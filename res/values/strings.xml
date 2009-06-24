@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="hello">Hello World, DroidSound!</string>
+    <string name="hello">Playing a BEEP</string>
     <string name="app_name">DroidSound</string>
 </resources>
