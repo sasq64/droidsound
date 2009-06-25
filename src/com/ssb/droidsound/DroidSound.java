@@ -1,50 +1,93 @@
 package com.ssb.droidsound;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import android.app.Activity;
+import android.content.Intent;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.MediaController;
+import android.widget.TextView;
 
-public class DroidSound extends Activity {
+public class DroidSound extends Activity implements OnClickListener {
+	
+	private static final String TAG = "Test";
+	private MediaController mediaCtrl;
+	private Player player;
+	private Thread playerThread;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        //setContentView(R.layout.main);
         
+        LinearLayout v = new LinearLayout(this);
+        setContentView(v);
+
+        Button b = new Button(this);
+        b.setText("Play");
+        b.setOnClickListener(this);
+        v.addView(b);
+        
+        b = new Button(this);
+        b.setText("Stop!");
+		b.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				player.stop();
+				finish();
+			}
+		});
+		v.addView(b);
+               
+        b = new Button(this);
+        b.setText("List!");
+		b.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				Intent i = new Intent(DroidSound.this, PlayListActivity.class);
+				startActivityForResult(i, 0);
+			}
+		});
+
+		v.addView(b);
+
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
         
-        ModPlugin mp = new ModPlugin();
-        boolean ok = mp.canHandle("test");
+		Log.v(TAG, "Creating player from thread " + Thread.currentThread().getId());
         
-        if(ok)
-        {
-	        
-	        int volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-	        
-	        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0);
-	        
-			int bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
-			if(bufSize < 32768*4) {
-				bufSize = 32768*4;
-			}
-			AudioTrack audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
-			 
-			int state = audioTrack.getState();
-			
-			short [] samples = new short [bufSize/2];
-			
-			for(int i=0; i<bufSize/2; i++) {
-				samples[i] = (short)(Math.sin(i*2*Math.PI / 327.67) * 32767);
-			}
-			
-			int rc = audioTrack.write(samples, 0, bufSize/2);
-			audioTrack.play();
-			audioTrack.flush();
-			
-			state = audioTrack.getPlayState();
-        }
-        
+        player = new Player(audioManager);
+        playerThread = new Thread(player);
+        playerThread.start();
     }
+
+ 	@Override
+	public void onClick(View v) {
+		// TODO Auto-generated method stub
+ 		
+ 		player.playMod("madness.mod");
+ 		Log.v(TAG, "Playing music");
+	}
+ 	
+ 	@Override
+ 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+ 		Log.v(TAG, "Result " + resultCode);
+
+ 		if(resultCode != RESULT_CANCELED) {
+ 			Bundle b = data.getExtras();
+ 			String name = b.getString("fileName");
+ 			Log.v(TAG, "Playing file " + name);
+ 			player.playMod(name);
+ 		}
+ 	}
 }

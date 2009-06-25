@@ -2,8 +2,8 @@ package com.ssb.droidsound;
 
 import java.nio.ByteBuffer;
 
-public class ModPlugin {
-
+public class ModPlugin implements DroidSoundPlugin {
+	
 	static {
 		System.loadLibrary("modplug");
 	}
@@ -11,14 +11,15 @@ public class ModPlugin {
 	ModPlugin() {
 	}
 	
-	native boolean canHandle(String name);
-	native boolean load(String name);
+	native public boolean canHandle(String name);
+	native public boolean load(byte [] module, int size);
+	native public void unload();
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native int getSoundData(byte [] dest, int size);	
-	native boolean seekTo(float seconds);
-	native String getSongName();
-	native String getSongAuthor();
-	native int getSongLength();
-
+	native public int getSoundData(short [] dest, int size);	
+	native public boolean seekTo(int seconds);
+	native public boolean setSong(int song);
+	native public String getStringInfo(int what);
+	native public int getIntInfo(int what);
+	native public int getSongLength();
 }
