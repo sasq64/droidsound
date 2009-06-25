@@ -20,5 +20,4 @@ public interface DroidSoundPlugin {
 	boolean setSong(int song);
 	String getStringInfo(int what);
 	int getIntInfo(int what);
-	int getSongLength();
 }

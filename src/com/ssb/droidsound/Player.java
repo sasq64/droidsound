@@ -14,7 +14,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 
-public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpdateListener{
+public class Player implements Runnable {
 
 	private static final String TAG = "Player";
 	private short [] samples;
@@ -26,6 +26,7 @@ public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpda
 	private AudioTrack audioTrack;
 	private int bufSize;
 	private boolean doStop;
+	private boolean playing;
 	
 	synchronized void playMod(String mod) {
 		modToPlay = mod;
@@ -41,8 +42,7 @@ public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpda
     		modName = modToPlay;
     		modToPlay = null;
 		}
-         
-        Log.v(TAG, "Instanciating ModPlugin");
+
         boolean ok = modPlugin.canHandle("test");
         
         
@@ -68,7 +68,7 @@ public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpda
 				FileInputStream fs = new FileInputStream(f);
 				fs.read(songBuffer);
 			} catch (IOException e) {
-				Log.w(TAG, "Could not load music");
+				Log.w(TAG, "Could not load music!");
 				// TODO Auto-generated catch block
 				//e.printStackTrace();
 			}
@@ -78,57 +78,22 @@ public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpda
 			}
 			
 			samples = new short [bufSize/2];
-	
-			for(int i=0; i<bufSize/2; i++) {
-				samples[i] = (short)(Math.sin(i*2*Math.PI / 327.68) * 32767);
-			}
-			
-			//songBuffer = null;
 
 			if(songBuffer != null) {
-				
-				Log.w(TAG, "Modname is " + modPlugin.getSongName());
-				
-				int rc = 1;
+				Log.w(TAG, "Modname is " + modPlugin.getStringInfo(modPlugin.INFO_TITLE));
 				audioTrack.play();				
-				//while(rc > 0) {
-				rc = modPlugin.getSoundData(samples, bufSize/2);
-				audioTrack.write(samples, 0, rc);
-				//}
-				return;
+				playing = true;
+
 			}	
-			audioTrack.play();			
-			int rc = audioTrack.write(samples, 0, bufSize/2);
-			audioTrack.flush();
-			
-			state = audioTrack.getPlayState();
         }
     }
-
-	@Override
-	public void onPeriodicNotification(AudioTrack track) {
-		
-		int frames = track.getPositionNotificationPeriod();
-		Log.v(TAG, "Writing data in thread " + Thread.currentThread().getId());
-		int rc = modPlugin.getSoundData(samples, frames*2);
-		if(rc <= 0) {
-			track.stop();
-		} else {
-			track.write(samples, 0, rc);
-		}
-	}
-
-	@Override
-	public void onClick(View v) {
-		// TODO Auto-generated method stub		
-	}
-
 
 	@Override
 	public void run() {
 
 		modPlugin = new ModPlugin();
 		doStop = false;
+		playing = false;
 		
 		
 		bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
@@ -139,12 +104,7 @@ public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpda
 
 		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		
-		
-		audioTrack.setPositionNotificationPeriod(32768);
-		audioTrack.setPlaybackPositionUpdateListener(this);
 
-		
-		// TODO Auto-generated method stub
 		while(true) {
 			try {
 				boolean doPlay = false;
@@ -152,14 +112,30 @@ public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpda
 					if(modToPlay != null)
 						doPlay = true;
 				}
-				if(doPlay)
+				if(doPlay) {
+					if(playing) {
+						audioTrack.stop();
+						modPlugin.unload();
+					}
+					playing = false;
 					startMod();
+				}
 				
 				if(doStop) {
+					if(playing) {
+						audioTrack.stop();
+						modPlugin.unload();
+					}
 					audioTrack.stop();
 					doStop = false;
+					playing = false;
 				}
-				//Thread.yield();
+
+				if(playing) {
+					int rc = modPlugin.getSoundData(samples, bufSize/2);
+					audioTrack.write(samples, 0, rc);
+				}
+
 				Thread.sleep(100);				
 				
 			} catch (InterruptedException e) {
@@ -169,12 +145,6 @@ public class Player implements Runnable, OnClickListener, OnPlaybackPositionUpda
 		
 	}
 
-
-	@Override
-	public void onMarkerReached(AudioTrack track) {
-		// TODO Auto-generated method stub
-		Log.v(TAG, "Marker reached");
-	}
 
 	public void stop() {
 		
