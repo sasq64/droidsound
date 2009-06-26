@@ -18,7 +18,9 @@ public class Player implements Runnable {
 
 	private static final String TAG = "Player";
 	private short [] samples;
-	private ModPlugin modPlugin;
+	private DroidSoundPlugin currentPlugin;
+	
+	private DroidSoundPlugin [] plugins;
 	
 	private String modToPlay;
 	private AudioManager audioManager;
@@ -33,11 +35,7 @@ public class Player implements Runnable {
 	private String moduleAuthor;
 	private int seekTo;
 	private boolean setPaused;
-	
-	synchronized void playMod(String mod) {
-		modToPlay = mod;
-	}
-	
+		
 	public Player(AudioManager am) {
 		audioManager = am;
 	}
@@ -48,20 +46,24 @@ public class Player implements Runnable {
     		modName = modToPlay;
     		modToPlay = null;
 		}
-
-        boolean ok = modPlugin.canHandle("test");
-        
-        
-        if(ok)
+    	
+    	currentPlugin = null;
+    	for(int i=0; i< plugins.length; i++) {
+    		if(plugins[i].canHandle(modName)) {    			
+    			currentPlugin = plugins[i];
+    			break;
+    		}
+    	}
+                
+        if(currentPlugin != null)
         {
             Log.v(TAG, "CanHandle OK");
 	        
-	        int volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-	        volume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-	        
-	        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, 0);
+	        //int volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+	        //volume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+	        //audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, 0);
 	  
-			int state = audioTrack.getState();
+			//int state = audioTrack.getState();
 			
 			byte [] songBuffer = null;
 			long fileSize = 0;
@@ -80,20 +82,19 @@ public class Player implements Runnable {
 			}
 			
 			if(songBuffer != null) {
-				modPlugin.load(songBuffer, (int) fileSize);
+				currentPlugin.load(songBuffer, (int) fileSize);
 			}
-			
-			samples = new short [bufSize/2];
 
 			if(songBuffer != null) {
 				Log.w(TAG, "HERE WE GO");
 				synchronized (this) {
-					Log.w(TAG, "HERE WE GO");
-					moduleLength = modPlugin.getIntInfo(modPlugin.INFO_LENGTH);
-					Log.w(TAG, "LENGTH IS " + moduleLength);
-					moduleTitle = modPlugin.getStringInfo(modPlugin.INFO_TITLE);
-					Log.w(TAG, "HERE WE GO");
-					//moduleAuthor = modPlugin.getStringInfo(modPlugin.INFO_AUTHOR);
+					moduleLength = currentPlugin.getIntInfo(currentPlugin.INFO_LENGTH);
+					moduleTitle = currentPlugin.getStringInfo(currentPlugin.INFO_TITLE);
+					if(moduleTitle == null)
+						moduleTitle = "Unknown";
+					moduleAuthor = currentPlugin.getStringInfo(currentPlugin.INFO_AUTHOR);
+					if(moduleAuthor == null)
+						moduleAuthor = "Unknown";
 				}
 				Log.w(TAG, "Modname is " + moduleTitle);
 				audioTrack.play();				
@@ -106,7 +107,10 @@ public class Player implements Runnable {
 	@Override
 	public void run() {
 
-		modPlugin = new ModPlugin();
+		plugins = new DroidSoundPlugin [1];
+		plugins[0] = new ModPlugin();		
+		currentPlugin = null;
+
 		doStop = false;
 		playing = false;
 		seekTo = -1;
@@ -115,6 +119,9 @@ public class Player implements Runnable {
 		if(bufSize < 32768*4) {
 			bufSize = 32768*4;
 		}
+		
+		samples = new short [bufSize/2];
+
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 
 		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
@@ -123,38 +130,44 @@ public class Player implements Runnable {
 		while(true) {
 			try {
 				boolean doPlay = false;
+
 				synchronized (this) {
 					if(modToPlay != null)
 						doPlay = true;
 				}
+
 				if(doPlay) {
 					if(playing) {
 						audioTrack.stop();
-						modPlugin.unload();
+						currentPlugin.unload();
 					}
 					playing = false;
 					startMod();
+					currentPosition = 0;
 				}
 				
 				if(doStop) {
 					if(playing) {
 						audioTrack.stop();
-						modPlugin.unload();
+						currentPlugin.unload();
 					}
 					audioTrack.stop();
 					doStop = false;
 					playing = false;
+					currentPosition = 0;
 				}
 				
-				if(seekTo >= 0) {
-					if(modPlugin.seekTo(seekTo)) {
-						currentPosition = seekTo;
-					}
-					seekTo = -1;
-				}
 
 				if(playing) {
-					int rc = modPlugin.getSoundData(samples, bufSize/2);
+
+					if(seekTo >= 0) {
+						if(currentPlugin.seekTo(seekTo)) {
+							currentPosition = seekTo;
+						}
+						seekTo = -1;
+					}
+
+					int rc = currentPlugin.getSoundData(samples, bufSize/2);
 					//synchronized (this) {
 						currentPosition += ((rc * 1000) / 88200);
 					//}
@@ -177,19 +190,29 @@ public class Player implements Runnable {
 	synchronized int getLength() {
 		return moduleLength;
 	}
+	
+	synchronized String getTitle() {
+		return moduleTitle;
+	}
 
+	synchronized String getAuthor() {
+		return moduleAuthor;
+	}
 
-	public void stop() {		
+	synchronized public void stop() {		
 		doStop = true;
 	}
 	
-	public void paused(boolean pause) {
+	synchronized public void paused(boolean pause) {
 		setPaused = pause;
 	}
 
-	public void seekTo(int pos) {
-		// TODO Auto-generated method stub
+	synchronized public void seekTo(int pos) {
 		seekTo = pos;		
+	}
+
+	synchronized void playMod(String mod) {
+		modToPlay = mod;
 	}
 
 }

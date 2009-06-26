@@ -1,12 +1,12 @@
 package com.ssb.droidsound;
 
-public class ModPlugin implements DroidSoundPlugin {
-	
+public class SidPlugin implements DroidSoundPlugin {
+
 	static {
-		System.loadLibrary("modplug");
+		System.loadLibrary("sidplay");
 	}
 
-	ModPlugin() {
+	SidPlugin() {
 	}
 	
 	public boolean canHandle(String name) { return N_canHandle(name); }
@@ -30,4 +30,5 @@ public class ModPlugin implements DroidSoundPlugin {
 	native public boolean N_setSong(int song);
 	native public String N_getStringInfo(int what);
 	native public int N_getIntInfo(int what);
+
 }

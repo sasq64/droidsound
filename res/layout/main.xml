@@ -5,12 +5,28 @@
     android:layout_height="fill_parent"
     >
 	<LinearLayout android:id="@+id/LinearLayout01" android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content">
+		<ImageButton android:id="@+id/moreButton" android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@android:drawable/ic_menu_more"></ImageButton>
+		<!-- 
 		<Button android:text="Play" android:id="@+id/playButton" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
 		<Button android:text="Stop" android:id="@+id/stopButton" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
 		<Button android:text="List" android:id="@+id/listButton" android:layout_width="wrap_content" android:layout_height="wrap_content"></Button>
+		 -->	
 	</LinearLayout>
-	<ListView android:id="@+id/infoList" android:layout_width="wrap_content" android:layout_height="wrap_content"></ListView>
-	<SurfaceView android:id="@+id/SurfaceView01" android:layout_width="fill_parent" android:layout_height="fill_parent"></SurfaceView>
-
-
+	<TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
+		<TableRow android:layout_width="wrap_content" android:layout_height="wrap_content">
+			<TextView android:text="Title:" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp" android:textStyle="bold"></TextView>
+			<TextView android:text="The Good Song" android:id="@+id/titleText" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
+		</TableRow>
+		<TableRow android:layout_width="wrap_content" android:layout_height="wrap_content">
+			<TextView android:text="Author:" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="10sp"></TextView>
+			<TextView android:text="DJ Unknown" android:id="@+id/authorText" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
+		</TableRow>
+	</TableLayout>
+	<SurfaceView android:id="@+id/surfaceView" android:layout_width="fill_parent" android:layout_height="fill_parent"></SurfaceView>
+	<!-- 
+	<MediaController android:id="@+id/mediaController" android:layout_width="fill_parent" android:layout_height="fill_parent" android:visibility="visible">
+	</MediaController>
+	<FrameLayout android:id="@+id/FrameLayout01" android:layout_width="fill_parent" android:layout_height="fill_parent">
+	</FrameLayout>
+	 -->
 </LinearLayout>
