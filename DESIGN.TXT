@@ -1,0 +1,9 @@
+
+The Player has a Current Song and SongSequence reference
+
+A PlayList is a list of Songs. Each Song can have a Group.
+
+A PlayList is displayed either flat or separated into groups
+
+The Music Directory is scanned for music, and is added to the FilePlayList
+

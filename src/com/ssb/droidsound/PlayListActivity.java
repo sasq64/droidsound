@@ -9,9 +9,12 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.MediaController;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 public class PlayListActivity extends ListActivity implements OnItemSelectedListener {
@@ -24,11 +27,16 @@ public class PlayListActivity extends ListActivity implements OnItemSelectedList
     	super.onCreate(savedInstanceState);
         //setContentView(R.layout.playlist);        
         //ListView view = (ListView)findViewById(R.id.PlayListView);
+    	//this.setContentView(R.id.PlayListView);
     	
     	//ListView view = new ListView(this);
     	//setContentView(view);
     	
     	//view.setOnItemSelectedListener(this);
+
+    	//ListView lv = getListView();    	
+        //LinearLayout v = new LinearLayout(this);
+        //setContentView(v);
     	
     	File modDir = new File(Environment.getExternalStorageDirectory()+"/MODS");    	
     	files = modDir.listFiles();
@@ -58,7 +66,7 @@ public class PlayListActivity extends ListActivity implements OnItemSelectedList
 	@Override
 	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
 		
-		Log.v(TAG, "Selected item " + arg2);
+		Log.v(TAG, "Selected item: " + arg2);
 		
 		File modFile = files[arg2];
 		Intent i = new Intent();

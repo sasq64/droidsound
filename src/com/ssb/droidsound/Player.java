@@ -27,6 +27,12 @@ public class Player implements Runnable {
 	private int bufSize;
 	private boolean doStop;
 	private boolean playing;
+	private int currentPosition;
+	private int moduleLength;
+	private String moduleTitle;
+	private String moduleAuthor;
+	private int seekTo;
+	private boolean setPaused;
 	
 	synchronized void playMod(String mod) {
 		modToPlay = mod;
@@ -80,7 +86,16 @@ public class Player implements Runnable {
 			samples = new short [bufSize/2];
 
 			if(songBuffer != null) {
-				Log.w(TAG, "Modname is " + modPlugin.getStringInfo(modPlugin.INFO_TITLE));
+				Log.w(TAG, "HERE WE GO");
+				synchronized (this) {
+					Log.w(TAG, "HERE WE GO");
+					moduleLength = modPlugin.getIntInfo(modPlugin.INFO_LENGTH);
+					Log.w(TAG, "LENGTH IS " + moduleLength);
+					moduleTitle = modPlugin.getStringInfo(modPlugin.INFO_TITLE);
+					Log.w(TAG, "HERE WE GO");
+					//moduleAuthor = modPlugin.getStringInfo(modPlugin.INFO_AUTHOR);
+				}
+				Log.w(TAG, "Modname is " + moduleTitle);
 				audioTrack.play();				
 				playing = true;
 
@@ -94,11 +109,11 @@ public class Player implements Runnable {
 		modPlugin = new ModPlugin();
 		doStop = false;
 		playing = false;
-		
+		seekTo = -1;
 		
 		bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 		if(bufSize < 32768*4) {
-			bufSize = 32768*8;
+			bufSize = 32768*4;
 		}
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 
@@ -130,9 +145,19 @@ public class Player implements Runnable {
 					doStop = false;
 					playing = false;
 				}
+				
+				if(seekTo >= 0) {
+					if(modPlugin.seekTo(seekTo)) {
+						currentPosition = seekTo;
+					}
+					seekTo = -1;
+				}
 
 				if(playing) {
 					int rc = modPlugin.getSoundData(samples, bufSize/2);
+					//synchronized (this) {
+						currentPosition += ((rc * 1000) / 88200);
+					//}
 					audioTrack.write(samples, 0, rc);
 				}
 
@@ -144,14 +169,27 @@ public class Player implements Runnable {
 		}
 		
 	}
+	
+	synchronized int getPosition() {
+		return currentPosition;
+	}
+	
+	synchronized int getLength() {
+		return moduleLength;
+	}
 
 
-	public void stop() {
-		
+	public void stop() {		
 		doStop = true;
-		
+	}
+	
+	public void paused(boolean pause) {
+		setPaused = pause;
+	}
+
+	public void seekTo(int pos) {
 		// TODO Auto-generated method stub
-		
+		seekTo = pos;		
 	}
 
 }
