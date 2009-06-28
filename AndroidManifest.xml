@@ -17,6 +17,7 @@
                 <action android:name="android.intent.action.VIEW" />
 			</intent-filter>
         </activity>
+        <service android:name="PlayerService"/>
     </application>
     <uses-sdk android:minSdkVersion="3" />
 </manifest> 

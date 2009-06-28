@@ -10,6 +10,8 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.AudioTrack.OnPlaybackPositionUpdateListener;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -34,10 +36,23 @@ public class Player implements Runnable {
 	private String moduleTitle;
 	private String moduleAuthor;
 	private int seekTo;
+	private Handler mHandler;
+	private int noPlayWait;
+	private int lastPos;
 	private boolean setPaused;
 		
-	public Player(AudioManager am) {
+	public Player(AudioManager am, Handler handler) {
 		audioManager = am;
+		mHandler = handler;
+		plugins = new DroidSoundPlugin [1];
+		plugins[0] = new ModPlugin();
+
+		bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+		if(bufSize < 32768*4) {
+			bufSize = 32768*4;
+		}
+		
+		samples = new short [bufSize/2];
 	}
 
     public void startMod() {
@@ -95,6 +110,12 @@ public class Player implements Runnable {
 					moduleAuthor = currentPlugin.getStringInfo(currentPlugin.INFO_AUTHOR);
 					if(moduleAuthor == null)
 						moduleAuthor = "Unknown";
+					
+					Message msg = mHandler.obtainMessage();
+					msg.what = 0;
+					msg.arg1 = moduleLength;
+					msg.obj = moduleTitle;
+					mHandler.sendMessage(msg);
 				}
 				Log.w(TAG, "Modname is " + moduleTitle);
 				audioTrack.play();				
@@ -107,27 +128,18 @@ public class Player implements Runnable {
 	@Override
 	public void run() {
 
-		plugins = new DroidSoundPlugin [1];
-		plugins[0] = new ModPlugin();		
 		currentPlugin = null;
 
 		doStop = false;
 		playing = false;
 		seekTo = -1;
-		
-		bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
-		if(bufSize < 32768*4) {
-			bufSize = 32768*4;
-		}
-		
-		samples = new short [bufSize/2];
 
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 
 		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
-		
+		noPlayWait = 0;
 
-		while(true) {
+		while(noPlayWait < 50) {
 			try {
 				boolean doPlay = false;
 
@@ -143,7 +155,7 @@ public class Player implements Runnable {
 					}
 					playing = false;
 					startMod();
-					currentPosition = 0;
+					currentPosition = lastPos = 0;
 				}
 				
 				if(doStop) {
@@ -154,32 +166,57 @@ public class Player implements Runnable {
 					audioTrack.stop();
 					doStop = false;
 					playing = false;
-					currentPosition = 0;
+					currentPosition = lastPos = 0;
 				}
 				
 
 				if(playing) {
-
-					if(seekTo >= 0) {
-						if(currentPlugin.seekTo(seekTo)) {
-							currentPosition = seekTo;
+					
+					if(!setPaused) {
+						noPlayWait = 0;
+						if(seekTo >= 0) {
+							if(currentPlugin.seekTo(seekTo)) {
+								currentPosition = lastPos = seekTo;
+							}
+							seekTo = -1;
 						}
-						seekTo = -1;
+	
+						int rc = currentPlugin.getSoundData(samples, bufSize/8);
+						//synchronized (this) {
+							currentPosition += ((rc * 1000) / 88200);
+							
+							if(currentPosition >= lastPos + 1000) {
+								Message msg = mHandler.obtainMessage();
+								msg.what = PlayerService.SONG_POS;
+								msg.arg1 = currentPosition;
+								mHandler.sendMessage(msg);
+								lastPos = currentPosition;
+							}
+							
+						//}
+						if(rc > 0) {
+							audioTrack.write(samples, 0, rc);
+						} else {
+							playing = false;
+							Message msg = mHandler.obtainMessage();
+							msg.what = 1;
+							mHandler.sendMessage(msg);
+						}
 					}
-
-					int rc = currentPlugin.getSoundData(samples, bufSize/2);
-					//synchronized (this) {
-						currentPosition += ((rc * 1000) / 88200);
-					//}
-					audioTrack.write(samples, 0, rc);
+				} else {
+					noPlayWait++;
 				}
 
 				Thread.sleep(100);				
 				
 			} catch (InterruptedException e) {
-				return;
+				break;
 			}
 		}
+		
+		audioTrack.release();
+		audioTrack = null;
+		Log.v(TAG, "Player Thread exiting due to inactivity");
 		
 	}
 	
