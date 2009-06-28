@@ -4,15 +4,12 @@ import java.io.File;
 
 import android.app.Service;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.media.AudioManager;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.util.Log;
-import android.widget.MediaController;
 
 public class PlayerService extends Service {
 

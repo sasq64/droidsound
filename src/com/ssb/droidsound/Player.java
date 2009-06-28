@@ -4,17 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-import android.media.AudioTrack.OnPlaybackPositionUpdateListener;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
 
 public class Player implements Runnable {
 
@@ -25,7 +20,6 @@ public class Player implements Runnable {
 	private DroidSoundPlugin [] plugins;
 	
 	private String modToPlay;
-	private AudioManager audioManager;
 	private String modName;
 	private AudioTrack audioTrack;
 	private int bufSize;
@@ -42,7 +36,6 @@ public class Player implements Runnable {
 	private boolean setPaused;
 		
 	public Player(AudioManager am, Handler handler) {
-		audioManager = am;
 		mHandler = handler;
 		plugins = new DroidSoundPlugin [1];
 		plugins[0] = new ModPlugin();
@@ -103,11 +96,11 @@ public class Player implements Runnable {
 			if(songBuffer != null) {
 				Log.w(TAG, "HERE WE GO");
 				synchronized (this) {
-					moduleLength = currentPlugin.getIntInfo(currentPlugin.INFO_LENGTH);
-					moduleTitle = currentPlugin.getStringInfo(currentPlugin.INFO_TITLE);
+					moduleLength = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+					moduleTitle = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
 					if(moduleTitle == null)
 						moduleTitle = "Unknown";
-					moduleAuthor = currentPlugin.getStringInfo(currentPlugin.INFO_AUTHOR);
+					moduleAuthor = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
 					if(moduleAuthor == null)
 						moduleAuthor = "Unknown";
 					

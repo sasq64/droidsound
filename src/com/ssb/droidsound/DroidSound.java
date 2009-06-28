@@ -1,54 +1,33 @@
 package com.ssb.droidsound;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import android.app.Activity;
-import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.ResolveInfo;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.widget.BaseAdapter;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.GridView;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.MediaController;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.TwoLineListItem;
 import android.widget.MediaController.MediaPlayerControl;
 
 public class DroidSound extends Activity implements MediaPlayerControl, MediaPlayer.OnPreparedListener,MediaPlayer.OnBufferingUpdateListener {
 	
 	private static final String TAG = "Test";
-	//private MediaController mediaCtrl;
-	private Player player;
-	//private Thread playerThread;
     private IPlayerService mService;
     private TextView titleTextView;
     private TextView authorTextView;
@@ -96,8 +75,6 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
 
 	
    private ServiceConnection mConnection = new ServiceConnection() {
-
-		private ComponentName name;
 
 		@Override
 		public void onServiceConnected(ComponentName className, IBinder service) {

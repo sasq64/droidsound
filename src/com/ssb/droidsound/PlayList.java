@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.List;
 import java.util.ListIterator;
 
-import android.os.Environment;
-
 public class PlayList {
 
 	private List<Song> songList;
