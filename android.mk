@@ -7,7 +7,7 @@ package:
 	mv bin/droidsound.apk package.apk
 	rm -rf lib
 	mkdir -p lib/armeabi
-	cp libmodplug.so lib/armeabi
+	cp *.so lib/armeabi
 	zip -r package.apk lib
 	#zip -qj package.apk classes.dex
 	mv package.apk package.apk.unsigned

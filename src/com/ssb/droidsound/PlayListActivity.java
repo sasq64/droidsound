@@ -31,7 +31,6 @@ public class PlayListActivity extends ListActivity implements OnItemSelectedList
     	//setContentView(view);
     	
     	//view.setOnItemSelectedListener(this);
-
     	//ListView lv = getListView();    	
         //LinearLayout v = new LinearLayout(this);
         //setContentView(v);
@@ -46,7 +45,7 @@ public class PlayListActivity extends ListActivity implements OnItemSelectedList
     	}
 
     	//view.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));    	
-    	setListAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_2, names));
+    	setListAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));
     }
 	
 	@Override

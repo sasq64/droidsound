@@ -37,8 +37,9 @@ public class Player implements Runnable {
 		
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
-		plugins = new DroidSoundPlugin [1];
-		plugins[0] = new ModPlugin();
+		plugins = new DroidSoundPlugin [2];
+		plugins[0] = new GMEPlugin();
+		plugins[1] = new ModPlugin();
 
 		bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 		if(bufSize < 32768*4) {
