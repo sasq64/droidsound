@@ -1,14 +1,29 @@
 package com.ssb.droidsound;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
@@ -23,6 +38,7 @@ import android.widget.ImageButton;
 import android.widget.MediaController;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.MediaController.MediaPlayerControl;
 
 public class DroidSound extends Activity implements MediaPlayerControl, MediaPlayer.OnPreparedListener,MediaPlayer.OnBufferingUpdateListener {
@@ -37,6 +53,8 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
     private String title;
     private int songLength;
     private SeekBar seekBar;
+	private boolean playPause = true;
+	private boolean dragging;
 
     
     
@@ -57,6 +75,7 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
 		public void intChanged(int what, int value) throws RemoteException {
 			Log.v(TAG, String.format("%d is now %d", what, value));
 			switch(what) {
+			
 			case DroidSoundPlugin.INFO_LENGTH:
 				songLength = value / 1000;
 				seekBar.setMax(songLength);
@@ -65,8 +84,10 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
 				break;
 			case PlayerService.SONG_POS:
 				int sec = value/1000;
-				Log.v(TAG, "Music at " + sec);				
-				seekBar.setProgress(sec);
+				Log.v(TAG, "Music at " + sec);
+				if(!dragging) {
+					seekBar.setProgress(sec);
+				}
 				posTextView.setText(String.format("%02d:%02d", sec/60, sec % 60));
 				break;
 			}
@@ -107,6 +128,7 @@ private ImageButton pauseButton;
 private String modName;
 private ImageButton prevButton;
 private ImageButton nextButton;
+private AlertDialog alert;
 
 		
     /** Called when the activity is first created. */
@@ -159,7 +181,6 @@ private ImageButton nextButton;
 		
 		pauseButton = (ImageButton) findViewById(R.id.pauseButton);		
 		pauseButton.setOnClickListener(new OnClickListener() {			
-			private boolean playPause;
 
 			@Override
 			public void onClick(View v) {
@@ -208,20 +229,22 @@ private ImageButton nextButton;
 			private int to = -1;
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
+				dragging = false;
+				lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
 				try {
 					if(to >= 0) {
 						mService.seekTo(to * 1000);
-						to = -1;
-						lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
 					}
 				} catch (RemoteException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				to = -1;
 			}
 			
 			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
+				dragging = true;
 			}
 			
 			@Override
@@ -270,9 +293,121 @@ private ImageButton nextButton;
         Intent i = new Intent(this, PlayerService.class);
         startService(i);
         bindService(i, mConnection, Context.BIND_AUTO_CREATE);
+        
+    	File modDir = new File(Environment.getExternalStorageDirectory()+"/MODS");
+    	
+		if(!modDir.exists()) {
+    		modDir.mkdir();
+            showDialog(0);
+    	} else {
+        	String [] s = modDir.list();
+        	if(s.length <= 0) {
+        		showDialog(0);
+        	}
+    	}
+    }
+    
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("Modules goes into the 'MODS' directory on your sdcard, but it seems you don't have any. Do you want to donload a few (~100KB) to get you going?")
+               .setCancelable(false)
+               .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                   public void onClick(DialogInterface dialog, int id) {
+                        DroidSound.this.downloadMods();
+                   }
+               })
+               .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                   public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                   }
+               });
+        return builder.create();    	
     }
 
-    boolean skip(int i) {
+    protected void downloadMods() {
+    	    	
+    	 AsyncTask<URL, Integer, String> atask = new AsyncTask<URL, Integer, String>() {
+    	     protected String doInBackground(URL... urls) {
+    	    	 
+    	    	 final String ok = "Music downloaded successfully.";
+    	    	 final String failed = "FAILED to download music";
+
+    	     	try {
+    				// TODO Auto-generated method stub
+    		        InputStream in = null;
+    		        int response = -1;
+		        	int size;
+		            byte[] buffer = new byte[16384];
+		            
+		            String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
+
+    		        
+    		        for(URL url : urls) {
+	    		        //URL url = new URL("http://swimmer.se/droidsound/mods.zip"); 
+	    		        URLConnection conn = url.openConnection();
+	    		                 
+	    		        if (!(conn instanceof HttpURLConnection))                     
+	    		            throw new IOException("Not a HTTP connection");
+	    		        
+	    		        HttpURLConnection httpConn = (HttpURLConnection) conn;
+	    		        httpConn.setAllowUserInteraction(false);
+	    		        httpConn.setInstanceFollowRedirects(true);
+	    		        httpConn.setRequestMethod("GET");
+	    		        httpConn.connect(); 
+	    		
+	    		        response = httpConn.getResponseCode();                 
+	    		        if (response == HttpURLConnection.HTTP_OK) {
+	    		        	
+	    		        	Log.v(TAG, "HTTP connected");
+	    		            in = httpConn.getInputStream();
+	    		            
+	    		            ZipInputStream zip = new ZipInputStream(in);
+	    		            ZipEntry e;
+	    		            while ((e = zip.getNextEntry()) != null) {
+	    		            	Log.v(TAG, "Found file " + e.getName());
+	    						FileOutputStream fos = new FileOutputStream(outDir + e.getName());
+	    						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
+	    						while ((size = zip.read(buffer, 0, buffer.length)) != -1) {
+	    							bos.write(buffer, 0, size);
+	    						}
+	    						bos.flush();
+	    						bos.close();
+	    		            }
+	    		            
+	    		        } else
+	    		        	return failed;
+    		        }
+	    	    } catch(IOException e) {
+    	    		e.printStackTrace();
+    	    		Log.w(TAG, "OOPS");
+    	    		return failed;
+    	    	}
+	    	    return ok;
+    	     }
+/*
+    	     protected void onProgressUpdate(Integer... progress) {
+    	         //setProgressPercent(progress[0]);
+    	     }
+*/
+    	     @Override
+    	     protected void onPostExecute(String result) {
+    	          Toast t = Toast.makeText(DroidSound.this, result, Toast.LENGTH_SHORT);//new Toast(DroidSound.this);
+    	          t.show();
+    	     }
+
+    	 };
+    	 
+    	 try {
+			atask.execute(new URL("http://swimmer.se/droidsound/mods.zip"));
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	boolean skip(int i) {
     	
     	if(modName == null)
     		return false;
@@ -415,7 +550,7 @@ private ImageButton nextButton;
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(0, 10, 0, "Settings").setIcon(android.R.drawable.ic_menu_preferences);
+		//menu.add(0, 10, 0, "Settings").setIcon(android.R.drawable.ic_menu_preferences);
 		menu.add(0, 11, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}
