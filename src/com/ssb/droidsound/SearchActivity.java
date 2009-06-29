@@ -1,0 +1,50 @@
+package com.ssb.droidsound;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class SearchActivity extends Activity {
+
+	private Button searchButton;
+	private Button cancelButton;
+
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+    	super.onCreate(savedInstanceState);
+    	
+        setContentView(R.layout.search);
+        
+		searchButton = (Button) findViewById(R.id.searchButton);		
+		searchButton.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {
+				
+				TextView t = (TextView) findViewById(R.id.titleEdit);
+				TextView g = (TextView) findViewById(R.id.gameEdit);
+				TextView a = (TextView) findViewById(R.id.authorEdit);
+
+				
+				Intent i = new Intent(SearchActivity.this, SearchResultActivity.class);
+				i.putExtra("title", t.getText().toString());
+				i.putExtra("game", g.getText().toString());
+				i.putExtra("author", a.getText().toString());
+				startActivityForResult(i, 0);
+			}
+		});
+
+		cancelButton = (Button) findViewById(R.id.cancelButton);		
+		cancelButton.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {
+				finish();
+			}
+		});
+
+	}
+
+}

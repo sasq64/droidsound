@@ -490,6 +490,8 @@ private AlertDialog alert;
  			
  			//player.playMod(name); 			
  		}
+ 		
+ 		// ftp://modland.ziphoid.com/pub/modules/
  	}
 
 	@Override
@@ -550,7 +552,7 @@ private AlertDialog alert;
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		//menu.add(0, 10, 0, "Settings").setIcon(android.R.drawable.ic_menu_preferences);
+		menu.add(0, 10, 0, "Search MODLAND").setIcon(android.R.drawable.ic_menu_search);
 		menu.add(0, 11, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}
@@ -566,7 +568,12 @@ private AlertDialog alert;
 				e.printStackTrace();
 			}
 			finish();
-		} //else
+		} else if(item.getItemId() == 10) {
+			//Intent i = new Intent(DroidSound.this, SearchResultActivity.class);
+			//i.putExtra("game", "Combat%");
+			Intent i = new Intent(DroidSound.this, SearchActivity.class);
+			startActivityForResult(i, 0);
+		}
 			//mediaCtrl.show(0);
 		return true;
 	}

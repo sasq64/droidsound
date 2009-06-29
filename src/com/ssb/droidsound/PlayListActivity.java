@@ -21,6 +21,8 @@ public class PlayListActivity extends ListActivity implements OnItemSelectedList
 	@Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+  	
+    	
         //setContentView(R.layout.playlist);        
         //ListView view = (ListView)findViewById(R.id.PlayListView);
     	//this.setContentView(R.id.PlayListView);
@@ -44,7 +46,7 @@ public class PlayListActivity extends ListActivity implements OnItemSelectedList
     	}
 
     	//view.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));    	
-    	setListAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));
+    	setListAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_2, names));
     }
 	
 	@Override
