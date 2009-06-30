@@ -5,10 +5,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -136,6 +140,28 @@ private AlertDialog alert;
     public void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.main);
+  /*
+        URL url = null;
+		URI uri = null;
+		try {
+			url = new URL("ftp://modland.com/pub/some thing/more here.xxx");
+		} catch (MalformedURLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+        try {
+			uri = url.toURI();
+		} catch (URISyntaxException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    */    
+        //try {
+        //} catch (URISyntaxException e) {
+            // do nothing.
+        //}
+  
+        
         
         //LinearLayout v = new LinearLayout(this);
         //v.set
@@ -326,81 +352,86 @@ private AlertDialog alert;
         return builder.create();    	
     }
 
+    
+	private AsyncTask<URL, Integer, String> downloadTask = new AsyncTask<URL, Integer, String>() {
+		protected String doInBackground(URL... urls) {
+
+			final String ok = "Music downloaded successfully.";
+			final String failed = "FAILED to download music";
+
+			try {
+				// TODO Auto-generated method stub
+				InputStream in = null;
+				int response = -1;
+				int size;
+				byte[] buffer = new byte[16384];
+
+				String outDir = Environment.getExternalStorageDirectory()
+						+ "/MODS/";
+
+				for (URL url : urls) {
+					// URL url = new
+					// URL("http://swimmer.se/droidsound/mods.zip");
+					URLConnection conn = url.openConnection();
+					if (!(conn instanceof HttpURLConnection))
+						throw new IOException("Not a HTTP connection");
+
+					HttpURLConnection httpConn = (HttpURLConnection) conn;
+					httpConn.setAllowUserInteraction(false);
+					httpConn.setInstanceFollowRedirects(true);
+					httpConn.setRequestMethod("GET");
+					httpConn.connect();
+
+					response = httpConn.getResponseCode();
+					if(response == HttpURLConnection.HTTP_OK)
+					{
+						Log.v(TAG, "HTTP connected");
+						//in = httpConn.getInputStream();
+						in = httpConn.getInputStream();
+
+						ZipInputStream zip = new ZipInputStream(in);
+						ZipEntry e;
+						while ((e = zip.getNextEntry()) != null) {
+							Log.v(TAG, "Found file " + e.getName());
+							FileOutputStream fos = new FileOutputStream(outDir
+									+ e.getName());
+							BufferedOutputStream bos = new BufferedOutputStream(
+									fos, buffer.length);
+							while ((size = zip.read(buffer, 0, buffer.length)) != -1) {
+								bos.write(buffer, 0, size);
+							}
+							bos.flush();
+							bos.close();
+						}
+
+					} else
+						return failed;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				Log.w(TAG, "OOPS");
+				return failed;
+			}
+			return ok;
+		}
+
+		/*
+		 * protected void onProgressUpdate(Integer... progress) {
+		 * //setProgressPercent(progress[0]); }
+		 */
+		@Override
+		protected void onPostExecute(String result) {
+			Toast t = Toast.makeText(DroidSound.this, result,
+					Toast.LENGTH_SHORT);// new Toast(DroidSound.this);
+			t.show();
+		}
+
+	};
+    
     protected void downloadMods() {
-    	    	
-    	 AsyncTask<URL, Integer, String> atask = new AsyncTask<URL, Integer, String>() {
-    	     protected String doInBackground(URL... urls) {
-    	    	 
-    	    	 final String ok = "Music downloaded successfully.";
-    	    	 final String failed = "FAILED to download music";
-
-    	     	try {
-    				// TODO Auto-generated method stub
-    		        InputStream in = null;
-    		        int response = -1;
-		        	int size;
-		            byte[] buffer = new byte[16384];
-		            
-		            String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
-
-    		        
-    		        for(URL url : urls) {
-	    		        //URL url = new URL("http://swimmer.se/droidsound/mods.zip"); 
-	    		        URLConnection conn = url.openConnection();
-	    		                 
-	    		        if (!(conn instanceof HttpURLConnection))                     
-	    		            throw new IOException("Not a HTTP connection");
-	    		        
-	    		        HttpURLConnection httpConn = (HttpURLConnection) conn;
-	    		        httpConn.setAllowUserInteraction(false);
-	    		        httpConn.setInstanceFollowRedirects(true);
-	    		        httpConn.setRequestMethod("GET");
-	    		        httpConn.connect(); 
-	    		
-	    		        response = httpConn.getResponseCode();                 
-	    		        if (response == HttpURLConnection.HTTP_OK) {
-	    		        	
-	    		        	Log.v(TAG, "HTTP connected");
-	    		            in = httpConn.getInputStream();
-	    		            
-	    		            ZipInputStream zip = new ZipInputStream(in);
-	    		            ZipEntry e;
-	    		            while ((e = zip.getNextEntry()) != null) {
-	    		            	Log.v(TAG, "Found file " + e.getName());
-	    						FileOutputStream fos = new FileOutputStream(outDir + e.getName());
-	    						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-	    						while ((size = zip.read(buffer, 0, buffer.length)) != -1) {
-	    							bos.write(buffer, 0, size);
-	    						}
-	    						bos.flush();
-	    						bos.close();
-	    		            }
-	    		            
-	    		        } else
-	    		        	return failed;
-    		        }
-	    	    } catch(IOException e) {
-    	    		e.printStackTrace();
-    	    		Log.w(TAG, "OOPS");
-    	    		return failed;
-    	    	}
-	    	    return ok;
-    	     }
-/*
-    	     protected void onProgressUpdate(Integer... progress) {
-    	         //setProgressPercent(progress[0]);
-    	     }
-*/
-    	     @Override
-    	     protected void onPostExecute(String result) {
-    	          Toast t = Toast.makeText(DroidSound.this, result, Toast.LENGTH_SHORT);//new Toast(DroidSound.this);
-    	          t.show();
-    	     }
-
-    	 };
-    	 
+    	    	    	 
     	 try {
-			atask.execute(new URL("http://swimmer.se/droidsound/mods.zip"));
+			downloadTask.execute(new URL("http://swimmer.se/droidsound/mods.zip"));
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -476,19 +507,32 @@ private AlertDialog alert;
  		Log.v(TAG, "Result " + resultCode);
 
  		if(resultCode != RESULT_CANCELED) {
+
  			Bundle b = data.getExtras();
- 			modName = b.getString("fileName");
- 			Log.v(TAG, "Playing file " + modName);
  			
- 			if(mService != null)
-				try {
-					mService.playMod(modName);
-				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
- 			
- 			//player.playMod(name); 			
+ 			if(requestCode == 0) {
+	 			modName = b.getString("fileName");
+	 			Log.v(TAG, "Playing file " + modName);
+	 			
+	 			if(mService != null)
+					try {
+						mService.playMod(modName);
+					} catch (RemoteException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+	 			
+	 			//player.playMod(name);
+ 			} else {
+ 				String name = "http://ftp.amigascne.org/mirrors/ftp.modland.com/pub/modules/" + b.getString("name");
+ 				Log.v(TAG, "Trying to download " + name);
+ 		    	try {
+ 					downloadTask.execute(new URL(name));
+ 				} catch (MalformedURLException e) {
+ 					// TODO Auto-generated catch block
+ 					e.printStackTrace();
+ 				}
+ 			}
  		}
  		
  		// ftp://modland.ziphoid.com/pub/modules/
@@ -572,7 +616,7 @@ private AlertDialog alert;
 			//Intent i = new Intent(DroidSound.this, SearchResultActivity.class);
 			//i.putExtra("game", "Combat%");
 			Intent i = new Intent(DroidSound.this, SearchActivity.class);
-			startActivityForResult(i, 0);
+			startActivityForResult(i, 1);
 		}
 			//mediaCtrl.show(0);
 		return true;

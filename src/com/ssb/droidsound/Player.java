@@ -3,6 +3,8 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -37,9 +39,10 @@ public class Player implements Runnable {
 		
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
-		plugins = new DroidSoundPlugin [2];
-		plugins[0] = new GMEPlugin();
+		plugins = new DroidSoundPlugin [3];
+		plugins[0] = new TinySidPlugin();
 		plugins[1] = new ModPlugin();
+		plugins[2] = new GMEPlugin();
 
 		bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 		if(bufSize < 32768*4) {
@@ -52,21 +55,26 @@ public class Player implements Runnable {
     public void startMod() {
     	
     	synchronized (this) {
-    		modName = modToPlay;
+    		modName = modToPlay;  
     		modToPlay = null;
 		}
     	
     	currentPlugin = null;
+    	
+    	List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
+    	
     	for(int i=0; i< plugins.length; i++) {
     		if(plugins[i].canHandle(modName)) {    			
-    			currentPlugin = plugins[i];
-    			break;
+    			//currentPlugin = plugins[i];
+    			list.add(plugins[i]);
+    			Log.v(TAG, String.format("%s handled by %d", modName, i));
+    			//break;
     		}
     	}
                 
-        if(currentPlugin != null)
+        //if(currentPlugin != null)
         {
-            Log.v(TAG, "CanHandle OK");
+            
 	        
 	        //int volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
 	        //volume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
@@ -91,10 +99,16 @@ public class Player implements Runnable {
 			}
 			
 			if(songBuffer != null) {
-				currentPlugin.load(songBuffer, (int) fileSize);
+				
+				for(DroidSoundPlugin plugin : list) {
+					if(plugin.load(songBuffer, (int) fileSize)) {
+						currentPlugin = plugin;
+						break;
+					}
+				}
 			}
 
-			if(songBuffer != null) {
+			if(currentPlugin != null) {
 				Log.w(TAG, "HERE WE GO");
 				synchronized (this) {
 					moduleLength = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);

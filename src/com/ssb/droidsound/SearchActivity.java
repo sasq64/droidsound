@@ -3,6 +3,8 @@ package com.ssb.droidsound;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.RemoteException;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -12,6 +14,7 @@ public class SearchActivity extends Activity {
 
 	private Button searchButton;
 	private Button cancelButton;
+	private static final String TAG = "SearchActivity";
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -33,7 +36,7 @@ public class SearchActivity extends Activity {
 				i.putExtra("title", t.getText().toString());
 				i.putExtra("game", g.getText().toString());
 				i.putExtra("author", a.getText().toString());
-				startActivityForResult(i, 0);
+				startActivityForResult(i, 1);
 			}
 		});
 
@@ -46,5 +49,23 @@ public class SearchActivity extends Activity {
 		});
 
 	}
+	
+ 	@Override
+ 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+ 		Log.v(TAG, "Result " + resultCode);
+
+ 		if(resultCode != RESULT_CANCELED) {
+ 			Bundle b = data.getExtras();
+ 			String name = b.getString("name");
+ 			Log.v(TAG, "Got file " + name);
+
+ 			setResult(RESULT_OK, data);
+ 			finish();
+ 		}
+ 		
+ 		// ftp://modland.ziphoid.com/pub/modules/
+ 	}
+
 
 }

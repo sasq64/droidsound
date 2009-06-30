@@ -18,3 +18,13 @@ package:
 	mv package.apk.aligned package.apk
 	$(DROID)/out/host/linux-x86/bin/acp -fpt package.apk bin/droidsound.apk
 	rm package.apk*
+
+	
+	
+	# make -C ../ModPlugin -f android.mk
+	# cp ../ModPlugin/*.so .
+	# make -C ../TinySidPlugin -f android.mk
+	# cp ../TinySidPlugin/*.so .
+	# make -C ../GMEPlugin -f android.mk
+	# cp ../GMEPlugin/*.so .
+	

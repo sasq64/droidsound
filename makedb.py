@@ -10,6 +10,7 @@ def main(argv) :
 	dbc = db.cursor()
 	try :
 		dbc.execute('create table songs (_id INTEGER PRIMARY KEY, name TEXT, author TEXT, game TEXT, type TEXT)')
+		dbc.execute('create index nameidx on songs (name)')
 #		dbc.execute('create table songs (_id INTEGER PRIMARY KEY, name TEXT, author INTEGER, game INTEGER, type INTEGER)')
 #		dbc.execute('create table types (_id INTEGER PRIMARY KEY, tname TEXT)')
 #		dbc.execute('create table authors (_id INTEGER PRIMARY KEY, aname TEXT)')

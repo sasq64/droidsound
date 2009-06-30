@@ -25,6 +25,7 @@
 	<SurfaceView android:id="@+id/surfaceView" android:layout_width="fill_parent" android:layout_height="wrap_content"></SurfaceView>
 	<MediaController android:id="@+id/mediaController" android:layout_width="fill_parent" android:layout_height="fill_parent" android:visibility="visible">
 	</MediaController>
+
 	<FrameLayout android:id="@+id/FrameLayout01" android:layout_width="fill_parent" android:layout_height="fill_parent">
 	</FrameLayout>
 	 -->
