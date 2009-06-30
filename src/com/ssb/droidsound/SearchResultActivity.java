@@ -45,7 +45,7 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
     	if(game.length() > 0) {
     		if(i > 0)
     			where.append(" and ");
-    		where.append("game GLOB '").append(author).append("*'");
+    		where.append("game GLOB '").append(game).append("*'");
     		i++;
     	}
 
@@ -151,7 +151,7 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
 		if(g.compareTo("NONE") == 0) {
 			path = String.format("%s/%s/%s", t, a, n);
 		} else {
-			path = String.format("%s/%s/%s%s", t, a, g, n);
+			path = String.format("%s/%s/%s/%s", t, a, g, n);
 		}
 		
 		Log.v(TAG, path + " selected");
