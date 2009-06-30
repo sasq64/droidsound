@@ -14,13 +14,14 @@
 	<TableLayout android:id="@+id/TableLayout01" android:layout_width="wrap_content" android:layout_height="wrap_content">
 		<TableRow android:layout_width="wrap_content" android:layout_height="wrap_content">
 			<TextView android:text="Title:" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
-			<TextView android:text="The Good Song" android:id="@+id/titleText" android:layout_width="wrap_content" android:textSize="30sp" android:layout_height="wrap_content"></TextView>
+			<TextView android:text="The Good Song" android:id="@+id/titleText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="20sp" android:paddingLeft="8sp"></TextView>
 		</TableRow>
 		<TableRow android:layout_width="wrap_content" android:layout_height="wrap_content">
 			<TextView android:text="Author:" android:layout_width="wrap_content" android:layout_height="wrap_content"></TextView>
-			<TextView android:text="DJ Unknown" android:id="@+id/authorText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="30sp"></TextView>
+			<TextView android:text="DJ Unknown" android:id="@+id/authorText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="20sp" android:paddingLeft="8sp"></TextView>
 		</TableRow>
 	</TableLayout>
+<TextView android:text="00:00" android:id="@+id/posTextView" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="40sp" android:typeface="monospace" android:textColor="#00ff00"></TextView>
 	<!-- 
 	<SurfaceView android:id="@+id/surfaceView" android:layout_width="fill_parent" android:layout_height="wrap_content"></SurfaceView>
 	<MediaController android:id="@+id/mediaController" android:layout_width="fill_parent" android:layout_height="fill_parent" android:visibility="visible">
@@ -29,15 +30,18 @@
 	<FrameLayout android:id="@+id/FrameLayout01" android:layout_width="fill_parent" android:layout_height="fill_parent">
 	</FrameLayout>
 	 -->
-<LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content">
-<SeekBar android:id="@+id/seekBar" android:layout_weight="1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center"/>
-<TextView android:text="00:00" android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/lengthView" android:typeface="monospace" android:textSize="16sp" android:textStyle="bold" android:textColor="#ffffff" android:gravity="center"></TextView>
+<LinearLayout android:layout_margin="6sp" android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content">
+<SeekBar android:id="@+id/seekSongBar" android:layout_weight="1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center"/>
+<TextView android:text="1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/songsView" android:typeface="monospace" android:textSize="20sp" android:textStyle="bold" android:textColor="#ffff00" android:gravity="center" android:paddingLeft="4sp"></TextView>
 </LinearLayout>
-<LinearLayout android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content">
+<LinearLayout android:layout_margin="6sp" android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content">
+<SeekBar android:id="@+id/seekBar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center" android:layout_weight="1"/>
+<TextView android:text="00:00" android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/lengthView" android:typeface="monospace" android:textSize="16sp" android:textStyle="bold" android:textColor="#ffffff" android:gravity="center" android:paddingTop="4sp" android:paddingLeft="4sp"></TextView>
+</LinearLayout>
+<LinearLayout android:layout_margin="5sp" android:orientation="horizontal" android:layout_width="fill_parent" android:layout_height="wrap_content">
 <ImageButton android:id="@+id/moreButton" android:layout_width="wrap_content" android:layout_height="fill_parent" android:src="@android:drawable/ic_menu_more"/>
 <ImageButton android:id="@+id/prevButton" android:layout_weight="1" android:layout_width="wrap_content" android:layout_height="fill_parent" android:src="@android:drawable/ic_media_previous"/>
 <ImageButton android:id="@+id/pauseButton" android:layout_weight="1" android:layout_width="wrap_content" android:layout_height="fill_parent" android:src="@android:drawable/ic_media_pause"/>
 <ImageButton android:id="@+id/nextButton" android:layout_weight="1" android:layout_width="wrap_content" android:layout_height="fill_parent" android:src="@android:drawable/ic_media_next"/>
 </LinearLayout>
-<TextView android:text="00:00" android:id="@+id/posTextView" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="40sp" android:typeface="monospace" android:textColor="#00ff00"></TextView>
 </LinearLayout>

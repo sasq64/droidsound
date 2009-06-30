@@ -36,28 +36,23 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
     	String title = intent.getStringExtra("title");
     	
     	StringBuilder where = new StringBuilder("select * from songs where ");
-    	//String [] args = new String [3];
-    	//for(int i=0; i<3; i++)
-//    		args[i] = "";
     	int i = 0;
-
     	if(title.length() > 0) {
-    		if(i > 0)
-    			where.append(" and ");
-    		where.append("name like '").append(title).append("%'");
+    		where.append("name GLOB '").append(title).append("*'");
     		i++; //args[i++] = title + "%";
     	}
 
     	if(game.length() > 0) {
-    		where.append("game like '").append(author).append("%'");
-    		i++; //args[i++] = game + "%";
+    		if(i > 0)
+    			where.append(" and ");
+    		where.append("game GLOB '").append(author).append("*'");
+    		i++;
     	}
 
     	if(author.length() > 0) {
     		if(i > 0)
     			where.append(" and ");
-    		where.append("author like '").append(author).append("%'");
-    		//args[i++] = author + "%";
+    		where.append("author GLOB '").append(author).append("*'");
     		i++;
     	}
     	
@@ -84,6 +79,22 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
     	Log.v(TAG, "Executing select: " + where.toString());
     	//Cursor cursor = db.query("songs", null, where.toString(), args2, null, null, null);
     	Cursor cursor = db.rawQuery(where.toString(), null);
+    	/*Cursor cursor;
+    	String q;
+    	if(title.charAt(0) == 'a')
+    		q = "SELECT * FROM songs WHERE name LIKE 'win%' AND author LIKE 'Ben%'";
+    	else
+    	if(title.charAt(0) == 'b')
+    		q = "select * from (select * from songs where name like 'win%') where author like 'Ben%'";
+    	else
+    	if(title.charAt(0) == 'c')
+    		q = "select * from (select * from songs where name GLOB 'win*') where author GLOB 'Ben*'";
+    	else
+    		q = "SELECT * FROM songs WHERE name GLOB 'win*' AND author GLOB 'Ben*'";
+    	
+    	Log.v(TAG, "Executing select: " + q);
+    	cursor = db.rawQuery(q, null);
+    	*/
     	//Cursor cursor = db.query("songs", null, "author like ? and name like ?", new String[] { "Oge%", "mega%", "" }, null, null, null);
     	//Cursor cursor = null;
     	
@@ -133,20 +144,15 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
 		//cursor.moveToFirst();
 		String path = "ILLEGAL";
 		
-		try {		
-			String n = URLEncoder.encode(cursor.getString(1), "UTF-8");
-			String a = URLEncoder.encode(cursor.getString(2), "UTF-8");
-			String g = URLEncoder.encode(cursor.getString(3), "UTF-8");
-			String t = URLEncoder.encode(cursor.getString(4), "UTF-8");
-			if(g.compareTo("NONE") == 0) {
-				path = String.format("%s/%s/%s", t, a, n);
-			} else {
-				path = String.format("%s/%s/%s%s", t, a, g, n);
-			}
-		} catch (UnsupportedEncodingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}		
+		String n = cursor.getString(1);
+		String a = cursor.getString(2);
+		String g = cursor.getString(3);
+		String t = cursor.getString(4);
+		if(g.compareTo("NONE") == 0) {
+			path = String.format("%s/%s/%s", t, a, n);
+		} else {
+			path = String.format("%s/%s/%s%s", t, a, g, n);
+		}
 		
 		Log.v(TAG, path + " selected");
 

@@ -9,6 +9,7 @@ import java.util.List;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -29,13 +30,14 @@ public class Player implements Runnable {
 	private boolean playing;
 	private int currentPosition;
 	private int moduleLength;
-	private String moduleTitle;
-	private String moduleAuthor;
+	//private String moduleTitle;
+	//private String moduleAuthor;
 	private int seekTo;
 	private Handler mHandler;
 	private int noPlayWait;
 	private int lastPos;
 	private boolean setPaused;
+	private int subSong;
 		
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
@@ -65,71 +67,69 @@ public class Player implements Runnable {
     	
     	for(int i=0; i< plugins.length; i++) {
     		if(plugins[i].canHandle(modName)) {    			
-    			//currentPlugin = plugins[i];
     			list.add(plugins[i]);
     			Log.v(TAG, String.format("%s handled by %d", modName, i));
-    			//break;
     		}
     	}
                 
-        //if(currentPlugin != null)
-        {
-            
-	        
-	        //int volume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-	        //volume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-	        //audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 6, 0);
-	  
-			//int state = audioTrack.getState();
+		byte [] songBuffer = null;
+		long fileSize = 0;
+		
+		try {
+			//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
+			File f = new File(modName);
+			fileSize = f.length();
+			songBuffer = new byte [(int) fileSize];
+			FileInputStream fs = new FileInputStream(f);
+			fs.read(songBuffer);
+		} catch (IOException e) {
+			Log.w(TAG, "Could not load music!");
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+		}
+		
+		if(songBuffer != null) {
 			
-			byte [] songBuffer = null;
-			long fileSize = 0;
-			
-			try {
-				//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
-				File f = new File(modName);
-				fileSize = f.length();
-				songBuffer = new byte [(int) fileSize];
-				FileInputStream fs = new FileInputStream(f);
-				fs.read(songBuffer);
-			} catch (IOException e) {
-				Log.w(TAG, "Could not load music!");
-				// TODO Auto-generated catch block
-				//e.printStackTrace();
+			for(DroidSoundPlugin plugin : list) {
+				if(plugin.load(songBuffer, (int) fileSize)) {
+					currentPlugin = plugin;
+					break;
+				}
 			}
-			
-			if(songBuffer != null) {
+		}
+
+		if(currentPlugin != null) {
+			Log.w(TAG, "HERE WE GO");
+			String title = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
+			String author = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
+			String copyright = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
+			String type = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
+			int subsongs = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBSONGS);
+			if(subsongs == -1)
+				subsongs = 0;
+			Log.v(TAG, String.format(":%s:%s:%s:%s:", title, author, copyright, type));
+			synchronized (this) {
+				moduleLength = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+				Log.v(TAG, "Got length " + moduleLength);
+				/*moduleTitle = title;
+				if(moduleTitle == null)
+					moduleTitle = "Unknown";
+				moduleAuthor = author;
+				if(moduleAuthor == null)
+					moduleAuthor = "Unknown";*/
 				
-				for(DroidSoundPlugin plugin : list) {
-					if(plugin.load(songBuffer, (int) fileSize)) {
-						currentPlugin = plugin;
-						break;
-					}
-				}
+				Message msg = mHandler.obtainMessage();
+				Bundle data;
+				msg.what = 0;
+				msg.arg1 = moduleLength;
+				msg.arg2 = subsongs;
+				msg.obj = new String [] { title, author, copyright, type };
+				mHandler.sendMessage(msg);
 			}
+			Log.w(TAG, "Modname is " + title);
+			audioTrack.play();				
+			playing = true;
 
-			if(currentPlugin != null) {
-				Log.w(TAG, "HERE WE GO");
-				synchronized (this) {
-					moduleLength = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-					moduleTitle = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
-					if(moduleTitle == null)
-						moduleTitle = "Unknown";
-					moduleAuthor = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
-					if(moduleAuthor == null)
-						moduleAuthor = "Unknown";
-					
-					Message msg = mHandler.obtainMessage();
-					msg.what = 0;
-					msg.arg1 = moduleLength;
-					msg.obj = moduleTitle;
-					mHandler.sendMessage(msg);
-				}
-				Log.w(TAG, "Modname is " + moduleTitle);
-				audioTrack.play();				
-				playing = true;
-
-			}	
         }
     }
 
@@ -141,6 +141,7 @@ public class Player implements Runnable {
 		doStop = false;
 		playing = false;
 		seekTo = -1;
+		subSong = -1;
 
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 
@@ -177,6 +178,12 @@ public class Player implements Runnable {
 					currentPosition = lastPos = 0;
 				}
 				
+				if(subSong >= 0) {
+					currentPlugin.setSong(subSong);
+					currentPosition = 0;
+					subSong = -1;
+				}
+				
 
 				if(playing) {
 					
@@ -195,7 +202,7 @@ public class Player implements Runnable {
 							
 							if(currentPosition >= lastPos + 1000) {
 								Message msg = mHandler.obtainMessage();
-								msg.what = PlayerService.SONG_POS;
+								msg.what = 3;
 								msg.arg1 = currentPosition;
 								mHandler.sendMessage(msg);
 								lastPos = currentPosition;
@@ -236,13 +243,13 @@ public class Player implements Runnable {
 		return moduleLength;
 	}
 	
-	synchronized String getTitle() {
-		return moduleTitle;
-	}
+	//synchronized String getTitle() {
+	//	return moduleTitle;
+	//}
 
-	synchronized String getAuthor() {
-		return moduleAuthor;
-	}
+	//synchronized String getAuthor() {
+	//	return moduleAuthor;
+	//}
 
 	synchronized public void stop() {		
 		doStop = true;
@@ -258,6 +265,12 @@ public class Player implements Runnable {
 
 	synchronized void playMod(String mod) {
 		modToPlay = mod;
+	}
+
+	public void setSubSong(int song) {
+		// TODO Auto-generated method stub
+		subSong = song;
+		
 	}
 
 }

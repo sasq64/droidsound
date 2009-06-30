@@ -1,6 +1,9 @@
 package com.ssb.droidsound;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import android.app.Service;
 import android.content.Intent;
@@ -12,54 +15,93 @@ import android.os.RemoteException;
 import android.util.Log;
 
 public class PlayerService extends Service {
-
+	
+	// Flags
+	
+	public static final int FLAG_CONTINUOUS = 1;
+	public static final int FLAG_SHUFFLE = 2;
+	public static final int FLAG_REPEAT = 4;
+	
+	// Information
+	
+	public static final int SONG_TITLE = 1;
+	public static final int SONG_AUTHOR = 2;
+	public static final int SONG_COPYRIGHT = 3;
+	public static final int SONG_GAMENAME = 4;	
+	public static final int SONG_FORMAT = 5;
+	
+	public static final int SONG_POS = 6;
+	public static final int SONG_FILENAME = 7;
+	public static final int SONG_LENGTH = 8;
+	public static final int SONG_SUBSONG = 9;
+	public static final int SONG_TOTALSONGS = 10;
+	
+	private Object info[];
+	
 	private static final String TAG = "Test";
 	private Player player;
 	private Thread playerThread;
-	private IPlayerServiceCallback callback; 	
-	private String currentMod;
-    private int currentPos;
-	private int songLength;
+	private List<IPlayerServiceCallback> callbacks; 	
+//	private String currentMod;
+//    private int currentPos;
+//	private int songLength;
 	
-	public static final int SONG_POS = 5;
-	public static final int SONG_FILENAME = 6;
-	public static final int SONG_LENGTH = 7;
+	private void performCallback(int...what) {
+		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
+		while(it.hasNext()) {
+			IPlayerServiceCallback cb = it.next();
+			for(int i : what) {
+				//if(info[i] != null) {
+					try {
+						if(info[i] instanceof String) {
+							cb.stringChanged(i, (String)info[i]);
+						} else {
+							if(info[i] != null) {
+								cb.intChanged(i, (Integer)info[i]);
+							}
+						}
+					} catch (RemoteException e) {
+						Log.v(TAG, "Removing callback becuase peer is gone");
+						it.remove();
+					}
+				//}
+			}
+		}
+	}
 
 	
     private Handler mHandler = new Handler() {
 		@Override
         public void handleMessage(Message msg) {
+        	//Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
             switch (msg.what) {
                 case 0:
-                	Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
-                	if(callback != null) {
-                		try {
-							callback.stringChanged(DroidSoundPlugin.INFO_TITLE, (String)msg.obj);
-							callback.intChanged(DroidSoundPlugin.INFO_LENGTH, msg.arg1);
-							songLength = msg.arg1;
-						} catch (RemoteException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+                	String text [] = (String [])msg.obj;
+                	if(text[0] == null || text[0].length() == 0) {
+                		File f = new File((String)info[SONG_FILENAME]);                	
+                		info[SONG_TITLE] = f.getName();
+                	} else {
+                		info[SONG_TITLE] = text[0];
                 	}
+					info[SONG_AUTHOR] = text[1];
+					info[SONG_COPYRIGHT] = text[2];
+					info[SONG_FORMAT] = text[3];
+					info[SONG_LENGTH] = (Integer)msg.arg1;
+					info[SONG_TOTALSONGS] = (Integer)(msg.arg2 & 0xffff);
+					info[SONG_SUBSONG] = (Integer)(msg.arg1>>16);
+					performCallback(SONG_FILENAME, SONG_AUTHOR, SONG_TITLE, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS);
                 	break;
                 case 1:
                 	Log.v(TAG, "Music done");
                 	String next = playNext();
                 	if(next != null) {
-                		currentMod = next;
-                		player.playMod(next);
+                		info[SONG_FILENAME] = next;
+                		player.playMod((String)info[SONG_FILENAME]);
                 	}
                     break;
-                case SONG_POS:
-    		        try {
-    					callback.intChanged(SONG_POS, msg.arg1);
-    					currentPos = msg.arg1;
-    					Log.v(TAG, "Music at " + msg.arg1);
-    				} catch (RemoteException e) {
-    					// TODO Auto-generated catch block
-    					e.printStackTrace();
-    				}
+                case 3:
+                	info[SONG_POS] = (Integer)msg.arg1;
+                	performCallback(SONG_POS);
     				break;
                 default:
                     super.handleMessage(msg);
@@ -85,6 +127,8 @@ public class PlayerService extends Service {
     }
 
     String playNext() {
+    	
+    	String currentMod = (String)info[SONG_FILENAME];
     	
     	File modDir = new File(currentMod).getParentFile();    	
     	File [] files = modDir.listFiles();
@@ -112,11 +156,20 @@ public class PlayerService extends Service {
 	
 	@Override
 	public void onCreate() {
-		super.onCreate();
-		
-		Log.v(TAG, "Creating player from thread " + Thread.currentThread().getId());
+		super.onCreate();		
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 		player = new Player(audioManager, mHandler);
+		callbacks = new ArrayList<IPlayerServiceCallback>();
+		info = new Object [20];
+		for(int i=0; i<20; i++)
+			info[i] = null;
+		
+		Log.v(TAG, "PlayerService created");
+	}
+	
+	@Override
+	public void onStart(Intent intent, int startId) {
+		super.onStart(intent, startId);		
 	}
 	
 	@Override
@@ -128,56 +181,35 @@ public class PlayerService extends Service {
 		playerThread = null;
 	}
 	
-	public Player getPlayer() {
-		return player;
-	}
-
 	private final IPlayerService.Stub mBinder = new IPlayerService.Stub() {
 
 		@Override
-		public void playMod(String name) throws RemoteException {
+		public boolean playMod(String name) throws RemoteException {
 			Log.v(TAG, "Playmod called " + name);
 			createThread();
-			currentMod = name;
-			player.playMod(name);
-			
-			if(callback != null) {
-		        try {
-					callback.stringChanged(99, "hello");
+			info[SONG_FILENAME] = name;
+			player.playMod(name);			
+			return true;
+		}
+
+		@Override
+		public void registerCallback(IPlayerServiceCallback cb, int flags) throws RemoteException {
+			for(int i=0; i<10; i++) {
+				try {
+					if(info[i] != null) {
+						if(info[i] instanceof String) {
+							cb.stringChanged(i, (String)info[i]);
+						} else {
+							cb.intChanged(i, (Integer)info[i]);
+						}
+					}
 				} catch (RemoteException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+					Log.v(TAG, "Ignoring callback because peer is gone");
+					return;
+				}				
 			}
-
-		}
-
-		@Override
-		public void registerCallback(IPlayerServiceCallback cb, int flags)
-				throws RemoteException {
-			callback = cb;
-			// TODO Auto-generated method stub
-			
-		}
-
-		@Override
-		public int getIntValue(int what) throws RemoteException {
-			switch(what) {
-			case SONG_LENGTH:
-				return songLength;
-			case SONG_POS:
-				return currentPos;
-			}
-			return -1;
-		}
-
-		@Override
-		public String getStringValue(int what) throws RemoteException {
-			switch(what) {
-			case SONG_FILENAME:
-				return currentMod;
-			}
-			return null;
+			callbacks.add(cb);
+			// TODO Auto-generated method stub			
 		}
 
 		@Override
@@ -192,16 +224,29 @@ public class PlayerService extends Service {
 			player.stop();			
 		}
 
+
 		@Override
-		public void playList(String fileName) throws RemoteException {
+		public boolean seekTo(int msec) throws RemoteException {
 			// TODO Auto-generated method stub
+			player.seekTo(msec);
+			info[SONG_POS] = msec;
+			performCallback(SONG_POS);
+			return true;
+		}
+
+		@Override
+		public boolean setSubSong(int song) throws RemoteException {
+			// TODO Auto-generated method stub
+			player.setSubSong(song);
+			info[SONG_SUBSONG] = (Integer)song;
+			performCallback(SONG_SUBSONG);
+			return true;
 			
 		}
 
 		@Override
-		public void seekTo(int msec) throws RemoteException {
+		public void setFlags(int flags) throws RemoteException {
 			// TODO Auto-generated method stub
-			player.seekTo(msec);
 			
 		}
 	};

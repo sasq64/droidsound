@@ -5,14 +5,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -29,7 +25,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
-import android.os.RemoteException;
+import android.os.RemoteException;					
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -59,18 +55,34 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
     private SeekBar seekBar;
 	private boolean playPause = true;
 	private boolean dragging;
+	private int subSong;
+	protected int totalSongs;
 
-    
-    
     private IPlayerServiceCallback mCallback = new IPlayerServiceCallback.Stub() {
+
 
 		@Override
 		public void stringChanged(int what, String value) throws RemoteException {
 			Log.v(TAG, String.format("%d is now %s", what, value));
 			switch(what) {
-			case DroidSoundPlugin.INFO_TITLE:
-				title = value;
+			case PlayerService.SONG_TITLE:
+				if(value != null && value.length() > 0) {
+					title = value;
+				} else {
+					title = modName;
+				}
 				titleTextView.setText(title);
+				break;
+			case PlayerService.SONG_AUTHOR:
+				if(value == null) {
+					author = "?";
+				} else {
+					author = value;
+				}
+				authorTextView.setText(author);
+				break;
+			case PlayerService.SONG_FILENAME:
+				modName = value;
 				break;
 			}
 		}
@@ -80,11 +92,24 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
 			Log.v(TAG, String.format("%d is now %d", what, value));
 			switch(what) {
 			
-			case DroidSoundPlugin.INFO_LENGTH:
+			case PlayerService.SONG_LENGTH:
 				songLength = value / 1000;
 				seekBar.setMax(songLength);
 				seekBar.setProgress(0);
 				lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
+				break;
+			case PlayerService.SONG_TOTALSONGS:
+				seekSongBar.setMax(value);
+				seekSongBar.setProgress(0);
+				songsTextView.setText(String.format("%02d", value));
+				totalSongs = value;
+				//lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
+				break;
+			case PlayerService.SONG_SUBSONG:
+				seekSongBar.setProgress(value);
+				subSong = value;
+				//seekBar.setMax(value);
+				//seekBar.s
 				break;
 			case PlayerService.SONG_POS:
 				int sec = value/1000;
@@ -108,12 +133,12 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
         	
             try {
     			mService.registerCallback(mCallback, 0);
-    			modName = mService.getStringValue(PlayerService.SONG_FILENAME);
-    			songLength = mService.getIntValue(PlayerService.SONG_LENGTH) / 1000;
-    			lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
-    			int sec = mService.getIntValue(PlayerService.SONG_POS) / 1000;
-				seekBar.setProgress(sec);
-				posTextView.setText(String.format("%02d:%02d", sec/60, sec % 60));
+    			//modName = mService.getStringValue(PlayerService.SONG_FILENAME);
+    			//songLength = mService.getIntValue(PlayerService.SONG_LENGTH) / 1000;
+    			//lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
+    			//int sec = mService.getIntValue(PlayerService.SONG_POS) / 1000;
+				//seekBar.setProgress(sec);
+				//posTextView.setText(String.format("%02d:%02d", sec/60, sec % 60));
     		} catch (RemoteException e) {
     			// TODO Auto-generated catch block
     			e.printStackTrace();
@@ -133,6 +158,8 @@ private String modName;
 private ImageButton prevButton;
 private ImageButton nextButton;
 private AlertDialog alert;
+private SeekBar seekSongBar;
+private TextView songsTextView;
 
 		
     /** Called when the activity is first created. */
@@ -204,7 +231,11 @@ private AlertDialog alert;
 		lengthTextView = (TextView) findViewById(R.id.lengthView);
 		posTextView = (TextView) findViewById(R.id.posTextView);
 		seekBar = (SeekBar) findViewById(R.id.seekBar);
-		
+		seekSongBar = (SeekBar) findViewById(R.id.seekSongBar);
+		seekSongBar.setMax(3);
+		seekSongBar.setProgress(0);
+		songsTextView = (TextView) findViewById(R.id.songsView);
+
 		pauseButton = (ImageButton) findViewById(R.id.pauseButton);		
 		pauseButton.setOnClickListener(new OnClickListener() {			
 
@@ -282,6 +313,41 @@ private AlertDialog alert;
 			}
 		});
 		
+		seekSongBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+			
+			private boolean dragging;
+			private int to = -1;
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				dragging = false;
+				//lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
+				songsTextView.setText(String.format("%02d", totalSongs));
+				try {
+					if(to >= 0) {
+						mService.setSubSong(to);
+					}
+				} catch (RemoteException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				to = -1;
+			}
+			
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+				dragging = true;
+			}
+			
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+				if(fromUser) {
+					to = progress;
+					songsTextView.setText(String.format("%02d", to));
+					//lengthTextView.setText(String.format("%02d:%02d", to/60, to % 60));
+				}
+			}
+		});
+
 		author = "";
 		title = "";
 		if(state != null) {
@@ -380,6 +446,10 @@ private AlertDialog alert;
 					httpConn.setAllowUserInteraction(false);
 					httpConn.setInstanceFollowRedirects(true);
 					httpConn.setRequestMethod("GET");
+					
+					Log.v(TAG, "Connecting");
+
+					
 					httpConn.connect();
 
 					response = httpConn.getResponseCode();
@@ -388,7 +458,21 @@ private AlertDialog alert;
 						Log.v(TAG, "HTTP connected");
 						//in = httpConn.getInputStream();
 						in = httpConn.getInputStream();
-
+						
+						String baseName = new File(url.getFile()).getName();
+						
+						Log.v(TAG, "Writing " + baseName);
+						
+						FileOutputStream fos = new FileOutputStream(outDir + baseName);
+						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
+						
+						while ((size = in.read(buffer)) != -1) {
+							bos.write(buffer, 0, size);
+						}
+						bos.flush();
+						bos.close();
+						
+						/*
 						ZipInputStream zip = new ZipInputStream(in);
 						ZipEntry e;
 						while ((e = zip.getNextEntry()) != null) {
@@ -402,7 +486,7 @@ private AlertDialog alert;
 							}
 							bos.flush();
 							bos.close();
-						}
+						}*/
 
 					} else
 						return failed;
@@ -501,6 +585,35 @@ private AlertDialog alert;
 		return true;
 	}
  	
+ 	String urlencode(String s) {
+ 		StringBuilder t = new StringBuilder();
+ 		
+ 		for(int i = 0; i<s.length(); i++) {
+ 			char c = s.charAt(i);
+ 			switch(c) {
+ 			case 0x20:
+ 			case 0x24:
+ 			case 0x25:
+ 			case 0x26:
+ 			case 0x2B:
+ 			case 0x2C:
+ 			//case 0x2F:
+ 			case 0x3A:
+ 			case 0x3B:
+ 			case 0x3D:
+ 			case 0x3F:
+ 			case 0x40:
+ 				t.append(String.format("%%%02x", (int)c));
+ 				break;
+ 			default:
+ 				t.append(c);
+ 				break;
+ 			}
+ 		}
+ 		
+ 		return t.toString();
+ 	}
+ 	
  	@Override
  	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -524,7 +637,7 @@ private AlertDialog alert;
 	 			
 	 			//player.playMod(name);
  			} else {
- 				String name = "http://ftp.amigascne.org/mirrors/ftp.modland.com/pub/modules/" + b.getString("name");
+ 				String name = "http://ftp.amigascne.org/mirrors/ftp.modland.com/pub/modules/" + urlencode(b.getString("name"));
  				Log.v(TAG, "Trying to download " + name);
  		    	try {
  					downloadTask.execute(new URL(name));

@@ -3,13 +3,12 @@ import com.ssb.droidsound.IPlayerServiceCallback;
 
 interface IPlayerService {
 
-	void playMod(String name);
-	void playList(String fileName);
+	boolean playMod(String name);
+	void setFlags(int flags);
 	void playPause(boolean play);
-	void seekTo(int msec);
+	boolean setSubSong(int song);
+	boolean seekTo(int msec);
 	void stop();
 	
-	String getStringValue(int what);
-	int getIntValue(int what);
 	void registerCallback(IPlayerServiceCallback cb, int flags);
 }
