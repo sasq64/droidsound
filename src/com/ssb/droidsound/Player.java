@@ -196,7 +196,7 @@ public class Player implements Runnable {
 							seekTo = -1;
 						}
 	
-						int rc = currentPlugin.getSoundData(samples, bufSize/8);
+						int rc = currentPlugin.getSoundData(samples, bufSize/4);
 						//synchronized (this) {
 							currentPosition += ((rc * 1000) / 88200);
 							
@@ -220,9 +220,8 @@ public class Player implements Runnable {
 					}
 				} else {
 					noPlayWait++;
+					Thread.sleep(100);
 				}
-
-				Thread.sleep(100);				
 				
 			} catch (InterruptedException e) {
 				break;

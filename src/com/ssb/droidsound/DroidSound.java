@@ -99,6 +99,7 @@ public class DroidSound extends Activity implements MediaPlayerControl, MediaPla
 				lengthTextView.setText(String.format("%02d:%02d", songLength/60, songLength % 60));
 				break;
 			case PlayerService.SONG_TOTALSONGS:
+				Log.v(TAG, String.format("We have %d subgsong", value));
 				seekSongBar.setMax(value);
 				seekSongBar.setProgress(0);
 				songsTextView.setText(String.format("%02d", value));
@@ -399,80 +400,91 @@ private TextView songsTextView;
     	}
     }
     
-    @Override
-    protected Dialog onCreateDialog(int id) {
-        
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Modules goes into the 'MODS' directory on your sdcard, but it seems you don't have any. Do you want to donload a few (~100KB) to get you going?")
-               .setCancelable(false)
-               .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                   public void onClick(DialogInterface dialog, int id) {
-                        DroidSound.this.downloadMods();
-                   }
-               })
-               .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                   public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                   }
-               });
-        return builder.create();    	
-    }
+	@Override
+	protected Dialog onCreateDialog(int id) {
 
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage("Modules goes into the 'MODS' directory on your sdcard, but it seems you don't have any. Do you want to donload a few (~100KB) to get you going?")
+				.setCancelable(false).setPositiveButton("Yes",
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								new DroidSound.DownloadTask()
+										.execute("http://swimmer.se/droidsound/mods.zip");
+							}
+						}).setNegativeButton("No",
+						new DialogInterface.OnClickListener() {
+							public void onClick(DialogInterface dialog, int id) {
+								dialog.cancel();
+							}
+						});
+		return builder.create();
+	}
     
-	private AsyncTask<URL, Integer, String> downloadTask = new AsyncTask<URL, Integer, String>() {
-		protected String doInBackground(URL... urls) {
+	class DownloadTask extends AsyncTask<String, Integer, String> {
+
+		protected String doInBackground(String... downloads) {
 
 			final String ok = "Music downloaded successfully.";
 			final String failed = "FAILED to download music";
+			
+			if(downloadMods(downloads)) {
+				return ok;
+			} else {
+				return failed;
+			}
+		}
+		/*
+		 * protected void onProgressUpdate(Integer... progress) {
+		 * //setProgressPercent(progress[0]); }
+		 */
+		@Override
+		protected void onPostExecute(String result) {
+			Toast t = Toast.makeText(DroidSound.this, result,
+					Toast.LENGTH_SHORT);// new Toast(DroidSound.this);
+			t.show();
+		}
+	};
+    
+    protected boolean downloadMods(String...urls) {
+    	    	
+		try {
+			InputStream in = null;
+			int response = -1;
+			int size;
+			byte[] buffer = new byte[16384];
 
-			try {
-				// TODO Auto-generated method stub
-				InputStream in = null;
-				int response = -1;
-				int size;
-				byte[] buffer = new byte[16384];
+			String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
 
-				String outDir = Environment.getExternalStorageDirectory()
-						+ "/MODS/";
+			for (String u : urls) {
+				
+				String uu = urlencode(u);
+				URL url = new URL(uu);
+				
+				Log.v(TAG, "Opening URL " + uu);
+				
+				URLConnection conn = url.openConnection();
+				if (!(conn instanceof HttpURLConnection))
+					throw new IOException("Not a HTTP connection");
 
-				for (URL url : urls) {
-					// URL url = new
-					// URL("http://swimmer.se/droidsound/mods.zip");
-					URLConnection conn = url.openConnection();
-					if (!(conn instanceof HttpURLConnection))
-						throw new IOException("Not a HTTP connection");
+				HttpURLConnection httpConn = (HttpURLConnection) conn;
+				httpConn.setAllowUserInteraction(false);
+				httpConn.setInstanceFollowRedirects(true);
+				httpConn.setRequestMethod("GET");
+				
+				Log.v(TAG, "Connecting");
+				
+				httpConn.connect();
 
-					HttpURLConnection httpConn = (HttpURLConnection) conn;
-					httpConn.setAllowUserInteraction(false);
-					httpConn.setInstanceFollowRedirects(true);
-					httpConn.setRequestMethod("GET");
+				response = httpConn.getResponseCode();
+				if(response == HttpURLConnection.HTTP_OK)
+				{
+					Log.v(TAG, "HTTP connected");
+					in = httpConn.getInputStream();
 					
-					Log.v(TAG, "Connecting");
+					String ext = u.substring(u.lastIndexOf('.') + 1, u.length());
+					String baseName = new File(u).getName();
 
-					
-					httpConn.connect();
-
-					response = httpConn.getResponseCode();
-					if(response == HttpURLConnection.HTTP_OK)
-					{
-						Log.v(TAG, "HTTP connected");
-						//in = httpConn.getInputStream();
-						in = httpConn.getInputStream();
-						
-						String baseName = new File(url.getFile()).getName();
-						
-						Log.v(TAG, "Writing " + baseName);
-						
-						FileOutputStream fos = new FileOutputStream(outDir + baseName);
-						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-						
-						while ((size = in.read(buffer)) != -1) {
-							bos.write(buffer, 0, size);
-						}
-						bos.flush();
-						bos.close();
-						
-						/*
+					if(ext.compareToIgnoreCase("ZIP") == 0) {
 						ZipInputStream zip = new ZipInputStream(in);
 						ZipEntry e;
 						while ((e = zip.getNextEntry()) != null) {
@@ -486,42 +498,33 @@ private TextView songsTextView;
 							}
 							bos.flush();
 							bos.close();
-						}*/
+						}
 
-					} else
-						return failed;
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				Log.w(TAG, "OOPS");
-				return failed;
+					} else {
+						
+						Log.v(TAG, "Writing " + baseName);
+						
+						FileOutputStream fos = new FileOutputStream(outDir + baseName);
+						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
+						
+						while ((size = in.read(buffer)) != -1) {
+							bos.write(buffer, 0, size);
+						}
+						bos.flush();
+						bos.close();
+					}
+
+				} else
+					return false;
 			}
-			return ok;
-		}
-
-		/*
-		 * protected void onProgressUpdate(Integer... progress) {
-		 * //setProgressPercent(progress[0]); }
-		 */
-		@Override
-		protected void onPostExecute(String result) {
-			Toast t = Toast.makeText(DroidSound.this, result,
-					Toast.LENGTH_SHORT);// new Toast(DroidSound.this);
-			t.show();
-		}
-
-	};
-    
-    protected void downloadMods() {
-    	    	    	 
-    	 try {
-			downloadTask.execute(new URL("http://swimmer.se/droidsound/mods.zip"));
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
+		} catch (IOException e) {
 			e.printStackTrace();
+			Log.w(TAG, "OOPS");
+			return false;
 		}
+		return true;
 	}
-
+  
 	boolean skip(int i) {
     	
     	if(modName == null)
@@ -598,7 +601,7 @@ private TextView songsTextView;
  			case 0x2B:
  			case 0x2C:
  			//case 0x2F:
- 			case 0x3A:
+ 			//case 0x3A:
  			case 0x3B:
  			case 0x3D:
  			case 0x3F:
@@ -637,14 +640,9 @@ private TextView songsTextView;
 	 			
 	 			//player.playMod(name);
  			} else {
- 				String name = "http://ftp.amigascne.org/mirrors/ftp.modland.com/pub/modules/" + urlencode(b.getString("name"));
+ 				String name = "http://ftp.amigascne.org/mirrors/ftp.modland.com/pub/modules/" + b.getString("name");
  				Log.v(TAG, "Trying to download " + name);
- 		    	try {
- 					downloadTask.execute(new URL(name));
- 				} catch (MalformedURLException e) {
- 					// TODO Auto-generated catch block
- 					e.printStackTrace();
- 				}
+				new DownloadTask().execute(name);
  			}
  		}
  		

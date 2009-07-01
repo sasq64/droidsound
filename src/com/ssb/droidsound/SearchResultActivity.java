@@ -5,116 +5,214 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 import android.app.ListActivity;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.DataSetObserver;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
+import android.widget.TwoLineListItem;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 public class SearchResultActivity extends ListActivity implements OnItemSelectedListener {
 	
 	private static final String TAG = "PlayList";
 	private SQLiteDatabase db;
+	
+	
+	class MyAdapter implements ListAdapter {
+		private Context mContext;
+		private Cursor mCursor;
+
+		private int COL_NAME;
+		private int COL_GAME;
+		private int COL_AUTHOR;
+		private int COL_TYPE;
+		private int mCount;
+		private int COL_ID;
+		
+		MyAdapter(Context context, Cursor cursor) {
+			mContext = context;
+			mCursor = cursor;
+			
+			COL_NAME = cursor.getColumnIndex("name");
+			COL_GAME = cursor.getColumnIndex("game");
+			COL_AUTHOR = cursor.getColumnIndex("author");
+			COL_TYPE = cursor.getColumnIndex("type");
+			COL_ID = cursor.getColumnIndex("_id");
+			
+			mCount = cursor.getCount();
+			
+		}
+		
+		@Override
+		public boolean areAllItemsEnabled() {
+			// TODO Auto-generated method stub
+			return true;
+		}
+
+		@Override
+		public boolean isEnabled(int position) {
+			// TODO Auto-generated method stub
+			return true;
+		}
+
+		@Override
+		public int getCount() {
+			// TODO Auto-generated method stub
+			return mCount;
+		}
+
+		@Override
+		public Object getItem(int position) {
+			// TODO Auto-generated method stub
+			mCursor.moveToPosition(position);
+			String a = mCursor.getString(COL_AUTHOR);
+			String g = mCursor.getString(COL_GAME);
+			
+			return new String [] { mCursor.getString(COL_TYPE), mCursor.getString(COL_AUTHOR), mCursor.getString(COL_GAME), mCursor.getString(COL_NAME) };
+		}
+
+		@Override
+		public long getItemId(int position) {
+			// TODO Auto-generated method stub
+			mCursor.moveToPosition(position);
+			return mCursor.getLong(COL_ID);
+		}
+
+		@Override
+		public int getItemViewType(int position) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			
+			View item;
+			
+			if(convertView == null) {
+				//item = (TwoLineListItem) findViewById(android.R.layout.two_line_list_item);
+				LayoutInflater inflater = getLayoutInflater();
+				item = inflater.inflate(R.layout.search_list_item, null);
+				Log.v(TAG, "VIEW is " + item.getClass().getName());
+			} else {
+				item = convertView;
+			}
+			TextView h = (TextView) item.findViewById(R.id.search_header);
+			TextView t = (TextView) item.findViewById(R.id.search_text);
+			
+			mCursor.moveToPosition(position);
+			String a = mCursor.getString(COL_AUTHOR);
+			String g = mCursor.getString(COL_GAME);
+			if((a.length() == 0 || a.contains("nknown")) && g.compareTo("NONE") != 0) {
+				a = g;
+			}
+			
+			h.setText(a);
+			t.setText(mCursor.getString(COL_NAME));
+			
+			// TODO Auto-generated method stub
+			return item;
+		}
+
+		@Override
+		public int getViewTypeCount() {
+			// TODO Auto-generated method stub
+			return 1;
+		}
+
+		@Override
+		public boolean hasStableIds() {
+			// TODO Auto-generated method stub
+			return true;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public void registerDataSetObserver(DataSetObserver observer) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void unregisterDataSetObserver(DataSetObserver observer) {
+			// TODO Auto-generated method stub		
+		}
+	};
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	
-    	//String [] cols = new String { "name", "author", "game", "type"};
+    	setContentView(R.layout.search_result);
     	
     	Intent intent = getIntent();    	
     	String game = intent.getStringExtra("game");
     	String author = intent.getStringExtra("author");
     	String title = intent.getStringExtra("title");
-    	
+
     	StringBuilder where = new StringBuilder("select * from songs where ");
     	int i = 0;
     	if(title.length() > 0) {
-    		where.append("name GLOB '").append(title).append("*'");
-    		i++; //args[i++] = title + "%";
+    		if(title.contains("*")) {
+    			where.append("name GLOB '").append(title).append("'");
+    		} else {
+    			where.append("name='").append(title).append("'");
+    		}
+    		i++;
     	}
 
     	if(game.length() > 0) {
     		if(i > 0)
     			where.append(" and ");
-    		where.append("game GLOB '").append(game).append("*'");
+    		if(game.contains("*")) {
+    			where.append("game GLOB '").append(game).append("'");
+    		} else {
+    			where.append("game='").append(game).append("'");
+    		}
     		i++;
     	}
 
     	if(author.length() > 0) {
     		if(i > 0)
     			where.append(" and ");
-    		where.append("author GLOB '").append(author).append("*'");
+    		if(author.contains("*")) {
+    			where.append("author GLOB '").append(author).append("'");
+    		} else {
+    			where.append("author='").append(author).append("'");
+    		}
     		i++;
     	}
     	
-    	where.append(" limit 50");
-
-    	//where = new StringBuilder("select * from (select * from songs where name like 'winter%') where author like 'Ben%'");
-    	//String [] args2 = new String [i];
-    	//for(int j=0; j<i; j++)
-    	//	args2[j] = args[j];
+    	where.append(" LIMIT 100");
     	
-    	
-    	
-    	Log.v(TAG, "Opening database");
-    	
+    	Log.v(TAG, "Opening database");    	
     	db = SQLiteDatabase.openDatabase("/sdcard/modland.db", null, SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
 
-/*    	Cursor acursor = db.query("authors", null, "name=?", new String[] { "Ben Daglish" }, null, null, null);    	
-    	acursor.moveToFirst();
-    	int aid = acursor.getInt(0);
-    	Log.v(TAG, "Got author " + aid);
-    	Cursor cursor = db.query("songs", null, "author=?", new String[] { Integer.toString(aid) }, null, null, null);
-*/
-    	
     	Log.v(TAG, "Executing select: " + where.toString());
-    	//Cursor cursor = db.query("songs", null, where.toString(), args2, null, null, null);
     	Cursor cursor = db.rawQuery(where.toString(), null);
-    	/*Cursor cursor;
-    	String q;
-    	if(title.charAt(0) == 'a')
-    		q = "SELECT * FROM songs WHERE name LIKE 'win%' AND author LIKE 'Ben%'";
-    	else
-    	if(title.charAt(0) == 'b')
-    		q = "select * from (select * from songs where name like 'win%') where author like 'Ben%'";
-    	else
-    	if(title.charAt(0) == 'c')
-    		q = "select * from (select * from songs where name GLOB 'win*') where author GLOB 'Ben*'";
-    	else
-    		q = "SELECT * FROM songs WHERE name GLOB 'win*' AND author GLOB 'Ben*'";
-    	
-    	Log.v(TAG, "Executing select: " + q);
-    	cursor = db.rawQuery(q, null);
-    	*/
-    	//Cursor cursor = db.query("songs", null, "author like ? and name like ?", new String[] { "Oge%", "mega%", "" }, null, null, null);
-    	//Cursor cursor = null;
-    	
-    	/*
-    	if(title.length() > 0) {
-    		cursor = db.rawQuery("SELECT songs._id, songs.name, games.gname FROM games JOIN songs ON (games._id=songs.game) WHERE songs.name LIKE ? LIMIT 50",
-    			new String [] { title } );
-    	} else if (game.length() > 0) {
-    		cursor = db.rawQuery("SELECT songs._id, songs.name, games.gname FROM games JOIN songs ON (games._id=songs.game) WHERE games.gname LIKE ? LIMIT 50",
-        			new String [] { game } );
-    	}
-    	*/
-    	//Cursor gcursor = db.query("games", null, "name like ?", new String[] { game }, null, null, null);    	
-    	//gcursor.moveToFirst();
-    	//int gid = gcursor.getInt(0);
-    	//Log.v(TAG, "Got game " + aid);
-    	//Cursor cursor = db.query("songs", null, "author=?", new String[] { Integer.toString(aid) }, null, null, null);
+    	Log.v(TAG, "Cursor ready");
 
     	startManagingCursor(cursor);
-    	ListAdapter adapter = 
+    	ListAdapter adapter = new MyAdapter(this, cursor);
+/*    		
     	new SimpleCursorAdapter(this, 
                 // Use a template that displays a text view
                 android.R.layout.two_line_list_item, 
@@ -123,7 +221,7 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
                 // Map the NAME column in the people database to...
                 new String[] {"game", "name"} ,
                 // The "text1" view defined in the XML template
-                new int[] {android.R.id.text1, android.R.id.text2}); 
+                new int[] {android.R.id.text1, android.R.id.text2});*/ 
         setListAdapter(adapter);
         
     	Log.v(TAG, "Adapter set");        
