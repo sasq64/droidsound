@@ -1,14 +1,21 @@
 package com.ssb.droidsound;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -38,6 +45,7 @@ public class Player implements Runnable {
 	private int lastPos;
 	private boolean setPaused;
 	private int subSong;
+	private Uri uriToPlay;
 		
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
@@ -77,11 +85,63 @@ public class Player implements Runnable {
 		
 		try {
 			//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
-			File f = new File(modName);
-			fileSize = f.length();
-			songBuffer = new byte [(int) fileSize];
-			FileInputStream fs = new FileInputStream(f);
-			fs.read(songBuffer);
+			
+			if(modName.startsWith("file://")) {
+				modName = modName.substring(7);
+			}
+			
+			if(modName.startsWith("http://")) {
+				
+				URL url = new URL(modName);
+				
+				Log.v(TAG, "Opening URL " + modName);
+				
+				URLConnection conn = url.openConnection();
+				if (!(conn instanceof HttpURLConnection))
+					throw new IOException("Not a HTTP connection");
+
+				HttpURLConnection httpConn = (HttpURLConnection) conn;
+				httpConn.setAllowUserInteraction(false);
+				httpConn.setInstanceFollowRedirects(true);
+				httpConn.setRequestMethod("GET");
+				
+				Log.v(TAG, "Connecting");
+				
+				httpConn.connect();
+
+				int response = httpConn.getResponseCode();
+				if(response == HttpURLConnection.HTTP_OK)
+				{
+					int size;
+					byte[] buffer = new byte[16384];
+					Log.v(TAG, "HTTP connected");
+					InputStream in = httpConn.getInputStream();
+					File f = File.createTempFile("music", null);
+					FileOutputStream fos = new FileOutputStream(f);
+					BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);					
+					while ((size = in.read(buffer)) != -1) {
+						bos.write(buffer, 0, size);
+					}
+					bos.flush();
+					bos.close();
+					
+					fileSize = f.length();
+					
+					Log.v(TAG, "Bytes written: " + fileSize);
+
+					songBuffer = new byte [(int) fileSize];
+					FileInputStream fs = new FileInputStream(f);
+					fs.read(songBuffer);
+
+				}
+			} else {
+				File f = new File(modName);
+				fileSize = f.length();
+				songBuffer = new byte [(int) fileSize];
+				FileInputStream fs = new FileInputStream(f);
+				fs.read(songBuffer);
+			}
+
 		} catch (IOException e) {
 			Log.w(TAG, "Could not load music!");
 			// TODO Auto-generated catch block
@@ -119,7 +179,6 @@ public class Player implements Runnable {
 					moduleAuthor = "Unknown";*/
 				
 				Message msg = mHandler.obtainMessage();
-				Bundle data;
 				msg.what = 0;
 				msg.arg1 = moduleLength;
 				msg.arg2 = subsongs;
@@ -269,6 +328,12 @@ public class Player implements Runnable {
 	public void setSubSong(int song) {
 		// TODO Auto-generated method stub
 		subSong = song;
+		
+	}
+
+	public void playMod(Uri uri) {
+		// TODO Auto-generated method stub
+		uriToPlay = uri;
 		
 	}
 

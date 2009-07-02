@@ -21,6 +21,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -32,6 +33,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.View.OnClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ImageButton;
@@ -158,16 +160,45 @@ private ImageButton pauseButton;
 private String modName;
 private ImageButton prevButton;
 private ImageButton nextButton;
-private AlertDialog alert;
 private SeekBar seekSongBar;
 private TextView songsTextView;
 
+
+	@Override
+	protected void onStart() {
+		// TODO Auto-generated method stub
+		super.onStart();
+		Log.v(TAG, "Droidsound started");
+	}
 		
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+        
+
+        Intent intent = getIntent();
+        String action = intent.getAction();
+
+        if(action != null && action.contentEquals(Intent.ACTION_VIEW)) {
+            Intent i = new Intent(this, PlayerService.class);
+        	i.setData(intent.getData());
+        	i.setAction(Intent.ACTION_VIEW);
+            startService(i);
+            finish();
+            return;
+        }
+
+        
+        
+        //requestWindowFeature(Window.FEATURE_PROGRESS);
+        // 
+        
         setContentView(R.layout.main);
+        
+        //setProgressBarVisibility(true);
+        //setProgress(500);
+
   /*
         URL url = null;
 		URI uri = null;
@@ -382,8 +413,20 @@ private TextView songsTextView;
         //fl.addView(mediaCtrl);
         
         //mediaCtrl.show(0);
+		
+
+		//Intent intent = getIntent();
+        //Uri uri = intent.getData();
+        
+        //Log.v(TAG, String.format("INTENT %s %s %s", intent.getAction(), intent.getDataString(), intent.getType()));
+
+        //String action = intent.getAction();
 
         Intent i = new Intent(this, PlayerService.class);
+        //if(action != null && action.contentEquals(Intent.ACTION_VIEW)) {
+        //	i.setData(uri);
+        //	i.setAction(Intent.ACTION_VIEW);
+        //}
         startService(i);
         bindService(i, mConnection, Context.BIND_AUTO_CREATE);
         
@@ -530,7 +573,9 @@ private TextView songsTextView;
     	if(modName == null)
     		return false;
     	
-    	File modDir = new File(modName).getParentFile();    	
+    	File modDir = new File(modName).getParentFile();
+    	if(modDir == null)
+    		return false;
     	File [] files = modDir.listFiles();
     	
     	if(files.length <= 0)
@@ -566,8 +611,10 @@ private TextView songsTextView;
     @Override
     protected void onDestroy() {
     	super.onDestroy();
-		Log.v(TAG, "Destroy " + Thread.currentThread().getId());		
-		unbindService(mConnection);
+		Log.v(TAG, "Destroy " + Thread.currentThread().getId());
+		if(mConnection != null && mService != null) {
+			unbindService(mConnection);
+		}
     }
     
     @Override

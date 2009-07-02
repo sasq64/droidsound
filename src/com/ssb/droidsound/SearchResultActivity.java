@@ -77,10 +77,7 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
 		@Override
 		public Object getItem(int position) {
 			// TODO Auto-generated method stub
-			mCursor.moveToPosition(position);
-			String a = mCursor.getString(COL_AUTHOR);
-			String g = mCursor.getString(COL_GAME);
-			
+			mCursor.moveToPosition(position);			
 			return new String [] { mCursor.getString(COL_TYPE), mCursor.getString(COL_AUTHOR), mCursor.getString(COL_GAME), mCursor.getString(COL_NAME) };
 		}
 

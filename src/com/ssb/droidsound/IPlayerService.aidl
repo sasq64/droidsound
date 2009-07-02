@@ -1,6 +1,8 @@
 package com.ssb.droidsound;
 import com.ssb.droidsound.IPlayerServiceCallback;
 
+
+// @SuppressWarnings("unused")
 interface IPlayerService {
 
 	boolean playMod(String name);

@@ -8,6 +8,7 @@ import java.util.List;
 import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -129,8 +130,12 @@ public class PlayerService extends Service {
     String playNext() {
     	
     	String currentMod = (String)info[SONG_FILENAME];
+    	if(currentMod == null)
+    		return null;
     	
     	File modDir = new File(currentMod).getParentFile();    	
+    	if(modDir == null)
+    		return null;
     	File [] files = modDir.listFiles();
     	
     	if(files.length <= 0)
@@ -153,7 +158,8 @@ public class PlayerService extends Service {
     		return files[0].getPath();
     }
 
-	
+    
+
 	@Override
 	public void onCreate() {
 		super.onCreate();		
@@ -169,7 +175,17 @@ public class PlayerService extends Service {
 	
 	@Override
 	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);		
+		super.onStart(intent, startId);
+		Log.v(TAG, "Service started");
+		
+        if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
+			Uri uri = intent.getData();
+			Log.v(TAG, "Want to play " + intent.getDataString());
+			createThread();
+			info[SONG_FILENAME] = uri.getLastPathSegment();
+			player.playMod(intent.getDataString());			
+		}
+		
 	}
 	
 	@Override

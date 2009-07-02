@@ -11,19 +11,24 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+         <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+ 				<category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" />
+                <data android:scheme="content"/>
+                <data android:scheme="file"/>
+                <data android:mimeType="audio/prs.sid" />
+                <data android:mimeType="audio/x-mod" />
+                <data android:mimeType="audio/x-sid" />
+                <data android:mimeType="audio/x-s3m" />
+                <data android:mimeType="audio/x-xm" />
+            </intent-filter>         
         </activity>
         <activity android:name="PlayListActivity"/>
         <activity android:name="SearchActivity"/>
         <activity android:name="SearchResultActivity"/>
-        <service android:name="PlayerService">        
- 	       <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <data android:mimeType="audio/prs.sid" />
-				<data android:mimeType="audio/psid" />
-				<data android:mimeType="audio/x-psid" />
-				<data android:mimeType="audio/sidtune" />
-				<data android:mimeType="audio/x-sidtune" />
-            </intent-filter>
+        <service android:name="PlayerService">       
         </service>
     </application>
     <uses-sdk android:minSdkVersion="3" />
