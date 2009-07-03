@@ -151,6 +151,7 @@ public class Player implements Runnable {
 		if(songBuffer != null) {
 			
 			for(DroidSoundPlugin plugin : list) {
+				Log.v(TAG, "Trying " + plugin.getClass().getName());
 				if(plugin.load(songBuffer, (int) fileSize)) {
 					currentPlugin = plugin;
 					break;
@@ -159,7 +160,7 @@ public class Player implements Runnable {
 		}
 
 		if(currentPlugin != null) {
-			Log.w(TAG, "HERE WE GO");
+			Log.w(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
 			String title = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
 			String author = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
 			String copyright = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
@@ -244,41 +245,39 @@ public class Player implements Runnable {
 				}
 				
 
-				if(playing) {
-					
-					if(!setPaused) {
-						noPlayWait = 0;
-						if(seekTo >= 0) {
-							if(currentPlugin.seekTo(seekTo)) {
-								currentPosition = lastPos = seekTo;
-							}
-							seekTo = -1;
+				if(playing && !setPaused) {					
+					noPlayWait = 0;
+					if(seekTo >= 0) {
+						if(currentPlugin.seekTo(seekTo)) {
+							currentPosition = lastPos = seekTo;
 						}
-	
-						int rc = currentPlugin.getSoundData(samples, bufSize/4);
-						//synchronized (this) {
-							currentPosition += ((rc * 1000) / 88200);
-							
-							if(currentPosition >= lastPos + 1000) {
-								Message msg = mHandler.obtainMessage();
-								msg.what = 3;
-								msg.arg1 = currentPosition;
-								mHandler.sendMessage(msg);
-								lastPos = currentPosition;
-							}
-							
-						//}
-						if(rc > 0) {
-							audioTrack.write(samples, 0, rc);
-						} else {
-							playing = false;
+						seekTo = -1;
+					}
+
+					int rc = currentPlugin.getSoundData(samples, bufSize/4);
+					//synchronized (this) {
+						currentPosition += ((rc * 1000) / 88200);
+						
+						if(currentPosition >= lastPos + 1000) {
 							Message msg = mHandler.obtainMessage();
-							msg.what = 1;
+							msg.what = 3;
+							msg.arg1 = currentPosition;
 							mHandler.sendMessage(msg);
+							lastPos = currentPosition;
 						}
+						
+					//}
+					if(rc > 0) {
+						audioTrack.write(samples, 0, rc);
+					} else {
+						playing = false;
+						Message msg = mHandler.obtainMessage();
+						msg.what = 1;
+						mHandler.sendMessage(msg);
 					}
 				} else {
-					noPlayWait++;
+					if(!setPaused)
+						noPlayWait++;
 					Thread.sleep(100);
 				}
 				
