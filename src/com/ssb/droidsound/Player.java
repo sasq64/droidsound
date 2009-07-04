@@ -16,7 +16,6 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -45,7 +44,7 @@ public class Player implements Runnable {
 	private int lastPos;
 	private boolean setPaused;
 	private int subSong;
-	private Uri uriToPlay;
+	//private Uri uriToPlay;
 		
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
@@ -332,7 +331,7 @@ public class Player implements Runnable {
 
 	public void playMod(Uri uri) {
 		// TODO Auto-generated method stub
-		uriToPlay = uri;
+		//uriToPlay = uri;
 		
 	}
 
