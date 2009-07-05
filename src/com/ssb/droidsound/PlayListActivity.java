@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,12 +12,9 @@ import java.util.List;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -36,19 +32,14 @@ import android.widget.AdapterView.OnItemSelectedListener;
 
 public class PlayListActivity extends Activity implements OnItemSelectedListener, OnItemClickListener, OnLongClickListener {
 	
-	//private File [] files;
+	private static final String TAG = "PlayList";
+
 	private MyAdapter myAdapter;
 	private ListView playListView;
 	private VirtualFS myFileSys;
-	private static final String TAG = "PlayList";
 	private FileListNode myPlaylist;
 	private VirtualFS.Node mCurrentNode;
-	
-	public PlayListActivity() {
-		Log.v(TAG, ">>>> CONSTRUCTOR CALLED\n");
-	}
 
-	
 	class MyTextVew extends TextView implements Checkable {
 
 		private boolean mChecked;
@@ -56,32 +47,23 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		public MyTextVew(Context context) {
 			super(context);
 			this.setTextColor(0xffffff00);
-			// TODO Auto-generated constructor stub
 		}
 
 		@Override
 		public boolean isChecked() {
-			// TODO Auto-generated method stub
 			return mChecked;
 		}
 
 		@Override
 		public void setChecked(boolean checked) {
-			// TODO Auto-generated method stub
 			mChecked = checked;
-			this.setTextColor(mChecked ? 0xffffff00 : 0xffffffff);
-			Log.v(TAG, "SET CHECKED " + mChecked);
-			//invalidate();
+			setTextColor(mChecked ? 0xffffff00 : 0xffffffff);
 		}
 
 		@Override
 		public void toggle() {
 			mChecked = !mChecked;
-			this.setTextColor(mChecked ? 0xffffff00 : 0xffffffff);
-			//invalidate();
-			// TODO Auto-generated method stub
-			Log.v(TAG, "Toggle");
-			
+			setTextColor(mChecked ? 0xffffff00 : 0xffffffff);			
 		}
 	};
 	
@@ -115,7 +97,6 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 		@Override
 		String getName() {
-			// TODO Auto-generated method stub
 			return mName;
 		}
 		
@@ -146,145 +127,63 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 	class MyAdapter extends BaseAdapter {
 		
-
 		static final int TYPE_FILE = 1;
 		static final int TYPE_DIR = 2;
 		static final int TYPE_REMOTE = 3;
 		static final int TYPE_REFERENCE = 4;
-
-		//private final static int TYPE_HOME = 10;
-		//private final static int TYPE_REMOTE = 11;
-		//private final static int TYPE_PLAYLIST = 12;
-		//private final static int TYPE_MUSICFILE = 13;
-		//private final static int TYPE_OTHERFILE = 14;
-		
-		//private int drawables[] = new int [] { R.drawable.folder, R.drawable.home, R.drawable.remote, 0, R.drawable.note, 0 }; 
 		
 		private Context mContext;
-		private VirtualFS mFS;
-		
-		private class BookMarks extends VirtualFS.Node {
-			
-			VirtualFS.Node mParent;
-			
-			BookMarks(VirtualFS.Node parent) {
-				mParent = parent;
-			}
-
-			@Override
-			public VirtualFS.Node getChild(int pos) {
-				return new VirtualFS.FileSystemNode(new File("strange/path"), "playlist01", this);
-			}
-
-			@Override
-			public String getName() {
-				// TODO Auto-generated method stub
-				return "My BookMarks";
-			}
-
-			@Override
-			public long getSize() {
-				// TODO Auto-generated method stub
-				return 0;
-			}
-
-			@Override
-			public int getType() {
-				// TODO Auto-generated method stub
-				return TYPE_DIR;
-			}
-
-			@Override
-			public InputStream read() throws IOException {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public int getChildCount() {
-				// TODO Auto-generated method stub
-				return 1;
-			}
-
-			@Override
-			public VirtualFS.Node getParent() {
-				// TODO Auto-generated method stub
-				return mParent;
-			}
-		};
-		
 		
 		MyAdapter(Context context, VirtualFS fs) {
 			mContext = context;
-			mFS = fs;
-			mFS.registerPath("My Music", "/sdcard/MODS");
-			mFS.registerNode(new BookMarks(mFS.getRoot()));
-			mCurrentNode = mFS.getRoot();
-			//mFS.registerNode(node)
-		}
-		
-		void setPath(String path) {
-		
+			myFileSys.registerPath("My Music", "/sdcard/MODS");
+			mCurrentNode = myFileSys.getRoot();
 		}
 		
 		@Override
 		public boolean areAllItemsEnabled() {
-			// TODO Auto-generated method stub
 			return true;
 		}
 
 		@Override
 		public boolean isEnabled(int position) {
-			// TODO Auto-generated method stub
 			return true;
 		}
 
 		@Override
 		public int getCount() {
-			// TODO Auto-generated method stub
 			return mCurrentNode.getChildCount();
 		}
 
 		@Override
 		public Object getItem(int position) {
-			// TODO Auto-generated method stub
 			return mCurrentNode.getChild(position);
-			//return entries[position];
 		}
 
 		@Override
 		public long getItemId(int position) {
-			// TODO Auto-generated method stub
 			return position;
 		}
 
 		@Override
 		public int getItemViewType(int position) {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			
-			MyTextVew item;
+			TextView item;
 			
 			if(convertView == null) {
-				//item = (TwoLineListItem) findViewById(android.R.layout.two_line_list_item);
-				//LayoutInflater inflater = getLayoutInflater();
-				//item = inflater.inflate(R.layout.search_list_item, null);
-				
-				item = new MyTextVew(mContext);
+				item = new TextView(mContext);
 				item.setTextSize(18.0F);
-				Log.v(TAG, "VIEW is " + item.getClass().getName());
 			} else {
-				item = (MyTextVew)convertView;
+				item = (TextView)convertView;
 			}
-			
-			item.setTextColor(0xffffffff);
 
+			item.setTextColor(0xffffffff);
 			VirtualFS.Node n = mCurrentNode.getChild(position);
-			
 			item.setText(n.getName());
 
 			if(n.getClass() == FileListNode.class) {
@@ -294,45 +193,33 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			} else {
 				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.note, 0, 0, 0);
 			}
-		
-			//item.setCompoundDrawables(R.drawable.sound, null, null, null);
-			
-			// TODO Auto-generated method stub
 			return item;
 		}
 
 		@Override
 		public int getViewTypeCount() {
-			// TODO Auto-generated method stub
 			return 1;
 		}
 
 		@Override
 		public boolean hasStableIds() {
-			// TODO Auto-generated method stub
 			return true;
 		}
 
 		@Override
 		public boolean isEmpty() {
-			// TODO Auto-generated method stub
 			return false;
 		}
 
 		@Override
 		public void registerDataSetObserver(DataSetObserver observer) {
-			// TODO Auto-generated method stub
-			
 		}
 
 		@Override
 		public void unregisterDataSetObserver(DataSetObserver observer) {
-			// TODO Auto-generated method stub		
 		}
 
-		public boolean enterDir(int position) {
-			
-			
+		public boolean enterDir(int position) {			
 			if(position == -1) {
 				mCurrentNode = mCurrentNode.getParent();
 				if(mCurrentNode == null)
@@ -341,7 +228,6 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			}
 			
 			VirtualFS.Node node = mCurrentNode.getChild(position);
-			
 			if(node.getType() == VirtualFS.TYPE_DIR) {
 				mCurrentNode = node;
 				return true;
@@ -371,9 +257,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		
+
 		super.onDestroy();
 	}
 	
@@ -399,7 +283,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
     	
     	Log.v(TAG, (mCurrentNode == null) ? "NONE" : mCurrentNode.pathName());
   	
-    	
+    	//File modDir = new File(Environment.getExternalStorageDirectory()+"/MODS");
         setContentView(R.layout.playlist);        
         playListView = (ListView)findViewById(R.id.playListView);
         
@@ -410,27 +294,9 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
     	//playListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
     	//this.setContentView(R.id.PlayListView);
     	
-    	//ListView view = new ListView(this);
-    	//setContentView(view);
-    	
-    	//view.setOnItemSelectedListener(this);
-    	//ListView lv = getListView();    	
-        //LinearLayout v = new LinearLayout(this);
-        //setContentView(v);
-    	/*
-    	File modDir = new File(Environment.getExternalStorageDirectory()+"/MODS");    	
-    	files = modDir.listFiles();
-    	
-    	String [] names = new String [files.length];
-    	int i = 0;
-    	for(File f : files) {
-    		names[i++] = f.getName(); 
-    	} */
     	
         myFileSys = new VirtualFS();
-
 		myPlaylist = new FileListNode("My Playlist", myFileSys.getRoot());
-
 
 		File file = new File("/sdcard/playlist.plist");
 		try {
@@ -451,10 +317,8 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		}
 
 		myFileSys.registerNode(myPlaylist);
-		//myPlaylist.AddFile("/My Music/quick/intr(o)uder alert.mod");
 
-        
-    	myAdapter = new MyAdapter(this, myFileSys);
+		myAdapter = new MyAdapter(this, myFileSys);
     	
     	if(savedInstanceState != null) {
 	    	String path = savedInstanceState.getString("path");
@@ -465,18 +329,12 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 	    		mCurrentNode = myFileSys.resolvePath(path);
     	}
 
-    	//view.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));    	
-    	//setListAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));
-    	//setListAdapter(myAdapter);
     	playListView.setAdapter(myAdapter);
     	playListView.setOnItemSelectedListener(this);
     	playListView.setOnItemClickListener(this);
-    	//playListView.setOnLongClickListener(this);
-    	Log.v(TAG, "Choicemode " + playListView.getChoiceMode());
     }
 	
 	@Override
-//	protected void  onItemClick  (ListView l, View v, int position, long id)
 	public void onItemClick(AdapterView<?> av, View v, int position, long id) {
 		
 		ListView l = (ListView) av;
@@ -490,14 +348,10 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			Log.v(TAG, "Resolves to " + rnode.getName());
 		}
 		
-		//((MyTextVew)v).toggle();
-		//v.invalidate();
-		
 		if(file.getType() == VirtualFS.TYPE_DIR) {
 			myAdapter.enterDir(position);
 			l.invalidateViews();
 		} else {
-			//File modFile = files[position];
 			
 			Intent intent = new Intent();
 
@@ -525,34 +379,16 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 	@Override
 	public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-		
-		Log.v(TAG, "Selected item: " + arg2);
-		
-		//File modFile = files[arg2];
-		//Intent i = new Intent();
-		//i.putExtra("fileName", modFile.getName());
-		//setResult(RESULT_OK, i);
-		//finish();
 	}
 
 	@Override
 	public void onNothingSelected(AdapterView<?> arg0) {
 		// TODO Auto-generated method stub
-		Log.v(TAG, "WHAT");
 	}
 	
 	@Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-		
-		/*
-		SparseBooleanArray array = playListView.getCheckedItemPositions();
-		if(array != null) {
-			for(int i=0; i<array.size(); i++) {
-				Log.v(TAG, "SET " + array.get(i));
-			}
-		}
-		*/
-		
+
         switch(event.getKeyCode())
         {
         	case KeyEvent.KEYCODE_BACK:
@@ -602,9 +438,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		AdapterView.AdapterContextMenuInfo aci = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
 
 		VirtualFS.Node file = (VirtualFS.Node) playListView.getItemAtPosition(aci.position);
-		//VirtualFS.Node parent = file.getParent();		
 		String path = file.pathName();
-		//int t = file.getType();
 		
 		Log.v(TAG, String.format("Selected %d on %s", i, path));
 
@@ -638,7 +472,6 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 	@Override
 	public boolean onLongClick(View v) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
