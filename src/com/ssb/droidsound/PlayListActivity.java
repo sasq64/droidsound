@@ -499,15 +499,26 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		} else {
 			//File modFile = files[position];
 			
-			Intent i = new Intent();
-			i.putExtra("musicName", file.getName());
+			Intent intent = new Intent();
+
 			try {
-				i.putExtra("musicFile", file.getFile());
+				String [] list = new String [ mCurrentNode.getChildCount() ];				
+				for(int i=0; i< list.length; i++) {
+					list[i] = mCurrentNode.getChild(i).getFile().getPath();
+				}
+				intent.putExtra("musicList", list);
+				intent.putExtra("musicPos", position);
+			} catch (IOException e) {
+			}
+			
+			//intent.putExtra("musicName", file.getName());
+			try {
+				intent.putExtra("musicFile", file.getFile().getPath());
 			} catch (IOException e) {
 				Log.e(TAG, "Could not read file");
 			}
 			//i.putExtra("musicData", data);
-			setResult(RESULT_OK, i);
+			setResult(RESULT_OK, intent);
 			finish();
 		}
 	}
@@ -540,7 +551,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 				Log.v(TAG, "SET " + array.get(i));
 			}
 		}
-
+		*/
 		
         switch(event.getKeyCode())
         {
@@ -551,7 +562,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
         			playListView.invalidateViews();
 
         		return true;
-        }*/
+        }
         return super.onKeyDown(keyCode, event);
     }
 	
@@ -610,7 +621,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 	}
 
 	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(0, 10, 0, "Player").setIcon(android.R.drawable.ic_media_pause);
+		menu.add(0, 10, 0, "Player").setIcon(R.drawable.ic_menu_playback);
 		menu.add(0, 11, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}

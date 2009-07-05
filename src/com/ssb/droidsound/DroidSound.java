@@ -124,7 +124,7 @@ public class DroidSound extends Activity {
 				Log.v(TAG, String.format("We have %d subgsong", value));
 				//seekSongBar.setMax(value);
 				//seekSongBar.setProgress(0);
-				songsTextView.setText(String.format("%02d", value));
+				songsTextView.setText(String.format("SONGS %02d", value));
 				totalSongs = value;
 				// lengthTextView.setText(String.format("%02d:%02d",
 				// songLength/60, songLength % 60));
@@ -168,6 +168,8 @@ public class DroidSound extends Activity {
 
 		}
 	};
+	private int musicListPos;
+	private String[] musicList;
 
 	@Override
 	protected void onStart() {
@@ -466,6 +468,18 @@ public class DroidSound extends Activity {
 
 	boolean skip(int i) {
 
+		if(musicList != null) {
+    		musicListPos+=i;
+    		if(musicListPos >= 0 && musicListPos < musicList.length) {
+    			modName = musicList[musicListPos];
+    			Log.v(TAG, "Now skipping to " + modName);
+    			return true;
+    		}
+    		musicListPos = -1;
+		}
+		return false;
+		
+		/*
 		if(modName == null)
 			return false;
 
@@ -501,7 +515,7 @@ public class DroidSound extends Activity {
 		if(getNext)
 			return false;
 
-		return true;
+		return true;*/
 	}
 
 	@Override
@@ -569,13 +583,23 @@ public class DroidSound extends Activity {
 			Bundle b = data.getExtras();
 
 			if(requestCode == 0) {
-				File f = (File) b.getSerializable("musicFile");
-				modName = f.getPath();
+				String f =  b.getString("musicFile");
+				musicListPos = b.getInt("musicPos");
+				musicList = (String []) b.getSerializable("musicList");
+				
+				modName = f;
 				Log.v(TAG, "Playing file " + modName);
 
 				if(mService != null)
 					try {
-						mService.playMod(modName);
+						if(musicList != null) {
+							
+							Log.v(TAG, String.format("Playing list with %d entries, first %s from position %d", musicList.length, musicList[0], musicListPos));
+							
+							mService.playList(musicList, musicListPos);
+						} else {						
+							mService.playMod(modName);
+						}
 					} catch (RemoteException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

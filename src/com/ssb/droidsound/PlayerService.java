@@ -38,7 +38,10 @@ public class PlayerService extends Service {
 	public static final int SONG_TOTALSONGS = 10;
 	
 	private Object info[];
-	
+
+	protected String[] musicList;
+	protected int musicListPos;
+    	
 	private static final String TAG = "Test";
 	private Player player;
 	private Thread playerThread;
@@ -110,7 +113,7 @@ public class PlayerService extends Service {
         }
 
     };
-    
+	
     void createThread() {
     	
     	if(playerThread != null) {
@@ -129,6 +132,17 @@ public class PlayerService extends Service {
 
     String playNext() {
     	
+    	
+    	if(musicList != null) {
+    		musicListPos++;
+    		if(musicListPos < musicList.length) {
+    			return musicList[musicListPos]; 
+    		}
+    		musicListPos = -1;
+    	}
+    	return null;
+    	
+    	/*
     	String currentMod = (String)info[SONG_FILENAME];
     	if(currentMod == null)
     		return null;
@@ -156,6 +170,7 @@ public class PlayerService extends Service {
     		return null;
     	else
     		return files[0].getPath();
+    	*/
     }
 
     
@@ -202,9 +217,15 @@ public class PlayerService extends Service {
 		@Override
 		public boolean playMod(String name) throws RemoteException {
 			Log.v(TAG, "Playmod called " + name);
+			
+			if(musicList != null && musicListPos >= 0) {
+				musicList[musicListPos] = name;
+			}
+			
 			createThread();
 			info[SONG_FILENAME] = name;
-			player.playMod(name);			
+			player.playMod(name);
+			
 			return true;
 		}
 
@@ -267,8 +288,14 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public boolean playList(String name, int startIndex) throws RemoteException {
-			// TODO Auto-generated method stub
+		public boolean playList(String[] names, int startIndex) throws RemoteException {
+			musicList = names;
+			musicListPos = startIndex;
+			String name = names[startIndex];			
+			Log.v(TAG, "PlayList called " + name);
+			createThread();
+			info[SONG_FILENAME] = name;
+			player.playMod(name);
 			return false;
 		}
 	};
