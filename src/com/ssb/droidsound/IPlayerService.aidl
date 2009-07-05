@@ -6,6 +6,7 @@ import com.ssb.droidsound.IPlayerServiceCallback;
 interface IPlayerService {
 
 	boolean playMod(String name);
+	boolean playList(String name, int startIndex);
 	void setFlags(int flags);
 	void playPause(boolean play);
 	boolean setSubSong(int song);

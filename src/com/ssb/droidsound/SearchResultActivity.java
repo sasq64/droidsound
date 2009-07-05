@@ -1,9 +1,5 @@
 package com.ssb.droidsound;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
@@ -11,18 +7,14 @@ import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
-import android.widget.TwoLineListItem;
 import android.widget.AdapterView.OnItemSelectedListener;
 
 public class SearchResultActivity extends ListActivity implements OnItemSelectedListener {
@@ -277,7 +269,7 @@ public class SearchResultActivity extends ListActivity implements OnItemSelected
 	}
 
 	@Override
-	public void onNothingSelected(AdapterView<?> arg0) {
+	public void onNothingSelected(AdapterView<?> arg0) { 
 		// TODO Auto-generated method stub
 		Log.v(TAG, "WHAT");
 	}

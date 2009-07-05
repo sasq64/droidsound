@@ -55,7 +55,7 @@ public class DroidSound extends Activity {
 	private String modName;
 	private ImageButton prevButton;
 	private ImageButton nextButton;
-	private SeekBar seekSongBar;
+	//private SeekBar seekSongBar;
 	private TextView songsTextView;
 
 	class DownloadTask extends AsyncTask<String, Integer, String> {
@@ -85,7 +85,7 @@ public class DroidSound extends Activity {
 
 		@Override
 		public void stringChanged(int what, String value) throws RemoteException {
-			Log.v(TAG, String.format("%d is now %s", what, value));
+			//Log.v(TAG, String.format("%d is now %s", what, value));
 			switch(what) {
 			case PlayerService.SONG_TITLE:
 				if(value != null && value.length() > 0) {
@@ -111,7 +111,7 @@ public class DroidSound extends Activity {
 
 		@Override
 		public void intChanged(int what, int value) throws RemoteException {
-			Log.v(TAG, String.format("%d is now %d", what, value));
+			//Log.v(TAG, String.format("%d is now %d", what, value));
 			switch(what) {
 
 			case PlayerService.SONG_LENGTH:
@@ -122,22 +122,22 @@ public class DroidSound extends Activity {
 				break;
 			case PlayerService.SONG_TOTALSONGS:
 				Log.v(TAG, String.format("We have %d subgsong", value));
-				seekSongBar.setMax(value);
-				seekSongBar.setProgress(0);
+				//seekSongBar.setMax(value);
+				//seekSongBar.setProgress(0);
 				songsTextView.setText(String.format("%02d", value));
 				totalSongs = value;
 				// lengthTextView.setText(String.format("%02d:%02d",
 				// songLength/60, songLength % 60));
 				break;
 			case PlayerService.SONG_SUBSONG:
-				seekSongBar.setProgress(value);
+				//seekSongBar.setProgress(value);
 				//subSong = value;
 				// seekBar.setMax(value);
 				// seekBar.s
 				break;
 			case PlayerService.SONG_POS:
 				int sec = value / 1000;
-				Log.v(TAG, "Music at " + sec);
+				//Log.v(TAG, "Music at " + sec);
 				if(!dragging) {
 					seekBar.setProgress(sec);
 				}
@@ -200,22 +200,22 @@ public class DroidSound extends Activity {
 		// setProgressBarVisibility(true);
 		// setProgress(500);
 
-		ImageButton b = (ImageButton) findViewById(R.id.moreButton);
+		/*ImageButton b = (ImageButton) findViewById(R.id.moreButton);
 		b.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				Intent i = new Intent(DroidSound.this, PlayListActivity.class);
 				startActivityForResult(i, 0);
 			}
-		});
+		});*/
 
 		titleTextView = (TextView) findViewById(R.id.titleText);
 		authorTextView = (TextView) findViewById(R.id.authorText);
-		lengthTextView = (TextView) findViewById(R.id.lengthView);
-		posTextView = (TextView) findViewById(R.id.posTextView);
+		lengthTextView = (TextView) findViewById(R.id.totaltime);
+		posTextView = (TextView) findViewById(R.id.currenttime);
 		seekBar = (SeekBar) findViewById(R.id.seekBar);
-		seekSongBar = (SeekBar) findViewById(R.id.seekSongBar);
-		seekSongBar.setMax(3);
-		seekSongBar.setProgress(0);
+		//seekSongBar = (SeekBar) findViewById(R.id.seekSongBar);
+		//seekSongBar.setMax(3);
+		//seekSongBar.setProgress(0);
 		songsTextView = (TextView) findViewById(R.id.songsView);
 
 		
@@ -295,7 +295,7 @@ public class DroidSound extends Activity {
 				}
 			}
 		});
-
+/*
 		seekSongBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
 			//private boolean dragging;
@@ -333,7 +333,7 @@ public class DroidSound extends Activity {
 				}
 			}
 		});
-
+*/
 		author = "";
 		title = "";
 		if(state != null) {
@@ -594,7 +594,7 @@ public class DroidSound extends Activity {
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		menu.add(0, 10, 0, "Search MODLAND").setIcon(android.R.drawable.ic_menu_search);
+		menu.add(0, 10, 0, "Songs").setIcon(R.drawable.ic_menu_music_library);
 		menu.add(0, 11, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}
@@ -611,8 +611,10 @@ public class DroidSound extends Activity {
 			}
 			finish();
 		} else if(item.getItemId() == 10) {
-			Intent i = new Intent(DroidSound.this, SearchActivity.class);
-			startActivityForResult(i, 1);
+			//Intent i = new Intent(DroidSound.this, SearchActivity.class);
+			//startActivityForResult(i, 1);
+			Intent i = new Intent(DroidSound.this, PlayListActivity.class);
+			startActivityForResult(i, 0);
 		}
 		// mediaCtrl.show(0);
 		return true;

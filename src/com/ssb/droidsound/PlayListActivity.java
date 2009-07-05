@@ -13,12 +13,15 @@ import java.util.List;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.DataSetObserver;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,6 +42,11 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 	private VirtualFS myFileSys;
 	private static final String TAG = "PlayList";
 	private FileListNode myPlaylist;
+	private VirtualFS.Node mCurrentNode;
+	
+	public PlayListActivity() {
+		Log.v(TAG, ">>>> CONSTRUCTOR CALLED\n");
+	}
 
 	
 	class MyTextVew extends TextView implements Checkable {
@@ -113,9 +121,9 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		
 		@Override
 		VirtualFS.Node getChild(int pos) {
-			//if(resolved.get(pos) == null) {
-			//	resolved.set(pos, myFileSys.resolvePath(references.get(pos)));
-			//}
+			if(resolved.get(pos) == null) {
+				resolved.set(pos, myFileSys.resolvePath(references.get(pos)));
+			}
 			return resolved.get(pos);
 		}
 		
@@ -127,6 +135,11 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		@Override
 		VirtualFS.Node getParent() {
 			return mParent;
+		}
+
+		public void RemoveFile(int position) {
+			references.remove(position);
+			resolved.remove(position);
 		}
 		
 	};
@@ -149,7 +162,6 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		
 		private Context mContext;
 		private VirtualFS mFS;
-		private VirtualFS.Node mCurrentNode;
 		
 		private class BookMarks extends VirtualFS.Node {
 			
@@ -270,13 +282,15 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			}
 			
 			item.setTextColor(0xffffffff);
-			
+
 			VirtualFS.Node n = mCurrentNode.getChild(position);
 			
 			item.setText(n.getName());
-			
-			if(n.getType() == VirtualFS.TYPE_DIR) {
-				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.folder, 0, 0, 0);
+
+			if(n.getClass() == FileListNode.class) {
+				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.play_list, 0, 0, 0);			
+			} else if(n.getType() == VirtualFS.TYPE_DIR) {
+				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.directory, 0, 0, 0);
 			} else {
 				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.note, 0, 0, 0);
 			}
@@ -342,6 +356,8 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		
 		List<String> list = myPlaylist.getReferences();
 		
+		Log.v(TAG, ">> Saving PLAYLIST");
+		
 		File file = new File("/sdcard/playlist.plist");
 		try {
 			file.createNewFile();
@@ -360,10 +376,28 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		
 		super.onDestroy();
 	}
+	
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		String path = mCurrentNode.pathName();
+		Log.v(TAG, ">> Saving path " + path);
+		outState.putString("path", path);
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		Log.v(TAG, ">> OnPause");
+	}
 
 	@Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	
+		Log.v(TAG, ">> OnCreate");
+    	
+    	Log.v(TAG, (mCurrentNode == null) ? "NONE" : mCurrentNode.pathName());
   	
     	
         setContentView(R.layout.playlist);        
@@ -395,7 +429,8 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
     	
         myFileSys = new VirtualFS();
 
-		myPlaylist = new FileListNode("My Playlist", null);
+		myPlaylist = new FileListNode("My Playlist", myFileSys.getRoot());
+
 
 		File file = new File("/sdcard/playlist.plist");
 		try {
@@ -420,6 +455,15 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
         
     	myAdapter = new MyAdapter(this, myFileSys);
+    	
+    	if(savedInstanceState != null) {
+	    	String path = savedInstanceState.getString("path");
+	    	
+			Log.v(TAG, ">> Restroing path " + path);
+	    	
+	    	if(path != null)
+	    		mCurrentNode = myFileSys.resolvePath(path);
+    	}
 
     	//view.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));    	
     	//setListAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, names));
@@ -489,7 +533,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 	@Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
 		
-		
+		/*
 		SparseBooleanArray array = playListView.getCheckedItemPositions();
 		if(array != null) {
 			for(int i=0; i<array.size(); i++) {
@@ -507,7 +551,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
         			playListView.invalidateViews();
 
         		return true;
-        }
+        }*/
         return super.onKeyDown(keyCode, event);
     }
 	
@@ -523,16 +567,20 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		String path = file.pathName();
 		int t = file.getType();
 		
+		
+		Log.v(TAG, String.format("File %s, Class %s Parent class %s", path, file.getClass().getName(), parent.getClass().getName()));
+		
 		if(path != null) {
 			cmenu.add(0, 3, 0, "Information");
-			if(myPlaylist != null && t == VirtualFS.TYPE_FILE)
-				cmenu.add(0, 3, 0, "Add To Playlist");
+			
 			if(t == VirtualFS.TYPE_REMOTE) {
 				cmenu.add(0, 4, 0, "Download");
 			}
 
-			if(parent != null && parent.getClass() == FileListNode.class) {
+			if(parent != null && mCurrentNode.getClass() == FileListNode.class) {
 				cmenu.add(0, 5, 0, "Remove From Playlist");
+			} if(myPlaylist != null && t == VirtualFS.TYPE_FILE) {
+				cmenu.add(0, 3, 0, R.string.add_to_playlist); 
 			}
 		}
 	}
@@ -553,6 +601,26 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		case 3:
 			myPlaylist.AddFile(path);
 			break;
+		case 5:
+			myPlaylist.RemoveFile(aci.position);
+			playListView.invalidateViews();
+			break;
+		}
+		return true;
+	}
+
+	public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add(0, 10, 0, "Player").setIcon(android.R.drawable.ic_media_pause);
+		menu.add(0, 11, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		if(item.getItemId() == 11) {
+			finish();
+		} else if(item.getItemId() == 10) {
+			finish();
 		}
 		return true;
 	}

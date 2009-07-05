@@ -124,7 +124,6 @@ public class VirtualFS {
 		
 		@Override
 		String getName() {
-			// TODO Auto-generated method stub
 			return mName;
 		}
 		

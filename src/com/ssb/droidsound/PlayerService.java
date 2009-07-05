@@ -265,6 +265,12 @@ public class PlayerService extends Service {
 			// TODO Auto-generated method stub
 			
 		}
+
+		@Override
+		public boolean playList(String name, int startIndex) throws RemoteException {
+			// TODO Auto-generated method stub
+			return false;
+		}
 	};
 	
     @Override
