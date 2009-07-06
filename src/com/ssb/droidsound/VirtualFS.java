@@ -87,7 +87,7 @@ public class VirtualFS {
 				rest = path.substring(slash + 1);
 			}
 			
-			Log.v(TAG, head + " : " + rest);
+			//Log.v(TAG, head + " : " + rest);
 
 			for(int i = 0; i < getChildCount(); i++) {
 				Node n = getChild(i);
@@ -203,8 +203,7 @@ public class VirtualFS {
 		@Override
 		File getFile() throws IOException {
 			return mRoot;
-		}
-
+		}		
 	};
 	
 	private class RootNode extends Node {
@@ -267,7 +266,7 @@ public class VirtualFS {
 	
 
 	public Node resolvePath(String path) {
-		Log.v(TAG, "Trying to resolve " + path);
+		//Log.v(TAG, "Trying to resolve " + path);
 		return mRootNode.resolvePath(path);
 	}
 

@@ -19,17 +19,22 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
+import android.view.View.OnCreateContextMenuListener;
+import android.view.View.OnLongClickListener;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -49,13 +54,14 @@ public class DroidSound extends Activity {
 	private SeekBar seekBar;
 	private boolean playPause = true;
 	private boolean dragging;
-	//private int subSong;
+	private int subSong;
 	protected int totalSongs;
 	private ImageButton pauseButton;
 	private String modName;
 	private ImageButton prevButton;
 	private ImageButton nextButton;
-	//private SeekBar seekSongBar;
+	private String playListDir;
+	private int playListPos;
 	private TextView songsTextView;
 
 	class DownloadTask extends AsyncTask<String, Integer, String> {
@@ -124,14 +130,15 @@ public class DroidSound extends Activity {
 				Log.v(TAG, String.format("We have %d subgsong", value));
 				//seekSongBar.setMax(value);
 				//seekSongBar.setProgress(0);
-				songsTextView.setText(String.format("SONGS %02d", value));
 				totalSongs = value;
+				songsTextView.setText(String.format("SONG %02d/%02d", subSong+1, totalSongs));
 				// lengthTextView.setText(String.format("%02d:%02d",
 				// songLength/60, songLength % 60));
 				break;
 			case PlayerService.SONG_SUBSONG:
 				//seekSongBar.setProgress(value);
-				//subSong = value;
+				subSong = value;
+				songsTextView.setText(String.format("SONG %02d/%02d", subSong+1, totalSongs));
 				// seekBar.setMax(value);
 				// seekBar.s
 				break;
@@ -168,8 +175,6 @@ public class DroidSound extends Activity {
 
 		}
 	};
-	private int musicListPos;
-	private String[] musicList;
 
 	@Override
 	protected void onStart() {
@@ -215,6 +220,20 @@ public class DroidSound extends Activity {
 		lengthTextView = (TextView) findViewById(R.id.totaltime);
 		posTextView = (TextView) findViewById(R.id.currenttime);
 		seekBar = (SeekBar) findViewById(R.id.seekBar);
+		/*
+		seekBar.setOnLongClickListener(new OnLongClickListener() {			
+			@Override
+			public boolean onLongClick(View v) {
+				return false;
+			}
+		});
+		*/
+		/*
+		seekBar.setOnCreateContextMenuListener(new OnCreateContextMenuListener() {			
+		});
+		*/
+
+		
 		//seekSongBar = (SeekBar) findViewById(R.id.seekSongBar);
 		//seekSongBar.setMax(3);
 		//seekSongBar.setProgress(0);
@@ -222,6 +241,7 @@ public class DroidSound extends Activity {
 
 		
 		pauseButton = (ImageButton) findViewById(R.id.pauseButton);
+        registerForContextMenu(pauseButton);
 		pauseButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -243,11 +263,9 @@ public class DroidSound extends Activity {
 		prevButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if(skip(-1)) {
-					try {
-						mService.playMod(modName);
-					} catch (RemoteException e) {
-					}
+				try {
+					mService.playPrev();
+				} catch (RemoteException e) {
 				}
 			}
 		});
@@ -256,11 +274,9 @@ public class DroidSound extends Activity {
 		nextButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if(skip(1)) {
-					try {
-						mService.playMod(modName);
-					} catch (RemoteException e) {
-					}
+				try {
+					mService.playNext();
+				} catch (RemoteException e) {
 				}
 			}
 		});
@@ -466,6 +482,7 @@ public class DroidSound extends Activity {
 		return true;
 	}
 
+	/*
 	boolean skip(int i) {
 
 		if(musicList != null) {
@@ -479,7 +496,6 @@ public class DroidSound extends Activity {
 		}
 		return false;
 		
-		/*
 		if(modName == null)
 			return false;
 
@@ -515,8 +531,8 @@ public class DroidSound extends Activity {
 		if(getNext)
 			return false;
 
-		return true;*/
-	}
+		return true;
+	}*/
 
 	@Override
 	protected void onDestroy() {
@@ -581,21 +597,22 @@ public class DroidSound extends Activity {
 		if(resultCode != RESULT_CANCELED) {
 
 			Bundle b = data.getExtras();
+			
+			playListDir = b.getString("directory");
+			playListPos = b.getInt("position");
 
 			if(requestCode == 0) {
 				String f =  b.getString("musicFile");
-				musicListPos = b.getInt("musicPos");
-				musicList = (String []) b.getSerializable("musicList");
+				int musicListPos = b.getInt("musicPos");
+				String [] musicList = (String []) b.getSerializable("musicList");
 				
 				modName = f;
 				Log.v(TAG, "Playing file " + modName);
 
 				if(mService != null)
 					try {
-						if(musicList != null) {
-							
-							Log.v(TAG, String.format("Playing list with %d entries, first %s from position %d", musicList.length, musicList[0], musicListPos));
-							
+						if(musicList != null) {							
+							Log.v(TAG, String.format("Playing list with %d entries, first %s,%s from position %d", musicList.length, musicList[0], musicList[1], musicListPos));							
 							mService.playList(musicList, musicListPos);
 						} else {						
 							mService.playMod(modName);
@@ -638,10 +655,41 @@ public class DroidSound extends Activity {
 			//Intent i = new Intent(DroidSound.this, SearchActivity.class);
 			//startActivityForResult(i, 1);
 			Intent i = new Intent(DroidSound.this, PlayListActivity.class);
+			i.putExtra("directory", playListDir);
+			i.putExtra("position", playListPos);
 			startActivityForResult(i, 0);
 		}
 		// mediaCtrl.show(0);
 		return true;
 	}
+	
+	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+		Log.v(TAG, "We want menu");
+		if(totalSongs < 2) {
+			menu.add(0, -1, 0, "No Subsongs");
+			return;
+		}
+		
+		for(int i=0; i<totalSongs; i++) {
+			menu.add(0, i, 0, "Subsong " + (i+1));
+		}
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		int i = item.getItemId();
+		if(i<0) return true;
+		try {
+			mService.setSubSong(i);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return true;
+		
+	}
+
 
 }

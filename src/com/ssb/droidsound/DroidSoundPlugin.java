@@ -8,6 +8,7 @@ public interface DroidSoundPlugin {
 	public static final int INFO_TYPE = 4;
 	public static final int INFO_COPYRIGHT = 5;
 	public static final int INFO_SUBSONGS = 6;
+	public static final int INFO_STARTSONG = 7;
 
 	
 	boolean canHandle(String name);

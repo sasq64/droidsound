@@ -9,6 +9,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -59,10 +60,10 @@ public class PlayerService extends Service {
 					try {
 						if(info[i] instanceof String) {
 							cb.stringChanged(i, (String)info[i]);
+						} else if(info[i] == null) {
+							cb.stringChanged(i, (String)info[i]);
 						} else {
-							if(info[i] != null) {
-								cb.intChanged(i, (Integer)info[i]);
-							}
+							cb.intChanged(i, (Integer)info[i]);
 						}
 					} catch (RemoteException e) {
 						Log.v(TAG, "Removing callback becuase peer is gone");
@@ -92,16 +93,12 @@ public class PlayerService extends Service {
 					info[SONG_FORMAT] = text[3];
 					info[SONG_LENGTH] = (Integer)msg.arg1;
 					info[SONG_TOTALSONGS] = (Integer)(msg.arg2 & 0xffff);
-					info[SONG_SUBSONG] = (Integer)(msg.arg1>>16);
+					info[SONG_SUBSONG] = (Integer)(msg.arg2>>16);
 					performCallback(SONG_FILENAME, SONG_AUTHOR, SONG_TITLE, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS);
                 	break;
                 case 1:
                 	Log.v(TAG, "Music done");
-                	String next = playNext();
-                	if(next != null) {
-                		info[SONG_FILENAME] = next;
-                		player.playMod((String)info[SONG_FILENAME]);
-                	}
+                	playNextSong();
                     break;
                 case 3:
                 	info[SONG_POS] = (Integer)msg.arg1;
@@ -130,49 +127,31 @@ public class PlayerService extends Service {
     	}
     }
 
-    String playNext() {
-    	
-    	
+    void playNextSong() {
+    	    	
     	if(musicList != null) {
     		musicListPos++;
-    		if(musicListPos < musicList.length) {
-    			return musicList[musicListPos]; 
+    		if(musicListPos < musicList.length) {    			
+           		info[SONG_FILENAME] = musicList[musicListPos];
+           		player.playMod((String)info[SONG_FILENAME]);
+           		return;
     		}
-    		musicListPos = -1;
+    		musicListPos--;;
     	}
-    	return null;
-    	
-    	/*
-    	String currentMod = (String)info[SONG_FILENAME];
-    	if(currentMod == null)
-    		return null;
-    	
-    	File modDir = new File(currentMod).getParentFile();    	
-    	if(modDir == null)
-    		return null;
-    	File [] files = modDir.listFiles();
-    	
-    	if(files.length <= 0)
-    		return null;
-
-    	boolean getNext = false;
-    	for(File f : files) {
-    		if(getNext) {
-    			return f.getPath();
-    		}
-        	Log.v(TAG, String.format("Comparing %s to %s", f.getPath(), currentMod));
-    		if(f.getPath().compareToIgnoreCase(currentMod) == 0) {
-    			getNext = true;
-    		}
-    	}
-    	
-    	if(getNext)
-    		return null;
-    	else
-    		return files[0].getPath();
-    	*/
     }
 
+    void playPrevSong() {
+    	    	
+    	if(musicList != null) {
+    		musicListPos--;
+    		if(musicListPos >= 0) {
+           		info[SONG_FILENAME] = musicList[musicListPos];
+           		player.playMod((String)info[SONG_FILENAME]);
+           		return;
+    		}
+    		musicListPos++;
+    	}
+    }
     
 
 	@Override
@@ -195,10 +174,24 @@ public class PlayerService extends Service {
 		
         if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
 			Uri uri = intent.getData();
-			Log.v(TAG, "Want to play " + intent.getDataString());
-			createThread();
-			info[SONG_FILENAME] = uri.getLastPathSegment();
-			player.playMod(intent.getDataString());			
+			if(uri == null) {
+				Bundle b = intent.getExtras();							
+				String f =  b.getString("musicFile");
+				musicListPos = b.getInt("musicPos");
+				musicList = (String []) b.getSerializable("musicList");
+				if(f == null) {
+					f = musicList[musicListPos];
+				}
+				Log.v(TAG, "Want to play list with " + f);
+				createThread();
+				info[SONG_FILENAME] = f;
+				player.playMod(f);
+			} else {
+				Log.v(TAG, "Want to play " + intent.getDataString());
+				createThread();
+				info[SONG_FILENAME] = uri.getLastPathSegment();
+				player.playMod(intent.getDataString());
+			}
 		}
 		
 	}
@@ -297,6 +290,16 @@ public class PlayerService extends Service {
 			info[SONG_FILENAME] = name;
 			player.playMod(name);
 			return false;
+		}
+
+		@Override
+		public void playNext() throws RemoteException {
+			playNextSong();
+		}
+
+		@Override
+		public void playPrev() throws RemoteException {
+			playPrevSong();
 		}
 	};
 	

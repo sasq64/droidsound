@@ -165,6 +165,7 @@ public class Player implements Runnable {
 			String copyright = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
 			String type = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
 			int subsongs = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBSONGS);
+			int startsong = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_STARTSONG);
 			if(subsongs == -1)
 				subsongs = 0;
 			Log.v(TAG, String.format(":%s:%s:%s:%s:", title, author, copyright, type));
@@ -181,7 +182,7 @@ public class Player implements Runnable {
 				Message msg = mHandler.obtainMessage();
 				msg.what = 0;
 				msg.arg1 = moduleLength;
-				msg.arg2 = subsongs;
+				msg.arg2 = subsongs | (startsong<<16);
 				msg.obj = new String [] { title, author, copyright, type };
 				mHandler.sendMessage(msg);
 			}

@@ -7,7 +7,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.List;
+
+import com.ssb.droidsound.VirtualFS.Node;
 
 import android.app.Activity;
 import android.content.Context;
@@ -91,8 +94,9 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		}
 		
 		void AddFile(String reference) {
+			Node node = myFileSys.resolvePath(reference);
 			references.add(reference);
-			resolved.add(myFileSys.resolvePath(reference));
+			resolved.add(node);
 		}
 
 		@Override
@@ -184,14 +188,18 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 			item.setTextColor(0xffffffff);
 			VirtualFS.Node n = mCurrentNode.getChild(position);
-			item.setText(n.getName());
-
-			if(n.getClass() == FileListNode.class) {
-				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.play_list, 0, 0, 0);			
-			} else if(n.getType() == VirtualFS.TYPE_DIR) {
-				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.directory, 0, 0, 0);
+			if(n == null) {
+				item.setText("<NULL>");
 			} else {
-				item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.note, 0, 0, 0);
+				item.setText(n.getName());
+	
+				if(n.getClass() == FileListNode.class) {
+					item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.play_list, 0, 0, 0);			
+				} else if(n.getType() == VirtualFS.TYPE_DIR) {
+					item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.directory, 0, 0, 0);
+				} else {
+					item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.note, 0, 0, 0);
+				}
 			}
 			return item;
 		}
@@ -293,6 +301,23 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
         
     	//playListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
     	//this.setContentView(R.id.PlayListView);
+        
+        String path = null;
+        
+    	if(savedInstanceState != null) {
+	    	path = savedInstanceState.getString("path");	    	
+    	}
+
+        int pos = -1;
+        Intent intent = getIntent();        
+        Bundle b = intent.getExtras();
+        if(b != null) {
+        	String p = b.getString("directory");
+        	pos = b.getInt("position");
+        	if(p != null) {
+        		path = p;
+        	}
+        }
     	
     	
         myFileSys = new VirtualFS();
@@ -320,18 +345,19 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 		myAdapter = new MyAdapter(this, myFileSys);
     	
-    	if(savedInstanceState != null) {
-	    	String path = savedInstanceState.getString("path");
-	    	
 			Log.v(TAG, ">> Restroing path " + path);
 	    	
-	    	if(path != null)
+	    	if(path != null) {
 	    		mCurrentNode = myFileSys.resolvePath(path);
-    	}
+	    	}	
 
     	playListView.setAdapter(myAdapter);
     	playListView.setOnItemSelectedListener(this);
     	playListView.setOnItemClickListener(this);
+    	
+    	if(pos >= 0) {
+    		playListView.setSelection(pos);
+    	}
     }
 	
 	@Override
@@ -354,11 +380,18 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		} else {
 			
 			Intent intent = new Intent();
+			
+			String dirPath = mCurrentNode.pathName();
+			intent.putExtra("directory", dirPath);
+			intent.putExtra("position", position);
 
 			try {
 				String [] list = new String [ mCurrentNode.getChildCount() ];				
 				for(int i=0; i< list.length; i++) {
 					list[i] = mCurrentNode.getChild(i).getFile().getPath();
+					if(i<10) {
+						Log.v(TAG, String.format("%d : %s", i, list[i]));
+					}
 				}
 				intent.putExtra("musicList", list);
 				intent.putExtra("musicPos", position);
@@ -410,6 +443,8 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		AdapterView.AdapterContextMenuInfo aci = (AdapterView.AdapterContextMenuInfo) cinfo;
 		
 		VirtualFS.Node file = (VirtualFS.Node) ((ListView)view).getItemAtPosition(aci.position);
+		if(file == null)
+			return;
 		VirtualFS.Node parent = file.getParent();		
 		String path = file.pathName();
 		int t = file.getType();
@@ -418,33 +453,67 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		Log.v(TAG, String.format("File %s, Class %s Parent class %s", path, file.getClass().getName(), parent.getClass().getName()));
 		
 		if(path != null) {
+
+			if(t != VirtualFS.TYPE_DIR) {
+				cmenu.add(0, 2, 0, "Play");
+			}
+
 			cmenu.add(0, 3, 0, "Information");
 			
 			if(t == VirtualFS.TYPE_REMOTE) {
 				cmenu.add(0, 4, 0, "Download");
 			}
 
-			if(parent != null && mCurrentNode.getClass() == FileListNode.class) {
+			if(mCurrentNode.getClass() == FileListNode.class) {
 				cmenu.add(0, 5, 0, "Remove From Playlist");
-			} if(myPlaylist != null && t == VirtualFS.TYPE_FILE) {
-				cmenu.add(0, 3, 0, R.string.add_to_playlist); 
+			} else if(myPlaylist != null) {
+				cmenu.add(0, 3, 0, R.string.add_to_playlist);
 			}
 		}
 	}
 	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
-		int i = item.getItemId();
+		int id = item.getItemId();
 		AdapterView.AdapterContextMenuInfo aci = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
 
 		VirtualFS.Node file = (VirtualFS.Node) playListView.getItemAtPosition(aci.position);
 		String path = file.pathName();
 		
-		Log.v(TAG, String.format("Selected %d on %s", i, path));
+		Log.v(TAG, String.format("Selected %d on %s", id, path));
 
-		switch(i) {
+		switch(id) {
+		case 2:
+
+			try {
+				Intent intent = new Intent(this, PlayerService.class);
+				String [] list = new String [ mCurrentNode.getChildCount() ];				
+				for(int i=0; i< list.length; i++) {
+					list[i] = mCurrentNode.getChild(i).getFile().getPath();
+					if(i<10) {
+						Log.v(TAG, String.format("%d : %s", i, list[i]));
+					}
+				}
+				intent.putExtra("musicList", list);
+				intent.putExtra("musicPos", aci.position);
+				
+				intent.setAction(Intent.ACTION_VIEW);
+				startService(intent);
+
+			} catch (IOException e) {
+			}
+			break;
 		case 3:
-			myPlaylist.AddFile(path);
+			if(file.getType() == VirtualFS.TYPE_DIR) {
+				for(int i = 0 ; i<file.getChildCount(); i++) {
+					VirtualFS.Node node = file.getChild(i);
+					if(node.getType() == VirtualFS.TYPE_FILE) {
+						myPlaylist.AddFile(node.pathName());
+					}
+				}
+			} else {
+				myPlaylist.AddFile(path);
+			}
 			break;
 		case 5:
 			myPlaylist.RemoveFile(aci.position);
@@ -456,6 +525,13 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 	public boolean onCreateOptionsMenu(Menu menu) {
 		menu.add(0, 10, 0, "Player").setIcon(R.drawable.ic_menu_playback);
+		
+		Log.v(TAG, mCurrentNode.getClass().getName());
+		
+		if(mCurrentNode.getClass() == FileListNode.class) {
+			menu.add(0, 12, 0, "Clear all").setIcon(android.R.drawable.ic_menu_delete);
+		}
+		
 		menu.add(0, 11, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}
@@ -466,6 +542,15 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			finish();
 		} else if(item.getItemId() == 10) {
 			finish();
+		} else if(item.getItemId() == 12) {
+			
+			FileListNode node = (FileListNode) mCurrentNode;
+			int count = node.getChildCount();
+			for(int i=count-1; i >= 0; i--) {
+				node.RemoveFile(i);
+			}			
+			mCurrentNode = new FileListNode(mCurrentNode.getName(), mCurrentNode.getParent());
+			playListView.invalidateViews();
 		}
 		return true;
 	}
