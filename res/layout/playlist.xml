@@ -13,5 +13,5 @@
 	<ImageButton android:src="@android:drawable/ic_menu_info_details" android:id="@+id/infoButton" android:layout_weight="1" android:layout_height="fill_parent" android:layout_width="wrap_content"/>
 	</LinearLayout>
 	  -->
-<ListView android:id="@+id/playListView" android:layout_width="wrap_content" android:layout_height="wrap_content" android:choiceMode="multipleChoice"></ListView>
+<ListView android:id="@+id/playListView" android:layout_width="fill_parent" android:layout_height="wrap_content" android:choiceMode="multipleChoice"></ListView>
 </LinearLayout>

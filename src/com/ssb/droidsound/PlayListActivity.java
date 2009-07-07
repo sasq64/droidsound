@@ -7,10 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Currency;
 import java.util.List;
-
-import com.ssb.droidsound.VirtualFS.Node;
 
 import android.app.Activity;
 import android.content.Context;
@@ -20,6 +17,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,6 +30,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
+
+import com.ssb.droidsound.VirtualFS.Node;
 
 public class PlayListActivity extends Activity implements OnItemSelectedListener, OnItemClickListener, OnLongClickListener {
 	
@@ -72,8 +72,9 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 	
 	class FileListNode extends VirtualFS.Node {
 		
-		private List<String> references;
-		private List<VirtualFS.Node> resolved;
+		//private List<String> references;
+		private List<VirtualFS.FileSystemNode> references;
+		//private List<VirtualFS.Node> resolved;
 
 		private VirtualFS.Node mParent;
 		private String mName;
@@ -81,22 +82,32 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		FileListNode(String name, VirtualFS.Node parent) {
 			mParent = parent;
 			mName = name;
-			references = new ArrayList<String>();
-			resolved = new ArrayList<VirtualFS.Node>();
+			references = new ArrayList<VirtualFS.FileSystemNode>();
+			//resolved = new ArrayList<VirtualFS.Node>();
 		}
 		
-		List<String> getReferences() {
+		List<VirtualFS.FileSystemNode> getReferences() {
 			return references;
 		}
 		
-		void setReferences(List<String> ref) {
+		void setReferences(List<VirtualFS.FileSystemNode> ref) {
 			references = ref;
 		}
 		
-		void AddFile(String reference) {
+		void AddFile(String name) {
+			references.add(new VirtualFS.FileSystemNode(new File(name), null, this));
+		}
+
+		public void AddReference(String reference) {
 			Node node = myFileSys.resolvePath(reference);
-			references.add(reference);
-			resolved.add(node);
+			try {
+				references.add(new VirtualFS.FileSystemNode(node.getFile(), node.getName(), this));
+				//node.getFile().getPath());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			//resolved.add(node);
 		}
 
 		@Override
@@ -106,10 +117,10 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		
 		@Override
 		VirtualFS.Node getChild(int pos) {
-			if(resolved.get(pos) == null) {
-				resolved.set(pos, myFileSys.resolvePath(references.get(pos)));
-			}
-			return resolved.get(pos);
+			//if(resolved.get(pos) == null) {
+			//	resolved.set(pos, myFileSys.resolvePath(references.get(pos)));
+			//}
+			return references.get(pos);
 		}
 		
 		@Override
@@ -124,8 +135,9 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 		public void RemoveFile(int position) {
 			references.remove(position);
-			resolved.remove(position);
+			//resolved.remove(position);
 		}
+
 		
 	};
 
@@ -180,19 +192,23 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			TextView item;
 			
 			if(convertView == null) {
-				item = new TextView(mContext);
-				item.setTextSize(18.0F);
+				//item = new TextView(mContext);
+				//item.setTextSize(18.0F);
+				//item.setLayoutParams(new ListView.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+				LayoutInflater inflater = getLayoutInflater();
+				item = (TextView) inflater.inflate(R.layout.play_list_item, null);
+
 			} else {
 				item = (TextView)convertView;
 			}
-
+			
 			item.setTextColor(0xffffffff);
 			VirtualFS.Node n = mCurrentNode.getChild(position);
 			if(n == null) {
 				item.setText("<NULL>");
 			} else {
 				item.setText(n.getName());
-	
+
 				if(n.getClass() == FileListNode.class) {
 					item.setCompoundDrawablesWithIntrinsicBounds(R.drawable.play_list, 0, 0, 0);			
 				} else if(n.getType() == VirtualFS.TYPE_DIR) {
@@ -248,7 +264,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 	@Override
 	protected void onDestroy() {
 		
-		List<String> list = myPlaylist.getReferences();
+		List<VirtualFS.FileSystemNode> list = myPlaylist.getReferences();
 		
 		Log.v(TAG, ">> Saving PLAYLIST");
 		
@@ -256,8 +272,8 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 		try {
 			file.createNewFile();
 			PrintStream ps = new PrintStream(file);
-			for(String s : list) {
-				ps.println(s);
+			for(VirtualFS.FileSystemNode s : list) {
+				ps.println(s.getFile().getPath());
 			}
 			ps.close();
 			
@@ -458,7 +474,7 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 				cmenu.add(0, 2, 0, "Play");
 			}
 
-			cmenu.add(0, 3, 0, "Information");
+			cmenu.add(0, 1, 0, "Information");
 			
 			if(t == VirtualFS.TYPE_REMOTE) {
 				cmenu.add(0, 4, 0, "Download");
@@ -508,11 +524,11 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 				for(int i = 0 ; i<file.getChildCount(); i++) {
 					VirtualFS.Node node = file.getChild(i);
 					if(node.getType() == VirtualFS.TYPE_FILE) {
-						myPlaylist.AddFile(node.pathName());
+						myPlaylist.AddReference(node.pathName());
 					}
 				}
 			} else {
-				myPlaylist.AddFile(path);
+				myPlaylist.AddReference(path);
 			}
 			break;
 		case 5:

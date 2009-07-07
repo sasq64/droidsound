@@ -148,7 +148,7 @@ public class DroidSound extends Activity {
 				if(!dragging) {
 					seekBar.setProgress(sec);
 				}
-				posTextView.setText(String.format("%02d:%02d", sec / 60, sec % 60));
+				//posTextView.setText(String.format("%02d:%02d", sec / 60, sec % 60));
 				break;
 			}
 		}

@@ -53,10 +53,13 @@ public class Player implements Runnable {
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
 
-		bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
-		if(bufSize < 32768*4) {
-			bufSize = 32768*4;
-		}
+		//bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+		//if(bufSize < 32768*2) {
+		//	bufSize = 32768*2;
+		//}
+		
+		// Enough for 500ms
+		bufSize = (44100*4) / 2;
 		
 		samples = new short [bufSize/2];
 	}
