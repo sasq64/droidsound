@@ -180,12 +180,28 @@ public class PlayerService extends Service {
 				musicListPos = b.getInt("musicPos");
 				musicList = (String []) b.getSerializable("musicList");
 				if(f == null) {
-					f = musicList[musicListPos];
+					if(musicListPos >= 0) {
+						f = musicList[musicListPos];
+					}
 				}
-				Log.v(TAG, "Want to play list with " + f);
 				createThread();
-				info[SONG_FILENAME] = f;
-				player.playMod(f);
+				if(f == null) {
+					String modname = (String) info[SONG_FILENAME];
+					if(musicList != null && modname != null) {
+						Log.v(TAG, "Got playlist without song");
+						for(int i=0; i<musicList.length; i++) {
+							if(musicList[i].compareTo(modname) == 0) {
+								musicListPos = i;
+								Log.v(TAG, String.format("Changing pos ftrom %d to %d", musicListPos, i));
+								break;
+							}
+						}
+					}
+				} else {
+					Log.v(TAG, "Want to play list with " + f);
+					info[SONG_FILENAME] = f;
+					player.playMod(f);
+				}
 			} else {
 				Log.v(TAG, "Want to play " + intent.getDataString());
 				createThread();
@@ -243,9 +259,13 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public void playPause(boolean play) throws RemoteException {
+		public boolean playPause(boolean play) throws RemoteException {
 			// TODO Auto-generated method stub
-			player.paused(!play);
+			if(player.isActive()) {
+				player.paused(!play);
+				return true;
+			}
+			return false;
 		}
 
 		@Override

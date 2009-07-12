@@ -24,7 +24,7 @@
 			<TextView android:text="DJ Unknown" android:id="@+id/authorText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="20sp" android:paddingLeft="8sp"></TextView>
 		</TableRow>
 	</TableLayout>
-<TextView android:text="1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/songsView" android:typeface="monospace" android:textSize="20sp" android:textStyle="bold" android:textColor="#ffff00" android:gravity="center" android:paddingLeft="4sp"/>
+<TextView android:text=" " android:layout_width="wrap_content" android:layout_height="wrap_content" android:id="@+id/songsView" android:typeface="monospace" android:textSize="20sp" android:textStyle="bold" android:textColor="#ffff00" android:gravity="center" android:paddingLeft="4sp"/>
 
 	<!-- 
 <TextView android:text="00:00" android:id="@+id/posTextView" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="40sp" android:typeface="monospace" android:textColor="#00ff00"></TextView>

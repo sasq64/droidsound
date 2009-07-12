@@ -10,7 +10,7 @@ interface IPlayerService {
 	void playPrev();
 	void playNext();
 	void setFlags(int flags);
-	void playPause(boolean play);
+	boolean playPause(boolean play);
 	boolean setSubSong(int song);
 	boolean seekTo(int msec);
 	void stop();

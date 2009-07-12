@@ -33,7 +33,7 @@ public class Player implements Runnable {
 	private AudioTrack audioTrack;
 	private int bufSize;
 	private boolean doStop;
-	private boolean playing;
+	volatile private boolean playing;
 	private int currentPosition;
 	private int moduleLength;
 	//private String moduleTitle;
@@ -175,12 +175,6 @@ public class Player implements Runnable {
 			synchronized (this) {
 				moduleLength = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 				Log.v(TAG, "Got length " + moduleLength);
-				/*moduleTitle = title;
-				if(moduleTitle == null)
-					moduleTitle = "Unknown";
-				moduleAuthor = author;
-				if(moduleAuthor == null)
-					moduleAuthor = "Unknown";*/
 				
 				Message msg = mHandler.obtainMessage();
 				msg.what = 0;
@@ -228,6 +222,7 @@ public class Player implements Runnable {
 					playing = false;
 					startMod();
 					currentPosition = lastPos = 0;
+					setPaused = false;
 				}
 				
 				if(doStop) {
@@ -337,6 +332,11 @@ public class Player implements Runnable {
 		// TODO Auto-generated method stub
 		//uriToPlay = uri;
 		
+	}
+
+	public boolean isActive() {
+		// TODO Auto-generated method stub
+		return playing;
 	}
 
 }

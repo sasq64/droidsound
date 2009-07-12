@@ -472,24 +472,42 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 			if(t != VirtualFS.TYPE_DIR) {
 				cmenu.add(0, 2, 0, "Play");
+				if(mCurrentNode.getClass() == FileListNode.class) {
+					cmenu.add(0, 5, 0, "Remove From Playlist");
+				} else if(myPlaylist != null) {
+					cmenu.add(0, 3, 0, R.string.add_to_playlist);
+				}
 			}
 
-			cmenu.add(0, 1, 0, "Information");
+			//cmenu.add(0, 1, 0, "Information");
 			
 			if(t == VirtualFS.TYPE_REMOTE) {
 				cmenu.add(0, 4, 0, "Download");
 			}
 
-			if(mCurrentNode.getClass() == FileListNode.class) {
-				cmenu.add(0, 5, 0, "Remove From Playlist");
-			} else if(myPlaylist != null) {
-				cmenu.add(0, 3, 0, R.string.add_to_playlist);
-			}
 		}
+	}
+	
+	public Intent makeListIntent() {
+		Intent intent = new Intent(this, PlayerService.class);
+		intent.setAction(Intent.ACTION_VIEW);
+		String [] list = new String [ mCurrentNode.getChildCount() ];				
+		try {
+			for(int i=0; i< list.length; i++) {
+				list[i] = mCurrentNode.getChild(i).getFile().getPath();
+				if(i<10) {
+					Log.v(TAG, String.format("%d : %s", i, list[i]));
+				}
+			}
+			intent.putExtra("musicList", list);
+		} catch (IOException e) {
+			}
+		return intent;
 	}
 	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
+		Intent intent = null;
 		int id = item.getItemId();
 		AdapterView.AdapterContextMenuInfo aci = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
 
@@ -500,24 +518,10 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 
 		switch(id) {
 		case 2:
-
-			try {
-				Intent intent = new Intent(this, PlayerService.class);
-				String [] list = new String [ mCurrentNode.getChildCount() ];				
-				for(int i=0; i< list.length; i++) {
-					list[i] = mCurrentNode.getChild(i).getFile().getPath();
-					if(i<10) {
-						Log.v(TAG, String.format("%d : %s", i, list[i]));
-					}
-				}
-				intent.putExtra("musicList", list);
-				intent.putExtra("musicPos", aci.position);
-				
-				intent.setAction(Intent.ACTION_VIEW);
+				intent = makeListIntent();
+				intent.putExtra("musicPos", aci.position);				
 				startService(intent);
 
-			} catch (IOException e) {
-			}
 			break;
 		case 3:
 			if(file.getType() == VirtualFS.TYPE_DIR) {
@@ -530,9 +534,15 @@ public class PlayListActivity extends Activity implements OnItemSelectedListener
 			} else {
 				myPlaylist.AddReference(path);
 			}
+			//intent = makeListIntent();
+			//intent.putExtra("musicPos", -1);
+			//startService(intent);
 			break;
 		case 5:
 			myPlaylist.RemoveFile(aci.position);
+			//intent = makeListIntent();
+			//intent.putExtra("musicPos", -1);
+			//startService(intent);
 			playListView.invalidateViews();
 			break;
 		}

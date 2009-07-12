@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.text.util.Linkify;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -100,6 +101,8 @@ public class DroidSound extends Activity {
 					title = modName;
 				}
 				titleTextView.setText(title);
+				playPause = true;
+				pauseButton.setImageResource(android.R.drawable.ic_media_pause);
 				break;
 			case PlayerService.SONG_AUTHOR:
 				if(value == null) {
@@ -131,7 +134,11 @@ public class DroidSound extends Activity {
 				//seekSongBar.setMax(value);
 				//seekSongBar.setProgress(0);
 				totalSongs = value;
-				songsTextView.setText(String.format("SONG %02d/%02d", subSong+1, totalSongs));
+				if(totalSongs > 0) {
+					songsTextView.setText(String.format("SONG %02d/%02d", subSong+1, totalSongs));
+				} else {
+					songsTextView.setText("NO SUBSONGS");
+				}
 				// lengthTextView.setText(String.format("%02d:%02d",
 				// songLength/60, songLength % 60));
 				break;
@@ -148,7 +155,7 @@ public class DroidSound extends Activity {
 				if(!dragging) {
 					seekBar.setProgress(sec);
 				}
-				//posTextView.setText(String.format("%02d:%02d", sec / 60, sec % 60));
+				posTextView.setText(String.format("%02d:%02d", sec / 60, sec % 60));
 				break;
 			}
 		}
@@ -242,17 +249,23 @@ public class DroidSound extends Activity {
 		
 		pauseButton = (ImageButton) findViewById(R.id.pauseButton);
         registerForContextMenu(pauseButton);
+
 		pauseButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				playPause = !playPause;
-				if(playPause) {
-					pauseButton.setImageResource(android.R.drawable.ic_media_pause);
-				} else {
-					pauseButton.setImageResource(android.R.drawable.ic_media_play);
-				}
 				try {
-					mService.playPause(playPause);
+					if(mService.playPause(!playPause)) {
+						playPause = !playPause;
+						if(playPause) {
+							pauseButton.setImageResource(android.R.drawable.ic_media_pause);
+						} else {
+							pauseButton.setImageResource(android.R.drawable.ic_media_play);
+						}
+					} else {
+						Intent i = new Intent(DroidSound.this, PlayListActivity.class);
+						i.putExtra("directory", playListDir);
+						startActivityForResult(i, 0);
+					}
 				} catch (RemoteException e) {
 				}
 
@@ -389,9 +402,9 @@ public class DroidSound extends Activity {
 	protected Dialog onCreateDialog(int id) {
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder
-				.setMessage(
-						"Modules goes into the 'MODS' directory on your sdcard, but it seems you don't have any. Do you want to donload a few (~100KB) to get you going?")
+		switch(id) {
+		case 0:
+			builder.setMessage(R.string.mod_dl_text)
 				.setCancelable(false).setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
 						new DroidSound.DownloadTask().execute("http://swimmer.se/droidsound/mods.zip");
@@ -401,6 +414,21 @@ public class DroidSound extends Activity {
 						dialog.cancel();
 					}
 				});
+			break;
+		case 1:
+			builder.setTitle("About DroidSound").setCancelable(true)
+			.setNegativeButton("Ok", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					dialog.cancel();
+				}
+			});
+			TextView tv = new TextView(this);
+			tv.setAutoLinkMask(Linkify.WEB_URLS);
+			tv.setText(R.string.about_text);
+			builder.setView(tv);
+			//.setMessage(R.string.about_text)
+		break;
+		}
 		return builder.create();
 	}
 
@@ -609,6 +637,16 @@ public class DroidSound extends Activity {
 				modName = f;
 				Log.v(TAG, "Playing file " + modName);
 
+				if(playPause) {
+					playPause = false;
+			        pauseButton.setImageResource(android.R.drawable.ic_media_pause);
+					try {
+						mService.playPause(playPause);
+					} catch (RemoteException e) {
+					}
+				}
+
+
 				if(mService != null)
 					try {
 						if(musicList != null) {							
@@ -636,30 +674,32 @@ public class DroidSound extends Activity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		menu.add(0, 10, 0, "Songs").setIcon(R.drawable.ic_menu_music_library);
+		menu.add(0, 12, 0, "About").setIcon(android.R.drawable.ic_menu_info_details);
 		menu.add(0, 11, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		if(item.getItemId() == 11) {
-			// player.stop();
+		int choice = item.getItemId();
+		switch(choice) {
+		case 11:
 			try {
 				mService.stop();
 			} catch (RemoteException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 			finish();
-		} else if(item.getItemId() == 10) {
-			//Intent i = new Intent(DroidSound.this, SearchActivity.class);
-			//startActivityForResult(i, 1);
+			break;
+		case 10:
 			Intent i = new Intent(DroidSound.this, PlayListActivity.class);
 			i.putExtra("directory", playListDir);
 			i.putExtra("position", playListPos);
 			startActivityForResult(i, 0);
+			break;
+		case 12:
+			showDialog(1);			
+			break;
 		}
-		// mediaCtrl.show(0);
 		return true;
 	}
 	

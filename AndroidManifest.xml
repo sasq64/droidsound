@@ -19,10 +19,18 @@
                 <data android:scheme="content"/>
                 <data android:scheme="file"/>
                 <data android:mimeType="audio/prs.sid" />
-                <data android:mimeType="audio/x-mod" />
                 <data android:mimeType="audio/x-sid" />
+                <data android:mimeType="audio/x-mod" />
                 <data android:mimeType="audio/x-s3m" />
                 <data android:mimeType="audio/x-xm" />
+
+                <data android:mimeType="audio/x-gbs" />
+                <data android:mimeType="audio/x-nsf" />
+                <data android:mimeType="audio/x-spc" />
+                <data android:mimeType="audio/x-gym" />
+                <data android:mimeType="audio/x-ay" />
+                <data android:mimeType="audio/x-vgm" />
+                <data android:mimeType="audio/x-vgz" />
             </intent-filter>         
         </activity>
         <activity android:name="PlayListActivity"/>
