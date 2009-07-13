@@ -58,8 +58,8 @@ public class Player implements Runnable {
 		//	bufSize = 32768*2;
 		//}
 		
-		// Enough for 500ms
-		bufSize = (44100*4) / 2;
+		// Enough for 1000ms
+		bufSize = 44100*4;
 		
 		samples = new short [bufSize/2];
 	}
@@ -139,6 +139,7 @@ public class Player implements Runnable {
 			} else {
 				File f = new File(modName);
 				fileSize = f.length();
+				System.gc();
 				songBuffer = new byte [(int) fileSize];
 				FileInputStream fs = new FileInputStream(f);
 				fs.read(songBuffer);

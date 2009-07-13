@@ -23,6 +23,7 @@
                 <data android:mimeType="audio/x-mod" />
                 <data android:mimeType="audio/x-s3m" />
                 <data android:mimeType="audio/x-xm" />
+                <data android:mimeType="audio/x-it" />
 
                 <data android:mimeType="audio/x-gbs" />
                 <data android:mimeType="audio/x-nsf" />
