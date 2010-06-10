@@ -45,13 +45,13 @@ public class Player implements Runnable {
 	private boolean setPaused;
 	private int subSong;
 	//private Uri uriToPlay;
-		
+
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
-		plugins = new DroidSoundPlugin [0];
-		//plugins[0] = new TinySidPlugin();
-		//plugins[1] = new ModPlugin();
-		//plugins[2] = new GMEPlugin();
+		plugins = new DroidSoundPlugin [3];
+		plugins[0] = new TinySidPlugin();
+		plugins[1] = new ModPlugin();
+		plugins[2] = new GMEPlugin();
 
 		//bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 		//if(bufSize < 32768*2) {
