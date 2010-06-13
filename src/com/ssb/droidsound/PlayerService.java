@@ -47,9 +47,6 @@ public class PlayerService extends Service {
 	private Player player;
 	private Thread playerThread;
 	private List<IPlayerServiceCallback> callbacks; 	
-//	private String currentMod;
-//    private int currentPos;
-//	private int songLength;
 	
 	private void performCallback(int...what) {
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();

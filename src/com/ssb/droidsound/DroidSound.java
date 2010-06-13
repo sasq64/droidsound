@@ -1,15 +1,6 @@
 package com.ssb.droidsound;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -19,7 +10,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -30,12 +20,9 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
-import android.view.View.OnCreateContextMenuListener;
-import android.view.View.OnLongClickListener;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -71,8 +58,10 @@ public class DroidSound extends Activity {
 
 			final String ok = "Music downloaded successfully.";
 			final String failed = "FAILED to download music";
+			
+			File modDir = new File(Environment.getExternalStorageDirectory() + "/MODS");
 
-			if(downloadMods(downloads)) {
+			if(HttpDownloader.downloadFiles(null, modDir.getPath(), downloads)) {
 				return ok;
 			} else {
 				return failed;
@@ -182,13 +171,6 @@ public class DroidSound extends Activity {
 
 		}
 	};
-
-	@Override
-	protected void onStart() {
-		// TODO Auto-generated method stub
-		super.onStart();
-		Log.v(TAG, "Droidsound started");
-	}
 
 	/** Called when the activity is first created. */
 	@Override
@@ -407,7 +389,7 @@ public class DroidSound extends Activity {
 			builder.setMessage(R.string.mod_dl_text)
 				.setCancelable(false).setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
-						new DroidSound.DownloadTask().execute("http://swimmer.se/droidsound/mods.zip");
+						new DownloadTask().execute("http://swimmer.se/droidsound/mods.zip");
 					}
 				}).setNegativeButton("No", new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int id) {
@@ -433,135 +415,6 @@ public class DroidSound extends Activity {
 	}
 
 
-	protected boolean downloadMods(String... urls) {
-
-		try {
-			InputStream in = null;
-			int response = -1;
-			int size;
-			byte[] buffer = new byte[16384];
-
-			String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
-
-			for(String u : urls) {
-
-				String uu = urlencode(u);
-				URL url = new URL(uu);
-
-				Log.v(TAG, "Opening URL " + uu);
-
-				URLConnection conn = url.openConnection();
-				if(!(conn instanceof HttpURLConnection))
-					throw new IOException("Not a HTTP connection");
-
-				HttpURLConnection httpConn = (HttpURLConnection) conn;
-				httpConn.setAllowUserInteraction(false);
-				httpConn.setInstanceFollowRedirects(true);
-				httpConn.setRequestMethod("GET");
-
-				Log.v(TAG, "Connecting");
-
-				httpConn.connect();
-
-				response = httpConn.getResponseCode();
-				if(response == HttpURLConnection.HTTP_OK) {
-					Log.v(TAG, "HTTP connected");
-					in = httpConn.getInputStream();
-
-					String ext = u.substring(u.lastIndexOf('.') + 1, u.length());
-					String baseName = new File(u).getName();
-
-					if(ext.compareToIgnoreCase("ZIP") == 0) {
-						ZipInputStream zip = new ZipInputStream(in);
-						ZipEntry e;
-						while((e = zip.getNextEntry()) != null) {
-							Log.v(TAG, "Found file " + e.getName());
-							FileOutputStream fos = new FileOutputStream(outDir + e.getName());
-							BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-							while((size = zip.read(buffer, 0, buffer.length)) != -1) {
-								bos.write(buffer, 0, size);
-							}
-							bos.flush();
-							bos.close();
-						}
-
-					} else {
-
-						Log.v(TAG, "Writing " + baseName);
-
-						FileOutputStream fos = new FileOutputStream(outDir + baseName);
-						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-
-						while((size = in.read(buffer)) != -1) {
-							bos.write(buffer, 0, size);
-						}
-						bos.flush();
-						bos.close();
-					}
-
-				} else
-					return false;
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			Log.w(TAG, "OOPS");
-			return false;
-		}
-		return true;
-	}
-
-	/*
-	boolean skip(int i) {
-
-		if(musicList != null) {
-    		musicListPos+=i;
-    		if(musicListPos >= 0 && musicListPos < musicList.length) {
-    			modName = musicList[musicListPos];
-    			Log.v(TAG, "Now skipping to " + modName);
-    			return true;
-    		}
-    		musicListPos = -1;
-		}
-		return false;
-		
-		if(modName == null)
-			return false;
-
-		File modDir = new File(modName).getParentFile();
-		if(modDir == null)
-			return false;
-		File[] files = modDir.listFiles();
-
-		if(files.length <= 0)
-			return false;
-
-		boolean getNext = false;
-		File lastFile = null;
-		for(File f : files) {
-			if(getNext) {
-				modName = f.getPath();
-				return true;
-			}
-			if(f.getPath().compareToIgnoreCase(modName) == 0) {
-				if(i < 0) {
-					if(lastFile != null) {
-						modName = lastFile.getPath();
-						return true;
-					}
-					return false;
-				}
-				getNext = true;
-			}
-
-			lastFile = f;
-		}
-
-		if(getNext)
-			return false;
-
-		return true;
-	}*/
-
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
@@ -577,44 +430,6 @@ public class DroidSound extends Activity {
 		super.onSaveInstanceState(outState);
 		outState.putString("title", title);
 		outState.putString("author", author);
-	}
-
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		// TODO Auto-generated method stub
-		// mediaCtrl.show(0);
-		// player.playMod("madness.mod");
-		// Log.v(TAG, "Playing music");
-		return true;
-	}
-
-	String urlencode(String s) {
-		StringBuilder t = new StringBuilder();
-
-		for(int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
-			switch(c) {
-			case 0x20:
-			case 0x24:
-			case 0x25:
-			case 0x26:
-			case 0x2B:
-			case 0x2C:
-				// case 0x2F:
-				// case 0x3A:
-			case 0x3B:
-			case 0x3D:
-			case 0x3F:
-			case 0x40:
-				t.append(String.format("%%%02x", (int) c));
-				break;
-			default:
-				t.append(c);
-				break;
-			}
-		}
-
-		return t.toString();
 	}
 
 	@Override

@@ -59,7 +59,7 @@ public class Player implements Runnable {
 		//}
 		
 		// Enough for 1000ms
-		bufSize = 44100*4;
+		bufSize = 44100*2;
 		
 		samples = new short [bufSize/2];
 	}
@@ -202,7 +202,6 @@ public class Player implements Runnable {
 		subSong = -1;
 
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
-
 		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
 
