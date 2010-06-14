@@ -12,7 +12,18 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
-
+/**
+ * 
+ * A ListView that presents a list of songs, and that maintains a connection to
+ * a music player for playing them.
+ * 
+ * Each song is a name and a reference. The reference can be either to a File or
+ * 
+ * If the File isDirectory() that item will be rendered differently
+ * 
+ * 
+ *
+ */
 public class PlayListView extends ListView {
 
     class PlayListAdapter extends BaseAdapter {

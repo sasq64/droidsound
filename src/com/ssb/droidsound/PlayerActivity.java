@@ -3,6 +3,7 @@ package com.ssb.droidsound;
 import java.io.File;
 
 import android.app.Activity;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -29,6 +30,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int subTune;
 	private int subTuneCount;
 	private boolean mIsPlaying = false;
+
+	private SongDatabase songDatabase;
 
 
 
@@ -105,6 +108,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
                 
         File modDir = new File("/sdcard/MODS");
         
+        songDatabase = new SongDatabase(this);
+        
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+			@Override
+			protected Void doInBackground(Void... arg) {
+				songDatabase.scan();
+				return null;
+			}
+        };
+        task.execute((Void)null);
+
         playListView.setDirectory(modDir);
         playListView.setPlayer(player);
         /*

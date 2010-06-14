@@ -13,6 +13,7 @@
 #define INFO_COPYRIGHT 5
 #define INFO_SUBSONGS 6
 #define INFO_STARTSONG 7
+#define INFO_GAME 8
 
 #include "gme/gme.h"
 
@@ -23,8 +24,9 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1canHandle(JNIEnv
 	return true;
 }
 
-Music_Emu *emu = NULL;
-int currentSong = 0;
+static Music_Emu *emu = NULL;
+static int currentSong = 0;
+static track_info_t lastTrack;
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
 {
@@ -37,6 +39,8 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1load(JNIEnv *env
 	if(!err)
 		err = gme_start_track(emu, 0);
 
+	if(!err)
+		err = gme_track_info(emu, &lastTrack, 0);
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
 	return (err == NULL);
@@ -76,34 +80,30 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1seekTo(JNIEnv *e
 
 JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jint what)
 {
-	track_info_t track;
-	gme_err_t err = gme_track_info(emu, &track, 0);
-
 	switch(what)
 	{
 	case INFO_TITLE:
-		return env->NewStringUTF(track.song);
+		return env->NewStringUTF(lastTrack.song);
 	case INFO_AUTHOR:
-		return env->NewStringUTF(track.author);
+		return env->NewStringUTF(lastTrack.author);
 	case INFO_COPYRIGHT:
-		return env->NewStringUTF(track.copyright);
+		return env->NewStringUTF(lastTrack.copyright);
 	case INFO_TYPE:
-		return env->NewStringUTF(track.system);
+		return env->NewStringUTF(lastTrack.system);
+	case INFO_GAME:
+		return env->NewStringUTF(lastTrack.game);
 	}
 	return 0;
 }
 
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jint what)
 {
-	track_info_t track;
-	gme_err_t err = gme_track_info(emu, &track, currentSong);
-
 	switch(what)
 	{
 	case INFO_LENGTH:
-		return track.length;
+		return lastTrack.length;
 	case INFO_SUBSONGS:
-		return track.track_count;
+		return lastTrack.track_count;
 	case INFO_STARTSONG:
 		return 0;
 	}

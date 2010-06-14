@@ -23,6 +23,9 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1canHandle
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load
   (JNIEnv *, jobject, jbyteArray, jint);
 
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1loadInfo
+  (JNIEnv *, jobject, jbyteArray, jint);
+
 /*
  * Class:     com_ssb_droidsound_ModPlugin
  * Method:    N_unload

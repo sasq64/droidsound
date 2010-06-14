@@ -1,5 +1,9 @@
 package com.ssb.droidsound;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+
 public class TinySidPlugin implements DroidSoundPlugin {
 
 	static {
@@ -9,7 +13,11 @@ public class TinySidPlugin implements DroidSoundPlugin {
 	TinySidPlugin() {
 	}
 	
-	public boolean canHandle(String name) { return N_canHandle(name); }
+	public boolean canHandle(String name) { 
+		//return N_canHandle(name);
+		return name.toLowerCase().endsWith(".sid");
+	}
+
 	public boolean load(byte [] module, int size) { return N_load(module, size); }
 	public void unload() { N_unload(); }
 	
@@ -30,5 +38,21 @@ public class TinySidPlugin implements DroidSoundPlugin {
 	native public boolean N_setSong(int song);
 	native public String N_getStringInfo(int what);
 	native public int N_getIntInfo(int what);
+
+	@Override
+	public boolean loadInfo(File file) throws IOException {
+		boolean ok = load(file);
+		N_unload();
+		return ok;
+	}
+
+	@Override
+	public boolean load(File file) throws IOException {
+		int l = (int)file.length();
+		byte [] songBuffer = new byte [l];
+		FileInputStream fs = new FileInputStream(file);
+		fs.read(songBuffer);
+		return N_load(songBuffer, l); 
+	}
 
 }

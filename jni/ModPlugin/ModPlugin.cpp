@@ -28,7 +28,7 @@ jstring NewString(JNIEnv *env, const char *str)
 	char *ptr = temp;
 	while(*str) {
 		char c = *str++;
-		*ptr++ = c < 0xf0 ? c : '?';
+		*ptr++ = (c < 0x7f) && (c >= 0x20) ? c : '?';
 	}
 	*ptr++ = 0;
 	jstring j = env->NewStringUTF(temp);
@@ -81,7 +81,86 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1canHandle(JNIEnv
 
 ModPlugFile *mod = 0;
 const char *modType = "MOD";
-char author[128];
+char author[128] = "";
+char mod_name[128] = "";
+int mod_length = 0;
+
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
+{
+}
+
+
+void guessAuthor(ModPlugFile *mod)
+{
+	char temp[256];
+	int c = ModPlug_NumSamples(mod);
+	bool getNext = false;
+	*author = 0;
+	int noOf = -1;
+	int noSlash = -1;
+	int noCopy = -1;
+
+	for(int i=0; i<c; i++)
+	{
+		ModPlug_SampleName(mod, i, temp);
+
+		if(noSlash<0 && strchr(temp, '/') != NULL)
+		{
+			noSlash = i;
+		}
+
+		char *w = strtok(temp, " :");
+		while(w) {
+
+			if(getNext)
+			{
+				ModPlug_SampleName(mod, i, temp);
+				strcpy(author, w);
+				getNext = false;
+				break;
+			}
+
+			if(noCopy<0 && strcasecmp(w, "(C)") == 0)
+			{
+				noCopy = i;
+			}
+
+			if(noOf<0 && strcasecmp(w, "OF") == 0)
+			{
+				noOf = i;
+			}
+
+
+			if(strcasecmp(w, "BY") == 0)
+				getNext = true;
+			w = strtok(NULL, " :");
+		}
+		if(*author != 0)
+			break;
+	}
+
+	if(*author == 0)
+	{
+		if(noSlash >= 0)
+		{
+			ModPlug_SampleName(mod, noSlash, temp);
+			strcpy(author, temp);
+		}
+		else
+		if(noCopy >= 0)
+		{
+			ModPlug_SampleName(mod, noCopy, temp);
+			strcpy(author, temp);
+		}
+		else
+		if(noOf >= 0)
+		{
+			ModPlug_SampleName(mod, noOf, temp);
+			strcpy(author, temp);
+		}
+	}
+
+}
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
 {
@@ -99,77 +178,11 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load(JNIEnv *env
 
 	if(mod)
 	{
-		char temp[256];
-		int c = ModPlug_NumSamples(mod);
-		bool getNext = false;
-		*author = 0;
-		int noOf = -1;
-		int noSlash = -1;
-		int noCopy = -1;
-
-		for(int i=0; i<c; i++)
-		{
-			ModPlug_SampleName(mod, i, temp);
-
-			//__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Instrument '%s'", temp);
-
-			if(noSlash<0 && strchr(temp, '/') != NULL)
-			{
-				noSlash = i;
-			}
-
-			char *w = strtok(temp, " :");
-			while(w) {
-
-				if(getNext)
-				{
-					ModPlug_SampleName(mod, i, temp);
-					strcpy(author, w);
-					getNext = false;
-					break;
-				}
-
-				if(noCopy<0 && strcasecmp(w, "(C)") == 0)
-				{
-					noCopy = i;
-				}
-
-				if(noOf<0 && strcasecmp(w, "OF") == 0)
-				{
-					noOf = i;
-				}
-
-
-				if(strcasecmp(w, "BY") == 0)
-					getNext = true;
-				w = strtok(NULL, " :");
-			}
-			if(*author != 0)
-				break;
-		}
-
-		if(*author == 0)
-		{
-			if(noSlash >= 0)
-			{
-				ModPlug_SampleName(mod, noSlash, temp);
-				strcpy(author, temp);
-			}
-			else
-			if(noCopy >= 0)
-			{
-				ModPlug_SampleName(mod, noCopy, temp);
-				strcpy(author, temp);
-			}
-			else
-			if(noOf >= 0)
-			{
-				ModPlug_SampleName(mod, noOf, temp);
-				strcpy(author, temp);
-			}
-		}
-
+		guessAuthor(mod);
+		strcpy(mod_name, ModPlug_GetName(mod));
+		mod_length = ModPlug_GetLength(mod);
 	}
+
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
 	return (mod != 0);
@@ -218,15 +231,15 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getStringInfo(JNI
 	switch(what)
 	{
 	case INFO_AUTHOR:
-		if(mod)
+		//if(mod)
 			return NewString(env, author);
 		break;
 	case INFO_TITLE:
-		if(mod)
-			return NewString(env, ModPlug_GetName(mod));
+		//if(mod)
+			return NewString(env, mod_name);
 		break;
 	case INFO_TYPE:
-		if(mod)
+		//if(mod)
 			return NewString(env, modType);
 		break;
 	}
@@ -238,8 +251,8 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getIntInfo(JNIEnv *e
 	switch(what)
 	{
 	case INFO_LENGTH:
-		if(mod)
-			return  ModPlug_GetLength(mod);
+		//if(mod)
+			return  mod_length;
 	case INFO_SUBSONGS:
 		return 0;
 	case INFO_STARTSONG:
