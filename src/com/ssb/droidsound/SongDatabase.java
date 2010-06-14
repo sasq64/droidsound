@@ -250,11 +250,26 @@ public class SongDatabase {
 
 	}
 
-	public Cursor query(String query) {
-		rdb = mOpenHelper.getReadableDatabase();
-		//rdb.query("SONGS", columns, selection, selectionArgs, null, null, null);
-		rdb.close();
-		return null;
+	public Cursor search(String query) {
+		if(rdb == null) {
+			rdb = mOpenHelper.getReadableDatabase();
+		}
+	
+		String q = "%" + query + "%" ;
+		Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
+		Log.v(TAG, String.format("Got %d hits", c.getCount()));
+		return c;
+	}
+	
+	public void closeDB() {
+		if(rdb != null) {
+			rdb.close();
+			rdb = null;
+		}
+		if(db != null) {
+			db.close();
+			db = null;
+		}
 	}
 
 }

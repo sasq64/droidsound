@@ -2,18 +2,22 @@ package com.ssb.droidsound;
 
 import android.app.ListActivity;
 import android.app.SearchManager;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
+import android.widget.CursorAdapter;
+import android.widget.TextView;
 
 public class SearchableActivity extends ListActivity {
 	private static final String TAG = SearchableActivity.class.getSimpleName();
 
 	private SongDatabase songDatabase;
+
+	private Cursor cursor;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -25,33 +29,28 @@ public class SearchableActivity extends ListActivity {
 	    	songDatabase = new SongDatabase(this);
 	    	String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
-	    	Cursor cursor = songDatabase.query(query);
-	    	BaseAdapter adapter = new BaseAdapter() {				
+	    	cursor = songDatabase.search(query);
+	    	CursorAdapter adapter = new CursorAdapter(this, cursor) {
 				@Override
-				public View getView(int position, View convertView, ViewGroup parent) {
-					// TODO Auto-generated method stub
-					return null;
+				public void bindView(View view, Context context, Cursor cursor) {
+					((TextView)view).setText(cursor.getString(1));
 				}
-				
+
 				@Override
-				public long getItemId(int position) {
-					// TODO Auto-generated method stub
-					return position;
-				}
-				
-				@Override
-				public Object getItem(int position) {
-					// TODO Auto-generated method stub
-					return null;
-				}
-				
-				@Override
-				public int getCount() {
-					// TODO Auto-generated method stub
-					return 0;
+				public View newView(Context context, Cursor cursor, ViewGroup parent) {
+					TextView tv = new TextView(context);					
+					tv.setText(cursor.getString(1));
+					return tv;
 				}
 			};
 	    	setListAdapter(adapter);
 	    }
+	}
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		cursor.close();
+		songDatabase.closeDB();
 	}
 }

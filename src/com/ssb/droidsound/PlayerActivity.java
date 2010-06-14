@@ -120,7 +120,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
     			public void onDone() {
     				playListView.rescan();
     			}
-    		}, "/sdcard/MODS/", "http://swimmer.se/droidsound/mods.zip");	
+    		}, "/sdcard/MODS/",  "http://swimmer.se/droidsound/mods.zip");	
         }
         
         songDatabase = new SongDatabase(this);
