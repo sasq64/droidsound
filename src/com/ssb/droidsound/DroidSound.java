@@ -29,7 +29,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class DroidSound extends Activity {
-
 	private static final String TAG = "DroidSound";
 	private IPlayerService mService;
 	private TextView titleTextView;

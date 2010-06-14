@@ -107,6 +107,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
         
                 
         File modDir = new File("/sdcard/MODS");
+        if(!modDir.exists()) {
+        	modDir.mkdir();
+        }
+
+        if(modDir.listFiles().length < 1) {
+            HttpDownloader.downloadFiles(new HttpDownloader.Callback() {			
+    			@Override
+    			public void onDisplayProgress(int progress) {}
+
+    			@Override
+    			public void onDone() {
+    				playListView.rescan();
+    			}
+    		}, "/sdcard/MODS/", "http://swimmer.se/droidsound/mods.zip");	
+        }
         
         songDatabase = new SongDatabase(this);
         
@@ -120,18 +135,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
         task.execute((Void)null);
 
         playListView.setDirectory(modDir);
-        playListView.setPlayer(player);
-        /*
-        HttpDownloader.downloadFiles(new HttpDownloader.Callback() {			
-			@Override
-			public void onDisplayProgress(int progress) {}
-
-			@Override
-			public void onDone() {
-				playListView.rescan();
-			}
-		}, "/sdcard/MODS/", "http://swimmer.se/droidsound/mods.zip"); */
-      
+        playListView.setPlayer(player);      
     }
 	
 	@Override

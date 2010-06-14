@@ -125,18 +125,18 @@ public class PlayListView extends ListView {
 			}
 		});
 	}
-        
+
     public void setFiles(File [] files) {
     	this.files = files;
     	adapter.files = files;
     }
-    
+
     public void setDirectory(File parent) {
     	parentDir = topDir = parent;
     	files = parent.listFiles();
     	adapter.files = files;
     }
-    
+
     public void setPlayer(PlayerServiceConnection player) {
     	mPlayer = player;
     }
@@ -144,6 +144,4 @@ public class PlayListView extends ListView {
 	public void rescan() {
 		adapter.notifyDataSetChanged();		
 	}
-		
-
 }

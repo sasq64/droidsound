@@ -38,15 +38,20 @@ public class SongDatabase {
 
 		@Override
 		public void onCreate(SQLiteDatabase db) {
-			db.execSQL("CREATE TABLE " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," + "TITLE"
-					+ " TEXT," + "COMPOSER" + " TEXT," + "COPYRIGHT" + " TEXT," + "PRODUCT" + " TEXT," + "FORMAT"
-					+ " TEXT," + "LENGTH" + " INTEGER," + "PATH" + " TEXT," + "FILENAME" + " TEXT" + ");");
+			db.execSQL("CREATE TABLE " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"TITLE" + " TEXT," +
+					"COMPOSER" + " TEXT," +
+					"COPYRIGHT" + " TEXT," +
+					"PRODUCT" + " TEXT," +
+					"FORMAT" + " TEXT," +
+					"LENGTH" + " INTEGER," +
+					"PATH" + " TEXT," +
+					"FILENAME" + " TEXT" + ");");
 		}
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 			// TODO Auto-generated method stub
-
 		}
 	}
 
@@ -243,6 +248,13 @@ public class SongDatabase {
 		//	Log.v(TAG, "No need to scan files");
 		//}
 
+	}
+
+	public Cursor query(String query) {
+		rdb = mOpenHelper.getReadableDatabase();
+		//rdb.query("SONGS", columns, selection, selectionArgs, null, null, null);
+		rdb.close();
+		return null;
 	}
 
 }
