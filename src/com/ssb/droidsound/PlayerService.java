@@ -58,12 +58,12 @@ public class PlayerService extends Service {
 						if(info[i] instanceof String) {
 							cb.stringChanged(i, (String)info[i]);
 						} else if(info[i] == null) {
-							cb.stringChanged(i, (String)info[i]);
+							cb.stringChanged(i, null);
 						} else {
 							cb.intChanged(i, (Integer)info[i]);
 						}
 					} catch (RemoteException e) {
-						Log.v(TAG, "Removing callback becuase peer is gone");
+						Log.v(TAG, "Removing callback because peer is gone");
 						it.remove();
 					}
 				//}

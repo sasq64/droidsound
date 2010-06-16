@@ -256,7 +256,8 @@ public class SongDatabase {
 		}
 	
 		String q = "%" + query + "%" ;
-		Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
+		//Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
+		Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME" }, "TITLE LIKE ?", new String[] { q }, null, null, "COMPOSER");
 		Log.v(TAG, String.format("Got %d hits", c.getCount()));
 		return c;
 	}

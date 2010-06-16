@@ -30,19 +30,7 @@ public class SearchableActivity extends ListActivity {
 	    	String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
 	    	cursor = songDatabase.search(query);
-	    	CursorAdapter adapter = new CursorAdapter(this, cursor) {
-				@Override
-				public void bindView(View view, Context context, Cursor cursor) {
-					((TextView)view).setText(cursor.getString(1));
-				}
-
-				@Override
-				public View newView(Context context, Cursor cursor, ViewGroup parent) {
-					TextView tv = new TextView(context);					
-					tv.setText(cursor.getString(1));
-					return tv;
-				}
-			};
+	    	CursorAdapter adapter = new SongListAdapter(this, cursor);
 	    	setListAdapter(adapter);
 	    }
 	}
