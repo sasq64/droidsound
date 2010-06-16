@@ -11,20 +11,75 @@ import android.widget.BaseAdapter;
 import android.widget.CursorAdapter;
 import android.widget.TextView;
 
-public class SongListAdapter extends CursorAdapter {
+public class SongListAdapter extends BaseAdapter {
 	private static final String TAG = CursorAdapter.class.getSimpleName();
 
 	private Cursor mCursor;
 	private int headerIndex;
 	private int itemIndex;
 
+	private Context mContext;
+
 	public SongListAdapter(Context context, Cursor c) {
-		super(context, c);
+		super();
 		mCursor = c;
+		mContext = context;
 		headerIndex = mCursor.getColumnIndex("COMPOSER");
 		itemIndex = mCursor.getColumnIndex("TITLE");
 	}
 
+	@Override
+	public int getCount() {
+		// TODO Auto-generated method stub
+		return mCursor.getCount();
+	}
+
+	@Override
+	public Object getItem(int position) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public long getItemId(int position) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
+		String oldHeader = null;
+		if(position > 0) {
+			mCursor.moveToPosition(position-1);
+			oldHeader = mCursor.getString(headerIndex);
+			mCursor.moveToNext();
+		} else {
+			mCursor.moveToPosition(position);
+		}
+		
+		String item = mCursor.getString(itemIndex);
+		String header = mCursor.getString(headerIndex);
+		
+		if(convertView == null) {
+			convertView = inflater.inflate(R.layout.songlist_header, null);
+		}
+		TextView headerView = (TextView)((ViewGroup)convertView).getChildAt(0);
+		TextView itemView = (TextView)((ViewGroup)convertView).getChildAt(1);
+		if(!header.equals(oldHeader)) {
+			headerView.setText(header);
+			headerView.setVisibility(View.VISIBLE);
+		} else {
+			headerView.setVisibility(View.GONE);
+		}
+		itemView.setText(item);
+		
+		return convertView;
+		
+	}
+}
+
+/*
 	@Override
 	public void bindView(View view, Context context, Cursor cursor) {
 
@@ -124,5 +179,5 @@ public class SongListAdapter extends CursorAdapter {
 		
 		
 		
-	}
-}
+	} 
+} */

@@ -134,6 +134,7 @@ public class Player implements Runnable {
 					songBuffer = new byte [(int) fileSize];
 					FileInputStream fs = new FileInputStream(f);
 					fs.read(songBuffer);
+					fs.close();
 
 				}
 			} else {
@@ -143,6 +144,7 @@ public class Player implements Runnable {
 				songBuffer = new byte [(int) fileSize];
 				FileInputStream fs = new FileInputStream(f);
 				fs.read(songBuffer);
+				fs.close();
 			}
 
 		} catch (IOException e) {

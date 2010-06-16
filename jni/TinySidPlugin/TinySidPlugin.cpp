@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <android/log.h>
 #include "TinySidPlugin.h"
 #include "tiny/tinysid.h"
 
@@ -16,6 +17,19 @@
 ///extern void c64Init(void);
 //extern word c64SidLoad(char *filename, word *init_addr, word *play_addr, byte *sub_song_start, byte *max_sub_songs, byte *speed, char *name, char *author, char *copyright);
 
+static jstring NewString(JNIEnv *env, const char *str)
+{
+	static char temp[256];
+	char *ptr = temp;
+	while(*str) {
+		char c = *str++;
+		*ptr++ = (c < 0x7f) && (c >= 0x20) ? c : '?';
+	}
+	*ptr++ = 0;
+	jstring j = env->NewStringUTF(temp);
+	return j;
+}
+
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
 {
@@ -28,6 +42,9 @@ unsigned char subsongs, startsong, play_speed;
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "TinySidPlugin", "in load()");
+
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
 //	unsigned short LoadSIDFromMemory(void *pSidData, unsigned short *load_addr, unsigned short *init_addr, unsigned short *play_addr, unsigned char *subsongs, unsigned char *startsong, unsigned char *speed, unsigned short size);
 
@@ -36,12 +53,16 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1load(JNIEnv 
 		c64Init();
 		synth_init(44100);
 
+		__android_log_print(ANDROID_LOG_VERBOSE, "TinySidPlugin", "INIT");
+
 
 		memcpy(song_name, ptr + 0x16, 32);
 		memcpy(song_author, ptr + 0x36, 32);
 		memcpy(song_copyright, ptr + 0x56, 32);
 
 		song_name[32] = song_author[32] = song_copyright[32] = 0;
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "TinySidPlugin", "load sid");
 
 		LoadSIDFromMemory(ptr, &load_addr, &init_addr, &play_addr, &subsongs, &startsong, &play_speed, size);
 		cpuJSR(init_addr, startsong);
@@ -113,11 +134,11 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1getStringInfo
 	switch(what)
 	{
 	case INFO_TITLE:
-		return env->NewStringUTF(song_name);
+		return NewString(env, song_name);
 	case INFO_AUTHOR:
-		return env->NewStringUTF(song_author);
+		return NewString(env, song_author);
 	case INFO_COPYRIGHT:
-		return env->NewStringUTF(song_copyright);
+		return NewString(env, song_copyright);
 	}
 	return 0;
 }
