@@ -1,7 +1,6 @@
 package com.ssb.droidsound;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,6 +30,8 @@ public class SongDatabase {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 
 	private static class DbHelper extends SQLiteOpenHelper {
+		
+		boolean wasCreated = false;
 
 		public DbHelper(Context context) {
 			super(context, "songs", null, 1);
@@ -38,6 +39,7 @@ public class SongDatabase {
 
 		@Override
 		public void onCreate(SQLiteDatabase db) {
+			wasCreated = true;
 			db.execSQL("CREATE TABLE " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"TITLE" + " TEXT," +
 					"COMPOSER" + " TEXT," +
@@ -55,6 +57,10 @@ public class SongDatabase {
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 			// TODO Auto-generated method stub
+		}
+
+		public boolean newlyCreated() {
+			return wasCreated;
 		}
 	}
 
@@ -127,19 +133,6 @@ public class SongDatabase {
 		values.put("FILENAME", file.getName());
 		
 		return true;
-	}
-
-	private void updateFile(File f) {
-		ContentValues values = new ContentValues();
-		try {
-			if(checkModule(f, values)) {
-				Log.v(TAG, "Inserting...");
-				db.insert("SONGS", "TITLE", values);
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 	
 	private boolean hasChanged(File f) {
@@ -303,9 +296,8 @@ public class SongDatabase {
 					// Directory has been removed on disk, schedule for DELETE
 					deletes.add(fileName);
 				}
-
 			}
-			
+
 			dirCursor.close();
 			dirCursor = null;
 			
@@ -344,7 +336,11 @@ public class SongDatabase {
 		File f = new File("/sdcard/MODS");
 
 		SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
-		lastScan = prefs.getLong("lastScan", 0);
+		if(mOpenHelper.newlyCreated()) {
+			lastScan = 0;
+		} else {
+			lastScan = prefs.getLong("lastScan", 0);
+		}
 
 		Log.v(TAG, String.format("lastScan %d vs %d", lastScan, System.currentTimeMillis()));
 		//lastScan = 0;
