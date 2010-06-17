@@ -69,20 +69,22 @@ public class TinySidPlugin implements DroidSoundPlugin {
 		fs.read(copyright);
 		fs.close();
 		int o = 31;
-		while(o > 0 && name[o] == 0) {
+		while(o >= 0 && name[o] == 0) {
 			o -= 1;
 		}
-		nameInfo = new String(name, 0, o, "ISO-8859-1");
+		nameInfo = new String(name, 0, o+1, "ISO-8859-1");
+
 		o = 31;
-		while(o > 0 && name[o] == 0) {
+		while(o >= 0 && composer[o] == 0) {
 			o -= 1;
 		}
-		composerInfo = new String(composer, 0, o, "ISO-8859-1");
+		composerInfo = new String(composer, 0, o+1, "ISO-8859-1");
+		
 		o = 31;
-		while(o > 0 && name[o] == 0) {
+		while(o >= 0 && copyright[o] == 0) {
 			o -= 1;
 		}
-		copyrightInfo = new String(copyright, 0, o, "ISO-8859-1");
+		copyrightInfo = new String(copyright, 0, o+1, "ISO-8859-1");
 		
 		return true;
 		

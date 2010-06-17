@@ -3,8 +3,11 @@ package com.ssb.droidsound;
 import java.io.File;
 
 import android.app.Activity;
+import android.app.SearchManager;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
@@ -104,6 +107,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			}
 		});
+        
+        
+	    Intent intent = getIntent();
+
+	    if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
+	    	songDatabase = new SongDatabase(this);
+	    	String query = intent.getStringExtra(SearchManager.QUERY);
+	 		Log.v(TAG, "QUERY " + query);
+	    	//cursor = songDatabase.search(query);
+	    	//SongListAdapter adapter = new SongListAdapter(this, cursor);
+	    }
         
                 
         File modDir = new File("/sdcard/MODS");

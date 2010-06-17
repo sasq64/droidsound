@@ -28,18 +28,19 @@ import android.util.Log;
 
 public class SongDatabase {
 	private static final String TAG = SongDatabase.class.getSimpleName();
+	private static final String[] FILENAME_array = new String[] { "FILENAME" };
 
 	private static class DbHelper extends SQLiteOpenHelper {
 		
-		boolean wasCreated = false;
+		Context mContext;
 
 		public DbHelper(Context context) {
 			super(context, "songs", null, 1);
+			mContext = context;
 		}
 
 		@Override
 		public void onCreate(SQLiteDatabase db) {
-			wasCreated = true;
 			db.execSQL("CREATE TABLE " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"TITLE" + " TEXT," +
 					"COMPOSER" + " TEXT," +
@@ -52,15 +53,16 @@ public class SongDatabase {
 					"FILENAME" + " TEXT," +
 					"PATH" + " TEXT," +
 					"FLAGS" + " INTEGER" + ");");
+			Log.v(TAG, "Creating database");
+			SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
+			SharedPreferences.Editor editor = prefs.edit();
+			editor.putLong("lastScan", 0);
+			editor.commit();
 		}
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 			// TODO Auto-generated method stub
-		}
-
-		public boolean newlyCreated() {
-			return wasCreated;
 		}
 	}
 
@@ -86,10 +88,6 @@ public class SongDatabase {
 		}
 		if(file.length() > 2 * 1024 * 1024) {
 			System.gc();
-		}
-		
-		if(file.getName().startsWith("I_Wanna_Dance")) {
-			Log.v(TAG, "YO");
 		}
 
 		for(DroidSoundPlugin plugin : list) {
@@ -139,19 +137,21 @@ public class SongDatabase {
 		return (lastScan < f.lastModified());
 	}
 
-	private int scanFiles(File parentDir) {
-
-		int dirCount = -1;
+	private void scanFiles(File parentDir, boolean alwaysScan) {
+		
 		String parent = parentDir.getPath();
+		String[] parentArray = new String[] { parent };
+		
+		boolean hasChanged = hasChanged(parentDir);
+		if(alwaysScan)
+			hasChanged = true;
 		
 		Log.v(TAG, String.format("Entering '%s'", parent));
 
 		// We always need the directory from the database
-		Cursor dirCursor = rdb.query("DIRS", new String[] { "FILENAME", "FLAGS" }, "PATH=?", new String[] { parent }, 
-				null, null, null);
+		Cursor dirCursor = rdb.query("DIRS", FILENAME_array, "PATH=?", parentArray, null, null, null);
 		
-
-		if(hasChanged(parentDir)) {
+		if(hasChanged) {
 			
 			// This directory has changed so we need to list all files and compare them to the database
 
@@ -164,8 +164,7 @@ public class SongDatabase {
 			}
 
 			// Get all files from in this Path from the database
-			Cursor songCursor = rdb.query("SONGS", new String[] { "FILENAME" }, "PATH=?", new String[] { parent },
-					null, null, null);
+			Cursor songCursor = rdb.query("SONGS", FILENAME_array, "PATH=?", parentArray, null, null, null);
 	
 			Log.v(TAG, String.format("Datbase has %d entries, found %d files", songCursor.getCount(), files.size()));
 	
@@ -225,46 +224,12 @@ public class SongDatabase {
 				}
 			}
 			files = null;
-		} else {
-			Log.v(TAG, "!! Not scanning files");
-		}
+			
 
-		/// Time to deal with directories				
-		
-		if(!hasChanged(parentDir)) {
-			
-			// This directory has not been changed - only enter non-leaf or modified directories	
-			// Also we can safely iterate over the query instead of files since they should be in sync
-			
-			dirCount = dirCursor.getCount();
-	
-			int index = dirCursor.getColumnIndex("FILENAME");
-			int flindex = dirCursor.getColumnIndex("FLAGS");
-			// Iterate over database result and compare to hash set
-			while(dirCursor.moveToNext()) {
-				String fileName = dirCursor.getString(index);
-				int flags = dirCursor.getInt(flindex);
-				File f = new File(parentDir, fileName);
-				if((flags == 0) || hasChanged(f)) {
-					int c = scanFiles(f);
-					Log.v(TAG, String.format("Found %d dirs", c));
-					if(c == 0 && flags == 0) {
-						Log.v(TAG, String.format("Tagging Directory '%s/%s' as LEAF", parent, fileName));
-						ContentValues values = new ContentValues();
-						values.put("FLAGS", 1);
-						db.update("DIRS", values, "PATH=? AND FILENAME=?", new String[] { parent, fileName} );
-					}
-				} else {
-					Log.v(TAG, String.format("Skipping unchanged leaf directory '%s/%s' as LEAF", parent, fileName));
-				}
-			}
+			/// Time to deal with directories				
+
 						
-			dirCursor.close();
-			dirCursor = null;
-			
-		} else {
-
-			// This directory has changed so we need to list all directories and compare them to the database
+			// Here we list all directories and compare them to the database
 			
 			Set<String> dirs = new HashSet<String>();
 
@@ -275,22 +240,17 @@ public class SongDatabase {
 				}
 			}
 			
-			dirCount = dirs.size();
+			//Set<String> deletes = new HashSet<String>();
+			deletes.clear();
 			
-			// TODO: We should not enter unchanged leaf directories here, and also found LEAF -> NON-LEAF change
-			for(String s : dirs) {
-				scanFiles(new File(parentDir, s));
-			}			
-			
-			Set<String> deletes = new HashSet<String>();
-			
-			int index = dirCursor.getColumnIndex("FILENAME");
+			index = dirCursor.getColumnIndex("FILENAME");
 			// Iterate over database result and compare to hash set
 			while(dirCursor.moveToNext()) {
 				String fileName = dirCursor.getString(index);
 				if(dirs.contains(fileName)) {
 					// Directory is in both - all is OK
 					dirs.remove(fileName);
+					scanFiles(new File(parentDir, fileName), alwaysScan);
 				} else {
 					Log.v(TAG, String.format("Directory '%s' found in DB but not on disk, DELETING", fileName));
 					// Directory has been removed on disk, schedule for DELETE
@@ -300,14 +260,23 @@ public class SongDatabase {
 
 			dirCursor.close();
 			dirCursor = null;
+
+			// Iterate over newly added directories - these must be scanned regardless of modified date
+			for(String s : dirs) {
+				scanFiles(new File(parentDir, s), true);
+			}			
 			
 			if(deletes.size() > 0 || dirs.size() > 0) {
 				// We have database operations to perform
 				db.beginTransaction();
 				try {
 					for(String d : deletes) {
-						Log.v(TAG, "Deleting DIR...");
+						File f = new File(parent, d);
+						Log.v(TAG, String.format("Deleting DIR %s / %s", parent, d));
 						db.delete("DIRS", "PATH=? AND FILENAME=?", new String [] { parent, d} );
+						Log.v(TAG, String.format("Also removing %s", f.getPath() + "%"));
+						db.delete("DIRS", "PATH LIKE ?", new String [] { f.getPath() + "%" } );						
+						db.delete("SONGS", "PATH LIKE ?", new String [] { f.getPath() + "%" } );
 					}
 					
 					for(String s : dirs) {
@@ -326,23 +295,36 @@ public class SongDatabase {
 				}
 			}
 			
-			dirs = null;
+			dirs = null;			
+			
+		} else {
+			Log.v(TAG, "!! Not scanning files");
+			// This directory has not been changed
+			// We can now safely iterate over the query instead of files since they should be in sync
+			
+			if(dirCursor.getCount() > 0) {
+	
+				int index = dirCursor.getColumnIndex("FILENAME");
+				// Iterate over database result and compare to hash set
+				while(dirCursor.moveToNext()) {
+					String fileName = dirCursor.getString(index);
+					File f = new File(parentDir, fileName);
+					scanFiles(f, alwaysScan);
+				}
+			}
+						
+			dirCursor.close();
+			dirCursor = null;
 		}
-		
-		return dirCount;
 	}
 
 	public void scan() {
 		File f = new File("/sdcard/MODS");
 
 		SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
-		if(mOpenHelper.newlyCreated()) {
-			lastScan = 0;
-		} else {
-			lastScan = prefs.getLong("lastScan", 0);
-		}
+		lastScan = prefs.getLong("lastScan", 0);
 
-		Log.v(TAG, String.format("lastScan %d vs %d", lastScan, System.currentTimeMillis()));
+
 		//lastScan = 0;
 		//if(f.lastModified() > lastScan) {
 
@@ -353,8 +335,12 @@ public class SongDatabase {
 
 			rdb = mOpenHelper.getReadableDatabase();
 			db = mOpenHelper.getWritableDatabase();
+
 			long startTime = System.currentTimeMillis();
-			scanFiles(f);
+			
+			Log.v(TAG, String.format("lastScan %d vs %d", lastScan, startTime));
+
+			scanFiles(f, false);
 			SharedPreferences.Editor editor = prefs.edit();
 			editor.putLong("lastScan", startTime);
 			editor.commit();
