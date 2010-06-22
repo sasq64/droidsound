@@ -136,6 +136,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
     			}
     		}, "/sdcard/MODS/",  "http://swimmer.se/droidsound/mods.zip");	
         }
+
         
         songDatabase = new SongDatabase(this);
         
