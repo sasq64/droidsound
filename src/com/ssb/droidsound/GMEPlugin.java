@@ -15,14 +15,21 @@ public class GMEPlugin implements DroidSoundPlugin {
 	GMEPlugin() {
 	}
 	
+	@Override
 	public boolean canHandle(String name) { return N_canHandle(name); }
+	@Override
 	public void unload(Object song) { N_unload((Long)song); }
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
+	@Override
 	public int getSoundData(Object song, short [] dest, int size) { return N_getSoundData((Long)song, dest, size); }	
+	@Override
 	public boolean seekTo(Object song, int seconds) { return N_seekTo((Long)song, seconds); }
+	@Override
 	public boolean setTune(Object song, int tune) { return N_setTune((Long)song, tune); }
+	@Override
 	public String getStringInfo(Object song, int what) { return N_getStringInfo((Long)song, what); }
+	@Override
 	public int getIntInfo(Object song, int what) { return N_getIntInfo((Long)song, what); }
 
 	native public boolean N_canHandle(String name);
@@ -39,22 +46,8 @@ public class GMEPlugin implements DroidSoundPlugin {
 	public Object load(byte [] module, int size) { return N_load(module, size); }
 	
 	@Override
-	public Object[] loadInfo(File file) throws IOException {
-		Object [] info = new Object [SIZEOF_INFO];		
-		synchronized (staticLock) {			
-			Object song = load(file);		
-			info[INFO_TITLE] = getStringInfo(song, INFO_TITLE); 
-			info[INFO_AUTHOR] = getStringInfo(song, INFO_AUTHOR); 
-			info[INFO_COPYRIGHT] = getStringInfo(song, INFO_COPYRIGHT); 
-			info[INFO_TYPE] = getStringInfo(song, INFO_TYPE); 
-			info[INFO_GAME] = getStringInfo(song, INFO_GAME);
-			info[INFO_LENGTH] = getIntInfo(song, INFO_LENGTH);
-			info[INFO_STARTTUNE] = getIntInfo(song, INFO_STARTTUNE);
-			info[INFO_SUBTUNES] = getIntInfo(song, INFO_SUBTUNES);		
-			N_unload((Long)song);
-		}
-
-		return info;
+	public Object loadInfo(File file) throws IOException {
+		return load(file);
 	}
 
 	@Override

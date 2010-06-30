@@ -140,6 +140,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				songDatabase.scan();
 				return null;
 			}
+			@Override
+			protected void onPostExecute(Void result) {
+				playListView.rescan();				
+			}
         };
         task.execute((Void)null);
 

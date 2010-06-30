@@ -12,7 +12,7 @@ public class ModPlugin implements DroidSoundPlugin {
 
 	ModPlugin() {
 	}
-	
+
 	public boolean canHandle(String name) { return N_canHandle(name); }
 	
 	@Override
@@ -41,7 +41,6 @@ public class ModPlugin implements DroidSoundPlugin {
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
 		long song = N_load(songBuffer, l);
-		N_unload(song);
 		return song;
 	}
 
