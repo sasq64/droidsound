@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import com.ssb.droidsound.Player.SongInfo;
+
 import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
@@ -17,6 +19,7 @@ import android.os.RemoteException;
 import android.util.Log;
 
 public class PlayerService extends Service {
+	private static final String TAG = "PlayerService";
 	
 	// Flags
 	
@@ -38,69 +41,77 @@ public class PlayerService extends Service {
 	public static final int SONG_SUBSONG = 9;
 	public static final int SONG_TOTALSONGS = 10;
 	
+	public static final int SONG_STATE = 11;
+	
 	private Object info[];
 
 	protected String[] musicList;
 	protected int musicListPos;
     	
-	private static final String TAG = "Test";
 	private Player player;
 	private Thread playerThread;
 	private List<IPlayerServiceCallback> callbacks; 	
+
+	private SongInfo currentSongInfo = new SongInfo();
+
 	
 	private void performCallback(int...what) {
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
 		while(it.hasNext()) {
 			IPlayerServiceCallback cb = it.next();
 			for(int i : what) {
-				//if(info[i] != null) {
-					try {
-						if(info[i] instanceof String) {
-							cb.stringChanged(i, (String)info[i]);
-						} else if(info[i] == null) {
-							cb.stringChanged(i, null);
-						} else {
-							cb.intChanged(i, (Integer)info[i]);
-						}
-					} catch (RemoteException e) {
-						Log.v(TAG, "Removing callback because peer is gone");
-						it.remove();
+				try {
+					if(info[i] instanceof String) {
+						cb.stringChanged(i, (String)info[i]);
+					} else if(info[i] == null) {
+						cb.stringChanged(i, null);
+					} else {
+						cb.intChanged(i, (Integer)info[i]);
 					}
-				//}
+				} catch (RemoteException e) {
+					Log.v(TAG, "Removing callback because peer is gone");
+					it.remove();
+				}
 			}
 		}
 	}
 
 	
     private Handler mHandler = new Handler() {
+
 		@Override
         public void handleMessage(Message msg) {
         	//Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
             switch (msg.what) {
-                case 0:
-                	String text [] = (String [])msg.obj;
-                	if(text[0] == null || text[0].length() == 0) {
+                case Player.MSG_NEWSONG:
+                	
+                	player.getSongInfo(currentSongInfo);
+                	if(currentSongInfo.title == null || currentSongInfo.title.length() == 0) {
                 		File f = new File((String)info[SONG_FILENAME]);                	
                 		info[SONG_TITLE] = f.getName();
-                	} else {
-                		info[SONG_TITLE] = text[0];
                 	}
-					info[SONG_AUTHOR] = text[1];
-					info[SONG_COPYRIGHT] = text[2];
-					info[SONG_FORMAT] = text[3];
-					info[SONG_LENGTH] = (Integer)msg.arg1;
-					info[SONG_TOTALSONGS] = (Integer)(msg.arg2 & 0xffff);
-					info[SONG_SUBSONG] = (Integer)(msg.arg2>>16);
-					performCallback(SONG_FILENAME, SONG_AUTHOR, SONG_TITLE, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS);
+
+                	info[SONG_TITLE] = currentSongInfo.title;
+					info[SONG_AUTHOR] = currentSongInfo.author;
+					info[SONG_COPYRIGHT] = currentSongInfo.copyright;
+					info[SONG_FORMAT] = currentSongInfo.type;
+					info[SONG_LENGTH] = currentSongInfo.length;
+					info[SONG_TOTALSONGS] = currentSongInfo.subTunes;
+					info[SONG_SUBSONG] = currentSongInfo.startTune;
+					info[SONG_STATE] = 1;
+					performCallback(SONG_FILENAME, SONG_AUTHOR, SONG_TITLE, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_STATE);
                 	break;
-                case 1:
+                case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
                 	playNextSong();
                     break;
-                case 3:
+                case Player.MSG_PROGRESS:
                 	info[SONG_POS] = (Integer)msg.arg1;
                 	performCallback(SONG_POS);
     				break;
+                case Player.MSG_STATE:
+                	info[SONG_STATE] = (Integer)msg.arg1;
+                	performCallback(SONG_STATE);
                 default:
                     super.handleMessage(msg);
             }
@@ -251,13 +262,11 @@ public class PlayerService extends Service {
 					return;
 				}				
 			}
-			callbacks.add(cb);
-			// TODO Auto-generated method stub			
+			callbacks.add(cb);			
 		}
 
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
-			// TODO Auto-generated method stub
 			if(player.isActive()) {
 				player.paused(!play);
 				return true;
@@ -267,14 +276,12 @@ public class PlayerService extends Service {
 
 		@Override
 		public void stop() throws RemoteException {
-			// TODO Auto-generated method stub
 			player.stop();			
 		}
 
 
 		@Override
 		public boolean seekTo(int msec) throws RemoteException {
-			// TODO Auto-generated method stub
 			player.seekTo(msec);
 			info[SONG_POS] = msec;
 			performCallback(SONG_POS);
@@ -283,7 +290,6 @@ public class PlayerService extends Service {
 
 		@Override
 		public boolean setSubSong(int song) throws RemoteException {
-			// TODO Auto-generated method stub
 			player.setSubSong(song);
 			info[SONG_SUBSONG] = (Integer)song;
 			performCallback(SONG_SUBSONG);
@@ -293,8 +299,7 @@ public class PlayerService extends Service {
 
 		@Override
 		public void setFlags(int flags) throws RemoteException {
-			// TODO Auto-generated method stub
-			
+			// TODO Auto-generated method stub			
 		}
 
 		@Override
@@ -322,6 +327,13 @@ public class PlayerService extends Service {
 	
     @Override
     public IBinder onBind(Intent intent) {
+    	Log.v(TAG, "BOUND");
     	return mBinder;
+    }
+    
+    @Override
+    public boolean onUnbind(Intent intent) {
+    	Log.v(TAG, "UNBOUND");
+    	return super.onUnbind(intent);
     }
 }

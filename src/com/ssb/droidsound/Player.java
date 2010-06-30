@@ -15,36 +15,76 @@ import java.util.List;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+/*
+ * The Player thread 
+ */
 public class Player implements Runnable {
-
 	private static final String TAG = "Player";
+	
+	public enum State {
+		STOPPED,
+		PAUSED,
+		PLAYING;
+	};
+
+	public enum Command {
+		NO_COMMAND,
+		STOP, // Unload and stop if playing
+		PLAY, // Play new file or last file
+
+		// Only when Playing:
+		PAUSE,
+		UNPAUSE,
+		SET_POS,
+		SET_TUNE,	
+	};
+	
+	public static final int MSG_NEWSONG = 0;
+	public static final int MSG_DONE = 2;
+	public static final int MSG_STATE = 1;
+	public static final int MSG_PROGRESS = 3;
+	
+	public static class SongInfo {
+		String title;
+		String author;
+		String copyright;
+		String type;
+		int length;
+		int subTunes;
+		int startTune;		
+	};
+	
+	private Handler mHandler;
+	
+	// Audio data
 	private short [] samples;
-	private DroidSoundPlugin currentPlugin;
-	
-	private DroidSoundPlugin [] plugins;
-	
-	private String modToPlay;
-	private String modName;
 	private AudioTrack audioTrack;
 	private int bufSize;
-	private boolean doStop;
-	volatile private boolean playing;
+
+	// Plugins
+	private DroidSoundPlugin currentPlugin;	
+	private DroidSoundPlugin [] plugins;
+	
+	
+	// Incoming state
+	private Object cmdLock = new Object();
+	private Command command = Command.NO_COMMAND;
+	private Object argument;
+	
+	
+	// Player state
 	private int currentPosition;
-	private int moduleLength;
-	//private String moduleTitle;
-	//private String moduleAuthor;
-	private int seekTo;
-	private Handler mHandler;
 	private int noPlayWait;
 	private int lastPos;
-	private boolean setPaused;
-	private int subSong;
-	//private Uri uriToPlay;
+	private SongInfo currentSong = new SongInfo();
+	
+	private Object songRef;
+	
+	private volatile State currentState = State.STOPPED;
 
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
@@ -60,25 +100,23 @@ public class Player implements Runnable {
 		
 		// Enough for 1000ms
 		bufSize = 44100*2;
-		
+
 		samples = new short [bufSize/2];
 	}
 
-    public void startMod() {
-    	
-    	synchronized (this) {
-    		modName = modToPlay;  
-    		modToPlay = null;
-		}
-    	
+    private void startSong(String songName) {
+    	    	
+    	if(currentPlugin != null) {
+    		currentPlugin.unload(songRef);
+    	}
     	currentPlugin = null;
     	
     	List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
     	
     	for(int i=0; i< plugins.length; i++) {
-    		if(plugins[i].canHandle(modName)) {    			
+    		if(plugins[i].canHandle(songName)) {    			
     			list.add(plugins[i]);
-    			Log.v(TAG, String.format("%s handled by %d", modName, i));
+    			Log.v(TAG, String.format("%s handled by %d", songName, i));
     		}
     	}
                 
@@ -88,15 +126,15 @@ public class Player implements Runnable {
 		try {
 			//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
 			
-			if(modName.startsWith("file://")) {
-				modName = modName.substring(7);
+			if(songName.startsWith("file://")) {
+				songName = songName.substring(7);
 			}
 			
-			if(modName.startsWith("http://")) {
+			if(songName.startsWith("http://")) {
 				
-				URL url = new URL(modName);
+				URL url = new URL(songName);
 				
-				Log.v(TAG, "Opening URL " + modName);
+				Log.v(TAG, "Opening URL " + songName);
 				
 				URLConnection conn = url.openConnection();
 				if (!(conn instanceof HttpURLConnection))
@@ -138,7 +176,7 @@ public class Player implements Runnable {
 
 				}
 			} else {
-				File f = new File(modName);
+				File f = new File(songName);
 				fileSize = f.length();
 				System.gc();
 				songBuffer = new byte [(int) fileSize];
@@ -149,15 +187,15 @@ public class Player implements Runnable {
 
 		} catch (IOException e) {
 			Log.w(TAG, "Could not load music!");
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 		
 		if(songBuffer != null) {
 			
 			for(DroidSoundPlugin plugin : list) {
 				Log.v(TAG, "Trying " + plugin.getClass().getName());
-				if(plugin.load(songBuffer, (int) fileSize)) {
+				songRef = plugin.load(songBuffer, (int) fileSize);
+				if(songRef != null) {
 					currentPlugin = plugin;
 					break;
 				}
@@ -166,118 +204,124 @@ public class Player implements Runnable {
 
 		if(currentPlugin != null) {
 			Log.w(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
-			String title = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
-			String author = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
-			String copyright = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
-			String type = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
-			int subsongs = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBSONGS);
-			int startsong = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_STARTSONG);
-			if(subsongs == -1)
-				subsongs = 0;
-			Log.v(TAG, String.format(":%s:%s:%s:%s:", title, author, copyright, type));
 			synchronized (this) {
-				moduleLength = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-				Log.v(TAG, "Got length " + moduleLength);
-				
-				Message msg = mHandler.obtainMessage();
-				msg.what = 0;
-				msg.arg1 = moduleLength;
-				msg.arg2 = subsongs | (startsong<<16);
-				msg.obj = new String [] { title, author, copyright, type };
-				mHandler.sendMessage(msg);
+				currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
+				currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
+				currentSong.copyright = getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT);
+				currentSong.type = getPluginInfo(DroidSoundPlugin.INFO_TYPE);
+				currentSong.subTunes = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_SUBTUNES);
+				currentSong.startTune = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_STARTTUNE);
+				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
+				if(currentSong.subTunes == -1)
+					currentSong.subTunes = 0;			
 			}
-			Log.w(TAG, "Modname is " + title);
-			audioTrack.play();				
-			playing = true;
 
+			Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type));
+
+			Message msg = mHandler.obtainMessage(MSG_NEWSONG);
+			mHandler.sendMessage(msg);
+
+			audioTrack.flush();
+			audioTrack.play();				
+			currentState = State.PLAYING;
+			currentPosition = 0;
+			lastPos = -1000;
         }
     }
+
+	private String getPluginInfo(int info) {
+		String s = currentPlugin.getStringInfo(songRef, info);
+		if(s == null) {
+			s = "";
+		}
+		return s;
+	}
 
 	@Override
 	public void run() {
 
 		currentPlugin = null;
 
-		doStop = false;
-		playing = false;
-		seekTo = -1;
-		subSong = -1;
-
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
 
 		while(noPlayWait < 50) {
-			try {
-				boolean doPlay = false;
-
-				synchronized (this) {
-					if(modToPlay != null)
-						doPlay = true;
-				}
-
-				if(doPlay) {
-					if(playing) {
-						audioTrack.stop();
-						currentPlugin.unload();
-					}
-					playing = false;
-					startMod();
-					currentPosition = lastPos = 0;
-					setPaused = false;
-				}
-				
-				if(doStop) {
-					if(playing) {
-						audioTrack.stop();
-						currentPlugin.unload();
-					}
-					audioTrack.stop();
-					doStop = false;
-					playing = false;
-					currentPosition = lastPos = 0;
-				}
-				
-				if(subSong >= 0) {
-					currentPlugin.setSong(subSong);
-					currentPosition = 0;
-					subSong = -1;
-				}
-				
-
-				if(playing && !setPaused) {					
-					noPlayWait = 0;
-					if(seekTo >= 0) {
-						if(currentPlugin.seekTo(seekTo)) {
-							currentPosition = lastPos = seekTo;
+			try {				
+				if(command != Command.NO_COMMAND) {
+					
+					Log.v(TAG, String.format("Command %s while in state %s", command.toString(), currentState.toString()));
+					
+					synchronized (cmdLock) {
+						switch(command) {
+						case PLAY:
+							startSong((String)argument);
+							break;
+						case STOP:
+							if(currentState != State.STOPPED) {
+								audioTrack.stop();
+								currentPlugin.unload(songRef);
+								currentState = State.STOPPED;
+								Message msg = mHandler.obtainMessage(MSG_STATE, 0, 0);
+								mHandler.sendMessage(msg);
+							}
+							break;
 						}
-						seekTo = -1;
-					}
-
-					int rc = currentPlugin.getSoundData(samples, bufSize/4);
-					//synchronized (this) {
-						currentPosition += ((rc * 1000) / 88200);
-						
-						if(currentPosition >= lastPos + 1000) {
-							Message msg = mHandler.obtainMessage();
-							msg.what = 3;
-							msg.arg1 = currentPosition;
-							mHandler.sendMessage(msg);
-							lastPos = currentPosition;
+						if(currentState != State.STOPPED) {
+							switch(command) {
+							case SET_POS:
+								int msec = (Integer)argument;
+								if(currentPlugin.seekTo(songRef, msec)) {
+									currentPosition = msec;
+									lastPos = -1000;
+								}
+							case SET_TUNE:
+								currentPlugin.setTune(songRef, (Integer)argument);
+								break;
+							case PAUSE :
+								if(currentState == State.PLAYING) {
+									currentState = State.PAUSED;
+									Message msg = mHandler.obtainMessage(MSG_STATE, 2, 0);
+									mHandler.sendMessage(msg);
+								}
+								audioTrack.pause();
+								break;
+							case UNPAUSE :
+								if(currentState == State.PAUSED) {
+									currentState = State.PLAYING;
+									Message msg = mHandler.obtainMessage(MSG_STATE, 1, 0);
+									mHandler.sendMessage(msg);
+								}
+								audioTrack.play();
+								break;
+							}								
 						}
-						
-					//}
-					if(rc > 0) {
-						audioTrack.write(samples, 0, rc);
-					} else {
-						playing = false;
-						Message msg = mHandler.obtainMessage();
-						msg.what = 1;
+						command = Command.NO_COMMAND;
+					}					
+				}
+				
+				if(currentState == State.PLAYING) {
+					
+					int len = currentPlugin.getSoundData(songRef, samples, bufSize/4);
+					currentPosition += ((len * 1000) / 88200);						
+					if(currentPosition >= lastPos + 1000) {
+						Message msg = mHandler.obtainMessage(MSG_PROGRESS, currentPosition, 0);
 						mHandler.sendMessage(msg);
+						lastPos = currentPosition;
 					}
-				} else {
-					if(!setPaused)
+					if(len > 0) {
+						audioTrack.write(samples, 0, len);
+					} else {
+						currentState = State.STOPPED;
+						Message msg = mHandler.obtainMessage(MSG_DONE);
+						mHandler.sendMessage(msg);
+					}	
+					noPlayWait = 0;
+				}
+				else {
+					if(currentState == State.STOPPED) {
 						noPlayWait++;
+					}
 					Thread.sleep(100);
 				}
 				
@@ -296,49 +340,59 @@ public class Player implements Runnable {
 		return currentPosition;
 	}
 	
-	synchronized int getLength() {
-		return moduleLength;
+	synchronized public boolean getSongInfo(SongInfo target) {		
+		target.title = new String(currentSong.title);
+		target.author = new String(currentSong.author);
+		target.copyright = new String(currentSong.copyright);
+		target.type = new String(currentSong.type);
+		target.length = currentSong.length;
+		target.subTunes = currentSong.subTunes;
+		target.startTune = currentSong.startTune;
+		return true;
 	}
 	
-	//synchronized String getTitle() {
-	//	return moduleTitle;
-	//}
 
-	//synchronized String getAuthor() {
-	//	return moduleAuthor;
-	//}
-
-	synchronized public void stop() {		
-		doStop = true;
+	public void stop() {		
+		synchronized (cmdLock) {
+			command = Command.STOP;
+		}
 	}
 	
-	synchronized public void paused(boolean pause) {
-		setPaused = pause;
+	public void paused(boolean pause) {
+		synchronized (cmdLock) {
+			if(pause) {
+				Log.v(TAG, "Pausing");
+				command = Command.PAUSE;
+			} else {
+				Log.v(TAG, "Unpausing");
+				command = Command.UNPAUSE;
+			}
+		}
 	}
 
-	synchronized public void seekTo(int pos) {
-		seekTo = pos;		
+	public void seekTo(int pos) {
+		synchronized (cmdLock) {
+			command = Command.SET_POS;
+			argument = pos;
+		}
 	}
 
-	synchronized void playMod(String mod) {
-		modToPlay = mod;
+	public void playMod(String mod) {
+		synchronized (cmdLock) {
+			command = Command.PLAY;
+			argument = mod;
+		}
 	}
 
 	public void setSubSong(int song) {
-		// TODO Auto-generated method stub
-		subSong = song;
-		
-	}
-
-	public void playMod(Uri uri) {
-		// TODO Auto-generated method stub
-		//uriToPlay = uri;
-		
+		synchronized (cmdLock) {
+			command = Command.SET_TUNE;
+			argument = song;
+		}
 	}
 
 	public boolean isActive() {
-		// TODO Auto-generated method stub
-		return playing;
+		return currentState != State.STOPPED;
 	}
 
 }

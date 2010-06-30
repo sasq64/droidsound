@@ -92,13 +92,14 @@ public class SongDatabase {
 
 		for(DroidSoundPlugin plugin : list) {
 			Log.v(TAG, "Trying " + plugin.getClass().getName());
-			if(plugin.loadInfo(file)) {
-				String title = plugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
-				String author = plugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
-				String copyright = plugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
-				String game = plugin.getStringInfo(DroidSoundPlugin.INFO_GAME);
-				String type = plugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
-				int length = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+			Object songRef = plugin.loadInfo(file);
+			if(songRef != null) {
+				String title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
+				String author = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
+				String copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
+				String game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
+				String type = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
+				int length = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 				
 				if(title == null || title.equals("")) {
 					title = game;
@@ -121,6 +122,8 @@ public class SongDatabase {
 				values.put("LENGTH", length);
 				values.put("PATH", file.getParentFile().getPath());
 				values.put("FILENAME", file.getName());
+				
+				plugin.unload(songRef);
 
 				return true;
 			}

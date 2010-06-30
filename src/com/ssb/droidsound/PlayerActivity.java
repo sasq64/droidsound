@@ -58,14 +58,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
         playButton.setOnClickListener(new OnClickListener() {			
 
 			@Override
-			public void onClick(View v) {
-				mIsPlaying = !mIsPlaying;
-				player.playPause(mIsPlaying);
-				if(mIsPlaying) {
-					playButton.setImageResource(R.drawable.mg_pause);
-				} else {
-					playButton.setImageResource(R.drawable.mg_forward);
-				}
+			public void onClick(View v) {				
+				player.playPause(!mIsPlaying);
 			}
 		});
         
@@ -177,6 +171,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case PlayerService.SONG_TOTALSONGS :
 			subTuneCount = value;
 			songDigitsText.setText(String.format("%02d:%02d [%02d/%02d]", songPos/60, songPos%60, subTune+1, subTuneCount));
+			break;
+		case PlayerService.SONG_STATE:
+			Log.v(TAG, String.format("State now %d", value));
+			if(value == 1) {
+				mIsPlaying = true;
+				playButton.setImageResource(R.drawable.mg_pause);
+			} else {
+				playButton.setImageResource(R.drawable.mg_forward);
+				mIsPlaying = false;
+			}
 			break;
 		}
 	}

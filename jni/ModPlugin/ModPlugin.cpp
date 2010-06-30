@@ -8,19 +8,21 @@
 #include <android/log.h> 
 #include <jni.h>
 
-#include "ModPlugin.h"
 #include "modplug/modplug.h"
+
+#include "com_ssb_droidsound_ModPlugin.h"
+
 //#include "modplug/libmodplug/it_defs.h"
 //#include "modplug/libmodplug/sndfile.h"
 
-#define INFO_TITLE 1
-#define INFO_AUTHOR 2
-#define INFO_LENGTH 3
-#define INFO_TYPE 4
-#define INFO_COPYRIGHT 5
-#define INFO_SUBSONGS 6
-#define INFO_STARTSONG 7
-
+#define INFO_TITLE 0
+#define INFO_AUTHOR 1
+#define INFO_LENGTH 2
+#define INFO_TYPE 3
+#define INFO_COPYRIGHT 4
+#define INFO_GAME 5
+#define INFO_SUBTUNES 6
+#define INFO_STARTTUNE 7
 
 jstring NewString(JNIEnv *env, const char *str)
 {
@@ -79,30 +81,40 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1canHandle(JNIEnv
 	return ok;
 }
 
-ModPlugFile *mod = 0;
-const char *modType = "MOD";
-char author[128] = "";
-char mod_name[128] = "";
-int mod_length = 0;
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
+struct ModInfo {
+	ModPlugFile *mod;
+	const char *modType;
+	char author[128];
+	char mod_name[128];
+	int mod_length;
+};
+
+//ModPlugFile *mod = 0;
+//const char *modType = "MOD";
+//char author[128] = "";
+//char mod_name[128] = "";
+//int mod_length = 0;
+
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
 }
 
 
-void guessAuthor(ModPlugFile *mod)
+
+void guessAuthor(ModInfo *info)
 {
 	char temp[256];
-	int c = ModPlug_NumSamples(mod);
+	int c = ModPlug_NumSamples(info->mod);
 	bool getNext = false;
-	*author = 0;
+	*info->author = 0;
 	int noOf = -1;
 	int noSlash = -1;
 	int noCopy = -1;
 
 	for(int i=0; i<c; i++)
 	{
-		ModPlug_SampleName(mod, i, temp);
+		ModPlug_SampleName(info->mod, i, temp);
 
 		if(noSlash<0 && strchr(temp, '/') != NULL)
 		{
@@ -114,8 +126,8 @@ void guessAuthor(ModPlugFile *mod)
 
 			if(getNext)
 			{
-				ModPlug_SampleName(mod, i, temp);
-				strcpy(author, w);
+				ModPlug_SampleName(info->mod, i, temp);
+				strcpy(info->author, w);
 				getNext = false;
 				break;
 			}
@@ -135,34 +147,34 @@ void guessAuthor(ModPlugFile *mod)
 				getNext = true;
 			w = strtok(NULL, " :");
 		}
-		if(*author != 0)
+		if(*info->author != 0)
 			break;
 	}
 
-	if(*author == 0)
+	if(*info->author == 0)
 	{
 		if(noSlash >= 0)
 		{
-			ModPlug_SampleName(mod, noSlash, temp);
-			strcpy(author, temp);
+			ModPlug_SampleName(info->mod, noSlash, temp);
+			strcpy(info->author, temp);
 		}
 		else
 		if(noCopy >= 0)
 		{
-			ModPlug_SampleName(mod, noCopy, temp);
-			strcpy(author, temp);
+			ModPlug_SampleName(info->mod, noCopy, temp);
+			strcpy(info->author, temp);
 		}
 		else
 		if(noOf >= 0)
 		{
-			ModPlug_SampleName(mod, noOf, temp);
-			strcpy(author, temp);
+			ModPlug_SampleName(info->mod, noOf, temp);
+			strcpy(info->author, temp);
 		}
 	}
 
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
 	jboolean iscopy;
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
@@ -174,37 +186,44 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load(JNIEnv *env
 	settings.mBits = 16;
 	ModPlug_SetSettings(&settings);
 
-	mod = ModPlug_Load(ptr, size);
+	ModPlugFile *mod = ModPlug_Load(ptr, size);
+	ModInfo *info = NULL;
 
 	if(mod)
 	{
-		guessAuthor(mod);
-		strcpy(mod_name, ModPlug_GetName(mod));
-		mod_length = ModPlug_GetLength(mod);
+		info = new ModInfo();
+		info->mod = mod;
+		guessAuthor(info);
+		strcpy(info->mod_name, ModPlug_GetName(mod));
+		info->mod_length = ModPlug_GetLength(mod);
+		info->modType = "MOD";
+
 	}
 
-
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
-	return (mod != 0);
+	return (long)info;
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_ModPlugin_N_1unload(JNIEnv *env, jobject obj)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_ModPlugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
 {
-	if(mod)
-		ModPlug_Unload(mod);
-	mod = NULL;
+	ModInfo *info = (ModInfo*)song;
+	if(info->mod)
+		ModPlug_Unload(info->mod);
+	delete info;
+	info = NULL;
 }
 
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jshortArray bArray, int size)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray bArray, int size)
 {
 	//unsigned char *ptr = (unsigned char *)env->GetDirectBufferAddress(buffer);
 	//int size = env->GetDirectBufferCapacity(buffer);
+	ModInfo *info = (ModInfo*)song;
 
 	jbyte *ptr = (jbyte*)env->GetShortArrayElements(bArray, NULL);
 
 	fprintf(stderr, "ptr %p, size %d\n", ptr, size);
-	int rc = ModPlug_Read(mod, (void*)ptr, size*2);
+	int rc = ModPlug_Read(info->mod, (void*)ptr, size*2);
 	/*for(int i=0; i<size; i++)
 	{
 		unsigned char x = ptr[i*2];
@@ -219,45 +238,46 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getSoundData(JNIEnv 
 	return rc / 2;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1seekTo(JNIEnv *env, jobject obj, int where)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1seekTo(JNIEnv *env, jobject obj, jlong song, int where)
 {
-	ModPlug_Seek(mod, where);
+	ModInfo *info = (ModInfo*)song;
+	ModPlug_Seek(info->mod, where);
 	return true;
 }
 
 
-JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jint what)
+JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
+	ModInfo *info = (ModInfo*)song;
 	switch(what)
 	{
 	case INFO_AUTHOR:
 		//if(mod)
-			return NewString(env, author);
+			return NewString(env, info->author);
 		break;
 	case INFO_TITLE:
 		//if(mod)
-			return NewString(env, mod_name);
+			return NewString(env, info->mod_name);
 		break;
 	case INFO_TYPE:
 		//if(mod)
-			return NewString(env, modType);
+			return NewString(env, info->modType);
 		break;
 	}
 	return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jint what)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
+	ModInfo *info = (ModInfo*)song;
 	switch(what)
 	{
 	case INFO_LENGTH:
-		//if(mod)
-			return  mod_length;
-	case INFO_SUBSONGS:
+		return info->mod_length;
+	case INFO_SUBTUNES:
 		return 0;
-	case INFO_STARTSONG:
+	case INFO_STARTTUNE:
 		return 0;
 	}
 	return -1;
-
 }

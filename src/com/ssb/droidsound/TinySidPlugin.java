@@ -3,17 +3,18 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 public class TinySidPlugin implements DroidSoundPlugin {
 
 	static {
 		System.loadLibrary("tinysid");
 	}
-
-	private String nameInfo;
-	private String composerInfo;
-	private String copyrightInfo;
+	
+	private static class Info {
+		String name;
+		String composer;
+		String copyright;
+	};
 
 	TinySidPlugin() {
 	}
@@ -23,39 +24,49 @@ public class TinySidPlugin implements DroidSoundPlugin {
 		return name.toLowerCase().endsWith(".sid");
 	}
 
-	public boolean load(byte [] module, int size) { return N_load(module, size); }
-	public void unload() { N_unload(); }
-	
-	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	public int getSoundData(short [] dest, int size) { return N_getSoundData(dest, size); }	
-	public boolean seekTo(int seconds) { return N_seekTo(seconds); }
-	public boolean setSong(int song) { return N_setSong(song); }
-	public String getStringInfo(int what) {
-		switch(what) {
-		case INFO_AUTHOR:
-			return composerInfo;
-		case INFO_COPYRIGHT:
-			return copyrightInfo;
-		case INFO_TITLE:
-			return nameInfo;
+	public void unload(Object song) {
+		if(song instanceof Info) {
+			return;
 		}
-		return null; //N_getStringInfo(what);
+		N_unload((Long)song);
 	}
-	public int getIntInfo(int what) { return N_getIntInfo(what); }
-
-	native public boolean N_canHandle(String name);
-	native public boolean N_load(byte [] module, int size);
-	native public void N_unload();
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(short [] dest, int size);	
-	native public boolean N_seekTo(int seconds);
-	native public boolean N_setSong(int song);
-	native public String N_getStringInfo(int what);
-	native public int N_getIntInfo(int what);
+	public int getSoundData(Object song, short [] dest, int size) { return N_getSoundData((Long)song, dest, size); }	
+	public boolean seekTo(Object song, int seconds) { return N_seekTo((Long)song, seconds); }
+	public boolean setTune(Object song, int tune) { return N_setTune((Long)song, tune); }
+	public int getIntInfo(Object song, int what) { return N_getIntInfo((Long)song, what); }
+
+	native public long N_load(byte [] module, int size);
+	native public void N_unload(long song);
+	
+	// Expects Stereo, 44.1Khz, signed, big-endian shorts
+	native public int N_getSoundData(long song, short [] dest, int size);	
+	native public boolean N_seekTo(long song, int seconds);
+	native public boolean N_setTune(long song, int tune);
+	native public String N_getStringInfo(long song, int what);
+	native public int N_getIntInfo(long song, int what);
+
+	public Object load(byte [] module, int size) { return N_load(module, size); }
+
+	public String getStringInfo(Object song, int what) {
+		if(song instanceof Info) {
+			Info info = (Info)song;
+			switch(what) {
+			case INFO_AUTHOR:
+				return info.composer;
+			case INFO_COPYRIGHT:
+				return info.copyright;
+			case INFO_TITLE:
+				return info.name;
+			}
+			return null;
+		}
+		return N_getStringInfo((Long)song, what);
+	}
 
 	@Override
-	public boolean loadInfo(File file) throws IOException {
+	public Object loadInfo(File file) throws IOException {
 
 		byte [] tag = new byte [4];
 		byte [] name = new byte [32];
@@ -72,26 +83,29 @@ public class TinySidPlugin implements DroidSoundPlugin {
 		while(o >= 0 && name[o] == 0) {
 			o -= 1;
 		}
-		nameInfo = new String(name, 0, o+1, "ISO-8859-1");
+		
+		Info info = new Info();
+		
+		info.name = new String(name, 0, o+1, "ISO-8859-1");
 
 		o = 31;
 		while(o >= 0 && composer[o] == 0) {
 			o -= 1;
 		}
-		composerInfo = new String(composer, 0, o+1, "ISO-8859-1");
+		info.composer = new String(composer, 0, o+1, "ISO-8859-1");
 		
 		o = 31;
 		while(o >= 0 && copyright[o] == 0) {
 			o -= 1;
 		}
-		copyrightInfo = new String(copyright, 0, o+1, "ISO-8859-1");
+		info.copyright = new String(copyright, 0, o+1, "ISO-8859-1");
 		
-		return true;
+		return info;
 		
 	}
 
 	@Override
-	public boolean load(File file) throws IOException {
+	public Object load(File file) throws IOException {
 		
 		loadInfo(file);
 		
