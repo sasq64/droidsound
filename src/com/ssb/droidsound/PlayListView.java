@@ -137,6 +137,23 @@ public class PlayListView extends ListView {
 			return 0;
 		}
 
+		public File[] getFiles() {
+			
+			int fnIndex = mSongCursor.getColumnIndex("FILENAME");
+			int pIndex = mSongCursor.getColumnIndex("PATH");
+			
+			File [] names = new File [ mSongCursor.getCount() ];
+						
+			mSongCursor.moveToFirst();
+			for(int i=0; i<names.length; i++) {
+				String fileName = mSongCursor.getString(fnIndex);
+				String pathName = mSongCursor.getString(pIndex);
+				names[i] = new File(pathName, fileName);
+				mSongCursor.moveToNext();
+			}			
+			return names;
+		}
+
 	}
 
     static class PlayListAdapter extends BaseAdapter {
@@ -256,7 +273,16 @@ public class PlayListView extends ListView {
 					if(file.isDirectory()) {
 						setDirectory(file);
 					} else {
-						mPlayer.playMod(file.getPath());
+						int index = 0;
+						File [] files = adapter.getFiles(); 
+						String [] names = new String [files.length];
+						for(int i=0; i<files.length; i++) {
+							if(files[i].equals(file)) {
+								index = i;
+							}
+							names[i] = files[i].getPath();
+						}
+						mPlayer.playList(names, index);
 					}
 				}
 			}

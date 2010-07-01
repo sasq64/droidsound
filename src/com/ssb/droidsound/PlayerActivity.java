@@ -10,7 +10,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.widget.ImageButton;
+import android.widget.SlidingDrawer;
 import android.widget.TextView;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
@@ -20,13 +22,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private ImageButton playButton;
 	private ImageButton backButton;
 	private ImageButton fwdButton;
-	private ImageButton back2Button;
-	private ImageButton fwd2Button;
+	private ImageButton stopButton;
 	
 	private TextView songTitleText;
 	private TextView songComposerText;
 	private TextView songDigitsText;
 	private PlayListView playListView;
+	private SlidingDrawer drawer;
 
 	private int songLength;
 	private int songPos;
@@ -48,43 +50,70 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
         playButton = (ImageButton) findViewById(R.id.play_button);
         backButton = (ImageButton) findViewById(R.id.back_button);
         fwdButton = (ImageButton) findViewById(R.id.fwd_button);
-        back2Button = (ImageButton) findViewById(R.id.sub_back_button);
-        fwd2Button = (ImageButton) findViewById(R.id.sub_fwd_button);
+        stopButton = (ImageButton) findViewById(R.id.stop_button);
         songTitleText = (TextView) findViewById(R.id.title_text);
         songComposerText = (TextView) findViewById(R.id.composer_text);
         songDigitsText = (TextView) findViewById(R.id.seconds_text);
         playListView = (PlayListView) findViewById(R.id.play_list);
+        drawer = (SlidingDrawer) findViewById(R.id.drawer);
+        
+        int top = drawer.getTop();
+        Log.v(TAG, String.format("TOP %d", top));
         
         playButton.setOnClickListener(new OnClickListener() {			
-
 			@Override
 			public void onClick(View v) {				
 				player.playPause(!mIsPlaying);
 			}
 		});
         
+        stopButton.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {				
+				player.stop();
+			}
+		});
+
         backButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
+				subTune -= 1;
+				if(subTune < 0) {
+					player.playPrev();
+				} else {
+					player.setSubSong(subTune);
+				}
+			}
+		});
+        
+        backButton.setOnLongClickListener(new OnLongClickListener() {			
+			@Override
+			public boolean onLongClick(View v) {
 				player.playPrev();
+				return true;
 			}
 		});
 
         fwdButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
-				player.playNext();
+				subTune += 1;
+				if(subTune < subTuneCount) {
+					player.setSubSong(subTune);
+				} else {
+					player.playNext();
+				}
 			}
 		});
         
-        back2Button.setOnClickListener(new OnClickListener() {			
+        fwdButton.setOnLongClickListener(new OnLongClickListener() {			
 			@Override
-			public void onClick(View v) {
-				if(subTune > 0) {
-					player.setSubSong(subTune-1);
-				}	
+			public boolean onLongClick(View v) {
+				player.playNext();
+				return true;
 			}
 		});
+        
         
         songDigitsText.setOnClickListener(new OnClickListener() {
 			@Override
@@ -92,16 +121,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 			}
 		});
-
-        fwd2Button.setOnClickListener(new OnClickListener() {			
-			@Override
-			public void onClick(View v) {
-				if(subTune <= subTuneCount) {
-					player.setSubSong(subTune+1);
-				}
-			}
-		});
-        
         
 	    Intent intent = getIntent();
 

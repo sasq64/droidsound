@@ -1,0 +1,16 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+    android:layout_width="fill_parent" android:layout_height="fill_parent" >
+<com.ssb.droidsound.AsciiTextView android:text="Name" android:textSize="10px" android:textColor="#ffffff"
+	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="4px" 
+	android:shadowColor="#ff000000" android:shadowDx="4" android:shadowDy="4"/>
+<com.ssb.droidsound.AsciiTextView android:id="@+id/title_text" android:textSize="20px" android:textColor="#000000"
+	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="4px" />
+<com.ssb.droidsound.AsciiTextView android:text="Composer" android:textSize="10px" android:textColor="#ffffff"
+	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="4px"
+	android:shadowColor="#ff000000" />
+<com.ssb.droidsound.AsciiTextView android:id="@+id/composer_text" android:textColor="#000000" android:textSize="20px"
+	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="4px" />
+<com.ssb.droidsound.AsciiTextView android:id="@+id/seconds_text" android:textSize="20px" android:textColor="#00ff00"
+ 	android:text="00:00 [01/01]" android:background="#000000" android:padding="4px"
+	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="4px" />
+</LinearLayout>

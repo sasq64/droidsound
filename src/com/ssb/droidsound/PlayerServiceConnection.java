@@ -137,6 +137,12 @@ public class PlayerServiceConnection implements ServiceConnection {
 		return false;
 	}
 	public void stop() {
+		try {
+			mService.stop();
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }
