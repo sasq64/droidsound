@@ -4,6 +4,8 @@
 
 #include <jni.h>
 
+#include <android/log.h>
+
 #include "com_ssb_droidsound_GMEPlugin.h"
 
 #define INFO_TITLE 0
@@ -39,27 +41,33 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1load(JNIEnv *env, j
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
 	Music_Emu *emu = NULL;
 
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "open %p %d", ptr, size);
+
+
 	gme_err_t err = gme_open_data(ptr, size, &emu, 44100);
 
-
-	if(!err)
-		err = gme_start_track(emu, 0);
-
-
-	track_info_t track;
-	err = gme_track_info(emu, &track, 0);
-
-	env->ReleaseByteArrayElements(bArray, ptr, 0);
+	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Done ERR '%s'", err);
 
 	if(!err) {
+		err = gme_start_track(emu, 0);
 
-		GMEInfo *info = new GMEInfo();
-		info->emu = emu;
-		info->currentSong = 0;
-		info->lastTrack = track;
-		return (jlong)info;
+		track_info_t track;
+		err = gme_track_info(emu, &track, 0);
+
+
+		if(!err) {
+
+			GMEInfo *info = new GMEInfo();
+			info->emu = emu;
+			info->currentSong = 0;
+			info->lastTrack = track;
+			env->ReleaseByteArrayElements(bArray, ptr, 0);
+			return (jlong)info;
+		}
 	}
 
+	env->ReleaseByteArrayElements(bArray, ptr, 0);
 	return NULL;
 }
 

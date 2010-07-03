@@ -53,6 +53,7 @@ public class Player implements Runnable {
 		String author;
 		String copyright;
 		String type;
+		String game;
 		int length;
 		int subTunes;
 		int startTune;		
@@ -110,6 +111,7 @@ public class Player implements Runnable {
     		currentPlugin.unload(songRef);
     	}
     	currentPlugin = null;
+    	currentState = State.STOPPED;
     	
     	List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
     	
@@ -209,9 +211,25 @@ public class Player implements Runnable {
 				currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
 				currentSong.copyright = getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT);
 				currentSong.type = getPluginInfo(DroidSoundPlugin.INFO_TYPE);
+				currentSong.game = getPluginInfo(DroidSoundPlugin.INFO_GAME);
 				currentSong.subTunes = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_SUBTUNES);
 				currentSong.startTune = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_STARTTUNE);
 				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
+				
+				
+				if(currentSong.title == null || currentSong.title.equals("")) {
+					currentSong.title = currentSong.game;
+					Log.v(TAG, String.format("G Title '%s'", currentSong.title));
+					if(currentSong.title == null || currentSong.title.equals("")) {
+						currentSong.title = songName;
+						if(currentSong.title.contains(".")) {
+							currentSong.title = currentSong.title.substring(0, currentSong.title.lastIndexOf('.'));
+						}
+						Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
+					}
+				}
+				
+				
 				if(currentSong.subTunes == -1)
 					currentSong.subTunes = 0;			
 			}

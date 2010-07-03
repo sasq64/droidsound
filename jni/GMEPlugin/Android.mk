@@ -24,5 +24,6 @@ LOCAL_SRC_FILES :=  GMEPlugin.cpp
 
 MY_SOURCES := $(wildcard $(LOCAL_PATH)/gme/*.cpp)
 LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
+LOCAL_LDLIBS := -llog
 
 include $(BUILD_SHARED_LIBRARY)

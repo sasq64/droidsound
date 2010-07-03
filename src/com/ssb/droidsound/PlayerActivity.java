@@ -7,13 +7,20 @@ import android.app.SearchManager;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
+import android.widget.AbsListView;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.RelativeLayout;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
+import android.widget.AbsListView.OnScrollListener;
+import android.widget.RelativeLayout.LayoutParams;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "DroidSound";
@@ -35,46 +42,92 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int subTune;
 	private int subTuneCount;
 	private boolean mIsPlaying = false;
+	private boolean controlsHidden = false;
 
 	private SongDatabase songDatabase;
 
+	private FrameLayout listFrame;
 
+	private View infoDisplay;
+
+	private View controls;
+
+	private String playingFile;
+
+
+	private static void Log(String fmt, Object...args) {
+		Log.v(TAG, String.format(fmt, args));
+	}
 
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        player.bindService(this, this);
-
-        setContentView(R.layout.player);
-        playButton = (ImageButton) findViewById(R.id.play_button);
-        backButton = (ImageButton) findViewById(R.id.back_button);
-        fwdButton = (ImageButton) findViewById(R.id.fwd_button);
-        stopButton = (ImageButton) findViewById(R.id.stop_button);
-        songTitleText = (TextView) findViewById(R.id.title_text);
-        songComposerText = (TextView) findViewById(R.id.composer_text);
-        songDigitsText = (TextView) findViewById(R.id.seconds_text);
-        playListView = (PlayListView) findViewById(R.id.play_list);
-        drawer = (SlidingDrawer) findViewById(R.id.drawer);
-        
-        int top = drawer.getTop();
-        Log.v(TAG, String.format("TOP %d", top));
-        
-        playButton.setOnClickListener(new OnClickListener() {			
+		super.onCreate(savedInstanceState);
+		player.bindService(this, this);
+		
+		setContentView(R.layout.player2);
+		playButton = (ImageButton) findViewById(R.id.play_button);
+		backButton = (ImageButton) findViewById(R.id.back_button);
+		fwdButton = (ImageButton) findViewById(R.id.fwd_button);
+		stopButton = (ImageButton) findViewById(R.id.stop_button);
+		songTitleText = (TextView) findViewById(R.id.title_text);
+		songComposerText = (TextView) findViewById(R.id.composer_text);
+		songDigitsText = (TextView) findViewById(R.id.seconds_text);
+		playListView = (PlayListView) findViewById(R.id.play_list);
+		drawer = (SlidingDrawer) findViewById(R.id.drawer);
+		listFrame = (FrameLayout) findViewById(R.id.play_list_frame);
+		infoDisplay = findViewById(R.id.info_display);
+		controls = findViewById(R.id.controls);
+		
+		//int top = drawer.getTop();
+		//Log.v(TAG, String.format("TOP %d", top));
+		
+		playListView.setOnScrollListener(new OnScrollListener() {
+			@Override
+			public void onScrollStateChanged(AbsListView view, int scrollState) {
+				// TODO Auto-generated method stub
+				Log("Scroll state %d", scrollState);
+				if(scrollState == SCROLL_STATE_FLING) {
+					if(!controlsHidden) {
+						controlsHidden = true;
+						controls.setVisibility(View.GONE);
+						infoDisplay.setVisibility(View.GONE);
+					}
+				}
+			}
+			
+			@Override
+			public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+				Log("Scroll %d/%d/%d", firstVisibleItem, visibleItemCount, totalItemCount);
+			}
+		});
+		
+		playButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {				
 				player.playPause(!mIsPlaying);
 			}
 		});
-        
-        stopButton.setOnClickListener(new OnClickListener() {			
+		
+		stopButton.setOnClickListener(new OnClickListener() {			
 			@Override
-			public void onClick(View v) {				
+			public void onClick(View v) {
+				
 				player.stop();
+				/*
+				View view = listFrame.getChildAt(0);
+				ViewGroup.LayoutParams oldParams = view.getLayoutParams();
+				Log.v(TAG, String.format("%s", oldParams.getClass().getSimpleName()));
+				//int rules [] = oldParams.getRules();
+				LayoutParams params = new LayoutParams(oldParams.width, oldParams.height);
+				params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+				view.setLayoutParams(params);
+				listFrame.requestLayout(); */
+				
 			}
 		});
 
-        backButton.setOnClickListener(new OnClickListener() {			
+		backButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
 				subTune -= 1;
@@ -85,8 +138,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			}
 		});
-        
-        backButton.setOnLongClickListener(new OnLongClickListener() {			
+		
+		backButton.setOnLongClickListener(new OnLongClickListener() {			
 			@Override
 			public boolean onLongClick(View v) {
 				player.playPrev();
@@ -94,7 +147,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 
-        fwdButton.setOnClickListener(new OnClickListener() {			
+		fwdButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
 				subTune += 1;
@@ -105,55 +158,65 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			}
 		});
-        
-        fwdButton.setOnLongClickListener(new OnLongClickListener() {			
+		
+		fwdButton.setOnLongClickListener(new OnLongClickListener() {			
 			@Override
 			public boolean onLongClick(View v) {
 				player.playNext();
 				return true;
 			}
 		});
-        
-        
-        songDigitsText.setOnClickListener(new OnClickListener() {
+		
+		
+		songDigitsText.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				
 			}
 		});
-        
-	    Intent intent = getIntent();
+		
+		Intent intent = getIntent();
+		
+		String modDirName;
+		File ext = Environment.getExternalStorageDirectory();
+		// Galaxy S Hack
+		if(new File(ext, "sd").isDirectory()) {
+			modDirName = ext + "/sd/MODS";
+		} else {
+			modDirName = ext + "/MODS";
+		}
+		
+		Log.v(TAG, String.format("MODDIR: %s", modDirName));
 
-	    if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
-	    	songDatabase = new SongDatabase(this);
-	    	String query = intent.getStringExtra(SearchManager.QUERY);
+		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
+			songDatabase = new SongDatabase(this, modDirName);
+			String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
-	    	//cursor = songDatabase.search(query);
-	    	//SongListAdapter adapter = new SongListAdapter(this, cursor);
-	    }
-        
-                
-        File modDir = new File("/sdcard/MODS");
-        if(!modDir.exists()) {
-        	modDir.mkdir();
-        }
+			//cursor = songDatabase.search(query);
+			//SongListAdapter adapter = new SongListAdapter(this, cursor);
+		}
+				
+		File modDir = new File(modDirName);
+		if(!modDir.exists()) {
+			modDir.mkdir();
+		}
+/*
+		if(modDir.listFiles().length < 1) {
+			HttpDownloader.downloadFiles(new HttpDownloader.Callback() {			
+				@Override
+				public void onDisplayProgress(int progress) {}
 
-        if(modDir.listFiles().length < 1) {
-            HttpDownloader.downloadFiles(new HttpDownloader.Callback() {			
-    			@Override
-    			public void onDisplayProgress(int progress) {}
-
-    			@Override
-    			public void onDone() {
-    				playListView.rescan();
-    			}
-    		}, "/sdcard/MODS/",  "http://swimmer.se/droidsound/mods.zip");	
-        }
-
-        
-        songDatabase = new SongDatabase(this);
-        
-        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+				@Override
+				public void onDone() {
+					playListView.rescan();
+				}
+			}, "/sdcard/MODS/",  "http://swimmer.se/droidsound/mods.zip");	
+		}
+*/
+		
+		songDatabase = new SongDatabase(this, modDirName);
+		
+		AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
 			@Override
 			protected Void doInBackground(Void... arg) {
 				songDatabase.scan();
@@ -163,12 +226,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			protected void onPostExecute(Void result) {
 				playListView.rescan();				
 			}
-        };
-        task.execute((Void)null);
+		};
+		task.execute((Void)null);
 
-        playListView.setDirectory(modDir);
-        playListView.setPlayer(player);      
-    }
+		playListView.setBaseDir(modDir);
+		playListView.setPlayer(player);	  
+	}
 	
 	@Override
 	protected void onDestroy() {
@@ -200,17 +263,49 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(value == 1) {
 				mIsPlaying = true;
 				playButton.setImageResource(R.drawable.mg_pause);
+				if(controlsHidden) {
+					controlsHidden = false;
+					controls.setVisibility(View.VISIBLE);
+					infoDisplay.setVisibility(View.VISIBLE);
+					playListView.redraw();
+					//playListView.setSelection(playingFile);
+
+				}
+				
 			} else {
 				playButton.setImageResource(R.drawable.mg_forward);
 				mIsPlaying = false;
+				if(value == 0) {
+					songTitleText.setText("");
+					songComposerText.setText("");
+					songDigitsText.setText("00:00 [00/00]");
+				}
 			}
 			break;
+		}
+	}
+	
+	@Override
+	public void onBackPressed() {
+		if(controlsHidden) {
+			if(controlsHidden) {
+				controlsHidden = false;
+				controls.setVisibility(View.VISIBLE);
+				infoDisplay.setVisibility(View.VISIBLE);
+				//playListView.redraw();
+			}
+		} else {
+			super.onBackPressed();
 		}
 	}
 
 	@Override
 	public void stringChanged(int what, String value) {
 		switch(what) {
+		case PlayerService.SONG_FILENAME :
+			playListView.setSelection(value);
+			playingFile = value;
+			break;
 		case PlayerService.SONG_TITLE :
 			songTitleText.setText(value);
 			break;

@@ -72,8 +72,10 @@ public class SongDatabase {
 	private long lastScan;
 	private Context mContext;
 	private DroidSoundPlugin[] plugins;
+	private String modDirName;
 
-	SongDatabase(Context context) {
+	SongDatabase(Context context, String mdName) {
+		modDirName = mdName;
 		mOpenHelper = new DbHelper(context);
 		mContext = context;
 	}
@@ -322,13 +324,14 @@ public class SongDatabase {
 	}
 
 	public void scan() {
-		File f = new File("/sdcard/MODS");
+		//File f = new File("/sdcard/sd/MODS");
+		File f = new File(modDirName);
 
 		SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		lastScan = prefs.getLong("lastScan", 0);
 
 
-		//lastScan = 0;
+		lastScan = 0;
 		//if(f.lastModified() > lastScan) {
 
 			plugins = new DroidSoundPlugin[3];

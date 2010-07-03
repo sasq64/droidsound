@@ -41,7 +41,10 @@ public class ModPlugin implements DroidSoundPlugin {
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
 		long song = N_load(songBuffer, l);
-		return song;
+		if(song == 0)
+			return null;
+		else
+			return song;
 	}
 
 	@Override
@@ -50,7 +53,11 @@ public class ModPlugin implements DroidSoundPlugin {
 		byte [] songBuffer = new byte [l];
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
-		return N_load(songBuffer, l); 
+		long rc =  N_load(songBuffer, l);
+		if(rc == 0)
+			return null;
+		else
+			return rc;
 	}
 
 	

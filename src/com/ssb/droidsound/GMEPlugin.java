@@ -43,7 +43,13 @@ public class GMEPlugin implements DroidSoundPlugin {
 	native public String N_getStringInfo(long song, int what);
 	native public int N_getIntInfo(long song, int what);
 
-	public Object load(byte [] module, int size) { return N_load(module, size); }
+	public Object load(byte [] module, int size) {
+		long rc = N_load(module, size);
+		if(rc == 0)
+			return null;
+		else
+			return rc;		
+	}
 	
 	@Override
 	public Object loadInfo(File file) throws IOException {
@@ -56,7 +62,7 @@ public class GMEPlugin implements DroidSoundPlugin {
 		byte [] songBuffer = new byte [l];
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
-		return N_load(songBuffer, l); 
+		return load(songBuffer, l);
 	}
 
 	
