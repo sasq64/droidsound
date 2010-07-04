@@ -4,11 +4,16 @@ import java.io.File;
 
 import android.app.Activity;
 import android.app.SearchManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
@@ -19,6 +24,7 @@ import android.widget.ImageButton;
 import android.widget.RelativeLayout;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.RelativeLayout.LayoutParams;
 
@@ -59,6 +65,29 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Log.v(TAG, String.format(fmt, args));
 	}
 
+	private void scan(SongDatabase db, boolean full) {
+		
+		final SongDatabase songDatabase = db;
+		final boolean fullScan = full;
+		
+		AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+			@Override
+			protected Void doInBackground(Void... arg) {
+				songDatabase.scan(fullScan);
+				return null;
+			}
+
+			@Override
+			protected void onPostExecute(Void result) {
+				Toast t = Toast.makeText(PlayerActivity.this, "Scan done", Toast.LENGTH_SHORT);
+				t.show();
+				playListView.rescan();				
+			}
+		};
+
+		task.execute((Void)null);
+	}
+	
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -175,31 +204,35 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 		
+		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
+		String searchPath = prefs.getString("searchPath", null);
+		if(searchPath == null) {
+			File ext = Environment.getExternalStorageDirectory();
+			searchPath = ext + "/MODS";
+			// Galaxy S Hack
+			if(new File(ext, "sd").isDirectory()) {
+				searchPath += (":" + ext + "/sd/MODS");
+			}
+			Editor editor = prefs.edit();
+			editor.putString("searchPath", searchPath);
+		}
+
 		Intent intent = getIntent();
 		
-		String modDirName;
-		File ext = Environment.getExternalStorageDirectory();
-		// Galaxy S Hack
-		if(new File(ext, "sd").isDirectory()) {
-			modDirName = ext + "/sd/MODS";
-		} else {
-			modDirName = ext + "/MODS";
-		}
-		
-		Log.v(TAG, String.format("MODDIR: %s", modDirName));
+		Log.v(TAG, String.format("SEARCHPATH: %s", searchPath));
 
 		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
-			songDatabase = new SongDatabase(this, modDirName);
+			songDatabase = new SongDatabase(this);
 			String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
 			//cursor = songDatabase.search(query);
 			//SongListAdapter adapter = new SongListAdapter(this, cursor);
 		}
 				
-		File modDir = new File(modDirName);
-		if(!modDir.exists()) {
-			modDir.mkdir();
-		}
+		//File modDir = new File(modDirName);
+		//if(!modDir.exists()) {
+		//	modDir.mkdir();
+		//}
 /*
 		if(modDir.listFiles().length < 1) {
 			HttpDownloader.downloadFiles(new HttpDownloader.Callback() {			
@@ -214,22 +247,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 */
 		
-		songDatabase = new SongDatabase(this, modDirName);
+		songDatabase = new SongDatabase(this);		
+		scan(songDatabase, false);
 		
-		AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
-			@Override
-			protected Void doInBackground(Void... arg) {
-				songDatabase.scan();
-				return null;
-			}
-			@Override
-			protected void onPostExecute(Void result) {
-				playListView.rescan();				
-			}
-		};
-		task.execute((Void)null);
-
-		playListView.setBaseDir(modDir);
+		playListView.setBaseDir("/MODS");
 		playListView.setPlayer(player);	  
 	}
 	
@@ -247,7 +268,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case PlayerService.SONG_POS :
 			songPos = value/1000;
-			
 			songDigitsText.setText(String.format("%02d:%02d [%02d/%02d]", songPos/60, songPos%60, subTune+1, subTuneCount));
 			break;
 		case PlayerService.SONG_SUBSONG :
@@ -314,4 +334,25 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		}
 	}
+		
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		menu.add(0, 10, 0, "Rescan").setIcon(R.drawable.ic_menu_music_library);
+		menu.add(0, 11, 0, "About").setIcon(android.R.drawable.ic_menu_info_details);
+		menu.add(0, 12, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		int choice = item.getItemId();
+		
+		if(choice == 10) {
+			scan(songDatabase, true);
+		}
+		
+		return true;
+	}
+
+	
 }

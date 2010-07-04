@@ -35,7 +35,7 @@ public class SongDatabase {
 		Context mContext;
 
 		public DbHelper(Context context) {
-			super(context, "songs", null, 1);
+			super(context, "songs", null, 2);
 			mContext = context;
 		}
 
@@ -53,29 +53,40 @@ public class SongDatabase {
 					"FILENAME" + " TEXT," +
 					"PATH" + " TEXT," +
 					"FLAGS" + " INTEGER" + ");");
+			db.execSQL("CREATE TABLE " + "SEARCHDIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"PATH" + " TEXT," +
+					"FLAGS" + " INTEGER," +
+					"LASTSCAN" + " INTEGER" + ");");
+
 			Log.v(TAG, "Creating database");
-			SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
-			SharedPreferences.Editor editor = prefs.edit();
-			editor.putLong("lastScan", 0);
-			editor.commit();
+			
+			
+			
+			
+			//SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
+			//SharedPreferences.Editor editor = prefs.edit();
+			//editor.putLong("lastScan", 0);
+			//editor.commit();
 		}
 
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 			// TODO Auto-generated method stub
+			db.execSQL("DROP TABLE SONGS;");
+			db.execSQL("DROP TABLE DIRS;");
+			db.execSQL("DROP TABLE SEARCHDIRS;");
+			onCreate(db);
 		}
 	}
 
 	private DbHelper mOpenHelper;
 	private SQLiteDatabase db;
 	private SQLiteDatabase rdb;
-	private long lastScan;
+	//private long lastScan;
 	private Context mContext;
 	private DroidSoundPlugin[] plugins;
-	private String modDirName;
 
-	SongDatabase(Context context, String mdName) {
-		modDirName = mdName;
+	SongDatabase(Context context) {
 		mOpenHelper = new DbHelper(context);
 		mContext = context;
 	}
@@ -138,20 +149,16 @@ public class SongDatabase {
 		return true;
 	}
 	
-	private boolean hasChanged(File f) {
-		return (lastScan < f.lastModified());
-	}
-
-	private void scanFiles(File parentDir, boolean alwaysScan) {
+	private void scanFiles(File parentDir, boolean alwaysScan, long lastScan) {
 		
 		String parent = parentDir.getPath();
 		String[] parentArray = new String[] { parent };
 		
-		boolean hasChanged = hasChanged(parentDir);
+		boolean hasChanged = (lastScan < parentDir.lastModified());
 		if(alwaysScan)
 			hasChanged = true;
 		
-		Log.v(TAG, String.format("Entering '%s'", parent));
+		Log.v(TAG, String.format("Entering '%s', lastScan %d", parent, lastScan));
 
 		// We always need the directory from the database
 		Cursor dirCursor = rdb.query("DIRS", FILENAME_array, "PATH=?", parentArray, null, null, null);
@@ -255,7 +262,7 @@ public class SongDatabase {
 				if(dirs.contains(fileName)) {
 					// Directory is in both - all is OK
 					dirs.remove(fileName);
-					scanFiles(new File(parentDir, fileName), alwaysScan);
+					scanFiles(new File(parentDir, fileName), alwaysScan, lastScan);
 				} else {
 					Log.v(TAG, String.format("Directory '%s' found in DB but not on disk, DELETING", fileName));
 					// Directory has been removed on disk, schedule for DELETE
@@ -268,7 +275,7 @@ public class SongDatabase {
 
 			// Iterate over newly added directories - these must be scanned regardless of modified date
 			for(String s : dirs) {
-				scanFiles(new File(parentDir, s), true);
+				scanFiles(new File(parentDir, s), true, lastScan);
 			}			
 			
 			if(deletes.size() > 0 || dirs.size() > 0) {
@@ -314,7 +321,7 @@ public class SongDatabase {
 				while(dirCursor.moveToNext()) {
 					String fileName = dirCursor.getString(index);
 					File f = new File(parentDir, fileName);
-					scanFiles(f, alwaysScan);
+					scanFiles(f, alwaysScan, lastScan);
 				}
 			}
 						
@@ -323,15 +330,21 @@ public class SongDatabase {
 		}
 	}
 
-	public void scan() {
+	public void scan(boolean full) {
 		//File f = new File("/sdcard/sd/MODS");
-		File f = new File(modDirName);
+		//File f = new File(modDirName);
 
 		SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
-		lastScan = prefs.getLong("lastScan", 0);
-
-
-		lastScan = 0;
+		String searchPath = prefs.getString("searchPath", "");
+		
+		String searchDirs [] = searchPath.split(File.pathSeparator);
+		long lastScans [] = new long [searchDirs.length];
+		for(int i=0; i<lastScans.length; i++) {
+			lastScans[i] = -1;
+		}
+		
+		//lastScan = prefs.getLong("lastScan", 0);
+		//lastScan = 0;
 		//if(f.lastModified() > lastScan) {
 
 			plugins = new DroidSoundPlugin[3];
@@ -344,19 +357,41 @@ public class SongDatabase {
 
 			long startTime = System.currentTimeMillis();
 			
-			Log.v(TAG, String.format("lastScan %d vs %d", lastScan, startTime));
+			Log.v(TAG, String.format("Searchpath %s", searchPath));
 
-			scanFiles(f, false);
-			SharedPreferences.Editor editor = prefs.edit();
-			editor.putLong("lastScan", startTime);
-			editor.commit();
-			lastScan = startTime;
+			Cursor cursor = rdb.query("SEARCHDIRS", new String[] { "PATH", "LASTSCAN" }, null, null, null, null, "TITLE");
+			
+			while(cursor.moveToNext()) {
+				String path = cursor.getString(0);
+				long lastScan = cursor.getInt(1);
+				for(int i=0; i<searchDirs.length; i++) {
+					if(searchDirs[i].equals(path)) {
+						lastScans[i] = lastScan;
+					}
+				}
+			}
+			
+			db.delete("SEARCHDIRS", null, null);
+
+			for(int i=0; i<searchDirs.length; i++) {
+				String s = searchDirs[i];
+				scanFiles(new File(s), full, lastScans[i]);
+				ContentValues values = new ContentValues();
+				values.put("PATH", s);
+				values.put("LASTSCAN", startTime);
+				db.insert("SEARCHDIRS", "PATH", values);
+			}
+			//SharedPreferences.Editor editor = prefs.edit();
+			//editor.putLong("lastScan", startTime);
+			//editor.commit();
+			//lastScan = startTime;
 
 			db.close();
 			rdb.close();
 		//} else {
 		//	Log.v(TAG, "No need to scan files");
-		//}
+
+			//}
 
 	}
 
@@ -387,14 +422,14 @@ public class SongDatabase {
 		if(rdb == null) {
 			rdb = mOpenHelper.getReadableDatabase();
 		}
-		return rdb.query("SONGS", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME" }, "PATH=?", new String[] { pathName }, null, null, "TITLE");	
+		return rdb.query("SONGS", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME" }, "PATH LIKE ?", new String[] { "%" + pathName }, null, null, "TITLE");	
 	}
 
 	public Cursor getDirsInPath(String pathName) {
 		if(rdb == null) {
 			rdb = mOpenHelper.getReadableDatabase();
 		}
-		return rdb.query("DIRS", new String[] { "_id", "FILENAME", "PATH", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FILENAME");			
+		return rdb.query("DIRS", new String[] { "_id", "FILENAME", "PATH", "FLAGS" }, "PATH LIKE ?", new String[] { "%" + pathName }, null, null, "FILENAME");			
 	}
 
 }

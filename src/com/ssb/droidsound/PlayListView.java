@@ -315,12 +315,12 @@ public class PlayListView extends ListView {
 	
 	private File selectedFile;
 	private String pathName;
-	private File baseDir;
+	private String baseDir;
 	
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/topaz_plus1200.ttf");
-		dataBase = new SongDatabase(context, null);
+		dataBase = new SongDatabase(context);
 		
 		adapter = new FileListAdapter(context, tf);
 		setAdapter(adapter);
@@ -334,7 +334,7 @@ public class PlayListView extends ListView {
 				if(file != null) {
 					selectedFile = file;
 					if(file.isDirectory()) {
-						setDirectory(file);
+						setDirectory(file.getPath());
 					} else {
 						int index = 0;
 						File [] files = adapter.getFiles(); 
@@ -358,10 +358,16 @@ public class PlayListView extends ListView {
    // 	dataBase = db;
     //}
 
-    public void setDirectory(File parent) {
-    	pathName = parent.getPath();    	
+    public void setDirectory(String parent) {
+    	
+    	int bi = parent.indexOf(baseDir);
+    	if(bi >= 0) {
+    		parent = parent.substring(bi);
+    	}
+
+    	pathName = parent;    	
     	adapter.setCursors(dataBase.getSongsInPath(pathName), dataBase.getDirsInPath(pathName), pathName);
-    	adapter.setHasParent(!pathName.equals(baseDir));
+    	//adapter.setHasParent(!pathName.equals(baseDir));
     }
 
     public void setPlayer(PlayerServiceConnection player) {
@@ -389,7 +395,7 @@ public class PlayListView extends ListView {
 		adapter.notifyDataSetChanged();
 	}
 
-	public void setBaseDir(File modDir) {
+	public void setBaseDir(String modDir) {
 		setDirectory(modDir);
 		baseDir = modDir;
 	}

@@ -21,7 +21,7 @@ public class SearchableActivity extends ListActivity {
 	    Intent intent = getIntent();
 
 	    if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
-	    	songDatabase = new SongDatabase(this, null);
+	    	songDatabase = new SongDatabase(this);
 	    	String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
 	    	cursor = songDatabase.search(query);
