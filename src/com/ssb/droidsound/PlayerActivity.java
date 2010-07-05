@@ -215,6 +215,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			Editor editor = prefs.edit();
 			editor.putString("searchPath", searchPath);
+			editor.commit();
 		}
 
 		Intent intent = getIntent();

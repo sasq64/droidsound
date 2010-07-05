@@ -35,7 +35,7 @@ public class SongDatabase {
 		Context mContext;
 
 		public DbHelper(Context context) {
-			super(context, "songs", null, 2);
+			super(context, "songs", null, 1);
 			mContext = context;
 		}
 
@@ -331,8 +331,6 @@ public class SongDatabase {
 	}
 
 	public void scan(boolean full) {
-		//File f = new File("/sdcard/sd/MODS");
-		//File f = new File(modDirName);
 
 		SharedPreferences prefs = mContext.getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		String searchPath = prefs.getString("searchPath", "");
@@ -342,57 +340,45 @@ public class SongDatabase {
 		for(int i=0; i<lastScans.length; i++) {
 			lastScans[i] = -1;
 		}
-		
-		//lastScan = prefs.getLong("lastScan", 0);
-		//lastScan = 0;
-		//if(f.lastModified() > lastScan) {
 
-			plugins = new DroidSoundPlugin[3];
-			plugins[0] = new TinySidPlugin();
-			plugins[1] = new ModPlugin();
-			plugins[2] = new GMEPlugin();
+		plugins = new DroidSoundPlugin[3];
+		plugins[0] = new TinySidPlugin();
+		plugins[1] = new ModPlugin();
+		plugins[2] = new GMEPlugin();
 
-			rdb = mOpenHelper.getReadableDatabase();
-			db = mOpenHelper.getWritableDatabase();
+		rdb = mOpenHelper.getReadableDatabase();
+		db = mOpenHelper.getWritableDatabase();
 
-			long startTime = System.currentTimeMillis();
-			
-			Log.v(TAG, String.format("Searchpath %s", searchPath));
+		long startTime = System.currentTimeMillis();
 
-			Cursor cursor = rdb.query("SEARCHDIRS", new String[] { "PATH", "LASTSCAN" }, null, null, null, null, "TITLE");
-			
-			while(cursor.moveToNext()) {
-				String path = cursor.getString(0);
-				long lastScan = cursor.getInt(1);
-				for(int i=0; i<searchDirs.length; i++) {
-					if(searchDirs[i].equals(path)) {
-						lastScans[i] = lastScan;
-					}
+		Log.v(TAG, String.format("Searchpath %s", searchPath));
+
+		Cursor cursor = rdb.query("SEARCHDIRS", new String[] { "PATH", "LASTSCAN" }, null, null, null, null, null);
+
+		while(cursor.moveToNext()) {
+			String path = cursor.getString(0);
+			Log.v(TAG, String.format("PATH: %s", path)); 
+			long lastScan = cursor.getInt(1);
+			for(int i=0; i<searchDirs.length; i++) {
+				if(searchDirs[i].equals(path)) {
+					lastScans[i] = lastScan;
 				}
 			}
-			
-			db.delete("SEARCHDIRS", null, null);
+		}
+		
+		db.delete("SEARCHDIRS", null, null);
 
-			for(int i=0; i<searchDirs.length; i++) {
-				String s = searchDirs[i];
-				scanFiles(new File(s), full, lastScans[i]);
-				ContentValues values = new ContentValues();
-				values.put("PATH", s);
-				values.put("LASTSCAN", startTime);
-				db.insert("SEARCHDIRS", "PATH", values);
-			}
-			//SharedPreferences.Editor editor = prefs.edit();
-			//editor.putLong("lastScan", startTime);
-			//editor.commit();
-			//lastScan = startTime;
+		for(int i=0; i<searchDirs.length; i++) {
+			String s = searchDirs[i];
+			scanFiles(new File(s), full, lastScans[i]);
+			ContentValues values = new ContentValues();
+			values.put("PATH", s);
+			values.put("LASTSCAN", startTime);
+			db.insert("SEARCHDIRS", "PATH", values);
+		}
 
-			db.close();
-			rdb.close();
-		//} else {
-		//	Log.v(TAG, "No need to scan files");
-
-			//}
-
+		db.close();
+		rdb.close();
 	}
 
 	public Cursor search(String query) {

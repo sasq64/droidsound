@@ -396,7 +396,7 @@ public class PlayListView extends ListView {
 	}
 
 	public void setBaseDir(String modDir) {
-		setDirectory(modDir);
 		baseDir = modDir;
+		setDirectory(modDir);
 	}
 }
