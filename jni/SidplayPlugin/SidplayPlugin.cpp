@@ -60,7 +60,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
 //	unsigned short LoadSIDFromMemory(void *pSidData, unsigned short *load_addr, unsigned short *init_addr, unsigned short *play_addr, unsigned char *subsongs, unsigned char *startsong, unsigned char *speed, unsigned short size);
 
-	if(strncmp((char*)ptr, "PSID", 4) == 0)
+	//if(strncmp((char*)ptr, "PSID", 4) == 0)
 	{
 		//c64Init();
 		//synth_init(44100);
