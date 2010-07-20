@@ -1,13 +1,14 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import com.ssb.droidsound.DroidSoundPlugin;
 
-public class TinySidPlugin implements DroidSoundPlugin {
+public class SidplayPlugin implements DroidSoundPlugin {
 
 	static {
-		System.loadLibrary("tinysid");
+		System.loadLibrary("sidplay2");
 	}
 	
 	private static class Info {
@@ -16,7 +17,7 @@ public class TinySidPlugin implements DroidSoundPlugin {
 		String copyright;
 	};
 
-	TinySidPlugin() {
+	public SidplayPlugin() {
 	}
 	
 	@Override
@@ -130,5 +131,4 @@ public class TinySidPlugin implements DroidSoundPlugin {
 		
 		return N_load(songBuffer, l); 
 	}
-
 }

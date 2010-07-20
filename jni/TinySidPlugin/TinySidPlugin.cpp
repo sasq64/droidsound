@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include <android/log.h>
-#include "com_ssb_droidsound_TinySidPlugin.h"
+#include "com_ssb_droidsound_plugins_TinySidPlugin.h"
 #include "tiny/tinysid.h"
 
 #define INFO_TITLE 0
@@ -32,7 +32,7 @@ static jstring NewString(JNIEnv *env, const char *str)
 }
 
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
 {
 	return true;
 }
@@ -41,7 +41,7 @@ static char song_name[33], song_author[33], song_copyright[33];
 static unsigned short load_addr, init_addr, play_addr;
 static unsigned char subsongs, startsong, play_speed;
 
-JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "TinySidPlugin", "in load()");
@@ -74,11 +74,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1load(JNIEnv *en
 	return 0;
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1unload(JNIEnv *, jobject, jlong song)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1unload(JNIEnv *, jobject, jlong song)
 {
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray sArray, jint size)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray sArray, jint size)
 {
 	jshort *ptr = env->GetShortArrayElements(sArray, NULL);
 	int orgsize = size;
@@ -119,18 +119,18 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1getSoundData(JNI
 	return orgsize - size;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1seekTo(JNIEnv *, jobject, jlong, jint)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1seekTo(JNIEnv *, jobject, jlong, jint)
 {
 	return false;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1setTune(JNIEnv *env, jobject obj, jlong song, jint tune)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1setTune(JNIEnv *env, jobject obj, jlong song, jint tune)
 {
 	cpuJSR(init_addr, song);
 	return true;
 }
 
-JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
+JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
 	switch(what)
 	{
@@ -144,7 +144,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1getStringInfo
 	return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_TinySidPlugin_N_1getIntInfo(JNIEnv *, jobject, jlong, jint what)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_TinySidPlugin_N_1getIntInfo(JNIEnv *, jobject, jlong, jint what)
 {
 	switch(what)
 	{

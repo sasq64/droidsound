@@ -1,8 +1,10 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+
+import com.ssb.droidsound.DroidSoundPlugin;
 
 public class ModPlugin implements DroidSoundPlugin {
 	
@@ -10,7 +12,7 @@ public class ModPlugin implements DroidSoundPlugin {
 		System.loadLibrary("modplug");
 	}
 
-	ModPlugin() {
+	public ModPlugin() {
 	}
 
 	public boolean canHandle(String name) { return N_canHandle(name); }

@@ -6,7 +6,7 @@
 
 #include <android/log.h>
 
-#include "com_ssb_droidsound_GMEPlugin.h"
+#include "com_ssb_droidsound_plugins_GMEPlugin.h"
 
 #define INFO_TITLE 0
 #define INFO_AUTHOR 1
@@ -21,7 +21,7 @@
 
 //#include "log.h"
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
 {
 	return true;
 }
@@ -36,7 +36,7 @@ struct GMEInfo {
 //static int currentSong = 0;
 //static track_info_t lastTrack;
 
-JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
 {
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
 	Music_Emu *emu = NULL;
@@ -71,7 +71,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1load(JNIEnv *env, j
 	return NULL;
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
 {
 	GMEInfo *info = (GMEInfo*)song;
 	if(info->emu)
@@ -79,7 +79,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1unload(JNIEnv *env, 
 	delete info;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1setTune(JNIEnv *env, jobject obj, jlong song, jint tune)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1setTune(JNIEnv *env, jobject obj, jlong song, jint tune)
 {
 	GMEInfo *info = (GMEInfo*)song;
 	gme_err_t err = gme_start_track(info->emu, tune);
@@ -88,7 +88,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1setTune(JNIEnv *
 }
 
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray bArray, int size)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray bArray, int size)
 {
 	GMEInfo *info = (GMEInfo*)song;
 	jshort *ptr = env->GetShortArrayElements(bArray, NULL);
@@ -99,7 +99,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1getSoundData(JNIEnv 
 	return size;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1seekTo(JNIEnv *env, jobject obj, jlong song, int where)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1seekTo(JNIEnv *env, jobject obj, jlong song, int where)
 {
 	GMEInfo *info = (GMEInfo*)song;
 	gme_seek(info->emu, where);
@@ -107,7 +107,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1seekTo(JNIEnv *e
 }
 
 
-JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
+JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
 	GMEInfo *info = (GMEInfo*)song;
 	switch(what)
@@ -126,7 +126,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1getStringInfo(JNI
 	return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_GMEPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
 	GMEInfo *info = (GMEInfo*)song;
 	switch(what)

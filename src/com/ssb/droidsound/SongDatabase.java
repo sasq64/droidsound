@@ -7,10 +7,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.ssb.droidsound.plugins.GMEPlugin;
+import com.ssb.droidsound.plugins.ModPlugin;
+import com.ssb.droidsound.plugins.TinySidPlugin;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
@@ -29,7 +34,7 @@ import android.util.Log;
 public class SongDatabase {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	private static final String[] FILENAME_array = new String[] { "FILENAME" };
-
+/*
 	private static class DbHelper extends SQLiteOpenHelper {
 		
 		Context mContext;
@@ -41,22 +46,32 @@ public class SongDatabase {
 
 		@Override
 		public void onCreate(SQLiteDatabase db) {
-			db.execSQL("CREATE TABLE " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-					"TITLE" + " TEXT," +
-					"COMPOSER" + " TEXT," +
-					"COPYRIGHT" + " TEXT," +
-					"FORMAT" + " TEXT," +
-					"LENGTH" + " INTEGER," +
-					"PATH" + " TEXT," +
-					"FILENAME" + " TEXT" + ");");
-			db.execSQL("CREATE TABLE " + "DIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-					"FILENAME" + " TEXT," +
-					"PATH" + " TEXT," +
-					"FLAGS" + " INTEGER" + ");");
-			db.execSQL("CREATE TABLE " + "SEARCHDIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-					"PATH" + " TEXT," +
-					"FLAGS" + " INTEGER," +
-					"LASTSCAN" + " INTEGER" + ");");
+			
+			try {
+				db.execSQL("CREATE TABLE " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+						"TITLE" + " TEXT," +
+						"COMPOSER" + " TEXT," +
+						"COPYRIGHT" + " TEXT," +
+						"FORMAT" + " TEXT," +
+						"LENGTH" + " INTEGER," +
+						"PATH" + " TEXT," +
+						"FILENAME" + " TEXT" + ");");
+			} catch (SQLException e) {
+			}
+			try {
+				db.execSQL("CREATE TABLE " + "DIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+						"FILENAME" + " TEXT," +
+						"PATH" + " TEXT," +
+						"FLAGS" + " INTEGER" + ");");
+			} catch (SQLException e) {
+			}
+			try {
+				db.execSQL("CREATE TABLE " + "SEARCHDIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+						"PATH" + " TEXT," +
+						"FLAGS" + " INTEGER," +
+						"LASTSCAN" + " INTEGER" + ");");
+			} catch (SQLException e) {
+			}
 
 			Log.v(TAG, "Creating database");
 			
@@ -80,15 +95,57 @@ public class SongDatabase {
 	}
 
 	private DbHelper mOpenHelper;
+*/
+	
+	
 	private SQLiteDatabase db;
 	private SQLiteDatabase rdb;
 	//private long lastScan;
 	private Context mContext;
 	private DroidSoundPlugin[] plugins;
+	
+	private String dbName;
+	
+	SQLiteDatabase getReadableDatabase() {
+		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY);
+	}
+
+	SQLiteDatabase getWritableDatabase() {
+		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
+	}
 
 	SongDatabase(Context context) {
-		mOpenHelper = new DbHelper(context);
+		//mOpenHelper = new DbHelper(context);
+		//dbName = "songs.db";
 		mContext = context;
+		
+		File myDir = context.getFilesDir();
+		
+		dbName = new File(myDir, "songs.db").getAbsolutePath();
+		Log.v(TAG, String.format("Database path %s", dbName));
+		
+		SQLiteDatabase db = getWritableDatabase();
+
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+				"TITLE" + " TEXT," +
+				"COMPOSER" + " TEXT," +
+				"COPYRIGHT" + " TEXT," +
+				"FORMAT" + " TEXT," +
+				"LENGTH" + " INTEGER," +
+				"PATH" + " TEXT," +
+				"FILENAME" + " TEXT" + ");");
+
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + "DIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+				"FILENAME" + " TEXT," +
+				"PATH" + " TEXT," +
+				"FLAGS" + " INTEGER" + ");");
+
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + "SEARCHDIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+				"PATH" + " TEXT," +
+				"FLAGS" + " INTEGER," +
+				"LASTSCAN" + " INTEGER" + ");");
+
+		db.close();
 	}
 
 	private boolean checkModule(File file, ContentValues values) throws IOException {
@@ -168,10 +225,15 @@ public class SongDatabase {
 			// This directory has changed so we need to list all files and compare them to the database
 
 			Set<String> files = new HashSet<String>();
-			// Add all existing files to a hash set
-			for(File f : parentDir.listFiles()) {
-				if(!f.isDirectory()) {
-					files.add(f.getName());
+			
+			File [] fileList = parentDir.listFiles();
+			
+			if(fileList != null) {
+				// Add all existing files to a hash set
+				for(File f : fileList) {
+					if(!f.isDirectory()) {
+						files.add(f.getName());
+					}
 				}
 			}
 
@@ -245,10 +307,12 @@ public class SongDatabase {
 			
 			Set<String> dirs = new HashSet<String>();
 
-			// Add all existing dirs to a hash set
-			for(File f : parentDir.listFiles()) {
-				if(f.isDirectory()) {
-					dirs.add(f.getName());
+			if(fileList != null) {
+				// Add all existing dirs to a hash set
+				for(File f : fileList) {
+					if(f.isDirectory()) {
+						dirs.add(f.getName());
+					}
 				}
 			}
 			
@@ -346,8 +410,8 @@ public class SongDatabase {
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
 
-		rdb = mOpenHelper.getReadableDatabase();
-		db = mOpenHelper.getWritableDatabase();
+		rdb = getReadableDatabase();
+		db = getWritableDatabase();
 
 		long startTime = System.currentTimeMillis();
 
@@ -383,7 +447,7 @@ public class SongDatabase {
 
 	public Cursor search(String query) {
 		if(rdb == null) {
-			rdb = mOpenHelper.getReadableDatabase();
+			rdb = getReadableDatabase();
 		}
 	
 		String q = "%" + query + "%" ;
@@ -406,14 +470,14 @@ public class SongDatabase {
 
 	public Cursor getSongsInPath(String pathName) {
 		if(rdb == null) {
-			rdb = mOpenHelper.getReadableDatabase();
+			rdb = getReadableDatabase();
 		}
 		return rdb.query("SONGS", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME" }, "PATH LIKE ?", new String[] { "%" + pathName }, null, null, "TITLE");	
 	}
 
 	public Cursor getDirsInPath(String pathName) {
 		if(rdb == null) {
-			rdb = mOpenHelper.getReadableDatabase();
+			rdb = getReadableDatabase();
 		}
 		return rdb.query("DIRS", new String[] { "_id", "FILENAME", "PATH", "FLAGS" }, "PATH LIKE ?", new String[] { "%" + pathName }, null, null, "FILENAME");			
 	}

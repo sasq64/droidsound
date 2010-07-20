@@ -12,6 +12,11 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ssb.droidsound.plugins.GMEPlugin;
+import com.ssb.droidsound.plugins.ModPlugin;
+import com.ssb.droidsound.plugins.SidplayPlugin;
+import com.ssb.droidsound.plugins.TinySidPlugin;
+
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -90,7 +95,7 @@ public class Player implements Runnable {
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
 		plugins = new DroidSoundPlugin [3];
-		plugins[0] = new TinySidPlugin();
+		plugins[0] = new SidplayPlugin();
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
 

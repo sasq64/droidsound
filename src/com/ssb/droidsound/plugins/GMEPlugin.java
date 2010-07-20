@@ -1,8 +1,10 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+
+import com.ssb.droidsound.DroidSoundPlugin;
 
 public class GMEPlugin implements DroidSoundPlugin {
 	
@@ -12,7 +14,7 @@ public class GMEPlugin implements DroidSoundPlugin {
 	
 	static Object staticLock = new Object();
 
-	GMEPlugin() {
+	public GMEPlugin() {
 	}
 	
 	@Override

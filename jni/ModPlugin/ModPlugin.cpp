@@ -10,7 +10,7 @@
 
 #include "modplug/modplug.h"
 
-#include "com_ssb_droidsound_ModPlugin.h"
+#include "com_ssb_droidsound_plugins_ModPlugin.h"
 
 //#include "modplug/libmodplug/it_defs.h"
 //#include "modplug/libmodplug/sndfile.h"
@@ -39,7 +39,7 @@ jstring NewString(JNIEnv *env, const char *str)
 
 
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
 {
 	const char spaces[] = "      ";
 	unsigned int ext = 0;
@@ -96,7 +96,7 @@ struct ModInfo {
 //char mod_name[128] = "";
 //int mod_length = 0;
 
-JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
 }
 
@@ -174,7 +174,7 @@ void guessAuthor(ModInfo *info)
 
 }
 
-JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
 	jboolean iscopy;
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
@@ -204,7 +204,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_ModPlugin_N_1load(JNIEnv *env, j
 	return (long)info;
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_ModPlugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
 {
 	ModInfo *info = (ModInfo*)song;
 	if(info->mod)
@@ -214,7 +214,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_ModPlugin_N_1unload(JNIEnv *env, 
 }
 
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray bArray, int size)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray bArray, int size)
 {
 	//unsigned char *ptr = (unsigned char *)env->GetDirectBufferAddress(buffer);
 	//int size = env->GetDirectBufferCapacity(buffer);
@@ -238,7 +238,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getSoundData(JNIEnv 
 	return rc / 2;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1seekTo(JNIEnv *env, jobject obj, jlong song, int where)
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1seekTo(JNIEnv *env, jobject obj, jlong song, int where)
 {
 	ModInfo *info = (ModInfo*)song;
 	ModPlug_Seek(info->mod, where);
@@ -246,7 +246,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_ModPlugin_N_1seekTo(JNIEnv *e
 }
 
 
-JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
+JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
 	ModInfo *info = (ModInfo*)song;
 	switch(what)
@@ -267,7 +267,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getStringInfo(JNI
 	return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_ModPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
 	ModInfo *info = (ModInfo*)song;
 	switch(what)
