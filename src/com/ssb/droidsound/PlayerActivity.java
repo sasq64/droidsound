@@ -251,7 +251,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		songDatabase = new SongDatabase(this);		
 		scan(songDatabase, false);
 		
-		playListView.setBaseDir("/MODS");
+		playListView.setBaseDir("/sdcard/MODS");
 		playListView.setPlayer(player);	  
 	}
 	

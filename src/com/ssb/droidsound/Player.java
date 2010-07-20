@@ -95,7 +95,8 @@ public class Player implements Runnable {
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
 		plugins = new DroidSoundPlugin [3];
-		plugins[0] = new SidplayPlugin();
+		//plugins[0] = new SidplayPlugin();
+		plugins[0] = new TinySidPlugin();
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
 
