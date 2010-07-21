@@ -236,17 +236,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		String searchPath = prefs.getString("searchPath", null);
-		if(searchPath == null) {
-			File ext = Environment.getExternalStorageDirectory();
-			searchPath = ext + "/MODS";
-			// Galaxy S Hack
-			if(new File(ext, "sd").isDirectory()) {
-				searchPath += (":" + ext + "/sd/MODS");
-			}
-			Editor editor = prefs.edit();
-			editor.putString("searchPath", searchPath);
-			editor.commit();
-		}
 
 		Intent intent = getIntent();
 		
@@ -377,9 +366,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int choice = item.getItemId();
-		
-		if(choice == 10) {
+		switch(choice) {
+		case 10:
 			scan(songDatabase, true);
+			break;
+		case 12:
+			player.stop();
+			finish();
 		}
 		
 		return true;

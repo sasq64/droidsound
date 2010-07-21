@@ -12,7 +12,7 @@ extern "C" {
  * Method:    NativeZipFile
  * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_NativeZipFile
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_openZipFile
   (JNIEnv *, jobject, jstring);
 
 /*
@@ -54,6 +54,9 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_findEntry
  */
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_readData
   (JNIEnv *, jobject, jint, jbyteArray);
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_closeZipFile
+  (JNIEnv *, jobject);
 
 #ifdef __cplusplus
 }

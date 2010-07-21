@@ -27,13 +27,23 @@ jstring NewString(JNIEnv *env, const char *str)
 
 static struct zip *zipFile;
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_NativeZipFile(JNIEnv *env, jobject obj, jstring fileName)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_openZipFile(JNIEnv *env, jobject obj, jstring fileName)
 {
 	jboolean iscopy;
 	const char *fname = env->GetStringUTFChars(fileName, &iscopy);
 	zipFile = zip_open(fname, 0, NULL);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "TinySidPlugin", "ZIPFile %p", zipFile);
+
 	env->ReleaseStringUTFChars(fileName, fname);
 }
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_closeZipFile(JNIEnv *, jobject)
+{
+	zip_close(zipFile);
+	zipFile = NULL;
+}
+
 
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_getCount(JNIEnv *env, jobject obj)
 {
@@ -69,6 +79,9 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_readData(JNIEnv *en
 	int len = env->GetArrayLength(target);
 	int rc = -1;
 	struct zip_file *zf = zip_fopen_index(zipFile, e, 0);
+
+	//__android_log_print(ANDROID_LOG_VERBOSE, "TinySidPlugin", "Reading %d bytes from %p", len, zf);
+
 	if(zf) {
 		rc = zip_fread(zf, ptr, len);
 		zip_fclose(zf);

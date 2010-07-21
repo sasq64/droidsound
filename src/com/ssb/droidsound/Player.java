@@ -93,7 +93,7 @@ public class Player implements Runnable {
 	private Object songRef;
 	
 	private File currentZipFile;
-	private ZipFile currentZip;
+	private NativeZipFile currentZip;
 	
 	private volatile State currentState = State.STOPPED;
 
@@ -156,7 +156,7 @@ public class Player implements Runnable {
 				if(currentZipFile != null && f.equals(currentZipFile)) {
 				} else {
 					currentZipFile = f;
-					currentZip = new ZipFile(f);
+					currentZip = new NativeZipFile(f);
 				}
 
 				String name = songName.substring(zipExt+5);

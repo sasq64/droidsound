@@ -1,11 +1,14 @@
 package com.ssb.droidsound;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -129,8 +132,8 @@ public class SongDatabase {
 		
 		SQLiteDatabase db = getWritableDatabase();
 		
-		db.execSQL("DROP TABLE IF EXISTS FILES ;");
-		db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
+		//db.execSQL("DROP TABLE IF EXISTS FILES ;");
+		//db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
 
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"PATH" + " TEXT," +
@@ -142,6 +145,8 @@ public class SongDatabase {
 				"COPYRIGHT" + " TEXT," +
 				"FORMAT" + " TEXT," +
 				"LENGTH" + " INTEGER" + ");");
+		
+		db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
 
 		/*db.execSQL("CREATE TABLE IF NOT EXISTS " + "DIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"FILENAME" + " TEXT," +
@@ -232,11 +237,41 @@ public class SongDatabase {
 		db.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
 		
 		Log.v(TAG, "OPEN");
-		ZipFile zfile = new ZipFile(zipFile);		
+		//ZipFile zfile = new ZipFile(zipFile);		
+		NativeZipFile zfile = new NativeZipFile(zipFile);
 		Log.v(TAG, "ENTRY");
+		/*
 		ZipEntry le = zfile.getEntry("C64Music/DOCUMENTS/Songlengths.txt");
 		if(le != null) {
-		}
+			data = new byte [(int) le.getSize()] ;
+			
+			InputStreamReader reader = new InputStreamReader(zfile.getInputStream(le));
+			BufferedReader breader = new BufferedReader(reader);
+			String line0, line1;
+
+			HashMap<String, String> hmap = new HashMap<String, String>();
+			
+			line0 = breader.readLine();
+			if(line0.equals("[Database]")) {
+				
+				while(true) {
+					line0 = breader.readLine();
+					if(line0 == null)
+						break;
+					line1 = breader.readLine();
+					if(line1 == null)
+						break;
+					String name = line0.substring(2);
+					int eq = line1.indexOf('=');
+					if(eq > 0) {
+						String length = line1.substring(eq+1);
+						//System.out.printf("%s = %s\n", name, length);
+						//int len = Integer.parseInt(arg0);
+						hmap.put(name, length);
+					}
+				}
+			}
+		}*/
 		
 		String baseName = zipFile.getPath();
 		int baseCount = baseName.length();
@@ -344,12 +379,13 @@ public class SongDatabase {
 
 				db.insert("FILES", "PATH", values);
 				
-				if((count++) % 200 == 0) {
-					Log.v(TAG, String.format("Added %s %s", name, author));
+				if((count % 200) == 0) {
+					Log.v(TAG, String.format("(%d) Added %s %s", count, name, author));
 				}
+				count++;
 				
-				if(count == 1000)
-					break;
+				//if(count == 1000)
+				//	break;
 			}
 			
 		}
@@ -607,7 +643,7 @@ public class SongDatabase {
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
-		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, TITLE");	
+		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
 	}
 
 }
