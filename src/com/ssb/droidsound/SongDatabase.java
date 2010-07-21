@@ -1,11 +1,17 @@
 package com.ssb.droidsound;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -30,7 +36,7 @@ import com.ssb.droidsound.plugins.TinySidPlugin;
 
 public class SongDatabase {
 	private static final String TAG = SongDatabase.class.getSimpleName();
-	private static final String[] FILENAME_array = new String[] { "FILENAME" };
+	private static final String[] FILENAME_array = new String[] { "FILENAME", "FLAGS" };
 /*
 	private static class DbHelper extends SQLiteOpenHelper {
 		
@@ -122,22 +128,27 @@ public class SongDatabase {
 		Log.v(TAG, String.format("Database path %s", dbName));
 		
 		SQLiteDatabase db = getWritableDatabase();
+		
+		db.execSQL("DROP TABLE IF EXISTS FILES ;");
+		db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
 
-		db.execSQL("CREATE TABLE IF NOT EXISTS " + "SONGS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+				"PATH" + " TEXT," +
+				"FILENAME" + " TEXT," +
+				"FLAGS" + " INTEGER," +
+
 				"TITLE" + " TEXT," +
 				"COMPOSER" + " TEXT," +
 				"COPYRIGHT" + " TEXT," +
 				"FORMAT" + " TEXT," +
-				"LENGTH" + " INTEGER," +
-				"PATH" + " TEXT," +
-				"FILENAME" + " TEXT" + ");");
+				"LENGTH" + " INTEGER" + ");");
 
-		db.execSQL("CREATE TABLE IF NOT EXISTS " + "DIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+		/*db.execSQL("CREATE TABLE IF NOT EXISTS " + "DIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"FILENAME" + " TEXT," +
 				"PATH" + " TEXT," +
 				"FLAGS" + " INTEGER" + ");");
 
-		/*db.execSQL("CREATE TABLE IF NOT EXISTS " + "SEARCHDIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + "SEARCHDIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"PATH" + " TEXT," +
 				"FLAGS" + " INTEGER," +
 				"LASTSCAN" + " INTEGER" + ");");*/
@@ -170,6 +181,10 @@ public class SongDatabase {
 				String game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
 				String type = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
 				int length = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
+				
+				if(type != null && type.equals("MOD")) {
+					author = file.getParentFile().getName();
+				}
 				
 				if(title == null || title.equals("")) {
 					title = game;
@@ -206,6 +221,158 @@ public class SongDatabase {
 		return true;
 	}
 	
+	
+	private void scanZip(File zipFile) throws ZipException, IOException {
+		
+		byte [] data;
+		
+		Log.v(TAG, String.format("Scanning %s", zipFile.getPath()));
+		
+		// Erase any previous entries
+		db.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
+		
+		Log.v(TAG, "OPEN");
+		ZipFile zfile = new ZipFile(zipFile);		
+		Log.v(TAG, "ENTRY");
+		ZipEntry le = zfile.getEntry("C64Music/DOCUMENTS/Songlengths.txt");
+		if(le != null) {
+		}
+		
+		String baseName = zipFile.getPath();
+		int baseCount = baseName.length();
+		// Basename = /sdcard/MODS/C64Music.zip
+
+		Log.v(TAG, "ENUM");
+		Enumeration<? extends ZipEntry> entries = zfile.entries();
+		
+		data = new byte [0x78];
+		
+		Set<String> pathSet = new HashSet<String>();
+		
+		Log.v(TAG, String.format("Scanning %d zip entries", zfile.size()));
+		int count = 0;
+		String lastPath = "";
+		while(entries.hasMoreElements()) {
+			ZipEntry ze = entries.nextElement();
+			
+			String n = ze.getName();
+			// n = C64Music/xxx ...
+			
+			if(n.endsWith(".sid")) {
+				
+				int slash = n.lastIndexOf('/');				
+				//int firstSlash =  n.indexOf('/');
+				
+				String fileName = n.substring(slash+1);
+				String path = baseName + "/" + n.substring(0, slash);
+				
+				
+				
+				if(!path.equals(lastPath)) {
+					// /sdcard/MODS/C64Music.zip/MUSICIANS/A-Z/Agemixer					
+					Log.v(TAG, String.format("Adding DIR %s", path));
+					pathSet.add(path);
+					slash = path.lastIndexOf('/');
+					while(slash > baseCount) {
+						Log.v(TAG, String.format("Adding DIR %s", path.substring(0, slash)));
+						pathSet.add(path.substring(0, slash));
+						slash = path.lastIndexOf('/', slash-1);
+					}					
+					lastPath = path;
+				}
+							
+				DataInputStream dis = new DataInputStream(zfile.getInputStream(ze));
+				dis.read(data);
+				
+				//int songs = (int)data[0x0f];
+				//int startSong = (int)data[0x11];
+				
+				//if(startSong == 0)
+				//	startSong = 1;
+				
+				int o = 0x35;
+				while(o >= 0x16 && data[o] == 0) {
+					o -= 1;
+				}
+				String name = new String(data, 0x16, o-0x15, "ISO-8859-1");
+	
+				o = 0x55;
+				while(o >= 0x36 && data[o] == 0) {
+					o -= 1;
+				}
+				String author = new String(data, 0x36, o-0x35, "ISO-8859-1");
+	
+				o = 0x75;
+				while(o >= 0x56 && data[o] == 0) {
+					o -= 1;
+				}
+				String copyright = new String(data, 0x56, o-0x55, "ISO-8859-1");
+
+				//String n = ze.getName().substring(8);
+				/*
+				System.out.printf("%s %s %s (%02d/%02d)\n", name, author, copyright, startSong, songs);
+				String length = hmap.get(n.substring(8));
+				int iLength = 0;
+				if(length != null) {					
+					String lens [] = length.split(" ");
+					System.out.printf("%s --- %d\n", length, lens.length);
+					if(lens.length > 1)
+						length = lens[startSong-1];
+					int colon = length.indexOf(':');
+					int min = Integer.parseInt(length.substring(0, colon));
+					int sec = Integer.parseInt(length.substring(colon+1, colon+3));
+					iLength = min*60+sec;
+					System.out.printf("%s %s ==> %d seconds\n", n, length, iLength);
+				} */
+				
+				//int year = 0;
+				//try {
+				//	year = Integer.parseInt(copyright.substring(0,4));
+				//} catch (NumberFormatException e) {
+				//}
+				
+
+				ContentValues values = new ContentValues();
+				values.put("PATH", path);
+				values.put("FILENAME", fileName);
+				values.put("TITLE", name);
+				values.put("COMPOSER", author);
+				values.put("COPYRIGHT", copyright);
+				values.put("FORMAT", "SID");
+				values.put("LENGTH", 0);
+				values.put("FLAGS", 1);
+
+				db.insert("FILES", "PATH", values);
+				
+				if((count++) % 200 == 0) {
+					Log.v(TAG, String.format("Added %s %s", name, author));
+				}
+				
+				if(count == 1000)
+					break;
+			}
+			
+		}
+		
+		zfile.close();
+
+		Log.v(TAG, String.format("Adding %d paths", pathSet.size()));
+		
+		for(String s : pathSet) {
+			ContentValues values = new ContentValues();
+			
+			int slash = s.lastIndexOf('/');
+			String fileName = s.substring(slash+1);
+			String path = s.substring(0, slash);
+			
+			values.put("PATH", path);
+			values.put("FILENAME", fileName);
+			values.put("FLAGS", 0);
+			db.insert("FILES", "PATH", values);
+		}
+		
+	}
+	
 	private void scanFiles(File parentDir, boolean alwaysScan, long lastScan) {
 		
 		String parent = parentDir.getPath();
@@ -216,40 +383,50 @@ public class SongDatabase {
 			hasChanged = true;
 		
 		Log.v(TAG, String.format("Entering '%s', lastScan %d", parent, lastScan));
+		if(hasChanged) {
+			Log.v(TAG, ">> Doing FULL scan");
+		}
 
-		// We always need the directory from the database
-		Cursor dirCursor = db.query("DIRS", FILENAME_array, "PATH=?", parentArray, null, null, null);
+		Cursor fileCursor = db.query("FILES", FILENAME_array, "PATH=?", parentArray, null, null, null);
+
+		// All files and directories
+		Set<String> files = new HashSet<String>();
 		
+		// Directories to scan later
+		Set<String> foundDirs = new HashSet<String>();
+		Set<String> foundDirsNew = new HashSet<String>();
+		Set<File> zipFiles = new HashSet<File>();
+		
+		File [] fileList = parentDir.listFiles();
+		
+		if(fileList != null) {
+			// Add all existing files to a hash set
+			for(File f : fileList) {
+				files.add(f.getName());
+			}
+		}
+
+		Log.v(TAG, String.format("Datbase has %d entries, found %d files/dirs", fileCursor.getCount(), files.size()));
+
 		if(hasChanged) {
 			
-			// This directory has changed so we need to list all files and compare them to the database
-
-			Set<String> files = new HashSet<String>();
-			
-			File [] fileList = parentDir.listFiles();
-			
-			if(fileList != null) {
-				// Add all existing files to a hash set
-				for(File f : fileList) {
-					if(!f.isDirectory()) {
-						files.add(f.getName());
-					}
-				}
-			}
-
-			// Get all files from in this Path from the database
-			Cursor songCursor = db.query("SONGS", FILENAME_array, "PATH=?", parentArray, null, null, null);
-	
-			Log.v(TAG, String.format("Datbase has %d entries, found %d files", songCursor.getCount(), files.size()));
-	
 			Set<String> deletes = new HashSet<String>();
 			
-			int index = songCursor.getColumnIndex("FILENAME");
+			Log.v(TAG, "Comparing DB to FS");
+			
+			int index = fileCursor.getColumnIndex("FILENAME");
+			int flindex = fileCursor.getColumnIndex("FLAGS");
 			// Iterate over database result and compare to hash set
-			while(songCursor.moveToNext()) {
-				String fileName = songCursor.getString(index);
+			while(fileCursor.moveToNext()) {
+				String fileName = fileCursor.getString(index);
+				int flags = fileCursor.getInt(flindex);
 				if(files.contains(fileName)) {
-					// File is in both - all is OK
+					// File/dir is in both
+					
+					// Add directories to scanlist
+					if(new File(parentDir, fileName).isDirectory()) {
+						foundDirs.add(fileName);
+					}
 					files.remove(fileName);
 				} else {
 					Log.v(TAG, String.format("'%s' found in DB but not on disk, DELETING", fileName));
@@ -261,11 +438,11 @@ public class SongDatabase {
 			for(String s : files) {
 				Log.v(TAG, String.format("!! File '%s' not in database", s));
 			}
-	
+				
 			// Close cursor (important since we call ourselves recursively below)
-			songCursor.close();
-			songCursor = null;
-
+			fileCursor.close();
+			fileCursor = null;
+	
 			if(files.size() > 0 || deletes.size() > 0) {
 				// We have database operations to perform
 				db.beginTransaction();
@@ -273,21 +450,42 @@ public class SongDatabase {
 					
 					for(String d : deletes) {
 						Log.v(TAG, "Deleting...");
-						db.delete("SONGS", "PATH=? AND FILENAME=?", new String [] { parent, d} );
+						db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { parent, d} );
 					}
 	
 					// Iterate over added files
 					for(String s : files) {
 						File f = new File(parentDir, s);
 						ContentValues values = new ContentValues();
-						try {
-							if(checkModule(f, values)) {
-								Log.v(TAG, String.format("Inserting FILE... (%s)", s));
-								db.insert("SONGS", "TITLE", values);
+						values.put("PATH", f.getParentFile().getPath());
+						values.put("FILENAME", f.getName());
+	
+						if(f.isFile()) {
+							
+							if(f.getName().toUpperCase().endsWith(".ZIP")) {
+								Log.v(TAG, String.format("Found zipfile (%s)", f.getPath()));
+								zipFiles.add(f);
+								values.put("FLAGS", 2);
 							}
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+							else {
+								values.put("FLAGS", 1);
+								try {
+									if(checkModule(f, values)) {
+									} else {
+										values = null;
+									}
+								} catch (IOException e) {
+									e.printStackTrace();
+									values = null;
+								}
+							}
+						} else {
+							foundDirsNew.add(s);
+							values.put("FLAGS", 0);
+						}
+						if(values != null) {
+							Log.v(TAG, String.format("Inserting FILE... (%s)", s));
+							db.insert("FILES", "PATH", values);
 						}
 					}
 					Log.v(TAG, "TRANSATION SUCCESSFUL");
@@ -297,101 +495,48 @@ public class SongDatabase {
 					db.endTransaction();
 				}
 			}
-			files = null;
 			
-
-			/// Time to deal with directories				
-
-						
-			// Here we list all directories and compare them to the database
-			
-			Set<String> dirs = new HashSet<String>();
-
-			if(fileList != null) {
-				// Add all existing dirs to a hash set
-				for(File f : fileList) {
-					if(f.isDirectory()) {
-						dirs.add(f.getName());
+			Log.v(TAG, String.format("zipfiles (%d)", zipFiles.size()));
+			if(zipFiles.size() > 0) {
+				db.beginTransaction();
+				for(File f : zipFiles) {
+					try {
+						scanZip(f);
+					} catch (ZipException e) {
+						Log.v(TAG, "Broken zip");
+					} catch (IOException e) {
+						Log.v(TAG, "IO Error");
 					}
 				}
-			}
-			
-			//Set<String> deletes = new HashSet<String>();
-			deletes.clear();
-			
-			index = dirCursor.getColumnIndex("FILENAME");
-			// Iterate over database result and compare to hash set
-			while(dirCursor.moveToNext()) {
-				String fileName = dirCursor.getString(index);
-				if(dirs.contains(fileName)) {
-					// Directory is in both - all is OK
-					dirs.remove(fileName);
-					scanFiles(new File(parentDir, fileName), alwaysScan, lastScan);
-				} else {
-					Log.v(TAG, String.format("Directory '%s' found in DB but not on disk, DELETING", fileName));
-					// Directory has been removed on disk, schedule for DELETE
-					deletes.add(fileName);
-				}
+				Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
+				db.setTransactionSuccessful();
+				db.endTransaction();
 			}
 
-			dirCursor.close();
-			dirCursor = null;
+			// Time to recursively scan sub-directories
+			// scanDirs contains found dirs that exists in database
 
-			// Iterate over newly added directories - these must be scanned regardless of modified date
-			for(String s : dirs) {
-				scanFiles(new File(parentDir, s), true, lastScan);
+			for(String s : foundDirs) {
+				scanFiles(new File(parentDir, s), alwaysScan, lastScan);
 			}			
 			
-			if(deletes.size() > 0 || dirs.size() > 0) {
-				// We have database operations to perform
-				db.beginTransaction();
-				try {
-					for(String d : deletes) {
-						File f = new File(parent, d);
-						Log.v(TAG, String.format("Deleting DIR %s / %s", parent, d));
-						db.delete("DIRS", "PATH=? AND FILENAME=?", new String [] { parent, d} );
-						Log.v(TAG, String.format("Also removing %s", f.getPath() + "%"));
-						db.delete("DIRS", "PATH LIKE ?", new String [] { f.getPath() + "%" } );						
-						db.delete("SONGS", "PATH LIKE ?", new String [] { f.getPath() + "%" } );
-					}
-					
-					for(String s : dirs) {
-						ContentValues values = new ContentValues();
-						values.put("PATH", parent);
-						values.put("FILENAME", s);
-						values.put("FLAGS", 0);
-						Log.v(TAG, String.format("Inserting DIR... (%s,%s)", parent, s));
-						db.insert("DIRS", "FILENAME", values);
-					}
-					
-					Log.v(TAG, "TRANSATION SUCCESSFUL");
-					db.setTransactionSuccessful();
-				} finally {
-					db.endTransaction();
-				}
+			for(String s : foundDirsNew) {
+				scanFiles(new File(parentDir, s), true, lastScan);
 			}
-			
-			dirs = null;			
-			
-		} else {
-			Log.v(TAG, "!! Not scanning files");
-			// This directory has not been changed
-			// We can now safely iterate over the query instead of files since they should be in sync
-			
-			if(dirCursor.getCount() > 0) {
 	
-				int index = dirCursor.getColumnIndex("FILENAME");
-				// Iterate over database result and compare to hash set
-				while(dirCursor.moveToNext()) {
-					String fileName = dirCursor.getString(index);
-					File f = new File(parentDir, fileName);
+		} else if(fileList != null) {
+
+			fileCursor.close();
+			fileCursor = null;
+
+			for(File f : fileList) {
+				if(f.isDirectory()) {
 					scanFiles(f, alwaysScan, lastScan);
 				}
 			}
-						
-			dirCursor.close();
-			dirCursor = null;
+
 		}
+		
 	}
 
 	public void scan(boolean full) {
@@ -417,6 +562,8 @@ public class SongDatabase {
 			cursor.moveToFirst();
 			lastScan = Long.parseLong(cursor.getString(1));
 		}
+		
+		cursor.close();
 		
 		Log.v(TAG, String.format("Last scan %d\n", lastScan));
 
@@ -456,18 +603,11 @@ public class SongDatabase {
 		}
 	}
 
-	public Cursor getSongsInPath(String pathName) {
+	public Cursor getFilesInPath(String pathName) {
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
-		return rdb.query("SONGS", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME" }, "PATH=?", new String[] { pathName }, null, null, "TITLE");	
-	}
-
-	public Cursor getDirsInPath(String pathName) {
-		if(rdb == null) {
-			rdb = getReadableDatabase();
-		}
-		return rdb.query("DIRS", new String[] { "_id", "FILENAME", "PATH", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FILENAME");			
+		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, TITLE");	
 	}
 
 }

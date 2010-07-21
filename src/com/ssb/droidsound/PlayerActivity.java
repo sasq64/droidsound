@@ -19,6 +19,7 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.AbsListView;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -36,6 +37,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private ImageButton backButton;
 	private ImageButton fwdButton;
 	private ImageButton stopButton;
+	
+	private Button parentButton;
 	
 	private TextView songTitleText;
 	private TextView songComposerText;
@@ -59,6 +62,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private View controls;
 
 	private String playingFile;
+
+	private TextView titleText;
 
 
 	private static void Log(String fmt, Object...args) {
@@ -107,27 +112,52 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		listFrame = (FrameLayout) findViewById(R.id.play_list_frame);
 		infoDisplay = findViewById(R.id.info_display);
 		controls = findViewById(R.id.controls);
+		parentButton = (Button) findViewById(R.id.parent_button);
+		titleText = (TextView) findViewById(R.id.list_title);
 		
 		//int top = drawer.getTop();
 		//Log.v(TAG, String.format("TOP %d", top));
+		
+		
+		parentButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				playListView.gotoParent();
+			}
+		});
 		
 		playListView.setOnScrollListener(new OnScrollListener() {
 			@Override
 			public void onScrollStateChanged(AbsListView view, int scrollState) {
 				// TODO Auto-generated method stub
-				Log("Scroll state %d", scrollState);
+				/*Log("Scroll state %d", scrollState);
 				if(scrollState == SCROLL_STATE_FLING) {
 					if(!controlsHidden) {
 						controlsHidden = true;
 						controls.setVisibility(View.GONE);
 						infoDisplay.setVisibility(View.GONE);
 					}
-				}
+				}*/
 			}
 			
 			@Override
 			public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-				Log("Scroll %d/%d/%d", firstVisibleItem, visibleItemCount, totalItemCount);
+				//Log("Scroll %d/%d/%d", firstVisibleItem, visibleItemCount, totalItemCount);
+			}
+		});
+		
+		playListView.setOnDirChangeCallback(new PlayListView.DirChangeCallback() {			
+			@Override
+			public void dirChange(String dir) {
+				File f = new File(dir);
+				if(f.getPath().equals("/sdcard/MODS")) {
+					parentButton.setText("");
+					parentButton.setVisibility(View.INVISIBLE);
+				} else {
+					parentButton.setText(f.getParentFile().getName());
+					parentButton.setVisibility(View.VISIBLE);
+				}
+				titleText.setText(f.getName());
 			}
 		});
 		
@@ -203,7 +233,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 			}
 		});
-		
+
 		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		String searchPath = prefs.getString("searchPath", null);
 		if(searchPath == null) {

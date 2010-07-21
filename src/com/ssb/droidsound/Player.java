@@ -11,6 +11,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
@@ -90,13 +92,16 @@ public class Player implements Runnable {
 	
 	private Object songRef;
 	
+	private File currentZipFile;
+	private ZipFile currentZip;
+	
 	private volatile State currentState = State.STOPPED;
 
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
 		plugins = new DroidSoundPlugin [3];
-		//plugins[0] = new SidplayPlugin();
-		plugins[0] = new TinySidPlugin();
+		plugins[0] = new SidplayPlugin();
+		//plugins[0] = new TinySidPlugin();
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
 
@@ -134,10 +139,48 @@ public class Player implements Runnable {
 		try {
 			//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
 			
+			int zipExt = songName.toUpperCase().indexOf(".ZIP/");
+			
+			if(zipExt < 0) {
+				if(currentZipFile != null) {
+					currentZip.close();
+					currentZip = null;
+					currentZipFile = null;
+				}
+			}
+
+			if(zipExt > 0) {
+				
+				File f = new File(songName.substring(0, zipExt + 5));
+				
+				if(currentZipFile != null && f.equals(currentZipFile)) {
+				} else {
+					currentZipFile = f;
+					currentZip = new ZipFile(f);
+				}
+
+				String name = songName.substring(zipExt+5);
+				
+				Log.v(TAG, String.format("Trying to open '%s' in zipfile '%s'\n", name, f.getPath())); 
+				
+				if(currentZip != null) {
+					Log.v(TAG, "ENTRY"); 
+					ZipEntry entry = currentZip.getEntry(name);
+					if(entry != null) {
+						Log.v(TAG, String.format("Entry  '%s' %d\n", entry.getName(), entry.getSize())); 
+						InputStream fs = currentZip.getInputStream(entry);
+						fileSize = entry.getSize();
+						songBuffer = new byte [(int) fileSize];
+						fs.read(songBuffer);
+						fs.close();
+					}
+				}
+			}
+			else
 			if(songName.startsWith("file://")) {
 				songName = songName.substring(7);
 			}
-			
+			else
 			if(songName.startsWith("http://")) {
 				
 				URL url = new URL(songName);
