@@ -52,7 +52,7 @@ public class PlayListView extends ListView {
 		private int mFlagsIndex;
 		private int mFileIndex;
 		private int mPathIndex;
-		private String mDirName; 
+		private String pathName; 
 		private int selectedPosition = -1;
 		private boolean hasParent;
 
@@ -68,11 +68,14 @@ public class PlayListView extends ListView {
 			}
 			
     		mCursor = cursor;
-    		mDirName = dirName;
+    		pathName = dirName;
     		mAuthorIndex = mCursor.getColumnIndex("COMPOSER");
     		mTitleIndex = mCursor.getColumnIndex("TITLE");
     		mFlagsIndex = mCursor.getColumnIndex("FLAGS");
     		mFileIndex = mCursor.getColumnIndex("FILENAME");
+    		if(mFileIndex < 0) {
+    			mFileIndex = mCursor.getColumnIndex("NAME");
+    		}
     		mPathIndex = mCursor.getColumnIndex("PATH");
     		notifyDataSetChanged();
     		selectedPosition = -1;
@@ -106,8 +109,10 @@ public class PlayListView extends ListView {
 			TextView tv1 = (TextView)vg.getChildAt(1);
 
 			mCursor.moveToPosition(position);
-			int flags = mCursor.getInt(mFlagsIndex);
-			
+			int flags = 0;
+			if(mFlagsIndex >= 0) {
+				flags = mCursor.getInt(mFlagsIndex);
+			}
 			
 			if((flags & 1) != 0) {
 				tv0.setText(mCursor.getString(mTitleIndex));
@@ -150,9 +155,14 @@ public class PlayListView extends ListView {
 		public Object getItem(int position) {
 			mCursor.moveToPosition(position);
 			String fileName = mCursor.getString(mFileIndex);
-			String pathName = mCursor.getString(mPathIndex);
+			File f;
+			if(mPathIndex >= 0) {
+				f = new File(mCursor.getString(mPathIndex), fileName);
+			} else {
+				f = new File(pathName, fileName);
+			}				
 			int flags = mCursor.getInt(mFlagsIndex);
-			return new FileInfo(new File(pathName, fileName), flags);
+			return new FileInfo(f, flags);
 		}
 
 		@Override
@@ -169,9 +179,14 @@ public class PlayListView extends ListView {
 			mCursor.move(-1);
 			while(mCursor.moveToNext()) {
 				String fileName = mCursor.getString(mFileIndex);
-				String pathName = mCursor.getString(mPathIndex);
+				File f;
+				if(mPathIndex >= 0) {
+					f = new File(mCursor.getString(mPathIndex), fileName);
+				} else {
+					f = new File(pathName, fileName);
+				}	
+				//String pathName = mCursor.getString(mPathIndex);
 				int flags = mCursor.getInt(mFlagsIndex);
-				File f = new File(pathName, fileName);
 				if((flags & 1) != 0) {
 					files.add(f);
 				}
@@ -269,10 +284,9 @@ public class PlayListView extends ListView {
 
     public void setDirectory(String parent) {
     	
-    	int bi = parent.indexOf(baseDir);
-    	if(bi >= 0) {
-    		parent = parent.substring(bi);
-    	}
+    	//int bi = parent.indexOf(baseDir);
+    	//if(bi >= 0) {
+    	//	parent = parent.substring(bi);
 
     	pathName = parent;    	
     	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
@@ -325,7 +339,7 @@ public class PlayListView extends ListView {
 	public void search(String query) {
 		Cursor cursor = dataBase.search(query);
     	pathName = pathName + "/SEARCH";    	
-    	adapter.setCursor(cursor, pathName);    	
+    	adapter.setCursor(cursor, null);    	
     	if(dirChangeCallback != null) {
     		dirChangeCallback.dirChange(pathName);
     	}

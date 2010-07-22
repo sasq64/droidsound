@@ -290,9 +290,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		//songDatabase = new SongDatabase(this);		
 		//scan(songDatabase, false);
+		//songDatabase.registerPath(name, cb)
 		
-		playListView.setBaseDir(currentPath);
-		playListView.setPlayer(player);	  
+		playListView.setDirectory(currentPath);
+		playListView.setPlayer(player);
 	}
 	
 	@Override

@@ -11,6 +11,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
@@ -645,7 +646,25 @@ public class SongDatabase {
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
-		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
+		
+		int colon = pathName.indexOf(':');
+		if(colon > 0) {
+			PathCallback cb = pathCallbacks.get(pathName.substring(0, colon));
+			if(cb != null) {
+				return cb.getCursorFromPath(pathName.substring(colon+1));
+			}
+		}		
+		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
+	}
+	
+	private Map<String, PathCallback> pathCallbacks = new HashMap<String, PathCallback>();
+	
+	public static interface PathCallback {
+		Cursor getCursorFromPath(String path);
+	}
+
+	public void registerPath(String name, PathCallback cb) {
+		pathCallbacks.put(name, cb);		
 	}
 
 }
