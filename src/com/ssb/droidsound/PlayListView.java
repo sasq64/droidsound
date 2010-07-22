@@ -321,4 +321,14 @@ public class PlayListView extends ListView {
 		baseDir = modDir;
 		setDirectory(modDir);
 	}
+
+	public void search(String query) {
+		Cursor cursor = dataBase.search(query);
+    	pathName = pathName + "/SEARCH";    	
+    	adapter.setCursor(cursor, pathName);    	
+    	if(dirChangeCallback != null) {
+    		dirChangeCallback.dirChange(pathName);
+    	}
+	
+	}
 }

@@ -97,7 +97,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		cfg.sidSamples   = true;
 		//cfg.optimisation  = 2;
 
-		cfg.environment = sid2_envR;
+		//cfg.environment = sid2_envR;
 
 		player->sidbuilder = new ReSIDBuilder("ReSID");
 		//ASSERT(player->sidbuilder != NULL);

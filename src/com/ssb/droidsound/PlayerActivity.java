@@ -38,6 +38,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private ImageButton fwdButton;
 	private ImageButton stopButton;
 	
+	private ImageButton searchButton;
+	
 	private Button parentButton;
 	
 	private TextView songTitleText;
@@ -93,6 +95,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		task.execute((Void)null);
 	}
 	
+	@Override
+	protected void onNewIntent(Intent intent) {
+		setIntent(intent);
+		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
+			String query = intent.getStringExtra(SearchManager.QUERY);
+	 		Log.v(TAG, "QUERY " + query);
+	 		playListView.search(query);
+		}
+	}
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -115,9 +126,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		parentButton = (Button) findViewById(R.id.parent_button);
 		titleText = (TextView) findViewById(R.id.list_title);
 		
+		searchButton = (ImageButton) findViewById(R.id.search_button);
 		//int top = drawer.getTop();
 		//Log.v(TAG, String.format("TOP %d", top));
 		
+		searchButton.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {
+				onSearchRequested();
+			}
+		});
 		
 		parentButton.setOnClickListener(new OnClickListener() {
 			@Override
@@ -235,12 +253,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		});
 
 		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
-		String searchPath = prefs.getString("searchPath", null);
+		String currentPath = prefs.getString("currentPath", null);
+		if(currentPath == null) {
+			currentPath = "/sdcard/MODS";
+		}
 
 		Intent intent = getIntent();
-		
-		Log.v(TAG, String.format("SEARCHPATH: %s", searchPath));
-
+		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
 		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			songDatabase = new SongDatabase(this);
 			String query = intent.getStringExtra(SearchManager.QUERY);
@@ -267,17 +286,25 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 */
 		
-		songDatabase = new SongDatabase(this);		
-		scan(songDatabase, false);
+		//songDatabase = new SongDatabase(this);		
+		//scan(songDatabase, false);
 		
-		playListView.setBaseDir("/sdcard/MODS");
+		playListView.setBaseDir(currentPath);
 		playListView.setPlayer(player);	  
 	}
 	
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		
+		Log.v(TAG, "DESTROYED");
+		
 		player.unbindService();
+		
+		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
+		Editor editor = prefs.edit();
+		editor.putString("currentPath", playListView.getDirectory());
+		editor.commit();
 	}
 
 	@Override
@@ -368,7 +395,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		int choice = item.getItemId();
 		switch(choice) {
 		case 10:
-			scan(songDatabase, true);
+			scan(songDatabase, false);
 			break;
 		case 12:
 			player.stop();
