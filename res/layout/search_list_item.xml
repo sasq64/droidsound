@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    >
-<TextView android:id="@+id/search.header" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFF00" android:textSize="16sp"></TextView>
-<TextView android:id="@+id/search.text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#AAAAEE" android:textSize="14sp"></TextView>
-</LinearLayout>
