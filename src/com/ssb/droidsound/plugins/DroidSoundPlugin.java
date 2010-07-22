@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.FileNotFoundException;

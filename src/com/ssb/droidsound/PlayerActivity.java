@@ -110,7 +110,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		super.onCreate(savedInstanceState);
 		player.bindService(this, this);
 		
-		setContentView(R.layout.player2);
+		setContentView(R.layout.player);
 		playButton = (ImageButton) findViewById(R.id.play_button);
 		backButton = (ImageButton) findViewById(R.id.back_button);
 		fwdButton = (ImageButton) findViewById(R.id.fwd_button);
