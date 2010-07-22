@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.service;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -19,6 +19,7 @@ import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.TinySidPlugin;
+import com.ssb.droidsound.utils.NativeZipFile;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;

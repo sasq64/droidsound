@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

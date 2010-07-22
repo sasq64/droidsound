@@ -1,5 +1,9 @@
 package com.ssb.droidsound;
 
+import com.ssb.droidsound.service.IPlayerService;
+import com.ssb.droidsound.service.IPlayerServiceCallback;
+import com.ssb.droidsound.service.PlayerService;
+
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;

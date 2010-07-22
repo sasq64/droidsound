@@ -1,5 +1,5 @@
-package com.ssb.droidsound;
-import com.ssb.droidsound.IPlayerServiceCallback;
+package com.ssb.droidsound.service;
+import com.ssb.droidsound.service.IPlayerServiceCallback;
 
 
 // @SuppressWarnings("unused")

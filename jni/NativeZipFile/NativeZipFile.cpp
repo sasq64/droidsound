@@ -10,7 +10,7 @@
 
 #include "ziplib/zip.h"
 
-#include "com_ssb_droidsound_NativeZipFile.h"
+#include "com_ssb_droidsound_utils_NativeZipFile.h"
 
 jstring NewString(JNIEnv *env, const char *str)
 {
@@ -27,7 +27,7 @@ jstring NewString(JNIEnv *env, const char *str)
 
 static struct zip *zipFile;
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_openZipFile(JNIEnv *env, jobject obj, jstring fileName)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_openZipFile(JNIEnv *env, jobject obj, jstring fileName)
 {
 	jboolean iscopy;
 	const char *fname = env->GetStringUTFChars(fileName, &iscopy);
@@ -38,32 +38,32 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_openZipFile(JNIEnv 
 	env->ReleaseStringUTFChars(fileName, fname);
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_NativeZipFile_closeZipFile(JNIEnv *, jobject)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_closeZipFile(JNIEnv *, jobject)
 {
 	zip_close(zipFile);
 	zipFile = NULL;
 }
 
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_getCount(JNIEnv *env, jobject obj)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_getCount(JNIEnv *env, jobject obj)
 {
 	return zip_get_num_files(zipFile);
 }
 
-JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_NativeZipFile_getEntry(JNIEnv *env, jobject obj, jint e)
+JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_getEntry(JNIEnv *env, jobject obj, jint e)
 {
 	const char *name = zip_get_name(zipFile, e, 0 /* ZIP_FL_UNCHANGED */ );
 	return NewString(env, name);
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_getSize(JNIEnv *env, jobject obj, jint e)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_getSize(JNIEnv *env, jobject obj, jint e)
 {
 	struct zip_stat sz;
 	zip_stat_index(zipFile, e, 0, &sz);
 	return sz.size;
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_findEntry(JNIEnv *env, jobject obj, jstring name)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_findEntry(JNIEnv *env, jobject obj, jstring name)
 {
 	jboolean iscopy;
 	const char *fname = env->GetStringUTFChars(name, &iscopy);
@@ -72,7 +72,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_findEntry(JNIEnv *e
 	return e;
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_NativeZipFile_readData(JNIEnv *env, jobject obj, jint e, jbyteArray target)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_readData(JNIEnv *env, jobject obj, jint e, jbyteArray target)
 {
 	jboolean iscopy;
 	jbyte *ptr = env->GetByteArrayElements(target, NULL);

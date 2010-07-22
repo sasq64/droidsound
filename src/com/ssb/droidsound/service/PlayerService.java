@@ -1,11 +1,11 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.service;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import com.ssb.droidsound.Player.SongInfo;
+import com.ssb.droidsound.service.Player.SongInfo;
 
 import android.app.Service;
 import android.content.Intent;

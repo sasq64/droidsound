@@ -2,6 +2,8 @@ package com.ssb.droidsound;
 
 import java.io.File;
 
+import com.ssb.droidsound.service.PlayerService;
+
 import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Context;

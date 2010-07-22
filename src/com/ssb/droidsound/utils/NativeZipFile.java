@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -36,11 +36,11 @@ public class NativeZipFile {
 	native int findEntry(String name);
 	native int readData(int i, byte [] target);
 
-	NativeZipFile(String fileName) {
+	public NativeZipFile(String fileName) {
 		openZipFile(fileName);
 	}
 	
-	NativeZipFile(File file) {
+	public NativeZipFile(File file) {
 		openZipFile(file.getPath());
 	}
 	
@@ -85,7 +85,7 @@ public class NativeZipFile {
 		}
 	};
 	
-	Enumeration<? extends ZipEntry> entries() {
+	public Enumeration<? extends ZipEntry> entries() {
 		return new MyEnumeration(this);
 	}
 	

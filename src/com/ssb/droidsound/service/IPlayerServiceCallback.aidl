@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.service;
 
 interface IPlayerServiceCallback {
 	void intChanged(int what, int value);
