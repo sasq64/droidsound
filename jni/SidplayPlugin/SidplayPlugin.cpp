@@ -41,15 +41,16 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1canH
 	return true;
 }
 
-static char song_name[33], song_author[33], song_copyright[33];
-static unsigned short load_addr, init_addr, play_addr;
-static unsigned char subsongs, startsong, play_speed;
+//static char song_name[33], song_author[33], song_copyright[33];
+//static unsigned short load_addr, init_addr, play_addr;
+//static unsigned char subsongs, startsong, play_speed;
 
 struct Player
 {
 	SidTune *sidtune;
 	ReSIDBuilder *sidbuilder;
 	sidplay2 *sidemu;
+	SidTuneInfo sidInfo;
 };
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
@@ -79,6 +80,9 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		player->sidtune->selectSong(0);
 
+		player->sidtune->getInfo(player->sidInfo);
+
+
 		player->sidemu = new sidplay2;
 
 		sid2_config_t cfg = player->sidemu->config();
@@ -89,9 +93,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		cfg.playback     = sid2_stereo;
 		cfg.precision    = 16;
 		//cfg.sidModel     = SID2_MODEL_CORRECT;
-		cfg.sidDefault   = SID2_MOS6581;
+		cfg.sidDefault   = SID2_MOS6581; // SIDTUNE_SIDMODEL_ANY
 		cfg.sidSamples   = true;
 		//cfg.optimisation  = 2;
+
+		cfg.environment = sid2_envR;
 
 		player->sidbuilder = new ReSIDBuilder("ReSID");
 		//ASSERT(player->sidbuilder != NULL);
@@ -106,11 +112,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		player->sidemu->config(cfg);
 
-		memcpy(song_name, ptr + 0x16, 32);
-		memcpy(song_author, ptr + 0x36, 32);
-		memcpy(song_copyright, ptr + 0x56, 32);
+		//memcpy(song_name, ptr + 0x16, 32);
+		//memcpy(song_author, ptr + 0x36, 32);
+		//memcpy(song_copyright, ptr + 0x56, 32);
 
-		song_name[32] = song_author[32] = song_copyright[32] = 0;
+		//song_name[32] = song_author[32] = song_copyright[32] = 0;
 
 		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "load sid");
 
@@ -156,7 +162,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1setT
 {
 	Player *player = (Player*)song;
 
-	player->sidtune->selectSong(tune);
+	player->sidtune->selectSong(tune+1);
 	player->sidemu->load(player->sidtune);
 	//cpuJSR(init_addr, song);
 	return true;
@@ -164,28 +170,30 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1setT
 
 JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getStringInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
+	Player *player = (Player*)song;
 	switch(what)
 	{
 	case INFO_TITLE:
-		return NewString(env, song_name);
+		return NewString(env, player->sidInfo.infoString[0]);
 	case INFO_AUTHOR:
-		return NewString(env, song_author);
+		return NewString(env, player->sidInfo.infoString[1]);
 	case INFO_COPYRIGHT:
-		return NewString(env, song_copyright);
+		return NewString(env, player->sidInfo.infoString[2]);
 	}
 	return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getIntInfo(JNIEnv *, jobject, jlong, jint what)
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
+	Player *player = (Player*)song;
 	switch(what)
 	{
 	case INFO_LENGTH:
 		return 5*60*1000;
 	case INFO_SUBTUNES:
-		return subsongs+1;
+		return player->sidInfo.songs;
 	case INFO_STARTTUNE:
-		return startsong;
+		return player->sidInfo.startSong-1;
 	}
 	return -1;
 }

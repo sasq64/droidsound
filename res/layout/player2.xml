@@ -34,7 +34,7 @@
      android:layout_height="wrap_content"
      android:layout_below="@id/info_display"
      android:bottomOffset="22dip"
-     android:topOffset="250dip"
+     android:topOffset="180dip"
 
      android:handle="@+id/handle"
      android:content="@+id/panel">
