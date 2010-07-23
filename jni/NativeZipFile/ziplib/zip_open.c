@@ -192,6 +192,8 @@ _zip_readcdir(FILE *fp, unsigned char *buf, unsigned char *eocd, int buflen,
 	int i, comlen, nentry;
 	unsigned int left;
 
+	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "Trying to read CDIR from offset %d", ftell(fp));
+
 	comlen = buf + buflen - eocd - EOCDLEN;
 	if (comlen < 0) {
 		/* not enough bytes left for comment */
@@ -269,6 +271,7 @@ _zip_readcdir(FILE *fp, unsigned char *buf, unsigned char *eocd, int buflen,
 
 	left = cd->size;
 	i=0;
+	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "Reading %d zipentries", cd->nentry);
 	do {
 		if (i == cd->nentry && left > 0) {
 			/* Infozip extension for more than 64k entries:
@@ -284,6 +287,7 @@ _zip_readcdir(FILE *fp, unsigned char *buf, unsigned char *eocd, int buflen,
 		i++;
 
 	} while (i<cd->nentry);
+	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "DONE");
 	
 	return cd;
 }

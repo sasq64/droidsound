@@ -57,10 +57,10 @@ _zip_cdir_free(struct zip_cdir *cd)
     int i;
 
     if (!cd)
-	return;
+		return;
 
     for (i=0; i<cd->nentry; i++)
-	_zip_dirent_finalize(cd->entry+i);
+		_zip_dirent_finalize(cd->entry+i);
     free(cd->comment);
     free(cd->entry);
     free(cd);
@@ -74,14 +74,14 @@ _zip_cdir_grow(struct zip_cdir *cd, int nentry, struct zip_error *error)
     struct zip_dirent *entry;
 
     if (nentry < cd->nentry) {
-	_zip_error_set(error, ZIP_ER_INTERNAL, 0);
-	return -1;
+		_zip_error_set(error, ZIP_ER_INTERNAL, 0);
+		return -1;
     }
 
     if ((entry=((struct zip_dirent *)
-		realloc(cd->entry, sizeof(*(cd->entry))*nentry))) == NULL) {
-	_zip_error_set(error, ZIP_ER_MEMORY, 0);
-	return -1;
+				realloc(cd->entry, sizeof(*(cd->entry))*nentry))) == NULL) {
+		_zip_error_set(error, ZIP_ER_MEMORY, 0);
+		return -1;
     }
 
     cd->nentry = nentry;
@@ -98,15 +98,15 @@ _zip_cdir_new(int nentry, struct zip_error *error)
     struct zip_cdir *cd;
     
     if ((cd=(struct zip_cdir *)malloc(sizeof(*cd))) == NULL) {
-	_zip_error_set(error, ZIP_ER_MEMORY, 0);
-	return NULL;
+		_zip_error_set(error, ZIP_ER_MEMORY, 0);
+		return NULL;
     }
 
     if ((cd->entry=(struct zip_dirent *)malloc(sizeof(*(cd->entry))*nentry))
-	== NULL) {
-	_zip_error_set(error, ZIP_ER_MEMORY, 0);
-	free(cd);
-	return NULL;
+		== NULL) {
+		_zip_error_set(error, ZIP_ER_MEMORY, 0);
+		free(cd);
+		return NULL;
     }
 
     /* entries must be initialized by caller */
@@ -129,8 +129,8 @@ _zip_cdir_write(struct zip_cdir *cd, FILE *fp, struct zip_error *error)
     cd->offset = ftello(fp);
 
     for (i=0; i<cd->nentry; i++) {
-	if (_zip_dirent_write(cd->entry+i, fp, 0, error) != 0)
-	    return -1;
+		if (_zip_dirent_write(cd->entry+i, fp, 0, error) != 0)
+		    return -1;
     }
 
     cd->size = ftello(fp) - cd->offset;
@@ -146,8 +146,8 @@ _zip_cdir_write(struct zip_cdir *cd, FILE *fp, struct zip_error *error)
     fwrite(cd->comment, 1, cd->comment_len, fp);
 
     if (ferror(fp)) {
-	_zip_error_set(error, ZIP_ER_WRITE, errno);
-	return -1;
+		_zip_error_set(error, ZIP_ER_WRITE, errno);
+		return -1;
     }
 
     return 0;
@@ -213,8 +213,8 @@ _zip_dirent_init(struct zip_dirent *de)
 
 int
 _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
-		 unsigned char **bufp, unsigned int *leftp, int local,
-		 struct zip_error *error)
+				 unsigned char **bufp, unsigned int *leftp, int local,
+				 struct zip_error *error)
 {
     unsigned char buf[CDENTRYSIZE];
     unsigned char *cur;
@@ -222,49 +222,51 @@ _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
     unsigned int size;
 
     if (local)
-	size = LENTRYSIZE;
+		size = LENTRYSIZE;
     else
-	size = CDENTRYSIZE;
+		size = CDENTRYSIZE;
 
     if (leftp && (*leftp < size)) {
-	_zip_error_set(error, ZIP_ER_NOZIP, 0);
-	return -1;
+		_zip_error_set(error, ZIP_ER_NOZIP, 0);
+		return -1;
     }
 
     if (bufp) {
-	/* use data from buffer */
-	cur = *bufp;
+		/* use data from buffer */
+		cur = *bufp;
     }
     else {
-	/* read entry from disk */
-	if ((fread(buf, 1, size, fp)<size)) {
-	    _zip_error_set(error, ZIP_ER_READ, errno);
-	    return -1;
-	}
-	cur = buf;
+		/* read entry from disk */
+		if ((fread(buf, 1, size, fp)<size)) {
+		    _zip_error_set(error, ZIP_ER_READ, errno);
+		    return -1;
+		}
+		cur = buf;
     }
 
-    if (memcmp(cur, (local ? LOCAL_MAGIC : CENTRAL_MAGIC), 4) != 0) {
-	_zip_error_set(error, ZIP_ER_NOZIP, 0);
-	return -1;
-    }
+    //if (memcmp(cur, (local ? LOCAL_MAGIC : CENTRAL_MAGIC), 4) != 0) {
+	//	_zip_error_set(error, ZIP_ER_NOZIP, 0);
+	//	return -1;
+    //}
     cur += 4;
 
     
     /* convert buffercontents to zip_dirent */
     
     if (!local)
-	zde->version_madeby = _zip_read2(&cur);
+		zde->version_madeby = _zip_read2(&cur);
     else
-	zde->version_madeby = 0;
+		zde->version_madeby = 0;
     zde->version_needed = _zip_read2(&cur);
     zde->bitflags = _zip_read2(&cur);
     zde->comp_method = _zip_read2(&cur);
     
     /* convert to time_t */
-    dostime = _zip_read2(&cur);
-    dosdate = _zip_read2(&cur);
-    zde->last_mod = _zip_d2u_time(dostime, dosdate);
+    // dostime = _zip_read2(&cur);
+    // dosdate = _zip_read2(&cur);
+    cur += 4;
+
+    zde->last_mod = 0 ;//_zip_d2u_time(dostime, dosdate);
     
     zde->crc = _zip_read4(&cur);
     zde->comp_size = _zip_read4(&cur);
@@ -274,75 +276,76 @@ _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
     zde->extrafield_len = _zip_read2(&cur);
     
     if (local) {
-	zde->comment_len = 0;
-	zde->disk_number = 0;
-	zde->int_attrib = 0;
-	zde->ext_attrib = 0;
-	zde->offset = 0;
+		zde->comment_len = 0;
+		// zde->disk_number = 0;
+		// zde->int_attrib = 0;
+		// zde->ext_attrib = 0;
+		zde->offset = 0;
     } else {
-	zde->comment_len = _zip_read2(&cur);
-	zde->disk_number = _zip_read2(&cur);
-	zde->int_attrib = _zip_read2(&cur);
-	zde->ext_attrib = _zip_read4(&cur);
-	zde->offset = _zip_read4(&cur);
+		zde->comment_len = _zip_read2(&cur);
+		//zde->disk_number = _zip_read2(&cur);
+		// zde->int_attrib = _zip_read2(&cur);
+		// zde->ext_attrib = _zip_read4(&cur);
+		cur += 8;
+		zde->offset = _zip_read4(&cur);
     }
 
     zde->filename = NULL;
     zde->extrafield = NULL;
     zde->comment = NULL;
 
-    size += zde->filename_len+zde->extrafield_len+zde->comment_len;
+    size += zde->filename_len; //+zde->extrafield_len+zde->comment_len;
 
     if (leftp && (*leftp < size)) {
-	_zip_error_set(error, ZIP_ER_NOZIP, 0);
-	return -1;
+		_zip_error_set(error, ZIP_ER_NOZIP, 0);
+		return -1;
     }
 
     if (bufp) {
-	if (zde->filename_len) {
-	    zde->filename = _zip_readstr(&cur, zde->filename_len, 1, error);
-	    if (!zde->filename)
-		    return -1;
-	}
+		if (zde->filename_len) {
+		    zde->filename = _zip_readstr(&cur, zde->filename_len, 1, error);
+		    // if (!zde->filename)
+			//	    return -1;
+		}
 
-	if (zde->extrafield_len) {
-	    zde->extrafield = _zip_readstr(&cur, zde->extrafield_len, 0,
-					   error);
-	    if (!zde->extrafield)
-		return -1;
-	}
+		if (zde->extrafield_len) {
+		    zde->extrafield = _zip_readstr(&cur, zde->extrafield_len, 0,
+										   error);
+		   // if (!zde->extrafield)
+			//	return -1;
+		}
 
-	if (zde->comment_len) {
-	    zde->comment = _zip_readstr(&cur, zde->comment_len, 0, error);
-	    if (!zde->comment)
-		return -1;
-	}
+		if (zde->comment_len) {
+		    zde->comment = _zip_readstr(&cur, zde->comment_len, 0, error);
+		   // if (!zde->comment)
+			//	return -1;
+		}
     }
     else {
-	if (zde->filename_len) {
-	    zde->filename = _zip_readfpstr(fp, zde->filename_len, 1, error);
-	    if (!zde->filename)
-		    return -1;
-	}
+		if (zde->filename_len) {
+		    zde->filename = _zip_readfpstr(fp, zde->filename_len, 1, error);
+		    //if (!zde->filename)
+			//	    return -1;
+		}
 
-	if (zde->extrafield_len) {
-	    zde->extrafield = _zip_readfpstr(fp, zde->extrafield_len, 0,
-					     error);
-	    if (!zde->extrafield)
-		return -1;
-	}
+		if (zde->extrafield_len) {
+		    zde->extrafield = _zip_readfpstr(fp, zde->extrafield_len, 0,
+										     error);
+		    //if (!zde->extrafield)
+			//	return -1;
+		}
 
-	if (zde->comment_len) {
-	    zde->comment = _zip_readfpstr(fp, zde->comment_len, 0, error);
-	    if (!zde->comment)
-		return -1;
-	}
+		if (zde->comment_len) {
+		    zde->comment = _zip_readfpstr(fp, zde->comment_len, 0, error);
+		    //if (!zde->comment)
+			//	return -1;
+		}
     }
 
     if (bufp)
       *bufp = cur;
     if (leftp)
-	*leftp -= size;
+		*leftp -= size;
 
     return 0;
 }
@@ -361,28 +364,28 @@ _zip_dirent_torrent_normalize(struct zip_dirent *de)
 
     if (last_mod == 0) {
 #ifdef HAVE_STRUCT_TM_TM_ZONE
-	time_t now;
-	struct tm *l;
+		time_t now;
+		struct tm *l;
 #endif
 
-	torrenttime.tm_sec = 0;
-	torrenttime.tm_min = 32;
-	torrenttime.tm_hour = 23;
-	torrenttime.tm_mday = 24;
-	torrenttime.tm_mon = 11;
-	torrenttime.tm_year = 96;
-	torrenttime.tm_wday = 0;
-	torrenttime.tm_yday = 0;
-	torrenttime.tm_isdst = 0;
+		torrenttime.tm_sec = 0;
+		torrenttime.tm_min = 32;
+		torrenttime.tm_hour = 23;
+		torrenttime.tm_mday = 24;
+		torrenttime.tm_mon = 11;
+		torrenttime.tm_year = 96;
+		torrenttime.tm_wday = 0;
+		torrenttime.tm_yday = 0;
+		torrenttime.tm_isdst = 0;
 
 #ifdef HAVE_STRUCT_TM_TM_ZONE
-	time(&now);
-	l = localtime(&now);
-	torrenttime.tm_gmtoff = l->tm_gmtoff;
-	torrenttime.tm_zone = l->tm_zone;
+		time(&now);
+		l = localtime(&now);
+		torrenttime.tm_gmtoff = l->tm_gmtoff;
+		torrenttime.tm_zone = l->tm_zone;
 #endif
 
-	last_mod = mktime(&torrenttime);
+		last_mod = mktime(&torrenttime);
     }
     
     de->version_madeby = 0;
@@ -418,14 +421,14 @@ _zip_dirent_torrent_normalize(struct zip_dirent *de)
 
 int
 _zip_dirent_write(struct zip_dirent *zde, FILE *fp, int localp,
-		  struct zip_error *error)
+				  struct zip_error *error)
 {
     unsigned short dostime, dosdate;
 
     fwrite(localp ? LOCAL_MAGIC : CENTRAL_MAGIC, 1, 4, fp);
 
     if (!localp)
-	_zip_write2(zde->version_madeby, fp);
+		_zip_write2(zde->version_madeby, fp);
     _zip_write2(zde->version_needed, fp);
     _zip_write2(zde->bitflags, fp);
     _zip_write2(zde->comp_method, fp);
@@ -442,27 +445,27 @@ _zip_dirent_write(struct zip_dirent *zde, FILE *fp, int localp,
     _zip_write2(zde->extrafield_len, fp);
     
     if (!localp) {
-	_zip_write2(zde->comment_len, fp);
-	_zip_write2(zde->disk_number, fp);
-	_zip_write2(zde->int_attrib, fp);
-	_zip_write4(zde->ext_attrib, fp);
-	_zip_write4(zde->offset, fp);
+		_zip_write2(zde->comment_len, fp);
+		_zip_write2(zde->disk_number, fp);
+		_zip_write2(zde->int_attrib, fp);
+		_zip_write4(zde->ext_attrib, fp);
+		_zip_write4(zde->offset, fp);
     }
 
     if (zde->filename_len)
-	fwrite(zde->filename, 1, zde->filename_len, fp);
+		fwrite(zde->filename, 1, zde->filename_len, fp);
 
     if (zde->extrafield_len)
-	fwrite(zde->extrafield, 1, zde->extrafield_len, fp);
+		fwrite(zde->extrafield, 1, zde->extrafield_len, fp);
 
     if (!localp) {
-	if (zde->comment_len)
-	    fwrite(zde->comment, 1, zde->comment_len, fp);
+		if (zde->comment_len)
+		    fwrite(zde->comment, 1, zde->comment_len, fp);
     }
 
     if (ferror(fp)) {
-	_zip_error_set(error, ZIP_ER_WRITE, errno);
-	return -1;
+		_zip_error_set(error, ZIP_ER_WRITE, errno);
+		return -1;
     }
 
     return 0;
@@ -526,22 +529,22 @@ _zip_readfpstr(FILE *fp, unsigned int len, int nulp, struct zip_error *error)
 
     r = (char *)malloc(nulp ? len+1 : len);
     if (!r) {
-	_zip_error_set(error, ZIP_ER_MEMORY, 0);
-	return NULL;
+		_zip_error_set(error, ZIP_ER_MEMORY, 0);
+		return NULL;
     }
 
     if (fread(r, 1, len, fp)<len) {
-	free(r);
-	_zip_error_set(error, ZIP_ER_READ, errno);
-	return NULL;
+		free(r);
+		_zip_error_set(error, ZIP_ER_READ, errno);
+		return NULL;
     }
 
     if (nulp) {
-	/* replace any in-string NUL characters with spaces */
-	r[len] = 0;
-	for (o=r; o<r+len; o++)
-	    if (*o == '\0')
-		*o = ' ';
+		/* replace any in-string NUL characters with spaces */
+		r[len] = 0;
+		for (o=r; o<r+len; o++)
+		    if (*o == '\0')
+				*o = ' ';
     }
     
     return r;
@@ -556,19 +559,19 @@ _zip_readstr(unsigned char **buf, int len, int nulp, struct zip_error *error)
 
     r = (char *)malloc(nulp ? len+1 : len);
     if (!r) {
-	_zip_error_set(error, ZIP_ER_MEMORY, 0);
-	return NULL;
+		_zip_error_set(error, ZIP_ER_MEMORY, 0);
+		return NULL;
     }
     
     memcpy(r, *buf, len);
     *buf += len;
 
     if (nulp) {
-	/* replace any in-string NUL characters with spaces */
-	r[len] = 0;
-	for (o=r; o<r+len; o++)
-	    if (*o == '\0')
-		*o = ' ';
+		/* replace any in-string NUL characters with spaces */
+		r[len] = 0;
+		for (o=r; o<r+len; o++)
+		    if (*o == '\0')
+				*o = ' ';
     }
 
     return r;
@@ -607,9 +610,9 @@ _zip_u2d_time(time_t time, unsigned short *dtime, unsigned short *ddate)
 
     tm = localtime(&time);
     *ddate = ((tm->tm_year+1900-1980)<<9) + ((tm->tm_mon+1)<<5)
-	+ tm->tm_mday;
+		+ tm->tm_mday;
     *dtime = ((tm->tm_hour)<<11) + ((tm->tm_min)<<5)
-	+ ((tm->tm_sec)>>1);
+		+ ((tm->tm_sec)>>1);
 
     return;
 }

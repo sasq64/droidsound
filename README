@@ -1,4 +1,15 @@
 
+==== Droudsound ====
+
+RUNNING
+
+For now, put your Music under /sdcard/MODS/
+
+C64Music.zip will be scanned and indexed if present.
+
+
+BUILDING
+
 Droidsound should now build with the normal Android NDK r4 (and above hopefully)
 
 Just run ndk-build from the droidsound directory to build the sound plugins, then build the project

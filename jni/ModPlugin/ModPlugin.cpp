@@ -189,6 +189,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 	ModPlugFile *mod = ModPlug_Load(ptr, size);
 	ModInfo *info = NULL;
 
+
 	if(mod)
 	{
 		info = new ModInfo();
@@ -197,6 +198,18 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 		strcpy(info->mod_name, ModPlug_GetName(mod));
 		info->mod_length = ModPlug_GetLength(mod);
 		info->modType = "MOD";
+
+		settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
+		settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
+
+		int t = ModPlug_GetModuleType(mod);
+		__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Type is %d", t);
+		if(t == 1) {
+			settings.mResamplingMode = MODPLUG_RESAMPLE_NEAREST;
+			__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "NEAREST resampling");
+		}
+
+		ModPlug_SetSettings(&settings);
 
 	}
 

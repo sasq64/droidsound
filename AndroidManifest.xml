@@ -41,6 +41,9 @@
 		</activity>
 		
 		<service android:name=".service.PlayerService"/>
+		
+		<provider android:name="com.ssb.droidsound.provider.SongProvider" android:authorities="com.ssb.droidsound.provider" />
+		
 		<meta-data android:name="android.app.default_searchable" android:value=".PlayerActivity" />
 	</application>
 	<uses-sdk android:minSdkVersion="3" />

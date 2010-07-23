@@ -43,7 +43,19 @@ import com.ssb.droidsound.utils.NativeZipFile;
 public class SongDatabase {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	private static final String[] FILENAME_array = new String[] { "FILENAME", "FLAGS" };
-/*
+
+	private Map<String, PathCallback> pathCallbacks = new HashMap<String, PathCallback>();
+	private ScanCallback scanCallback;
+	
+	public static interface PathCallback {
+		Cursor getCursorFromPath(String path);
+	}
+
+	public static interface ScanCallback {
+		void notifyScan(String path, int percent);
+	}
+	
+	/*
 	private static class DbHelper extends SQLiteOpenHelper {
 		
 		Context mContext;
@@ -110,7 +122,7 @@ public class SongDatabase {
 	private SQLiteDatabase db;
 	private SQLiteDatabase rdb;
 	//private long lastScan;
-	private Context mContext;
+	//private Context mContext;
 	private DroidSoundPlugin[] plugins;
 	
 	private String dbName;
@@ -123,10 +135,10 @@ public class SongDatabase {
 		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
 	}
 
-	SongDatabase(Context context) {
+	public SongDatabase(Context context) {
 		//mOpenHelper = new DbHelper(context);
 		//dbName = "songs.db";
-		mContext = context;
+		//mContext = context;
 		
 		File myDir = context.getFilesDir();
 		
@@ -191,7 +203,26 @@ public class SongDatabase {
 				int length = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 				
 				if(type != null && type.equals("MOD")) {
-					author = file.getParentFile().getName();
+					String fname = file.getName();
+					int sep = fname.indexOf(" - ");
+					if(sep > 0) {
+						author = fname.substring(0, sep);
+						Log.v(TAG, String.format("######## FILENAME %s", fname));
+						int dot = fname.lastIndexOf('.');
+						if(dot > 0) {
+							String ext = fname.substring(dot+1).toUpperCase();
+							Log.v(TAG, String.format("Extention %s", ext));
+							if(ext.equals("MOD") || ext.equals("IT") || ext.equals("XM") || ext.equals("S3M")) {
+								title = fname.substring(sep+3, dot);
+							} else {
+								title = fname.substring(sep+3);
+							}
+						} else {						
+							title = fname.substring(sep+3);
+						}
+					} else {
+						author = file.getParentFile().getName();
+					}
 				}
 				
 				if(title == null || title.equals("")) {
@@ -289,6 +320,13 @@ public class SongDatabase {
 		
 		Log.v(TAG, String.format("Scanning %d zip entries", zfile.size()));
 		int count = 0;
+		int total = zfile.size();
+		
+		int reportPeriod = total / 100;
+		if(reportPeriod < 100) {
+			reportPeriod = 100;
+		}
+		
 		String lastPath = "";
 		while(entries.hasMoreElements()) {
 			ZipEntry ze = entries.nextElement();
@@ -308,11 +346,11 @@ public class SongDatabase {
 				
 				if(!path.equals(lastPath)) {
 					// /sdcard/MODS/C64Music.zip/MUSICIANS/A-Z/Agemixer					
-					Log.v(TAG, String.format("Adding DIR %s", path));
+					//Log.v(TAG, String.format("Adding DIR %s", path));
 					pathSet.add(path);
 					slash = path.lastIndexOf('/');
 					while(slash > baseCount) {
-						Log.v(TAG, String.format("Adding DIR %s", path.substring(0, slash)));
+						//Log.v(TAG, String.format("Adding DIR %s", path.substring(0, slash)));
 						pathSet.add(path.substring(0, slash));
 						slash = path.lastIndexOf('/', slash-1);
 					}					
@@ -382,12 +420,16 @@ public class SongDatabase {
 
 				db.insert("FILES", "PATH", values);
 				
-				if((count % 200) == 0) {
-					Log.v(TAG, String.format("(%d) Added %s %s", count, name, author));
-				}
 				count++;
+				if((count % reportPeriod) == 0) {
+					Log.v(TAG, String.format("(%d) Added %s %s", count, name, author));
+					if(scanCallback != null) {
+						scanCallback.notifyScan(null, count * 100 / total);
+					}					
+				}
 				
-				//if(count == 1000)
+				
+				//if(count == 4000)
 				//	break;
 			}
 			
@@ -427,34 +469,35 @@ public class SongDatabase {
 		}
 
 		Cursor fileCursor = db.query("FILES", FILENAME_array, "PATH=?", parentArray, null, null, null);
-
-		// All files and directories
-		Set<String> files = new HashSet<String>();
-		
-		// Directories to scan later
-		Set<String> foundDirs = new HashSet<String>();
-		Set<String> foundDirsNew = new HashSet<String>();
-		Set<File> zipFiles = new HashSet<File>();
-		
-		File [] fileList = parentDir.listFiles();
-		
-		if(fileList != null) {
-			// Add all existing files to a hash set
-			for(File f : fileList) {
-				files.add(f.getName());
-			}
-		}
-
-		Log.v(TAG, String.format("Datbase has %d entries, found %d files/dirs", fileCursor.getCount(), files.size()));
+		int index = fileCursor.getColumnIndex("FILENAME");
+		int flindex = fileCursor.getColumnIndex("FLAGS");
 
 		if(hasChanged) {
 			
-			Set<String> deletes = new HashSet<String>();
+			// All files and directories
+			Set<String> files = new HashSet<String>();
+			
+			// Directories to scan later
+			Set<String> foundDirs = new HashSet<String>();
+			Set<String> foundDirsNew = new HashSet<String>();
+			Set<File> zipFiles = new HashSet<File>();
+			
+			File [] fileList = parentDir.listFiles();
+			
+			if(fileList != null) {
+				// Add all existing files to a hash set
+				for(File f : fileList) {
+					files.add(f.getName());
+				}
+			}
+
+			Log.v(TAG, String.format("Datbase has %d entries, found %d files/dirs", fileCursor.getCount(), files.size()));
+
+			Set<String> delDirs = new HashSet<String>();
+			Set<String> delFiles = new HashSet<String>();
 			
 			Log.v(TAG, "Comparing DB to FS");
 			
-			int index = fileCursor.getColumnIndex("FILENAME");
-			int flindex = fileCursor.getColumnIndex("FLAGS");
 			// Iterate over database result and compare to hash set
 			while(fileCursor.moveToNext()) {
 				String fileName = fileCursor.getString(index);
@@ -468,31 +511,49 @@ public class SongDatabase {
 					}
 					files.remove(fileName);
 				} else {
-					Log.v(TAG, String.format("'%s' found in DB but not on disk, DELETING", fileName));
+					Log.v(TAG, String.format("!! '%s' found in DB but not on disk, DELETING", fileName));
 					// File has been removed on disk, schedule for DELETE
-					deletes.add(fileName);
+					if((flags & 1) == 0) {
+						delDirs.add(fileName);
+					} else {
+						delFiles.add(fileName);
+					}
 				}
 			}
 			
 			for(String s : files) {
-				Log.v(TAG, String.format("!! File '%s' not in database", s));
+				Log.v(TAG, String.format("!! '%s' not in database, ADDING", s));
 			}
 				
 			// Close cursor (important since we call ourselves recursively below)
 			fileCursor.close();
 			fileCursor = null;
 	
-			if(files.size() > 0 || deletes.size() > 0) {
+			if(files.size() > 0 || delDirs.size() > 0 || delFiles.size() > 0) {
 				// We have database operations to perform
 				db.beginTransaction();
 				try {
 					
-					for(String d : deletes) {
-						Log.v(TAG, "Deleting...");
+					for(String d : delDirs) {
+						String path = new File(parent, d).getPath();
+						Log.v(TAG, String.format("Deleting PATH %s and subdirs", path));
 						db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { parent, d} );
+						db.delete("FILES", "PATH LIKE ?", new String [] { path + "/%" } );
+						db.delete("FILES", "PATH=?", new String [] { path } );
 					}
 	
-					// Iterate over added files
+					for(String d : delFiles) {
+						Log.v(TAG, String.format("Deleting FILE %s in %s", d, parent));
+						db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { parent, d} );
+					}
+
+					// Iterate over added files					
+					int count = 0;
+					int total = files.size();
+					int reportPeriod = total / 100;
+					if(reportPeriod < 10) {
+						reportPeriod = 10;
+					}
 					for(String s : files) {
 						File f = new File(parentDir, s);
 						ContentValues values = new ContentValues();
@@ -526,6 +587,13 @@ public class SongDatabase {
 							Log.v(TAG, String.format("Inserting FILE... (%s)", s));
 							db.insert("FILES", "PATH", values);
 						}
+						
+						count++;
+						if(count % reportPeriod == 0) {
+							if(scanCallback != null) {
+								scanCallback.notifyScan(null, count * 100 / total);
+							}
+						}
 					}
 					Log.v(TAG, "TRANSATION SUCCESSFUL");
 					db.setTransactionSuccessful();
@@ -540,6 +608,9 @@ public class SongDatabase {
 				db.beginTransaction();
 				for(File f : zipFiles) {
 					try {
+						if(scanCallback != null) {
+							scanCallback.notifyScan(f.getPath(), 0);
+						}
 						scanZip(f);
 					} catch (ZipException e) {
 						Log.v(TAG, "Broken zip");
@@ -560,22 +631,35 @@ public class SongDatabase {
 			}			
 			
 			for(String s : foundDirsNew) {
-				scanFiles(new File(parentDir, s), true, lastScan);
+				File f = new File(parentDir, s);
+				if(scanCallback != null) {
+					scanCallback.notifyScan(f.getPath(), 0);
+				}
+				scanFiles(f, true, lastScan);
 			}
 	
-		} else if(fileList != null) {
+		} else {
+			
+			// This directory is not modified - we can rely on the database entries
+			
+			Set<File> files = new HashSet<File>();
+			while(fileCursor.moveToNext()) {
+				String fileName = fileCursor.getString(index);
+				int flags = fileCursor.getInt(flindex);
+				if(flags == 0) {
+					files.add(new File(parentDir, fileName));
+				}
+			}
+			
+			Log.v(TAG, String.format("No change, scanning %d Datbase entries with %d dirs", fileCursor.getCount(), files.size()));
 
 			fileCursor.close();
 			fileCursor = null;
 
-			for(File f : fileList) {
-				if(f.isDirectory()) {
-					scanFiles(f, alwaysScan, lastScan);
-				}
+			for(File f : files) {
+				scanFiles(f, alwaysScan, lastScan);
 			}
-
 		}
-		
 	}
 
 	public void scan(boolean full) {
@@ -608,7 +692,71 @@ public class SongDatabase {
 
 		File parentDir = new File("/sdcard/MODS");
 		
+		
+		if(full) {
+			
+			Set<File> deletes = new HashSet<File>();
+			int limit, offset;
+			limit = 5000;
+			offset = 0;
+						
+			if(scanCallback != null) {
+				scanCallback.notifyScan("Checking orphans", 0);
+			}					
+			
+			while(true) {
+				
+				// Remove orphaned directories
+				Cursor oc = db.query("FILES", new String[] { "PATH", "FILENAME" }, "PATH NOT LIKE '%.zip%'", null, null, null, null, String.format("%d , %d", offset, limit));
+
+				Log.v(TAG, String.format("Orphan check on %d files\n", oc.getCount()));
+
+				if(oc.getCount() <= 0) {
+					oc.close();
+					break;
+				}
+				
+				offset += limit;
+				
+				int pindex = oc.getColumnIndex("PATH");
+				int findex = oc.getColumnIndex("FILENAME");
+		
+
+				deletes.clear();
+				while(oc.moveToNext()) {				
+					String pathName = oc.getString(pindex);
+					if(!pathName.contains(".zip")) {
+						String fileName = oc.getString(findex);
+						File f = new File(pathName, fileName);
+						if(!f.exists()) {
+							deletes.add(f);
+						}
+					}
+				}
+				
+				oc.close();
+				
+				if(deletes.size() > 0) {
+					db.beginTransaction();
+					for(File f : deletes) {
+						Log.v(TAG, String.format("Removing %s from DB\n", f.getPath()));
+						db.delete("FILES", "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() });
+					}
+					db.setTransactionSuccessful();
+					db.endTransaction();
+				}
+			}
+		}
+
+		
+		
 		scanFiles(parentDir, full, lastScan);
+		//if(scanCallback != null) {
+		//	scanCallback.notifyScan(null, -1);
+		//}
+		
+		
+		
 		
 		ContentValues values = new ContentValues();
 		values.put("VAR", "lastscan");
@@ -657,10 +805,8 @@ public class SongDatabase {
 		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
 	}
 	
-	private Map<String, PathCallback> pathCallbacks = new HashMap<String, PathCallback>();
-	
-	public static interface PathCallback {
-		Cursor getCursorFromPath(String path);
+	public void setScanCallback(ScanCallback cb) {
+		scanCallback = cb;
 	}
 
 	public void registerPath(String name, PathCallback cb) {

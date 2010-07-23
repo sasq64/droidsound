@@ -2,14 +2,20 @@ package com.ssb.droidsound;
 
 import java.io.File;
 
+import com.ssb.droidsound.provider.SongProvider;
 import com.ssb.droidsound.service.PlayerService;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.SearchManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -25,6 +31,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
+import android.widget.RemoteViews;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -78,18 +85,74 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		final SongDatabase songDatabase = db;
 		final boolean fullScan = full;
+		final NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);	
 		
-		AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+		
+		//RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification_progress);
+		//contentView.setProgressBar(R.id.np_progress, 100, 50, false);
+		
+		final Notification notification = new Notification(R.drawable.note, "Scanning", System.currentTimeMillis());				
+		Intent notificationIntent = new Intent(PlayerActivity.this, PlayerActivity.class);
+		final PendingIntent contentIntent = PendingIntent.getActivity(PlayerActivity.this, 0, notificationIntent, 0);
+
+		//notification.contentView = contentView;
+		//notification.contentIntent = contentIntent;
+		
+		//notification.setLatestEventInfo(PlayerActivity.this, "Scanning", "what", contentIntent);
+		//manager.notify(1, notification);
+		
+		AsyncTask<Void, String, Void> task = new AsyncTask<Void, String, Void>() {
+			
+			boolean notified = false;
+			String path = null;
+			
 			@Override
 			protected Void doInBackground(Void... arg) {
+								
+				songDatabase.setScanCallback(new SongDatabase.ScanCallback() {					
+					@Override
+					public void notifyScan(String p, int percent) {
+						
+						Log.v(TAG, String.format("NOTIFY %s %s %d", p, path, percent));
+						
+						if(p != null) {
+							path = p;
+						}
+						if(percent > 0) {
+							publishProgress(String.format("%s [%02d%%]", path, percent));
+						} else {
+							publishProgress(String.format("%s", path));
+						}
+					}
+				});
+
 				songDatabase.scan(fullScan);
+				songDatabase.setScanCallback(null);
 				return null;
+			}
+			
+			@Override
+			protected void onProgressUpdate(String... values) {
+					
+				
+				//Log.v(TAG, String.format("NOTIFY %s", values[0]));
+
+				if(values[0] != null) {
+					notification.setLatestEventInfo(PlayerActivity.this, "Scanning", values[0], contentIntent);
+					manager.notify(1, notification);
+					if(!notified) {
+						notified = true;
+					}
+				}
 			}
 
 			@Override
 			protected void onPostExecute(Void result) {
-				Toast t = Toast.makeText(PlayerActivity.this, "Scan done", Toast.LENGTH_SHORT);
-				t.show();
+				
+				if(notified) {
+					manager.cancel(1);
+				}
+				
 				playListView.rescan();				
 			}
 		};
@@ -127,10 +190,64 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		controls = findViewById(R.id.controls);
 		parentButton = (Button) findViewById(R.id.parent_button);
 		titleText = (TextView) findViewById(R.id.list_title);
-		
 		searchButton = (ImageButton) findViewById(R.id.search_button);
+		
+		
+		//return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
+
+		/*
+		String[] projection = new String[] {
+                SongProvider._ID,
+                SongProvider.TITLE,
+                SongProvider.COMPOSER,
+                SongProvider.FILENAME,
+                SongProvider.FLAGS,
+             };
+		
+		ContentResolver cr = getContentResolver();
+		String pathName = "/sdcard/MODS";		
+		Cursor c = cr.query(SongProvider.SONG_URI, projection, "PATH=?", new String[] { pathName }, "FLAGS, FILENAME");
+		*/
 		//int top = drawer.getTop();
 		//Log.v(TAG, String.format("TOP %d", top));
+		
+		songDatabase = new SongDatabase(this);
+		
+		songDatabase.setScanCallback(new SongDatabase.ScanCallback() {
+			
+			NotificationManager manager;
+			Notification notification;
+			PendingIntent contentIntent;
+			
+			@Override
+			public void notifyScan(String path, int percent) {
+
+				if(manager == null) {
+					
+					if(path == null) {
+						return;
+					}
+					
+					Log.v(TAG, String.format("NOTIFY %s %d", path, percent));
+					
+					NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);		
+					notification = new Notification(R.drawable.note, "Scanning", System.currentTimeMillis());
+							
+					Intent notificationIntent = new Intent(PlayerActivity.this, PlayerActivity.class);
+					contentIntent = PendingIntent.getActivity(PlayerActivity.this, 0, notificationIntent, 0);
+					notification.setLatestEventInfo(PlayerActivity.this, "Scanning", path, contentIntent);
+					manager.notify(1, notification);
+					return;
+				}
+				
+				if(percent == -1) {
+					manager.cancel(1);
+				} else {				
+					notification.setLatestEventInfo(PlayerActivity.this, "Scanning", path, contentIntent);
+				}
+				
+			}
+		});
 		
 		searchButton.setOnClickListener(new OnClickListener() {			
 			@Override
@@ -263,7 +380,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Intent intent = getIntent();
 		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
 		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
-			songDatabase = new SongDatabase(this);
 			String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
 			//cursor = songDatabase.search(query);
@@ -289,7 +405,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 */
 		
 		//songDatabase = new SongDatabase(this);		
-		//scan(songDatabase, false);
+		scan(songDatabase, false);
 		//songDatabase.registerPath(name, cb)
 		
 		playListView.setDirectory(currentPath);
@@ -398,7 +514,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		int choice = item.getItemId();
 		switch(choice) {
 		case 10:
-			scan(songDatabase, false);
+			scan(songDatabase, true);
+			break;
+		case 11 :
+			NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+			mNotificationManager.cancel(1);
 			break;
 		case 12:
 			player.stop();
