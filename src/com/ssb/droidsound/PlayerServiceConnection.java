@@ -74,6 +74,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 
 	public void unbindService(Activity activity) {
 		Log.v(TAG, "Unbinding");
+		callback = null;
 		if(mService != null) {
 			try {
 				mService.unRegisterCallback(mCallback);

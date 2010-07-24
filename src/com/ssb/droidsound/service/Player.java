@@ -330,6 +330,7 @@ public class Player implements Runnable {
 							if(currentState != State.STOPPED) {
 								audioTrack.stop();
 								currentPlugin.unload(songRef);
+								currentPlugin = null;
 								currentState = State.STOPPED;
 								Message msg = mHandler.obtainMessage(MSG_STATE, 0, 0);
 								mHandler.sendMessage(msg);
