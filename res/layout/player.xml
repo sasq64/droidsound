@@ -39,9 +39,10 @@
 <SlidingDrawer
      android:id="@+id/drawer"
      android:layout_width="fill_parent"
-     android:layout_height="wrap_content"
+     android:layout_height="240dp"
      android:bottomOffset="22dip"
-     android:topOffset="180dip"
+     
+     android:layout_alignParentBottom="true"
 
      android:handle="@+id/handle"
      android:content="@+id/panel">
@@ -55,7 +56,9 @@
 	<LinearLayout
 		android:id="@id/panel"
 		android:orientation="vertical"
-		android:layout_width="fill_parent" android:layout_height="fill_parent"		
+		android:layout_width="fill_parent"
+		android:layout_height="400dp"
+		android:background="#ffa0a0a0"	
 	>
 		<FrameLayout 
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 

@@ -112,6 +112,7 @@ public class PlayerService extends Service {
                 case Player.MSG_STATE:
                 	info[SONG_STATE] = (Integer)msg.arg1;
                 	performCallback(SONG_STATE);
+                	break;
                 default:
                     super.handleMessage(msg);
             }
@@ -248,23 +249,36 @@ public class PlayerService extends Service {
 
 		@Override
 		public void registerCallback(IPlayerServiceCallback cb, int flags) throws RemoteException {
-			for(int i=0; i<10; i++) {
-				try {
-					if(info[i] != null) {
-						if(info[i] instanceof String) {
-							cb.stringChanged(i, (String)info[i]);
-						} else {
-							cb.intChanged(i, (Integer)info[i]);
+			
+			if(cb != null) {
+				for(int i=0; i<10; i++) {
+					try {
+						if(info[i] != null) {
+							if(info[i] instanceof String) {
+								cb.stringChanged(i, (String)info[i]);
+							} else {
+								cb.intChanged(i, (Integer)info[i]);
+							}
 						}
-					}
-				} catch (RemoteException e) {
-					Log.v(TAG, "Ignoring callback because peer is gone");
-					return;
-				}				
+					} catch (RemoteException e) {
+						Log.v(TAG, "Ignoring callback because peer is gone");
+						return;
+					}				
+				}
 			}
+			Log.v(TAG, String.format("Adding %s", cb.toString()));
 			callbacks.add(cb);			
 		}
 
+		@Override
+		public void unRegisterCallback(IPlayerServiceCallback cb)
+				throws RemoteException {
+			
+			Log.v(TAG, String.format("Removing %s", cb.toString()));
+			callbacks.remove(cb);
+		}
+
+		
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
 			if(player.isActive()) {
@@ -323,7 +337,8 @@ public class PlayerService extends Service {
 		public void playPrev() throws RemoteException {
 			playPrevSong();
 		}
-	};
+
+		};
 	
     @Override
     public IBinder onBind(Intent intent) {

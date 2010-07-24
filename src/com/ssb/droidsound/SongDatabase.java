@@ -662,7 +662,7 @@ public class SongDatabase {
 		}
 	}
 
-	public void scan(boolean full) {
+	public void scan(boolean full, String modsDir) {
 
 
 		plugins = new DroidSoundPlugin[3];
@@ -690,7 +690,7 @@ public class SongDatabase {
 		
 		Log.v(TAG, String.format("Last scan %d\n", lastScan));
 
-		File parentDir = new File("/sdcard/MODS");
+		File parentDir = new File(modsDir);
 		
 		
 		if(full) {
@@ -784,10 +784,10 @@ public class SongDatabase {
 			rdb.close();
 			rdb = null;
 		}
-		if(db != null) {
+		/*if(db != null) {
 			db.close();
 			db = null;
-		}
+		}*/
 	}
 
 	public Cursor getFilesInPath(String pathName) {

@@ -16,4 +16,5 @@ interface IPlayerService {
 	void stop();
 	
 	void registerCallback(IPlayerServiceCallback cb, int flags);
+	void unRegisterCallback(IPlayerServiceCallback cb);
 }

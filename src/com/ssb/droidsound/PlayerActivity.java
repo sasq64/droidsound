@@ -2,20 +2,18 @@ package com.ssb.droidsound;
 
 import java.io.File;
 
-import com.ssb.droidsound.provider.SongProvider;
-import com.ssb.droidsound.service.PlayerService;
-
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.SearchManager;
-import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,25 +21,22 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.RelativeLayout;
-import android.widget.RemoteViews;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AbsListView.OnScrollListener;
-import android.widget.RelativeLayout.LayoutParams;
+
+import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "DroidSound";
 
-	private PlayerServiceConnection player = new PlayerServiceConnection();
+	private PlayerServiceConnection player;
 	private ImageButton playButton;
 	private ImageButton backButton;
 	private ImageButton fwdButton;
@@ -57,32 +52,31 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private PlayListView playListView;
 	private SlidingDrawer drawer;
 
-	private int songLength;
 	private int songPos;
 	private int subTune;
 	private int subTuneCount;
+	private int songLength;
+	private String songName;
 	private boolean mIsPlaying = false;
 	private boolean controlsHidden = false;
 
 	private SongDatabase songDatabase;
 
-	private FrameLayout listFrame;
-
 	private View infoDisplay;
-
 	private View controls;
-
-	private String playingFile;
-
 	private TextView titleText;
 
+	private String modsDir;
 
-	private static void Log(String fmt, Object...args) {
-		Log.v(TAG, String.format(fmt, args));
-	}
-
+	private static AsyncTask<Void, String, Void> scanTask = null;
+	
 	private void scan(SongDatabase db, boolean full) {
 		
+		if(scanTask != null) {
+			Log.v(TAG, "Already scanning! exiting scan...");
+			return;
+		}
+			
 		final SongDatabase songDatabase = db;
 		final boolean fullScan = full;
 		final NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);	
@@ -101,7 +95,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//notification.setLatestEventInfo(PlayerActivity.this, "Scanning", "what", contentIntent);
 		//manager.notify(1, notification);
 		
-		AsyncTask<Void, String, Void> task = new AsyncTask<Void, String, Void>() {
+		scanTask = new AsyncTask<Void, String, Void>() {
 			
 			boolean notified = false;
 			String path = null;
@@ -126,7 +120,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					}
 				});
 
-				songDatabase.scan(fullScan);
+				songDatabase.scan(fullScan, modsDir);
 				songDatabase.setScanCallback(null);
 				return null;
 			}
@@ -153,11 +147,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					manager.cancel(1);
 				}
 				
-				playListView.rescan();				
+				playListView.rescan();
+				scanTask = null;
 			}
 		};
 
-		task.execute((Void)null);
+		scanTask.execute((Void)null);
 	}
 	
 	@Override
@@ -173,7 +168,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		player.bindService(this, this);
+		player = new PlayerServiceConnection();
 		
 		setContentView(R.layout.player);
 		playButton = (ImageButton) findViewById(R.id.play_button);
@@ -185,13 +180,45 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		songDigitsText = (TextView) findViewById(R.id.seconds_text);
 		playListView = (PlayListView) findViewById(R.id.play_list);
 		drawer = (SlidingDrawer) findViewById(R.id.drawer);
-		listFrame = (FrameLayout) findViewById(R.id.play_list_frame);
 		infoDisplay = findViewById(R.id.info_display);
 		controls = findViewById(R.id.controls);
 		parentButton = (Button) findViewById(R.id.parent_button);
 		titleText = (TextView) findViewById(R.id.list_title);
 		searchButton = (ImageButton) findViewById(R.id.search_button);
+				
+		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
+		modsDir = prefs.getString("modsDir", null);
 		
+
+		//modsDir = "/sdcard/MODS";
+		if(modsDir == null) {
+			File extFile = Environment.getExternalStorageDirectory();		
+			if(extFile != null) {
+				File mf = new File(extFile, "MODS");
+				if(!mf.exists()) {
+					mf.mkdir();
+				}
+				
+				if(!mf.exists()) {
+					showDialog(11);
+				} else {
+					
+					modsDir = mf.getPath();
+					Editor editor = prefs.edit();
+					editor.putString("modsDir", modsDir);
+					editor.commit();
+					
+					showDialog(12);
+					
+				}
+	
+				
+			} else {
+				showDialog(10);
+			}
+		}
+		
+		Log.v(TAG, String.format("MODS at %s", modsDir));
 		
 		//return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
 
@@ -212,6 +239,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//Log.v(TAG, String.format("TOP %d", top));
 		
 		songDatabase = new SongDatabase(this);
+		playListView.setDatabase(songDatabase);
 		
 		songDatabase.setScanCallback(new SongDatabase.ScanCallback() {
 			
@@ -287,7 +315,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void dirChange(String dir) {
 				File f = new File(dir);
-				if(f.getPath().equals("/sdcard/MODS")) {
+				if(f.getPath().equals(modsDir)) {
 					parentButton.setText("");
 					parentButton.setVisibility(View.INVISIBLE);
 				} else {
@@ -326,10 +354,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		backButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
-				subTune -= 1;
-				if(subTune < 0) {
+				if(subTune == 0) {
 					player.playPrev();
 				} else {
+					subTune -= 1;
 					player.setSubSong(subTune);
 				}
 			}
@@ -346,8 +374,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		fwdButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
-				subTune += 1;
-				if(subTune < subTuneCount) {
+				if((subTune+1) < subTuneCount) {
+					subTune += 1;
 					player.setSubSong(subTune);
 				} else {
 					player.playNext();
@@ -371,10 +399,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 
-		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
+		//SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		String currentPath = prefs.getString("currentPath", null);
 		if(currentPath == null) {
-			currentPath = "/sdcard/MODS";
+			currentPath = modsDir;
 		}
 
 		Intent intent = getIntent();
@@ -412,13 +440,29 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		playListView.setPlayer(player);
 	}
 	
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		player.bindService(this, this);
+	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		player.unbindService(this);
+	}
+	
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		
+		playListView.close();
+		songDatabase.closeDB();
+		
 		Log.v(TAG, "DESTROYED");
 		
-		player.unbindService();
+		player = null;
 		
 		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		Editor editor = prefs.edit();
@@ -470,7 +514,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		}
 	}
-	
+	/*
 	@Override
 	public void onBackPressed() {
 		if(controlsHidden) {
@@ -483,14 +527,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		} else {
 			super.onBackPressed();
 		}
-	}
+	}*/
 
 	@Override
 	public void stringChanged(int what, String value) {
 		switch(what) {
 		case PlayerService.SONG_FILENAME :
 			playListView.setSelection(value);
-			playingFile = value;
+			songName = value;
 			break;
 		case PlayerService.SONG_TITLE :
 			songTitleText.setText(value);
@@ -517,15 +561,44 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			scan(songDatabase, true);
 			break;
 		case 11 :
-			NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-			mNotificationManager.cancel(1);
+			showDialog(0);
 			break;
 		case 12:
 			player.stop();
 			finish();
+		}		
+		return true;
+	}
+	
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		
+		String msg = "SWAY WAT?";
+		
+		switch(id) {
+		case 0:
+			msg = "Droidsound Beta 1\nBy sasq64@gmail.com";
+			break;
+		case 10:
+			msg = "Could not find sdcard";
+			break;
+		case 11:
+			msg = "Could not write sdcard";
+			break;
+		case 12:
+			msg = "MODS at " + modsDir;
+			break;
 		}
 		
-		return true;
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(msg)
+		       .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+		           public void onClick(DialogInterface dialog, int id) {
+		                dialog.cancel();
+		           }
+		       });
+		AlertDialog alert = builder.create();
+		return alert;
 	}
 
 	

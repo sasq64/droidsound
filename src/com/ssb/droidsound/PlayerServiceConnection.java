@@ -22,7 +22,6 @@ public class PlayerServiceConnection implements ServiceConnection {
 	};
 	
 	protected IPlayerService mService;
-	private Activity mActivity;
 	private String modToPlay;
 	private Callback callback;
 	
@@ -46,14 +45,14 @@ public class PlayerServiceConnection implements ServiceConnection {
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
 		mService = IPlayerService.Stub.asInterface(service);
-		Log.v(TAG, "Service now bound");
+		Log.v(TAG, "Service Connected");
 		
 		try {
 			mService.registerCallback(mCallback, 0);
 		} catch (RemoteException e) {
 			throw new RuntimeException(e);
 		}
-		
+
 		if(modToPlay != null) {
 			playMod(modToPlay);
 			modToPlay = null;
@@ -62,22 +61,27 @@ public class PlayerServiceConnection implements ServiceConnection {
 
 	@Override
 	public void onServiceDisconnected(ComponentName name) {
-		// TODO Auto-generated method stub
+		Log.v(TAG, "Service Disconnected!");
 	}
 
 	public void bindService(Activity activity, Callback cb) {
-		mActivity = activity;
 		callback = cb;
-
+		Log.v(TAG, "binding");
 		Intent i = new Intent(activity, PlayerService.class);
 		activity.startService(i);
 		activity.bindService(i, this, Context.BIND_AUTO_CREATE);        		
 	}
 
-	public void unbindService() {
+	public void unbindService(Activity activity) {
+		Log.v(TAG, "Unbinding");
 		if(mService != null) {
-			mActivity.unbindService(this);
+			try {
+				mService.unRegisterCallback(mCallback);
+			} catch (RemoteException e) {
+				throw new RuntimeException(e);
+			}
 		}
+		activity.unbindService(this);
 	}
 
 	public boolean playMod(String name) {

@@ -44,7 +44,6 @@ public class PlayListView extends ListView {
 	static class PlayListAdapter extends BaseAdapter {
     	
     	private Context mContext;
-		private Typeface mTypeface;
 		private Cursor mCursor;
 
 		private int mAuthorIndex;
@@ -56,9 +55,9 @@ public class PlayListView extends ListView {
 		private int selectedPosition = -1;
 		private boolean hasParent;
 
-		PlayListAdapter(Context context, Typeface tf) {
+		PlayListAdapter(Context context) {
     		mContext = context;
-    		mTypeface = tf;
+
     	}
 		
 		public void setCursor(Cursor cursor, String dirName) {
@@ -79,6 +78,20 @@ public class PlayListView extends ListView {
     		mPathIndex = mCursor.getColumnIndex("PATH");
     		notifyDataSetChanged();
     		selectedPosition = -1;
+		}
+		
+		protected void finalize() throws Throwable {
+			Log.v(TAG, "FINALIIIIIIIIZE!");
+			if(mCursor != null) {
+				mCursor.close();
+			}
+		};
+		
+		public void close() {
+			if(mCursor != null) {
+				mCursor.close();
+				mCursor = null;
+			}
 		}
 		
 		@Override
@@ -131,7 +144,7 @@ public class PlayListView extends ListView {
 			}
 			
 			if(position == selectedPosition) {
-				tv0.setTextColor(0xFFFFFFFF);
+				tv0.setTextColor(0xFFFFFF00);
 			}
 			
 			return convertView;
@@ -171,12 +184,12 @@ public class PlayListView extends ListView {
 			return 0;
 		}
 
-		public File[] getFiles() {
+		public File[] getFiles(boolean skipDirs) {
 			
 			//File [] names = new File [ mCursor.getCount() ];
 			ArrayList<File> files = new ArrayList<File>();
 						
-			mCursor.move(-1);
+			mCursor.moveToPosition(-1);
 			while(mCursor.moveToNext()) {
 				String fileName = mCursor.getString(mFileIndex);
 				File f;
@@ -187,13 +200,16 @@ public class PlayListView extends ListView {
 				}	
 				//String pathName = mCursor.getString(mPathIndex);
 				int flags = mCursor.getInt(mFlagsIndex);
-				if((flags & 1) != 0) {
+				
+				//Log.v(TAG, String.format("File %s flags %d", f.getPath(), flags));
+				
+				if(!skipDirs || (flags & 1) != 0) {
 					files.add(f);
 				}
 			}
 			File [] names = new File [ files.size() ];
 			int i = 0;
-			for(File f : files) {
+			for(File f : files) {				
 				names[i++] = f;
 			}
 			return names;
@@ -204,13 +220,17 @@ public class PlayListView extends ListView {
 		}
 
 		public int setSelectedFile(String name) {
-			File [] files = getFiles();
+			if(name == null) {
+				return -1;
+			}
+			File [] files = getFiles(false);
 			int realpos = -1;
 			for(int i=0; i<files.length; i++) {
 				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
 				if(name.equals(files[i].getPath())) {
 					setSelectedPosition(i);
 					realpos = i;
+					break;
 				}
 			}
 			return realpos;
@@ -239,13 +259,13 @@ public class PlayListView extends ListView {
 	private File selectedFile;
 	private String pathName;
 	private String baseDir;
+	private String selectedName;
 	
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/topaz_plus1200.ttf");
-		dataBase = new SongDatabase(context);
+		//Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/topaz_plus1200.ttf");
 		
-		adapter = new PlayListAdapter(context, tf);
+		adapter = new PlayListAdapter(context);
 		setAdapter(adapter);
 				
         setOnItemClickListener(new OnItemClickListener() {
@@ -261,7 +281,7 @@ public class PlayListView extends ListView {
 						setDirectory(fi.file.getPath());
 					} else {
 						int index = 0;
-						File [] files = adapter.getFiles(); 
+						File [] files = adapter.getFiles(true); 
 						String [] names = new String [files.length];
 						for(int i=0; i<files.length; i++) {
 							if(files[i].equals(fi.file)) {
@@ -278,9 +298,9 @@ public class PlayListView extends ListView {
 		});
 	}
 
-   // public void setDatabase(SongDatabase db) {
-   // 	dataBase = db;
-    //}
+    public void setDatabase(SongDatabase db) {
+    	dataBase = db;
+    }
 
     public void setDirectory(String parent) {
     	
@@ -288,9 +308,10 @@ public class PlayListView extends ListView {
     	//if(bi >= 0) {
     	//	parent = parent.substring(bi);
 
+
     	pathName = parent;    	
     	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
-    	
+    	adapter.setSelectedFile(selectedName);
     	if(dirChangeCallback != null) {
     		dirChangeCallback.dirChange(pathName);
     	}
@@ -313,7 +334,7 @@ public class PlayListView extends ListView {
 	public void rescan() {
 		adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
 		adapter.notifyDataSetChanged();
-		adapter.setSelectedPosition(-1);
+		adapter.setSelectedFile(selectedName);
 	}
 	
 	public void selectPosition(int position) {
@@ -322,9 +343,10 @@ public class PlayListView extends ListView {
 	public void setSelection(String name) {
 		
 		int position = adapter.setSelectedFile(name);
+		selectedName = name;
 		adapter.notifyDataSetChanged();
 		//adapter.setSelectedPosition(position);
-		setSelectionFromTop(position, getHeight()/2);
+		setSelectionFromTop(position, getHeight()/4);
 	}
 
 	public void redraw() {
@@ -343,6 +365,9 @@ public class PlayListView extends ListView {
     	if(dirChangeCallback != null) {
     		dirChangeCallback.dirChange(pathName);
     	}
+	}
 	
+	public void close() {
+		adapter.close();
 	}
 }
