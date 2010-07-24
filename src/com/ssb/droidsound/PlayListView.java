@@ -32,7 +32,7 @@ import android.widget.AdapterView.OnItemClickListener;
 public class PlayListView extends ListView {
 	private static final String TAG = "PlayListView";
 	
-	private static class FileInfo {
+	public static class FileInfo {
 		File file;
 		int flags;
 		FileInfo(File f, int fl) {
@@ -122,20 +122,20 @@ public class PlayListView extends ListView {
 			TextView tv1 = (TextView)vg.getChildAt(1);
 
 			mCursor.moveToPosition(position);
-			int flags = 0;
+			int flags = 1;
 			if(mFlagsIndex >= 0) {
 				flags = mCursor.getInt(mFlagsIndex);
 			}
 			
-			if((flags & 1) != 0) {
+			if(flags == 1) {
 				tv0.setText(mCursor.getString(mTitleIndex));
 				tv1.setText(mCursor.getString(mAuthorIndex));
 				tv0.setTextColor(0xFFA0A0FF);
 				tv1.setVisibility(View.VISIBLE);
 			}
-			else if((flags & 2) != 0) {
+			else if(flags == 2) {
 				tv0.setText(mCursor.getString(mFileIndex));
-				tv0.setTextColor(0xFFA0A080);
+				tv0.setTextColor(0xFFFFA080);
 				tv1.setVisibility(View.GONE);				
 			} else {
 				tv0.setText(mCursor.getString(mFileIndex));
@@ -174,7 +174,10 @@ public class PlayListView extends ListView {
 			} else {
 				f = new File(pathName, fileName);
 			}				
-			int flags = mCursor.getInt(mFlagsIndex);
+			int flags = 1;
+			if(mFlagsIndex >= 0) {
+				flags = mCursor.getInt(mFlagsIndex);
+			}
 			return new FileInfo(f, flags);
 		}
 
@@ -199,11 +202,15 @@ public class PlayListView extends ListView {
 					f = new File(pathName, fileName);
 				}	
 				//String pathName = mCursor.getString(mPathIndex);
-				int flags = mCursor.getInt(mFlagsIndex);
+				
+				int flags = 1;
+				if(mFlagsIndex >= 0) {
+					flags = mCursor.getInt(mFlagsIndex);
+				}
 				
 				//Log.v(TAG, String.format("File %s flags %d", f.getPath(), flags));
 				
-				if(!skipDirs || (flags & 1) != 0) {
+				if(!skipDirs || (flags == 1)) {
 					files.add(f);
 				}
 			}
@@ -239,6 +246,14 @@ public class PlayListView extends ListView {
 		public void setHasParent(boolean b) {
 			hasParent = b;
 		}
+
+		public Cursor getCursor(int position) {
+			if(mCursor != null) {
+				mCursor.moveToPosition(position);
+			}
+			return mCursor;
+		}
+		
 	}
 	
 	public static interface DirChangeCallback {
@@ -261,12 +276,22 @@ public class PlayListView extends ListView {
 	private String baseDir;
 	private String selectedName;
 	
+	
+	
+	
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		//Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/topaz_plus1200.ttf");
 		
 		adapter = new PlayListAdapter(context);
 		setAdapter(adapter);
+		
+		setOnItemLongClickListener(new OnItemLongClickListener() {
+			@Override
+			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+				return false;
+			}
+		});
 				
         setOnItemClickListener(new OnItemClickListener() {
 
@@ -369,5 +394,9 @@ public class PlayListView extends ListView {
 	
 	public void close() {
 		adapter.close();
+	}
+
+	public Cursor getCursor(int position) {
+		return adapter.getCursor(position);		
 	}
 }

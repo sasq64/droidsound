@@ -10,29 +10,36 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.SearchManager;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
 import android.widget.AbsListView.OnScrollListener;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 
-import com.ssb.droidsound.SongDatabase.ScanCallback;
 import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
@@ -248,7 +255,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//Log.v(TAG, String.format("TOP %d", top));
 		
 		songDatabase = new SongDatabase(this);
-		playListView.setDatabase(songDatabase);
+		
+		songDatabase.registerPath("TEST", new SongDatabase.PathCallback() {
+			@Override
+			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
+				Log.v(TAG, "Getting TEST path " + path);
+				String cp = String.format("%s%%", path);
+				//return db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "COPYRIGHT LIKE ?", new String[] { cp }, null, null, "COMPOSER, TITLE");
+				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=0", null, null, null, null);
+			}			
+		});
+		
+		playListView.setDatabase(songDatabase);		
+		registerForContextMenu(playListView);
 		
 		searchButton.setOnClickListener(new OnClickListener() {			
 			@Override
@@ -261,6 +280,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 				playListView.gotoParent();
+			}
+		});
+		
+		parentButton.setOnLongClickListener(new OnLongClickListener() {
+			@Override
+			public boolean onLongClick(View v) {
+				playListView.setDirectory(modsDir);
+				return true;
 			}
 		});
 		
@@ -573,6 +600,74 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		AlertDialog alert = builder.create();
 		return alert;
 	}
-
 	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);		
+		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+		Log.v(TAG, String.format("POS %d", info.position));
+		Cursor cursor = playListView.getCursor(info.position);
+		
+		//MenuInflater inflater = getMenuInflater();
+		//inflater.inflate(R.menu.songmenu, menu);
+		menu.add(Menu.NONE, 10, Menu.NONE, "Details");
+		menu.add(Menu.NONE, 11, Menu.NONE, "Favorite");
+		menu.add(Menu.NONE, 12, Menu.NONE, "Go to author");
+		if(cursor.getColumnIndex("LIST") >= 0) {
+			menu.add(Menu.NONE, 13, Menu.NONE, "Remove");
+		}
+		
+	}
+	
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		SQLiteDatabase db;
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
+		//PlayListView.FileInfo finfo = (PlayListView.FileInfo) playListView.getItemAtPosition(info.position);
+		Cursor cursor = playListView.getCursor(info.position);
+		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id));
+		ContentValues values;
+		switch(item.getItemId()) {
+		case 12:
+			playListView.setDirectory(cursor.getString(cursor.getColumnIndex("PATH")));
+			break;
+		case 11:
+			db = songDatabase.getWritableDatabase();
+			values = new ContentValues();
+			values.put("LIST", 0);
+			int pi = cursor.getColumnIndex("PATH");
+			String path = playListView.getDirectory();
+			if(pi >= 0) {
+				path =  cursor.getString(pi);
+			}
+			int idx =-1;
+			values.put("PATH", path);
+			values.put("FILENAME", cursor.getString(cursor.getColumnIndex("FILENAME")));
+			idx = cursor.getColumnIndex("TITLE");
+			if(idx >= 0)
+				values.put("TITLE", cursor.getString(idx));
+			idx = cursor.getColumnIndex("COMPOSER");
+			if(idx >= 0)
+				values.put("COMPOSER", cursor.getString(idx));
+			idx = cursor.getColumnIndex("COPYRIGHT");
+			if(idx >= 0)
+				values.put("COPYRIGHT", cursor.getString(idx));
+			idx = cursor.getColumnIndex("FORMAT");
+			if(idx >= 0)
+				values.put("FORMAT", cursor.getString(idx));
+			db.insert("LINKS","PATH", values);
+			db.close();
+			break;
+		case 13 :
+			db = songDatabase.getWritableDatabase();
+			db.delete("LINKS", "_id=?", new String [] { Integer.toString(cursor.getInt( cursor.getColumnIndex("_id"))) } );
+			db.close();
+			playListView.rescan();
+		case R.id.details:
+			break;
+		default:
+			return super.onContextItemSelected(item);
+		}
+		return true;
+	}	
 }

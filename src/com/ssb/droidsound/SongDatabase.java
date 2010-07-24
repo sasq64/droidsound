@@ -3,9 +3,9 @@ package com.ssb.droidsound;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
-import java.util.zip.ZipFile;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -48,7 +47,7 @@ public class SongDatabase {
 	private ScanCallback scanCallback;
 	
 	public static interface PathCallback {
-		Cursor getCursorFromPath(String path);
+		Cursor getCursorFromPath(String path, SQLiteDatabase db);
 	}
 
 	public static interface ScanCallback {
@@ -161,6 +160,15 @@ public class SongDatabase {
 				"FORMAT" + " TEXT," +
 				"LENGTH" + " INTEGER" + ");");
 		
+		db.execSQL("CREATE TABLE IF NOT EXISTS " + "LINKS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+				"LIST" + " INTEGER," +
+				"PATH" + " TEXT," +
+				"FILENAME" + " TEXT," +
+				"TITLE" + " TEXT," +
+				"COMPOSER" + " TEXT," +
+				"COPYRIGHT" + " TEXT," +
+				"FORMAT" + " TEXT" + ");");
+
 		db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
 
 		/*db.execSQL("CREATE TABLE IF NOT EXISTS " + "DIRS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
@@ -513,10 +521,10 @@ public class SongDatabase {
 				} else {
 					Log.v(TAG, String.format("!! '%s' found in DB but not on disk, DELETING", fileName));
 					// File has been removed on disk, schedule for DELETE
-					if((flags & 1) == 0) {
-						delDirs.add(fileName);
-					} else {
+					if(flags == 1) {
 						delFiles.add(fileName);
+					} else {
+						delDirs.add(fileName);
 					}
 				}
 			}
@@ -562,12 +570,21 @@ public class SongDatabase {
 	
 						if(f.isFile()) {
 							
-							if(f.getName().toUpperCase().endsWith(".ZIP")) {
+							String fn = f.getName();
+							int end = fn.length();
+							
+							if(fn.toUpperCase().endsWith(".ZIP")) {
 								Log.v(TAG, String.format("Found zipfile (%s)", f.getPath()));
 								zipFiles.add(f);
 								values.put("FLAGS", 2);
+								values.put("TITLE", fn.substring(end - 4, end));
 							}
-							else {
+							else 
+							if(fn.toUpperCase().endsWith(".LNK")) {
+								Log.v(TAG, String.format("Found link (%s)", fn));
+								values.put("FLAGS", 2);
+								values.put("TITLE", fn.substring(end - 4, end));								
+							} else {
 								values.put("FLAGS", 1);
 								try {
 									if(checkModule(f, values)) {
@@ -691,7 +708,119 @@ public class SongDatabase {
 		Log.v(TAG, String.format("Last scan %d\n", lastScan));
 
 		File parentDir = new File(modsDir);
-		
+		/*
+		File cf = new File(modsDir, "csdb.txt");
+		if(cf.exists()) {
+			
+			db.execSQL("DROP TABLE IF EXISTS RELEASES;");
+			db.execSQL("DROP TABLE IF EXISTS GROUPS;");
+			db.execSQL("DROP TABLE IF EXISTS EVENTS;");
+			db.execSQL("DROP TABLE IF EXISTS RELEASESIDS;");
+			
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "RELEASES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"ID" + " INTEGER," +
+					"NAME" + " TEXT," +
+					"GROUPID" + " INTEGER," +
+
+					"TYPE" + " TEXT," +
+					"YEAR" + " INTEGER," +
+					"EVENTID" + " INTEGER," +
+					"COMPO" + " TEXT," +
+					"PLACE" + " INTEGER" + ");");
+
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "GROUPS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"ID" + " INTEGER," +
+					"NAME" + " TEXT" + ");");
+
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "EVENTS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"ID" + " INTEGER," +
+					"NAME" + " TEXT" + ");");
+
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "RELEASESIDS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"RELEASEID" + " INTEGER," +
+					"PATH" + " TEXT," +
+					"FILENAME" + " TEXT" + ");");
+
+			
+			BufferedReader reader;
+			db.beginTransaction();
+			try {
+				int place = -1;
+				Log.v(TAG, "OPENING CSDB");
+				reader = new BufferedReader(new FileReader(cf));				
+				String line = reader.readLine();
+				while(line != null) {
+					if(line.equals("[Releases]")) {
+						Log.v(TAG, "RELEASES");
+						place = 0;
+					} else
+					if(line.equals("[Groups]")) {
+						Log.v(TAG, "GROUPS");
+						place = 1;
+					} else
+					if(line.equals("[Events]")) {
+						Log.v(TAG, "EVENTS");
+						place = 2;
+					} else {
+						String[] args = line.split("\t");
+						ContentValues values = new ContentValues();
+						if(place == 0) {
+							// (id, name, gid, type, y, eid, compo, place, ','.join(fnames))
+							
+							Log.v(TAG, String.format("Release (%s) %s [%s]\n", args[0], args[1], args[4]));
+							
+							values.put("ID", Integer.parseInt(args[0]));
+							values.put("NAME", args[1]);
+							if(args[2].length() > 0)
+								values.put("GROUPID", Integer.parseInt(args[2])); 
+							values.put("TYPE", args[3]); 
+							if(args[4].length() > 0)
+								values.put("YEAR", args[4]); 
+							if(args[5].length() > 0)
+								values.put("EVENTID", Integer.parseInt(args[5]));
+							if(args[6].length() > 0)
+								values.put("COMPO", args[6]);
+							if(args[7].length() > 0)
+								values.put("PLACE", Integer.parseInt(args[7]));
+							
+							db.insert("RELEASES", "ID", values);
+							
+							String [] sids = args[8].split(":");
+							if(sids.length > 0) {
+								ContentValues values2 = new ContentValues();
+								for(String s : sids) {
+									values2.put("RELEASEID", Integer.parseInt(args[0]));
+									File f = new File(s);
+									values2.put("FILENAME", f.getName());
+									values2.put("PATH", f.getParent());
+									db.insert("RELEASESIDS", "PATH", values2);
+								}
+							}
+						} else if(place == 1) {
+							Log.v(TAG, String.format("Group (%s) %s \n", args[0], args[1]));
+							values.put("ID", Integer.parseInt(args[0]));
+							values.put("NAME", args[1]);
+							db.insert("GROUPS", "ID", values);
+						} else if(place == 2) {
+							Log.v(TAG, String.format("Event (%s) %s \n", args[0], args[1]));
+							values.put("ID", Integer.parseInt(args[0]));
+							values.put("NAME", args[1]);
+							db.insert("EVENTS", "ID", values);
+						}
+					}
+					line = reader.readLine();
+				}
+				db.setTransactionSuccessful();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				db.endTransaction();
+			}
+			Log.v(TAG, "DONE");
+		}
+		*/
 		
 		if(full) {
 			
@@ -789,19 +918,48 @@ public class SongDatabase {
 			db = null;
 		}*/
 	}
+	
+	/*
+	 *   /sdcard/MODS/music/test.mod
+	 *   /sdcard/MODS/C64Music.zip/songs/song.sid
+	 *   /sdcard/MODS/allmon.search
+	 *   /sdcard/MODS/CSDB/PARTIES.LNK contains CDSB:/PARTIES
+	 *   CSDB:/PARTIES/X2008/EdgeOfDisgrace/
+	 * 
+	 */
 
 	public Cursor getFilesInPath(String pathName) {
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
 		
-		int colon = pathName.indexOf(':');
+		File f = new File(pathName);
+		
+		Log.v(TAG, String.format("files in path '%s'", pathName));
+		
+		if(f.getName().toUpperCase().endsWith(".LNK")) {
+			try {
+				BufferedReader reader = new BufferedReader(new FileReader(f));
+				pathName = reader.readLine();
+				reader.close();
+				f = new File(pathName);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}	
+
+		Log.v(TAG, String.format("Path now '%s'", f.getName()));
+
+		int colon = f.getName().indexOf(':');
 		if(colon > 0) {
 			PathCallback cb = pathCallbacks.get(pathName.substring(0, colon));
 			if(cb != null) {
-				return cb.getCursorFromPath(pathName.substring(colon+1));
+				return cb.getCursorFromPath(pathName.substring(colon+1), rdb);
 			}
-		}		
+		}
+
 		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
 	}
 	
@@ -810,7 +968,7 @@ public class SongDatabase {
 	}
 
 	public void registerPath(String name, PathCallback cb) {
-		pathCallbacks.put(name, cb);		
+		pathCallbacks.put(name, cb);
 	}
 
 }
