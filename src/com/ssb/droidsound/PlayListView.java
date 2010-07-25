@@ -134,7 +134,7 @@ public class PlayListView extends ListView {
 				tv1.setVisibility(View.VISIBLE);
 			}
 			else if(flags == 2) {
-				tv0.setText(mCursor.getString(mFileIndex));
+				tv0.setText(mCursor.getString(mTitleIndex));
 				tv0.setTextColor(0xFFFFA080);
 				tv1.setVisibility(View.GONE);				
 			} else {

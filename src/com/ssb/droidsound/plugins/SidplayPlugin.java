@@ -3,8 +3,9 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
-public class SidplayPlugin implements DroidSoundPlugin {
+public class SidplayPlugin extends DroidSoundPlugin {
 
 	static {
 		System.loadLibrary("sidplay2");
@@ -15,6 +16,8 @@ public class SidplayPlugin implements DroidSoundPlugin {
 		String composer;
 		String copyright;
 	};
+	
+	final byte [] header = new byte [128];
 
 	public SidplayPlugin() {
 	}
@@ -59,7 +62,10 @@ public class SidplayPlugin implements DroidSoundPlugin {
 	native public int N_getIntInfo(long song, int what);
 
 	@Override
-	public Object load(byte [] module, int size) { return N_load(module, size); }
+	public Object load(byte [] module, int size) {
+		long rc = N_load(module, size);		
+		return rc != 0 ? rc : null; 
+	}
 
 	@Override
 	public String getStringInfo(Object song, int what) {
@@ -79,55 +85,59 @@ public class SidplayPlugin implements DroidSoundPlugin {
 	}
 
 	@Override
-	public Object loadInfo(File file) throws IOException {
-
-		byte [] tag = new byte [4];
-		byte [] name = new byte [32];
-		byte [] composer = new byte [32];
-		byte [] copyright = new byte [32];
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(tag);
-		fs.skip(18);
-		fs.read(name);
-		fs.read(composer);
-		fs.read(copyright);
-		fs.close();
-		int o = 31;
-		while(o >= 0 && name[o] == 0) {
-			o -= 1;
-		}
+	public Object loadInfo(InputStream is, int size) throws IOException {
 		
 		Info info = new Info();
 		
-		info.name = new String(name, 0, o+1, "ISO-8859-1");
+		is.read(header);
+		
+		String s = new String(header, 0, 4);
+		if(!(s.equals("PSID") || s.equals("RSID"))) {
+			return null;
+		}
 
-		o = 31;
-		while(o >= 0 && composer[o] == 0) {
+		int o = 0x35;
+		while(o >= 0x16 && header[o] == 0) {
 			o -= 1;
 		}
-		info.composer = new String(composer, 0, o+1, "ISO-8859-1");
-		
-		o = 31;
-		while(o >= 0 && copyright[o] == 0) {
+		info.name = new String(header, 0x16, o-0x15, "ISO-8859-1");
+
+		o = 0x55;
+		while(o >= 0x36 && header[o] == 0) {
 			o -= 1;
 		}
-		info.copyright = new String(copyright, 0, o+1, "ISO-8859-1");
-		
-		return info;
-		
+		info.composer = new String(header, 0x36, o-0x35, "ISO-8859-1");
+
+		o = 0x75;
+		while(o >= 0x56 && header[o] == 0) {
+			o -= 1;
+		}
+		info.copyright = new String(header, 0x56, o-0x55, "ISO-8859-1");
+
+		return info;	
 	}
+	
+	@Override
+	public boolean isSilent(Object song) {
+		
+		return (N_getIntInfo((Long)song, 100) != 0);
+	}
+	
 
 	@Override
 	public Object load(File file) throws IOException {
 		
-		loadInfo(file);
+		//if(loadInfo(file) == null) {
+		//	return null;
+		//}
 		
 		int l = (int)file.length();
 		byte [] songBuffer = new byte [l];
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
 		fs.close();
-		
-		return N_load(songBuffer, l); 
+
+		long rc = N_load(songBuffer, l);		
+		return rc != 0 ? rc : null; 
 	}
 }

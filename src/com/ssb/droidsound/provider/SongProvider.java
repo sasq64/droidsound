@@ -41,7 +41,7 @@ public class SongProvider extends ContentProvider {
 	@Override
 	public boolean onCreate() {
 		
-		songDatabase = new SongDatabase(getContext());
+		songDatabase = new SongDatabase(getContext(), false);
 		return true;
 	}
 

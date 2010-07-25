@@ -56,6 +56,7 @@ public class Player implements Runnable {
 	public static final int MSG_DONE = 2;
 	public static final int MSG_STATE = 1;
 	public static final int MSG_PROGRESS = 3;
+	protected static final int MSG_SILENT = 4;
 	
 	public static class SongInfo {
 		String title;
@@ -98,6 +99,7 @@ public class Player implements Runnable {
 	private NativeZipFile currentZip;
 	
 	private volatile State currentState = State.STOPPED;
+	private int silentPosition;
 
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
@@ -111,7 +113,7 @@ public class Player implements Runnable {
 		//if(bufSize < 32768*2) {
 		//	bufSize = 32768*2;
 		//}
-		
+		silentPosition = -1;
 		// Enough for 1000ms
 		bufSize = 44100*2;
 
@@ -253,6 +255,19 @@ public class Player implements Runnable {
 					break;
 				}
 			}
+			
+			if(currentPlugin == null) {
+		    	for(int i=0; i< plugins.length; i++) {
+		    		if(!plugins[i].canHandle(songName)) {    			
+		    			songRef = plugins[i].load(songBuffer, (int) fileSize);
+		    			Log.v(TAG, String.format("%s gave Songref %s", plugins[i].getClass().getName(), songRef != null ? songRef.toString() : "NULL"));
+						if(songRef != null) {
+							currentPlugin = plugins[i];
+							break;
+						}
+		    		}
+		    	}
+			}
 		}
 
 		if(currentPlugin != null) {
@@ -378,6 +393,22 @@ public class Player implements Runnable {
 						Message msg = mHandler.obtainMessage(MSG_PROGRESS, currentPosition, 0);
 						mHandler.sendMessage(msg);
 						lastPos = currentPosition;
+												
+						if(currentPlugin.isSilent(songRef)) {
+							if(silentPosition < 0) {
+								silentPosition = currentPosition;
+							}
+							else
+							if(currentPosition > silentPosition + 2500) {
+								msg = mHandler.obtainMessage(MSG_SILENT);
+								mHandler.sendMessage(msg);
+								Log.v(TAG, "Silence");
+								silentPosition = -1;
+							}
+						} else {
+							silentPosition = -1;
+						}
+						
 					}
 					if(len > 0) {
 						audioTrack.write(samples, 0, len);

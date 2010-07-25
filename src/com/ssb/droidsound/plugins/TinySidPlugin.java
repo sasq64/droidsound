@@ -5,7 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 
-public class TinySidPlugin implements DroidSoundPlugin {
+public class TinySidPlugin extends DroidSoundPlugin {
 
 	static {
 		System.loadLibrary("tinysid");
@@ -60,7 +60,10 @@ public class TinySidPlugin implements DroidSoundPlugin {
 	native public int N_getIntInfo(long song, int what);
 
 	@Override
-	public Object load(byte [] module, int size) { return N_load(module, size); }
+	public Object load(byte [] module, int size) { 
+		long rc = N_load(module, size);		
+		return rc != 0 ? rc : null; 
+	}
 
 	@Override
 	public String getStringInfo(Object song, int what) {
@@ -88,6 +91,11 @@ public class TinySidPlugin implements DroidSoundPlugin {
 		byte [] copyright = new byte [32];
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(tag);
+		String s = new String(tag);
+		if(!(s.equals("PSID") || s.equals("RSID"))) {
+			fs.close();
+			return null;
+		}
 		fs.skip(18);
 		fs.read(name);
 		fs.read(composer);
@@ -129,7 +137,8 @@ public class TinySidPlugin implements DroidSoundPlugin {
 		fs.read(songBuffer);
 		fs.close();
 		
-		return N_load(songBuffer, l); 
+		long rc = N_load(songBuffer, l);		
+		return rc != 0 ? rc : null; 
 	}
 
 }

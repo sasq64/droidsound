@@ -5,19 +5,17 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 
-public class GMEPlugin implements DroidSoundPlugin {
+public class GMEPlugin extends DroidSoundPlugin {
 	
 	static {
 		System.loadLibrary("gme");
 	}
-	
-	static Object staticLock = new Object();
-
 	public GMEPlugin() {
 	}
 	
 	@Override
-	public boolean canHandle(String name) { return N_canHandle(name); }
+	public boolean canHandle(String name) { return false; }
+
 	@Override
 	public void unload(Object song) { N_unload((Long)song); }
 	
@@ -51,21 +49,4 @@ public class GMEPlugin implements DroidSoundPlugin {
 		else
 			return rc;		
 	}
-	
-	@Override
-	public Object loadInfo(File file) throws IOException {
-		return load(file);
-	}
-
-	@Override
-	public Object load(File file) throws IOException {
-		int l = (int)file.length();
-		byte [] songBuffer = new byte [l];
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
-		return load(songBuffer, l);
-	}
-
-	
-
 }

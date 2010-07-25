@@ -3,22 +3,42 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.ssb.droidsound.SongDatabase;
+
+import android.util.Log;
 
 
-public class ModPlugin implements DroidSoundPlugin {
+public class ModPlugin extends DroidSoundPlugin {
+	private static final String TAG = ModPlugin.class.getSimpleName();
 	
 	static {
 		System.loadLibrary("modplug");
 	}
+	private Set<String> extensions;
 
-	public ModPlugin() {
+	public ModPlugin() {		
+		extensions = new HashSet<String>();
+		extensions.add("MOD");
+		extensions.add("XM");
+		extensions.add("S3M");
+		extensions.add("IT");
 	}
 
-	public boolean canHandle(String name) { return N_canHandle(name); }
+	@Override
+	public boolean canHandle(String name) {
+		int x = name.lastIndexOf('.');
+		if(x < 0) return false;
+		String ext = name.substring(x+1).toUpperCase();
+		return extensions.contains(ext);
+	}
 	
 	@Override
 	public Object load(byte [] module, int size) {
-		return N_load(module, size);
+		long rc = N_load(module, size);		
+		return rc != 0 ? rc : null; 
 	}
 	@Override
 	public void unload(Object song) { N_unload((Long)song); }
@@ -41,6 +61,10 @@ public class ModPlugin implements DroidSoundPlugin {
 		byte [] songBuffer = new byte [l];
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
+		
+		//String magic = new String(songBuffer, 0x438,4);	
+		//Log.v(TAG, String.format(">> Magic '%s'", magic));
+		
 		long song = N_load(songBuffer, l);
 		if(song == 0)
 			return null;
@@ -48,18 +72,30 @@ public class ModPlugin implements DroidSoundPlugin {
 			return song;
 	}
 
-	@Override
-	public Object load(File file) throws IOException {
-		int l = (int)file.length();
-		byte [] songBuffer = new byte [l];
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
-		long rc =  N_load(songBuffer, l);
-		if(rc == 0)
-			return null;
-		else
-			return rc;
-	}
+	/*
+	void data() {
+		if(type != null && type.equals("MOD")) {
+			String fname = file.getName();
+			int sep = fname.indexOf(" - ");
+			if(sep > 0) {
+				author = fname.substring(0, sep);
+				Log.v(TAG, String.format("######## FILENAME %s", fname));
+				int dot = fname.lastIndexOf('.');
+				if(dot > 0) {
+					String ext = fname.substring(dot+1).toUpperCase();
+					Log.v(TAG, String.format("Extention %s", ext));
+					if(ext.equals("MOD") || ext.equals("IT") || ext.equals("XM") || ext.equals("S3M")) {
+						title = fname.substring(sep+3, dot);
+					} else {
+						title = fname.substring(sep+3);
+					}
+				} else {						
+					title = fname.substring(sep+3);
+				}
+			} else {
+				author = file.getParentFile().getName();
+			}
+		}*/
 
 	
 	// --- Native functions

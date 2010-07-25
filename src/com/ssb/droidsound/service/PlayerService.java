@@ -53,7 +53,8 @@ public class PlayerService extends Service {
 	private List<IPlayerServiceCallback> callbacks; 	
 
 	private SongInfo currentSongInfo = new SongInfo();
-
+	
+	private boolean userInterferred;
 	
 	private void performCallback(int...what) {
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
@@ -113,6 +114,12 @@ public class PlayerService extends Service {
                 	info[SONG_STATE] = (Integer)msg.arg1;
                 	performCallback(SONG_STATE);
                 	break;
+                case Player.MSG_SILENT:
+                	if(!userInterferred)
+                		playNextSong();
+                	else
+                		Log.v(TAG, "User has interferred, not switching");
+                	break;
                 default:
                     super.handleMessage(msg);
             }
@@ -137,7 +144,6 @@ public class PlayerService extends Service {
     }
 
     void playNextSong() {
-    	    	
     	if(musicList != null) {
     		musicListPos++;
     		if(musicListPos < musicList.length) {    			
@@ -149,8 +155,7 @@ public class PlayerService extends Service {
     	}
     }
 
-    void playPrevSong() {
-    	    	
+    void playPrevSong() {    	
     	if(musicList != null) {
     		musicListPos--;
     		if(musicListPos >= 0) {
@@ -290,7 +295,8 @@ public class PlayerService extends Service {
 
 		@Override
 		public void stop() throws RemoteException {
-			player.stop();			
+			player.stop();
+	    	userInterferred = false;
 		}
 
 
@@ -299,6 +305,7 @@ public class PlayerService extends Service {
 			player.seekTo(msec);
 			info[SONG_POS] = msec;
 			performCallback(SONG_POS);
+			userInterferred = true;
 			return true;
 		}
 
@@ -307,6 +314,7 @@ public class PlayerService extends Service {
 			player.setSubSong(song);
 			info[SONG_SUBSONG] = (Integer)song;
 			performCallback(SONG_SUBSONG);
+			userInterferred = true;
 			return true;
 			
 		}
@@ -325,16 +333,19 @@ public class PlayerService extends Service {
 			createThread();
 			info[SONG_FILENAME] = name;
 			player.playMod(name);
+	    	userInterferred = false;
 			return false;
 		}
 
 		@Override
 		public void playNext() throws RemoteException {
+	    	userInterferred = false;
 			playNextSong();
 		}
 
 		@Override
 		public void playPrev() throws RemoteException {
+	    	userInterferred = false;
 			playPrevSong();
 		}
 

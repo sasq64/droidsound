@@ -9,18 +9,26 @@
 	android:layout_width="wrap_content"
     android:layout_height="54dp"
     android:textSize="20dp"
+    android:textColor="#FFFFFFFF"
+    android:background="@drawable/parent_button"
+    android:layout_margin="4dp"
+    android:layout_weight="1.0"
+    android:singleLine="true"
 	/>
 
 	<TextView android:id="@+id/list_title"
 	android:text="[Current Location]"
-	android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
+	android:layout_width="100dp"
+    android:layout_height="54dp"
     android:textSize="20dp"
     android:textColor="#FFFFFFFF"
+    android:layout_margin="4dp"
+    android:layout_weight="1.0"
+    android:singleLine="true"
 	/>
 	
 	<ImageButton android:id="@+id/search_button" android:src="@android:drawable/ic_menu_search"
-	android:layout_width="54dp" android:layout_height="54dp" />
+	android:layout_width="54dp" android:layout_height="54dp" android:layout_margin="4dp" />
 	
 	
 </LinearLayout>
@@ -40,7 +48,6 @@
      android:id="@+id/drawer"
      android:layout_width="fill_parent"
      android:layout_height="240dp"
-     android:bottomOffset="22dip"
      
      android:layout_alignParentBottom="true"
 
@@ -50,15 +57,16 @@
      <ImageView
          android:id="@id/handle"
          android:layout_width="88dip"
-         android:layout_height="44dip"
-         android:src="@drawable/remove" />
+         android:layout_height="30dip"
+         android:scaleType="fitXY"
+         android:src="@drawable/handle" />
 
 	<LinearLayout
 		android:id="@id/panel"
 		android:orientation="vertical"
 		android:layout_width="fill_parent"
 		android:layout_height="400dp"
-		android:background="#ffa0a0a0"	
+		android:background="#ffa08080"	
 	>
 		<FrameLayout 
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 

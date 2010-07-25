@@ -51,6 +51,7 @@ struct Player
 	ReSIDBuilder *sidbuilder;
 	sidplay2 *sidemu;
 	SidTuneInfo sidInfo;
+	bool silent;
 };
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
@@ -67,12 +68,15 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		//synth_init(44100);
 
 		Player *player = new Player();
+		player->silent = false;
 
 		player->sidtune = new SidTune((uint_least8_t*)ptr, size);
 
 		if(!player->sidtune->getStatus()) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "FAILED!");
-			return -1;
+			delete player->sidtune;
+			delete player;
+			return 0;
 		}
 
 		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "INIT");
@@ -109,6 +113,13 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		int rc = player->sidemu->load(player->sidtune);
 		//ASSERT(rc == 0);
+		if(rc != 0) {
+			delete player->sidemu;
+			delete player->sidbuilder;
+			delete player->sidtune;
+			delete player;
+			return 0;
+		}
 
 		player->sidemu->config(cfg);
 
@@ -148,6 +159,14 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getSound
 	jshort *orgptr = ptr;
 
 	size = player->sidemu->play(ptr, size*2);
+
+	int i = 0;
+	while(i<size && orgptr[i] < 140 && orgptr[i] > -140)
+		i++;
+
+	//__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "%d %d", i, orgptr[i]);
+
+	player->silent = (i == size);
 
     env->ReleaseShortArrayElements(sArray, ptr, 0);
 	return orgsize;
@@ -194,6 +213,9 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getIntIn
 		return player->sidInfo.songs;
 	case INFO_STARTTUNE:
 		return player->sidInfo.startSong-1;
+	case 100 :
+		//__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "SILENT %d", player->silent ? 1 : 0);
+		return player->silent ? 1 : 0;
 	}
 	return -1;
 }
