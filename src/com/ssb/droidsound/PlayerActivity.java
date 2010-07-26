@@ -1,6 +1,8 @@
 package com.ssb.droidsound;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -259,6 +261,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				if(!mf.exists()) {
 					mf.mkdir();
 				}
+								
 				
 				if(!mf.exists()) {
 					showDialog(11);
@@ -272,12 +275,26 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					showDialog(12);
 					
 				}
-	
 				
 			} else {
 				showDialog(10);
 			}
 		}
+		
+		File mf = new File(modsDir, "Favorites.lnk");
+		if(!mf.exists()) {
+			try {
+				Log.v(TAG, "Trying to write Favorites");
+				FileWriter fw = new FileWriter(mf);
+				fw.write("LINK:0\n");
+				fw.close();
+				Log.v(TAG, "Done");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
 		
 		
 		receiver = new BroadcastReceiver() {
@@ -314,13 +331,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		db = songDatabase.getWritableDatabase();
 		
 		
-		songDatabase.registerPath("TEST", new SongDatabase.PathCallback() {
+		songDatabase.registerPath("LINK", new SongDatabase.PathCallback() {
 			@Override
 			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
-				Log.v(TAG, "Getting TEST path " + path);
+				Log.v(TAG, "Getting LINK path " + path);
 				String cp = String.format("%s%%", path);
 				//return db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "COPYRIGHT LIKE ?", new String[] { cp }, null, null, "COMPOSER, TITLE");
-				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=0", null, null, null, null);
+				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=?", new String[] { path }, null, null, null);
 			}			
 		});
 		
@@ -619,6 +636,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		} else {
 			menu.add(0, 13, 0, "Abort scan").setIcon(R.drawable.ic_menu_music_library);
 		}
+		//menu.add(0, 14, 0, "Backup DB").setIcon(R.drawable.ic_menu_music_library);
+		//menu.add(0, 15, 0, "Restore DB").setIcon(R.drawable.ic_menu_music_library);
 		menu.add(0, 11, 0, "About").setIcon(android.R.drawable.ic_menu_info_details);
 		menu.add(0, 12, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
@@ -639,6 +658,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			player.stop();
 			finish();
 			break;
+		case 14:
+			break;
+		case 15:
+			break;
 		case 13:
 			if(scanTask != null) {
 				synchronized (scanTask) {
@@ -656,7 +679,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		
-		String msg = "SWAY WAT?";
+		String msg = "SWAY HAT?";
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		
 		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -743,6 +766,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		menu.add(Menu.NONE, 12, Menu.NONE, "Go to author");
 		if(cursor.getColumnIndex("LIST") >= 0) {
 			menu.add(Menu.NONE, 13, Menu.NONE, "Remove");
+			menu.add(Menu.NONE, 14, Menu.NONE, "Remove All");
 		}
 		
 	}
@@ -795,6 +819,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			db.delete("LINKS", "_id=?", new String [] { Integer.toString(cursor.getInt( cursor.getColumnIndex("_id"))) } );
 			//db.close();
 			playListView.rescan();
+			break;
+		case 14 :
+			if(db == null) {
+				db = songDatabase.getWritableDatabase();
+			}
+			db.delete("LINKS", "LIST=?", new String [] { Integer.toString(cursor.getInt(cursor.getColumnIndex("LIST"))) } );
+			//db.close();
+			playListView.rescan();
+			break;
 		case R.id.details:
 			break;
 		default:

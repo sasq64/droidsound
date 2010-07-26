@@ -198,6 +198,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getSt
 		return NewString(env, player->sidInfo.infoString[1]);
 	case INFO_COPYRIGHT:
 		return NewString(env, player->sidInfo.infoString[2]);
+		//return player->sidInfo.
 	}
 	return 0;
 }

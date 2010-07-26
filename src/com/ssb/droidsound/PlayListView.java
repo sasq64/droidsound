@@ -9,6 +9,7 @@ import android.database.Cursor;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -127,20 +128,42 @@ public class PlayListView extends ListView {
 				flags = mCursor.getInt(mFlagsIndex);
 			}
 			
-			if(flags == 1) {
-				tv0.setText(mCursor.getString(mTitleIndex));
-				tv1.setText(mCursor.getString(mAuthorIndex));
-				tv0.setTextColor(0xFFA0A0FF);
-				tv1.setVisibility(View.VISIBLE);
+			String title = null;
+			String sub = null;
+
+			if(mTitleIndex >= 0) {
+				title = mCursor.getString(mTitleIndex);
 			}
-			else if(flags == 2) {
-				tv0.setText(mCursor.getString(mTitleIndex));
-				tv0.setTextColor(0xFFFFA080);
-				tv1.setVisibility(View.GONE);				
+			
+			if(title == null && mFileIndex >= 0) {
+				title = mCursor.getString(mFileIndex);
+			}
+			
+			if(title == null) {
+				title = "<ERROR>";
+			}
+			
+			if(mAuthorIndex >= 0) {
+				sub = mCursor.getString(mAuthorIndex);
+			}
+
+			tv0.setText(title);
+
+			if(sub != null) {
+				tv0.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
+				tv1.setText(sub);
+				tv1.setVisibility(View.VISIBLE);
 			} else {
-				tv0.setText(mCursor.getString(mFileIndex));
+				tv0.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 36);
+				tv1.setVisibility(View.GONE);
+			}
+			
+			if(flags == 1) {
+				tv0.setTextColor(0xFFA0A0FF);
+			} else if(flags == 2) {
+				tv0.setTextColor(0xFFFFA080);
+			} else {
 				tv0.setTextColor(0xFFA0A080);
-				tv1.setVisibility(View.GONE);				
 			}
 			
 			if(position == selectedPosition) {
