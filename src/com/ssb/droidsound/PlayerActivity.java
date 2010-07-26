@@ -36,7 +36,6 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -45,7 +44,6 @@ import android.view.View.OnLongClickListener;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
@@ -244,41 +242,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 
-		final UncaughtExceptionHandler oldHandler = Thread.getDefaultUncaughtExceptionHandler();
-		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {			
-			@Override
-			public void uncaughtException(Thread thread, Throwable ex) {
-				ex.printStackTrace();
-		        final Writer result = new StringWriter();
-		        final PrintWriter printWriter = new PrintWriter(result);
-		        ex.printStackTrace(printWriter);
-		        String stacktrace = result.toString();
-		        printWriter.close();		
-		        
-		        File f = new File(new File(modsDir).getParent(),  "droidsound_crash.txt");		        
-		        writeToFile(stacktrace, f);
-		        oldHandler.uncaughtException(thread, ex);
-			}
-			private void writeToFile(String stacktrace, File f) {
-				try {
-					BufferedWriter bos = new BufferedWriter(new FileWriter(f));
-					
-					bos.write(String.format("Droidsound %s crash\n", DROIDSOUND_VERSION));
-					Date d = new Date();					
-					bos.write(String.format("%s\n\nMANUFACTURER:%s\nNMODEL:%s\n", d.toString(), Build.MANUFACTURER, Build.MODEL)); 
-					
-					bos.write(stacktrace);
-					bos.flush();
-					bos.close();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-			 
-		});
+		//final UncaughtExceptionHandler oldHandler = Thread.getDefaultUncaughtExceptionHandler();		
+		//Thread.setDefaultUncaughtExceptionHandler(		
+		//modsDir.getParent()
 		
 		super.onCreate(savedInstanceState);
-		
 		
 		player = new PlayerServiceConnection();
 		
@@ -300,7 +268,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		modsDir = prefs.getString("modsDir", null);
-		
 
 		//modsDir = "/sdcard/MODS";
 		if(modsDir == null) {
@@ -357,23 +324,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		
 		Log.v(TAG, String.format("MODS at %s", modsDir));
-		//return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME");	
-
-		/*
-		String[] projection = new String[] {
-                SongProvider._ID,
-                SongProvider.TITLE,
-                SongProvider.COMPOSER,
-                SongProvider.FILENAME,
-                SongProvider.TYPE,
-             };
-		
-		ContentResolver cr = getContentResolver();
-		String pathName = "/sdcard/MODS";		
-		Cursor c = cr.query(SongProvider.SONG_URI, projection, "PATH=?", new String[] { pathName }, "TYPE, FILENAME");
-		*/
-		//int top = drawer.getTop();
-		//Log.v(TAG, String.format("TOP %d", top));
 		
 		songDatabase = new SongDatabase(this, false);
 		
@@ -381,8 +331,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		if(db.needUpgrade(SongDatabase.DB_VERSION)) {
 			db.close();
+			Toast toast = Toast.makeText(this, "Clearing database", Toast.LENGTH_LONG);
+			toast.show();
+			songDatabase.closeDB();
 			songDatabase = new SongDatabase(this, true);
-			Toast toast = Toast.makeText(this, "Database cleared", Toast.LENGTH_LONG);
+			toast = Toast.makeText(this, "Database cleared", Toast.LENGTH_LONG);
 			toast.show();
 		}
 		
@@ -420,27 +373,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				return true;
 			}
 		});
-		
-		playListView.setOnScrollListener(new OnScrollListener() {
-			@Override
-			public void onScrollStateChanged(AbsListView view, int scrollState) {
-				// TODO Auto-generated method stub
-				/*Log("Scroll state %d", scrollState);
-				if(scrollState == SCROLL_STATE_FLING) {
-					if(!controlsHidden) {
-						controlsHidden = true;
-						controls.setVisibility(View.GONE);
-						infoDisplay.setVisibility(View.GONE);
-					}
-				}*/
-			}
-			
-			@Override
-			public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-				//Log("Scroll %d/%d/%d", firstVisibleItem, visibleItemCount, totalItemCount);
-			}
-		});
-		
+				
 		playListView.setOnDirChangeCallback(new PlayListView.DirChangeCallback() {			
 			@Override
 			public void dirChange(String dir) {
@@ -465,19 +398,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		stopButton.setOnClickListener(new OnClickListener() {			
 			@Override
-			public void onClick(View v) {
-				
+			public void onClick(View v) {				
 				player.stop();
-				/*
-				View view = listFrame.getChildAt(0);
-				ViewGroup.LayoutParams oldParams = view.getLayoutParams();
-				Log.v(TAG, String.format("%s", oldParams.getClass().getSimpleName()));
-				//int rules [] = oldParams.getRules();
-				LayoutParams params = new LayoutParams(oldParams.width, oldParams.height);
-				params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-				view.setLayoutParams(params);
-				listFrame.requestLayout(); */
-				
 			}
 		});
 
@@ -543,27 +465,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			//cursor = songDatabase.search(query);
 			//SongListAdapter adapter = new SongListAdapter(this, cursor);
 		}
-				
-		//File modDir = new File(modDirName);
-		//if(!modDir.exists()) {
-		//	modDir.mkdir();
-		//}
-/*
-		if(modDir.listFiles().length < 1) {
-			HttpDownloader.downloadFiles(new HttpDownloader.Callback() {			
-				@Override
-				public void onDisplayProgress(int progress) {}
-
-				@Override
-				public void onDone() {
-					playListView.rescan();
-				}
-			}, "/sdcard/MODS/",  "http://swimmer.se/droidsound/mods.zip");	
-		}
-*/
 		
 		//songDatabase = new SongDatabase(this);		
-		scan(false);
+		// scan(false);
 		//songDatabase.registerPath(name, cb)
 		
 		playListView.setDirectory(currentPath);
@@ -594,7 +498,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		super.onDestroy();
 		
 		playListView.close();
-		songDatabase.closeDB();
+		if(songDatabase != null) {
+			songDatabase.closeDB();
+		}
 		
 		Log.v(TAG, "DESTROYED");
 		
