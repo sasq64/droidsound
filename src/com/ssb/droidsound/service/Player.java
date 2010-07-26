@@ -12,14 +12,6 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
-import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.plugins.GMEPlugin;
-import com.ssb.droidsound.plugins.ModPlugin;
-import com.ssb.droidsound.plugins.SidplayPlugin;
-import com.ssb.droidsound.plugins.TinySidPlugin;
-import com.ssb.droidsound.utils.NativeZipFile;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -27,6 +19,12 @@ import android.media.AudioTrack;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.plugins.GMEPlugin;
+import com.ssb.droidsound.plugins.ModPlugin;
+import com.ssb.droidsound.plugins.SidplayPlugin;
+import com.ssb.droidsound.utils.NativeZipFile;
 
 /*
  * The Player thread 

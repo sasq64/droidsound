@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
-import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -17,7 +16,6 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.AdapterView.OnItemClickListener;
 /**
  * 
  * A ListView that presents a list of songs, and that maintains a connection to
@@ -54,7 +52,6 @@ public class PlayListView extends ListView {
 		private int mPathIndex;
 		private String pathName; 
 		private int selectedPosition = -1;
-		private boolean hasParent;
 
 		PlayListAdapter(Context context) {
     		mContext = context;
@@ -111,7 +108,6 @@ public class PlayListView extends ListView {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 
-			View view = null;
 			LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
 
 			if(convertView == null) {
@@ -206,7 +202,6 @@ public class PlayListView extends ListView {
 
 		@Override
 		public long getItemId(int position) {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 
@@ -266,10 +261,6 @@ public class PlayListView extends ListView {
 			return realpos;
 		}
 
-		public void setHasParent(boolean b) {
-			hasParent = b;
-		}
-
 		public Cursor getCursor(int position) {
 			if(mCursor != null) {
 				mCursor.moveToPosition(position);
@@ -296,7 +287,6 @@ public class PlayListView extends ListView {
 	
 	private File selectedFile;
 	private String pathName;
-	private String baseDir;
 	private String selectedName;
 	
 	
@@ -324,7 +314,6 @@ public class PlayListView extends ListView {
 				FileInfo fi = (FileInfo) adapter.getItem(position);
 				if(fi.file != null) {
 					selectedFile = fi.file;
-					String name = fi.file.getName().toUpperCase();
 					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE) {
 						setDirectory(fi.file.getPath());
 					} else {
@@ -402,7 +391,6 @@ public class PlayListView extends ListView {
 	}
 
 	public void setBaseDir(String modDir) {
-		baseDir = modDir;
 		setDirectory(modDir);
 	}
 

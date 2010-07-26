@@ -1,14 +1,8 @@
 package com.ssb.droidsound;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.Date;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -30,7 +24,6 @@ import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -41,14 +34,12 @@ import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.ssb.droidsound.service.PlayerService;
@@ -72,7 +63,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private TextView songComposerText;
 	private TextView songDigitsText;
 	private PlayListView playListView;
-	private SlidingDrawer drawer;
 
 	private int songPos;
 	private int subTune;
@@ -259,7 +249,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		songComposerText = (TextView) findViewById(R.id.composer_text);
 		songDigitsText = (TextView) findViewById(R.id.seconds_text);
 		playListView = (PlayListView) findViewById(R.id.play_list);
-		drawer = (SlidingDrawer) findViewById(R.id.drawer);
 		infoDisplay = findViewById(R.id.info_display);
 		controls = findViewById(R.id.controls);
 		parentButton = (Button) findViewById(R.id.parent_button);
@@ -311,8 +300,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		}
 
-		
-		
 		receiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -321,7 +308,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				playListView.rescan();
 			} 
 		};
-
 		
 		Log.v(TAG, String.format("MODS at %s", modsDir));
 		
@@ -343,7 +329,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
 				Log.v(TAG, "Getting LINK path " + path);
-				String cp = String.format("%s%%", path);
+				//String cp = String.format("%s%%", path);
 				//return db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "COPYRIGHT LIKE ?", new String[] { cp }, null, null, "COMPOSER, TITLE");
 				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=?", new String[] { path }, null, null, null);
 			}			
