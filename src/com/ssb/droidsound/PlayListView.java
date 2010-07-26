@@ -408,7 +408,9 @@ public class PlayListView extends ListView {
 
 	public void search(String query) {
 		Cursor cursor = dataBase.search(query);
-    	pathName = pathName + "/SEARCH";    	
+		if(!pathName.endsWith("/SEARCH")) {
+			pathName = pathName + "/SEARCH";
+		}
     	adapter.setCursor(cursor, null);    	
     	if(dirChangeCallback != null) {
     		dirChangeCallback.dirChange(pathName);

@@ -40,7 +40,7 @@
     android:layout_below="@id/title_bar"
 >
 	<com.ssb.droidsound.PlayListView android:id="@+id/play_list" android:background="#ff5050a0"
-	 android:cacheColorHint="#ff5050a0" 
+	 android:cacheColorHint="#ff5050a0"  android:fastScrollEnabled="true"
 	 android:layout_width="fill_parent" android:layout_height="fill_parent" />
 </FrameLayout>
 

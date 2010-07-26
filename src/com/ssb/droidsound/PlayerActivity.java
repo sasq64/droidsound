@@ -1,8 +1,14 @@
 package com.ssb.droidsound;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.Date;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -24,6 +30,7 @@ import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -49,6 +56,8 @@ import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "DroidSound";
+	
+	public static final String DROIDSOUND_VERSION = "Beta 2";
 
 	private PlayerServiceConnection player;
 	private ImageButton playButton;
@@ -74,6 +83,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private boolean mIsPlaying = false;
 	private boolean controlsHidden = false;
 
+	private String exitString;
+
+	
 	private SongDatabase songDatabase;
 
 	private View infoDisplay;
@@ -230,7 +242,43 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+
+		final UncaughtExceptionHandler oldHandler = Thread.getDefaultUncaughtExceptionHandler();
+		Thread.setDefaultUncaughtExceptionHandler(new UncaughtExceptionHandler() {			
+			@Override
+			public void uncaughtException(Thread thread, Throwable ex) {
+				ex.printStackTrace();
+		        final Writer result = new StringWriter();
+		        final PrintWriter printWriter = new PrintWriter(result);
+		        ex.printStackTrace(printWriter);
+		        String stacktrace = result.toString();
+		        printWriter.close();		
+		        
+		        File f = new File(new File(modsDir).getParent(),  "droidsound_crash.txt");		        
+		        writeToFile(stacktrace, f);
+		        oldHandler.uncaughtException(thread, ex);
+			}
+			private void writeToFile(String stacktrace, File f) {
+				try {
+					BufferedWriter bos = new BufferedWriter(new FileWriter(f));
+					
+					bos.write(String.format("Droidsound %s crash\n", DROIDSOUND_VERSION));
+					Date d = new Date();					
+					bos.write(String.format("%s\n\nMANUFACTURER:%s\nNMODEL:%s\n", d.toString(), Build.MANUFACTURER, Build.MODEL)); 
+					
+					bos.write(stacktrace);
+					bos.flush();
+					bos.close();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			 
+		});
+		
 		super.onCreate(savedInstanceState);
+		
+		
 		player = new PlayerServiceConnection();
 		
 		setContentView(R.layout.player);
@@ -692,7 +740,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case 0:
 			msg = "Droidsound Beta 1\nBy sasq64@gmail.com";
 			builder.setMessage(msg);
-
+			break;
+		case 99 :
+			builder.setMessage(exitString);
+			builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					finish();
+				}
+			});
 			break;
 		case 10:
 			msg = "Could not find sdcard";
@@ -827,8 +882,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			db.delete("LINKS", "LIST=?", new String [] { Integer.toString(cursor.getInt(cursor.getColumnIndex("LIST"))) } );
 			//db.close();
 			playListView.rescan();
-			break;
-		case R.id.details:
 			break;
 		default:
 			return super.onContextItemSelected(item);

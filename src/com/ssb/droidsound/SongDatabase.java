@@ -765,7 +765,7 @@ public class SongDatabase {
 	
 		String q = "%" + query + "%" ;
 		//Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
-		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "TITLE LIKE ?", new String[] { q }, null, null, "COMPOSER, TITLE");
+		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "TITLE LIKE ?", new String[] { q }, null, null, "COMPOSER, TITLE", "500");
 		Log.v(TAG, String.format("Got %d hits", c.getCount()));
 		return c;
 	}
@@ -794,6 +794,12 @@ public class SongDatabase {
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
+		
+		
+		if(rdb.isDbLockedByOtherThreads()) {
+			return null;
+		}
+		
 		
 		File f = new File(pathName);
 		
@@ -827,7 +833,7 @@ public class SongDatabase {
 			}
 		}
 
-		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
+		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME", "1000");	
 	}
 	
 	public void setScanCallback(ScanCallback cb) {
