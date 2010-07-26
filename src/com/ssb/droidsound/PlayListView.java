@@ -35,10 +35,10 @@ public class PlayListView extends ListView {
 	
 	public static class FileInfo {
 		File file;
-		int flags;
+		int type;
 		FileInfo(File f, int fl) {
 			file = f;
-			flags = fl;
+			type = fl;
 		}
 	};
 	
@@ -49,7 +49,7 @@ public class PlayListView extends ListView {
 
 		private int mAuthorIndex;
 		private int mTitleIndex;
-		private int mFlagsIndex;
+		private int mTypeIndex;
 		private int mFileIndex;
 		private int mPathIndex;
 		private String pathName; 
@@ -71,7 +71,7 @@ public class PlayListView extends ListView {
     		pathName = dirName;
     		mAuthorIndex = mCursor.getColumnIndex("COMPOSER");
     		mTitleIndex = mCursor.getColumnIndex("TITLE");
-    		mFlagsIndex = mCursor.getColumnIndex("FLAGS");
+    		mTypeIndex = mCursor.getColumnIndex("TYPE");
     		mFileIndex = mCursor.getColumnIndex("FILENAME");
     		if(mFileIndex < 0) {
     			mFileIndex = mCursor.getColumnIndex("NAME");
@@ -123,9 +123,9 @@ public class PlayListView extends ListView {
 			TextView tv1 = (TextView)vg.getChildAt(1);
 
 			mCursor.moveToPosition(position);
-			int flags = 1;
-			if(mFlagsIndex >= 0) {
-				flags = mCursor.getInt(mFlagsIndex);
+			int type = SongDatabase.TYPE_FILE;
+			if(mTypeIndex >= 0) {
+				type = mCursor.getInt(mTypeIndex);
 			}
 			
 			String title = null;
@@ -158,9 +158,9 @@ public class PlayListView extends ListView {
 				tv1.setVisibility(View.GONE);
 			}
 			
-			if(flags == 1) {
+			if(type == SongDatabase.TYPE_FILE) {
 				tv0.setTextColor(0xFFA0A0FF);
-			} else if(flags == 2) {
+			} else if(type == SongDatabase.TYPE_ARCHIVE) {
 				tv0.setTextColor(0xFFFFA080);
 			} else {
 				tv0.setTextColor(0xFFA0A080);
@@ -197,11 +197,11 @@ public class PlayListView extends ListView {
 			} else {
 				f = new File(pathName, fileName);
 			}				
-			int flags = 1;
-			if(mFlagsIndex >= 0) {
-				flags = mCursor.getInt(mFlagsIndex);
+			int type = SongDatabase.TYPE_FILE;
+			if(mTypeIndex >= 0) {
+				type = mCursor.getInt(mTypeIndex);
 			}
-			return new FileInfo(f, flags);
+			return new FileInfo(f, type);
 		}
 
 		@Override
@@ -226,14 +226,14 @@ public class PlayListView extends ListView {
 				}	
 				//String pathName = mCursor.getString(mPathIndex);
 				
-				int flags = 1;
-				if(mFlagsIndex >= 0) {
-					flags = mCursor.getInt(mFlagsIndex);
+				int type = SongDatabase.TYPE_FILE;
+				if(mTypeIndex >= 0) {
+					type = mCursor.getInt(mTypeIndex);
 				}
 				
-				//Log.v(TAG, String.format("File %s flags %d", f.getPath(), flags));
+				//Log.v(TAG, String.format("File %s type %d", f.getPath(), type));
 				
-				if(!skipDirs || (flags == 1)) {
+				if(!skipDirs || (type == SongDatabase.TYPE_FILE)) {
 					files.add(f);
 				}
 			}
@@ -325,7 +325,7 @@ public class PlayListView extends ListView {
 				if(fi.file != null) {
 					selectedFile = fi.file;
 					String name = fi.file.getName().toUpperCase();
-					if(fi.flags == 0 || fi.flags == 2) {
+					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE) {
 						setDirectory(fi.file.getPath());
 					} else {
 						int index = 0;

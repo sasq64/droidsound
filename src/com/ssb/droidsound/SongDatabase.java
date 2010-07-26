@@ -41,7 +41,10 @@ import com.ssb.droidsound.utils.NativeZipFile;
 
 public class SongDatabase {
 	private static final String TAG = SongDatabase.class.getSimpleName();
-	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "FLAGS" };
+	
+	public static final int DB_VERSION = 1;
+	
+	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 
 	private Map<String, PathCallback> pathCallbacks = new HashMap<String, PathCallback>();
 	private ScanCallback scanCallback;
@@ -69,6 +72,10 @@ public class SongDatabase {
 		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
 	}
 
+	public static final int TYPE_ARCHIVE = 0;
+	public static final int TYPE_DIR = 1;
+	public static final int TYPE_FILE = 2;
+	
 	public SongDatabase(Context context, boolean drop) {
 		
 		File myDir = context.getFilesDir();
@@ -79,14 +86,16 @@ public class SongDatabase {
 		SQLiteDatabase db = getWritableDatabase();
 		
 		if(drop) {
+			Log.v(TAG, "Dropping file tables!");
 			db.execSQL("DROP TABLE IF EXISTS FILES ;");
 			db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
+			db.setVersion(DB_VERSION);
 		}
 
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"PATH" + " TEXT," +
 				"FILENAME" + " TEXT," +
-				"FLAGS" + " INTEGER," +
+				"TYPE" + " INTEGER," +
 
 				"TITLE" + " TEXT," +
 				"COMPOSER" + " TEXT," +
@@ -316,7 +325,7 @@ public class SongDatabase {
 				
 				values.put("PATH", path);
 				values.put("FILENAME", fileName);
-				values.put("FLAGS", 1);
+				values.put("TYPE", TYPE_FILE);
 
 				db.insert("FILES", "PATH", values);
 				
@@ -345,7 +354,7 @@ public class SongDatabase {
 			
 			values.put("PATH", path);
 			values.put("FILENAME", fileName);
-			values.put("FLAGS", 0);
+			values.put("TYPE", TYPE_DIR);
 			db.insert("FILES", "PATH", values);
 		}
 		
@@ -373,7 +382,7 @@ public class SongDatabase {
 
 		Cursor fileCursor = db.query("FILES", FILENAME_array, "PATH=?", parentArray, null, null, null);
 		int index = fileCursor.getColumnIndex("FILENAME");
-		int flindex = fileCursor.getColumnIndex("FLAGS");
+		int flindex = fileCursor.getColumnIndex("TYPE");
 		int idindex = fileCursor.getColumnIndex("_id");
 
 		if(hasChanged) {
@@ -408,7 +417,7 @@ public class SongDatabase {
 			// Iterate over database result and compare to hash set
 			while(fileCursor.moveToNext()) {
 				String fileName = fileCursor.getString(index);
-				int flags = fileCursor.getInt(flindex);
+				int type = fileCursor.getInt(flindex);
 				long id = fileCursor.getLong(idindex);
 				
 				if(removes.contains(fileName)) {
@@ -440,7 +449,7 @@ public class SongDatabase {
 				} else {
 					Log.v(TAG, String.format("!! '%s' found in DB but not on disk, DELETING", fileName));
 					// File has been removed on disk, schedule for DELETE
-					if(flags == 1) {
+					if(type == TYPE_FILE) {
 						delFiles.add(id);
 					} else {
 						delDirs.add(fileName);
@@ -508,10 +517,10 @@ public class SongDatabase {
 							else 
 							if(fn.toUpperCase().endsWith(".LNK")) {
 								Log.v(TAG, String.format("Found link (%s)", fn));
-								values.put("FLAGS", 2);
+								values.put("TYPE", TYPE_ARCHIVE);
 								values.put("TITLE", fn.substring(0, end - 4));								
 							} else {
-								values.put("FLAGS", 1);
+								values.put("TYPE", TYPE_FILE);
 								try {
 									if(checkModule(f, values)) {
 									} else {
@@ -524,7 +533,7 @@ public class SongDatabase {
 							}
 						} else {
 							foundDirsNew.add(s);
-							values.put("FLAGS", 0);
+							values.put("TYPE", TYPE_DIR);
 						}
 						if(values != null) {
 							Log.v(TAG, String.format("Inserting FILE... (%s)", s));
@@ -558,7 +567,7 @@ public class SongDatabase {
 							ContentValues values = new ContentValues();
 							values.put("PATH", f.getParentFile().getPath());
 							values.put("FILENAME", f.getName());
-							values.put("FLAGS", 2);
+							values.put("TYPE", TYPE_ARCHIVE);
 							int end = f.getName().length();
 							values.put("TITLE", f.getName().substring(0, end - 4));				
 							Log.v(TAG, String.format("Inserting FILE... (%s)", f.getName()));
@@ -585,7 +594,7 @@ public class SongDatabase {
 					ContentValues values = new ContentValues();
 					values.put("PATH", csdb.getParentFile().getPath());
 					values.put("FILENAME", csdb.getName());
-					values.put("FLAGS", 2);
+					values.put("TYPE", TYPE_ARCHIVE);
 					values.put("TITLE", "CSDB");
 					Log.v(TAG, String.format("Inserting CSDB from dump (%s)", csdb.getPath()));
 					db.insert("FILES", "PATH", values);
@@ -621,8 +630,8 @@ public class SongDatabase {
 			Set<File> files = new HashSet<File>();
 			while(fileCursor.moveToNext()) {
 				String fileName = fileCursor.getString(index);
-				int flags = fileCursor.getInt(flindex);
-				if(flags == 0) {
+				int type = fileCursor.getInt(flindex);
+				if(type == TYPE_DIR) {
 					files.add(new File(parentDir, fileName));
 				}
 			}
@@ -765,7 +774,7 @@ public class SongDatabase {
 	
 		String q = "%" + query + "%" ;
 		//Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
-		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "TITLE LIKE ?", new String[] { q }, null, null, "COMPOSER, TITLE", "500");
+		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "TITLE LIKE ?", new String[] { q }, null, null, "COMPOSER, TITLE", "500");
 		Log.v(TAG, String.format("Got %d hits", c.getCount()));
 		return c;
 	}
@@ -833,7 +842,7 @@ public class SongDatabase {
 			}
 		}
 
-		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME", "1000");	
+		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
 	}
 	
 	public void setScanCallback(ScanCallback cb) {

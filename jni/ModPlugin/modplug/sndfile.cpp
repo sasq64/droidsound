@@ -1104,7 +1104,7 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 		return 0;
 	}
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Reading %d sample from %p to %p", nFlags, lpMemFile, pIns->pSample);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Reading %d sample from %p to %p", nFlags, lpMemFile, pIns->pSample);
 
 	switch(nFlags)
 	{

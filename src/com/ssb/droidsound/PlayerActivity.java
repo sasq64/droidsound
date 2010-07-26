@@ -49,6 +49,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
@@ -356,7 +357,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		
 		Log.v(TAG, String.format("MODS at %s", modsDir));
-		//return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "FLAGS" }, "PATH=?", new String[] { pathName }, null, null, "FLAGS, FILENAME");	
+		//return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME");	
 
 		/*
 		String[] projection = new String[] {
@@ -364,12 +365,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
                 SongProvider.TITLE,
                 SongProvider.COMPOSER,
                 SongProvider.FILENAME,
-                SongProvider.FLAGS,
+                SongProvider.TYPE,
              };
 		
 		ContentResolver cr = getContentResolver();
 		String pathName = "/sdcard/MODS";		
-		Cursor c = cr.query(SongProvider.SONG_URI, projection, "PATH=?", new String[] { pathName }, "FLAGS, FILENAME");
+		Cursor c = cr.query(SongProvider.SONG_URI, projection, "PATH=?", new String[] { pathName }, "TYPE, FILENAME");
 		*/
 		//int top = drawer.getTop();
 		//Log.v(TAG, String.format("TOP %d", top));
@@ -378,13 +379,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		db = songDatabase.getWritableDatabase();
 		
+		if(db.needUpgrade(SongDatabase.DB_VERSION)) {
+			db.close();
+			songDatabase = new SongDatabase(this, true);
+			Toast toast = Toast.makeText(this, "Database cleared", Toast.LENGTH_LONG);
+			toast.show();
+		}
 		
 		songDatabase.registerPath("LINK", new SongDatabase.PathCallback() {
 			@Override
 			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
 				Log.v(TAG, "Getting LINK path " + path);
 				String cp = String.format("%s%%", path);
-				//return db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "FLAGS" }, "COPYRIGHT LIKE ?", new String[] { cp }, null, null, "COMPOSER, TITLE");
+				//return db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "COPYRIGHT LIKE ?", new String[] { cp }, null, null, "COMPOSER, TITLE");
 				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=?", new String[] { path }, null, null, null);
 			}			
 		});
@@ -738,7 +745,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		switch(id) {
 		case 0:
-			msg = "Droidsound Beta 1\nBy sasq64@gmail.com";
+			msg = "Droidsound " + DROIDSOUND_VERSION + "\nBy sasq64@gmail.com";
 			builder.setMessage(msg);
 			break;
 		case 99 :
