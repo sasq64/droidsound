@@ -1,8 +1,8 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 
 
 public class GMEPlugin extends DroidSoundPlugin {
@@ -10,11 +10,26 @@ public class GMEPlugin extends DroidSoundPlugin {
 	static {
 		System.loadLibrary("gme");
 	}
+
+	private Set<String> extensions;
+
 	public GMEPlugin() {
+		extensions = new HashSet<String>();
+		extensions.add("SPC");
+		extensions.add("GYM");
+		extensions.add("NSF");
+		extensions.add("GBS");
+		extensions.add("AY");
+		extensions.add("VGM");
 	}
 	
 	@Override
-	public boolean canHandle(String name) { return false; }
+	public boolean canHandle(String name) {
+		int x = name.lastIndexOf('.');
+		if(x < 0) return false;
+		String ext = name.substring(x+1).toUpperCase();
+		return extensions.contains(ext);
+	}
 
 	@Override
 	public void unload(Object song) { N_unload((Long)song); }

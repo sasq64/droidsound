@@ -108,7 +108,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		cfg.sidEmulation  = player->sidbuilder;
 
 		player->sidbuilder->create(1);
-		player->sidbuilder->filter(false);
+		player->sidbuilder->filter(true);
 		//player->sidbuilder->filter((void*)0);
 
 		int rc = player->sidemu->load(player->sidtune);

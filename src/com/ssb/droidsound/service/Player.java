@@ -24,7 +24,9 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
+import com.ssb.droidsound.plugins.TFMXPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
+
 
 /*
  * The Player thread 
@@ -98,14 +100,17 @@ public class Player implements Runnable {
 	
 	private volatile State currentState = State.STOPPED;
 	private int silentPosition;
+	
+	int FREQ = 44100;
 
 	public Player(AudioManager am, Handler handler) {
 		mHandler = handler;
-		plugins = new DroidSoundPlugin [3];
+		plugins = new DroidSoundPlugin [4];
 		plugins[0] = new SidplayPlugin();
 		//plugins[0] = new TinySidPlugin();
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
+		plugins[3] = new TFMXPlugin();
 
 		//bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 		//if(bufSize < 32768*2) {
@@ -113,7 +118,7 @@ public class Player implements Runnable {
 		//}
 		silentPosition = -1;
 		// Enough for 1000ms
-		bufSize = 44100*2;
+		bufSize = FREQ*4;
 
 		samples = new short [bufSize/2];
 	}
@@ -137,6 +142,7 @@ public class Player implements Runnable {
                 
 		byte [] songBuffer = null;
 		long fileSize = 0;
+		File songFile = null;
 		
 		try {
 			//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
@@ -229,13 +235,17 @@ public class Player implements Runnable {
 
 				}
 			} else {
-				File f = new File(songName);
-				fileSize = f.length();
+				songFile = new File(songName);
+				fileSize = songFile.length();
 				System.gc();
-				songBuffer = new byte [(int) fileSize];
-				FileInputStream fs = new FileInputStream(f);
-				fs.read(songBuffer);
-				fs.close();
+				
+				if(!songFile.exists())
+					songFile = null;				
+				
+				//songBuffer = new byte [(int) fileSize];
+				//FileInputStream fs = new FileInputStream(f);
+				//fs.read(songBuffer);
+				//fs.close();
 			}
 
 		} catch (IOException e) {
@@ -243,11 +253,18 @@ public class Player implements Runnable {
 			e.printStackTrace();
 		}
 		
-		if(songBuffer != null) {
+		if(songBuffer != null || songFile != null) {
 			
 			for(DroidSoundPlugin plugin : list) {
 				Log.v(TAG, "Trying " + plugin.getClass().getName());
-				songRef = plugin.load(songBuffer, (int) fileSize);
+				if(songFile != null) {
+					try {
+						songRef = plugin.load(songFile);
+					} catch (IOException e) {
+					}
+				} else {
+					songRef = plugin.load(songBuffer, (int) fileSize);
+				}
 				if(songRef != null) {
 					currentPlugin = plugin;
 					break;
@@ -257,7 +274,14 @@ public class Player implements Runnable {
 			if(currentPlugin == null) {
 		    	for(int i=0; i< plugins.length; i++) {
 		    		if(!plugins[i].canHandle(songName)) {    			
-		    			songRef = plugins[i].load(songBuffer, (int) fileSize);
+						if(songFile != null) {
+							try {
+								songRef = plugins[i].load(songFile);
+							} catch (IOException e) {
+							}
+						} else {
+							songRef = plugins[i].load(songBuffer, (int) fileSize);
+						}
 		    			Log.v(TAG, String.format("%s gave Songref %s", plugins[i].getClass().getName(), songRef != null ? songRef.toString() : "NULL"));
 						if(songRef != null) {
 							currentPlugin = plugins[i];
@@ -285,9 +309,13 @@ public class Player implements Runnable {
 					currentSong.title = currentSong.game;
 					Log.v(TAG, String.format("G Title '%s'", currentSong.title));
 					if(currentSong.title == null || currentSong.title.equals("")) {
-						currentSong.title = songName;
-						if(currentSong.title.contains(".")) {
-							currentSong.title = currentSong.title.substring(0, currentSong.title.lastIndexOf('.'));
+						int slash = songName.lastIndexOf('/');
+						int dot = songName.lastIndexOf('.');
+						if(slash < 0) slash = 0; 
+						if(dot < 0) {
+							currentSong.title = songName.substring(slash);
+						} else {
+							currentSong.title = songName.substring(slash, dot);
 						}
 						Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
 					}
@@ -324,7 +352,7 @@ public class Player implements Runnable {
 
 		currentPlugin = null;
 
-		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, 44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
+		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
 
@@ -386,7 +414,7 @@ public class Player implements Runnable {
 				if(currentState == State.PLAYING) {
 					
 					int len = currentPlugin.getSoundData(songRef, samples, bufSize/4);
-					currentPosition += ((len * 1000) / 88200);						
+					currentPosition += ((len * 1000) / (FREQ*2));						
 					if(currentPosition >= lastPos + 1000) {
 						Message msg = mHandler.obtainMessage(MSG_PROGRESS, currentPosition, 0);
 						mHandler.sendMessage(msg);

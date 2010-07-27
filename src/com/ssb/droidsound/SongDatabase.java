@@ -27,6 +27,7 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
 import com.ssb.droidsound.plugins.TinySidPlugin;
+import com.ssb.droidsound.plugins.TFMXPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
@@ -133,25 +134,30 @@ public class SongDatabase {
 			String type = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
 			int length = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 			
-			if(type != null && type.equals("MOD")) {
+			if(title == null || (type != null && type.equals("MOD"))) {
 				String fname = file.getName();
 				int sep = fname.indexOf(" - ");
 				if(sep > 0) {
 					author = fname.substring(0, sep);
-					Log.v(TAG, String.format("######## FILENAME %s", fname));
-					int dot = fname.lastIndexOf('.');
-					if(dot > 0) {
-						String ext = fname.substring(dot+1).toUpperCase();
-						Log.v(TAG, String.format("Extention %s", ext));
-						if(ext.equals("MOD") || ext.equals("IT") || ext.equals("XM") || ext.equals("S3M")) {
-							title = fname.substring(sep+3, dot);
-						} else {
-							title = fname.substring(sep+3);
-						}
-					} else {						
-						title = fname.substring(sep+3);
-					}
+					sep += 3;
 				} else {
+					sep = 0;
+				}
+				Log.v(TAG, String.format("######## FILENAME %s", fname));
+				int dot = fname.lastIndexOf('.');
+				if(dot > 0) {
+					String ext = fname.substring(dot+1).toUpperCase();
+					Log.v(TAG, String.format("Extention %s", ext));
+					if(ext.equals("MOD") || ext.equals("IT") || ext.equals("XM") || ext.equals("S3M")) {
+						title = fname.substring(sep, dot);
+					} else {
+						title = fname.substring(sep);
+					}
+				} else {						
+					title = fname.substring(sep);
+				}
+				
+				if(author == null) {
 					author = file.getParentFile().getName();
 				}
 			}
@@ -199,7 +205,7 @@ public class SongDatabase {
 					return true;
 				}
 		}
-		
+		/*
 		Log.v(TAG, "Failed, trying the rest");
 	
 		for(int i = 0; i < plugins.length; i++) {
@@ -209,7 +215,7 @@ public class SongDatabase {
 					return true;
 				}
 			}
-		}		
+		} */		
 		
 		return false;
 	}
@@ -499,6 +505,8 @@ public class SongDatabase {
 						ContentValues values = new ContentValues();
 						values.put("PATH", f.getParentFile().getPath());
 						values.put("FILENAME", f.getName());
+						
+						Log.v(TAG, String.format("%s isfile %s", f.getPath(), String.valueOf(f.isFile())));
 	
 						if(f.isFile()) {
 							
@@ -522,6 +530,7 @@ public class SongDatabase {
 							} else {
 								values.put("TYPE", TYPE_FILE);
 								try {
+									Log.v(TAG, String.format("Checking %s", f.getPath()));
 									if(checkModule(f, values)) {
 									} else {
 										values = null;
@@ -651,10 +660,12 @@ public class SongDatabase {
 
 		stopScanning = false;
 
-		plugins = new DroidSoundPlugin[3];
+		plugins = new DroidSoundPlugin[4];
 		plugins[0] = new TinySidPlugin();
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
+		plugins[3] = new TFMXPlugin();
+
 
 		//rdb = getReadableDatabase();
 		db = getWritableDatabase();
@@ -683,7 +694,7 @@ public class SongDatabase {
 			Set<File> deletes = new HashSet<File>();
 			int limit, offset;
 			limit = 5000;
-			offset = 0;
+			offset = 1;
 						
 			if(scanCallback != null) {
 				scanCallback.notifyScan("Checking orphans", 0);
@@ -692,7 +703,7 @@ public class SongDatabase {
 			while(true) {
 				
 				// Remove orphaned directories
-				Cursor oc = db.query("FILES", new String[] { "PATH", "FILENAME" }, "PATH NOT LIKE '%.zip%'", null, null, null, null, String.format("%d , %d", offset, limit));
+				Cursor oc = db.query("FILES", new String[] { "PATH", "FILENAME" }, "PATH NOT LIKE '%.zip%'", null, null, null, null, String.format("%d,%d", offset, limit));
 
 				Log.v(TAG, String.format("Orphan check on %d files\n", oc.getCount()));
 

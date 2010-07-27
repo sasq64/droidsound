@@ -44,7 +44,7 @@ public class MyExceptionHandler implements UncaughtExceptionHandler {
 			
 			bos.write(String.format("Droidsound %s crash\n", PlayerActivity.DROIDSOUND_VERSION));
 			Date d = new Date();					
-			bos.write(String.format("%s\n\nMANUFACTURER:%s\nNMODEL:%s\n", d.toString(), Build.MANUFACTURER, Build.MODEL)); 
+			bos.write(String.format("%s\n\nMANUFACTURER:%s\nNMODEL:%s\n", d.toString(), Build.DEVICE, Build.MODEL)); 
 			
 			bos.write(stacktrace);
 			bos.flush();

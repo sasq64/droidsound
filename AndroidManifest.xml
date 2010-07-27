@@ -47,6 +47,6 @@
 		
 		<meta-data android:name="android.app.default_searchable" android:value=".PlayerActivity" />
 	</application>
-	<uses-sdk android:minSdkVersion="4" />
+	<uses-sdk android:minSdkVersion="3" />
 
 </manifest> 

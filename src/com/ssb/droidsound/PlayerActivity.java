@@ -275,10 +275,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					modsDir = mf.getPath();
 					Editor editor = prefs.edit();
 					editor.putString("modsDir", modsDir);
-					editor.commit();
-					
-					showDialog(12);
-					
+					editor.commit();					
+					//showDialog(12);
 				}
 				
 			} else {
@@ -317,6 +315,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		if(db.needUpgrade(SongDatabase.DB_VERSION)) {
 			db.close();
+			db = null;
 			Toast toast = Toast.makeText(this, "Clearing database", Toast.LENGTH_LONG);
 			toast.show();
 			songDatabase.closeDB();
@@ -452,9 +451,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			//SongListAdapter adapter = new SongListAdapter(this, cursor);
 		}
 		
-		//songDatabase = new SongDatabase(this);		
-		// scan(false);
-		//songDatabase.registerPath(name, cb)
+		scan(false);
 		
 		playListView.setDirectory(currentPath);
 		playListView.setPlayer(player);
