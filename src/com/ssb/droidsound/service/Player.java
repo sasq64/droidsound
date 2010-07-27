@@ -309,9 +309,8 @@ public class Player implements Runnable {
 					currentSong.title = currentSong.game;
 					Log.v(TAG, String.format("G Title '%s'", currentSong.title));
 					if(currentSong.title == null || currentSong.title.equals("")) {
-						int slash = songName.lastIndexOf('/');
+						int slash = songName.lastIndexOf('/') + 1;
 						int dot = songName.lastIndexOf('.');
-						if(slash < 0) slash = 0; 
 						if(dot < 0) {
 							currentSong.title = songName.substring(slash);
 						} else {
@@ -320,8 +319,7 @@ public class Player implements Runnable {
 						Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
 					}
 				}
-				
-				
+
 				if(currentSong.subTunes == -1)
 					currentSong.subTunes = 0;			
 			}
