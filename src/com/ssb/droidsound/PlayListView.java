@@ -52,10 +52,23 @@ public class PlayListView extends ListView {
 		private int mPathIndex;
 		private String pathName; 
 		private int selectedPosition = -1;
+		private int itemColor;
+		private int subitemColor;
+		private int archiveColor;
+		private int dirColor;
+		private int totalH;
+		private float titleHeight;
+		private float subtitleHeight;
 
-		PlayListAdapter(Context context) {
+		PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
     		mContext = context;
 
+			itemColor = ic;
+			subitemColor = sc;
+			archiveColor = ac;
+			dirColor = dc;
+			titleHeight = -1;
+			subtitleHeight = -1;
     	}
 		
 		public void setCursor(Cursor cursor, String dirName) {
@@ -112,6 +125,16 @@ public class PlayListView extends ListView {
 
 			if(convertView == null) {
 				convertView = inflater.inflate(R.layout.songlist_item, null);
+				ViewGroup vg = (ViewGroup)convertView;
+				TextView tv0 = (TextView)vg.getChildAt(0);
+				TextView tv1 = (TextView)vg.getChildAt(1);
+				tv1.setTextColor(subitemColor);
+				if(titleHeight < 0) {
+					titleHeight = tv0.getTextSize();
+				}
+				if(subtitleHeight < 0) {
+					subtitleHeight = tv1.getTextSize();
+				}				
 			}
 			ViewGroup vg = (ViewGroup)convertView;
 
@@ -146,24 +169,24 @@ public class PlayListView extends ListView {
 			tv0.setText(title);
 
 			if(sub != null) {
-				tv0.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
+				tv0.setTextSize(titleHeight);
 				tv1.setText(sub);
 				tv1.setVisibility(View.VISIBLE);
 			} else {
-				tv0.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 36);
+				tv0.setTextSize(titleHeight + subtitleHeight);
 				tv1.setVisibility(View.GONE);
 			}
-			
+
 			if(type == SongDatabase.TYPE_FILE) {
-				tv0.setTextColor(0xFFA0A0FF);
+				tv0.setTextColor(itemColor);
 			} else if(type == SongDatabase.TYPE_ARCHIVE) {
-				tv0.setTextColor(0xFFFFA080);
+				tv0.setTextColor(archiveColor);
 			} else {
-				tv0.setTextColor(0xFFA0A080);
+				tv0.setTextColor(dirColor);
 			}
 			
 			if(position == selectedPosition) {
-				tv0.setTextColor(0xFFFFFF00);
+				tv0.setTextColor(0xffffc0c0);
 			}
 			
 			return convertView;
@@ -294,9 +317,32 @@ public class PlayListView extends ListView {
 	
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		
+		int itemColor = 0xFFA0A0FF;
+		int subitemColor = 0xFFA0A0FF;
+		int archiveColor = 0xFFFFA080;
+		int dirColor = 0xFFA0A080;
+
+		
+		for(int i=0; i<attrs.getAttributeCount(); i++) {
+			String name = attrs.getAttributeName(i);
+			if(name.equals("dirColor")) {
+				dirColor = attrs.getAttributeIntValue(i, -1);
+			} else
+			if(name.equals("archiveColor")) {
+				archiveColor = attrs.getAttributeIntValue(i, -1);
+			} else
+			if(name.equals("itemColor")) {
+				itemColor = attrs.getAttributeIntValue(i, -1);
+			}
+			if(name.equals("subitemColor")) {
+				subitemColor = attrs.getAttributeIntValue(i, -1);
+			}
+		}
+				
 		//Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/topaz_plus1200.ttf");
 		
-		adapter = new PlayListAdapter(context);
+		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
 		
 		setOnItemLongClickListener(new OnItemLongClickListener() {

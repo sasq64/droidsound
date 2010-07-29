@@ -46,28 +46,27 @@
 
 <SlidingDrawer
      android:id="@+id/drawer"
-     android:layout_width="fill_parent"
-     android:layout_height="240dp"
-	android:orientation="vertical"
+     android:layout_width="240dp"
+     android:layout_height="fill_parent"
+     android:orientation="horizontal"
      
-     
-     android:layout_alignParentBottom="true"
+     android:layout_alignParentRight="true"
 
      android:handle="@+id/handle"
      android:content="@+id/panel">
 
      <ImageView
          android:id="@id/handle"
-         android:layout_width="88dip"
-         android:layout_height="30dip"
+         android:layout_width="30dip"
+         android:layout_height="88dip"
          android:scaleType="fitXY"
-         android:src="@drawable/handle" />
+         android:src="@drawable/handle_rot" />
 
 	<LinearLayout
 		android:id="@id/panel"
 		android:orientation="vertical"
-		android:layout_width="fill_parent"
-		android:layout_height="400dp"
+		android:layout_height="fill_parent"
+		android:layout_width="400dp"
 		android:background="#ffa08080"	
 	>
 		<FrameLayout 
