@@ -71,7 +71,7 @@
 	>
 		<FrameLayout 
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 
-		    android:background="#a0a0a0"
+		    android:background="#ffa08080"
 		    android:id="@+id/info_display"
 		>
 			<include layout="@layout/info_display" />
@@ -79,7 +79,7 @@
 		
 		<FrameLayout
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 
-		    android:background="#a0a0a0"  android:layout_gravity="center_horizontal"
+		    android:background="#ffa08080"  android:layout_gravity="center_horizontal"
 		    android:id="@+id/controls">
 			<include layout="@layout/controls" />
 		</FrameLayout>
