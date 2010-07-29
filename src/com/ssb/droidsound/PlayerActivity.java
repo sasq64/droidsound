@@ -620,10 +620,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	protected Dialog onCreateDialog(int id) {
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage(id);
 		
 		switch(id) {		
 		case R.string.recreate_confirm:
+			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
@@ -665,6 +665,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			});
 			break;
 		default:
+			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int id) {
 					dialog.cancel();
