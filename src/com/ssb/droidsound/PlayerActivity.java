@@ -29,6 +29,7 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -102,6 +103,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		private PendingIntent contentIntent;
 		private Application application;
 		private boolean drop;
+		private String scanning;
 		
 		protected void finalize() throws Throwable {
 			Log.v(TAG, "########## ScanTask finalize");
@@ -113,13 +115,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			this.drop = drop;
 			application = app;
 			
+			scanning = app.getString(R.string.scanning);
+			
 			manager = (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);	
-			notification = new Notification(R.drawable.note, "Scanning", System.currentTimeMillis());				
+			notification = new Notification(R.drawable.note, scanning, System.currentTimeMillis());				
 			Intent notificationIntent = new Intent();
 			contentIntent = PendingIntent.getActivity(app, 0, notificationIntent, 0);
 		
 			if(drop) {
-				notification.setLatestEventInfo(application, "Scanning", "Clearing database", contentIntent);
+				notification.setLatestEventInfo(application, scanning, "Clearing database", contentIntent);
 				manager.notify(1, notification);
 				notified = true;
 			}
@@ -173,7 +177,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(percent > 0) {
 				path = String.format("%s [%02d%%]", path, percent);
 			}
-			notification.setLatestEventInfo(application, "Scanning", path, contentIntent);
+			notification.setLatestEventInfo(application, scanning, path, contentIntent);
 			manager.notify(1, notification);
 			notified = true;
 		}
@@ -269,7 +273,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 								
 				
 				if(!mf.exists()) {
-					showDialog(11);
+					showDialog(R.string.create_moddir_failed);
 				} else {
 					
 					modsDir = mf.getPath();
@@ -280,7 +284,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 				
 			} else {
-				showDialog(10);
+				showDialog(R.string.sdcard_not_found);
 			}
 		}
 		
@@ -316,11 +320,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(db.needUpgrade(SongDatabase.DB_VERSION)) {
 			db.close();
 			db = null;
-			Toast toast = Toast.makeText(this, "Clearing database", Toast.LENGTH_LONG);
+			Toast toast = Toast.makeText(this, R.string.clearing_database, Toast.LENGTH_LONG);
 			toast.show();
 			songDatabase.closeDB();
 			songDatabase = new SongDatabase(this, true);
-			toast = Toast.makeText(this, "Database cleared", Toast.LENGTH_LONG);
+			toast = Toast.makeText(this, R.string.database_cleared, Toast.LENGTH_LONG);
 			toast.show();
 		}
 		
@@ -540,20 +544,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		}
 	}
-	/*
-	@Override
-	public void onBackPressed() {
-		if(controlsHidden) {
-			if(controlsHidden) {
-				controlsHidden = false;
-				controls.setVisibility(View.VISIBLE);
-				infoDisplay.setVisibility(View.VISIBLE);
-				//playListView.redraw();
-			}
-		} else {
-			super.onBackPressed();
-		}
-	}*/
 
 	@Override
 	public void stringChanged(int what, String value) {
@@ -572,41 +562,47 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 		
 	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-	//public boolean onCreateOptionsMenu(Menu menu) {
-		menu.clear();
-		if(scanTask == null) {
-			menu.add(0, 10, 0, "Rescan").setIcon(R.drawable.ic_menu_music_library);
-		} else {
-			menu.add(0, 13, 0, "Abort scan").setIcon(R.drawable.ic_menu_music_library);
-		}
-		//menu.add(0, 14, 0, "Backup DB").setIcon(R.drawable.ic_menu_music_library);
-		//menu.add(0, 15, 0, "Restore DB").setIcon(R.drawable.ic_menu_music_library);
-		menu.add(0, 11, 0, "About").setIcon(android.R.drawable.ic_menu_info_details);
-		menu.add(0, 12, 0, "Quit").setIcon(android.R.drawable.ic_menu_close_clear_cancel);
+	public boolean onCreateOptionsMenu(Menu menu) {
+		
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.optionsmenu, menu);
+		
+		//menu.clear();
+		//menu.add(0, 10, 0, R.string.rescan).setIcon(R.drawable.ic_menu_music_library);
+		//menu.add(0, 11, 0, R.string.about).setIcon(android.R.drawable.ic_menu_info_details);
+		//menu.add(0, 12, 0, R.string.quit).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}
+
+	public boolean onPrepareOptionsMenu(Menu menu) {
+
+		if(scanTask == null) {
+			menu.setGroupVisible(R.id.when_not_scanning, true);
+			menu.setGroupVisible(R.id.when_scanning, false);
+		} else {
+			menu.setGroupVisible(R.id.when_not_scanning, false);
+			menu.setGroupVisible(R.id.when_scanning, true);
+		}
+		return true;
+	}
+
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int choice = item.getItemId();
 		switch(choice) {
-		case 10:
+		case R.id.rescan:
 			//scan(true);
-			showDialog(20);
+			showDialog(R.string.scan_db);
 			break;
-		case 11 :
-			showDialog(0);
+		case R.id.about :
+			showDialog(R.string.about_droidsound);
 			break;
-		case 12:
+		case R.id.quit:
 			player.stop();
 			finish();
 			break;
-		case 14:
-			break;
-		case 15:
-			break;
-		case 13:
+		case R.id.abort_scan:
 			if(scanTask != null) {
 				synchronized (scanTask) {
 					if(scanTask != null) {
@@ -623,82 +619,60 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		
-		String msg = "SWAY HAT?";
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(id);
 		
-		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int id) {
-				dialog.cancel();
-			}
-		});
-		
-		switch(id) {
-		case 0:
-			msg = "Droidsound " + DROIDSOUND_VERSION + "\nBy sasq64@gmail.com";
-			builder.setMessage(msg);
-			break;
-		case 99 :
-			builder.setMessage(exitString);
-			builder.setPositiveButton("Exit", new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int id) {
-					finish();
-				}
-			});
-			break;
-		case 10:
-			msg = "Could not find sdcard";
-			break;
-		case 11:
-			msg = "Could not write sdcard";
-			break;
-		case 12:
-			msg = "MODS at " + modsDir;
-			break;
-		case 21:
-			builder.setMessage("This will recreate the entire database. It may take a long time. Are you absolutely sure?");
-			builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+		switch(id) {		
+		case R.string.recreate_confirm:
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					rescan();
 				}
 			});
-			builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
 				}				
 			});
 			break;
-		case 20 :
+		case R.string.scan_db:
 			doFullScan = false;
-			builder.setTitle("Rescan database");
-			builder.setMultiChoiceItems(new String[] { "Full" }, null, new OnMultiChoiceClickListener() {				
+			builder.setTitle(R.string.scan_db);
+			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
 					Log.v(TAG, String.format("%d %s", which, String.valueOf(isChecked)));
 					doFullScan = isChecked;
 				}
 			});
-			builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
 				}				
 			});
-			builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int id) {
 					dialog.cancel();
 					if(doFullScan) {
-						showDialog(21);
+						showDialog(R.string.recreate_confirm);
 					} else {
 						scan(true);
 					}
 				}
 			});
 			break;
+		default:
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					dialog.cancel();
+				}
+			});
+			break;
 		}
-				
-		
+
 		AlertDialog alert = builder.create();
 		return alert;
 	}
@@ -710,16 +684,24 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Log.v(TAG, String.format("POS %d", info.position));
 		Cursor cursor = playListView.getCursor(info.position);
 		
-		//MenuInflater inflater = getMenuInflater();
-		//inflater.inflate(R.menu.songmenu, menu);
-		menu.add(Menu.NONE, 10, Menu.NONE, "Details");
-		menu.add(Menu.NONE, 11, Menu.NONE, "Favorite");
-		menu.add(Menu.NONE, 12, Menu.NONE, "Go to author");
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.songmenu, menu);
+		
 		if(cursor.getColumnIndex("LIST") >= 0) {
-			menu.add(Menu.NONE, 13, Menu.NONE, "Remove");
-			menu.add(Menu.NONE, 14, Menu.NONE, "Remove All");
+			menu.setGroupVisible(R.id.in_playlist, true);
+		} else {
+			menu.setGroupVisible(R.id.in_playlist, false);
 		}
 		
+		//MenuInflater inflater = getMenuInflater();
+		//inflater.inflate(R.menu.songmenu, menu);
+		//menu.add(Menu.NONE, 10, Menu.NONE, R.string.details);
+		//menu.add(Menu.NONE, 11, Menu.NONE, R.string.favorite);
+		//menu.add(Menu.NONE, 12, Menu.NONE, R.string.go_to_author);
+		//if(cursor.getColumnIndex("LIST") >= 0) {
+		//	menu.add(Menu.NONE, 13, Menu.NONE, R.string.remove);
+		//	menu.add(Menu.NONE, 14, Menu.NONE, R.string.remove_all);
+		//}		
 	}
 	
 	@Override
@@ -730,21 +712,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Cursor cursor = playListView.getCursor(info.position);
 		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id));
 		ContentValues values;
+		int pi = cursor.getColumnIndex("PATH");
+		String path = playListView.getDirectory();
+		if(pi >= 0) {
+			path =  cursor.getString(pi);
+		}
 		switch(item.getItemId()) {
-		case 12:
-			playListView.setDirectory(cursor.getString(cursor.getColumnIndex("PATH")));
+		case R.id.go_author:
+			playListView.setDirectory(path);
 			break;
-		case 11:
+		case R.id.favorite:
 			if(db == null) {
 				db = songDatabase.getWritableDatabase();
 			}
 			values = new ContentValues();
 			values.put("LIST", 0);
-			int pi = cursor.getColumnIndex("PATH");
-			String path = playListView.getDirectory();
-			if(pi >= 0) {
-				path =  cursor.getString(pi);
-			}
+			
 			int idx =-1;
 			values.put("PATH", path);
 			values.put("FILENAME", cursor.getString(cursor.getColumnIndex("FILENAME")));
@@ -763,7 +746,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			db.insert("LINKS","PATH", values);
 			//db.close();
 			break;
-		case 13 :
+		case R.id.remove :
 			if(db == null) {
 				db = songDatabase.getWritableDatabase();
 			}
@@ -771,7 +754,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			//db.close();
 			playListView.rescan();
 			break;
-		case 14 :
+		case R.id.remove_all :
 			if(db == null) {
 				db = songDatabase.getWritableDatabase();
 			}

@@ -1,17 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<string name="add_to_playlist">Add To Playlist</string>
 <string name="app_name">DroidSound</string>
-<string name="mod_dl_text">Modules goes into the \'MODS\' directory on your sdcard, but it seems you don\'t have any. Do you want to donload a few (~100KB) to get you going?</string>
-<string name="about_text">
-DroidSound vPRE3 by Sasq 2009
-\nUsing:
-\nmodplug
-\nhttp://modplug-xmms.sourceforge.net/
-\nTinySid
-\nhttp://www.rsinsch.de/?id=7298b
-\nGME
-\nhttp://www.fly.net/~ant/libs/audio.html
-</string>
-<string name="search_hint">Search Song title</string>
+<string name="create_moddir_failed">Could not create MODS directory on sdcard!</string>
+<string name="sdcard_not_found">Could not access sdcard!</string>
+<string name="search_hint">Search title</string>
+<string name="scan_db">Rescan database</string>
+<string name="about_droidsound">"Droidsound beta\nBy sasq64@gmail.com"</string>
+<string name="recreate_confirm">This will recreate the entire database. It may take a long time. Are you absolutely sure?</string>
+<string-array name="scan_opts">
+    <item>Full</item>
+</string-array>
+<string name="details">Details</string>
+<string name="favorite">Favorite</string>
+<string name="go_to_author">Go to author</string>
+<string name="remove">Remove</string>
+<string name="remove_all">Remove all</string>
+<string name="rescan">Rescan</string>
+<string name="abort_scan">Abort scan</string>
+<string name="about">About</string>
+<string name="quit">Quit</string>
+<string name="database_cleared">Database cleared</string>
+<string name="clearing_database">Clearing database</string>
+<string name="scanning">Scanning</string>
+<string name="name">Name</string>
+<string name="composer">Composer</string>
 </resources>
