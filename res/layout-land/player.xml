@@ -70,6 +70,7 @@
 		android:background="#ff232729"	
 	>
 		<FrameLayout 
+			android:paddingLeft="30dp"
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 
 		    android:id="@+id/info_display"
 		>

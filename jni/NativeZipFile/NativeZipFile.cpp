@@ -25,7 +25,6 @@ jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
-//static struct zip *zipFile;
 static jfieldID refField;
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_openZipFile(JNIEnv *env, jobject obj, jstring fileName)
