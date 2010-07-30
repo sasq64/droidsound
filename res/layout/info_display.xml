@@ -3,12 +3,12 @@
 <TextView android:text="@string/name" android:textSize="10dp" android:textColor="#ffffff"
 	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="1px" 
 	android:shadowColor="#ff000000" android:shadowDx="4" android:shadowDy="4"/>
-<TextView android:id="@+id/title_text" android:textSize="20dp" android:textColor="#000000"
+<TextView android:id="@+id/title_text" android:textSize="20dp" android:textColor="#000000" android:singleLine="true"
 	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="1px" />
 <TextView android:text="@string/composer" android:textSize="10dp" android:textColor="#ffffff"
 	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="1px"
 	android:shadowColor="#ff000000" />
-<TextView android:id="@+id/composer_text" android:textColor="#000000" android:textSize="20dp"
+<TextView android:id="@+id/composer_text" android:textColor="#000000" android:textSize="20dp" android:singleLine="true"
 	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="1px" />
 <TextView android:id="@+id/seconds_text" android:textSize="16dp" android:textColor="#00ff00"
  	android:text="00:00 [01/01]" android:background="#000000" android:padding="4px" android:typeface="monospace"

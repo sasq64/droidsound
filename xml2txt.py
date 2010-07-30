@@ -53,23 +53,41 @@ def main(argv) :
 		for r in releases :
 			rel = {}
 			
+			name = getText(r, 'Name')
+			id = getText(r, 'ID')
+
+			
 			gid = getText(r, 'ReleasedBy/Group/ID')
 			if gid :
 				group = getText(r, 'ReleasedBy/Group/Group')
 				groupList[int(gid)] = group
+
+			y = getText(r, 'ReleaseDate/Year')
+			m = getText(r, 'ReleaseDate/Month')
+			year = 0
+			if y :
+				year = int(y) * 100
+			if m :
+				year += int(m)
+
 			 
 			eid = getText(r, 'Achievement/Event/ID')
 			if eid :
 				event = getText(r, 'Achievement/Event/Name')
-				eventList[int(eid)] = event
+				
+				if int(eid) == 7 :
+					print "%s %d" % (name, year)
+				
+				if eventList.has_key(eid) :
+					x = eventList[int(eid)]
+					if x[1] == 0 :
+						eventList[int(eid)] = (event, year)
+				else :
+					eventList[int(eid)] = (event, year)
 			
-			name = getText(r, 'Name')
-			id = getText(r, 'ID')
 			compo = getText(r, 'Achievement/Compo')
 			place = getText(r, 'Achievement/Place')
 						
-			y = getText(r, 'ReleaseDate/Year')
-			m = getText(r, 'ReleaseDate/Month')
 			type = getText(r, 'ReleaseType')
 
 			#print getText(r, 'ReleaseDate/Month')
@@ -91,7 +109,8 @@ def main(argv) :
  		outf.write("[Events]\n")
 
 		for e in eventList :
-			outf.write((u"%d\t%s\n" % (e, eventList[e])).encode(code))
+			x = eventList[e]
+			outf.write((u"%d\t%d\t%s\n" % (e, x[1], x[0])).encode(code))
 
 		outf.close()
 						

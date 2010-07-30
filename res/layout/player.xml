@@ -1,8 +1,9 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
-	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#a0a0a0" >
+	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
 
 <LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
 	android:orientation="horizontal" android:layout_alignParentTop="true"
+	android:background="#000080"
 	android:id="@+id/title_bar"
 >
 	<Button android:id="@+id/parent_button" android:text=".."
@@ -10,7 +11,6 @@
     android:layout_height="54dp"
     android:textSize="20dp"
     android:textColor="#FFFFFFFF"
-    android:background="@drawable/parent_button"
     android:layout_margin="4dp"
     android:singleLine="true"
 	/>
@@ -48,9 +48,8 @@
      android:id="@+id/drawer"
      android:layout_width="fill_parent"
      android:layout_height="240dp"
-	android:orientation="vertical"
-     
-     
+     android:orientation="vertical"
+
      android:layout_alignParentBottom="true"
 
      android:handle="@+id/handle"
@@ -61,18 +60,17 @@
          android:layout_width="88dip"
          android:layout_height="30dip"
          android:scaleType="fitXY"
-         android:src="@drawable/handle" />
+         android:src="@drawable/scroll_button" />
 
 	<LinearLayout
 		android:id="@id/panel"
 		android:orientation="vertical"
 		android:layout_width="fill_parent"
 		android:layout_height="400dp"
-		android:background="#ffa08080"	
+		android:background="#ff232729"	
 	>
 		<FrameLayout 
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 
-		    android:background="#ffa08080"
 		    android:id="@+id/info_display"
 		>
 			<include layout="@layout/info_display" />
@@ -80,7 +78,7 @@
 		
 		<FrameLayout
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 
-		    android:background="#ffa08080"  android:layout_gravity="center_horizontal"
+		    android:layout_gravity="center_horizontal"
 		    android:id="@+id/controls">
 			<include layout="@layout/controls" />
 		</FrameLayout>

@@ -1,11 +1,12 @@
 package com.ssb.droidsound;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -26,8 +27,8 @@ import android.util.Log;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
-import com.ssb.droidsound.plugins.TinySidPlugin;
 import com.ssb.droidsound.plugins.TFMXPlugin;
+import com.ssb.droidsound.plugins.TinySidPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
@@ -133,48 +134,6 @@ public class SongDatabase {
 			String game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
 			String type = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
 			int length = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
-			
-			if(title == null || (type != null && type.equals("MOD"))) {
-				String fname = file.getName();
-				int sep = fname.indexOf(" - ");
-				if(sep > 0) {
-					author = fname.substring(0, sep);
-					sep += 3;
-				} else {
-					sep = 0;
-				}
-				Log.v(TAG, String.format("######## FILENAME %s", fname));
-				int dot = fname.lastIndexOf('.');
-				if(dot > 0) {
-					String ext = fname.substring(dot+1).toUpperCase();
-					Log.v(TAG, String.format("Extention %s", ext));
-					if(ext.equals("MOD") || ext.equals("IT") || ext.equals("XM") || ext.equals("S3M")) {
-						title = fname.substring(sep, dot);
-					} else {
-						title = fname.substring(sep);
-					}
-				} else {						
-					title = fname.substring(sep);
-				}
-				
-				if(author == null) {
-					author = file.getParentFile().getName();
-				}
-			}
-			
-			if(title == null || title.equals("")) {
-				title = game;
-				Log.v(TAG, String.format("G Title '%s'", title));
-				if(title == null || title.equals("")) {
-					title = file.getName();
-					if(title.contains(".")) {
-						title = title.substring(0, title.lastIndexOf('.'));
-					}
-					Log.v(TAG, String.format("FN Title '%s'", title));
-				}
-			}
-
-			Log.v(TAG, String.format("Got Info T:%s, A:%s, C:%s, (%d)", title, author, copyright, length));
 
 			values.put("TITLE", title);
 			values.put("COMPOSER", author);
@@ -223,9 +182,6 @@ public class SongDatabase {
 	
 	private boolean scanZip(File zipFile) throws ZipException, IOException {
 		
-		byte [] data;
-		boolean ok;
-		
 		Log.v(TAG, String.format("Scanning %s", zipFile.getPath()));
 		
 		// Erase any previous entries
@@ -238,13 +194,10 @@ public class SongDatabase {
 		Log.v(TAG, "ENTRY");
 		
 		String baseName = zipFile.getPath();
-		int baseCount = baseName.length();
 		// Basename = /sdcard/MODS/C64Music.zip
 
 		Log.v(TAG, "ENUM");
 		Enumeration<? extends ZipEntry> entries = zfile.entries();
-		
-		data = new byte [0x78];
 		
 		Set<String> pathSet = new HashSet<String>();
 		
@@ -256,8 +209,7 @@ public class SongDatabase {
 		if(reportPeriod < 100) {
 			reportPeriod = 100;
 		}
-		
-		String lastPath = "";
+
 		while(entries.hasMoreElements()) {
 			
 			if(stopScanning) {
@@ -267,81 +219,40 @@ public class SongDatabase {
 			
 			ZipEntry ze = entries.nextElement();
 			
-			String n = ze.getName();
-			// n = C64Music/xxx ...
-			
-			ContentValues values = new ContentValues();
-			ok = false;
-			
-			if(n.endsWith(".sid")) {
-				
-				DataInputStream dis = new DataInputStream(zfile.getInputStream(ze));
-				dis.read(data);
+			String n = ze.getName();			
+			int slash = n.lastIndexOf('/');				
+			String fileName = n.substring(slash+1);
+			String path = baseName + "/" + n.substring(0, slash);
 
-				int o = 0x35;
-				while(o >= 0x16 && data[o] == 0) {
-					o -= 1;
-				}
-				String name = new String(data, 0x16, o-0x15, "ISO-8859-1");
-	
-				o = 0x55;
-				while(o >= 0x36 && data[o] == 0) {
-					o -= 1;
-				}
-				String author = new String(data, 0x36, o-0x35, "ISO-8859-1");
-	
-				o = 0x75;
-				while(o >= 0x56 && data[o] == 0) {
-					o -= 1;
-				}
-				String copyright = new String(data, 0x56, o-0x55, "ISO-8859-1");
-				
-				values.put("TITLE", name);
-				values.put("COMPOSER", author);
-				values.put("COPYRIGHT", copyright);
-				values.put("FORMAT", "SID");
-				values.put("LENGTH", 0);
-				ok = true;
-				
+			if(fileName.equals("")) {
+				pathSet.add(path);
 			} else {
-				// checkModule(dis, values);
-				ok = false;
-			}
-
-			if(ok) {
-				int slash = n.lastIndexOf('/');				
-				//int firstSlash =  n.indexOf('/');
+					
+				ContentValues values = new ContentValues();
 				
-				String fileName = n.substring(slash+1);
-				String path = baseName + "/" + n.substring(0, slash);
-
-				if(!path.equals(lastPath)) {
-					// /sdcard/MODS/C64Music.zip/MUSICIANS/A-Z/Agemixer					
-					//Log.v(TAG, String.format("Adding DIR %s", path));
-					pathSet.add(path);
-					slash = path.lastIndexOf('/');
-					while(slash > baseCount) {
-						//Log.v(TAG, String.format("Adding DIR %s", path.substring(0, slash)));
-						pathSet.add(path.substring(0, slash));
-						slash = path.lastIndexOf('/', slash-1);
-					}					
-					lastPath = path;
+				InputStream is = zfile.getInputStream(ze);
+				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, is);
+				is.close();
+	
+				if(info != null) {
+					values.put("TITLE", info.title);
+					values.put("COMPOSER", info.composer);
+					values.put("COPYRIGHT", info.copyright);
+					values.put("FORMAT", info.format);
+					values.put("LENGTH", 0);
+					values.put("PATH", path);
+					values.put("FILENAME", fileName);
+					values.put("TYPE", TYPE_FILE);
+					db.insert("FILES", "PATH", values);
 				}
 
-				
-				values.put("PATH", path);
-				values.put("FILENAME", fileName);
-				values.put("TYPE", TYPE_FILE);
-
-				db.insert("FILES", "PATH", values);
-				
 				count++;
 				if((count % reportPeriod) == 0) {
 					if(scanCallback != null) {
 						scanCallback.notifyScan(null, count * 100 / total);
 					}					
 				}
-				
+					
 				//if(count == 4000)
 				//	break;
 			}			
@@ -451,7 +362,7 @@ public class SongDatabase {
 							/// files.remove(fileName);
 							removes.add(fileName);
 						}
-					}					
+					}
 				} else {
 					Log.v(TAG, String.format("!! '%s' found in DB but not on disk, DELETING", fileName));
 					// File has been removed on disk, schedule for DELETE
@@ -531,8 +442,25 @@ public class SongDatabase {
 								values.put("TYPE", TYPE_FILE);
 								try {
 									Log.v(TAG, String.format("Checking %s", f.getPath()));
-									if(checkModule(f, values)) {
+																		
+									InputStream is = new FileInputStream(f);
+									FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), is);
+									is.close();
+									boolean ok = false;
+									if(info != null) {
+										values.put("TITLE", info.title);
+										values.put("COMPOSER", info.composer);
+										values.put("COPYRIGHT", info.copyright);
+										values.put("FORMAT", info.format);
+										values.put("LENGTH", 0);
+										ok = true;				
 									} else {
+										if(checkModule(f, values)) {
+											ok = true;
+										}
+									}
+									
+									if(!ok) {
 										values = null;
 									}
 								} catch (IOException e) {
@@ -565,13 +493,13 @@ public class SongDatabase {
 			}
 			
 			Log.v(TAG, String.format("zipfiles (%d)", zipFiles.size()));
-			if(zipFiles.size() > 0) {
-				db.beginTransaction();
+			if(zipFiles.size() > 0) {				
 				for(File f : zipFiles) {
 					try {
 						if(scanCallback != null) {
 							scanCallback.notifyScan(f.getPath(), 0);
 						}
+						db.beginTransaction();
 						if(scanZip(f)) {
 							ContentValues values = new ContentValues();
 							values.put("PATH", f.getParentFile().getPath());
@@ -589,8 +517,8 @@ public class SongDatabase {
 					} catch (IOException e) {
 						Log.v(TAG, "IO Error");
 					}
+					db.endTransaction();
 				}
-				db.endTransaction();			
 			}
 			
 			if(csdb != null) {
@@ -621,7 +549,11 @@ public class SongDatabase {
 			// scanDirs contains found dirs that exists in database
 
 			for(String s : foundDirs) {
-				scanFiles(new File(parentDir, s), alwaysScan, lastScan);
+				File f = new File(parentDir, s);
+				if(scanCallback != null) {
+					scanCallback.notifyScan(f.getPath(), 0);
+				}
+				scanFiles(f, alwaysScan, lastScan);
 			}			
 			
 			for(String s : foundDirsNew) {
@@ -795,20 +727,7 @@ public class SongDatabase {
 			rdb.close();
 			rdb = null;
 		}
-		/*if(db != null) {
-			db.close();
-			db = null;
-		}*/
 	}
-	
-	/*
-	 *   /sdcard/MODS/music/test.mod
-	 *   /sdcard/MODS/C64Music.zip/songs/song.sid
-	 *   /sdcard/MODS/allmon.search
-	 *   /sdcard/MODS/CSDB/PARTIES.LNK contains CDSB:/PARTIES
-	 *   CSDB:/PARTIES/X2008/EdgeOfDisgrace/
-	 * 
-	 */
 
 	public Cursor getFilesInPath(String pathName) {
 		if(rdb == null) {
@@ -840,7 +759,7 @@ public class SongDatabase {
 				e.printStackTrace();
 			}
 		} else if(name.equals("CSDB.TXT")) {
-			return CSDBParser.getRoot(rdb);
+			return CSDBParser.getPath("CSDB:", rdb);
 		}
 
 		Log.v(TAG, String.format("Path now '%s'", f.getName()));

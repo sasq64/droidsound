@@ -2,6 +2,7 @@ package com.ssb.droidsound.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
@@ -27,6 +28,8 @@ public class NativeZipFile {
 		public int getIndex() { return index; }
 	};
 	
+	private long zipRef;	
+	
 	private native void openZipFile(String fileName);
 	
 	native void closeZipFile();
@@ -36,12 +39,18 @@ public class NativeZipFile {
 	native int findEntry(String name);
 	native int readData(int i, byte [] target);
 
-	public NativeZipFile(String fileName) {
+	public NativeZipFile(String fileName) throws IOException {
 		openZipFile(fileName);
+		if(zipRef == 0) {
+			throw new IOException();
+		}
 	}
 	
-	public NativeZipFile(File file) {
+	public NativeZipFile(File file) throws IOException {
 		openZipFile(file.getPath());
+		if(zipRef == 0) {
+			throw new IOException();
+		}
 	}
 	
 	public ZipEntry getEntry(String entryName) {

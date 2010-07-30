@@ -4,4 +4,5 @@
 <ImageButton android:id="@+id/play_button" android:background="@drawable/mg_forward" android:layout_width="58dp" android:layout_height="58dp" android:scaleType="fitCenter" />
 <ImageButton android:id="@+id/stop_button" android:background="@drawable/mg_stop" android:layout_width="58dp" android:layout_height="58dp" android:scaleType="fitCenter" />
 <ImageButton android:id="@+id/fwd_button" android:background="@drawable/mg_forward2" android:layout_width="58dp" android:layout_height="58dp" android:scaleType="fitCenter" />
+
 </LinearLayout>

@@ -113,7 +113,10 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getString
 	switch(what)
 	{
 	case INFO_TITLE:
-		return env->NewStringUTF(info->lastTrack.song);
+		if(!strlen(info->lastTrack.song))
+			return env->NewStringUTF(info->lastTrack.game);
+		else
+			return env->NewStringUTF(info->lastTrack.song);
 	case INFO_AUTHOR:
 		return env->NewStringUTF(info->lastTrack.author);
 	case INFO_COPYRIGHT:

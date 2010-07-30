@@ -41,6 +41,7 @@ public class CSDBParser {
 
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "EVENTS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"ID" + " INTEGER," +
+				"DATE" + " INTEGER," +
 				"NAME" + " TEXT" + ");");
 
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "RELEASESIDS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
@@ -53,7 +54,7 @@ public class CSDBParser {
 		db.beginTransaction();
 		try {
 			int place = -1;
-			Log.v(TAG, "OPENING CSDB");
+			Log.v(TAG, "OPENING CSDB");			
 			reader = new BufferedReader(new FileReader(file));				
 			String line = reader.readLine();
 			int count = 0;
@@ -122,7 +123,8 @@ public class CSDBParser {
 					} else if(place == 2) {
 						Log.v(TAG, String.format("Event (%s) %s \n", args[0], args[1]));
 						values.put("ID", Integer.parseInt(args[0]));
-						values.put("NAME", args[1]);
+						values.put("DATE", Integer.parseInt(args[1]));
+						values.put("NAME", args[2]);
 						db.insert("EVENTS", "ID", values);
 					}
 				}
@@ -145,12 +147,24 @@ public class CSDBParser {
 		return ok;
 	}
 
-	public static Cursor getRoot(SQLiteDatabase rdb) {
+	/*
+	 * CSDB:EVENTS/X2008/EdgeOfDisgrace/  song.sid
+	 * CSDB:RELEASES/EdgeOfDisgrace/ song.sid
+	 * CSDB:RELEASES/SomeCollection/ song.sid
+	 * CSDB:GROUPS/BoozeDesign/EdgeOfDisgrace/ song.sid
+	 * 
+	 * select * from releasesids where group=booze release=eod
+	 * 
+	 */
+	public static Cursor getPath(String path, SQLiteDatabase rdb) {
 		
-		return rdb.rawQuery("select releases.name, groups.name from releases,groups where releases.groupid=groups.id and releases.eventid=1577", null);
+		if(path == "") {
+			return rdb.rawQuery("select name, id from events order by date", null);
+		} else {
+			return null;
+		}
+		//return rdb.rawQuery("select releases.name, groups.name from releases,groups where releases.groupid=groups.id and releases.eventid=1577", null);
 		//return rdb.query("RELEASES", new String[] { "NAME AS TITLE, GROUP AS COMPOSER" }, "EVENTID=?", new String[] { "1577" }, null, null, "NAME");
-		
-		
-	}
+	}	
 
 }

@@ -166,6 +166,11 @@ public class PlayListView extends ListView {
 				sub = mCursor.getString(mAuthorIndex);
 			}
 
+			
+			if(sub == null && type == SongDatabase.TYPE_FILE) {
+				sub = "Unknown";
+			}
+			
 			tv0.setText(title);
 
 			if(sub != null) {

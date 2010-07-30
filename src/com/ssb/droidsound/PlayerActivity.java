@@ -71,9 +71,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int songLength;
 	private String songName;
 	private boolean mIsPlaying = false;
-	private boolean controlsHidden = false;
-
-	private String exitString;
 
 	
 	private SongDatabase songDatabase;
@@ -87,6 +84,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private BroadcastReceiver receiver;
 
 	private SQLiteDatabase db;
+
+	private SlidingDrawer drawer;
 
 	//private static AsyncTask<Void, String, Void> scanTask = null;
 	private static ScanTask scanTask = null;
@@ -259,6 +258,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		titleText = (TextView) findViewById(R.id.list_title);
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 				
+		View panel = findViewById(R.id.panel);
+		panel.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+			}
+		});
+		
 		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		modsDir = prefs.getString("modsDir", null);
 
@@ -337,6 +343,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=?", new String[] { path }, null, null, null);
 			}			
 		});
+		
+		/*
+		 * CSDB:Parties/ => EVENTS
+		 * CSDB:Parties/X2008/ => RELEASES
+		 * CSDB:Releases/
+		 * CSDB:TopList/
+		 * CSDB:TopList/Edge Of Disgrace/ => RELEASESIDS
+		 */
+		songDatabase.registerPath("CSDB", new SongDatabase.PathCallback() {			
+			@Override
+			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
+				return CSDBParser.getPath(path, db);
+			}
+		});
+
 		
 		playListView.setDatabase(songDatabase);		
 		registerForContextMenu(playListView);
@@ -522,16 +543,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			Log.v(TAG, String.format("State now %d", value));
 			if(value == 1) {
 				mIsPlaying = true;
-				playButton.setImageResource(R.drawable.mg_pause);
-				if(controlsHidden) {
-					controlsHidden = false;
-					controls.setVisibility(View.VISIBLE);
-					infoDisplay.setVisibility(View.VISIBLE);
-					playListView.redraw();
-					//playListView.setSelection(playingFile);
-
-				}
-				
+				playButton.setImageResource(R.drawable.mg_pause);				
 			} else {
 				playButton.setImageResource(R.drawable.mg_forward);
 				mIsPlaying = false;
@@ -566,11 +578,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.optionsmenu, menu);
-		
-		//menu.clear();
-		//menu.add(0, 10, 0, R.string.rescan).setIcon(R.drawable.ic_menu_music_library);
-		//menu.add(0, 11, 0, R.string.about).setIcon(android.R.drawable.ic_menu_info_details);
-		//menu.add(0, 12, 0, R.string.quit).setIcon(android.R.drawable.ic_menu_close_clear_cancel);
 		return true;
 	}
 
@@ -692,17 +699,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			menu.setGroupVisible(R.id.in_playlist, true);
 		} else {
 			menu.setGroupVisible(R.id.in_playlist, false);
-		}
-		
-		//MenuInflater inflater = getMenuInflater();
-		//inflater.inflate(R.menu.songmenu, menu);
-		//menu.add(Menu.NONE, 10, Menu.NONE, R.string.details);
-		//menu.add(Menu.NONE, 11, Menu.NONE, R.string.favorite);
-		//menu.add(Menu.NONE, 12, Menu.NONE, R.string.go_to_author);
-		//if(cursor.getColumnIndex("LIST") >= 0) {
-		//	menu.add(Menu.NONE, 13, Menu.NONE, R.string.remove);
-		//	menu.add(Menu.NONE, 14, Menu.NONE, R.string.remove_all);
-		//}		
+		}		
 	}
 	
 	@Override
