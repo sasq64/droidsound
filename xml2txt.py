@@ -55,7 +55,9 @@ def main(argv) :
 			
 			name = getText(r, 'Name')
 			id = getText(r, 'ID')
-
+			rating = getText(r, 'CSDbRating')
+			if rating :
+				rating = str(int(float(rating) * 100))
 			
 			gid = getText(r, 'ReleasedBy/Group/ID')
 			if gid :
@@ -64,11 +66,11 @@ def main(argv) :
 
 			y = getText(r, 'ReleaseDate/Year')
 			m = getText(r, 'ReleaseDate/Month')
-			year = 0
+			date = 0
 			if y :
-				year = int(y) * 100
+				date = int(y) * 10000
 			if m :
-				year += int(m)
+				date += (int(m) * 100)
 
 			 
 			eid = getText(r, 'Achievement/Event/ID')
@@ -76,19 +78,21 @@ def main(argv) :
 				event = getText(r, 'Achievement/Event/Name')
 				
 				if int(eid) == 7 :
-					print "%s %d" % (name, year)
+					print "%s %d" % (name, date)
 				
 				if eventList.has_key(eid) :
 					x = eventList[int(eid)]
 					if x[1] == 0 :
-						eventList[int(eid)] = (event, year)
+						eventList[int(eid)] = (event, date)
 				else :
-					eventList[int(eid)] = (event, year)
+					eventList[int(eid)] = (event, date)
 			
 			compo = getText(r, 'Achievement/Compo')
 			place = getText(r, 'Achievement/Place')
 						
 			type = getText(r, 'ReleaseType')
+			if compo :
+				type = compo
 
 			#print getText(r, 'ReleaseDate/Month')
 			#print getText(r, 'Sids/HVSCPath')
@@ -98,7 +102,7 @@ def main(argv) :
 			for s in sids :			
 				fnames.append(s.firstChild.data)
 				
-			rel = (id, name, gid, type, y, eid, compo, place, ','.join(fnames))
+			rel = (id, name, gid, type, str(date), eid, place, rating, ','.join(fnames))
 			outf.write((u'\t'.join(rel) + "\n").encode(code))
  		
  		outf.write("[Groups]\n")

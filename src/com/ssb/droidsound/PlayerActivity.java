@@ -134,7 +134,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		protected Void doInBackground(Void... arg) {
 					
 			synchronized (this) {
-				songDatabase = new SongDatabase(application, drop);
+				songDatabase = new SongDatabase(application, modsDir, drop);
 				songDatabase.setScanCallback(new SongDatabase.ScanCallback() {					
 					@Override
 					public void notifyScan(String path, int percent) {					
@@ -144,7 +144,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				});
 			}
 
-			songDatabase.scan(fullScan, modsDir);
+			songDatabase.scan(fullScan);
 
 			synchronized (this) {
 				songDatabase.setScanCallback(null);
@@ -325,7 +325,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Log.v(TAG, String.format("MODS at %s", modsDir));
 
 		
-		songDatabase = new SongDatabase(this, false);		
+		songDatabase = new SongDatabase(this, modsDir, false);		
 		db = songDatabase.getWritableDatabase();
 		
 		if(db != null) {		
@@ -335,7 +335,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				Toast toast = Toast.makeText(this, R.string.clearing_database, Toast.LENGTH_LONG);
 				toast.show();
 				songDatabase.closeDB();
-				songDatabase = new SongDatabase(this, true);
+				songDatabase = new SongDatabase(this, modsDir, true);
 				toast = Toast.makeText(this, R.string.database_cleared, Toast.LENGTH_LONG);
 				toast.show();
 			}

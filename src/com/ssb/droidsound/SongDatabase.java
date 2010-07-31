@@ -66,6 +66,8 @@ public class SongDatabase {
 	
 	private String dbName;
 	private volatile boolean stopScanning;
+
+	private String modsDir;
 	
 	SQLiteDatabase getReadableDatabase() {
 		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY);
@@ -74,7 +76,7 @@ public class SongDatabase {
 	SQLiteDatabase getWritableDatabase() {
 		SQLiteDatabase dbrc = null;
 		try {
-		 dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
+			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
 		} catch (SQLException e) {
 		}
 		return dbrc;
@@ -84,9 +86,11 @@ public class SongDatabase {
 	public static final int TYPE_DIR = 1;
 	public static final int TYPE_FILE = 2;
 	
-	public SongDatabase(Context context, boolean drop) {
+	public SongDatabase(Context context, String mdir, boolean drop) {
 		
 		File myDir = context.getFilesDir();
+		
+		modsDir = mdir;
 		
 		dbName = new File(myDir, "songs.db").getAbsolutePath();
 		Log.v(TAG, String.format("Database path %s", dbName));
@@ -131,6 +135,7 @@ public class SongDatabase {
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "VARIABLES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"VAR" + " TEXT," +
 				"VALUE" + " TEXT" + ");");
+		
 		db.close();
 	}
 
@@ -434,13 +439,21 @@ public class SongDatabase {
 							String fn = f.getName();
 							int end = fn.length();
 							
-							if(fn.toUpperCase().equals("CSDB.TXT")) {
+							if(fn.toUpperCase().equals("CSDB.DUMP")) {
 								csdb = f;
 								values = null;
 							} else
 							if(fn.toUpperCase().endsWith(".ZIP")) {
 								Log.v(TAG, String.format("Found zipfile (%s)", f.getPath()));
 								zipFiles.add(f);
+								/*
+								if(fn.toUpperCase().equals("C64MUSIC.ZIP")) {
+									Log.v(TAG, "Found HVSC at " + f.getPath());
+									values = new ContentValues();
+									values.put("VALUE", f.getPath());
+									db.update("VARIABLES", values, "VAL='hvsc'", null);
+								} */
+								
 								values = null;
 							}
 							else 
@@ -598,7 +611,7 @@ public class SongDatabase {
 		}
 	}
 
-	public void scan(boolean full, String modsDir) {
+	public void scan(boolean full) {
 
 		stopScanning = false;
 
@@ -611,6 +624,7 @@ public class SongDatabase {
 
 		//rdb = getReadableDatabase();
 		db = getWritableDatabase();
+		
 
 		long startTime = System.currentTimeMillis();
 		long lastScan = -1;
@@ -750,33 +764,42 @@ public class SongDatabase {
 		}
 		
 		
-		File f = new File(pathName);
+		int csdb = pathName.toUpperCase().indexOf("/CSDB.DUMP");
+		if(csdb >= 0) {
+			//pathName.replaceFirst("/CSDB.DUMP", "CSDB:");
+			pathName = pathName.substring(0, csdb) + "/CSDB:" + pathName.substring(csdb+10);
+		}
+		
+		//File f = new File(pathName);
 		
 		Log.v(TAG, String.format("files in path '%s'", pathName));
-		String name = f.getName().toUpperCase();
+		String name = new File(pathName).getName().toUpperCase();
 		
 		if(name.endsWith(".LNK")) {
 			try {
+				File f = new File(pathName);
 				BufferedReader reader = new BufferedReader(new FileReader(f));
-				pathName = reader.readLine();
+				String p = reader.readLine();
 				reader.close();
-				if(pathName != null && pathName.length() > 0) {
-					f = new File(pathName);
+				if(p != null && p.length() > 0) {
+					pathName = p;
 				}
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		} else if(name.equals("CSDB.TXT")) {
-			return CSDBParser.getPath("CSDB:", rdb);
-		}
+		} /*else if(name.equals("CSDB.DUMP")) {
+			//return CSDBParser.getPath("", rdb);
+			pathName = new File(new File(pathName).getParent(), "CSDB:").getPath();
+		} */
 
-		Log.v(TAG, String.format("Path now '%s'", f.getName()));
+		Log.v(TAG, String.format("Path now '%s'", pathName));
 
-		int colon = f.getName().indexOf(':');
+		int colon = pathName.indexOf(':');
 		if(colon > 0) {
-			PathCallback cb = pathCallbacks.get(pathName.substring(0, colon));
+			int start = pathName.lastIndexOf('/', colon) + 1;
+			PathCallback cb = pathCallbacks.get(pathName.substring(start, colon));
 			if(cb != null) {
 				return cb.getCursorFromPath(pathName.substring(colon+1), rdb);
 			}

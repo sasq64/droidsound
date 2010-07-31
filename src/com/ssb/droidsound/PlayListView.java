@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -40,12 +41,14 @@ public class PlayListView extends ListView {
 		}
 	};
 	
+	public static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };
+	
 	static class PlayListAdapter extends BaseAdapter {
     	
     	private Context mContext;
 		private Cursor mCursor;
 
-		private int mAuthorIndex;
+		private int mSubIndex;
 		private int mTitleIndex;
 		private int mTypeIndex;
 		private int mFileIndex;
@@ -59,6 +62,7 @@ public class PlayListView extends ListView {
 		private int totalH;
 		private float titleHeight;
 		private float subtitleHeight;
+		private boolean subDate;
 
 		PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
     		mContext = context;
@@ -79,7 +83,17 @@ public class PlayListView extends ListView {
 			
     		mCursor = cursor;
     		pathName = dirName;
-    		mAuthorIndex = mCursor.getColumnIndex("COMPOSER");
+    		subDate = false;
+    		mSubIndex = mCursor.getColumnIndex("SUBTITLE");
+    		if(mSubIndex < 0) {
+    			mSubIndex = mCursor.getColumnIndex("COMPOSER");
+    		}
+    		if(mSubIndex < 0) {
+    			mSubIndex = mCursor.getColumnIndex("DATE");
+    			if(mSubIndex >= 0) {
+    				subDate = true;
+    			}
+    		}
     		mTitleIndex = mCursor.getColumnIndex("TITLE");
     		mTypeIndex = mCursor.getColumnIndex("TYPE");
     		mFileIndex = mCursor.getColumnIndex("FILENAME");
@@ -162,8 +176,16 @@ public class PlayListView extends ListView {
 				title = "<ERROR>";
 			}
 			
-			if(mAuthorIndex >= 0) {
-				sub = mCursor.getString(mAuthorIndex);
+			if(mSubIndex >= 0) {
+				if(subDate) {
+					int d = mCursor.getInt(mSubIndex);
+					int year = d / 10000;
+					int rest = d - year*10000;
+					int month = rest / 100;
+					sub = String.format("%04d %s", year, month > 0 ? monthNames[month-1] : "");					
+				} else {
+					sub = mCursor.getString(mSubIndex);
+				}
 			}
 
 			
@@ -407,8 +429,25 @@ public class PlayListView extends ListView {
     	//adapter.setHasParent(!pathName.equals(baseDir));
     }
     
-    public void gotoParent() {    	
-    	setDirectory(new File(pathName).getParent());
+    public void gotoParent() {
+    	String s = pathName;
+
+    	pathName = new File(pathName).getParent();    	
+    	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
+
+    	if(dirChangeCallback != null) {
+    		dirChangeCallback.dirChange(pathName);
+    	}
+   
+    	File [] files = adapter.getFiles(false);
+    	Log.v(TAG, String.format("PARENT from %s", s));
+		for(int i=0; i<files.length; i++) {
+			//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), s));
+			if(s.equals(files[i].getPath())) {
+				setSelection(i);
+				break;
+			}
+		}
     }
     
     public String getDirectory() {
@@ -430,6 +469,7 @@ public class PlayListView extends ListView {
 
 	public void setSelection(String name) {
 		
+		Log.v(TAG, String.format("SET_SELECTION %s", name));
 		int position = adapter.setSelectedFile(name);
 		selectedName = name;
 		adapter.notifyDataSetChanged();
@@ -446,7 +486,14 @@ public class PlayListView extends ListView {
 	}
 
 	public void search(String query) {
-		Cursor cursor = dataBase.search(query);
+		Cursor cursor;
+		if(pathName.toUpperCase().contains("/CSDB.DUMP")) {
+			SQLiteDatabase rdb = dataBase.getReadableDatabase();
+			cursor = CSDBParser.search(rdb, query);
+			rdb.close();
+		} else { 		
+			cursor = dataBase.search(query);
+		}
 		if(!pathName.endsWith("/SEARCH")) {
 			pathName = pathName + "/SEARCH";
 		}

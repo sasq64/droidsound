@@ -5,15 +5,25 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.database.CursorWrapper;
+import android.database.MatrixCursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Environment;
 import android.provider.BaseColumns;
 import android.util.Log;
 
 public class CSDBParser {
 	private static final String TAG = CSDBParser.class.getSimpleName();
+
+	private static String hvsc = null;
+	
+	static Map<String, Integer> events = new HashMap<String, Integer>();
+	static Map<String, Integer> groups = new HashMap<String, Integer>();
 	
 	static boolean parseCSDB(File file, SQLiteDatabase db, SongDatabase.ScanCallback scanCallback) {
 		
@@ -25,15 +35,14 @@ public class CSDBParser {
 		db.execSQL("DROP TABLE IF EXISTS RELEASESIDS;");
 		
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "RELEASES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-				"ID" + " INTEGER," +
-				"NAME" + " TEXT," +
-				"GROUPID" + " INTEGER," +
-
-				"TYPE" + " TEXT," +
-				"YEAR" + " INTEGER," +
-				"EVENTID" + " INTEGER," +
-				"COMPO" + " TEXT," +
-				"PLACE" + " INTEGER" + ");");
+				"ID INTEGER," +
+				"NAME TEXT," +
+				"GROUPID INTEGER," +
+				"TYPE TEXT," +
+				"DATE INTEGER," +
+				"EVENTID INTEGER," +
+				"RATING INTEGER," +
+				"PLACE INTEGER" + ");");
 
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "GROUPS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"ID" + " INTEGER," +
@@ -94,13 +103,13 @@ public class CSDBParser {
 							values.put("GROUPID", Integer.parseInt(args[2])); 
 						values.put("TYPE", args[3]); 
 						if(args[4].length() > 0)
-							values.put("YEAR", args[4]); 
+							values.put("DATE", Integer.parseInt(args[4])); 
 						if(args[5].length() > 0)
 							values.put("EVENTID", Integer.parseInt(args[5]));
 						if(args[6].length() > 0)
-							values.put("COMPO", args[6]);
+							values.put("PLACE", Integer.parseInt(args[6]));
 						if(args[7].length() > 0)
-							values.put("PLACE", Integer.parseInt(args[7]));
+							values.put("RATING", Integer.parseInt(args[7]));
 						
 						db.insert("RELEASES", "ID", values);
 						
@@ -156,15 +165,184 @@ public class CSDBParser {
 	 * select * from releasesids where group=booze release=eod
 	 * 
 	 */
+	
+	static class DirWrapper extends CursorWrapper {
+
+		public DirWrapper(Cursor cursor) {
+			super(cursor);
+		}
+		
+		@Override
+		public int getColumnIndex(String columnName) {
+			if(columnName.equals("TYPE")) {
+				return 99;
+			}
+			return super.getColumnIndex(columnName);
+		}
+		
+		@Override
+		public int getInt(int columnIndex) {
+			if(columnIndex == 99) {
+				return SongDatabase.TYPE_DIR;
+			}
+			return super.getInt(columnIndex);
+		}
+	};
+
+	static class SidCursor extends CursorWrapper {
+		private int pathIndex;
+
+		public SidCursor(Cursor cursor) {
+			super(cursor);
+			pathIndex = cursor.getColumnIndex("PATH");
+		}
+		
+		@Override
+		public int getColumnIndex(String columnName) {
+			if(columnName.equals("PATH")) {
+				return 99;
+			} else
+			if(columnName.equals("SUBTITLE")) {
+				return 98;
+			}
+			return super.getColumnIndex(columnName);
+		}
+		
+		@Override
+		public String getString(int columnIndex) {
+			if(columnIndex == 99) {
+				String path = getString(pathIndex);
+				return hvsc + path;
+			} else
+			if(columnIndex == 98) {
+				return getString(pathIndex);
+			}
+			return super.getString(columnIndex);
+		}
+		
+	}
+	
+	static class ReleaseCursor extends CursorWrapper {
+		private int gidIndex;
+		private int nameIndex;
+		private int typeIndex;
+		private int placeIndex;
+		private int ratingIndex;
+
+		public ReleaseCursor(Cursor cursor) {
+			super(cursor);
+			gidIndex = cursor.getColumnIndex("GROUPID");
+			nameIndex = cursor.getColumnIndex("NAME");
+			typeIndex = cursor.getColumnIndex("TYPE");
+			placeIndex = cursor.getColumnIndex("PLACE");
+			ratingIndex = cursor.getColumnIndex("RATING");
+		}
+		@Override
+		public int getColumnIndex(String columnName) {
+			if(columnName.equals("TYPE")) {
+				return 97;
+			}
+			if(columnName.equals("TITLE")) {
+				return 99;
+			}
+			if(columnName.equals("SUBTITLE")) {
+				return 98;
+			}
+			return super.getColumnIndex(columnName);
+		}
+		
+		@Override
+		public String getString(int columnIndex) {
+			
+			if(columnIndex == 99) {
+				return getString(nameIndex);
+			} else
+			if(columnIndex == 98) {
+				if(placeIndex >= 0) {
+					return String.format("%s #%d", getString(typeIndex), getInt(placeIndex));
+				} else {
+					return String.format("%s (%02.2f)", getString(typeIndex), ((float)getInt(ratingIndex))/100.0);
+				}
+			}
+			return super.getString(columnIndex);
+		}
+		
+		@Override
+		public int getInt(int columnIndex) {
+			if(columnIndex == 97) {
+				return SongDatabase.TYPE_DIR;
+			}
+			return super.getInt(columnIndex);
+		}
+	}
+
 	public static Cursor getPath(String path, SQLiteDatabase rdb) {
 		
-		if(path == "") {
-			return rdb.rawQuery("select name, id from events order by date", null);
+		String [] parts = path.split("/");
+		int n = parts.length;
+		for(int i=0; i<n; i++) {
+			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
+		}
+		
+		if(hvsc == null) {
+			Cursor c = rdb.rawQuery("select path from files where path like '%C64Music'", null);
+			if(c.getCount() > 0) {
+				c.moveToFirst();
+				hvsc = c.getString(0);
+			} else {
+				File extFile = Environment.getExternalStorageDirectory();
+				if(extFile != null) {
+					hvsc = extFile + "/C64Music.zip/C64Music";
+				} else {
+					hvsc = "/sdcard/MODS/C64Music.zip/C64Music";
+				}
+			}
+		}
+		
+		if(n == 1) {			
+			MatrixCursor cursor = new MatrixCursor(new String [] {"NAME", "ID", "TYPE"});
+			cursor.addRow(new Object [] { "EVENTS", 0, SongDatabase.TYPE_DIR} );
+			//cursor.addRow(new Object [] { "GROUPS", 1, SongDatabase.TYPE_DIR} );
+			cursor.addRow(new Object [] { "TOP RELEASES", 2, SongDatabase.TYPE_DIR} );
+			cursor.addRow(new Object [] { "LATEST RELEASES", 3, SongDatabase.TYPE_DIR} );
+			return cursor;
+		} else if(n == 2) {
+			if(parts[1].equals("EVENTS")) {
+				return new DirWrapper(rdb.rawQuery("select name, date, id from events order by date", null));
+			} else
+			if(parts[1].equals("GROUPS")) {
+				return new DirWrapper(rdb.rawQuery("select name, id from groups order by name", null));
+			} else
+			if(parts[1].equals("TOP RELEASES")) {
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by rating desc limit 250", null));			
+			} else
+			if(parts[1].equals("LATEST RELEASES")) {
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by date desc limit 250", null));			
+			} else {
+				return null;
+			}
+		} else if(n == 3) {
+			if(parts[1].equals("EVENTS")) {
+				Integer evid = events.get(parts[2]);
+				if(evid == null) {
+					Cursor c = rdb.rawQuery("select id from events where name=?", new String[]  { parts[2] });
+					c.moveToFirst();
+					evid = c.getInt(0);
+				}			
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, place, rating from releases where eventid=? order by type, place", new String[] { evid.toString() }));
+			} else {
+				return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid in (select id from releases where name=?)", new String[] { parts[2] }));
+			}
 		} else {
-			return null;
+			return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid in (select id from releases where name=?)", new String[] { parts[3] })); 
+			//return new SidWrapper("select releaseid, path, filename from releasesids where releaseid=?
 		}
 		//return rdb.rawQuery("select releases.name, groups.name from releases,groups where releases.groupid=groups.id and releases.eventid=1577", null);
 		//return rdb.query("RELEASES", new String[] { "NAME AS TITLE, GROUP AS COMPOSER" }, "EVENTID=?", new String[] { "1577" }, null, null, "NAME");
+	}
+
+	public static Cursor search(SQLiteDatabase db, String query) {
+		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ));		
 	}	
 
 }
