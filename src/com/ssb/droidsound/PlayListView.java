@@ -191,7 +191,7 @@ public class PlayListView extends ListView {
 			}
 			
 			if(position == selectedPosition) {
-				tv0.setTextColor(0xffffc0c0);
+				tv0.setTextColor(0xffffa000);
 			}
 			
 			return convertView;

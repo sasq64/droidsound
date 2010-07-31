@@ -21,6 +21,7 @@
 <string name="quit">Quit</string>
 <string name="database_cleared">Database cleared</string>
 <string name="clearing_database">Clearing database</string>
+<string name="database_busy">Database busy!</string>
 <string name="scanning">Scanning</string>
 <string name="name">Name</string>
 <string name="composer">Composer</string>

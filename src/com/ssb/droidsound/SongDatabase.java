@@ -20,6 +20,7 @@ import java.util.zip.ZipException;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
 import android.util.Log;
@@ -71,7 +72,12 @@ public class SongDatabase {
 	}
 
 	SQLiteDatabase getWritableDatabase() {
-		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
+		SQLiteDatabase dbrc = null;
+		try {
+		 dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
+		} catch (SQLException e) {
+		}
+		return dbrc;
 	}
 
 	public static final int TYPE_ARCHIVE = 0;
@@ -86,6 +92,10 @@ public class SongDatabase {
 		Log.v(TAG, String.format("Database path %s", dbName));
 		
 		SQLiteDatabase db = getWritableDatabase();
+		
+		if(db == null) {
+			return;
+		}
 		
 		if(drop) {
 			Log.v(TAG, "Dropping file tables!");

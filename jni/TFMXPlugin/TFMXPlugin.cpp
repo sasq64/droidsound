@@ -73,7 +73,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_TFMXPlugin_N_1getSoundDat
 	int bsize = tfmx_get_block_size();
 
 	int rc = tfmx_try_to_make_block();
-	printf("RC %d\n", rc);
+	//printf("RC %d\n", rc);
 	rc = tfmx_get_block(ptr);
 
     env->ReleaseShortArrayElements(sArray, ptr, 0);

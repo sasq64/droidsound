@@ -70,7 +70,7 @@
 		android:background="#ff232729"	
 	>
 		<FrameLayout 
-			android:paddingLeft="30dp"
+			android:paddingLeft="12dp"
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 
 		    android:id="@+id/info_display"
 		>
@@ -78,6 +78,7 @@
 		</FrameLayout>
 		
 		<FrameLayout
+			android:paddingLeft="12dp"
 		    android:layout_width="fill_parent" android:layout_height="wrap_content" 
 		    android:layout_gravity="center_horizontal"
 		    android:id="@+id/controls">

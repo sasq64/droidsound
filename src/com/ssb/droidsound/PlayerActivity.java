@@ -294,17 +294,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		}
 		
-		File mf = new File(modsDir, "Favorites.lnk");
-		if(!mf.exists()) {
-			try {
-				Log.v(TAG, "Trying to write Favorites");
-				FileWriter fw = new FileWriter(mf);
-				fw.write("LINK:0\n");
-				fw.close();
-				Log.v(TAG, "Done");
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		File modsFile = new File(modsDir);
+		if(!modsFile.exists()) {
+			showDialog(R.string.sdcard_not_found);
+		} else {		
+			File mf = new File(modsDir, "Favorites.lnk");
+			if(!mf.exists()) {
+				try {
+					Log.v(TAG, "Trying to write Favorites");
+					FileWriter fw = new FileWriter(mf);
+					fw.write("LINK:0\n");
+					fw.close();
+					Log.v(TAG, "Done");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		}
 
@@ -318,20 +323,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		};
 		
 		Log.v(TAG, String.format("MODS at %s", modsDir));
+
 		
-		songDatabase = new SongDatabase(this, false);
-		
+		songDatabase = new SongDatabase(this, false);		
 		db = songDatabase.getWritableDatabase();
 		
-		if(db.needUpgrade(SongDatabase.DB_VERSION)) {
-			db.close();
-			db = null;
-			Toast toast = Toast.makeText(this, R.string.clearing_database, Toast.LENGTH_LONG);
-			toast.show();
-			songDatabase.closeDB();
-			songDatabase = new SongDatabase(this, true);
-			toast = Toast.makeText(this, R.string.database_cleared, Toast.LENGTH_LONG);
-			toast.show();
+		if(db != null) {		
+			if(db.needUpgrade(SongDatabase.DB_VERSION)) {
+				db.close();
+				db = null;
+				Toast toast = Toast.makeText(this, R.string.clearing_database, Toast.LENGTH_LONG);
+				toast.show();
+				songDatabase.closeDB();
+				songDatabase = new SongDatabase(this, true);
+				toast = Toast.makeText(this, R.string.database_cleared, Toast.LENGTH_LONG);
+				toast.show();
+			}
 		}
 		
 		songDatabase.registerPath("LINK", new SongDatabase.PathCallback() {
@@ -525,27 +532,27 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		switch(what) {
 		case PlayerService.SONG_LENGTH :
 			songLength = value/1000;
-			songDigitsText.setText(String.format("%02d:%02d / %02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
 			break;
 		case PlayerService.SONG_POS :
 			songPos = value/1000;
-			songDigitsText.setText(String.format("%02d:%02d / %02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
 			break;
 		case PlayerService.SONG_SUBSONG :
 			subTune = value;
-			songDigitsText.setText(String.format("%02d:%02d / %02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
 			break;
 		case PlayerService.SONG_TOTALSONGS :
 			subTuneCount = value;
-			songDigitsText.setText(String.format("%02d:%02d / %02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
 			break;
 		case PlayerService.SONG_STATE:
 			Log.v(TAG, String.format("State now %d", value));
 			if(value == 1) {
 				mIsPlaying = true;
-				playButton.setImageResource(R.drawable.mg_pause);				
+				playButton.setBackgroundResource(R.drawable.pause_button);				
 			} else {
-				playButton.setImageResource(R.drawable.mg_forward);
+				playButton.setBackgroundResource(R.drawable.play_button);				
 				mIsPlaying = false;
 				if(value == 0) {
 					songTitleText.setText("");
@@ -723,25 +730,29 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(db == null) {
 				db = songDatabase.getWritableDatabase();
 			}
-			values = new ContentValues();
-			values.put("LIST", 0);
-			
-			int idx =-1;
-			values.put("PATH", path);
-			values.put("FILENAME", cursor.getString(cursor.getColumnIndex("FILENAME")));
-			idx = cursor.getColumnIndex("TITLE");
-			if(idx >= 0)
-				values.put("TITLE", cursor.getString(idx));
-			idx = cursor.getColumnIndex("COMPOSER");
-			if(idx >= 0)
-				values.put("COMPOSER", cursor.getString(idx));
-			idx = cursor.getColumnIndex("COPYRIGHT");
-			if(idx >= 0)
-				values.put("COPYRIGHT", cursor.getString(idx));
-			idx = cursor.getColumnIndex("FORMAT");
-			if(idx >= 0)
-				values.put("FORMAT", cursor.getString(idx));
-			db.insert("LINKS","PATH", values);
+			if(db != null) {
+				values = new ContentValues();
+				values.put("LIST", 0);
+				
+				int idx =-1;
+				values.put("PATH", path);
+				values.put("FILENAME", cursor.getString(cursor.getColumnIndex("FILENAME")));
+				idx = cursor.getColumnIndex("TITLE");
+				if(idx >= 0)
+					values.put("TITLE", cursor.getString(idx));
+				idx = cursor.getColumnIndex("COMPOSER");
+				if(idx >= 0)
+					values.put("COMPOSER", cursor.getString(idx));
+				idx = cursor.getColumnIndex("COPYRIGHT");
+				if(idx >= 0)
+					values.put("COPYRIGHT", cursor.getString(idx));
+				idx = cursor.getColumnIndex("FORMAT");
+				if(idx >= 0)
+					values.put("FORMAT", cursor.getString(idx));
+				db.insert("LINKS","PATH", values);
+			} else {
+				showDialog(R.string.database_busy);
+			}
 			//db.close();
 			break;
 		case R.id.remove :
