@@ -6,14 +6,9 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Application;
 import android.app.Dialog;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.SearchManager;
 import android.content.BroadcastReceiver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -23,11 +18,11 @@ import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -36,11 +31,9 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.ssb.droidsound.service.PlayerService;
@@ -48,7 +41,7 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "DroidSound";
 	
-	public static final String DROIDSOUND_VERSION = "Beta 2";
+	public static final String DROIDSOUND_VERSION = "Beta 3";
 
 	private PlayerServiceConnection player;
 	private ImageButton playButton;
@@ -58,7 +51,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 	private ImageButton searchButton;
 	
-	private Button parentButton;
+	//private Button parentButton;
 	
 	private TextView songTitleText;
 	private TextView songComposerText;
@@ -73,7 +66,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private boolean mIsPlaying = false;
 
 	
-	private SongDatabase songDatabase;
+	private static SongDatabase songDatabase = null;
 
 	private View infoDisplay;
 	private View controls;
@@ -87,138 +80,26 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private SlidingDrawer drawer;
 
-	//private static AsyncTask<Void, String, Void> scanTask = null;
-	private static ScanTask scanTask = null;
+	private int backDown;
+	private int downCount;
+	private boolean atTop;
 	
-	private static class ScanTask extends AsyncTask<Void, String, Void> {
-		
-		private boolean notified = false;
-		private String lastPath = null;
-		private SongDatabase songDatabase;
-		private boolean fullScan;
-		private String modsDir;
-		private NotificationManager manager;
-		private Notification notification;
-		private PendingIntent contentIntent;
-		private Application application;
-		private boolean drop;
-		private String scanning;
-		
-		protected void finalize() throws Throwable {
-			Log.v(TAG, "########## ScanTask finalize");
-		};
-		
-		ScanTask(boolean fullScan, String modsDir, Application app, boolean drop) {
-			this.fullScan = fullScan;
-			this.modsDir = modsDir;
-			this.drop = drop;
-			application = app;
-			
-			scanning = app.getString(R.string.scanning);
-			
-			manager = (NotificationManager) app.getSystemService(Context.NOTIFICATION_SERVICE);	
-			notification = new Notification(R.drawable.note, scanning, System.currentTimeMillis());				
-			Intent notificationIntent = new Intent();
-			contentIntent = PendingIntent.getActivity(app, 0, notificationIntent, 0);
-		
-			if(drop) {
-				notification.setLatestEventInfo(application, scanning, "Clearing database", contentIntent);
-				manager.notify(1, notification);
-				notified = true;
-			}
-			
-			
-		}
-
-		@Override
-		protected Void doInBackground(Void... arg) {
-					
-			synchronized (this) {
-				songDatabase = new SongDatabase(application, modsDir, drop);
-				songDatabase.setScanCallback(new SongDatabase.ScanCallback() {					
-					@Override
-					public void notifyScan(String path, int percent) {					
-						Log.v(TAG, String.format("NOTIFY %s %d", path, percent));
-						publishProgress(path, Integer.toString(percent));
-					}
-				});
-			}
-
-			songDatabase.scan(fullScan);
-
-			synchronized (this) {
-				songDatabase.setScanCallback(null);
-				songDatabase.closeDB();
-				songDatabase = null;
-			}
-				
-			return null;
-		}
-		
-		synchronized void cancel() {
-			if(songDatabase != null) {
-				songDatabase.stopScan();
-			}
-		}
-
-		
-		@Override
-		protected void onProgressUpdate(String... values) {
-			
-			String path = values[0];
-			int percent = Integer.parseInt(values[1]);
-
-			if(path == null) {
-				path = lastPath;
-			} else {
-				lastPath = path;
-			}
-			if(percent > 0) {
-				path = String.format("%s [%02d%%]", path, percent);
-			}
-			notification.setLatestEventInfo(application, scanning, path, contentIntent);
-			manager.notify(1, notification);
-			notified = true;
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			if(notified) {
-				manager.cancel(1);
-				notified = false;
-			}
-			synchronized (scanTask) {
-				scanTask = null;
-			}
-			Intent intent = new Intent("com.sddb.droidsound.SCAN_DONE");
-			application.sendBroadcast(intent);
-
-		}
-	}
 
 	
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## Activity finalize");
 	};
 	
-	private void scan(boolean full) {
-		
-		if(scanTask != null) {
+	private void scan(boolean full) {		
+		if(!ScanTask.scan(full, modsDir, getApplication(), songDatabase)) {
 			Log.v(TAG, "Already scanning! exiting scan...");
-			return;
 		}
-		scanTask = new ScanTask(full, modsDir, getApplication(), false);		
-		scanTask.execute((Void)null);
 	}
 	
-	private void rescan() {
-		
-		if(scanTask != null) {
+	private void rescan() {		
+		if(!ScanTask.scan(true, modsDir, getApplication(), songDatabase)) {
 			Log.v(TAG, "Already scanning! exiting scan...");
-			return;
 		}
-		scanTask = new ScanTask(true, modsDir, getApplication(), true);		
-		scanTask.execute((Void)null);
 	}
 
 	@Override
@@ -228,6 +109,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
+	 		CSDBParser.setPath(playListView.getDirectory());
 	 		playListView.search(query);
 		}
 	}
@@ -254,7 +136,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		playListView = (PlayListView) findViewById(R.id.play_list);
 		infoDisplay = findViewById(R.id.info_display);
 		controls = findViewById(R.id.controls);
-		parentButton = (Button) findViewById(R.id.parent_button);
+		//parentButton = (Button) findViewById(R.id.parent_button);
 		titleText = (TextView) findViewById(R.id.list_title);
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 				
@@ -324,23 +206,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		Log.v(TAG, String.format("MODS at %s", modsDir));
 
-		
-		songDatabase = new SongDatabase(this, modsDir, false);		
-		db = songDatabase.getWritableDatabase();
-		
-		if(db != null) {		
-			if(db.needUpgrade(SongDatabase.DB_VERSION)) {
-				db.close();
-				db = null;
-				Toast toast = Toast.makeText(this, R.string.clearing_database, Toast.LENGTH_LONG);
-				toast.show();
-				songDatabase.closeDB();
-				songDatabase = new SongDatabase(this, modsDir, true);
-				toast = Toast.makeText(this, R.string.database_cleared, Toast.LENGTH_LONG);
-				toast.show();
-			}
+		if(songDatabase == null) {		
+			songDatabase = new SongDatabase(getApplicationContext(), modsDir, false);
+			scan(false);
 		}
-		
+
 		songDatabase.registerPath("LINK", new SongDatabase.PathCallback() {
 			@Override
 			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
@@ -350,21 +220,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=?", new String[] { path }, null, null, null);
 			}			
 		});
-		
-		/*
-		 * CSDB:Parties/ => EVENTS
-		 * CSDB:Parties/X2008/ => RELEASES
-		 * CSDB:Releases/
-		 * CSDB:TopList/
-		 * CSDB:TopList/Edge Of Disgrace/ => RELEASESIDS
-		 */
+	
 		songDatabase.registerPath("CSDB", new SongDatabase.PathCallback() {			
 			@Override
 			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
 				return CSDBParser.getPath(path, db);
 			}
 		});
-
 		
 		playListView.setDatabase(songDatabase);		
 		registerForContextMenu(playListView);
@@ -375,7 +237,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				onSearchRequested();
 			}
 		});
-		
+		/*
 		parentButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -390,17 +252,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				return true;
 			}
 		});
-				
+		*/	
 		playListView.setOnDirChangeCallback(new PlayListView.DirChangeCallback() {			
+
 			@Override
 			public void dirChange(String dir) {
 				File f = new File(dir);
 				if(f.getPath().equals(modsDir)) {
 					//parentButton.setText("");
-					parentButton.setVisibility(View.INVISIBLE);
+					atTop = true;
+					//parentButton.setVisibility(View.INVISIBLE);
 				} else {
 					//parentButton.setText(f.getParentFile().getName());
-					parentButton.setVisibility(View.VISIBLE);
+					atTop = false;
+					//parentButton.setVisibility(View.VISIBLE);
 				}
 				titleText.setText(f.getName());
 			}
@@ -468,11 +333,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 
+		
 		//SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		String currentPath = prefs.getString("currentPath", null);
 		if(currentPath == null) {
 			currentPath = modsDir;
 		}
+		
+		atTop = currentPath.equals(modsDir);
+		
 
 		Intent intent = getIntent();
 		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
@@ -482,13 +351,56 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			//cursor = songDatabase.search(query);
 			//SongListAdapter adapter = new SongListAdapter(this, cursor);
 		}
-		
-		scan(false);
-		
+				
 		playListView.setDirectory(currentPath);
 		playListView.setPlayer(player);
 	}
+	/*
+	@Override
+	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+		Log.v(TAG, String.format("LONG PRESS %d", keyCode));
+		if(keyCode == KeyEvent.KEYCODE_BACK) {
+			backDown = 2;
+			playListView.setDirectory(modsDir);
+			return true;
+		}
+		return super.onKeyLongPress(keyCode, event);
+	} */
 	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		Log.v(TAG, String.format("DOWN %d", keyCode));
+		if(keyCode == KeyEvent.KEYCODE_BACK) {
+			downCount++;
+			if(downCount == 3) {
+				playListView.setDirectory(modsDir);
+			}
+			return true;
+		//	backDown = 1;
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+	
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		Log.v(TAG, String.format("UP %d", keyCode));
+		if(keyCode == KeyEvent.KEYCODE_BACK) {
+			if(downCount < 3) {
+				//if(backDown == 1) {
+					if(atTop) {
+						finish();
+					} else {
+						playListView.gotoParent();
+					}
+				//}
+			}
+			//backDown = 0;
+			downCount = 0;
+			return true;
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+
 	
 	@Override
 	protected void onResume() {
@@ -513,9 +425,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		super.onDestroy();
 		
 		playListView.close();
-		if(songDatabase != null) {
-			songDatabase.closeDB();
-		}
+		//if(songDatabase != null) {
+		//	songDatabase.closeDB();
+		//}
+		
+		songDatabase.unregisterAll();
 		
 		Log.v(TAG, "DESTROYED");
 		
@@ -590,12 +504,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	public boolean onPrepareOptionsMenu(Menu menu) {
 
-		if(scanTask == null) {
-			menu.setGroupVisible(R.id.when_not_scanning, true);
-			menu.setGroupVisible(R.id.when_scanning, false);
-		} else {
+		if(ScanTask.isScanning()) {
 			menu.setGroupVisible(R.id.when_not_scanning, false);
 			menu.setGroupVisible(R.id.when_scanning, true);
+		} else {
+			menu.setGroupVisible(R.id.when_not_scanning, true);
+			menu.setGroupVisible(R.id.when_scanning, false);
 		}
 		return true;
 	}
@@ -617,13 +531,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			finish();
 			break;
 		case R.id.abort_scan:
-			if(scanTask != null) {
-				synchronized (scanTask) {
-					if(scanTask != null) {
-						scanTask.cancel();
-					}				
-				}
-			}
+			ScanTask.cancel();
+			break;
 		}		
 		return true;
 	}
@@ -714,61 +623,27 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//SQLiteDatabase db;
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 		//PlayListView.FileInfo finfo = (PlayListView.FileInfo) playListView.getItemAtPosition(info.position);
-		Cursor cursor = playListView.getCursor(info.position);
+		//Cursor cursor = playListView.getCursor(info.position);
+		File file = playListView.getFile(info.position);
 		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id));
-		ContentValues values;
-		int pi = cursor.getColumnIndex("PATH");
-		String path = playListView.getDirectory();
-		if(pi >= 0) {
-			path =  cursor.getString(pi);
-		}
+		//int pi = cursor.getColumnIndex("PATH");
+		//String path = playListView.getDirectory();
+		//if(pi >= 0) {
+		//	path =  cursor.getString(pi);
+		//}
 		switch(item.getItemId()) {
 		case R.id.go_author:
-			playListView.setDirectory(path);
+			playListView.setDirectory(file.getParent());
 			break;
-		case R.id.favorite:
-			if(db == null) {
-				db = songDatabase.getWritableDatabase();
-			}
-			if(db != null) {
-				values = new ContentValues();
-				values.put("LIST", 0);
-				
-				int idx =-1;
-				values.put("PATH", path);
-				values.put("FILENAME", cursor.getString(cursor.getColumnIndex("FILENAME")));
-				idx = cursor.getColumnIndex("TITLE");
-				if(idx >= 0)
-					values.put("TITLE", cursor.getString(idx));
-				idx = cursor.getColumnIndex("COMPOSER");
-				if(idx >= 0)
-					values.put("COMPOSER", cursor.getString(idx));
-				idx = cursor.getColumnIndex("COPYRIGHT");
-				if(idx >= 0)
-					values.put("COPYRIGHT", cursor.getString(idx));
-				idx = cursor.getColumnIndex("FORMAT");
-				if(idx >= 0)
-					values.put("FORMAT", cursor.getString(idx));
-				db.insert("LINKS","PATH", values);
-			} else {
-				showDialog(R.string.database_busy);
-			}
-			//db.close();
+		case R.id.favorite:			
+			songDatabase.addFavorite(file);
 			break;
 		case R.id.remove :
-			if(db == null) {
-				db = songDatabase.getWritableDatabase();
-			}
-			db.delete("LINKS", "_id=?", new String [] { Integer.toString(cursor.getInt( cursor.getColumnIndex("_id"))) } );
-			//db.close();
+			songDatabase.removeFavorite(file);
 			playListView.rescan();
 			break;
 		case R.id.remove_all :
-			if(db == null) {
-				db = songDatabase.getWritableDatabase();
-			}
-			db.delete("LINKS", "LIST=?", new String [] { Integer.toString(cursor.getInt(cursor.getColumnIndex("LIST"))) } );
-			//db.close();
+			songDatabase.clearFavorites();
 			playListView.rescan();
 			break;
 		default:

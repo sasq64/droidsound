@@ -24,6 +24,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.GMEPlugin;
@@ -45,7 +46,7 @@ import com.ssb.droidsound.utils.NativeZipFile;
 public class SongDatabase {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	
-	public static final int DB_VERSION = 1;
+	public static final int DB_VERSION = 2;
 	
 	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 
@@ -60,7 +61,7 @@ public class SongDatabase {
 		void notifyScan(String path, int percent);
 	}
 	
-	private SQLiteDatabase db;
+	private SQLiteDatabase scanDb;
 	private SQLiteDatabase rdb;
 	private DroidSoundPlugin[] plugins;
 	
@@ -69,14 +70,14 @@ public class SongDatabase {
 
 	private String modsDir;
 	
-	SQLiteDatabase getReadableDatabase() {
-		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY);
+	private SQLiteDatabase getReadableDatabase() {
+		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
 	}
 
-	SQLiteDatabase getWritableDatabase() {
+	private SQLiteDatabase getWritableDatabase() {
 		SQLiteDatabase dbrc = null;
 		try {
-			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY);
+			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
 		} catch (SQLException e) {
 		}
 		return dbrc;
@@ -101,42 +102,54 @@ public class SongDatabase {
 			return;
 		}
 		
-		if(drop) {
-			Log.v(TAG, "Dropping file tables!");
-			db.execSQL("DROP TABLE IF EXISTS FILES ;");
-			db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
-			db.setVersion(DB_VERSION);
+		if(db.isDbLockedByOtherThreads()) {
+			db.close();
+			return;
 		}
-
-		db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-				"PATH" + " TEXT," +
-				"FILENAME" + " TEXT," +
-				"TYPE" + " INTEGER," +
-
-				"TITLE" + " TEXT," +
-				"COMPOSER" + " TEXT," +
-				"COPYRIGHT" + " TEXT," +
-				"FORMAT" + " TEXT," +
-				"LENGTH" + " INTEGER" + ");");
 		
-		db.execSQL("CREATE TABLE IF NOT EXISTS " + "LINKS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-				"LIST" + " INTEGER," +
-				"PATH" + " TEXT," +
-				"FILENAME" + " TEXT," +
-				"TITLE" + " TEXT," +
-				"COMPOSER" + " TEXT," +
-				"COPYRIGHT" + " TEXT," +
-				"FORMAT" + " TEXT" + ");");
-
-		db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
-
-		db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (TITLE) ;");
 		
-		db.execSQL("CREATE TABLE IF NOT EXISTS " + "VARIABLES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-				"VAR" + " TEXT," +
-				"VALUE" + " TEXT" + ");");
+		if(db.needUpgrade(DB_VERSION)) {
+			drop = true;
+		}
 		
-		db.close();
+		try {
+			if(drop) {
+				Log.v(TAG, "Dropping file tables!");
+				db.execSQL("DROP TABLE IF EXISTS FILES ;");
+				db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
+				db.setVersion(DB_VERSION);
+			}
+	
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"PATH" + " TEXT," +
+					"FILENAME" + " TEXT," +
+					"TYPE" + " INTEGER," +
+	
+					"TITLE" + " TEXT," +
+					"COMPOSER" + " TEXT," +
+					"COPYRIGHT" + " TEXT," +
+					"FORMAT" + " TEXT," +
+					"LENGTH" + " INTEGER" + ");");
+			
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "LINKS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"LIST" + " INTEGER," +
+					"PATH" + " TEXT," +
+					"FILENAME" + " TEXT," +
+					"TITLE" + " TEXT," +
+					"COMPOSER" + " TEXT," +
+					"COPYRIGHT" + " TEXT," +
+					"FORMAT" + " TEXT" + ");");
+	
+			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
+	
+			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (TITLE) ;");
+			
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "VARIABLES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"VAR" + " TEXT," +
+					"VALUE" + " TEXT" + ");");
+		} finally {		
+			db.close();
+		}
 	}
 
 	
@@ -200,8 +213,8 @@ public class SongDatabase {
 		Log.v(TAG, String.format("Scanning %s", zipFile.getPath()));
 		
 		// Erase any previous entries
-		db.delete("FILES", "PATH=?", new String [] { zipFile.getPath() });		
-		db.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
+		scanDb.delete("FILES", "PATH=?", new String [] { zipFile.getPath() });		
+		scanDb.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
 		
 		Log.v(TAG, "OPEN");
 		//ZipFile zfile = new ZipFile(zipFile);		
@@ -258,7 +271,7 @@ public class SongDatabase {
 					values.put("PATH", path);
 					values.put("FILENAME", fileName);
 					values.put("TYPE", TYPE_FILE);
-					db.insert("FILES", "PATH", values);
+					scanDb.insert("FILES", "PATH", values);
 				}
 
 				count++;
@@ -287,7 +300,7 @@ public class SongDatabase {
 			values.put("PATH", path);
 			values.put("FILENAME", fileName);
 			values.put("TYPE", TYPE_DIR);
-			db.insert("FILES", "PATH", values);
+			scanDb.insert("FILES", "PATH", values);
 		}
 		
 		return true;
@@ -312,7 +325,7 @@ public class SongDatabase {
 			Log.v(TAG, ">> Doing FULL scan");
 		}
 
-		Cursor fileCursor = db.query("FILES", FILENAME_array, "PATH=?", parentArray, null, null, null);
+		Cursor fileCursor = scanDb.query("FILES", FILENAME_array, "PATH=?", parentArray, null, null, null);
 		int index = fileCursor.getColumnIndex("FILENAME");
 		int flindex = fileCursor.getColumnIndex("TYPE");
 		int idindex = fileCursor.getColumnIndex("_id");
@@ -403,20 +416,20 @@ public class SongDatabase {
 			if(files.size() > 0 || delDirs.size() > 0 || delFiles.size() > 0) {
 
 				// We have database operations to perform
-				db.beginTransaction();
+				scanDb.beginTransaction();
 				try {
 					
 					for(String d : delDirs) {
 						String path = new File(parent, d).getPath();
 						Log.v(TAG, String.format("Deleting PATH %s and subdirs", path));
-						db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { parent, d} );
-						db.delete("FILES", "PATH LIKE ?", new String [] { path + "/%" } );
-						db.delete("FILES", "PATH=?", new String [] { path } );
+						scanDb.delete("FILES", "PATH=? AND FILENAME=?", new String [] { parent, d} );
+						scanDb.delete("FILES", "PATH LIKE ?", new String [] { path + "/%" } );
+						scanDb.delete("FILES", "PATH=?", new String [] { path } );
 					}
 	
 					for(long id : delFiles) {
 						Log.v(TAG, String.format("Deleting FILE %d in %s", id, parent));
-						db.delete("FILES", "_id=?", new String [] { Long.toString(id) } );
+						scanDb.delete("FILES", "_id=?", new String [] { Long.toString(id) } );
 					}
 
 					// Iterate over added files					
@@ -497,7 +510,7 @@ public class SongDatabase {
 						}
 						if(values != null) {
 							Log.v(TAG, String.format("Inserting FILE... (%s)", s));
-							db.insert("FILES", "PATH", values);
+							scanDb.insert("FILES", "PATH", values);
 						}
 						
 						count++;
@@ -508,10 +521,10 @@ public class SongDatabase {
 						}
 					}
 					Log.v(TAG, "TRANSATION SUCCESSFUL");
-					db.setTransactionSuccessful();
+					scanDb.setTransactionSuccessful();
 					
 				} finally {
-					db.endTransaction();
+					scanDb.endTransaction();
 				}
 			}
 			
@@ -522,7 +535,7 @@ public class SongDatabase {
 						if(scanCallback != null) {
 							scanCallback.notifyScan(f.getPath(), 0);
 						}
-						db.beginTransaction();
+						scanDb.beginTransaction();
 						if(scanZip(f)) {
 							ContentValues values = new ContentValues();
 							values.put("PATH", f.getParentFile().getPath());
@@ -531,8 +544,8 @@ public class SongDatabase {
 							int end = f.getName().length();
 							values.put("TITLE", f.getName().substring(0, end - 4));				
 							Log.v(TAG, String.format("Inserting FILE... (%s)", f.getName()));
-							db.insert("FILES", "PATH", values);
-							db.setTransactionSuccessful();
+							scanDb.insert("FILES", "PATH", values);
+							scanDb.setTransactionSuccessful();
 							Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
 						}
 					} catch (ZipException e) {
@@ -540,7 +553,7 @@ public class SongDatabase {
 					} catch (IOException e) {
 						Log.v(TAG, "IO Error");
 					}
-					db.endTransaction();
+					scanDb.endTransaction();
 				}
 			}
 			
@@ -550,14 +563,14 @@ public class SongDatabase {
 					scanCallback.notifyScan(csdb.getPath(), 0);
 				}
 				
-				if(CSDBParser.parseCSDB(csdb, db, scanCallback)) {
+				if(CSDBParser.parseCSDB(csdb, scanDb, scanCallback)) {
 					ContentValues values = new ContentValues();
 					values.put("PATH", csdb.getParentFile().getPath());
 					values.put("FILENAME", csdb.getName());
 					values.put("TYPE", TYPE_ARCHIVE);
 					values.put("TITLE", "CSDB");
 					Log.v(TAG, String.format("Inserting CSDB from dump (%s)", csdb.getPath()));
-					db.insert("FILES", "PATH", values);
+					scanDb.insert("FILES", "PATH", values);
 					//db.setTransactionSuccessful();
 					//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
 				}
@@ -623,17 +636,17 @@ public class SongDatabase {
 
 
 		//rdb = getReadableDatabase();
-		db = getWritableDatabase();
+		scanDb = getWritableDatabase();
 		
 
 		long startTime = System.currentTimeMillis();
 		long lastScan = -1;
-		Cursor cursor = db.query("VARIABLES", new String[] { "VAR", "VALUE" }, "VAR='lastscan'", null, null, null, null);
+		Cursor cursor = scanDb.query("VARIABLES", new String[] { "VAR", "VALUE" }, "VAR='lastscan'", null, null, null, null);
 		if(cursor.getCount() == 0) {
 			ContentValues values = new ContentValues();
 			values.put("VAR", "lastscan");
 			values.put("VALUE", "0");
-			db.insert("VARIABLES", "VAR", values);
+			scanDb.insert("VARIABLES", "VAR", values);
 		} else {		
 			cursor.moveToFirst();
 			lastScan = Long.parseLong(cursor.getString(1));
@@ -659,7 +672,7 @@ public class SongDatabase {
 			while(true) {
 				
 				// Remove orphaned directories
-				Cursor oc = db.query("FILES", new String[] { "PATH", "FILENAME" }, "PATH NOT LIKE '%.zip%'", null, null, null, null, String.format("%d,%d", offset, limit));
+				Cursor oc = scanDb.query("FILES", new String[] { "PATH", "FILENAME" }, "PATH NOT LIKE '%.zip%'", null, null, null, null, String.format("%d,%d", offset, limit));
 
 				Log.v(TAG, String.format("Orphan check on %d files\n", oc.getCount()));
 
@@ -696,17 +709,17 @@ public class SongDatabase {
 				}
 				
 				if(deletes.size() > 0) {
-					db.beginTransaction();
+					scanDb.beginTransaction();
 					for(File f : deletes) {
 						Log.v(TAG, String.format("Removing %s from DB\n", f.getPath()));
-						db.delete("FILES", "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() });
+						scanDb.delete("FILES", "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() });
 						if(f.getName().toUpperCase().endsWith(".ZIP")) {
 							Log.v(TAG, "Removing zip contents");
-							db.delete("FILES", "PATH LIKE ?", new String[] { f.getPath() + "/%" });
+							scanDb.delete("FILES", "PATH LIKE ?", new String[] { f.getPath() + "/%" });
 						}
 					}
-					db.setTransactionSuccessful();
-					db.endTransaction();
+					scanDb.setTransactionSuccessful();
+					scanDb.endTransaction();
 				}
 			}
 		}
@@ -724,19 +737,23 @@ public class SongDatabase {
 			ContentValues values = new ContentValues();
 			values.put("VAR", "lastscan");
 			values.put("VALUE", Long.toString(startTime));
-			db.update("VARIABLES", values, "VAR='lastscan'", null);
+			scanDb.update("VARIABLES", values, "VAR='lastscan'", null);
 		}
 		
 		stopScanning = false;
 
 		
-		db.close();
+		scanDb.close();
 		//rdb.close();
 	}
 
-	public Cursor search(String query) {
+	public Cursor search(String query, boolean csdb) {
 		if(rdb == null) {
 			rdb = getReadableDatabase();
+		}
+		
+		if(csdb) {
+			return CSDBParser.search(rdb, query);
 		}
 	
 		String q = "%" + query + "%" ;
@@ -815,9 +832,65 @@ public class SongDatabase {
 	public void registerPath(String name, PathCallback cb) {
 		pathCallbacks.put(name, cb);
 	}
+	
+	public void unregisterAll() {
+		pathCallbacks.clear();		
+	}
+
 
 	public void stopScan() {
 		stopScanning = true;
 		
 	}
+
+	public void addFavorite(File file) {
+		SQLiteDatabase db = getWritableDatabase();
+		if(db != null) {
+			ContentValues values = new ContentValues();
+			values.put("LIST", 0);			
+			int idx =-1;
+			values.put("PATH", file.getParent());
+			values.put("FILENAME", file.getName());			
+			//File f = new File(path, cursor.getString(cursor.getColumnIndex("FILENAME")));
+			Cursor cursor = db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { file.getParent(), file.getName() }, null, null, null);
+			Log.v(TAG, String.format("File '%s' Count %d", file.getPath(), cursor.getCount()));
+			cursor.moveToFirst();
+			
+			idx = cursor.getColumnIndex("TITLE");
+			if(idx >= 0)
+				values.put("TITLE", cursor.getString(idx));
+			idx = cursor.getColumnIndex("COMPOSER");
+			if(idx >= 0)
+				values.put("COMPOSER", cursor.getString(idx));
+			idx = cursor.getColumnIndex("COPYRIGHT");
+			if(idx >= 0)
+				values.put("COPYRIGHT", cursor.getString(idx));
+			idx = cursor.getColumnIndex("FORMAT");
+			if(idx >= 0)
+				values.put("FORMAT", cursor.getString(idx));
+			db.insert("LINKS","PATH", values);
+			db.close();
+		}
+	}
+	
+	public void removeFavorite(File file) {
+		SQLiteDatabase db = getWritableDatabase();
+		Log.v(TAG, String.format("Removing '%s'", file.getPath()));
+		if(db != null) {
+			db.delete("LINKS", "LIST=? AND PATH=? AND FILENAME=?", new String [] { "0", file.getParent(), file.getName() } );
+			db.close();
+		}
+	}
+	
+	public void clearFavorites() {
+		SQLiteDatabase db = getWritableDatabase();
+		if(db != null) {
+			db.delete("LINKS", "LIST=?", new String [] { "0" } );
+			db.close();
+		}
+	}
+	
+	
+	
+	
 }

@@ -23,7 +23,13 @@ public class CSDBParser {
 	private static String hvsc = null;
 	
 	static Map<String, Integer> events = new HashMap<String, Integer>();
-	static Map<String, Integer> groups = new HashMap<String, Integer>();
+	static HashMap<Integer, String> groups = null;
+	static String pathName = null;
+	
+	public static void setPath(String p) {
+		pathName = p;
+	}
+		
 	
 	static boolean parseCSDB(File file, SQLiteDatabase db, SongDatabase.ScanCallback scanCallback) {
 		
@@ -93,9 +99,7 @@ public class CSDBParser {
 					String[] args = line.split("\t");
 					ContentValues values = new ContentValues();
 					if(place == 0) {
-						// (id, name, gid, type, y, eid, compo, place, ','.join(fnames))
-						
-						Log.v(TAG, String.format("Release (%s) %s [%s]\n", args[0], args[1], args[4]));
+						// (id, name, gid, type, y, eid, compo, place, ','.join(fnames))						
 						
 						values.put("ID", Integer.parseInt(args[0]));
 						values.put("NAME", args[1]);
@@ -125,12 +129,12 @@ public class CSDBParser {
 							}
 						}
 					} else if(place == 1) {
-						Log.v(TAG, String.format("Group (%s) %s \n", args[0], args[1]));
+						//Log.v(TAG, String.format("Group (%s) %s \n", args[0], args[1]));
 						values.put("ID", Integer.parseInt(args[0]));
 						values.put("NAME", args[1]);
 						db.insert("GROUPS", "ID", values);
 					} else if(place == 2) {
-						Log.v(TAG, String.format("Event (%s) %s \n", args[0], args[1]));
+						//Log.v(TAG, String.format("Event (%s) %s \n", args[0], args[1]));
 						values.put("ID", Integer.parseInt(args[0]));
 						values.put("DATE", Integer.parseInt(args[1]));
 						values.put("NAME", args[2]);
@@ -222,13 +226,49 @@ public class CSDBParser {
 		
 	}
 	
+	/* static class PathWrapper extends CursorWrapper {
+
+		public PathWrapper(Cursor cursor) {
+			super(cursor);
+		}
+		
+		@Override
+		public int getColumnIndex(String columnName) {
+			if(columnName.equals("PATH")) {
+				return 99;
+			} else
+			if(columnName.equals("FILENAME")) {
+				return 98;
+			}
+			return super.getColumnIndex(columnName);
+		}
+		
+		@Override
+		public String getString(int columnIndex) {
+			if(columnIndex == 99) {
+				return 
+			}
+		}
+	} */
+	
 	static class ReleaseCursor extends CursorWrapper {
 		private int gidIndex;
 		private int nameIndex;
 		private int typeIndex;
 		private int placeIndex;
 		private int ratingIndex;
+		private String pathName;
 
+		public ReleaseCursor(Cursor cursor, String path) {
+			super(cursor);
+			pathName = path;
+			gidIndex = cursor.getColumnIndex("GROUPID");
+			nameIndex = cursor.getColumnIndex("NAME");
+			typeIndex = cursor.getColumnIndex("TYPE");
+			placeIndex = cursor.getColumnIndex("PLACE");
+			ratingIndex = cursor.getColumnIndex("RATING");
+		}
+		
 		public ReleaseCursor(Cursor cursor) {
 			super(cursor);
 			gidIndex = cursor.getColumnIndex("GROUPID");
@@ -237,6 +277,7 @@ public class CSDBParser {
 			placeIndex = cursor.getColumnIndex("PLACE");
 			ratingIndex = cursor.getColumnIndex("RATING");
 		}
+		
 		@Override
 		public int getColumnIndex(String columnName) {
 			if(columnName.equals("TYPE")) {
@@ -248,6 +289,9 @@ public class CSDBParser {
 			if(columnName.equals("SUBTITLE")) {
 				return 98;
 			}
+			if(pathName != null && columnName.equals("PATH")) {
+				return 96;
+			}
 			return super.getColumnIndex(columnName);
 		}
 		
@@ -255,14 +299,26 @@ public class CSDBParser {
 		public String getString(int columnIndex) {
 			
 			if(columnIndex == 99) {
-				return getString(nameIndex);
+				String group = groups.get(getInt(gidIndex));
+				if(group != null) {
+					return String.format("%s / %s", getString(nameIndex), group);
+				} else {
+					return getString(nameIndex);
+				}
 			} else
 			if(columnIndex == 98) {
 				if(placeIndex >= 0) {
 					return String.format("%s #%d", getString(typeIndex), getInt(placeIndex));
 				} else {
-					return String.format("%s (%02.2f)", getString(typeIndex), ((float)getInt(ratingIndex))/100.0);
+					int r = getInt(ratingIndex);
+					if(r > 0) {
+						return String.format("%s (%02.2f)", getString(typeIndex), ((float)r)/100.0);
+					} else {
+						return getString(typeIndex);
+					}
 				}
+			} else if(columnIndex == 96) {
+				return pathName + "/SEARCH";
 			}
 			return super.getString(columnIndex);
 		}
@@ -279,9 +335,20 @@ public class CSDBParser {
 	public static Cursor getPath(String path, SQLiteDatabase rdb) {
 		
 		String [] parts = path.split("/");
+		int searchPart = -1;
 		int n = parts.length;
+		
 		for(int i=0; i<n; i++) {
 			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
+		}
+
+		if(groups == null) {
+			 groups = new HashMap<Integer, String>();
+			 Cursor c = rdb.rawQuery("select id, name from groups", null);
+			 c.moveToPosition(-1);
+			 while(c.moveToNext()) {
+				 groups.put(c.getInt(0), c.getString(1));
+			 }
 		}
 		
 		if(hvsc == null) {
@@ -302,35 +369,50 @@ public class CSDBParser {
 		if(n == 1) {			
 			MatrixCursor cursor = new MatrixCursor(new String [] {"NAME", "ID", "TYPE"});
 			cursor.addRow(new Object [] { "EVENTS", 0, SongDatabase.TYPE_DIR} );
-			//cursor.addRow(new Object [] { "GROUPS", 1, SongDatabase.TYPE_DIR} );
-			cursor.addRow(new Object [] { "TOP RELEASES", 2, SongDatabase.TYPE_DIR} );
-			cursor.addRow(new Object [] { "LATEST RELEASES", 3, SongDatabase.TYPE_DIR} );
+			cursor.addRow(new Object [] { "GROUPS", 1, SongDatabase.TYPE_DIR} );
+			cursor.addRow(new Object [] { "TOP DEMOS", 2, SongDatabase.TYPE_DIR} );
+			cursor.addRow(new Object [] { "TOP MUSIC", 3, SongDatabase.TYPE_DIR} );
+			cursor.addRow(new Object [] { "TOP RELEASES", 4, SongDatabase.TYPE_DIR} );
+			cursor.addRow(new Object [] { "LATEST RELEASES", 5, SongDatabase.TYPE_DIR} );
 			return cursor;
 		} else if(n == 2) {
+			if(parts[1].equals("SEARCH")) {
+				return null;
+			} else
 			if(parts[1].equals("EVENTS")) {
-				return new DirWrapper(rdb.rawQuery("select name, date, id from events order by date", null));
+				return new DirWrapper(rdb.rawQuery("select name, date, id from events order by date desc", null));
 			} else
 			if(parts[1].equals("GROUPS")) {
 				return new DirWrapper(rdb.rawQuery("select name, id from groups order by name", null));
 			} else
+			if(parts[1].equals("TOP DEMOS")) {
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases where type='C64 Demo' order by rating desc limit 500", null));			
+			} else
+			if(parts[1].equals("TOP MUSIC")) {
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases where type='C64 Music' order by rating desc limit 250", null));			
+			} else
 			if(parts[1].equals("TOP RELEASES")) {
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by rating desc limit 250", null));			
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by rating desc limit 2000", null));			
 			} else
 			if(parts[1].equals("LATEST RELEASES")) {
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by date desc limit 250", null));			
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by date desc limit 2000", null));			
 			} else {
 				return null;
 			}
 		} else if(n == 3) {
 			if(parts[1].equals("EVENTS")) {
-				Integer evid = events.get(parts[2]);
+				/*Integer evid = events.get(parts[2]);
 				if(evid == null) {
 					Cursor c = rdb.rawQuery("select id from events where name=?", new String[]  { parts[2] });
 					c.moveToFirst();
 					evid = c.getInt(0);
-				}			
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, place, rating from releases where eventid=? order by type, place", new String[] { evid.toString() }));
-			} else {
+				} */			
+				//return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, place, rating from releases where eventid=? order by type, place", new String[] { evid.toString() }));
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, place, rating from releases where eventid in (select id from events where name=?) order by type, place", new String[] { parts[2] }));
+			} else if(parts[1].equals("GROUPS")) {
+				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases where groupid in (select id from groups where name=?) order by rating desc", new String[] { parts[2] }));				
+			}
+			else {
 				return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid in (select id from releases where name=?)", new String[] { parts[2] }));
 			}
 		} else {
@@ -342,7 +424,8 @@ public class CSDBParser {
 	}
 
 	public static Cursor search(SQLiteDatabase db, String query) {
-		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ));		
+		Log.v(TAG, "QUERY:" + query);
+		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ), "CSDB:");		
 	}	
 
 }

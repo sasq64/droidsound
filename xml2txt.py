@@ -77,12 +77,13 @@ def main(argv) :
 			if eid :
 				event = getText(r, 'Achievement/Event/Name')
 				
-				if int(eid) == 7 :
+				#if int(eid) == 7 :
+				if event == "X'2008" :
 					print "%s %d" % (name, date)
 				
 				if eventList.has_key(eid) :
 					x = eventList[int(eid)]
-					if x[1] == 0 :
+					if date > x[1] :
 						eventList[int(eid)] = (event, date)
 				else :
 					eventList[int(eid)] = (event, date)
@@ -91,8 +92,12 @@ def main(argv) :
 			place = getText(r, 'Achievement/Place')
 						
 			type = getText(r, 'ReleaseType')
-			if compo :
-				type = compo
+			
+			if type.endswith('Demo') :
+				type = 'C64 Demo'
+			
+			#if compo :
+			#	type = compo
 
 			#print getText(r, 'ReleaseDate/Month')
 			#print getText(r, 'Sids/HVSCPath')

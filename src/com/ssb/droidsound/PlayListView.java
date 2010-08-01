@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -59,7 +58,6 @@ public class PlayListView extends ListView {
 		private int subitemColor;
 		private int archiveColor;
 		private int dirColor;
-		private int totalH;
 		private float titleHeight;
 		private float subtitleHeight;
 		private boolean subDate;
@@ -83,6 +81,11 @@ public class PlayListView extends ListView {
 			
     		mCursor = cursor;
     		pathName = dirName;
+    		
+    		if(mCursor == null) {
+    			return;
+    		}
+    		
     		subDate = false;
     		mSubIndex = mCursor.getColumnIndex("SUBTITLE");
     		if(mSubIndex < 0) {
@@ -179,10 +182,12 @@ public class PlayListView extends ListView {
 			if(mSubIndex >= 0) {
 				if(subDate) {
 					int d = mCursor.getInt(mSubIndex);
-					int year = d / 10000;
-					int rest = d - year*10000;
-					int month = rest / 100;
-					sub = String.format("%04d %s", year, month > 0 ? monthNames[month-1] : "");					
+					if(d > 0) {
+						int year = d / 10000;
+						int rest = d - year*10000;
+						int month = rest / 100;
+						sub = String.format("%04d %s", year, month > 0 ? monthNames[month-1] : "");
+					}
 				} else {
 					sub = mCursor.getString(mSubIndex);
 				}
@@ -196,11 +201,11 @@ public class PlayListView extends ListView {
 			tv0.setText(title);
 
 			if(sub != null) {
-				tv0.setTextSize(titleHeight);
+				tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, titleHeight);
 				tv1.setText(sub);
 				tv1.setVisibility(View.VISIBLE);
 			} else {
-				tv0.setTextSize(titleHeight + subtitleHeight);
+				tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, titleHeight + subtitleHeight/2);
 				tv1.setVisibility(View.GONE);
 			}
 
@@ -219,12 +224,17 @@ public class PlayListView extends ListView {
 			return convertView;
 		}
 		
-		/*public File getFile(int position) {
+		public File getFile(int position) {
+			File f;
 			mCursor.moveToPosition(position);
-			String fileName = mCursor.getString(mCursor.getColumnIndex("FILENAME"));
-			String pathName = mCursor.getString(mCursor.getColumnIndex("PATH"));
-			return new File(pathName, fileName);
-		}*/
+			String fileName = mCursor.getString(mFileIndex);			
+			if(mPathIndex >= 0) {
+				f = new File(mCursor.getString(mPathIndex), fileName);
+			} else {
+				f = new File(pathName, fileName);
+			}
+			return f;
+		}
 
 		@Override
 		public int getCount() {
@@ -256,6 +266,10 @@ public class PlayListView extends ListView {
 		}
 
 		public File[] getFiles(boolean skipDirs) {
+			
+			if(mCursor == null) {
+				return new File [] {};
+			}
 			
 			//File [] names = new File [ mCursor.getCount() ];
 			ArrayList<File> files = new ArrayList<File>();
@@ -317,7 +331,7 @@ public class PlayListView extends ListView {
 			}
 			return mCursor;
 		}
-		
+				
 	}
 	
 	public static interface DirChangeCallback {
@@ -333,15 +347,11 @@ public class PlayListView extends ListView {
     
 	private PlayListAdapter adapter;
 	private PlayerServiceConnection mPlayer;
-	private SongDatabase dataBase;
-	
+	private SongDatabase dataBase;	
 	private File selectedFile;
 	private String pathName;
 	private String selectedName;
-	
-	
-	
-	
+
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		
@@ -486,14 +496,12 @@ public class PlayListView extends ListView {
 	}
 
 	public void search(String query) {
-		Cursor cursor;
+		boolean csdb = false;
 		if(pathName.toUpperCase().contains("/CSDB.DUMP")) {
-			SQLiteDatabase rdb = dataBase.getReadableDatabase();
-			cursor = CSDBParser.search(rdb, query);
-			rdb.close();
-		} else { 		
-			cursor = dataBase.search(query);
-		}
+			csdb = true;
+		}  		
+		Cursor cursor = dataBase.search(query, csdb);
+
 		if(!pathName.endsWith("/SEARCH")) {
 			pathName = pathName + "/SEARCH";
 		}
@@ -510,4 +518,9 @@ public class PlayListView extends ListView {
 	public Cursor getCursor(int position) {
 		return adapter.getCursor(position);		
 	}
+	
+	public File getFile(int position) {
+		return adapter.getFile(position);
+	}
+	
 }

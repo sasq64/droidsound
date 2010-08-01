@@ -6,14 +6,14 @@
 	android:background="#000080"
 	android:id="@+id/title_bar"
 >
-	<Button android:id="@+id/parent_button" android:text=".."
+	<!-- Button android:id="@+id/parent_button" android:text=".."
 	android:layout_width="wrap_content"
     android:layout_height="54dp"
     android:textSize="20dp"
     android:textColor="#FFFFFFFF"
     android:layout_margin="4dp"
     android:singleLine="true"
-	/>
+	/ -->
 
 	<TextView android:id="@+id/list_title"
 	android:text="[Current Location]"
