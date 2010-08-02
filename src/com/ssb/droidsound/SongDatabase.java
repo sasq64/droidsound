@@ -232,7 +232,7 @@ public class SongDatabase implements Runnable {
 		isReady = true;
 	}
 
-	
+/*
 	private boolean tryLoad(DroidSoundPlugin plugin, File file, ContentValues values) throws IOException {
 		Object songRef = plugin.loadInfo(file);
 		if(songRef != null) {
@@ -272,21 +272,10 @@ public class SongDatabase implements Runnable {
 					return true;
 				}
 		}
-		/*
-		Log.v(TAG, "Failed, trying the rest");
-	
-		for(int i = 0; i < plugins.length; i++) {
-			if(!plugins[i].canHandle(file.getName())) {
-				Log.v(TAG, "Trying " + plugins[i].getClass().getName());
-				if(tryLoad(plugins[i], file, values)) {
-					return true;
-				}
-			}
-		} */		
 		
 		return false;
 	}
-	
+*/	
 	
 	private boolean scanZip(File zipFile) throws ZipException, IOException {
 		
@@ -580,11 +569,11 @@ public class SongDatabase implements Runnable {
 										values.put("FORMAT", info.format);
 										values.put("LENGTH", 0);
 										ok = true;				
-									} else {
+									}/* else {
 										if(checkModule(f, values)) {
 											ok = true;
 										}
-									}
+									} */
 									
 									if(!ok) {
 										values = null;
@@ -739,6 +728,8 @@ public class SongDatabase implements Runnable {
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
 		plugins[3] = new TFMXPlugin();
+		
+		FileIdentifier.setPlugins(plugins);
 
 
 		//rdb = getReadableDatabase();
@@ -975,21 +966,21 @@ public class SongDatabase implements Runnable {
 			//File f = new File(path, cursor.getString(cursor.getColumnIndex("FILENAME")));
 			Cursor cursor = db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { file.getParent(), file.getName() }, null, null, null);
 			Log.v(TAG, String.format("File '%s' Count %d", file.getPath(), cursor.getCount()));
-			cursor.moveToFirst();
-			
-			idx = cursor.getColumnIndex("TITLE");
-			if(idx >= 0)
-				values.put("TITLE", cursor.getString(idx));
-			idx = cursor.getColumnIndex("COMPOSER");
-			if(idx >= 0)
-				values.put("COMPOSER", cursor.getString(idx));
-			idx = cursor.getColumnIndex("COPYRIGHT");
-			if(idx >= 0)
-				values.put("COPYRIGHT", cursor.getString(idx));
-			idx = cursor.getColumnIndex("FORMAT");
-			if(idx >= 0)
-				values.put("FORMAT", cursor.getString(idx));
-			db.insert("LINKS","PATH", values);
+			if(cursor.moveToFirst()) {
+				idx = cursor.getColumnIndex("TITLE");
+				if(idx >= 0)
+					values.put("TITLE", cursor.getString(idx));
+				idx = cursor.getColumnIndex("COMPOSER");
+				if(idx >= 0)
+					values.put("COMPOSER", cursor.getString(idx));
+				idx = cursor.getColumnIndex("COPYRIGHT");
+				if(idx >= 0)
+					values.put("COPYRIGHT", cursor.getString(idx));
+				idx = cursor.getColumnIndex("FORMAT");
+				if(idx >= 0)
+					values.put("FORMAT", cursor.getString(idx));
+				db.insert("LINKS","PATH", values);
+			}
 			db.close();
 		}
 	}

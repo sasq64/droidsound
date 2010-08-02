@@ -1,12 +1,18 @@
 package com.ssb.droidsound;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
+
+import android.content.ContentValues;
 import android.util.Log;
 
 public class FileIdentifier {
@@ -15,6 +21,8 @@ public class FileIdentifier {
 	private static Map<String, Integer> extensions;
 
 	private static HashSet<String> modMagic;
+
+	private static DroidSoundPlugin[] plugins;
 	
 	public static final int TYPE_MOD = 1;
 	public static final int TYPE_SID = 2;
@@ -81,12 +89,16 @@ public class FileIdentifier {
 			fname = fname.substring(0, dot);
 		}
 		
-		if(info.composer == null) {
+		if(info.composer == null || info.composer.length() == 0) {
 			int sep = fname.indexOf(" - ");
 			if(sep > 0) {
 				info.composer = fname.substring(0, sep);
 				info.title = fname.substring(sep+3);
 			}
+		}
+
+		if(info.composer != null && info.composer.length() == 0) {
+			info.composer = null;
 		}
 					
 		if(info.title == null || info.title.length() == 0) {
@@ -115,6 +127,31 @@ public class FileIdentifier {
 	}
 	
 	
+	public static void setPlugins(DroidSoundPlugin[] pl) {
+		plugins = pl;
+	}
+	
+	
+	private static MusicInfo tryLoad(DroidSoundPlugin plugin, InputStream is) throws IOException {
+		Object songRef = plugin.loadInfo(is, is.available());
+		if(songRef != null) {
+			MusicInfo info = new MusicInfo();
+			info.title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
+			info.composer = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
+			info.copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
+			info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
+			info.format = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
+			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);			
+			plugin.unload(songRef);
+			
+			Log.v(TAG, String.format("TITLE: %s -- COMPOSER: %s", info.title, info.composer));
+			
+			return info;
+		}		
+		return null;
+	}
+
+	
 	public static MusicInfo identify(String name, InputStream is) {
 
 		byte data [];
@@ -126,6 +163,29 @@ public class FileIdentifier {
 		//Log.v(TAG, String.format("hash %s %d", extensions.toString(), extensions.size()));
 		Integer i = extensions.get(ext);
 		if(i == null) {
+			
+			
+			List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
+			for(int j = 0; j < plugins.length; j++) {
+				if(plugins[j].canHandle(name)) {
+					list.add(plugins[j]);
+					Log.v(TAG, String.format("%s handled by %d", name, j));
+				}
+			}
+			
+			for(DroidSoundPlugin plugin : list) {
+				Log.v(TAG, "Trying " + plugin.getClass().getName());
+				MusicInfo info = null;
+				try {
+					info = tryLoad(plugin, is);
+				} catch (IOException e) {
+				}
+				if(info != null) {
+					fixName(name, info);
+					return info;
+				}
+			}
+			
 			return null;
 		}
 		int extno = i;		

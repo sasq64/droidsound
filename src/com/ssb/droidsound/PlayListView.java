@@ -14,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 /**
@@ -143,8 +144,8 @@ public class PlayListView extends ListView {
 			if(convertView == null) {
 				convertView = inflater.inflate(R.layout.songlist_item, null);
 				ViewGroup vg = (ViewGroup)convertView;
-				TextView tv0 = (TextView)vg.getChildAt(0);
-				TextView tv1 = (TextView)vg.getChildAt(1);
+				TextView tv0 = (TextView)vg.getChildAt(1);
+				TextView tv1 = (TextView)vg.getChildAt(2);
 				tv1.setTextColor(subitemColor);
 				if(titleHeight < 0) {
 					titleHeight = tv0.getTextSize();
@@ -154,9 +155,9 @@ public class PlayListView extends ListView {
 				}				
 			}
 			ViewGroup vg = (ViewGroup)convertView;
-
-			TextView tv0 = (TextView)vg.getChildAt(0);
-			TextView tv1 = (TextView)vg.getChildAt(1);
+			ImageView iv = (ImageView)vg.getChildAt(0);
+			TextView tv0 = (TextView)vg.getChildAt(1);
+			TextView tv1 = (TextView)vg.getChildAt(2);
 
 			mCursor.moveToPosition(position);
 			int type = SongDatabase.TYPE_FILE;
@@ -211,10 +212,16 @@ public class PlayListView extends ListView {
 
 			if(type == SongDatabase.TYPE_FILE) {
 				tv0.setTextColor(itemColor);
+				iv.setVisibility(View.GONE);
 			} else if(type == SongDatabase.TYPE_ARCHIVE) {
 				tv0.setTextColor(archiveColor);
+				//iv.setImageResource(R.drawable.play_list);
+				iv.setImageResource(R.drawable.folder);
+				iv.setVisibility(View.VISIBLE);
 			} else {
 				tv0.setTextColor(dirColor);
+				iv.setImageResource(R.drawable.folder);
+				iv.setVisibility(View.VISIBLE);
 			}
 			
 			if(position == selectedPosition) {
