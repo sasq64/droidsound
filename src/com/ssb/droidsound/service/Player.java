@@ -147,6 +147,10 @@ public class Player implements Runnable {
 		try {
 			//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
 			
+			if(songName.startsWith("file://")) {
+				songName = songName.substring(7);
+			}
+
 			int zipExt = songName.toUpperCase().indexOf(".ZIP/");
 			
 			if(zipExt < 0) {
@@ -156,6 +160,7 @@ public class Player implements Runnable {
 					currentZipFile = null;
 				}
 			}
+
 
 			if(zipExt > 0) {
 				
@@ -183,10 +188,6 @@ public class Player implements Runnable {
 						fs.close();
 					}
 				}
-			}
-			else
-			if(songName.startsWith("file://")) {
-				songName = songName.substring(7);
 			}
 			else
 			if(songName.startsWith("http://")) {

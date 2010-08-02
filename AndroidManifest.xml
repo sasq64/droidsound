@@ -19,10 +19,7 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 
-		</activity>
-		
-		<service android:name=".service.PlayerService">
-			<intent-filter>
+			<intent-filter>				
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
@@ -44,6 +41,11 @@
 				<data android:mimeType="audio/x-vgm" />
 				<data android:mimeType="audio/x-vgz" />
 			</intent-filter>		
+
+		</activity>
+		
+		<service android:name=".service.PlayerService">
+			
 		</service>
 		
 		<!-- provider android:name="com.ssb.droidsound.provider.SongProvider" android:authorities="com.ssb.droidsound.provider" / -->

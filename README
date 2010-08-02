@@ -1,18 +1,36 @@
 
-==== Droudsound ====
-
-RUNNING
-
-For now, put your Music under /sdcard/MODS/
-
-C64Music.zip will be scanned and indexed if present.
+==== Droudsound Beta 3 ====
 
 
-BUILDING
+= QUICKSTART =
 
-Droidsound should now build with the normal Android NDK r4 (and above hopefully)
+Put your music in a directory called "MODS" on your sdcard.
 
-Just run ndk-build from the droidsound directory to build the sound plugins, then build the project
-as you normally would (By importing it into eclipse for instance).
+Zip-files and directories will be scanned and indexed.
+
+
+
+
+= NOTES = 
+
+You can search for songs by title.
+
+Long press Back/Forward to skip subsongs and jump directly to next file.
+
+Long press Back to go to top directory
+
+Name songs "<author> - <title>.ext" and it that metadata will be used
+if none is found in the file.
+
+
+
+
+= FORMATS =
+
+All formats handled by libsidplay2, modlug and GME, the most popular;
+
+SID, MOD, XM, IT, S3M, NFS, GBS, SPC, AY
+
+
 
 -- Sasq

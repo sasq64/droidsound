@@ -117,8 +117,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//modsDir.getParent()
 		
 		super.onCreate(savedInstanceState);
+
+		Intent intent = getIntent();
+		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
+		if(Intent.ACTION_VIEW.equals(intent.getAction())) {			
+			String music = intent.getDataString();
+			Intent newIntent = new Intent(intent);
+			newIntent.setClass(this, PlayerService.class);
+			startService(newIntent);
+			finish();
+			return;
+		}
 		
-		player = new PlayerServiceConnection();
+		player = new PlayerServiceConnection();		
 		
 		setContentView(R.layout.player);
 		playButton = (ImageButton) findViewById(R.id.play_button);
@@ -194,6 +205,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				// TODO Auto-generated method stub
+								
 				if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
 					Log.v(TAG, "Open done!");
 					playListView.rescan();
@@ -389,17 +401,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		
 		atTop = currentPath.equals(modsDir);
-		
-
-		Intent intent = getIntent();
-		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
-		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
-			String query = intent.getStringExtra(SearchManager.QUERY);
-	 		Log.v(TAG, "QUERY " + query);
-			//cursor = songDatabase.search(query);
-			//SongListAdapter adapter = new SongListAdapter(this, cursor);
-		}
-
+	
 		playListView.setDirectory(currentPath);
 		playListView.setPlayer(player);
 	}
@@ -487,10 +489,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+
+		if(playListView != null) {
+			playListView.close();
+			SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
+			Editor editor = prefs.edit();
+			editor.putString("currentPath", playListView.getDirectory());
+			editor.commit();
+		}
 		
-		playListView.close();
-		
-		songDatabase.unregisterAll();
+		if(songDatabase != null) {
+			songDatabase.unregisterAll();
+		}
 		
 		if(progressDialog != null) {
 			progressDialog.dismiss();			
@@ -500,10 +510,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		player = null;
 		
-		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
-		Editor editor = prefs.edit();
-		editor.putString("currentPath", playListView.getDirectory());
-		editor.commit();
 	}
 	
 	//@Override

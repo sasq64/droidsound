@@ -227,7 +227,7 @@ public class PlayerService extends Service {
 	public void onStart(Intent intent, int startId) {
 		super.onStart(intent, startId);
 		Log.v(TAG, "Service started");
-		
+		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));		
         if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
 			Uri uri = intent.getData();
 			if(uri == null) {
@@ -265,6 +265,25 @@ public class PlayerService extends Service {
 				player.playMod(intent.getDataString());
 			}
 		}
+        /*
+		BroadcastReceiver receiver = new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				// TODO Auto-generated method stub
+				
+				if(player.isPlaying()) {
+					player.paused(true);
+					abortBroadcast();
+				}
+			}
+		};
+		
+		IntentFilter filter = new IntentFilter();
+		filter.addAction(Intent.ACTION_MEDIA_BUTTON);
+		filter.setPriority(1001);		
+		registerReceiver(receiver, filter);
+        */
+        
 		
 	}
 	
