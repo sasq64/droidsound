@@ -56,8 +56,13 @@ def main(argv) :
 			name = getText(r, 'Name')
 			id = getText(r, 'ID')
 			rating = getText(r, 'CSDbRating')
+			rt = 0
 			if rating :
-				rating = str(int(float(rating) * 100))
+				rt = int(float(rating) * 100)
+				rating = str(rt)
+			
+			#if rt < 900 :
+			#	continue
 			
 			gid = getText(r, 'ReleasedBy/Group/ID')
 			if gid :

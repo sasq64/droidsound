@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -19,9 +20,14 @@ import java.util.zip.ZipException;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.provider.BaseColumns;
 import android.util.Log;
 import android.widget.Toast;
@@ -43,7 +49,7 @@ import com.ssb.droidsound.utils.NativeZipFile;
  * 
  */
 
-public class SongDatabase {
+public class SongDatabase implements Runnable {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	
 	public static final int DB_VERSION = 2;
@@ -68,7 +74,17 @@ public class SongDatabase {
 	private String dbName;
 	private volatile boolean stopScanning;
 
-	private String modsDir;
+	//private String modsDir;
+
+	private Context context;
+
+	private boolean doQuit;
+
+	private Handler mHandler;
+
+	private volatile boolean scanning;
+
+	private volatile boolean isReady;
 	
 	private SQLiteDatabase getReadableDatabase() {
 		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
@@ -86,40 +102,103 @@ public class SongDatabase {
 	public static final int TYPE_ARCHIVE = 0;
 	public static final int TYPE_DIR = 1;
 	public static final int TYPE_FILE = 2;
+
+	protected static final int MSG_SCAN = 0;
 	
-	public SongDatabase(Context context, String mdir, boolean drop) {
+	public SongDatabase(Context ctx) {		
+		context = ctx;		
+	}
+	
+	
+	@Override
+	public void run() {
+				
+		Looper.prepare();
 		
+		mHandler = new Handler() {
+			@Override
+	        public void handleMessage(Message msg) {
+	        	Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
+	            switch (msg.what) {
+	            case MSG_SCAN:
+	            	if(msg.arg1 == 2) {
+	            		open(true);
+	            		doScan((String)msg.obj, false);
+	            	} else {
+	            		doScan((String)msg.obj, msg.arg1 != 0);
+	            	}
+	            	break;
+	            }
+			}
+		};
+		
+		setScanCallback(new ScanCallback() {
+			String oldPath;
+			@Override
+			public void notifyScan(String path, int percent) {
+				Intent intent;
+				
+				if(path == null) {
+					path = oldPath;
+				} else {
+					oldPath = path;
+				}
+				
+				Log.v(TAG, String.format("PATH %s %d\n", path, percent));
+				
+				if(percent >= 0) {
+					intent = new Intent("com.sddb.droidsound.SCAN_UPDATE");
+					intent.putExtra("PATH", path);
+					intent.putExtra("PERCENT", percent);
+				} else {
+					intent = new Intent("com.sddb.droidsound.SCAN_DONE");
+				}
+				context.sendBroadcast(intent);				
+			}
+		});
+
+		open(false);
+		Intent intent = new Intent("com.sddb.droidsound.OPEN_DONE");
+		context.sendBroadcast(intent);
+		Looper.loop();
+	}
+
+	private void open(boolean drop) {	
 		File myDir = context.getFilesDir();
 		
-		modsDir = mdir;
+		isReady = false;
+		
+		if(rdb != null) {
+			rdb.close();
+			rdb = null;
+		}
 		
 		dbName = new File(myDir, "songs.db").getAbsolutePath();
 		Log.v(TAG, String.format("Database path %s", dbName));
 		
 		SQLiteDatabase db = getWritableDatabase();
-		
-		if(db == null) {
-			return;
-		}
-		
-		if(db.isDbLockedByOtherThreads()) {
-			db.close();
-			return;
-		}
-		
-		
+
 		if(db.needUpgrade(DB_VERSION)) {
 			drop = true;
 		}
 		
 		try {
 			if(drop) {
+				if(scanCallback != null) {
+					scanCallback.notifyScan("Dropping database", 0);
+				}
 				Log.v(TAG, "Dropping file tables!");
 				db.execSQL("DROP TABLE IF EXISTS FILES ;");
 				db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
 				db.setVersion(DB_VERSION);
 			}
 	
+			if(drop) {
+				if(scanCallback != null) {
+					scanCallback.notifyScan("Creating database", 0);
+				}
+			}
+
 			db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"PATH" + " TEXT," +
 					"FILENAME" + " TEXT," +
@@ -150,6 +229,7 @@ public class SongDatabase {
 		} finally {		
 			db.close();
 		}
+		isReady = true;
 	}
 
 	
@@ -276,9 +356,19 @@ public class SongDatabase {
 
 				count++;
 				if((count % reportPeriod) == 0) {
+					isReady = false;
 					if(scanCallback != null) {
 						scanCallback.notifyScan(null, count * 100 / total);
-					}					
+					}
+					if(scanDb.yieldIfContendedSafely()) {
+						Log.v(TAG, "We yieleded!!!");
+						try {
+							Thread.sleep(500);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 				}
 					
 				//if(count == 4000)
@@ -515,6 +605,7 @@ public class SongDatabase {
 						
 						count++;
 						if(count % reportPeriod == 0) {
+							isReady = false;
 							if(scanCallback != null) {
 								scanCallback.notifyScan(null, count * 100 / total);
 							}
@@ -532,6 +623,7 @@ public class SongDatabase {
 			if(zipFiles.size() > 0) {				
 				for(File f : zipFiles) {
 					try {
+						isReady = false;
 						if(scanCallback != null) {
 							scanCallback.notifyScan(f.getPath(), 0);
 						}
@@ -558,7 +650,7 @@ public class SongDatabase {
 			}
 			
 			if(csdb != null) {
-				
+				isReady = false;
 				if(scanCallback != null) {
 					scanCallback.notifyScan(csdb.getPath(), 0);
 				}
@@ -586,6 +678,7 @@ public class SongDatabase {
 
 			for(String s : foundDirs) {
 				File f = new File(parentDir, s);
+				isReady = false;
 				if(scanCallback != null) {
 					scanCallback.notifyScan(f.getPath(), 0);
 				}
@@ -594,6 +687,7 @@ public class SongDatabase {
 			
 			for(String s : foundDirsNew) {
 				File f = new File(parentDir, s);
+				isReady = false;
 				if(scanCallback != null) {
 					scanCallback.notifyScan(f.getPath(), 0);
 				}
@@ -624,9 +718,21 @@ public class SongDatabase {
 		}
 	}
 
-	public void scan(boolean full) {
+	public void scan(boolean full, String mdir) {
+		Message msg = mHandler.obtainMessage(MSG_SCAN, full ? 1 : 0, 0, mdir);
+		mHandler.sendMessage(msg);
+	}
+
+	public void rescan(String mdir) {
+		Message msg = mHandler.obtainMessage(MSG_SCAN, 2, 0, mdir);
+		mHandler.sendMessage(msg);
+	}
+
+	
+	private void doScan(String modsDir, boolean full) {
 
 		stopScanning = false;
+		scanning = true;
 
 		plugins = new DroidSoundPlugin[4];
 		plugins[0] = new TinySidPlugin();
@@ -709,6 +815,7 @@ public class SongDatabase {
 				}
 				
 				if(deletes.size() > 0) {
+					isReady = false;
 					scanDb.beginTransaction();
 					for(File f : deletes) {
 						Log.v(TAG, String.format("Removing %s from DB\n", f.getPath()));
@@ -726,12 +833,7 @@ public class SongDatabase {
 
 		
 		
-		scanFiles(parentDir, full, lastScan);
-		//if(scanCallback != null) {
-		//	scanCallback.notifyScan(null, -1);
-		//}
-		
-		
+		scanFiles(parentDir, full, lastScan);		
 		
 		if(!stopScanning) {
 			ContentValues values = new ContentValues();
@@ -741,13 +843,25 @@ public class SongDatabase {
 		}
 		
 		stopScanning = false;
-
+		isReady = true;
 		
 		scanDb.close();
+		scanDb = null;
+		scanning = false;
+
+		if(scanCallback != null) {
+			scanCallback.notifyScan(null, -1);
+		}
+
 		//rdb.close();
 	}
 
 	public Cursor search(String query, boolean csdb) {
+		
+		if(!isReady) {
+			return null;
+		}
+		
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
@@ -771,15 +885,19 @@ public class SongDatabase {
 	}
 
 	public Cursor getFilesInPath(String pathName) {
-		if(rdb == null) {
-			rdb = getReadableDatabase();
-		}
 		
-		
-		if(rdb.isDbLockedByOtherThreads()) {
+		if(pathName == null || !isReady) {
 			return null;
 		}
 		
+		if(rdb == null) {
+			rdb = getReadableDatabase();
+		}
+
+		if(rdb.isDbLockedByOtherThreads()) {
+			return null;
+		}
+
 		
 		int csdb = pathName.toUpperCase().indexOf("/CSDB.DUMP");
 		if(csdb >= 0) {
@@ -822,7 +940,10 @@ public class SongDatabase {
 			}
 		}
 
-		return rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
+		Log.v(TAG, "BEGIN");
+		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
+		Log.v(TAG, "END");
+		return c;
 	}
 	
 	public void setScanCallback(ScanCallback cb) {
@@ -889,8 +1010,9 @@ public class SongDatabase {
 			db.close();
 		}
 	}
-	
-	
-	
-	
+
+	public boolean isScanning() {
+		// TODO Auto-generated method stub
+		return scanning;
+	}
 }

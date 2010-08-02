@@ -519,5 +519,9 @@ public class Player implements Runnable {
 	public boolean isActive() {
 		return currentState != State.STOPPED;
 	}
+	
+	public boolean isPlaying() {
+		return (currentState == State.PLAYING);
+	}
 
 }

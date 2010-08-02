@@ -14,7 +14,7 @@ public class ScanTask extends AsyncTask<Void, String, Void> {
 	
 	private boolean notified = false;
 	private String lastPath = null;
-	private static SongDatabase songDatabase;
+	private SongDatabase songDatabase;
 	private boolean fullScan;
 	private String modsDir;
 	private NotificationManager manager;
@@ -23,31 +23,17 @@ public class ScanTask extends AsyncTask<Void, String, Void> {
 	private Application application;
 	private boolean drop;
 	private String scanning;
-	
-	private static volatile ScanTask scanTask = null; 
+
+	private boolean reported;
+
+	private boolean scanOn;
 	
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## ScanTask finalize");
 	};
 	
-	public static boolean scan(boolean fullScan, String modsDir, Application app, SongDatabase db) {
-		if(scanTask != null) {
-			return false;
-		}
-		songDatabase = db;
-		scanTask = new ScanTask(fullScan, modsDir, app);
-		scanTask.execute((Void)null);
-		return true;
-	}
-	
-	public static boolean isScanning() {
-		return (scanTask != null);
-	}
-	
-	private ScanTask(boolean fullScan, String modsDir, Application app) {
-		this.fullScan = fullScan;
-		this.modsDir = modsDir;
-		application = app;
+	public boolean scan(boolean fullScan, String modsDir, Application app, SongDatabase db) {
+		
 		
 		scanning = app.getString(R.string.scanning);
 		
@@ -55,43 +41,50 @@ public class ScanTask extends AsyncTask<Void, String, Void> {
 		notification = new Notification(R.drawable.note, scanning, System.currentTimeMillis());				
 		Intent notificationIntent = new Intent();
 		contentIntent = PendingIntent.getActivity(app, 0, notificationIntent, 0);
-	
-		if(drop) {
-			notification.setLatestEventInfo(application, scanning, "Clearing database", contentIntent);
-			manager.notify(1, notification);
-			notified = true;
-		}
 		
-		
+		songDatabase.setScanCallback(new SongDatabase.ScanCallback() {					
+			@Override
+			public void notifyScan(String path, int percent) {
+				
+				if(!reported && percent > 0) {
+					Intent intent = new Intent("com.sddb.droidsound.SCAN_UPDATE");
+					application.sendBroadcast(intent);
+					reported = true;
+				}
+				
+				Log.v(TAG, String.format("NOTIFY %s %d", path, percent));
+				publishProgress(path, Integer.toString(percent));
+			}
+		});
+		/// songDatabase.scan(fullScan);
+		return true;
 	}
+	
+	
+	public boolean isScanning() {
+		return scanOn;
+	}
+	
+	ScanTask(String modsDir, Application app) {
+
+		this.modsDir = modsDir;
+		application = app;
+		scanOn = false;
+	}
+	
+	
+	
 
 	@Override
 	protected Void doInBackground(Void... arg) {
 				
-		synchronized (this) {
-			songDatabase = new SongDatabase(application, modsDir, drop);
-			songDatabase.setScanCallback(new SongDatabase.ScanCallback() {					
-				@Override
-				public void notifyScan(String path, int percent) {					
-					Log.v(TAG, String.format("NOTIFY %s %d", path, percent));
-					publishProgress(path, Integer.toString(percent));
-				}
-			});
-		}
-
-		songDatabase.scan(fullScan);
-
-		synchronized (this) {
-			songDatabase.setScanCallback(null);
-			songDatabase.closeDB();
-			songDatabase = null;
-		}
-			
+		/// songDatabase = new SongDatabase(application, modsDir, drop);
+		
 		return null;
 	}
 	
 	public static void cancel() {
-		scanTask.doCancel();
+		/// scanTask.doCancel();
 	}
 	
 	private synchronized void doCancel() {
@@ -126,11 +119,16 @@ public class ScanTask extends AsyncTask<Void, String, Void> {
 			manager.cancel(1);
 			notified = false;
 		}
-		synchronized (scanTask) {
-			scanTask = null;
-		}
+		//synchronized (scanTask) {
+		//	scanTask = null;
+		//}
 		Intent intent = new Intent("com.sddb.droidsound.SCAN_DONE");
 		application.sendBroadcast(intent);
 
 	}
+
+	public SongDatabase getSongDatabase() {
+		return songDatabase;
+	}
+
 }

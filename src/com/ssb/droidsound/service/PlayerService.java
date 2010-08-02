@@ -8,7 +8,10 @@ import java.util.List;
 import com.ssb.droidsound.service.Player.SongInfo;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -16,6 +19,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 public class PlayerService extends Service {
@@ -126,6 +131,8 @@ public class PlayerService extends Service {
         }
 
     };
+
+	private PhoneStateListener phoneStateListener;
 	
     void createThread() {
     	
@@ -177,6 +184,41 @@ public class PlayerService extends Service {
 		info = new Object [20];
 		for(int i=0; i<20; i++)
 			info[i] = null;
+		
+		
+		
+		phoneStateListener = new PhoneStateListener() {
+			
+			boolean didPause = false;
+			
+			@Override
+			public void onCallStateChanged(int state, String incomingNumber) {
+				
+				switch(state) {
+				case TelephonyManager.CALL_STATE_RINGING:
+					if(player != null && player.isPlaying()) {
+						player.paused(true);
+						didPause = true;
+					}
+					break;
+				case TelephonyManager.CALL_STATE_IDLE:
+					if(didPause && player != null && !player.isPlaying()) {
+						player.paused(false);
+					}
+					didPause = false;
+					break;
+				case TelephonyManager.CALL_STATE_OFFHOOK:
+					break;
+				}
+				
+				Log.v(TAG, String.format("CALL STATE %d %s", state, incomingNumber));
+				//super.onCallStateChanged(state, incomingNumber);
+			}
+		};
+		
+		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+
 		
 		Log.v(TAG, "PlayerService created");
 	}
@@ -230,6 +272,10 @@ public class PlayerService extends Service {
 	public void onDestroy() {
 		
 		super.onDestroy();
+		
+		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
+		tm.listen(phoneStateListener, 0);
+		
 		player.stop();
 		player = null;
 		playerThread = null;

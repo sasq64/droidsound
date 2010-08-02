@@ -442,7 +442,10 @@ public class PlayListView extends ListView {
     public void gotoParent() {
     	String s = pathName;
 
-    	pathName = new File(pathName).getParent();    	
+    	pathName = new File(pathName).getParent();
+    	if(pathName == null) {
+    		return;
+    	}
     	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
 
     	if(dirChangeCallback != null) {

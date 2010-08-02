@@ -89,11 +89,11 @@ public class FileIdentifier {
 			}
 		}
 					
-		if(info.title == null) {
+		if(info.title == null || info.title.length() == 0) {
 			info.title = info.game;
 		}
 
-		if(info.title == null) {
+		if(info.title == null || info.title.length() == 0) {
 			info.title = fname;
 		}
 	}
@@ -102,6 +102,7 @@ public class FileIdentifier {
 		int i = start;
 		for(; i<start+len; i++) {
 			if(data[i] == 0) {
+				i++;
 				break;
 			}
 		}
@@ -110,7 +111,7 @@ public class FileIdentifier {
 		//while(o >= start && data[o] == 0) {
 		//	o -= 1;
 		//}
-		return new String(data, start, i-start+1, "ISO-8859-1");
+		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
 	
 	

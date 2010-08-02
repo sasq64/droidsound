@@ -78,10 +78,11 @@ public class CSDBParser {
 			while(line != null) {
 				
 				count++;
-				if((count % 500) == 0) {
+				if((count % 300) == 0) {
 					if(scanCallback != null) {
 						scanCallback.notifyScan(null, total * 100 / fileSize);
-					}					
+					}
+					db.yieldIfContendedSafely();
 				}
 
 				if(line.equals("[Releases]")) {
