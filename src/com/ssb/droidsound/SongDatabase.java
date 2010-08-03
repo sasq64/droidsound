@@ -22,6 +22,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -35,8 +36,8 @@ import android.widget.Toast;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
+import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.TFMXPlugin;
-import com.ssb.droidsound.plugins.TinySidPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
@@ -549,6 +550,12 @@ public class SongDatabase implements Runnable {
 								values = null;
 							}
 							else 
+							if(fn.toUpperCase().endsWith(".PLIST")) {
+								Log.v(TAG, String.format("Found playlist (%s)", fn));
+								values.put("TYPE", TYPE_ARCHIVE);
+								values.put("TITLE", fn.substring(0, end - 6));								
+							}
+							else 
 							if(fn.toUpperCase().endsWith(".LNK")) {
 								Log.v(TAG, String.format("Found link (%s)", fn));
 								values.put("TYPE", TYPE_ARCHIVE);
@@ -724,7 +731,7 @@ public class SongDatabase implements Runnable {
 		scanning = true;
 
 		plugins = new DroidSoundPlugin[4];
-		plugins[0] = new TinySidPlugin();
+		plugins[0] = new SidplayPlugin();
 		plugins[1] = new ModPlugin();
 		plugins[2] = new GMEPlugin();
 		plugins[3] = new TFMXPlugin();
@@ -881,6 +888,65 @@ public class SongDatabase implements Runnable {
 			return null;
 		}
 		
+		String upath = pathName.toUpperCase();
+		
+		if(upath.endsWith(".PLIST")) {
+			File file = new File(pathName);
+			BufferedReader reader;
+			MatrixCursor cursor = new MatrixCursor(new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" });
+			String cols[] = new String [4];
+			try {
+				reader = new BufferedReader(new FileReader(file));
+				String line = reader.readLine();
+				while(line != null) {
+					String [] linecols = line.split("\t");					
+					if(linecols[0].length() > 0) {
+						
+						Log.v(TAG, line);
+						
+						File f = new File(linecols[0]);
+						
+						cols[0] = f.getParent();
+						cols[1] = f.getName();
+						cols[2] = cols[3] = null;
+						
+						if(cols[0].charAt(0) == '$') {
+							int slash = cols[0].indexOf('/');
+							String var = cols[0].substring(1, slash);
+							cols[0] = "/sdcard/MODS/C64Music.zip/C64Music" + cols[0].substring(slash);
+						}
+						
+						if(linecols.length > 2) {
+							cols[2] = linecols[1];
+						} else {
+							cols[2] = f.getName();
+						}
+						
+						if(linecols.length > 3) {
+							cols[3] = linecols[2];
+						} else {
+							cols[3] = f.getParent();
+						}
+		
+						cursor.addRow(cols);
+					}
+					line = reader.readLine();
+				}
+				reader.close();
+				return cursor;
+				
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}				
+			
+		}
+		
+		
+		
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
@@ -890,7 +956,7 @@ public class SongDatabase implements Runnable {
 		}
 
 		
-		int csdb = pathName.toUpperCase().indexOf("/CSDB.DUMP");
+		int csdb = upath.indexOf("/CSDB.DUMP");
 		if(csdb >= 0) {
 			//pathName.replaceFirst("/CSDB.DUMP", "CSDB:");
 			pathName = pathName.substring(0, csdb) + "/CSDB:" + pathName.substring(csdb+10);

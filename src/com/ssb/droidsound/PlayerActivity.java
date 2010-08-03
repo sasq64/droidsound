@@ -1,8 +1,13 @@
 package com.ssb.droidsound;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -21,6 +26,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.Editable;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -32,6 +38,7 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
@@ -76,6 +83,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private TextView titleText;
 
 	private String modsDir;
+	private String currentPath;
+
 
 	private BroadcastReceiver receiver;
 
@@ -315,9 +324,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		*/	
 		playListView.setOnDirChangeCallback(new PlayListView.DirChangeCallback() {			
 
+
 			@Override
 			public void dirChange(String dir) {
 				File f = new File(dir);
+				currentPath = dir;
+				
+				inPlayList = dir.toUpperCase().endsWith(".PLIST");
+				
 				if(f.getPath().equals(modsDir)) {
 					//parentButton.setText("");
 					atTop = true;
@@ -395,11 +409,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		
 		//SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
-		String currentPath = prefs.getString("currentPath", null);
+		currentPath = prefs.getString("currentPath", null);
 		if(currentPath == null) {
 			currentPath = modsDir;
 		}
 		
+		inPlayList = currentPath.toUpperCase().endsWith(".PLIST");
 		atTop = currentPath.equals(modsDir);
 	
 		playListView.setDirectory(currentPath);
@@ -614,6 +629,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 	
 	private boolean doFullScan;
+	private boolean inPlayList;
+
+	private String currentPlaylist;
 	
 	@Override
 	protected Dialog onCreateDialog(int id) {
@@ -635,6 +653,34 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					dialog.cancel();
 				}				
 			});
+			break;
+		case R.string.name_playlist:
+			
+			final EditText input = new EditText(this);  
+			builder.setView(input);  			  
+			builder.setMessage(id);
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					String s = input.getText().toString();
+					Log.v(TAG, "Create " + s);
+					File f = new File(currentPath, s + ".plist");
+					FileWriter writer;
+					try {
+						writer = new FileWriter(f);
+						writer.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}					
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}				
+			});
+			
 			break;
 		case R.string.scan_db:
 			doFullScan = false;
@@ -686,11 +732,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.songmenu, menu);
-		
-		if(cursor.getColumnIndex("LIST") >= 0) {
+
+		if(inPlayList) {
 			menu.setGroupVisible(R.id.in_playlist, true);
+			menu.setGroupVisible(R.id.not_in_playlist, false);
 		} else {
 			menu.setGroupVisible(R.id.in_playlist, false);
+			menu.setGroupVisible(R.id.not_in_playlist, true);
+			if(currentPlaylist != null) {
+				MenuItem item = menu.findItem(R.id.add_to_plist);
+				if(item != null) {
+					item.setTitle(String.format("Add to '%s'", new File(currentPlaylist).getName()));
+				}
+			} else {
+			}
 		}		
 	}
 	
@@ -711,6 +766,40 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case R.id.go_author:
 			playListView.setDirectory(file.getParent());
 			break;
+		case R.id.set_plist:
+			currentPlaylist = currentPath;
+			break;
+		case R.id.add_to_plist:
+			{
+				if(currentPlaylist == null) {
+					break;
+				}
+				InputStream is;
+				FileIdentifier.MusicInfo minfo = null;
+				try {
+					is = new FileInputStream(file);
+					minfo = FileIdentifier.identify(file.getName(), is);
+					is.close();
+				} catch (FileNotFoundException e1) {
+				} catch (IOException e) {
+				}
+				File f = new File(currentPlaylist);
+				try {
+					FileWriter writer = new FileWriter(f, true);
+					if(minfo != null) {
+						writer.append(String.format("%s\t%s\t%s\n", file.getPath(), minfo.title, minfo.composer));
+					} else {
+						writer.append(file.getPath() + "\n");
+					}
+					writer.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				if(currentPath.equals(currentPlaylist)) {
+					playListView.rescan();
+				}
+			}
+			break;
 		case R.id.favorite:			
 			songDatabase.addFavorite(file);
 			break;
@@ -722,9 +811,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songDatabase.clearFavorites();
 			playListView.rescan();
 			break;
+		case R.id.create_playlist:
+			showDialog(R.string.name_playlist);
+			break;
 		default:
 			return super.onContextItemSelected(item);
 		}
 		return true;
 	}	
 }
+
