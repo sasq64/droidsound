@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 	<!--  item android:id="@+id/details" android:title="@string/details" / -->
-	<group android:id="@+id/not_in_playlist">
-		<item android:id="@+id/favorite" android:title="@string/favorite" />
-		<item android:id="@+id/add_to_plist" android:title="@string/add_to_plist" />
-		<item android:id="@+id/create_playlist" android:title="@string/create_playlist" />
+	<group android:id="@+id/on_file">
+		<item android:id="@+id/go_author" android:title="@string/go_to_author" />
 	</group>
-	<item android:id="@+id/go_author" android:title="@string/go_to_author" />
-	<group android:id="@+id/in_playlist">
+	<group android:id="@+id/on_dir">
+	</group>
+	<group android:id="@+id/on_plist">
 		<item android:id="@+id/set_plist" android:title="@string/set_plist" />
+	</group>
+
+	<item android:id="@+id/add_to_plist" android:title="@string/add_to_plist" />
+
+	<group android:id="@+id/in_playlist">
 		<item android:id="@+id/remove" android:title="@string/remove" />
 		<item android:id="@+id/remove_all" android:title="@string/remove_all" />
 	</group>

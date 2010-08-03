@@ -18,6 +18,7 @@
 <string name="rescan">Rescan</string>
 <string name="abort_scan">Abort scan</string>
 <string name="about">About</string>
+<string name="new_">New</string>
 <string name="quit">Quit</string>
 <string name="database_cleared">Database cleared</string>
 <string name="clearing_database">Clearing database</string>
@@ -30,4 +31,9 @@
 <string name="create_playlist">Create playlist</string>
 <string name="set_plist">Set current playlist</string>
 <string name="name_playlist">Playlist name</string>
+<string name="name_folder">Folder name</string>
+<string-array name="new_opts">
+	<item>Folder</item>
+	<item>Playlist</item>
+</string-array>
 </resources>

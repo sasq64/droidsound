@@ -194,22 +194,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		File modsFile = new File(modsDir);
 		if(!modsFile.exists()) {
 			showDialog(R.string.sdcard_not_found);
-		} else {		
-			File mf = new File(modsDir, "Favorites.lnk");
-			if(!mf.exists()) {
-				try {
-					Log.v(TAG, "Trying to write Favorites");
-					FileWriter fw = new FileWriter(mf);
-					fw.write("LINK:0\n");
-					fw.close();
-					Log.v(TAG, "Done");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
 		}
-
+		
 		receiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -273,21 +259,30 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				progressDialog.setCancelable(false);
 				progressDialog.show();
 		}
-					
-		songDatabase.registerPath("LINK", new SongDatabase.PathCallback() {
-			@Override
-			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
-				Log.v(TAG, "Getting LINK path " + path);
-				return db.query("LINKS", new String[] { "_id", "LIST", "TITLE", "COMPOSER", "PATH", "FILENAME", }, "LIST=?", new String[] { path }, null, null, null);
-			}			
-		});
-	
+
 		songDatabase.registerPath("CSDB", new SongDatabase.PathCallback() {			
 			@Override
 			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
 				return CSDBParser.getPath(path, db);
 			}
 		});
+		
+		File mf = new File(modsDir, "Favorites.plist");
+		if(!mf.exists()) {
+			try {
+				Log.v(TAG, "Trying to write Favorites");
+				FileWriter fw = new FileWriter(mf);
+				fw.close();
+				Log.v(TAG, "Done");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		if(mf.exists()) {
+			songDatabase.setActivePlaylist(mf);
+		}
+		
 		
 		playListView.setDatabase(songDatabase);
 		
@@ -330,7 +325,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				File f = new File(dir);
 				currentPath = dir;
 				
-				inPlayList = dir.toUpperCase().endsWith(".PLIST");
+				//inPlayList = dir.toUpperCase().endsWith(".PLIST");
 				
 				if(f.getPath().equals(modsDir)) {
 					//parentButton.setText("");
@@ -414,7 +409,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			currentPath = modsDir;
 		}
 		
-		inPlayList = currentPath.toUpperCase().endsWith(".PLIST");
+		//inPlayList = currentPath.toUpperCase().endsWith(".PLIST");
 		atTop = currentPath.equals(modsDir);
 	
 		playListView.setDirectory(currentPath);
@@ -491,6 +486,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onPause() {
 		super.onPause();
+		
+		Playlist.flushAll();
+		
 		player.unbindService(this);
 		
 		unregisterReceiver(receiver);
@@ -624,14 +622,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case R.id.abort_scan:
 			ScanTask.cancel();
 			break;
+		case R.id.new_:
+			showDialog(R.string.new_);
+			break;
 		}		
 		return true;
 	}
 	
 	private boolean doFullScan;
-	private boolean inPlayList;
+	//private boolean inPlayList;
 
-	private String currentPlaylist;
+//	private Playlist currentPlaylist;
 	
 	@Override
 	protected Dialog onCreateDialog(int id) {
@@ -654,24 +655,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}				
 			});
 			break;
-		case R.string.name_playlist:
-			
-			final EditText input = new EditText(this);  
-			builder.setView(input);  			  
-			builder.setMessage(id);
-			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+		case R.string.new_:
+			builder.setTitle(id);
+			builder.setSingleChoiceItems(R.array.new_opts, -1, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					String s = input.getText().toString();
-					Log.v(TAG, "Create " + s);
-					File f = new File(currentPath, s + ".plist");
-					FileWriter writer;
-					try {
-						writer = new FileWriter(f);
-						writer.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}					
+					Log.v(TAG, "Clicked " + which);
+					dialog.dismiss();
+					switch(which) {
+					case 0:
+						showDialog(R.string.name_folder);
+						break;
+					case 1:
+						showDialog(R.string.name_playlist);
+						break;
+					}
 				}
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -680,11 +678,48 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					dialog.cancel();
 				}				
 			});
-			
+			break;
+		case R.string.name_playlist:			
+			final EditText input = new EditText(this);  
+			builder.setView(input);  			  
+			builder.setMessage(id);
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					String s = input.getText().toString();					
+					songDatabase.createPlaylist(new File(currentPath, s + ".plist"));
+					playListView.rescan();
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}				
+			});			
+			break;
+		case R.string.name_folder:			
+			final EditText input2 = new EditText(this);  
+			builder.setView(input2);  			  
+			builder.setMessage(id);
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					String s = input2.getText().toString();					
+					songDatabase.createFolder(new File(currentPath, s));
+					playListView.rescan();
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}				
+			});			
 			break;
 		case R.string.scan_db:
 			doFullScan = false;
-			builder.setTitle(R.string.scan_db);
+			builder.setTitle(id);
 			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
@@ -729,25 +764,50 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
 		Log.v(TAG, String.format("POS %d", info.position));
 		Cursor cursor = playListView.getCursor(info.position);
+		int type = SongDatabase.TYPE_FILE;
+		int t = cursor.getColumnIndex("TYPE");
+		if(t >= 0) {
+			type = cursor.getInt(t);
+		}
+		
+		File file = playListView.getFile(info.position);
 		
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.songmenu, menu);
 
-		if(inPlayList) {
+		MenuItem aitem = menu.findItem(R.id.add_to_plist);
+		Playlist pl = songDatabase.getActivePlaylist();
+		if(pl != null) {
+			aitem.setTitle(String.format("Add to '%s'", pl.getTitle()));
+		}
+
+		if(songDatabase.getCurrentPlaylist() != null) {
 			menu.setGroupVisible(R.id.in_playlist, true);
-			menu.setGroupVisible(R.id.not_in_playlist, false);
 		} else {
 			menu.setGroupVisible(R.id.in_playlist, false);
-			menu.setGroupVisible(R.id.not_in_playlist, true);
-			if(currentPlaylist != null) {
-				MenuItem item = menu.findItem(R.id.add_to_plist);
-				if(item != null) {
-					item.setTitle(String.format("Add to '%s'", new File(currentPlaylist).getName()));
-				}
-			} else {
-			}
-		}		
-	}
+		}
+		
+		switch(type) {
+		case SongDatabase.TYPE_FILE:
+			menu.setGroupVisible(R.id.on_file, true);
+			menu.setGroupVisible(R.id.on_dir, false);
+			menu.setGroupVisible(R.id.on_plist, false);
+			break;
+
+		case SongDatabase.TYPE_DIR:
+		case SongDatabase.TYPE_ARCHIVE:
+			menu.setGroupVisible(R.id.on_file, false);
+			menu.setGroupVisible(R.id.on_dir, true);
+			menu.setGroupVisible(R.id.on_plist, false);
+			break;
+
+		case SongDatabase.TYPE_PLIST:
+			menu.setGroupVisible(R.id.on_file, false);
+			menu.setGroupVisible(R.id.on_dir, false);
+			menu.setGroupVisible(R.id.on_plist, true);
+			break;			
+		}
+	}	
 	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
@@ -762,57 +822,40 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//if(pi >= 0) {
 		//	path =  cursor.getString(pi);
 		//}
+		Playlist pl = songDatabase.getCurrentPlaylist();
+		Playlist al = songDatabase.getActivePlaylist();
+
 		switch(item.getItemId()) {
 		case R.id.go_author:
 			playListView.setDirectory(file.getParent());
 			break;
-		case R.id.set_plist:
-			currentPlaylist = currentPath;
+		case R.id.set_plist:			
+			songDatabase.setActivePlaylist(file);
 			break;
-		case R.id.add_to_plist:
-			{
-				if(currentPlaylist == null) {
-					break;
-				}
-				InputStream is;
-				FileIdentifier.MusicInfo minfo = null;
-				try {
-					is = new FileInputStream(file);
-					minfo = FileIdentifier.identify(file.getName(), is);
-					is.close();
-				} catch (FileNotFoundException e1) {
-				} catch (IOException e) {
-				}
-				File f = new File(currentPlaylist);
-				try {
-					FileWriter writer = new FileWriter(f, true);
-					if(minfo != null) {
-						writer.append(String.format("%s\t%s\t%s\n", file.getPath(), minfo.title, minfo.composer));
-					} else {
-						writer.append(file.getPath() + "\n");
-					}
-					writer.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				if(currentPath.equals(currentPlaylist)) {
-					playListView.rescan();
+		case R.id.add_to_plist:			
+			if(al != null) {
+				if(!currentPath.equals(al.getFile().getPath())) {
+					//al.add(file);
+					songDatabase.addToPlaylist(al, file);
 				}
 			}
 			break;
-		case R.id.favorite:			
-			songDatabase.addFavorite(file);
-			break;
+		//case R.id.favorite:			
+		//	songDatabase.addFavorite(file);
+		//	break;
 		case R.id.remove :
-			songDatabase.removeFavorite(file);
-			playListView.rescan();
+			if(pl != null) {
+				pl.remove(file);
+				playListView.rescan();
+			}
+			
 			break;
 		case R.id.remove_all :
-			songDatabase.clearFavorites();
-			playListView.rescan();
-			break;
-		case R.id.create_playlist:
-			showDialog(R.string.name_playlist);
+			if(pl != null) {
+				pl.clear();
+				playListView.rescan();
+			}
+			
 			break;
 		default:
 			return super.onContextItemSelected(item);

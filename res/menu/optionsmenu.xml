@@ -6,6 +6,7 @@
 <group android:id="@+id/when_scanning">
     <item android:id="@+id/abort_scan" android:title="@string/abort_scan" android:icon="@drawable/ic_menu_music_library"/>
 </group>
-    <item android:id="@+id/about" android:title="@string/about" android:icon="@android:drawable/ic_menu_info_details"/>
-    <item android:id="@+id/quit" android:title="@string/quit" android:icon="@android:drawable/ic_menu_close_clear_cancel"/>
+<item android:id="@+id/new_" android:title="@string/new_" android:icon="@android:drawable/ic_menu_add"/>
+<item android:id="@+id/about" android:title="@string/about" android:icon="@android:drawable/ic_menu_info_details"/>
+<item android:id="@+id/quit" android:title="@string/quit" android:icon="@android:drawable/ic_menu_close_clear_cancel"/>
 </menu>

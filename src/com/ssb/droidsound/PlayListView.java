@@ -218,6 +218,11 @@ public class PlayListView extends ListView {
 				//iv.setImageResource(R.drawable.play_list);
 				iv.setImageResource(R.drawable.folder);
 				iv.setVisibility(View.VISIBLE);
+			} else if(type == SongDatabase.TYPE_PLIST) {
+				tv0.setTextColor(archiveColor);
+				//iv.setImageResource(R.drawable.play_list);
+				iv.setImageResource(R.drawable.play_list);
+				iv.setVisibility(View.VISIBLE);
 			} else {
 				tv0.setTextColor(dirColor);
 				iv.setImageResource(R.drawable.folder);
@@ -404,7 +409,7 @@ public class PlayListView extends ListView {
 				FileInfo fi = (FileInfo) adapter.getItem(position);
 				if(fi.file != null) {
 					selectedFile = fi.file;
-					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE) {
+					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
 						setDirectory(fi.file.getPath());
 					} else {
 						int index = 0;
@@ -434,6 +439,8 @@ public class PlayListView extends ListView {
     	//int bi = parent.indexOf(baseDir);
     	//if(bi >= 0) {
     	//	parent = parent.substring(bi);
+    	
+    	Playlist.flushAll();
 
 
     	pathName = parent;    	

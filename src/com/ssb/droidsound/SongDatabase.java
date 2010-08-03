@@ -5,10 +5,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,16 +21,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.MatrixCursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.BaseColumns;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.GMEPlugin;
@@ -53,7 +49,7 @@ import com.ssb.droidsound.utils.NativeZipFile;
 public class SongDatabase implements Runnable {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	
-	public static final int DB_VERSION = 2;
+	public static final int DB_VERSION = 3;
 	
 	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 
@@ -100,9 +96,11 @@ public class SongDatabase implements Runnable {
 		return dbrc;
 	}
 
-	public static final int TYPE_ARCHIVE = 0;
-	public static final int TYPE_DIR = 1;
-	public static final int TYPE_FILE = 2;
+	public static final int TYPE_ARCHIVE = 0x100;
+	public static final int TYPE_DIR = 0x200;
+	public static final int TYPE_PLIST = 0x300;
+	public static final int TYPE_FILE = 0x400;
+	
 
 	protected static final int MSG_SCAN = 0;
 	
@@ -191,6 +189,7 @@ public class SongDatabase implements Runnable {
 				Log.v(TAG, "Dropping file tables!");
 				db.execSQL("DROP TABLE IF EXISTS FILES ;");
 				db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
+				db.execSQL("DROP TABLE IF EXISTS LINKS ;");
 				db.setVersion(DB_VERSION);
 			}
 	
@@ -210,16 +209,7 @@ public class SongDatabase implements Runnable {
 					"COPYRIGHT" + " TEXT," +
 					"FORMAT" + " TEXT," +
 					"LENGTH" + " INTEGER" + ");");
-			
-			db.execSQL("CREATE TABLE IF NOT EXISTS " + "LINKS" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-					"LIST" + " INTEGER," +
-					"PATH" + " TEXT," +
-					"FILENAME" + " TEXT," +
-					"TITLE" + " TEXT," +
-					"COMPOSER" + " TEXT," +
-					"COPYRIGHT" + " TEXT," +
-					"FORMAT" + " TEXT" + ");");
-	
+
 			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
 	
 			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (TITLE) ;");
@@ -552,7 +542,7 @@ public class SongDatabase implements Runnable {
 							else 
 							if(fn.toUpperCase().endsWith(".PLIST")) {
 								Log.v(TAG, String.format("Found playlist (%s)", fn));
-								values.put("TYPE", TYPE_ARCHIVE);
+								values.put("TYPE", TYPE_PLIST);
 								values.put("TITLE", fn.substring(0, end - 6));								
 							}
 							else 
@@ -882,71 +872,39 @@ public class SongDatabase implements Runnable {
 		}
 	}
 
+	private Playlist currentPlaylist;
+	private Playlist activePlaylist;
+
+	public Playlist getCurrentPlaylist() {
+		return currentPlaylist;
+	}
+
+	public Playlist getActivePlaylist() {
+		return activePlaylist;
+	}
+	
+	public void setActivePlaylist(File file) {		
+		activePlaylist = Playlist.getPlaylist(file);
+	}
+
 	public Cursor getFilesInPath(String pathName) {
 		
 		if(pathName == null || !isReady) {
 			return null;
 		}
-		
-		String upath = pathName.toUpperCase();
-		
-		if(upath.endsWith(".PLIST")) {
-			File file = new File(pathName);
-			BufferedReader reader;
-			MatrixCursor cursor = new MatrixCursor(new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" });
-			String cols[] = new String [4];
-			try {
-				reader = new BufferedReader(new FileReader(file));
-				String line = reader.readLine();
-				while(line != null) {
-					String [] linecols = line.split("\t");					
-					if(linecols[0].length() > 0) {
-						
-						Log.v(TAG, line);
-						
-						File f = new File(linecols[0]);
-						
-						cols[0] = f.getParent();
-						cols[1] = f.getName();
-						cols[2] = cols[3] = null;
-						
-						if(cols[0].charAt(0) == '$') {
-							int slash = cols[0].indexOf('/');
-							String var = cols[0].substring(1, slash);
-							cols[0] = "/sdcard/MODS/C64Music.zip/C64Music" + cols[0].substring(slash);
-						}
-						
-						if(linecols.length > 2) {
-							cols[2] = linecols[1];
-						} else {
-							cols[2] = f.getName();
-						}
-						
-						if(linecols.length > 3) {
-							cols[3] = linecols[2];
-						} else {
-							cols[3] = f.getParent();
-						}
-		
-						cursor.addRow(cols);
-					}
-					line = reader.readLine();
-				}
-				reader.close();
-				return cursor;
 				
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}				
-			
+		String upath = pathName.toUpperCase();
+
+		currentPlaylist = null;
+		if(upath.endsWith(".PLIST")) {
+			File file = new File(pathName);			
+			currentPlaylist = Playlist.getPlaylist(file);
+			if(activePlaylist == null) {
+				activePlaylist = currentPlaylist;
+			}
+			return currentPlaylist.getCursor();
 		}
-		
-		
-		
+
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
@@ -1020,7 +978,7 @@ public class SongDatabase implements Runnable {
 		stopScanning = true;
 		
 	}
-
+/*
 	public void addFavorite(File file) {
 		SQLiteDatabase db = getWritableDatabase();
 		if(db != null) {
@@ -1067,9 +1025,78 @@ public class SongDatabase implements Runnable {
 			db.close();
 		}
 	}
-
+*/
 	public boolean isScanning() {
 		// TODO Auto-generated method stub
 		return scanning;
+	}
+	
+	public void addToPlaylist(Playlist pl, File f) {
+		Log.v(TAG, String.format("Adding %s / %s to playlist %s", f.getPath(), f.getName(), pl.getFile().getName()));
+		if(f.exists()) {
+			if(f.getName().toUpperCase().endsWith(".PLIST")) {
+				Playlist newpl = Playlist.getPlaylist(f);
+				List<File> files = newpl.getFiles();
+				Log.v(TAG, String.format("Adding %d files from playlist", files.size()));
+				for(File f2 : files) {
+					addToPlaylist(pl, f2);
+				}
+				
+			} else {
+				pl.add(f);
+			}
+		} else {
+			if(rdb == null) {
+				rdb = getReadableDatabase();
+			}
+			Cursor cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH" }, "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() }, null, null, null);
+			
+			//Log.v(TAG, String.format("Got %d results from query", cursor.getCount()));
+			
+			if(cursor != null && cursor.moveToFirst()) {
+				pl.add(cursor);
+			}
+			cursor.close();
+		}
+	}
+
+	public void createPlaylist(File file) {
+		
+		FileWriter writer;
+		String n = file.getName();
+		try {			
+			writer = new FileWriter(file);
+			writer.close();
+			ContentValues values = new ContentValues();
+			values.put("PATH", file.getParent());
+			values.put("FILENAME", n);
+			values.put("TYPE", TYPE_PLIST);
+			int dot = n.indexOf('.');
+			if(dot > 0) {
+				values.put("TITLE", n.substring(0, dot));
+			} else {
+				values.put("TITLE", n);
+			}
+			
+			SQLiteDatabase db = getWritableDatabase();
+			db.insert("FILES", "PATH", values);
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}					
+	}
+
+	public void createFolder(File file) {
+		
+		if(file.mkdir()) {
+			String n = file.getName();
+			ContentValues values = new ContentValues();
+			values.put("PATH", file.getParent());
+			values.put("FILENAME", n);
+			values.put("TYPE", TYPE_DIR);			
+			SQLiteDatabase db = getWritableDatabase();
+			db.insert("FILES", "PATH", values);
+		}
+		
 	}
 }
