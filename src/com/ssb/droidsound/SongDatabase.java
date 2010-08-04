@@ -646,7 +646,7 @@ public class SongDatabase implements Runnable {
 					values.put("PATH", csdb.getParentFile().getPath());
 					values.put("FILENAME", csdb.getName());
 					values.put("TYPE", TYPE_ARCHIVE);
-					values.put("TITLE", "CSDB");
+					values.put("TITLE", "CSDb");
 					Log.v(TAG, String.format("Inserting CSDB from dump (%s)", csdb.getPath()));
 					scanDb.insert("FILES", "PATH", values);
 					//db.setTransactionSuccessful();
@@ -858,7 +858,10 @@ public class SongDatabase implements Runnable {
 			return CSDBParser.search(rdb, query);
 		}
 	
+		pathTitle = "SEARCH: " + query;
+		
 		String q = "%" + query + "%" ;
+		
 		//Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
 		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "TITLE LIKE ?", new String[] { q }, null, null, "COMPOSER, TITLE", "500");
 		Log.v(TAG, String.format("Got %d hits", c.getCount()));
@@ -875,6 +878,8 @@ public class SongDatabase implements Runnable {
 	private Playlist currentPlaylist;
 	private Playlist activePlaylist;
 
+	private String pathTitle;
+
 	public Playlist getCurrentPlaylist() {
 		return currentPlaylist;
 	}
@@ -886,6 +891,10 @@ public class SongDatabase implements Runnable {
 	public void setActivePlaylist(File file) {		
 		activePlaylist = Playlist.getPlaylist(file);
 	}
+	
+	public String getPathTitle() {
+		return pathTitle;
+	}
 
 	public Cursor getFilesInPath(String pathName) {
 		
@@ -894,10 +903,44 @@ public class SongDatabase implements Runnable {
 		}
 				
 		String upath = pathName.toUpperCase();
+		int dot = pathName.lastIndexOf('.');
+		String ext = "";
+		if(dot > 0) {
+			ext = upath.substring(dot);
+		}
 
+		Log.v(TAG, String.format("files in path '%s'", pathName));
+		//String name = new File(pathName).getName().toUpperCase();
+		
+		if(ext.equals(".LNK")) {
+			try {
+				File f = new File(pathName);
+				BufferedReader reader = new BufferedReader(new FileReader(f));
+				String p = reader.readLine();
+				reader.close();
+				if(p != null && p.length() > 0) {
+					pathName = p;
+				}
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		File file = new File(pathName);
+		
 		currentPlaylist = null;
-		if(upath.endsWith(".PLIST")) {
-			File file = new File(pathName);			
+		if(ext.equals(".PLIST")) {
+			
+			String name = file.getName();
+			dot = name.lastIndexOf('.');
+			if(dot > 0) {
+				pathTitle = name.substring(0, dot);
+			} else {
+				pathTitle = name;
+			}
+
 			currentPlaylist = Playlist.getPlaylist(file);
 			if(activePlaylist == null) {
 				activePlaylist = currentPlaylist;
@@ -912,34 +955,17 @@ public class SongDatabase implements Runnable {
 		if(rdb.isDbLockedByOtherThreads()) {
 			return null;
 		}
-
 		
 		int csdb = upath.indexOf("/CSDB.DUMP");
 		if(csdb >= 0) {
 			//pathName.replaceFirst("/CSDB.DUMP", "CSDB:");
 			pathName = pathName.substring(0, csdb) + "/CSDB:" + pathName.substring(csdb+10);
+			pathTitle = "CSDb";
 		}
 		
 		//File f = new File(pathName);
 		
-		Log.v(TAG, String.format("files in path '%s'", pathName));
-		String name = new File(pathName).getName().toUpperCase();
-		
-		if(name.endsWith(".LNK")) {
-			try {
-				File f = new File(pathName);
-				BufferedReader reader = new BufferedReader(new FileReader(f));
-				String p = reader.readLine();
-				reader.close();
-				if(p != null && p.length() > 0) {
-					pathName = p;
-				}
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} /*else if(name.equals("CSDB.DUMP")) {
+ /*else if(name.equals("CSDB.DUMP")) {
 			//return CSDBParser.getPath("", rdb);
 			pathName = new File(new File(pathName).getParent(), "CSDB:").getPath();
 		} */
@@ -954,9 +980,16 @@ public class SongDatabase implements Runnable {
 				return cb.getCursorFromPath(pathName.substring(colon+1), rdb);
 			}
 		}
-
+	
 		Log.v(TAG, "BEGIN");
-		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
+		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { file.getParent(), file.getName() }, null, null, "TYPE, FILENAME", "1000");
+		if(c != null) {
+			if(c.moveToFirst()) {
+				pathTitle = c.getString(0);
+			}
+			c.close();
+		}
+		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
 		Log.v(TAG, "END");
 		return c;
 	}
@@ -1095,8 +1128,12 @@ public class SongDatabase implements Runnable {
 			values.put("FILENAME", n);
 			values.put("TYPE", TYPE_DIR);			
 			SQLiteDatabase db = getWritableDatabase();
-			db.insert("FILES", "PATH", values);
+			if(db != null) {
+				db.insert("FILES", "PATH", values);
+				db.close();
+			} else {
+				file.delete();
+			}
 		}
-		
 	}
 }

@@ -470,6 +470,7 @@ public class Player implements Runnable {
 		target.title = new String(currentSong.title);
 		target.author = new String(currentSong.author);
 		target.copyright = new String(currentSong.copyright);
+		target.game = new String(currentSong.game);
 		target.type = new String(currentSong.type);
 		target.length = currentSong.length;
 		target.subTunes = currentSong.subTunes;

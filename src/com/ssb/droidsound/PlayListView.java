@@ -216,16 +216,21 @@ public class PlayListView extends ListView {
 			} else if(type == SongDatabase.TYPE_ARCHIVE) {
 				tv0.setTextColor(archiveColor);
 				//iv.setImageResource(R.drawable.play_list);
-				iv.setImageResource(R.drawable.folder);
+				iv.setImageResource(R.drawable.gflat_folder);
 				iv.setVisibility(View.VISIBLE);
 			} else if(type == SongDatabase.TYPE_PLIST) {
 				tv0.setTextColor(archiveColor);
 				//iv.setImageResource(R.drawable.play_list);
-				iv.setImageResource(R.drawable.play_list);
+				if(title.equals("Favorites")) {
+					iv.setImageResource(R.drawable.gflat_heart);
+				} else {
+					iv.setImageResource(R.drawable.gflat_note3);
+				}
+
 				iv.setVisibility(View.VISIBLE);
 			} else {
 				tv0.setTextColor(dirColor);
-				iv.setImageResource(R.drawable.folder);
+				iv.setImageResource(R.drawable.gflat_folder);
 				iv.setVisibility(View.VISIBLE);
 			}
 			
@@ -347,7 +352,7 @@ public class PlayListView extends ListView {
 	}
 	
 	public static interface DirChangeCallback {
-		void dirChange(String dir);
+		void dirChange(String dir, String title);
 	}
 
 	private DirChangeCallback dirChangeCallback;
@@ -447,7 +452,7 @@ public class PlayListView extends ListView {
     	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
     	adapter.setSelectedFile(selectedName);
     	if(dirChangeCallback != null) {
-    		dirChangeCallback.dirChange(pathName);
+    		dirChangeCallback.dirChange(pathName, dataBase.getPathTitle());
     	}
     	
     	//adapter.setHasParent(!pathName.equals(baseDir));
@@ -463,7 +468,7 @@ public class PlayListView extends ListView {
     	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
 
     	if(dirChangeCallback != null) {
-    		dirChangeCallback.dirChange(pathName);
+    		dirChangeCallback.dirChange(pathName, dataBase.getPathTitle());
     	}
    
     	File [] files = adapter.getFiles(false);
@@ -524,7 +529,7 @@ public class PlayListView extends ListView {
 		}
     	adapter.setCursor(cursor, null);    	
     	if(dirChangeCallback != null) {
-    		dirChangeCallback.dirChange(pathName);
+    		dirChangeCallback.dirChange(pathName, dataBase.getPathTitle());
     	}
 	}
 	

@@ -350,10 +350,11 @@ public class CSDBParser {
 			 while(c.moveToNext()) {
 				 groups.put(c.getInt(0), c.getString(1));
 			 }
+			 c.close();
 		}
 		
 		if(hvsc == null) {
-			Cursor c = rdb.rawQuery("select path from files where path like '%C64Music'", null);
+			Cursor c = rdb.rawQuery("select path from files where path like '%C64Music'", null);			
 			if(c.getCount() > 0) {
 				c.moveToFirst();
 				hvsc = c.getString(0);
@@ -365,6 +366,7 @@ public class CSDBParser {
 					hvsc = "/sdcard/MODS/C64Music.zip/C64Music";
 				}
 			}
+			c.close();
 		}
 		
 		if(n == 1) {			

@@ -1,13 +1,8 @@
 package com.ssb.droidsound;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -26,7 +21,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
-import android.text.Editable;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -42,6 +36,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
 import com.ssb.droidsound.service.PlayerService;
@@ -57,13 +52,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private ImageButton fwdButton;
 	private ImageButton stopButton;
 	
-	private ImageButton searchButton;
+	private ImageButton goinfoButton;
 	
 	//private Button parentButton;
 	
 	private TextView songTitleText;
 	private TextView songComposerText;
-	private TextView songDigitsText;
 	private PlayListView playListView;
 
 	private int songPos;
@@ -99,6 +93,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private ProgressDialog progressDialog;
 
 	private boolean bcRegistered;
+
+	private ViewFlipper flipper;
+
+	private TextView songCopyrightText;
+
+	private ImageButton golistButton;
+
+	private TextView songSecondsText;
+
+	private TextView songTotalText;
+
+	private TextView songSubtunesText;
 	
 
 	
@@ -147,20 +153,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		stopButton = (ImageButton) findViewById(R.id.stop_button);
 		songTitleText = (TextView) findViewById(R.id.title_text);
 		songComposerText = (TextView) findViewById(R.id.composer_text);
-		songDigitsText = (TextView) findViewById(R.id.seconds_text);
+		songCopyrightText = (TextView) findViewById(R.id.copyright_text);
+		songSecondsText = (TextView) findViewById(R.id.seconds_text);
+		songTotalText = (TextView) findViewById(R.id.total_text);
+		songSubtunesText = (TextView) findViewById(R.id.songs_text);
+
 		playListView = (PlayListView) findViewById(R.id.play_list);
 		infoDisplay = findViewById(R.id.info_display);
 		controls = findViewById(R.id.controls);
 		//parentButton = (Button) findViewById(R.id.parent_button);
 		titleText = (TextView) findViewById(R.id.list_title);
-		searchButton = (ImageButton) findViewById(R.id.search_button);
-				
-		View panel = findViewById(R.id.panel);
-		panel.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-			}
-		});
+		goinfoButton = (ImageButton) findViewById(R.id.go_info_button);
+		golistButton = (ImageButton) findViewById(R.id.go_list_button);
+		flipper = (ViewFlipper) findViewById(R.id.flipper);
 		
 		SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		modsDir = prefs.getString("modsDir", null);
@@ -295,12 +300,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		registerForContextMenu(playListView);
 		
-		searchButton.setOnClickListener(new OnClickListener() {			
+		goinfoButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
-				onSearchRequested();
+				flipper.setDisplayedChild(1);
 			}
 		});
+		golistButton.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {
+				flipper.setDisplayedChild(0);
+			}
+		});
+		
 		/*
 		parentButton.setOnClickListener(new OnClickListener() {
 			@Override
@@ -321,7 +333,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 
 			@Override
-			public void dirChange(String dir) {
+			public void dirChange(String dir, String title) {
 				File f = new File(dir);
 				currentPath = dir;
 				
@@ -336,7 +348,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					atTop = false;
 					//parentButton.setVisibility(View.VISIBLE);
 				}
-				titleText.setText(f.getName());
+				if(title != null) {
+					titleText.setText(title);
+				} else {
+					titleText.setText(f.getName());
+				}
 			}
 		});
 		
@@ -394,14 +410,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 		
-		
-		songDigitsText.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				
-			}
-		});
-
 		
 		//SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 		currentPath = prefs.getString("currentPath", null);
@@ -535,19 +543,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		switch(what) {
 		case PlayerService.SONG_LENGTH :
 			songLength = value/1000;
-			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songTotalText.setText(String.format("%02d:%02d", songLength/60, songLength%60));
 			break;
 		case PlayerService.SONG_POS :
 			songPos = value/1000;
-			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songSecondsText.setText(String.format("%02d:%02d", songPos/60, songPos%60));
 			break;
 		case PlayerService.SONG_SUBSONG :
 			subTune = value;
-			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songSubtunesText.setText(String.format("[%02d/%02d]", subTune+1, subTuneCount));
 			break;
 		case PlayerService.SONG_TOTALSONGS :
 			subTuneCount = value;
-			songDigitsText.setText(String.format("%02d:%02d/%02d:%02d [%02d/%02d]", songPos/60, songPos%60, songLength/60, songLength%60, subTune+1, subTuneCount));
+			songSubtunesText.setText(String.format("[%02d/%02d]", subTune+1, subTuneCount));
 			break;
 		case PlayerService.SONG_STATE:
 			Log.v(TAG, String.format("State now %d", value));
@@ -560,7 +568,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				if(value == 0) {
 					songTitleText.setText("");
 					songComposerText.setText("");
-					songDigitsText.setText("00:00 [00/00]");
+					songCopyrightText.setText("");
+					songSubtunesText.setText("[00/00]");
+					songTotalText.setText("00:00");
+					songSecondsText.setText("00:00");
 				}
 			}
 			break;
@@ -579,6 +590,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case PlayerService.SONG_AUTHOR :
 			songComposerText.setText(value);
+			break;
+		case PlayerService.SONG_COPYRIGHT :
+			songCopyrightText.setText(value);
+			break;
+		case PlayerService.SONG_GAMENAME :
+			if(value != null && value.length() > 0) {
+				songCopyrightText.setText(value);
+			}
 			break;
 		}
 	}
@@ -625,6 +644,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case R.id.new_:
 			showDialog(R.string.new_);
 			break;
+		case R.id.search:
+			onSearchRequested();
+			break;		
 		}		
 		return true;
 	}

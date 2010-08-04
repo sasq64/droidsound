@@ -143,11 +143,17 @@ public class Playlist {
 		} catch (IOException e) {
 		}
 		
+		String s = file.getPath();
 		if(minfo != null) {
-			return String.format("%s\t%s\t%s", file.getPath(), minfo.title, minfo.composer);
-		} else {
-			return file.getPath();
+
+			if(minfo.title != null) {
+				s = s + "\t" + minfo.title;
+				if(minfo.composer != null) {
+					s = s + "\t" + minfo.composer;
+				}
+			}
 		}
+		return s;
 	}
 	
 	void add(File file) {
@@ -176,9 +182,9 @@ public class Playlist {
 		
 		if(title != null) {
 			line = line + "\t" + title;
-		}
-		if(composer != null) {
-			line = line + "\t" + composer;
+			if(composer != null) {
+				line = line + "\t" + composer;
+			}
 		}
 
 		// Log.v(TAG, "Adding ## " + line);

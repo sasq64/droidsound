@@ -1,18 +1,24 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
     android:layout_width="fill_parent" android:layout_height="fill_parent" >
-<TextView android:text="@string/name" android:textSize="10dp" android:textColor="#a0a0a0"
-	android:layout_width="wrap_content" android:layout_height="wrap_content" 
-	android:shadowColor="#ff000000" android:shadowDx="4" android:shadowDy="4"/>
-<TextView android:id="@+id/title_text" android:textSize="20dp" android:textColor="#ffffff"
-	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="2dp" />
-<TextView android:text="@string/composer" android:textSize="10dp" android:textColor="#a0a0a0"
-	android:layout_width="wrap_content" android:layout_height="wrap_content"
-	android:shadowColor="#ff000000" />
-<TextView android:id="@+id/composer_text" android:textColor="#ffffff" android:textSize="20dp"
-	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_margin="2dp" />
-<TextView android:id="@+id/seconds_text" android:textSize="16dp" android:textColor="#00ff00"
- 	android:text="00:00 [01/01]" android:background="#000000" android:padding="4px" android:typeface="monospace"
-	android:layout_width="wrap_content" android:layout_height="wrap_content"  android:layout_marginTop="4dp"
-	android:layout_gravity="center_horizontal" android:layout_marginBottom="16dp"
-	 />
+	<TextView android:text="@string/title" style="@style/InfoTitle"/>
+	<TextView android:id="@+id/title_text" style="@style/InfoText"/>
+	<TextView android:text="@string/composer" style="@style/InfoTitle"/>
+	<TextView android:id="@+id/composer_text" style="@style/InfoText"/>
+	<TextView android:text="@string/copyright" style="@style/InfoTitle"/>
+	<TextView android:id="@+id/copyright_text" style="@style/InfoText"/>
+	<TextView style="@style/InfoTitle"/>
+
+	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
+	 android:layout_gravity="center_horizontal" > 
+		<com.ssb.droidsound.FontTextView android:id="@+id/seconds_text" style="@style/LEDText" font="led" android:text="00:00"
+		android:layout_width="96dp" />
+		<com.ssb.droidsound.FontTextView android:text="/ " style="@style/LEDText" font="led" />
+		<com.ssb.droidsound.FontTextView android:id="@+id/total_text" style="@style/LEDText" font="led" android:text="00:00" 
+		android:layout_width="96dp"/>		
+	</LinearLayout>	
+	
+	<com.ssb.droidsound.FontTextView android:id="@+id/songs_text"  style="@style/LEDText" font="led"
+		android:layout_gravity="center_horizontal" android:text="[01/01]" />
+	
+	
 </LinearLayout>

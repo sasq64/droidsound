@@ -24,8 +24,9 @@
 <string name="clearing_database">Clearing database</string>
 <string name="database_busy">Database busy!</string>
 <string name="scanning">Scanning</string>
-<string name="name">Name</string>
+<string name="title">Title</string>
 <string name="composer">Composer</string>
+<string name="copyright">Copyright</string>
 <string name="upgrade_db">Database format has changed. Old database will be dropped and recreated.</string>
 <string name="add_to_plist">Add to playlist</string>
 <string name="create_playlist">Create playlist</string>

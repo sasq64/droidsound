@@ -2,9 +2,9 @@
     android:layout_width="wrap_content" android:layout_height="fill_parent"
     android:layout_gravity="center_horizontal"
     >
-<ImageButton android:id="@+id/back_button" android:background="@drawable/back_button" android:layout_width="58dp" android:layout_height="58dp" android:scaleType="fitCenter" />
-<ImageButton android:id="@+id/play_button" android:background="@drawable/play_button" android:layout_width="58dp" android:layout_height="58dp" android:scaleType="fitCenter" />
-<ImageButton android:id="@+id/stop_button" android:background="@drawable/stop_button" android:layout_width="58dp" android:layout_height="58dp" android:scaleType="fitCenter" />
-<ImageButton android:id="@+id/fwd_button" android:background="@drawable/fwd_button" android:layout_width="58dp" android:layout_height="58dp" android:scaleType="fitCenter" />
+<ImageButton android:id="@+id/back_button" android:background="@drawable/back_button" style="@style/Button" android:scaleType="fitCenter" />
+<ImageButton android:id="@+id/play_button" android:background="@drawable/play_button" style="@style/Button" android:scaleType="fitCenter" />
+<ImageButton android:id="@+id/stop_button" android:background="@drawable/stop_button" style="@style/Button" android:scaleType="fitCenter" />
+<ImageButton android:id="@+id/fwd_button" android:background="@drawable/fwd_button" style="@style/Button" android:scaleType="fitCenter" />
 
 </LinearLayout>
