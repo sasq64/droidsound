@@ -67,13 +67,12 @@ public class SettingsActivity extends ListActivity {
 			LayoutInflater inflater = ((Activity)context).getLayoutInflater();
 
 			if(convertView == null) {
-				convertView = inflater.inflate(R.layout.settings_item, null);
+				/*convertView = inflater.inflate(R.layout.settings_item, null);
 				ViewGroup vg = (ViewGroup)convertView;
 
 				convertView.findViewById(R.id.text1);
 				convertView.findViewById(R.id.text2);
-				convertView.findViewById(R.id.check);
-				
+				convertView.findViewById(R.id.check);*/
 			}
 			
 			return convertView;
@@ -92,7 +91,7 @@ public class SettingsActivity extends ListActivity {
 			settings.add(new Setting(setting_strings[i], setting_strings[i+1], 0));
 		}
 
-		SettingsAdapter adapter = new SettingsAdapter();		
+		SettingsAdapter adapter = new SettingsAdapter(this);		
 		setListAdapter(adapter);
 		
 	}
