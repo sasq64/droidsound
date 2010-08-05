@@ -190,11 +190,7 @@ public class FileIdentifier {
 		}
 		int extno = i;		
 		//Log.v(TAG, String.format("Ext %s -> Format %02x", ext, extno));
-		
-		if(extno < 0) {
-			return null;
-		}
-		
+
 		MusicInfo info = new MusicInfo();
 		info.type = extno;
 

@@ -288,6 +288,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songDatabase.setActivePlaylist(mf);
 		}
 		
+		mf = new File(modsDir, "Favorites.lnk");
+		mf.delete();
 		
 		playListView.setDatabase(songDatabase);
 		

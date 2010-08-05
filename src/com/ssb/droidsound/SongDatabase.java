@@ -222,51 +222,6 @@ public class SongDatabase implements Runnable {
 		}
 		isReady = true;
 	}
-
-/*
-	private boolean tryLoad(DroidSoundPlugin plugin, File file, ContentValues values) throws IOException {
-		Object songRef = plugin.loadInfo(file);
-		if(songRef != null) {
-			String title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
-			String author = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
-			String copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
-			String game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
-			String type = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
-			int length = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
-
-			values.put("TITLE", title);
-			values.put("COMPOSER", author);
-			values.put("COPYRIGHT", copyright);
-			values.put("FORMAT", type);
-			values.put("LENGTH", length);
-			values.put("PATH", file.getParentFile().getPath());
-			values.put("FILENAME", file.getName());
-			
-			plugin.unload(songRef);
-			return true;
-		}
-		return false;
-	}
-	
-	private boolean checkModule(File file, ContentValues values) throws IOException {
-		List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
-		for(int i = 0; i < plugins.length; i++) {
-			if(plugins[i].canHandle(file.getName())) {
-				list.add(plugins[i]);
-				Log.v(TAG, String.format("%s handled by %d", file.getName(), i));
-			}
-		}
-
-		for(DroidSoundPlugin plugin : list) {
-			Log.v(TAG, "Trying " + plugin.getClass().getName());
-				if(tryLoad(plugin, file, values)) {
-					return true;
-				}
-		}
-		
-		return false;
-	}
-*/	
 	
 	private boolean scanZip(File zipFile) throws ZipException, IOException {
 		
@@ -281,8 +236,8 @@ public class SongDatabase implements Runnable {
 		NativeZipFile zfile = new NativeZipFile(zipFile);
 		Log.v(TAG, "ENTRY");
 		
-		String baseName = zipFile.getPath();
-		// Basename = /sdcard/MODS/C64Music.zip
+		String baseName = zipFile.getPath() + "/";
+		// Basename = /sdcard/MODS/C64Music.zip/
 
 		Log.v(TAG, "ENUM");
 		Enumeration<? extends ZipEntry> entries = zfile.entries();
@@ -298,6 +253,11 @@ public class SongDatabase implements Runnable {
 			reportPeriod = 100;
 		}
 
+		ContentValues values = new ContentValues();
+		values.put("LENGTH", 0);
+		values.put("TYPE", TYPE_FILE);
+
+		
 		while(entries.hasMoreElements()) {
 			
 			if(stopScanning) {
@@ -310,14 +270,12 @@ public class SongDatabase implements Runnable {
 			String n = ze.getName();			
 			int slash = n.lastIndexOf('/');				
 			String fileName = n.substring(slash+1);
-			String path = baseName + "/" + n.substring(0, slash);
+			String path = baseName + n.substring(0, slash);
 
 			if(fileName.equals("")) {
 				pathSet.add(path);
 			} else {
-					
-				ContentValues values = new ContentValues();
-				
+									
 				InputStream is = zfile.getInputStream(ze);
 				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, is);
 				is.close();
@@ -327,10 +285,8 @@ public class SongDatabase implements Runnable {
 					values.put("COMPOSER", info.composer);
 					values.put("COPYRIGHT", info.copyright);
 					values.put("FORMAT", info.format);
-					values.put("LENGTH", 0);
 					values.put("PATH", path);
 					values.put("FILENAME", fileName);
-					values.put("TYPE", TYPE_FILE);
 					scanDb.insert("FILES", "PATH", values);
 				}
 
@@ -339,15 +295,6 @@ public class SongDatabase implements Runnable {
 					isReady = false;
 					if(scanCallback != null) {
 						scanCallback.notifyScan(null, count * 100 / total);
-					}
-					if(scanDb.yieldIfContendedSafely()) {
-						Log.v(TAG, "We yieleded!!!");
-						try {
-							Thread.sleep(500);
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
 					}
 				}
 					
@@ -360,8 +307,10 @@ public class SongDatabase implements Runnable {
 
 		Log.v(TAG, String.format("Adding %d paths", pathSet.size()));
 		
+		values.clear();
+		values.put("TYPE", TYPE_DIR);
 		for(String s : pathSet) {
-			ContentValues values = new ContentValues();
+			//ContentValues values = new ContentValues();
 			
 			int slash = s.lastIndexOf('/');
 			String fileName = s.substring(slash+1);
@@ -369,7 +318,6 @@ public class SongDatabase implements Runnable {
 			
 			values.put("PATH", path);
 			values.put("FILENAME", fileName);
-			values.put("TYPE", TYPE_DIR);
 			scanDb.insert("FILES", "PATH", values);
 		}
 		
@@ -980,9 +928,16 @@ public class SongDatabase implements Runnable {
 				return cb.getCursorFromPath(pathName.substring(colon+1), rdb);
 			}
 		}
+		
+		String path = file.getParent();
+		String fname = file.getName();
+		
+		if(path == null || fname == null) {
+			return null;
+		}
 	
 		Log.v(TAG, "BEGIN");
-		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { file.getParent(), file.getName() }, null, null, "TYPE, FILENAME", "1000");
+		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { path, fname }, null, null, "TYPE, FILENAME", "1000");
 		if(c != null) {
 			if(c.moveToFirst()) {
 				pathTitle = c.getString(0);
@@ -1011,54 +966,7 @@ public class SongDatabase implements Runnable {
 		stopScanning = true;
 		
 	}
-/*
-	public void addFavorite(File file) {
-		SQLiteDatabase db = getWritableDatabase();
-		if(db != null) {
-			ContentValues values = new ContentValues();
-			values.put("LIST", 0);			
-			int idx =-1;
-			values.put("PATH", file.getParent());
-			values.put("FILENAME", file.getName());			
-			//File f = new File(path, cursor.getString(cursor.getColumnIndex("FILENAME")));
-			Cursor cursor = db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { file.getParent(), file.getName() }, null, null, null);
-			Log.v(TAG, String.format("File '%s' Count %d", file.getPath(), cursor.getCount()));
-			if(cursor.moveToFirst()) {
-				idx = cursor.getColumnIndex("TITLE");
-				if(idx >= 0)
-					values.put("TITLE", cursor.getString(idx));
-				idx = cursor.getColumnIndex("COMPOSER");
-				if(idx >= 0)
-					values.put("COMPOSER", cursor.getString(idx));
-				idx = cursor.getColumnIndex("COPYRIGHT");
-				if(idx >= 0)
-					values.put("COPYRIGHT", cursor.getString(idx));
-				idx = cursor.getColumnIndex("FORMAT");
-				if(idx >= 0)
-					values.put("FORMAT", cursor.getString(idx));
-				db.insert("LINKS","PATH", values);
-			}
-			db.close();
-		}
-	}
-	
-	public void removeFavorite(File file) {
-		SQLiteDatabase db = getWritableDatabase();
-		Log.v(TAG, String.format("Removing '%s'", file.getPath()));
-		if(db != null) {
-			db.delete("LINKS", "LIST=? AND PATH=? AND FILENAME=?", new String [] { "0", file.getParent(), file.getName() } );
-			db.close();
-		}
-	}
-	
-	public void clearFavorites() {
-		SQLiteDatabase db = getWritableDatabase();
-		if(db != null) {
-			db.delete("LINKS", "LIST=?", new String [] { "0" } );
-			db.close();
-		}
-	}
-*/
+
 	public boolean isScanning() {
 		// TODO Auto-generated method stub
 		return scanning;

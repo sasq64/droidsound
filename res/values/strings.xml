@@ -5,7 +5,7 @@
 <string name="sdcard_not_found">Could not access sdcard!</string>
 <string name="search_hint">Search title</string>
 <string name="scan_db">Rescan database</string>
-<string name="about_droidsound">"Droidsound beta\nBy sasq64@gmail.com"</string>
+<string name="about_droidsound">"Droidsound beta 4\nBy sasq64@gmail.com"</string>
 <string name="recreate_confirm">This will recreate the entire database. It may take a long time. Are you absolutely sure?</string>
 <string-array name="scan_opts">
     <item>Full</item>
@@ -37,4 +37,29 @@
 	<item>Folder</item>
 	<item>Playlist</item>
 </string-array>
+
+<string-array name="settings">
+	<item>Index unknown extensions</item>
+	<item>Scan files with extensions not matching any plugin</item>
+	<item>index</item>
+	<item>Silence detection</item>
+	<item>Go to next song when silence is detected</item>
+	<item>silence</item>
+	<item>Database</item>
+	<item>Database options</item>
+	<item></item>
+</string-array>
+
+<string-array name="db_settings">
+	<item>Backup Database</item>
+	<item>Copy database to sdcard</item>
+	<item></item>	
+	<item>Restore Database</item>
+	<item>Restore database from sdcard</item>
+	<item></item>
+	<item>Database location</item>
+	<item>Move database to sdcard</item>
+	<item></item>
+</string-array>
+
 </resources>
