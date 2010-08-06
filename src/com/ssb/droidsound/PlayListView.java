@@ -351,24 +351,11 @@ public class PlayListView extends ListView {
 				
 	}
 	
-	public static interface DirChangeCallback {
-		void dirChange(String dir, String title);
-	}
-
-	private DirChangeCallback dirChangeCallback;
-	
-	public void setOnDirChangeCallback(DirChangeCallback cb) {
-		dirChangeCallback = cb;
-	}
-	
-    
+		
 	private PlayListAdapter adapter;
-	private PlayerServiceConnection mPlayer;
-	private SongDatabase dataBase;	
 	private File selectedFile;
-	private String pathName;
 	private String selectedName;
-
+	
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		
@@ -394,104 +381,13 @@ public class PlayListView extends ListView {
 			}
 		}
 				
-		//Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/topaz_plus1200.ttf");
-		
 		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
-		
-		setOnItemLongClickListener(new OnItemLongClickListener() {
-			@Override
-			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-				return false;
-			}
-		});
-				
-        setOnItemClickListener(new OnItemClickListener() {
 
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {				
-				//mPlayer.playList(names, position-1);
-				FileInfo fi = (FileInfo) adapter.getItem(position);
-				if(fi.file != null) {
-					selectedFile = fi.file;
-					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
-						setDirectory(fi.file.getPath());
-					} else {
-						int index = 0;
-						File [] files = adapter.getFiles(true); 
-						String [] names = new String [files.length];
-						for(int i=0; i<files.length; i++) {
-							if(files[i].equals(fi.file)) {
-								index = i;
-							}
-							names[i] = files[i].getPath();
-						}
-						mPlayer.playList(names, index);
-						adapter.notifyDataSetChanged();
-						//adapter.setSelectedPosition(position);
-					}
-				}
-			}
-		});
 	}
 
-    public void setDatabase(SongDatabase db) {
-    	dataBase = db;
-    }
-
-    public void setDirectory(String parent) {
-    	
-    	//int bi = parent.indexOf(baseDir);
-    	//if(bi >= 0) {
-    	//	parent = parent.substring(bi);
-    	
-    	Playlist.flushAll();
-
-
-    	pathName = parent;    	
-    	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
-    	adapter.setSelectedFile(selectedName);
-    	if(dirChangeCallback != null) {
-    		dirChangeCallback.dirChange(pathName, dataBase.getPathTitle());
-    	}
-    	
-    	//adapter.setHasParent(!pathName.equals(baseDir));
-    }
-    
-    public void gotoParent() {
-    	String s = pathName;
-
-    	pathName = new File(pathName).getParent();
-    	if(pathName == null) {
-    		return;
-    	}
-    	adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
-
-    	if(dirChangeCallback != null) {
-    		dirChangeCallback.dirChange(pathName, dataBase.getPathTitle());
-    	}
-   
-    	File [] files = adapter.getFiles(false);
-    	Log.v(TAG, String.format("PARENT from %s", s));
-		for(int i=0; i<files.length; i++) {
-			//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), s));
-			if(s.equals(files[i].getPath())) {
-				setSelection(i);
-				break;
-			}
-		}
-    }
-    
-    public String getDirectory() {
-    	return pathName;
-    }
-
-    public void setPlayer(PlayerServiceConnection player) {
-    	mPlayer = player;
-    }
-
 	public void rescan() {
-		adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
+		//adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
 		adapter.notifyDataSetChanged();
 		adapter.setSelectedFile(selectedName);
 	}
@@ -513,26 +409,6 @@ public class PlayListView extends ListView {
 		adapter.notifyDataSetChanged();
 	}
 
-	public void setBaseDir(String modDir) {
-		setDirectory(modDir);
-	}
-
-	public void search(String query) {
-		boolean csdb = false;
-		if(pathName.toUpperCase().contains("/CSDB.DUMP")) {
-			csdb = true;
-		}  		
-		Cursor cursor = dataBase.search(query, csdb);
-
-		if(!pathName.endsWith("/SEARCH")) {
-			pathName = pathName + "/SEARCH";
-		}
-    	adapter.setCursor(cursor, null);    	
-    	if(dirChangeCallback != null) {
-    		dirChangeCallback.dirChange(pathName, dataBase.getPathTitle());
-    	}
-	}
-	
 	public void close() {
 		adapter.close();
 	}
@@ -541,8 +417,20 @@ public class PlayListView extends ListView {
 		return adapter.getCursor(position);		
 	}
 	
+	public String getPath() {
+		return adapter.pathName;
+	}
+	
 	public File getFile(int position) {
 		return adapter.getFile(position);
+	}
+	
+	public void setCursor(Cursor cursor, String dirName) {
+		adapter.setCursor(cursor, dirName);
+	}
+
+	public File[] getFiles(boolean b) {
+		return adapter.getFiles(b);
 	}
 	
 }

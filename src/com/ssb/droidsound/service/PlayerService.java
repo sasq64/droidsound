@@ -106,7 +106,7 @@ public class PlayerService extends Service {
 					info[SONG_SUBSONG] = currentSongInfo.startTune;
 					info[SONG_GAMENAME] = currentSongInfo.game;
 					info[SONG_STATE] = 1;
-					performCallback(SONG_FILENAME, SONG_AUTHOR, SONG_TITLE, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
