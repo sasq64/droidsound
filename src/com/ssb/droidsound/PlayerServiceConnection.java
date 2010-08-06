@@ -41,12 +41,18 @@ public class PlayerServiceConnection implements ServiceConnection {
 			}
 		}
 	};
+	private boolean bound;
 	
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
 		mService = IPlayerService.Stub.asInterface(service);
-		Log.v(TAG, "Service Connected");
-		
+		if(bound) {
+			Log.v(TAG, "Service Connected");
+		} else {
+			Log.v(TAG, "Service Connected, but was unbound in the meantime");
+			return;
+		}
+
 		try {
 			mService.registerCallback(mCallback, 0);
 		} catch (RemoteException e) {
@@ -68,6 +74,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		callback = cb;
 		Log.v(TAG, "binding");
 		Intent i = new Intent(activity, PlayerService.class);
+		bound = true;
 		activity.startService(i);
 		activity.bindService(i, this, Context.BIND_AUTO_CREATE);        		
 	}
@@ -75,6 +82,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 	public void unbindService(Activity activity) {
 		Log.v(TAG, "Unbinding");
 		callback = null;
+		bound = false;
 		if(mService != null) {
 			try {
 				mService.unRegisterCallback(mCallback);
@@ -84,6 +92,14 @@ public class PlayerServiceConnection implements ServiceConnection {
 		}
 		activity.unbindService(this);
 	}
+	/*
+	public int getInt(int what) {
+		try {
+			return mService.getInt(what);
+		} catch (RemoteException e) {
+			return -1;
+		}
+	} */
 
 	public boolean playMod(String name) {
 		if(mService == null) {
@@ -97,6 +113,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 			return false;
 		}
 	}
+
 	public boolean playList(java.lang.String[] names, int startIndex) {
 		try {
 			return mService.playList(names, startIndex);

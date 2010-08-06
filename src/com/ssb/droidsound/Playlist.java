@@ -176,10 +176,9 @@ public class Playlist {
 		String composer = c.getString(c.getColumnIndex("COMPOSER"));
 		String filename = c.getString(c.getColumnIndex("FILENAME"));
 		String path = c.getString(c.getColumnIndex("PATH"));
-		
+
 		String line = new File(path, filename).getPath();
-		
-		
+
 		if(title != null) {
 			line = line + "\t" + title;
 			if(composer != null) {

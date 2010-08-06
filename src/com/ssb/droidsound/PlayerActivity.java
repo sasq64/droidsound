@@ -101,26 +101,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private boolean bcRegistered;
 
 	private ViewFlipper flipper;
-
 	private TextView songCopyrightText;
-
 	private ImageButton golistButton;
-
 	private TextView songSecondsText;
-
 	private TextView songTotalText;
-
 	private TextView songSubtunesText;
-
 	private PlayListView currentPlaylistView;
-
 	private TextToSpeech textToSpeech;
-
 	private String songTitle;
-
 	private String songComposer;
-	
-
 	
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## Activity finalize");
@@ -560,7 +549,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			registerReceiver(receiver, filter);
 			bcRegistered = true;
 		}
-		
+
 		if(!songDatabase.isScanning() && progressDialog != null) {
 			progressDialog.cancel();
 			progressDialog = null;
@@ -588,6 +577,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	protected void onDestroy() {
 		super.onDestroy();
 
+		if(textToSpeech != null) {
+			textToSpeech.shutdown();
+		}
+		
 		if(playListView != null) {
 			playListView.close();
 			SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);

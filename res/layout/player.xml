@@ -1,5 +1,5 @@
 
-<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+<com.ssb.droidsound.FixedViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/flipper"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content"
@@ -41,4 +41,4 @@
 		
 	<include layout="@layout/info" />
 
-</ViewFlipper>
+</com.ssb.droidsound.FixedViewFlipper>
