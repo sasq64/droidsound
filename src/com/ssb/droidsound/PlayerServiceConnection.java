@@ -202,5 +202,17 @@ public class PlayerServiceConnection implements ServiceConnection {
 			e.printStackTrace();
 		}
 	}
+	
+	public String [] getSongInfo() {
+		try {
+			return mService.getSongInfo();
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	
 
 }

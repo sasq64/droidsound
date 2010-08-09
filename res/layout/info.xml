@@ -3,6 +3,8 @@
 
 	<TextView android:text="@string/info" style="@style/InfoTitle"/>
 	<TextView android:id="@+id/info_text"
+		android:scrollbars="vertical"
+		android:maxLines="100"
 		android:layout_width="fill_parent" android:layout_height="fill_parent"
 		android:layout_weight="1.0"
 	/>

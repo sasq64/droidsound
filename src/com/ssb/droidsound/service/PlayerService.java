@@ -49,6 +49,8 @@ public class PlayerService extends Service {
 	public static final int SONG_TOTALSONGS = 10;
 	
 	public static final int SONG_STATE = 11;
+	
+	public static final int SONG_DETAILS = 12;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
@@ -480,6 +482,12 @@ public class PlayerService extends Service {
 		public void playPrev() throws RemoteException {
 	    	userInterferred = false;
 			playPrevSong();
+		}
+
+		@Override
+		public String[] getSongInfo() throws RemoteException {
+			// TODO Auto-generated method stub
+			return currentSongInfo.details;
 		}
 
 		};

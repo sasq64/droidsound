@@ -1,0 +1,20 @@
+<LinearLayout android:orientation="horizontal" xmlns:android="http://schemas.android.com/apk/res/android" 
+	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
+		
+	<LinearLayout android:orientation="vertical"
+			android:layout_weight="1.0"
+		android:layout_width="wrap_content" android:layout_height="fill_parent" android:background="#000000" >
+		<TextView android:text="@string/info" style="@style/InfoTitle"/>
+		<TextView android:id="@+id/info_text"
+			android:layout_width="fill_parent" android:layout_height="fill_parent"
+			android:layout_weight="1.0"
+		/>
+	</LinearLayout>
+
+	<FrameLayout
+		android:layout_weight="1.0"
+	    android:layout_width="wrap_content" android:layout_height="fill_parent" 
+	    android:id="@+id/controls">
+		<include layout="@layout/controls" />
+	</FrameLayout>
+</LinearLayout>

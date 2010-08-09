@@ -66,7 +66,8 @@ public class Player implements Runnable {
 		String game;
 		int length;
 		int subTunes;
-		int startTune;		
+		int startTune;
+		public String[] details;		
 	};
 	
 	private Handler mHandler;
@@ -304,7 +305,7 @@ public class Player implements Runnable {
 				currentSong.subTunes = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_SUBTUNES);
 				currentSong.startTune = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_STARTTUNE);
 				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
-				
+				currentSong.details = currentPlugin.getDetailedInfo(songRef);
 				
 				if(currentSong.title == null || currentSong.title.equals("")) {
 					currentSong.title = currentSong.game;
@@ -475,10 +476,10 @@ public class Player implements Runnable {
 		target.length = currentSong.length;
 		target.subTunes = currentSong.subTunes;
 		target.startTune = currentSong.startTune;
+		target.details = currentSong.details;
 		return true;
 	}
 	
-
 	public void stop() {		
 		synchronized (cmdLock) {
 			command = Command.STOP;

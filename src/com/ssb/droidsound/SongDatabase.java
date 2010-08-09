@@ -950,7 +950,9 @@ public class SongDatabase implements Runnable {
 		if(pathName == null || !isReady) {
 			return null;
 		}
-				
+
+		pathTitle = null;
+		
 		String upath = pathName.toUpperCase();
 		int dot = pathName.lastIndexOf('.');
 		String ext = "";

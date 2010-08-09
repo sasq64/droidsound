@@ -15,6 +15,8 @@ interface IPlayerService {
 	boolean seekTo(int msec);
 	void stop();
 	
+	String [] getSongInfo();
+	
 	void registerCallback(IPlayerServiceCallback cb, int flags);
 	void unRegisterCallback(IPlayerServiceCallback cb);
 }

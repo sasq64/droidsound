@@ -35,7 +35,7 @@ jstring NewString(JNIEnv *env, const char *str)
 	char *ptr = temp;
 	while(*str) {
 		char c = *str++;
-		*ptr++ = (c < 0x7f) && (c >= 0x20) ? c : '?';
+		*ptr++ = ((c < 0x7f) && (c >= 0x20)) || c == 0xa ? c : '?';
 	}
 	*ptr++ = 0;
 	jstring j = env->NewStringUTF(temp);
@@ -284,8 +284,10 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getString
 	case INFO_INSTRUMENTS:
 	{
 		char instruments[2048];
-		int instr = ModPlug_NumInstruments(info->mod);
-		for(int i=0; i<intr; i++) {
+		char *ptr = instruments;
+		int n = ModPlug_NumInstruments(info->mod);
+		__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "%d instruments", n);
+		for(int i=0; i<n; i++) {
 			ModPlug_InstrumentName(info->mod, i, ptr);
 			ptr += strlen(ptr);
 			*ptr++ = 0xa;

@@ -74,6 +74,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		
 		String[] info = new String [4];
 		String instruments = N_getStringInfo((Long)song, 100);
+		Log.v(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo((Long)song, 101);
 		info[0] = "Channels";
 		info[1] = Integer.toString(channels);
