@@ -5,14 +5,28 @@
 		android:orientation="horizontal" android:layout_alignParentTop="true"
 		android:background="#000080"
 		android:id="@+id/title_bar" >
-		<TextView android:id="@+id/list_title"
-			android:layout_width="wrap_content"
-		    android:layout_height="wrap_content"
-		    android:textSize="20dp"
-		    android:textColor="#FFFFFFFF"
-		    android:layout_margin="4dp"
-		    android:layout_weight="1.0"
-		    android:singleLine="true" />
+		
+		<LinearLayout android:orientation="vertical" android:layout_weight="1.0"		
+		android:layout_width="wrap_content" android:layout_height="wrap_content" >		
+			<TextView android:id="@+id/list_title"
+				android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textSize="22dp"
+			    android:textStyle="bold"
+			    android:textColor="#FFFFFFFF"
+			    android:layout_marginTop="4dp"
+			    android:layout_marginLeft="4dp"
+			    android:singleLine="true" />
+			<TextView android:id="@+id/list_subtitle"
+				android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:textSize="14dp"
+			    android:layout_marginLeft="4dp"
+			    android:textColor="#FFFFFFFF"			    
+			    android:layout_weight="1.0"
+			    android:ellipsize="start"
+			    android:singleLine="true" />
+		</LinearLayout>
 		
 		<ImageButton android:id="@+id/search_button" android:src="@android:drawable/ic_menu_search"
 			 android:scaleType="fitCenter" style="@style/Button" android:visibility="gone" />
@@ -25,7 +39,7 @@
 	<com.ssb.droidsound.FixedViewFlipper 
 		android:id="@+id/flipper"
 	    android:layout_width="fill_parent"
-	    android:layout_height="wrap_content"
+	    android:layout_height="fill_parent"
 	    android:inAnimation="@anim/in_from_right"
 	    android:outAnimation="@anim/out_to_left" >
 		

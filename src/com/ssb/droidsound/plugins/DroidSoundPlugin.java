@@ -67,6 +67,19 @@ public abstract class DroidSoundPlugin {
 		return false;
 	}
 
+	// Should return information in string pairs, as TITLE0, TEXT0, TITLE1, TEXT1 etc
+	// Some titles are predfined and excpect certain data
+	// Unknown titles are presented as-is in detailed song info
+	// Known TITLES:
+	// "Instruments" - Instrument names, one instrument per line
+	// "Info" - STIL info for C64, otherwise presented normally
+	// "Channels" - Number of channels
+	// "Copyright" - Same as INFO_COPYRIGHT
+	// "Game" - Same as INFO_GAME
+	public String [] getDetailedInfo(Object song) {
+		return null;
+	}
+	
 	public abstract String getStringInfo(Object song, int what);
 	public abstract int getIntInfo(Object song, int what);
 	

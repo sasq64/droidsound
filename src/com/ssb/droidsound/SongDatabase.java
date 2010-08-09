@@ -8,12 +8,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 
@@ -53,16 +55,29 @@ public class SongDatabase implements Runnable {
 	
 	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 
-	private Map<String, PathCallback> pathCallbacks = new HashMap<String, PathCallback>();
+	//private Map<String, PathCallback> pathCallbacks = new HashMap<String, PathCallback>();
 	private ScanCallback scanCallback;
 	
-	public static interface PathCallback {
-		Cursor getCursorFromPath(String path, SQLiteDatabase db);
-	}
+	//public static interface PathCallback {
+//		Cursor getCursorFromPath(String path, SQLiteDatabase db);
+	//}
 
 	public static interface ScanCallback {
 		void notifyScan(String path, int percent);
 	}
+	
+	public static interface DataSource {
+
+		boolean parseDump(File dump, SQLiteDatabase scanDb, ScanCallback scanCallback);
+		String getTitle();
+		Cursor getCursorFromPath(File file, SQLiteDatabase db);
+		String getPathTitle(File file);
+		void createIndex(int mode, SQLiteDatabase db);
+		Cursor search(String query, String fromPath, SQLiteDatabase db);
+	}
+	
+	private Map<String, DataSource> dbsources = new HashMap<String, DataSource>();
+	
 	
 	private SQLiteDatabase scanDb;
 	private SQLiteDatabase rdb;
@@ -105,6 +120,10 @@ public class SongDatabase implements Runnable {
 	protected static final int MSG_SCAN = 0;
 	protected static final int MSG_BACKUP = 1;
 	protected static final int MSG_RESTORE = 2;
+
+	public static final int INDEX_NONE = 0;
+	public static final int INDEX_BASIC = 1;
+	public static final int INDEX_FULL = 2;
 	
 	public SongDatabase(Context ctx) {		
 		context = ctx;		
@@ -113,6 +132,10 @@ public class SongDatabase implements Runnable {
 	
 	private void doBackup() {
 		
+	}
+	
+	public void registerDataSource(String dumpname, DataSource ds) {
+		dbsources.put(dumpname, ds);
 	}
 	
 	@Override
@@ -228,6 +251,42 @@ public class SongDatabase implements Runnable {
 		}
 		isReady = true;
 	}
+	
+	private void createIndex(int mode) {
+
+		SQLiteDatabase db = getWritableDatabase();
+		
+		if(scanCallback != null) {
+			scanCallback.notifyScan("Updating indexes", 0);
+		}
+		
+		switch(mode) {
+		case INDEX_NONE:
+			db.execSQL("DROP INDEX IF EXISTS fileindex ;");		
+			db.execSQL("DROP INDEX IF EXISTS titleindex ;");
+			db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
+			break;
+		case INDEX_BASIC:
+			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
+			db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
+			db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
+			break;
+		case INDEX_FULL:
+			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
+			db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
+			db.execSQL("CREATE INDEX IF NOT EXISTS filenameindex ON FILES (FILENAME) ;");
+			break;
+		}
+		
+		for(Entry<String, DataSource> ds : dbsources.entrySet()) {			
+			ds.getValue().createIndex(mode, db);			
+		}
+		
+		if(scanCallback != null) {
+			scanCallback.notifyScan(null, -1);
+		}
+	}
+	
 	
 	private boolean scanZip(File zipFile) throws ZipException, IOException {
 		
@@ -435,7 +494,8 @@ public class SongDatabase implements Runnable {
 			// Close cursor (important since we call ourselves recursively below)
 			fileCursor.close();
 			fileCursor = null;
-			File csdb = null;
+			//File csdb = null;
+			List<File> foundDumps = new ArrayList<File>();
 	
 			if(files.size() > 0 || delDirs.size() > 0 || delFiles.size() > 0) {
 
@@ -475,11 +535,16 @@ public class SongDatabase implements Runnable {
 							
 							String fn = f.getName();
 							int end = fn.length();
-							
-							if(fn.toUpperCase().equals("CSDB.DUMP")) {
+														
+							if(dbsources.containsKey(fn.toUpperCase())) {								
+								foundDumps.add(f);
+								values = null;
+							}							
+							else
+							/*if(fn.toUpperCase().equals("CSDB.DUMP")) {
 								csdb = f;
 								values = null;
-							} else
+							} else */
 							if(fn.toUpperCase().endsWith(".ZIP")) {
 								Log.v(TAG, String.format("Found zipfile (%s)", f.getPath()));
 								zipFiles.add(f);
@@ -589,6 +654,25 @@ public class SongDatabase implements Runnable {
 				}
 			}
 			
+			for(File dump : foundDumps) {
+				DataSource ds = dbsources.get(dump.getName().toUpperCase());
+				isReady = false;
+				if(scanCallback != null) {
+					scanCallback.notifyScan(dump.getPath(), 0);
+				}
+				if(ds.parseDump(dump, scanDb, scanCallback)) {
+					ContentValues values = new ContentValues();
+					values.put("PATH", dump.getParentFile().getPath());
+					values.put("FILENAME", dump.getName());
+					values.put("TYPE", TYPE_ARCHIVE);
+					values.put("TITLE", ds.getTitle());
+					Log.v(TAG, String.format("Inserting %s from dump (%s)", ds.getTitle(), dump.getPath()));
+					scanDb.insert("FILES", "PATH", values);
+					//db.setTransactionSuccessful();
+					//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
+				}
+			}
+			/*
 			if(csdb != null) {
 				isReady = false;
 				if(scanCallback != null) {
@@ -607,7 +691,7 @@ public class SongDatabase implements Runnable {
 					//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
 				}
 				csdb = null;
-			}
+			} */
 			
 			if(stopScanning) {
 				return;
@@ -798,7 +882,7 @@ public class SongDatabase implements Runnable {
 		//rdb.close();
 	}
 
-	public Cursor search(String query, boolean csdb) {
+	public Cursor search(String query, String fromPath) {
 		
 		if(!isReady) {
 			return null;
@@ -808,9 +892,20 @@ public class SongDatabase implements Runnable {
 			rdb = getReadableDatabase();
 		}
 		
-		if(csdb) {
-			return CSDBParser.search(rdb, query);
+		
+		for(Entry<String, DataSource> ds : dbsources.entrySet()) {
+			if(fromPath.toUpperCase().contains("/" + ds.getKey())) {
+				Cursor cursor = ds.getValue().search(query, fromPath, rdb);
+				if(cursor != null) {
+					return cursor;
+				}
+			}
 		}
+
+		
+		//if(csdb) {
+		//	return CSDBParser.search(rdb, query);
+		//}
 	
 		//pathTitle = "SEARCH: " + query;
 		
@@ -910,12 +1005,22 @@ public class SongDatabase implements Runnable {
 			return null;
 		}
 		
+		for(Entry<String, DataSource> db : dbsources.entrySet()) {
+			if(upath.contains("/" + db.getKey())) {
+				Cursor cursor = db.getValue().getCursorFromPath(file, rdb);
+				if(cursor != null) {
+					 pathTitle = db.getValue().getPathTitle(file);
+					return cursor;
+				}
+			}
+		}
+		/*
 		int csdb = upath.indexOf("/CSDB.DUMP");
 		if(csdb >= 0) {
 			//pathName.replaceFirst("/CSDB.DUMP", "CSDB:");
 			pathName = pathName.substring(0, csdb) + "/CSDB:" + pathName.substring(csdb+10);
 			pathTitle = "CSDb";
-		}
+		} */
 		
 		//File f = new File(pathName);
 		
@@ -925,7 +1030,7 @@ public class SongDatabase implements Runnable {
 		} */
 
 		Log.v(TAG, String.format("Path now '%s'", pathName));
-
+/*
 		int colon = pathName.indexOf(':');
 		if(colon > 0) {
 			int start = pathName.lastIndexOf('/', colon) + 1;
@@ -934,7 +1039,7 @@ public class SongDatabase implements Runnable {
 				return cb.getCursorFromPath(pathName.substring(colon+1), rdb);
 			}
 		}
-		
+*/	
 		String path = file.getParent();
 		String fname = file.getName();
 		
@@ -963,7 +1068,7 @@ public class SongDatabase implements Runnable {
 	public void setScanCallback(ScanCallback cb) {
 		scanCallback = cb;
 	}
-
+/*
 	public void registerPath(String name, PathCallback cb) {
 		pathCallbacks.put(name, cb);
 	}
@@ -971,7 +1076,7 @@ public class SongDatabase implements Runnable {
 	public void unregisterAll() {
 		pathCallbacks.clear();		
 	}
-
+*/
 
 	public void stopScan() {
 		stopScanning = true;

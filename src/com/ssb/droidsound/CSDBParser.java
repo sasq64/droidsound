@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ssb.droidsound.SongDatabase.ScanCallback;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.CursorWrapper;
@@ -17,9 +19,12 @@ import android.os.Environment;
 import android.provider.BaseColumns;
 import android.util.Log;
 
-public class CSDBParser {
+public class CSDBParser implements SongDatabase.DataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
 
+	public static final String DUMP_NAME = "CSDB.DUMP";
+	
+	
 	private static String hvsc = null;
 	
 	static Map<String, Integer> events = new HashMap<String, Integer>();
@@ -336,9 +341,28 @@ public class CSDBParser {
 	public static Cursor getPath(String path, SQLiteDatabase rdb) {
 		
 		String [] parts = path.split("/");
-		int searchPart = -1;
 		int n = parts.length;
-		
+		boolean found = false;
+
+		for(int i=0; i<n; i++) {
+			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
+		}
+
+		for(int i=0; i<n; i++) {
+			if(parts[i].toUpperCase().equals(DUMP_NAME)) {
+				for(int j=0; j<(n-i); j++) {
+					parts[j] = parts[i+j];
+				}
+				found = true;
+				n -= i;
+				break;
+			}
+		}
+
+		if(!found) {
+			return null;
+		}
+
 		for(int i=0; i<n; i++) {
 			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
 		}
@@ -429,6 +453,58 @@ public class CSDBParser {
 	public static Cursor search(SQLiteDatabase db, String query) {
 		Log.v(TAG, "QUERY:" + query);
 		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ), "CSDB:");		
+	}
+
+
+	@Override
+	public String getTitle() {
+		return "CSDb";
+	}
+
+
+	@Override
+	public boolean parseDump(File dump, SQLiteDatabase scanDb, ScanCallback scanCallback) {
+		return parseCSDB(dump, scanDb, scanCallback);
+	}
+
+
+	@Override
+	public Cursor getCursorFromPath(File file, SQLiteDatabase rdb) {
+		return getPath(file.getPath(), rdb);
+	}
+
+
+	@Override
+	public String getPathTitle(File file) {
+		return null;
+	}
+
+
+	@Override
+	public void createIndex(int mode, SQLiteDatabase db) {
+		switch(mode) {
+		case SongDatabase.INDEX_NONE:
+			db.execSQL("DROP INDEX IF EXISTS relindex ;");		
+			db.execSQL("DROP INDEX IF EXISTS grpindex ;");
+			db.execSQL("DROP INDEX IF EXISTS evtindex ;");
+			break;
+		case SongDatabase.INDEX_BASIC:
+			db.execSQL("DROP INDEX IF EXISTS relindex ;");		
+			db.execSQL("DROP INDEX IF EXISTS grpindex ;");
+			db.execSQL("DROP INDEX IF EXISTS evtindex ;");
+			break;
+		case SongDatabase.INDEX_FULL:
+			db.execSQL("CREATE INDEX IF NOT EXISTS relindex ON RELEASES (NAME) ;");		
+			db.execSQL("CREATE INDEX IF NOT EXISTS grpindex ON GROUPS (NAME) ;");
+			db.execSQL("CREATE INDEX IF NOT EXISTS evtindex ON EVENTS (NAME) ;");
+			break;
+		}		
+	}
+
+
+	@Override
+	public Cursor search(String query, String fromPath, SQLiteDatabase db) {
+		return search(db, query);
 	}	
 
 }

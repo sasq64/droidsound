@@ -1,16 +1,14 @@
 <LinearLayout android:orientation="vertical" xmlns:android="http://schemas.android.com/apk/res/android" 
 	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
-	<FrameLayout 
-	    android:layout_width="fill_parent" android:layout_height="wrap_content" 
-	    android:id="@+id/info_display" >
-	    android:layout_weight="0.0"
-		<include layout="@layout/info_display" />
-	</FrameLayout>
-	<FrameLayout android:layout_width="fill_parent" android:layout_height="fill_parent"
-	android:layout_weight="1.0" />
+
+	<TextView android:text="@string/info" style="@style/InfoTitle"/>
+	<TextView android:id="@+id/info_text"
+		android:layout_width="fill_parent" android:layout_height="fill_parent"
+		android:layout_weight="1.0"
+	/>
+	<TextView style="@style/InfoTitle"/>
 	<FrameLayout
 	    android:layout_width="fill_parent" android:layout_height="wrap_content" 
-	    android:layout_weight="0.0"
 	    android:id="@+id/controls">
 		<include layout="@layout/controls" />
 	</FrameLayout>

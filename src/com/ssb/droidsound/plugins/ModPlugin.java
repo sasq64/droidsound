@@ -61,42 +61,26 @@ public class ModPlugin extends DroidSoundPlugin {
 		byte [] songBuffer = new byte [l];
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
-		
-		//String magic = new String(songBuffer, 0x438,4);	
-		//Log.v(TAG, String.format(">> Magic '%s'", magic));
-		
+
 		long song = N_load(songBuffer, l);
 		if(song == 0)
 			return null;
 		else
 			return song;
 	}
-
-	/*
-	void data() {
-		if(type != null && type.equals("MOD")) {
-			String fname = file.getName();
-			int sep = fname.indexOf(" - ");
-			if(sep > 0) {
-				author = fname.substring(0, sep);
-				Log.v(TAG, String.format("######## FILENAME %s", fname));
-				int dot = fname.lastIndexOf('.');
-				if(dot > 0) {
-					String ext = fname.substring(dot+1).toUpperCase();
-					Log.v(TAG, String.format("Extention %s", ext));
-					if(ext.equals("MOD") || ext.equals("IT") || ext.equals("XM") || ext.equals("S3M")) {
-						title = fname.substring(sep+3, dot);
-					} else {
-						title = fname.substring(sep+3);
-					}
-				} else {						
-					title = fname.substring(sep+3);
-				}
-			} else {
-				author = file.getParentFile().getName();
-			}
-		}*/
-
+	
+	@Override
+	public String[] getDetailedInfo(Object song) {
+		
+		String[] info = new String [4];
+		String instruments = N_getStringInfo((Long)song, 100);
+		int channels = N_getIntInfo((Long)song, 101);
+		info[0] = "Channels";
+		info[1] = Integer.toString(channels);
+		info[2] = "Instruments";
+		info[3] = instruments;
+		return info;
+	}
 	
 	// --- Native functions
 	

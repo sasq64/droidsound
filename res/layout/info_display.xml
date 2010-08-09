@@ -6,19 +6,6 @@
 	<TextView android:id="@+id/composer_text" style="@style/InfoText"/>
 	<TextView android:text="@string/copyright" style="@style/InfoTitle"/>
 	<TextView android:id="@+id/copyright_text" style="@style/InfoText"/>
-	<TextView style="@style/InfoTitle"/>
-
-	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
-	 android:layout_gravity="center_horizontal" > 
-		<com.ssb.droidsound.FontTextView android:id="@+id/seconds_text" style="@style/LEDText" font="led" android:text="00:00"
-		android:layout_width="96dp" />
-		<com.ssb.droidsound.FontTextView android:text="/ " style="@style/LEDText" font="led" />
-		<com.ssb.droidsound.FontTextView android:id="@+id/total_text" style="@style/LEDText" font="led" android:text="00:00" 
-		android:layout_width="96dp"/>		
-	</LinearLayout>	
-	
-	<com.ssb.droidsound.FontTextView android:id="@+id/songs_text"  style="@style/LEDText" font="led"
-		android:layout_gravity="center_horizontal" android:text="[01/01]" />
-	
+	<TextView style="@style/InfoTitle"/>	
 	
 </LinearLayout>

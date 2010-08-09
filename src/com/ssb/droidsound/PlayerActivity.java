@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
+import android.text.Html;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.KeyEvent;
@@ -84,8 +85,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 	//private Button parentButton;
 	
-	private TextView songTitleText;
-	private TextView songComposerText;
+	//private TextView songTitleText;
+	//private TextView songComposerText;
 	private PlayListView playListView;
 	private PlayListView searchListView;
 	private SearchCursor searchCursor;
@@ -107,8 +108,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private View controls;
 	private TextView titleText;
 
-	private String modsDir;
-	private String currentPath;
+	private File modsDir;
+	private File currentPath;
 
 
 	private BroadcastReceiver receiver;
@@ -126,7 +127,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private boolean bcRegistered;
 
 	private ViewFlipper flipper;
-	private TextView songCopyrightText;
+	//private TextView songCopyrightText;
 	//private ImageButton golistButton;
 	private TextView songSecondsText;
 	private TextView songTotalText;
@@ -141,6 +142,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private ImageButton searchButton;
 	private String searchQuery;
 	private SharedPreferences prefs;
+	private TextView subtitleText;
+	private TextView infoText;
 	
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## Activity finalize");
@@ -152,6 +155,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		if(plv == null) {
 			plv = currentPlaylistView;
+		}
+		
+		if(f == null) {
+			f = currentPath;
 		}
 		
 		Cursor cursor = songDatabase.getFilesInPath(f.getPath());
@@ -169,8 +176,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			titleText.setText(f.getName());
 		}
 		
+		String parent = f.getParent().replaceFirst(modsDir.getParent(), "");
+		subtitleText.setText(parent);
+		
 		if(plv == playListView) {
-			currentPath = f.getPath();
+			currentPath = f;
 		}
 		
 	}
@@ -210,7 +220,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	 		if(searchCursor != null) {
 	 			searchCursor.realClose();
 	 		}
-	 		searchCursor = new SearchCursor(songDatabase.search(query, false));
+	 		searchCursor = new SearchCursor(songDatabase.search(query, currentPath.getPath()));
 	 		searchQuery = query;
 	 		searchListView.setCursor(searchCursor, null);
 	 		currentPlaylistView = searchListView;
@@ -269,9 +279,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			String title = songDatabase.getPathTitle();
 			if(title != null) {
 				titleText.setText(title);
-			} else {
-				File f = new File(currentPath);
-				titleText.setText(f.getName());
+			} else {;
+				titleText.setText(currentPath.getName());
 			}
 			break;
 		}		
@@ -306,9 +315,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		backButton = (ImageButton) findViewById(R.id.back_button);
 		fwdButton = (ImageButton) findViewById(R.id.fwd_button);
 		stopButton = (ImageButton) findViewById(R.id.stop_button);
-		songTitleText = (TextView) findViewById(R.id.title_text);
-		songComposerText = (TextView) findViewById(R.id.composer_text);
-		songCopyrightText = (TextView) findViewById(R.id.copyright_text);
+//		songTitleText = (TextView) findViewById(R.id.title_text);
+//		songComposerText = (TextView) findViewById(R.id.composer_text);
+//		songCopyrightText = (TextView) findViewById(R.id.copyright_text);
+		infoText = (TextView) findViewById(R.id.info_text);
 		songSecondsText = (TextView) findViewById(R.id.seconds_text);
 		songTotalText = (TextView) findViewById(R.id.total_text);
 		songSubtunesText = (TextView) findViewById(R.id.songs_text);
@@ -319,6 +329,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		controls = findViewById(R.id.controls);
 		//parentButton = (Button) findViewById(R.id.parent_button);
 		titleText = (TextView) findViewById(R.id.list_title);
+		subtitleText = (TextView) findViewById(R.id.list_subtitle);
 		goinfoButton = (ImageButton) findViewById(R.id.go_info_button);
 		//golistButton = (ImageButton) findViewById(R.id.go_list_button);
 		flipper = (ViewFlipper) findViewById(R.id.flipper);
@@ -326,7 +337,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 		
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		modsDir = prefs.getString("modsDir", null);
+		String md = prefs.getString("modsDir", null);
 		
 		currentPlaylistView = playListView;
 
@@ -340,7 +351,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		
 		//modsDir = "/sdcard/MODS";
-		if(modsDir == null) {
+		if(md == null) {
 			File extFile = Environment.getExternalStorageDirectory();		
 			if(extFile != null) {
 				File mf = new File(extFile, "MODS");
@@ -350,11 +361,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 								
 				if(!mf.exists()) {
 					showDialog(R.string.create_moddir_failed);
-				} else {
-					
-					modsDir = mf.getPath();
+				} else {					
+					modsDir = mf;
 					Editor editor = prefs.edit();
-					editor.putString("modsDir", modsDir);
+					editor.putString("modsDir", modsDir.getPath());
 					editor.commit();					
 					//showDialog(12);
 				}
@@ -362,10 +372,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			} else {
 				showDialog(R.string.sdcard_not_found);
 			}
+		} else {
+			modsDir = new File(md);
 		}
 		
-		File modsFile = new File(modsDir);
-		if(!modsFile.exists()) {
+		
+		
+		if(!modsDir.exists()) {
 			showDialog(R.string.sdcard_not_found);
 		}
 		
@@ -378,13 +391,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					Log.v(TAG, "Open done!");
 					
 					//playListView.rescan();
-					setDirectory(new File(currentPath), playListView);
+					setDirectory(null, playListView);
 					
 					if(lastConfig != null) {
 						Log.v(TAG, "CONFIG CHANGE");
 					} else {
 						Log.v(TAG, "SCANNING");
-						songDatabase.scan(false, modsDir);
+						songDatabase.scan(false, modsDir.getPath());
 					}
 					//songDatabase.scan(false, modsDir);
 				} else
@@ -396,7 +409,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					}
 					
 					Log.v(TAG, "Scan done!");
-					setDirectory(new File(currentPath), playListView);
+					setDirectory(null, playListView);
 					//playListView.rescan();
 				} else
 				if(intent.getAction().equals("com.sddb.droidsound.SCAN_UPDATE")) {
@@ -446,7 +459,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		if(songDatabase == null) {
 			Log.v(TAG, "############ CREATING static SongDatabase object ##############");
-			songDatabase = new SongDatabase(getApplicationContext());		
+			songDatabase = new SongDatabase(getApplicationContext());
+			
+			CSDBParser csdb = new CSDBParser();
+			songDatabase.registerDataSource("CSDB.DUMP", csdb);			
+			
 			dbThread = new Thread(songDatabase);
 			dbThread.start();
 		}
@@ -465,14 +482,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
 			startActivityForResult(checkIntent, 1234);
 		}
-
+/*
 		songDatabase.registerPath("CSDB", new SongDatabase.PathCallback() {			
 			@Override
 			public Cursor getCursorFromPath(String path, SQLiteDatabase db) {
 				return CSDBParser.getPath(path, db);
 			}
 		});
-		
+*/	
 		if(mf.exists()) {
 			songDatabase.setActivePlaylist(mf);
 		}
@@ -598,30 +615,36 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		
 		//SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
-		currentPath = prefs.getString("currentPath", null);
-		if(currentPath == null) {
+		String cp = prefs.getString("currentPath", null);
+		if(cp == null) {
 			currentPath = modsDir;
+		} else {
+			currentPath = new File(cp);
 		}
 		
 		//inPlayList = currentPath.toUpperCase().endsWith(".PLIST");
 		atTop = currentPath.equals(modsDir);
 	
-		setDirectory(new File(currentPath), playListView);
+		setDirectory(currentPath, playListView);
 		
 		// playListView.setDirectory(currentPath);
 		// playListView.setPlayer(player);
 	}
-	/*
-	@Override
+
+	//@Override
 	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
 		Log.v(TAG, String.format("LONG PRESS %d", keyCode));
 		if(keyCode == KeyEvent.KEYCODE_BACK) {
-			backDown = 2;
-			playListView.setDirectory(modsDir);
+			if(currentPlaylistView == searchListView) {
+				searchDirDepth = 0;
+				searchListView.setCursor(searchCursor, null);
+			} else {
+				setDirectory(modsDir, playListView);
+			}
 			return true;
 		}
 		return super.onKeyLongPress(keyCode, event);
-	} */
+	}
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -647,41 +670,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		Log.v(TAG, String.format("DOWN %d", keyCode));
 		if(keyCode == KeyEvent.KEYCODE_BACK) {
-			downCount++;
-			if(downCount == 3) {
-				if(currentPlaylistView == searchListView) {
-					searchDirDepth = 0;
-					searchListView.setCursor(searchCursor, null);
-				} else {
-					setDirectory(new File(modsDir), playListView);
-				}
+			
+			if(atTop) {
+				finish();
+			} else {
+				gotoParent(null);
 			}
-			return true;
-		//	backDown = 1;
-		}
-		return super.onKeyDown(keyCode, event);
-	}
-	
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		Log.v(TAG, String.format("UP %d", keyCode));
-		if(keyCode == KeyEvent.KEYCODE_BACK) {
-			if(downCount < 3) {
-				//if(backDown == 1) {
-					if(atTop) {
-						finish();
-					} else {
-						gotoParent(null);
-					}
-				//}
-			}
-			//backDown = 0;
-			downCount = 0;
 			return true;
 		}
 		return super.onKeyDown(keyCode, event);
 	}
-
 	
 	@Override
 	protected void onResume() {
@@ -702,7 +700,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(!songDatabase.isScanning() && progressDialog != null) {
 			progressDialog.cancel();
 			progressDialog = null;
-			playListView.rescan();
+			//playListView.rescan();
+			setDirectory(null, playListView);
 		}
 		
 		player.setOption(PlayerService.OPTION_SPEECH, prefs.getBoolean("speech", false) ? "on" : "off");
@@ -741,18 +740,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			playListView.close();
 			//SharedPreferences prefs = getSharedPreferences("songdb", Context.MODE_PRIVATE);
 			Editor editor = prefs.edit();
-			editor.putString("currentPath", currentPath);
+			editor.putString("currentPath", currentPath.getPath());
 			editor.commit();
 		}
 		
 		if(searchCursor != null) {
 			searchCursor.realClose();
 		}
-		
+/*		
 		if(songDatabase != null) {
 			songDatabase.unregisterAll();
 		}
-		
+*/	
 		if(progressDialog != null) {
 			progressDialog.dismiss();			
 		}
@@ -801,9 +800,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				playButton.setBackgroundResource(R.drawable.play_button);				
 				mIsPlaying = false;
 				if(value == 0) {
-					songTitleText.setText("");
-					songComposerText.setText("");
-					songCopyrightText.setText("");
+					// songTitleText.setText("");
+					// songComposerText.setText("");
+					// songCopyrightText.setText("");
 					songSubtunesText.setText("[00/00]");
 					songTotalText.setText("00:00");
 					songSecondsText.setText("00:00");
@@ -821,21 +820,24 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songName = value;
 			break;
 		case PlayerService.SONG_TITLE :
-			songTitleText.setText(value);
+			// songTitleText.setText(value);
 			songTitle = value;
 			break;
 		case PlayerService.SONG_AUTHOR :
-			songComposerText.setText(value);
+			// songComposerText.setText(value);
 			songComposer = value;
+			
 			
 			break;
 		case PlayerService.SONG_COPYRIGHT :
-			songCopyrightText.setText(value);
+			// songCopyrightText.setText(value);
+			String s = String.format("<b>%s</b><br/>%s<br/>", "Copyright", value);
+			infoText.setText(Html.fromHtml(s));
 			break;
 		case PlayerService.SONG_GAMENAME :
-			if(value != null && value.length() > 0) {
-				songCopyrightText.setText(value);
-			}
+			// if(value != null && value.length() > 0) {
+			// 	songCopyrightText.setText(value);
+			// }
 			break;
 		}
 	}
@@ -910,7 +912,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					songDatabase.rescan(modsDir);
+					songDatabase.rescan(modsDir.getPath());
 				}
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1004,7 +1006,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					if(doFullScan) {
 						showDialog(R.string.recreate_confirm);
 					} else {
-						songDatabase.scan(true, modsDir);
+						songDatabase.scan(true, modsDir.getPath());
 					}
 				}
 			});

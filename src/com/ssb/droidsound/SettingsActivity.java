@@ -46,10 +46,10 @@ public class SettingsActivity extends PreferenceActivity {
 	}
 	
 	
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		return super.onKeyDown(keyCode, event);
-	}
+	//@Override
+	//public boolean onKeyDown(int keyCode, KeyEvent event) {
+	//	return super.onKeyDown(keyCode, event);
+	//}
 	
 	@Override
 	protected void onDestroy() {

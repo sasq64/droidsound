@@ -25,6 +25,7 @@
 <string name="database_busy">Database busy!</string>
 <string name="scanning">Scanning</string>
 <string name="title">Title</string>
+<string name="info">Info</string>
 <string name="composer">Composer</string>
 <string name="copyright">Copyright</string>
 <string name="upgrade_db">Database format has changed. Old database will be dropped and recreated.</string>
@@ -37,30 +38,6 @@
 <string-array name="new_opts">
 	<item>Folder</item>
 	<item>Playlist</item>
-</string-array>
-
-<string-array name="settings">
-	<item>Index unknown extensions</item>
-	<item>Scan files with extensions not matching any plugin</item>
-	<item>index</item>
-	<item>Silence detection</item>
-	<item>Go to next song when silence is detected</item>
-	<item>silence</item>
-	<item>Database</item>
-	<item>Database options</item>
-	<item></item>
-</string-array>
-
-<string-array name="db_settings">
-	<item>Backup Database</item>
-	<item>Copy database to sdcard</item>
-	<item></item>	
-	<item>Restore Database</item>
-	<item>Restore database from sdcard</item>
-	<item></item>
-	<item>Database location</item>
-	<item>Move database to sdcard</item>
-	<item></item>
 </string-array>
 
 <string-array name="indexing_opts">

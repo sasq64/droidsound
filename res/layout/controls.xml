@@ -1,10 +1,25 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="horizontal"
-    android:layout_width="wrap_content" android:layout_height="fill_parent"
-    android:layout_gravity="center_horizontal"
-    >
-<ImageButton android:id="@+id/back_button" android:background="@drawable/back_button" style="@style/Button" android:scaleType="fitCenter" />
-<ImageButton android:id="@+id/play_button" android:background="@drawable/play_button" style="@style/Button" android:scaleType="fitCenter" />
-<ImageButton android:id="@+id/stop_button" android:background="@drawable/stop_button" style="@style/Button" android:scaleType="fitCenter" />
-<ImageButton android:id="@+id/fwd_button" android:background="@drawable/fwd_button" style="@style/Button" android:scaleType="fitCenter" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+    android:layout_width="fill_parent" android:layout_height="fill_parent" >
+	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
+	 android:layout_gravity="center_horizontal" > 
+		<com.ssb.droidsound.FontTextView android:id="@+id/seconds_text" style="@style/LEDText" font="led" android:text="00:00"
+		android:layout_width="96dp" />
+		<com.ssb.droidsound.FontTextView android:text="/ " style="@style/LEDText" font="led" />
+		<com.ssb.droidsound.FontTextView android:id="@+id/total_text" style="@style/LEDText" font="led" android:text="00:00" 
+		android:layout_width="96dp"/>		
+	</LinearLayout>	
+	
+	<com.ssb.droidsound.FontTextView android:id="@+id/songs_text"  style="@style/LEDText" font="led"
+		android:layout_gravity="center_horizontal" android:text="[01/01]" />
 
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="horizontal"
+	    android:layout_width="wrap_content" android:layout_height="fill_parent"
+	    android:layout_gravity="center_horizontal"
+	    >
+	<ImageButton android:id="@+id/back_button" android:background="@drawable/back_button" style="@style/Button" android:scaleType="fitCenter" />
+	<ImageButton android:id="@+id/play_button" android:background="@drawable/play_button" style="@style/Button" android:scaleType="fitCenter" />
+	<ImageButton android:id="@+id/stop_button" android:background="@drawable/stop_button" style="@style/Button" android:scaleType="fitCenter" />
+	<ImageButton android:id="@+id/fwd_button" android:background="@drawable/fwd_button" style="@style/Button" android:scaleType="fitCenter" />
+	
+	</LinearLayout>
 </LinearLayout>

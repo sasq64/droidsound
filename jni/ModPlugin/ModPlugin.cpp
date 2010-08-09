@@ -24,6 +24,11 @@
 #define INFO_SUBTUNES 6
 #define INFO_STARTTUNE 7
 
+#define INFO_INSTRUMENTS 100
+#define INFO_CHANNELS 101
+#define INFO_PATTERNS 102
+
+
 jstring NewString(JNIEnv *env, const char *str)
 {
 	static char temp[256];
@@ -276,6 +281,19 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getString
 		//if(mod)
 			return NewString(env, info->modType);
 		break;
+	case INFO_INSTRUMENTS:
+	{
+		char instruments[2048];
+		int instr = ModPlug_NumInstruments(info->mod);
+		for(int i=0; i<intr; i++) {
+			ModPlug_InstrumentName(info->mod, i, ptr);
+			ptr += strlen(ptr);
+			*ptr++ = 0xa;
+		}
+		*ptr = 0;
+		return  NewString(env, instruments);
+	}
+		break;
 	}
 	return 0;
 }
@@ -291,6 +309,10 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getIntInfo(J
 		return 0;
 	case INFO_STARTTUNE:
 		return 0;
+	case INFO_CHANNELS:
+		return ModPlug_NumChannels(info->mod);
+	case INFO_PATTERNS:
+		return ModPlug_NumPatterns(info->mod);
 	}
 	return -1;
 }

@@ -3,18 +3,21 @@
     <CheckBoxPreference
             android:key="extensions"
             android:title="Unknown extensions"
+            android:defaultValue="false"
             android:summaryOff="Files with unknown extensions will not be indexed"
             android:summaryOn="Files with unknown extensions will be indexed"
             />
     <CheckBoxPreference
             android:key="silence"
             android:title="Silence detection"
+            android:defaultValue="true"
             android:summaryOff="Silence will not trigger a song change"
             android:summaryOn="Silence will trigger a song change"
             />
     <CheckBoxPreference
             android:key="speech"
             android:title="Speech"
+            android:defaultValue="false"
             android:summaryOff="Do not speak the title of songs "
             android:summaryOn="Use text to speech to speak titles of songs"
             />
@@ -26,6 +29,7 @@
         <ListPreference
                 android:key="indexing"
                 android:title="Indexing"
+                android:defaultValue="Basic"
                 android:entries="@array/indexing_opts"
                 android:entryValues="@array/indexing_opts"
 		/>
