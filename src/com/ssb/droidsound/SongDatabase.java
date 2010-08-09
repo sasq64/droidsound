@@ -103,11 +103,17 @@ public class SongDatabase implements Runnable {
 	
 
 	protected static final int MSG_SCAN = 0;
+	protected static final int MSG_BACKUP = 1;
+	protected static final int MSG_RESTORE = 2;
 	
 	public SongDatabase(Context ctx) {		
 		context = ctx;		
 	}
 	
+	
+	private void doBackup() {
+		
+	}
 	
 	@Override
 	public void run() {
@@ -806,7 +812,7 @@ public class SongDatabase implements Runnable {
 			return CSDBParser.search(rdb, query);
 		}
 	
-		pathTitle = "SEARCH: " + query;
+		//pathTitle = "SEARCH: " + query;
 		
 		String q = "%" + query + "%" ;
 		
@@ -947,6 +953,11 @@ public class SongDatabase implements Runnable {
 		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
 		Log.v(TAG, "END");
 		return c;
+	}
+	
+	public void backup() {
+		Message msg = mHandler.obtainMessage(MSG_BACKUP);
+		mHandler.sendMessage(msg);
 	}
 	
 	public void setScanCallback(ScanCallback cb) {

@@ -1,5 +1,8 @@
 package com.ssb.droidsound;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.ssb.droidsound.service.IPlayerService;
 import com.ssb.droidsound.service.IPlayerServiceCallback;
 import com.ssb.droidsound.service.PlayerService;
@@ -24,6 +27,17 @@ public class PlayerServiceConnection implements ServiceConnection {
 	protected IPlayerService mService;
 	private String modToPlay;
 	private Callback callback;
+	
+	private static class Opt {
+		int opt;
+		String arg;
+		public Opt(int o, String a) {
+			opt = o;
+			arg = a;
+		}
+	};
+	
+	private List<Opt> options = new ArrayList<Opt>();
 	
 	private IPlayerServiceCallback mCallback = new IPlayerServiceCallback.Stub() {
 
@@ -58,6 +72,11 @@ public class PlayerServiceConnection implements ServiceConnection {
 		} catch (RemoteException e) {
 			throw new RuntimeException(e);
 		}
+		
+		for(Opt o : options) {
+			setOption(o.opt, o.arg);
+		}
+		options.clear();
 
 		if(modToPlay != null) {
 			playMod(modToPlay);
@@ -139,8 +158,21 @@ public class PlayerServiceConnection implements ServiceConnection {
 			e.printStackTrace();
 		}
 	}
-	public void setFlags(int flags) {
+	public void setOption(int opt, String arg) {
+		
+		if(mService == null) {
+			options.add(new Opt(opt, arg));
+			return;
+		}
+		
+		try {
+			mService.setOption(opt, arg);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
+	
 	public boolean playPause(boolean play) {
 		try {
 			return mService.playPause(play);

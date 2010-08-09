@@ -1,104 +1,122 @@
 package com.ssb.droidsound;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
-import org.w3c.dom.Document;
-
-import android.app.Activity;
-import android.app.ListActivity;
-import android.content.Context;
-import android.content.res.Resources;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.SimpleAdapter;
+import android.preference.Preference;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.widget.EditText;
 
-public class SettingsActivity extends ListActivity {
+public class SettingsActivity extends PreferenceActivity {
 
-	class Setting {
-		public Setting(String t, String st, int d) {
-			title = t;
-			subtitle = st;
-			type = 0;
-		}
-		String title;
-		String subtitle;
-		int type;
-		List<Setting> children;
-	};
-	
-	Setting[] settings;
-	
-	class SettingsAdapter extends BaseAdapter {
+	protected static final String TAG = SettingsActivity.class.getSimpleName();
+	private SongDatabase songDatabase;
+	private boolean doFullScan;
+	private SharedPreferences prefs;
+	private String modsDir;
 
-		
-		private Context context;
-
-		public SettingsAdapter(Context ctx) {
-			context = ctx;
-		}
-		
-		@Override
-		public int getCount() {
-			return settings.length;
-		}
-
-		@Override
-		public Object getItem(int position) {
-			return settings[position];
-		}
-
-		@Override
-		public long getItemId(int position) {
-			// TODO Auto-generated method stub
-			return position;
-		}
-
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			LayoutInflater inflater = ((Activity)context).getLayoutInflater();
-
-			if(convertView == null) {
-				/*convertView = inflater.inflate(R.layout.settings_item, null);
-				ViewGroup vg = (ViewGroup)convertView;
-
-				convertView.findViewById(R.id.text1);
-				convertView.findViewById(R.id.text2);
-				convertView.findViewById(R.id.check);*/
-			}
-			
-			return convertView;
-		}
-	};
-	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		Resources res = getResources();
-		String [] setting_strings = res.getStringArray(R.array.settings);
-		List<Setting> settings = new ArrayList<Setting>();
+		super.onCreate(savedInstanceState);		
+		addPreferencesFromResource(R.layout.preferences);
 		
-		for(int i=0; i<setting_strings.length; i += 3) {
-			settings.add(new Setting(setting_strings[i], setting_strings[i+1], 0));
-		}
+		songDatabase = PlayerActivity.songDatabase;
 
-		SettingsAdapter adapter = new SettingsAdapter(this);		
-		setListAdapter(adapter);
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		modsDir = prefs.getString("modsDir", null);
+
 		
+		Preference pref = findPreference("rescan_pref");
+		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				Log.v(TAG, "Rescan database");
+				showDialog(R.string.scan_db);
+				return false;
+			}
+		});
+	}
+	
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		return super.onKeyDown(keyCode, event);
 	}
 	
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 	}
+	
+	@Override
+	protected Dialog onCreateDialog(int id) {
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		
+		switch(id) {		
+		case R.string.recreate_confirm:
+			builder.setMessage(id);
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					songDatabase.rescan(modsDir);
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}				
+			});
+			break;
+		case R.string.scan_db:
+			doFullScan = false;
+			builder.setTitle(id);
+			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
+				@Override
+				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
+					Log.v(TAG, String.format("%d %s", which, String.valueOf(isChecked)));
+					doFullScan = isChecked;
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}				
+			});
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					dialog.cancel();
+					if(doFullScan) {
+						showDialog(R.string.recreate_confirm);
+					} else {
+						songDatabase.scan(true, modsDir);
+					}
+				}
+			});
+			break;
+		default:
+			builder.setMessage(id);
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					dialog.cancel();
+				}
+			});
+			break;
+		}
+
+		AlertDialog alert = builder.create();
+		return alert;
+	}
+
 	
 }

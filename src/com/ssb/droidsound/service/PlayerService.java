@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import com.ssb.droidsound.service.Player.SongInfo;
 
@@ -19,6 +20,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
+import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -28,9 +30,9 @@ public class PlayerService extends Service {
 	
 	// Flags
 	
-	public static final int FLAG_CONTINUOUS = 1;
-	public static final int FLAG_SHUFFLE = 2;
-	public static final int FLAG_REPEAT = 4;
+	// public static final int FLAG_CONTINUOUS = 1;
+	// public static final int FLAG_SHUFFLE = 2;
+	// public static final int FLAG_REPEAT = 4;
 	
 	// Information
 	
@@ -47,6 +49,10 @@ public class PlayerService extends Service {
 	public static final int SONG_TOTALSONGS = 10;
 	
 	public static final int SONG_STATE = 11;
+
+	public static final int OPTION_SPEECH = 0;
+	public static final int OPTION_SILENCE_DETECT = 1;
+	public static final int OPTION_PLAYBACK_ORDER = 2;
 	
 	private Object info[];
 
@@ -60,6 +66,10 @@ public class PlayerService extends Service {
 	private SongInfo currentSongInfo = new SongInfo();
 	
 	private boolean userInterferred;
+	private boolean silenceDetect;
+	
+	private TextToSpeech textToSpeech;
+	private int ttsStatus = -1;
 	
 	private void performCallback(int...what) {
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
@@ -92,12 +102,11 @@ public class PlayerService extends Service {
                 case Player.MSG_NEWSONG:
                 	
                 	player.getSongInfo(currentSongInfo);
+                	info[SONG_TITLE] = currentSongInfo.title;
                 	if(currentSongInfo.title == null || currentSongInfo.title.length() == 0) {
                 		File f = new File((String)info[SONG_FILENAME]);                	
                 		info[SONG_TITLE] = f.getName();
                 	}
-
-                	info[SONG_TITLE] = currentSongInfo.title;
 					info[SONG_AUTHOR] = currentSongInfo.author;
 					info[SONG_COPYRIGHT] = currentSongInfo.copyright;
 					info[SONG_FORMAT] = currentSongInfo.type;
@@ -106,6 +115,32 @@ public class PlayerService extends Service {
 					info[SONG_SUBSONG] = currentSongInfo.startTune;
 					info[SONG_GAMENAME] = currentSongInfo.game;
 					info[SONG_STATE] = 1;
+
+        			String text = "Unnamed song.";
+        			String songComposer = (String) info[SONG_AUTHOR];
+        			String songTitle = (String) info[SONG_TITLE];
+
+        			if(ttsStatus >= 0) {
+        				if(songComposer != null & songComposer.length() > 1) {
+        					
+        					if(songComposer.endsWith(")")) {
+        						int lpara = songComposer.lastIndexOf("(");
+        						int rpara = songComposer.lastIndexOf(")");
+        						if(lpara > 0) {
+        							songComposer = songComposer.substring(lpara+1, rpara);
+        						}
+        					}
+        					text = songTitle + ". By " + songComposer + ".";
+        					
+        				} else {
+        					text = songTitle + ".";
+        				}
+        				Log.v(TAG, String.format("Saying '%s'", text));
+        				textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, null);
+        			}
+
+                	
+
 					performCallback(SONG_FILENAME, SONG_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
@@ -121,10 +156,12 @@ public class PlayerService extends Service {
                 	performCallback(SONG_STATE);
                 	break;
                 case Player.MSG_SILENT:
-                	if(!userInterferred)
-                		playNextSong();
-                	else
-                		Log.v(TAG, "User has interferred, not switching");
+                	if(silenceDetect) {
+	                	if(!userInterferred)
+	                		playNextSong();
+	                	else
+	                		Log.v(TAG, "User has interferred, not switching");
+                	}
                 	break;
                 default:
                     super.handleMessage(msg);
@@ -185,7 +222,6 @@ public class PlayerService extends Service {
 		info = new Object [20];
 		for(int i=0; i<20; i++)
 			info[i] = null;
-		
 		
 		
 		phoneStateListener = new PhoneStateListener() {
@@ -385,9 +421,39 @@ public class PlayerService extends Service {
 			
 		}
 
+		
 		@Override
-		public void setFlags(int flags) throws RemoteException {
-			// TODO Auto-generated method stub			
+		public void setOption(int opt, String arg) throws RemoteException {
+
+			boolean on = arg.equals("on");
+			
+			switch(opt) {
+			case OPTION_SILENCE_DETECT:
+				Log.v(TAG, "Silence detection " + arg);
+				silenceDetect = on;
+				break;
+			case OPTION_SPEECH:
+				if(on) {
+					if(textToSpeech == null) {
+						Log.v(TAG, "Turning on speech");
+						textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+							@Override
+							public void onInit(int status) {					
+								ttsStatus = status;
+								textToSpeech.setLanguage(Locale.US);
+							}
+						});
+					}
+				} else {
+					if(textToSpeech != null) {
+						textToSpeech.shutdown();
+						textToSpeech = null;
+						ttsStatus = -1;
+						Log.v(TAG, "Turning off speech");
+					}
+				}
+				break;
+			}
 		}
 
 		@Override
@@ -400,6 +466,7 @@ public class PlayerService extends Service {
 			info[SONG_FILENAME] = name;
 			player.playMod(name);
 	    	userInterferred = false;
+
 			return false;
 		}
 

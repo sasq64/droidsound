@@ -388,6 +388,9 @@ public class PlayListView extends ListView {
 
 	public void rescan() {
 		//adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
+		if(adapter.mCursor != null) {
+			adapter.mCursor.requery();
+		}
 		adapter.notifyDataSetChanged();
 		adapter.setSelectedFile(selectedName);
 	}
@@ -415,6 +418,12 @@ public class PlayListView extends ListView {
 
 	public Cursor getCursor(int position) {
 		return adapter.getCursor(position);		
+	}
+	
+	public Cursor obtainCursor() {
+		Cursor c = adapter.mCursor;
+		adapter.mCursor = null;
+		return c;
 	}
 	
 	public String getPath() {

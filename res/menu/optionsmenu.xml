@@ -1,14 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-<group android:id="@+id/when_not_scanning">
-    <item android:id="@+id/rescan" android:title="@string/rescan" android:icon="@drawable/ic_menu_music_library"  />
-</group>
-<group android:id="@+id/when_scanning">
-    <item android:id="@+id/abort_scan" android:title="@string/abort_scan" android:icon="@drawable/ic_menu_music_library"/>
-</group>
+
 <item android:id="@+id/new_" android:title="@string/new_" android:icon="@android:drawable/ic_menu_add"/>
 <item android:id="@+id/search" android:title="@android:string/search_go" android:icon="@android:drawable/ic_menu_search"/>
-
-<item android:id="@+id/about" android:title="@string/about" android:icon="@android:drawable/ic_menu_info_details"/>
+<item android:id="@+id/settings" android:title="@string/settings" android:icon="@android:drawable/ic_menu_preferences"/>
 <item android:id="@+id/quit" android:title="@string/quit" android:icon="@android:drawable/ic_menu_close_clear_cancel"/>
+
 </menu>

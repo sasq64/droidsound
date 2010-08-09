@@ -9,7 +9,7 @@ interface IPlayerService {
 	boolean playList(in String [] names, int startIndex);
 	void playPrev();
 	void playNext();
-	void setFlags(int flags);
+	void setOption(int opt, String arg);
 	boolean playPause(boolean play);
 	boolean setSubSong(int song);
 	boolean seekTo(int msec);

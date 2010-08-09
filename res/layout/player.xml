@@ -1,33 +1,34 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
 
-<com.ssb.droidsound.FixedViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
-	android:id="@+id/flipper"
-    android:layout_width="fill_parent"
-    android:layout_height="wrap_content"
-    android:inAnimation="@anim/in_from_right"
-    android:outAnimation="@anim/out_to_left"
-    android:layout_below="@id/title_bar">
+	<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:orientation="horizontal" android:layout_alignParentTop="true"
+		android:background="#000080"
+		android:id="@+id/title_bar" >
+		<TextView android:id="@+id/list_title"
+			android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:textSize="20dp"
+		    android:textColor="#FFFFFFFF"
+		    android:layout_margin="4dp"
+		    android:layout_weight="1.0"
+		    android:singleLine="true" />
+		
+		<ImageButton android:id="@+id/search_button" android:src="@android:drawable/ic_menu_search"
+			 android:scaleType="fitCenter" style="@style/Button" android:visibility="gone" />
 
-	<LinearLayout  android:orientation="vertical"
-		android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
-	
-		<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
-			android:orientation="horizontal" android:layout_alignParentTop="true"
-			android:background="#000080"
-			android:id="@+id/title_bar" >
-			<TextView android:id="@+id/list_title"
-				android:layout_width="wrap_content"
-			    android:layout_height="wrap_content"
-			    android:textSize="20dp"
-			    android:textColor="#FFFFFFFF"
-			    android:layout_margin="4dp"
-			    android:layout_weight="1.0"
-			    android:singleLine="true" />
-			
-			<ImageButton android:id="@+id/go_info_button" android:src="@drawable/gflat_info"
-				 android:scaleType="fitCenter" style="@style/Button" />
-			
-		</LinearLayout>
-	
+		<ImageButton android:id="@+id/go_info_button" android:src="@android:drawable/ic_menu_more"
+			 android:scaleType="fitCenter" style="@style/Button" />
+		
+	</LinearLayout>
+
+	<com.ssb.droidsound.FixedViewFlipper 
+		android:id="@+id/flipper"
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:inAnimation="@anim/in_from_right"
+	    android:outAnimation="@anim/out_to_left" >
+		
 		<FrameLayout
 			android:id="@+id/play_list_frame"
 			android:layout_width="fill_parent"
@@ -37,8 +38,18 @@
 				itemColor="#ffffffff" subitemColor="#ffa0a0ff" dirColor="#ffffffa0" archiveColor="#ffffffa0"
 				android:layout_width="fill_parent" android:layout_height="fill_parent" />
 		</FrameLayout>
-	</LinearLayout>
 		
-	<include layout="@layout/info" />
+		<FrameLayout
+			android:id="@+id/search_list_frame"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent" >
+			<com.ssb.droidsound.PlayListView android:id="@+id/search_list" android:background="#ff000000"
+				android:cacheColorHint="#ff000000"  android:fastScrollEnabled="true"
+				itemColor="#ffffffff" subitemColor="#ffa0a0ff" dirColor="#ffffffa0" archiveColor="#ffffffa0"
+				android:layout_width="fill_parent" android:layout_height="fill_parent" />
+		</FrameLayout>
 
-</com.ssb.droidsound.FixedViewFlipper>
+		<include layout="@layout/info" />
+	
+	</com.ssb.droidsound.FixedViewFlipper>
+</LinearLayout>

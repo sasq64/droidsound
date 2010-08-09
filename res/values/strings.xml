@@ -33,6 +33,7 @@
 <string name="set_plist">Set current playlist</string>
 <string name="name_playlist">Playlist name</string>
 <string name="name_folder">Folder name</string>
+<string name="settings">Settings</string>
 <string-array name="new_opts">
 	<item>Folder</item>
 	<item>Playlist</item>
@@ -61,5 +62,12 @@
 	<item>Move database to sdcard</item>
 	<item></item>
 </string-array>
+
+<string-array name="indexing_opts">
+	<item>None</item>
+	<item>Basic</item>
+	<item>Full</item>
+</string-array>
+
 
 </resources>

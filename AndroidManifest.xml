@@ -48,6 +48,8 @@
 			
 		</service>
 		
+		<activity android:name=".SettingsActivity" />
+		
 		<!-- provider android:name="com.ssb.droidsound.provider.SongProvider" android:authorities="com.ssb.droidsound.provider" / -->
 		
 		<meta-data android:name="android.app.default_searchable" android:value=".PlayerActivity" />
