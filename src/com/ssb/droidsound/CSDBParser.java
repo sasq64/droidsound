@@ -450,8 +450,10 @@ public class CSDBParser implements SongDatabase.DataSource {
 		//return rdb.query("RELEASES", new String[] { "NAME AS TITLE, GROUP AS COMPOSER" }, "EVENTID=?", new String[] { "1577" }, null, null, "NAME");
 	}
 
-	public static Cursor search(SQLiteDatabase db, String query) {
-		Log.v(TAG, "QUERY:" + query);
+	@Override
+	public Cursor search(String query, String path, SQLiteDatabase db) {
+	//public static Cursor search(SQLiteDatabase db, String query) {
+		Log.v(TAG, String.format("QUERY: %s PATH: %s",query, path));
 		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ), "CSDB:");		
 	}
 
@@ -502,9 +504,5 @@ public class CSDBParser implements SongDatabase.DataSource {
 	}
 
 
-	@Override
-	public Cursor search(String query, String fromPath, SQLiteDatabase db) {
-		return search(db, query);
-	}	
 
 }
