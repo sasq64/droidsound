@@ -43,6 +43,17 @@ public class SettingsActivity extends PreferenceActivity {
 				return false;
 			}
 		});
+		
+		pref = findPreference("about_pref");
+		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				Log.v(TAG, "Rescan database");
+				showDialog(R.string.about_droidsound);
+				return false;
+			}
+		});
+
 	}
 	
 	
@@ -68,6 +79,7 @@ public class SettingsActivity extends PreferenceActivity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					songDatabase.rescan(modsDir);
+					finish();
 				}
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -100,6 +112,7 @@ public class SettingsActivity extends PreferenceActivity {
 						showDialog(R.string.recreate_confirm);
 					} else {
 						songDatabase.scan(true, modsDir);
+						finish();
 					}
 				}
 			});

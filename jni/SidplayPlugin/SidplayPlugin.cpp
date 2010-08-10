@@ -18,6 +18,9 @@
 #define INFO_SUBTUNES 6
 #define INFO_STARTTUNE 7
 
+#define INFO_SILENCE 100
+#define INFO_SIDMODEL 101
+
 //extern void synth_render (word *buffer, dword len);
 ///extern void c64Init(void);
 //extern word c64SidLoad(char *filename, word *init_addr, word *play_addr, byte *sub_song_start, byte *max_sub_songs, byte *speed, char *name, char *author, char *copyright);
@@ -214,7 +217,10 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getIntIn
 		return player->sidInfo.songs;
 	case INFO_STARTTUNE:
 		return player->sidInfo.startSong-1;
-	case 100 :
+	case INFO_SIDMODEL:
+		return player->sidInfo.sidModel;
+
+	case INFO_SILENCE :
 		//__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "SILENT %d", player->silent ? 1 : 0);
 		return player->silent ? 1 : 0;
 	}

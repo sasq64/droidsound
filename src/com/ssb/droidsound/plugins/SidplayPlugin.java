@@ -5,7 +5,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import android.util.Log;
+
 public class SidplayPlugin extends DroidSoundPlugin {
+
+	private static final String TAG = SidplayPlugin.class.getSimpleName();
+
 
 	static {
 		System.loadLibrary("sidplay2");
@@ -83,6 +88,24 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		}
 		return N_getStringInfo((Long)song, what);
 	}
+	
+	@Override
+	public String[] getDetailedInfo(Object song) {
+
+		final String sids [] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
+		
+		String[] info = new String [4];
+		info[0] = "Copyright";
+		info[1] = N_getStringInfo((Long)song, INFO_COPYRIGHT);
+		int m = N_getIntInfo((Long)song, 101);
+		Log.v(TAG, "Sid model " + m);
+		if(m < 4) {
+			info[2] = "SID Model";
+			info[3] = sids[m];
+		}
+		return info;
+	}
+
 
 	@Override
 	public Object loadInfo(InputStream is, int size) throws IOException {

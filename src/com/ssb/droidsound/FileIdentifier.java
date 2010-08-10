@@ -23,6 +23,8 @@ public class FileIdentifier {
 	private static HashSet<String> modMagic;
 
 	private static DroidSoundPlugin[] plugins;
+
+	private static boolean indexUnknown;
 	
 	public static final int TYPE_MOD = 1;
 	public static final int TYPE_SID = 2;
@@ -173,16 +175,41 @@ public class FileIdentifier {
 				}
 			}
 			
+			
+			Log.v(TAG, "MarkSupported " + is.markSupported());
+			
 			for(DroidSoundPlugin plugin : list) {
 				Log.v(TAG, "Trying " + plugin.getClass().getName());
 				MusicInfo info = null;
 				try {
+					is.mark(is.available());
 					info = tryLoad(plugin, is);
+					is.reset();
 				} catch (IOException e) {
 				}
 				if(info != null) {
 					fixName(name, info);
 					return info;
+				}
+			}
+			
+			if(indexUnknown) {
+				Log.v(TAG, "Trying non-handling plugins");
+				for(int j = 0; j < plugins.length; j++) {
+					if(!plugins[j].canHandle(name)) {
+						Log.v(TAG, "Trying " + plugins[j].getClass().getName());
+						MusicInfo info = null;
+						try {
+							is.mark(is.available());
+							info = tryLoad(plugins[j], is);
+							is.reset();
+						} catch (IOException e) {
+						}
+						if(info != null) {
+							fixName(name, info);
+							return info;
+						}
+					}
 				}
 			}
 			
@@ -286,5 +313,9 @@ public class FileIdentifier {
 		
 		fixName(name, info);
 		return info;
+	}
+
+	public static void setIndexUnknown(boolean idx) {		
+		indexUnknown = idx;
 	}
 }

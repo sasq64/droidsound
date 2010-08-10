@@ -17,6 +17,10 @@ public class TFMXPlugin extends DroidSoundPlugin {
 
 	private byte[] songBuffer;
 	private byte[] sampleBuffer;
+	
+	private static class Info {
+		int dummy;
+	};
 
 	public TFMXPlugin() {
 	}
@@ -31,7 +35,12 @@ public class TFMXPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void unload(Object song) { N_unload((Long)song); }
+	public void unload(Object song) {
+		if(song instanceof Info) {
+			return;
+		}
+		N_unload((Long)song);
+	}
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
@@ -41,9 +50,19 @@ public class TFMXPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean setTune(Object song, int tune) { return N_setTune((Long)song, tune); }
 	@Override
-	public String getStringInfo(Object song, int what) { return N_getStringInfo((Long)song, what); }
+	public String getStringInfo(Object song, int what) {
+		if(song instanceof Info) {
+			return null;
+		}
+		return N_getStringInfo((Long)song, what);
+	}
 	@Override
-	public int getIntInfo(Object song, int what) { return N_getIntInfo((Long)song, what); }
+	public int getIntInfo(Object song, int what) { 
+		if(song instanceof Info) {
+			return 0;
+		}
+		return N_getIntInfo((Long)song, what);
+	}
 
 	native public boolean N_canHandle(String name);
 	native public long N_load(byte [] module, byte [] samples);
@@ -89,6 +108,16 @@ public class TFMXPlugin extends DroidSoundPlugin {
 	}
 
 	public Object loadInfo(InputStream is, int size) throws IOException {
-		throw new RuntimeException("Cant load TFMX from stream");
+		//throw new RuntimeException("Cant load TFMX from stream");
+		
+		byte data [] = new byte [9];
+		is.read(data);
+		String s = new String(data, "ISO-8859-1");
+		
+		if(s.equals("TFMX-SONG")) {
+			return new Info();
+		}
+		
+		return null;
 	}
 }

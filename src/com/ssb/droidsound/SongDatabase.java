@@ -1,5 +1,6 @@
 package com.ssb.droidsound;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -574,7 +575,7 @@ public class SongDatabase implements Runnable {
 								try {
 									Log.v(TAG, String.format("Checking %s", f.getPath()));
 																		
-									InputStream is = new FileInputStream(f);
+									InputStream is = new BufferedInputStream(new FileInputStream(f), 256);
 									FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), is);
 									is.close();
 									boolean ok = false;

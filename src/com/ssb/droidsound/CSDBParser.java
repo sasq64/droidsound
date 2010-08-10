@@ -324,7 +324,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 					}
 				}
 			} else if(columnIndex == 96) {
-				return pathName + "/SEARCH";
+				return pathName;
 			}
 			return super.getString(columnIndex);
 		}
@@ -454,7 +454,9 @@ public class CSDBParser implements SongDatabase.DataSource {
 	public Cursor search(String query, String path, SQLiteDatabase db) {
 	//public static Cursor search(SQLiteDatabase db, String query) {
 		Log.v(TAG, String.format("QUERY: %s PATH: %s",query, path));
-		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ), "CSDB:");		
+		int csdb = path.toUpperCase().lastIndexOf(DUMP_NAME);
+		path = path.substring(0, csdb + DUMP_NAME.length()) + "/RELEASES";
+		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ), path);		
 	}
 
 
