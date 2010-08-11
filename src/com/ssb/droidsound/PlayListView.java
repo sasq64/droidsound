@@ -54,7 +54,7 @@ public class PlayListView extends ListView {
 		private int mFileIndex;
 		private int mPathIndex;
 		private String pathName; 
-		private int selectedPosition = -1;
+		private int hilightedPosition = -1;
 		private int itemColor;
 		private int subitemColor;
 		private int archiveColor;
@@ -62,6 +62,7 @@ public class PlayListView extends ListView {
 		private float titleHeight;
 		private float subtitleHeight;
 		private boolean subDate;
+		private File hilightedFile;
 
 		PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
     		mContext = context;
@@ -106,7 +107,7 @@ public class PlayListView extends ListView {
     		}
     		mPathIndex = mCursor.getColumnIndex("PATH");
     		notifyDataSetChanged();
-    		selectedPosition = -1;
+    		setHilightedFile(null);
 		}
 		
 		protected void finalize() throws Throwable {
@@ -128,7 +129,7 @@ public class PlayListView extends ListView {
 		
 		@Override
 		public int getItemViewType(int position) {
-			if(position == selectedPosition) {
+			if(position == hilightedPosition) {
 				return 1;
 			} else {
 				return 0;
@@ -234,7 +235,7 @@ public class PlayListView extends ListView {
 				iv.setVisibility(View.VISIBLE);
 			}
 			
-			if(position == selectedPosition) {
+			if(position == hilightedPosition) {
 				tv0.setTextColor(0xffffa000);
 			}
 			
@@ -321,25 +322,25 @@ public class PlayListView extends ListView {
 			return names;
 		}
 
-		void setSelectedPosition(int pos) {
-			selectedPosition = pos;
-		}
-
-		public int setSelectedFile(String name) {
-			if(name == null) {
-				return -1;
+		public void setHilightedFile(File hfile) {
+			if(hfile == null) {
+				hfile = hilightedFile;
 			}
+			hilightedPosition = -1;
+			hilightedFile = hfile;
+			
+			if(hilightedFile == null) {
+				return;
+			}
+			
 			File [] files = getFiles(false);
-			int realpos = -1;
 			for(int i=0; i<files.length; i++) {
 				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
-				if(name.equals(files[i].getPath())) {
-					setSelectedPosition(i);
-					realpos = i;
+				if(hilightedFile.equals(files[i])) {
+					hilightedPosition = i;
 					break;
 				}
 			}
-			return realpos;
 		}
 
 		public Cursor getCursor(int position) {
@@ -353,8 +354,8 @@ public class PlayListView extends ListView {
 	
 		
 	private PlayListAdapter adapter;
-	private File selectedFile;
-	private String selectedName;
+	//private File selectedFile;
+	//private String hilightedName;
 	
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -392,20 +393,32 @@ public class PlayListView extends ListView {
 			adapter.mCursor.requery();
 		}
 		adapter.notifyDataSetChanged();
-		adapter.setSelectedFile(selectedName);
+		adapter.setHilightedFile(null);
 	}
 	
-	public void selectPosition(int position) {
-	}
-
-	public void setSelection(String name) {
+	public void setHilighted(String name) {
 		
-		Log.v(TAG, String.format("SET_SELECTION %s", name));
-		int position = adapter.setSelectedFile(name);
-		selectedName = name;
+		Log.v(TAG, String.format("SET_HILIGHT %s", name));
+		adapter.setHilightedFile(new File(name));
+		//hilightedName = name;
 		adapter.notifyDataSetChanged();
 		//adapter.setSelectedPosition(position);
-		setSelectionFromTop(position, getHeight()/4);
+		//setSelectionFromTop(position, getHeight()/4);
+	}
+	
+	public void setScrollPosition(File f) {
+		if(f == null) {
+			setSelectionFromTop(0, 0);
+		} else {
+			File [] files = adapter.getFiles(false);
+			for(int i=0; i<files.length; i++) {
+				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
+				if(f.equals(files[i])) {
+					setSelectionFromTop(i, 0);
+					break;
+				}
+			}
+		}
 	}
 
 	public void redraw() {

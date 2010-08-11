@@ -3,7 +3,9 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -40,6 +42,7 @@ import android.view.View.OnLongClickListener;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.SlidingDrawer;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
@@ -57,6 +60,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//public TextToSpeech textToSpeech;
 		int ttsStatus;
 		SearchCursor searchCursor;
+		String activePlaylist;
+		String query;
 		int flipper;
 	}
 	
@@ -75,6 +80,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}		
 	}
 	
+	
+	private Map<Integer, Runnable> confirmables = new HashMap<Integer, Runnable>();
 
 	private PlayerServiceConnection player;
 	private ImageButton playButton;
@@ -208,8 +215,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		String p = plv.getPath();
 		if(p != null) {		
-			File f = new File(plv.getPath()).getParentFile();
-			setDirectory(f, plv);
+			File f = new File(plv.getPath());
+			setDirectory(f.getParentFile(), plv);
+			currentPlaylistView.setScrollPosition(f);
 			if(plv == searchListView) {
 				searchDirDepth--;
 			}
@@ -243,8 +251,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	public static final int FILE_VIEW = 0; 
-	public static final int SEARCH_VIEW = 1; 
-	public static final int INFO_VIEW = 2; 
+	public static final int INFO_VIEW = 1; 
+	public static final int SEARCH_VIEW = 2; 
 	public static final int NEXT_VIEW = 3; 
 	public static final int PREV_VIEW = 4; 
 	public static final int SAME_VIEW = 5;
@@ -502,6 +510,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			ttsStatus = lastConfig.ttsStatus;
 			searchCursor = lastConfig.searchCursor;
 			searchListView.setCursor(searchCursor, null);
+			songDatabase.setActivePlaylist(new File(lastConfig.activePlaylist));
+			searchQuery = lastConfig.query;
 	 		flipTo(lastConfig.flipper);
 		}
 		
@@ -546,6 +556,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					
 					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
 						setDirectory(fi.file, plv);
+						plv.setScrollPosition(null);
 						if(plv == searchListView) {
 							searchDirDepth++;
 						}
@@ -699,6 +710,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					flipTo(SEARCH_VIEW);
 				} else {
 					setDirectory(modsDir, playListView);
+					currentPlaylistView.setScrollPosition(null);
 				}
 			}
 			return true;
@@ -821,6 +833,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		//textToSpeech = null;
 		c.ttsStatus = ttsStatus;
 		c.searchCursor = searchCursor;
+		c.query = searchQuery;
+		Playlist al = songDatabase.getActivePlaylist();
+		if(al != null) {
+			c.activePlaylist = al.getFile().getPath();
+		}
 		searchCursor = null;
 		c.flipper = flipper.getDisplayedChild();
 		return c;
@@ -870,7 +887,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public void stringChanged(int what, String value) {
 		switch(what) {
 		case PlayerService.SONG_FILENAME :
-			playListView.setSelection(value);
+			playListView.setHilighted(value);
+			searchListView.setHilighted(value);
 			songName = value;
 			break;
 		case PlayerService.SONG_TITLE :
@@ -983,13 +1001,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		
-		switch(id) {		
-		case R.string.recreate_confirm:
+		if(confirmables.containsKey(id)) {
+			final Runnable runnable = confirmables.get(id);
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					songDatabase.rescan(modsDir.getPath());
+					runnable.run();
 				}
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -998,7 +1016,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					dialog.cancel();
 				}				
 			});
-			break;
+			confirmables.remove(id);
+			return builder.create();
+		}
+		
+		switch(id) {		
 		case R.string.new_:
 			builder.setTitle(id);
 			builder.setSingleChoiceItems(R.array.new_opts, -1, new DialogInterface.OnClickListener() {
@@ -1060,33 +1082,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					dialog.cancel();
 				}				
 			});			
-			break;
-		case R.string.scan_db:
-			doFullScan = false;
-			builder.setTitle(id);
-			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
-				@Override
-				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-					Log.v(TAG, String.format("%d %s", which, String.valueOf(isChecked)));
-					doFullScan = isChecked;
-				}
-			});
-			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					dialog.cancel();
-				}				
-			});
-			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int id) {
-					dialog.cancel();
-					if(doFullScan) {
-						showDialog(R.string.recreate_confirm);
-					} else {
-						songDatabase.scan(true, modsDir.getPath());
-					}
-				}
-			});
 			break;
 		default:
 			builder.setMessage(id);
@@ -1173,6 +1168,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		switch(item.getItemId()) {
 		case R.id.go_author:
 			setDirectory(file.getParentFile(), playListView);
+			currentPlaylistView.setScrollPosition(file);
 			//flipper.setDisplayedChild(0);
 			flipTo(FILE_VIEW);
 			break;
@@ -1193,14 +1189,59 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case R.id.remove :
 			if(pl != null) {
 				pl.remove(file);
-				currentPlaylistView.rescan();
+				setDirectory(null, null);
 			}
-			
 			break;
-		case R.id.remove_all :
+
+		case R.id.del_dir:
+			final File dd = file;
+			runConfirmable(R.string.do_del_dir, new Runnable() {					
+				@Override
+				public void run() {
+					if(songDatabase.deleteDir(dd)) {
+						delDir(dd);
+						setDirectory(null, null);
+					}
+				}
+			});
+			break;
+
+		case R.id.del_file:
+			final File df = file;
+			runConfirmable(R.string.do_del_file, new Runnable() {					
+				@Override
+				public void run() {
+					if(songDatabase.deleteFile(df)) {
+						df.delete();
+						setDirectory(null, null);
+					}
+				}
+			});
+			break;
+			
+		case R.id.del_plist:
+			final File pf = file;
+			runConfirmable(R.string.do_del_plist, new Runnable() {					
+				@Override
+				public void run() {
+					if(songDatabase.deleteFile(pf)) {
+						pf.delete();
+						setDirectory(null, null);
+					}
+				}
+			});
+			break;
+			
+		case R.id.remove_all :			
 			if(pl != null) {
-				pl.clear();
-				currentPlaylistView.rescan();
+				final Playlist rpl = pl;
+				runConfirmable(R.string.do_remove_all, new Runnable() {					
+					@Override
+					public void run() {
+						rpl.clear();
+						setDirectory(null, null);
+					}
+				});
 			}
 			
 			break;
@@ -1208,6 +1249,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			return super.onContextItemSelected(item);
 		}
 		return true;
+	}
+
+	private void runConfirmable(int textid, Runnable runnable) {		
+		confirmables.put(textid, runnable);
+		showDialog(textid);
+	}
+
+	private void delDir(File dd) {
+		
+		if(dd.isDirectory()) {
+			File [] files = dd.listFiles();
+			for(File f : files) {
+				delDir(f);
+			}
+		}
+		dd.delete();		
 	}
 
 }

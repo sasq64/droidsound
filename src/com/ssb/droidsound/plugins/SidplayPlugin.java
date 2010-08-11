@@ -99,7 +99,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		info[1] = N_getStringInfo((Long)song, INFO_COPYRIGHT);
 		int m = N_getIntInfo((Long)song, 101);
 		Log.v(TAG, "Sid model " + m);
-		if(m < 4) {
+		if(m <= 3 && m >= 0) {
 			info[2] = "SID Model";
 			info[3] = sids[m];
 		}

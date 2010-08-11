@@ -15,6 +15,14 @@
 <string name="go_to_author">Go to author</string>
 <string name="remove">Remove</string>
 <string name="remove_all">Remove all</string>
+<string name="do_remove_all">Really clear playlist?</string>
+<string name="del_dir">Delete</string>
+<string name="del_file">Delete</string>
+<string name="del_plist">Delete</string>
+<string name="do_del_plist">Really delete playlist?</string>
+<string name="do_del_dir">Really delete directory?</string>
+<string name="do_del_file">Really delete file?</string>
+
 <string name="rescan">Rescan</string>
 <string name="abort_scan">Abort scan</string>
 <string name="about">About</string>
@@ -35,6 +43,8 @@
 <string name="name_playlist">Playlist name</string>
 <string name="name_folder">Folder name</string>
 <string name="settings">Settings</string>
+
+
 <string-array name="new_opts">
 	<item>Folder</item>
 	<item>Playlist</item>

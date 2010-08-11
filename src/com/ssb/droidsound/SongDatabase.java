@@ -466,6 +466,7 @@ public class SongDatabase implements Runnable {
 						/// files.remove(fileName);
 						removes.add(fileName);
 					} else {
+						//Log.v(TAG, String.format("!! Lastscan %d, file %s modified %d", lastScan, fileName, f.lastModified()));
 						if(lastScan < f.lastModified()) {
 							// File has been modified - del and readd
 							Log.v(TAG, String.format("!! FILE %s was modified", fileName));
@@ -913,7 +914,7 @@ public class SongDatabase implements Runnable {
 		String q = "%" + query + "%" ;
 		
 		//Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
-		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "TITLE LIKE ?", new String[] { q }, null, null, "COMPOSER, TITLE", "500");
+		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "TITLE LIKE ?", new String[] { q }, null, null, "TITLE", "500");
 		Log.v(TAG, String.format("Got %d hits", c.getCount()));
 		return c;
 	}
@@ -1119,6 +1120,37 @@ public class SongDatabase implements Runnable {
 			cursor.close();
 		}
 	}
+	
+	public boolean deleteFile(File f) {
+		SQLiteDatabase db = getWritableDatabase();
+		if(db == null) {
+			return false;
+		}
+
+		db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { f.getParent(), f.getName() });		
+		db.close();
+		return true;
+
+	}
+
+	public boolean deleteDir(File f) {
+		SQLiteDatabase db = getWritableDatabase();
+		if(db == null) {
+			return false;
+		}
+
+		// /sdcard/MODS/Dummy
+		// /sdcard/MODS/Dummy  Dummy2
+		// /sdcard/MODS/Dummy/Dummy2 
+		
+		String path = f.getPath();
+		db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { f.getParent(), f.getName()} );
+		db.delete("FILES", "PATH LIKE ?", new String [] { path + "/%" } );
+		db.delete("FILES", "PATH=?", new String [] { path } );
+		db.close();
+		return true;
+
+	}
 
 	public void createPlaylist(File file) {
 		
@@ -1140,6 +1172,7 @@ public class SongDatabase implements Runnable {
 			
 			SQLiteDatabase db = getWritableDatabase();
 			db.insert("FILES", "PATH", values);
+			db.close();
 			
 		} catch (IOException e) {
 			e.printStackTrace();

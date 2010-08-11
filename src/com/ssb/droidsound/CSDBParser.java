@@ -2,9 +2,11 @@ package com.ssb.droidsound;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +29,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 	
 	private static String hvsc = null;
 	
-	static Map<String, Integer> events = new HashMap<String, Integer>();
+	//static Map<String, Integer> events = new HashMap<String, Integer>();
 	static HashMap<Integer, String> groups = null;
 	static String pathName = null;
 	
@@ -75,7 +77,9 @@ public class CSDBParser implements SongDatabase.DataSource {
 		try {
 			int place = -1;
 			Log.v(TAG, "OPENING CSDB");			
-			reader = new BufferedReader(new FileReader(file));				
+			
+			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859-1"));			
+			//reader = new BufferedReader(new FileReader(file));				
 			String line = reader.readLine();
 			int count = 0;
 			int total = line.length()+1;
@@ -264,6 +268,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		private int placeIndex;
 		private int ratingIndex;
 		private String pathName;
+		private int idIndex;
 
 		public ReleaseCursor(Cursor cursor, String path) {
 			super(cursor);
@@ -273,6 +278,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 			typeIndex = cursor.getColumnIndex("TYPE");
 			placeIndex = cursor.getColumnIndex("PLACE");
 			ratingIndex = cursor.getColumnIndex("RATING");
+			idIndex = cursor.getColumnIndex("ID");
 		}
 		
 		public ReleaseCursor(Cursor cursor) {
@@ -291,6 +297,9 @@ public class CSDBParser implements SongDatabase.DataSource {
 			}
 			if(columnName.equals("TITLE")) {
 				return 99;
+			}
+			if(columnName.equals("FILENAME")) {
+				return 95;
 			}
 			if(columnName.equals("SUBTITLE")) {
 				return 98;
@@ -325,6 +334,8 @@ public class CSDBParser implements SongDatabase.DataSource {
 				}
 			} else if(columnIndex == 96) {
 				return pathName;
+			} else if(columnIndex == 95) {
+				return Integer.toString(getInt(idIndex));
 			}
 			return super.getString(columnIndex);
 		}
@@ -338,11 +349,15 @@ public class CSDBParser implements SongDatabase.DataSource {
 		}
 	}
 
-	public static Cursor getPath(String path, SQLiteDatabase rdb) {
+
+	private String pathTitle;
+
+	public Cursor getPath(String path, SQLiteDatabase rdb) {
 		
 		String [] parts = path.split("/");
 		int n = parts.length;
 		boolean found = false;
+		pathTitle = null;
 
 		for(int i=0; i<n; i++) {
 			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
@@ -393,7 +408,10 @@ public class CSDBParser implements SongDatabase.DataSource {
 			c.close();
 		}
 		
-		if(n == 1) {			
+		if(n == 1) {
+			
+			pathTitle = "CSDb";
+			
 			MatrixCursor cursor = new MatrixCursor(new String [] {"NAME", "ID", "TYPE"});
 			cursor.addRow(new Object [] { "EVENTS", 0, SongDatabase.TYPE_DIR} );
 			cursor.addRow(new Object [] { "GROUPS", 1, SongDatabase.TYPE_DIR} );
@@ -403,6 +421,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 			cursor.addRow(new Object [] { "LATEST RELEASES", 5, SongDatabase.TYPE_DIR} );
 			return cursor;
 		} else if(n == 2) {
+			//pathTitle = parts[1];
 			if(parts[1].equals("SEARCH")) {
 				return null;
 			} else
@@ -413,16 +432,16 @@ public class CSDBParser implements SongDatabase.DataSource {
 				return new DirWrapper(rdb.rawQuery("select name, id from groups order by name", null));
 			} else
 			if(parts[1].equals("TOP DEMOS")) {
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases where type='C64 Demo' order by rating desc limit 500", null));			
+				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, rating from releases where type='C64 Demo' order by rating desc limit 500", null));			
 			} else
 			if(parts[1].equals("TOP MUSIC")) {
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases where type='C64 Music' order by rating desc limit 250", null));			
+				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, rating from releases where type='C64 Music' order by rating desc limit 250", null));			
 			} else
 			if(parts[1].equals("TOP RELEASES")) {
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by rating desc limit 2000", null));			
+				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, rating from releases order by rating desc limit 2000", null));			
 			} else
 			if(parts[1].equals("LATEST RELEASES")) {
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases order by date desc limit 2000", null));			
+				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, rating from releases order by date desc limit 2000", null));			
 			} else {
 				return null;
 			}
@@ -435,20 +454,41 @@ public class CSDBParser implements SongDatabase.DataSource {
 					evid = c.getInt(0);
 				} */			
 				//return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, place, rating from releases where eventid=? order by type, place", new String[] { evid.toString() }));
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, place, rating from releases where eventid in (select id from events where name=?) order by type, place", new String[] { parts[2] }));
+				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, place, rating from releases where eventid in (select id from events where name=?) order by type, place", new String[] { parts[2] }));
 			} else if(parts[1].equals("GROUPS")) {
-				return new ReleaseCursor(rdb.rawQuery("select name, type, groupid, rating from releases where groupid in (select id from groups where name=?) order by rating desc", new String[] { parts[2] }));				
-			}
-			else {
-				return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid in (select id from releases where name=?)", new String[] { parts[2] }));
+				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, rating from releases where groupid in (select id from groups where name=?) order by rating desc", new String[] { parts[2] }));				
+			} else if(parts[1].equals("RELEASES")) {
+				Log.v(TAG, "RELEASES " + parts[2]);
+				setTitle(parts[2], rdb);
+				return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid=?", new String[] { parts[2] }));
+			}			
+			else { // Releases
+				Log.v(TAG, "Release " + parts[2]);
+				setTitle(parts[2], rdb);
+				return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid=?", new String[] { parts[2] }));
 			}
 		} else {
-			return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid in (select id from releases where name=?)", new String[] { parts[3] })); 
+			Log.v(TAG, "SID " + parts[3]);
+			setTitle(parts[3], rdb);
+			return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid=?", new String[] { parts[3] }));
+			//return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid in (select id from releases where name=?)", new String[] { parts[3] })); 
 			//return new SidWrapper("select releaseid, path, filename from releasesids where releaseid=?
 		}
 		//return rdb.rawQuery("select releases.name, groups.name from releases,groups where releases.groupid=groups.id and releases.eventid=1577", null);
 		//return rdb.query("RELEASES", new String[] { "NAME AS TITLE, GROUP AS COMPOSER" }, "EVENTID=?", new String[] { "1577" }, null, null, "NAME");
 	}
+
+	private void setTitle(String id, SQLiteDatabase rdb) {
+		
+		Cursor c = rdb.rawQuery("select name from releases where id=?", new String[] {id });
+		if(c != null) {
+			if(c.moveToFirst()) {
+				pathTitle = c.getString(0);
+			}
+			c.close();
+		}
+	}
+
 
 	@Override
 	public Cursor search(String query, String path, SQLiteDatabase db) {
@@ -456,7 +496,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		Log.v(TAG, String.format("QUERY: %s PATH: %s",query, path));
 		int csdb = path.toUpperCase().lastIndexOf(DUMP_NAME);
 		path = path.substring(0, csdb + DUMP_NAME.length()) + "/RELEASES";
-		return new ReleaseCursor(db.rawQuery("select name, type, groupid, rating from releases where name like ? limit 250", new String [] {"%" + query + "%"} ), path);		
+		return new ReleaseCursor(db.rawQuery("select id, name, type, groupid, rating from releases where name like ? order by name limit 250", new String [] {"%" + query + "%"} ), path);		
 	}
 
 
@@ -480,7 +520,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 
 	@Override
 	public String getPathTitle(File file) {
-		return null;
+		return pathTitle;
 	}
 
 

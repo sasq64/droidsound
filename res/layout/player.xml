@@ -53,6 +53,8 @@
 				android:layout_width="fill_parent" android:layout_height="fill_parent" />
 		</FrameLayout>
 		
+		<include layout="@layout/info" />
+
 		<FrameLayout
 			android:id="@+id/search_list_frame"
 			android:layout_width="fill_parent"
@@ -63,7 +65,6 @@
 				android:layout_width="fill_parent" android:layout_height="fill_parent" />
 		</FrameLayout>
 
-		<include layout="@layout/info" />
 	
 	</com.ssb.droidsound.FixedViewFlipper>
 </LinearLayout>

@@ -3,11 +3,14 @@
 	<!--  item android:id="@+id/details" android:title="@string/details" / -->
 	<group android:id="@+id/on_file">
 		<item android:id="@+id/go_author" android:title="@string/go_to_author" />
+		<item android:id="@+id/del_file" android:title="@string/del_file" />
 	</group>
 	<group android:id="@+id/on_dir">
+		<item android:id="@+id/del_dir" android:title="@string/del_dir" />
 	</group>
 	<group android:id="@+id/on_plist">
 		<item android:id="@+id/set_plist" android:title="@string/set_plist" />
+		<item android:id="@+id/del_plist" android:title="@string/del_plist" />
 	</group>
 
 	<item android:id="@+id/add_to_plist" android:title="@string/add_to_plist" />

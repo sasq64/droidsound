@@ -27,14 +27,14 @@
 
 static jstring NewString(JNIEnv *env, const char *str)
 {
-	static char temp[256];
-	char *ptr = temp;
+	static jchar temp[256];
+	jchar *ptr = temp;
 	while(*str) {
-		char c = *str++;
-		*ptr++ = (c < 0x7f) && (c >= 0x20) ? c : '?';
+		unsigned char c = (unsigned char)*str++;
+		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 ? c : '?';
 	}
-	*ptr++ = 0;
-	jstring j = env->NewStringUTF(temp);
+	//*ptr++ = 0;
+	jstring j = env->NewString(temp, ptr - temp);
 	return j;
 }
 
