@@ -12,7 +12,6 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -42,6 +41,8 @@ public class PlayListView extends ListView {
 	};
 	
 	public static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };
+	
+	private PlayListAdapter adapter;
 	
 	static class PlayListAdapter extends BaseAdapter {
     	
@@ -353,9 +354,6 @@ public class PlayListView extends ListView {
 	}
 	
 		
-	private PlayListAdapter adapter;
-	//private File selectedFile;
-	//private String hilightedName;
 	
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);

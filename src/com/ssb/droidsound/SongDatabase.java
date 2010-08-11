@@ -56,12 +56,7 @@ public class SongDatabase implements Runnable {
 	
 	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 
-	//private Map<String, PathCallback> pathCallbacks = new HashMap<String, PathCallback>();
 	private ScanCallback scanCallback;
-	
-	//public static interface PathCallback {
-//		Cursor getCursorFromPath(String path, SQLiteDatabase db);
-	//}
 
 	public static interface ScanCallback {
 		void notifyScan(String path, int percent);
@@ -87,7 +82,6 @@ public class SongDatabase implements Runnable {
 	private String dbName;
 	private volatile boolean stopScanning;
 
-	//private String modsDir;
 
 	private Context context;
 
@@ -99,19 +93,6 @@ public class SongDatabase implements Runnable {
 
 	private volatile boolean isReady;
 	
-	private SQLiteDatabase getReadableDatabase() {
-		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
-	}
-
-	private SQLiteDatabase getWritableDatabase() {
-		SQLiteDatabase dbrc = null;
-		try {
-			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
-		} catch (SQLException e) {
-		}
-		return dbrc;
-	}
-
 	public static final int TYPE_ARCHIVE = 0x100;
 	public static final int TYPE_DIR = 0x200;
 	public static final int TYPE_PLIST = 0x300;
@@ -130,11 +111,19 @@ public class SongDatabase implements Runnable {
 		context = ctx;		
 	}
 	
-	
-	private void doBackup() {
-		
+	private SQLiteDatabase getReadableDatabase() {
+		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
 	}
-	
+
+	private SQLiteDatabase getWritableDatabase() {
+		SQLiteDatabase dbrc = null;
+		try {
+			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+		} catch (SQLException e) {
+		}
+		return dbrc;
+	}
+
 	public void registerDataSource(String dumpname, DataSource ds) {
 		dbsources.put(dumpname, ds);
 	}
@@ -543,20 +532,9 @@ public class SongDatabase implements Runnable {
 								values = null;
 							}							
 							else
-							/*if(fn.toUpperCase().equals("CSDB.DUMP")) {
-								csdb = f;
-								values = null;
-							} else */
 							if(fn.toUpperCase().endsWith(".ZIP")) {
 								Log.v(TAG, String.format("Found zipfile (%s)", f.getPath()));
 								zipFiles.add(f);
-								/*
-								if(fn.toUpperCase().equals("C64MUSIC.ZIP")) {
-									Log.v(TAG, "Found HVSC at " + f.getPath());
-									values = new ContentValues();
-									values.put("VALUE", f.getPath());
-									db.update("VARIABLES", values, "VAL='hvsc'", null);
-								} */
 								
 								values = null;
 							}
@@ -674,26 +652,6 @@ public class SongDatabase implements Runnable {
 					//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
 				}
 			}
-			/*
-			if(csdb != null) {
-				isReady = false;
-				if(scanCallback != null) {
-					scanCallback.notifyScan(csdb.getPath(), 0);
-				}
-				
-				if(CSDBParser.parseCSDB(csdb, scanDb, scanCallback)) {
-					ContentValues values = new ContentValues();
-					values.put("PATH", csdb.getParentFile().getPath());
-					values.put("FILENAME", csdb.getName());
-					values.put("TYPE", TYPE_ARCHIVE);
-					values.put("TITLE", "CSDb");
-					Log.v(TAG, String.format("Inserting CSDB from dump (%s)", csdb.getPath()));
-					scanDb.insert("FILES", "PATH", values);
-					//db.setTransactionSuccessful();
-					//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
-				}
-				csdb = null;
-			} */
 			
 			if(stopScanning) {
 				return;
@@ -904,16 +862,8 @@ public class SongDatabase implements Runnable {
 			}
 		}
 
-		
-		//if(csdb) {
-		//	return CSDBParser.search(rdb, query);
-		//}
-	
-		//pathTitle = "SEARCH: " + query;
-		
 		String q = "%" + query + "%" ;
 		
-		//Cursor c = rdb.query("SONGS", new String[] { "_id", "TITLE", "FILENAME" }, "TITLE LIKE ? OR FILENAME LIKE ? OR COMPOSER LIKE ?", new String[] { q, q, q }, null, null, null);
 		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "TITLE LIKE ?", new String[] { q }, null, null, "TITLE", "500");
 		Log.v(TAG, String.format("Got %d hits", c.getCount()));
 		return c;
@@ -1018,32 +968,9 @@ public class SongDatabase implements Runnable {
 				}
 			}
 		}
-		/*
-		int csdb = upath.indexOf("/CSDB.DUMP");
-		if(csdb >= 0) {
-			//pathName.replaceFirst("/CSDB.DUMP", "CSDB:");
-			pathName = pathName.substring(0, csdb) + "/CSDB:" + pathName.substring(csdb+10);
-			pathTitle = "CSDb";
-		} */
-		
-		//File f = new File(pathName);
-		
- /*else if(name.equals("CSDB.DUMP")) {
-			//return CSDBParser.getPath("", rdb);
-			pathName = new File(new File(pathName).getParent(), "CSDB:").getPath();
-		} */
 
 		Log.v(TAG, String.format("Path now '%s'", pathName));
-/*
-		int colon = pathName.indexOf(':');
-		if(colon > 0) {
-			int start = pathName.lastIndexOf('/', colon) + 1;
-			PathCallback cb = pathCallbacks.get(pathName.substring(start, colon));
-			if(cb != null) {
-				return cb.getCursorFromPath(pathName.substring(colon+1), rdb);
-			}
-		}
-*/	
+
 		String path = file.getParent();
 		String fname = file.getName();
 		
@@ -1072,15 +999,6 @@ public class SongDatabase implements Runnable {
 	public void setScanCallback(ScanCallback cb) {
 		scanCallback = cb;
 	}
-/*
-	public void registerPath(String name, PathCallback cb) {
-		pathCallbacks.put(name, cb);
-	}
-	
-	public void unregisterAll() {
-		pathCallbacks.clear();		
-	}
-*/
 
 	public void stopScan() {
 		stopScanning = true;

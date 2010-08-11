@@ -4,13 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
-import java.util.Map;
-
-import com.ssb.droidsound.SongDatabase.ScanCallback;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -20,6 +16,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.provider.BaseColumns;
 import android.util.Log;
+
+import com.ssb.droidsound.SongDatabase.ScanCallback;
 
 public class CSDBParser implements SongDatabase.DataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
@@ -235,32 +233,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		}
 		
 	}
-	
-	/* static class PathWrapper extends CursorWrapper {
 
-		public PathWrapper(Cursor cursor) {
-			super(cursor);
-		}
-		
-		@Override
-		public int getColumnIndex(String columnName) {
-			if(columnName.equals("PATH")) {
-				return 99;
-			} else
-			if(columnName.equals("FILENAME")) {
-				return 98;
-			}
-			return super.getColumnIndex(columnName);
-		}
-		
-		@Override
-		public String getString(int columnIndex) {
-			if(columnIndex == 99) {
-				return 
-			}
-		}
-	} */
-	
 	static class ReleaseCursor extends CursorWrapper {
 		private int gidIndex;
 		private int nameIndex;

@@ -285,12 +285,21 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getString
 	{
 		char instruments[2048];
 		char *ptr = instruments;
-		int n = ModPlug_NumInstruments(info->mod);
-		__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "%d instruments", n);
-		for(int i=0; i<n; i++) {
-			ModPlug_InstrumentName(info->mod, i, ptr);
-			ptr += strlen(ptr);
-			*ptr++ = 0xa;
+		int ni = ModPlug_NumInstruments(info->mod);
+		int ns = ModPlug_NumSamples(info->mod);
+		__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "%d / %d instruments", ni, ns);
+		if(ni > 0) {
+			for(int i=0; i<ni; i++) {
+				ModPlug_InstrumentName(info->mod, i, ptr);
+				ptr += strlen(ptr);
+				*ptr++ = 0xa;
+			}
+		} else if(ns > 0) {
+			for(int i=0; i<ns; i++) {
+				ModPlug_SampleName(info->mod, i, ptr);
+				ptr += strlen(ptr);
+				*ptr++ = 0xa;
+			}
 		}
 		*ptr = 0;
 		return  NewString(env, instruments);
