@@ -40,7 +40,6 @@ import android.view.View.OnLongClickListener;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.SlidingDrawer;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;

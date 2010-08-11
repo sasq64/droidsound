@@ -294,6 +294,15 @@ public class SongDatabase implements Runnable {
 		String baseName = zipFile.getPath() + "/";
 		// Basename = /sdcard/MODS/C64Music.zip/
 
+		
+		HVSCParser hvsc = null;
+		ZipEntry infoe = zfile.getEntry("C64Music/DOCUMENTS/Songlengths.txt");
+		if(infoe != null) {
+			hvsc = new HVSCParser();
+			hvsc.parseSongLengths(zfile.getInputStream(infoe));
+		}
+		
+		
 		Log.v(TAG, "ENUM");
 		Enumeration<? extends ZipEntry> entries = zfile.entries();
 		
@@ -311,8 +320,7 @@ public class SongDatabase implements Runnable {
 		ContentValues values = new ContentValues();
 		values.put("LENGTH", 0);
 		values.put("TYPE", TYPE_FILE);
-
-		
+				
 		while(entries.hasMoreElements()) {
 			
 			if(stopScanning) {
@@ -336,6 +344,12 @@ public class SongDatabase implements Runnable {
 				is.close();
 	
 				if(info != null) {
+					
+					if(hvsc != null) {
+						short [] s = hvsc.getSongLength(n);
+						values.put("LENGTH", s[0]);
+					}
+					
 					values.put("TITLE", info.title);
 					values.put("COMPOSER", info.composer);
 					values.put("COPYRIGHT", info.copyright);

@@ -9,8 +9,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import android.util.Log;
+
 public class HVSCParser {
-	
+	private static final String TAG = HVSCParser.class.getSimpleName();
 		
 	static private class XInfo {
 		List<String> names;
@@ -27,7 +29,9 @@ public class HVSCParser {
 	
 
 	short[] getSongLength(String name) {
-		Info info = nameMap.get(name);
+		String n = name.substring(8);
+		int hc = n.hashCode();
+		Info info = nameMap.get(hc);
 		if(info != null) {
 			if(info.xinfo == null) {
 				short [] s = new short [1];
@@ -35,7 +39,7 @@ public class HVSCParser {
 				return s;
 			}
 			for(int i = 0; i<info.xinfo.names.size(); i++) {
-				if(info.xinfo.names.get(i).equals(name)) {
+				if(info.xinfo.names.get(i).equals(n)) {
 					return info.xinfo.lengths.get(i);
 				}
 			}
@@ -54,13 +58,19 @@ public class HVSCParser {
 		BufferedReader breader = new BufferedReader(reader);
 		String line0, line1;
 
-		HashMap<Integer, Info> nameMap = new HashMap<Integer, Info>();
+		nameMap = new HashMap<Integer, Info>();
 		
 		line0 = breader.readLine();
 		if(line0.equals("[Database]")) {
-			
+			int counter = 0;
 			while(true) {
 				line0 = breader.readLine();
+				
+				counter++;
+				if(counter == 4630) {
+					break;
+				}
+				
 				if(line0 == null)
 					break;
 				line1 = breader.readLine();
@@ -70,11 +80,25 @@ public class HVSCParser {
 				int eq = line1.indexOf('=');
 				if(eq > 0) {
 					short [] array = null;
-					String [] lengths = line1.substring(eq+1).split(" ");					
+					
+					String [] lengths;
+					if(line1.indexOf(' ') < 0) {
+						lengths = new String [1];
+						lengths[0] = line1.substring(eq+1);
+					} else {
+						lengths = line1.substring(eq+1).split(" ");
+					}
 					//System.out.printf("%s = %s\n", name, length);
 					//int len = Integer.parseInt(arg0);
-					Info info = nameMap.get(name.hashCode());
+					int hc = name.hashCode();
+					if(name.equals("/GAMES/0-9/5_A_Row.sid")) {
+						Log.v(TAG, String.format("Name '%s'%d %d : %s", name, hc, lengths.length, lengths[0]));
+					}
+											
+					Info info = nameMap.get(hc);
+					
 					if(info != null || lengths.length > 1) {
+						Log.v(TAG, "Allocating extra info");
 						if(info == null) {
 							info = new Info();
 							info.length = -1;
@@ -83,11 +107,12 @@ public class HVSCParser {
 							info.xinfo = new XInfo();
 							info.xinfo.names = new ArrayList<String>();
 							info.xinfo.lengths = new ArrayList<short[]>();
-						} else {
-							info.xinfo.names.add(name);
-							array = new short [lengths.length];
-							info.xinfo.lengths.add(array);
 						}
+
+						info.xinfo.names.add(name);
+						array = new short [lengths.length];
+						info.xinfo.lengths.add(array);
+
 					} else {
 						info = new Info();
 					}
@@ -98,12 +123,14 @@ public class HVSCParser {
 						if(para > 0) {
 							x = x.substring(0,para);
 						}
+
+						info.length = (short) (Integer.parseInt(x.substring(0, colon)) * 60 + Integer.parseInt(x.substring(colon+1)));
 						if(array != null) {
 							array[i++] = info.length;
-						} else {
-							info.length = (short) (Integer.parseInt(x.substring(0, colon)) * 60 + Integer.parseInt(x.substring(colon+1)));
 						}
-					}						
+					}
+					
+					nameMap.put(name.hashCode(), info);
 					
 				}
 			}
