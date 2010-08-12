@@ -744,10 +744,10 @@ public class SongDatabase implements Runnable {
 		scanning = true;
 
 		plugins = new DroidSoundPlugin[4];
-		plugins[0] = new SidplayPlugin();
-		plugins[1] = new ModPlugin();
-		plugins[2] = new GMEPlugin();
-		plugins[3] = new TFMXPlugin();
+		plugins[0] = new SidplayPlugin(context);
+		plugins[1] = new ModPlugin(context);
+		plugins[2] = new GMEPlugin(context);
+		plugins[3] = new TFMXPlugin(context);
 		
 		FileIdentifier.setPlugins(plugins);
 

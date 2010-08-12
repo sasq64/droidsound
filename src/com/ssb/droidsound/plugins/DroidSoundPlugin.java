@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import android.content.Context;
+
 public abstract class DroidSoundPlugin {
 
 	public static final int INFO_TITLE = 0;
@@ -17,8 +19,13 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_STARTTUNE = 7;
 	
 	public static final int SIZEOF_INFO = 8;
+	private Context context;
 
 	public boolean canHandle(String name) { return false; }
+	
+	public DroidSoundPlugin(Context ctx) { context = ctx; }
+	
+	public Context getContext() { return context; }
 
 	public abstract Object load(byte [] module, int size);
 

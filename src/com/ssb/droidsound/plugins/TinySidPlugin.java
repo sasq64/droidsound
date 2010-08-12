@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import android.content.Context;
+
 
 public class TinySidPlugin extends DroidSoundPlugin {
 
@@ -17,7 +19,8 @@ public class TinySidPlugin extends DroidSoundPlugin {
 		String copyright;
 	};
 
-	public TinySidPlugin() {
+	public TinySidPlugin(Context ctx) {
+		super(ctx);
 	}
 	
 	@Override

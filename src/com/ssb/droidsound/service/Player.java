@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 
+import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -107,14 +108,14 @@ public class Player implements Runnable {
 	
 	int FREQ = 44100;
 
-	public Player(AudioManager am, Handler handler) {
+	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
 		plugins = new DroidSoundPlugin [4];
-		plugins[0] = new SidplayPlugin();
+		plugins[0] = new SidplayPlugin(ctx);
 		//plugins[0] = new TinySidPlugin();
-		plugins[1] = new ModPlugin();
-		plugins[2] = new GMEPlugin();
-		plugins[3] = new TFMXPlugin();
+		plugins[1] = new ModPlugin(ctx);
+		plugins[2] = new GMEPlugin(ctx);
+		plugins[3] = new TFMXPlugin(ctx);
 
 		//bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
 		//if(bufSize < 32768*2) {

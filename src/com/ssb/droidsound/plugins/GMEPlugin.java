@@ -3,6 +3,8 @@ package com.ssb.droidsound.plugins;
 import java.util.HashSet;
 import java.util.Set;
 
+import android.content.Context;
+
 
 
 public class GMEPlugin extends DroidSoundPlugin {
@@ -13,7 +15,8 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	private Set<String> extensions;
 
-	public GMEPlugin() {
+	public GMEPlugin(Context ctx) {
+		super(ctx);
 		extensions = new HashSet<String>();
 		extensions.add("SPC");
 		extensions.add("GYM");

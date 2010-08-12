@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import android.content.Context;
 import android.util.Log;
 
 
@@ -22,7 +23,8 @@ public class TFMXPlugin extends DroidSoundPlugin {
 		int dummy;
 	};
 
-	public TFMXPlugin() {
+	public TFMXPlugin(Context ctx) {
+		super(ctx);
 	}
 	
 	@Override

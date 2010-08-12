@@ -15,6 +15,10 @@ import android.util.Log;
 
 public class SidplayPlugin extends DroidSoundPlugin {
 
+	public SidplayPlugin(Context ctx) {
+		super(ctx);
+	}
+
 	private static final String TAG = SidplayPlugin.class.getSimpleName();
 
 
@@ -29,15 +33,11 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	};
 	
 	final byte [] header = new byte [128];
-	private Context context;
 	private byte[] lenData;
-
-	public SidplayPlugin() {
-	}
+	private byte[] mainHash;
+	private short[] extraLengths;
+	private int hashLen;
 	
-	public SidplayPlugin(Context ctx) {
-		context = ctx;
-	}
 
 	@Override
 	public boolean canHandle(String name) { 
@@ -84,27 +84,78 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	public Object load(byte [] module, int size) {
 		long rc = N_load(module, size);
 		
-		
+		Context context = getContext();
 		if(context != null) {		
-			if(lenData == null) {
+			if(mainHash == null) {
 				try {
 					InputStream is = context.getAssets().open("songlengths.dat");
-					if(is != null) {
-						
+					if(is != null) {						
 						DataInputStream dis = new DataInputStream(is);
-						int count = dis.readInt();
+						hashLen = dis.readInt();
+						mainHash = new byte [hashLen * 6];
+						dis.read(mainHash);
+						int l = is.available()/2;
+						Log.v(TAG, String.format("We have %d lengths and %d hashes", l, hashLen));
+						extraLengths = new short [l];
+						for(int i=0; i<l; i++) {
+							extraLengths[i] = dis.readShort();
+						}
+						is.close();
 						
-						
-						
-						lenData = new byte [is.available()];		
-						is.read(lenData);
 					}
 				} catch (IOException e) {
 				}
 			}
 		}
 		
-		findMD5(module, size);
+		byte [] md5 = findMD5(module, size);
+		int first = 0;
+		int upto = hashLen;
+		
+		int found = -1;
+		
+		long key = ((md5[0]&0xff) << 24) | ((md5[1]&0xff) << 16) | ((md5[2]&0xff) << 8) | (md5[3] & 0xff);
+		key &= 0xffffffffL;
+		
+		short lens [] = new short [128];
+		
+    	Log.v(TAG, String.format("MD5 %08x", key));
+		while (first < upto) {
+	        int mid = (first + upto) / 2;  // Compute mid point.
+    		long hash = ((mainHash[mid*6]&0xff) << 24) | ((mainHash[mid*6+1]&0xff) << 16) | ((mainHash[mid*6+2]&0xff) << 8) | (mainHash[mid*6+3] & 0xff);
+    		hash &= 0xffffffffL;
+
+        	Log.v(TAG, String.format("offs %x, hash %08x", mid, hash));
+	        if (key < hash) {
+	            upto = mid;     // repeat search in bottom half.
+	        } else if (key > hash) {
+	            first = mid + 1;  // Repeat search in top half.
+	        } else {
+	        	found = mid;
+	        	int len = ((mainHash[mid*6+4]&0xff)<<8) | (mainHash[mid*6+5]&0xff);
+    			Log.v(TAG, String.format("LEN: %x", len));
+	        	if((len & 0x8000) != 0) {
+	        		len &= 0x7fff;
+	        		int xl = 0;
+	        		int n = 0;
+	        		while((xl & 0x8000) == 0) {
+	        			xl = extraLengths[len++] & 0xffff;
+	        			lens[n++] = (short)(xl & 0x7fff);
+	        		}
+	        		
+	        		for(int i=0; i<n; i++) {
+	        			Log.v(TAG, String.format("LEN: %02d:%02d", lens[i]/60, lens[i]%60));
+	        		}
+	        	} else {
+	        		Log.v(TAG, String.format("SINGLE LEN: %02d:%02d", len/60, len%60));
+	        	}
+	        	
+	        	
+	        	break;
+	        }
+	    }
+		
+		Log.v(TAG, String.format("Found md5 at offset %d", found));
 		
 		return rc != 0 ? rc : null; 
 	}
@@ -160,7 +211,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 					}
 
 	 */
-	private void findMD5(byte[] module, int size) {
+	private byte [] findMD5(byte[] module, int size) {
 
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
 		src.order(ByteOrder.BIG_ENDIAN);
@@ -207,12 +258,13 @@ public class SidplayPlugin extends DroidSoundPlugin {
 			md.update(d);
 			
 			md5 = md.digest();
-			Log.v(TAG, String.format("%d %02x %02x DIGEST %02x %02x %02x %02x", d.length, d[0], d[1], md5[0], md5[1], md5[2], md5[3])); 
+			Log.v(TAG, String.format("%d %02x %02x DIGEST %02x %02x %02x %02x", d.length, d[0], d[1], md5[0], md5[1], md5[2], md5[3]));
+			return md5;
 			
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-
+		return null;
 	}
 
 
@@ -255,7 +307,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		return (N_getIntInfo((Long)song, 100) != 0);
 	}
 	
-
+/*
 	@Override
 	public Object load(File file) throws IOException {
 		
@@ -269,7 +321,8 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		fs.read(songBuffer);
 		fs.close();
 
+		
 		long rc = N_load(songBuffer, l);		
 		return rc != 0 ? rc : null; 
-	}
+	} */
 }

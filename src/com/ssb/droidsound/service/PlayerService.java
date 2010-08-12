@@ -224,7 +224,7 @@ public class PlayerService extends Service {
 	public void onCreate() {
 		super.onCreate();		
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-		player = new Player(audioManager, mHandler);
+		player = new Player(audioManager, mHandler, getApplicationContext());
 		callbacks = new ArrayList<IPlayerServiceCallback>();
 		info = new Object [20];
 		for(int i=0; i<20; i++)

@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.ssb.droidsound.SongDatabase;
 
+import android.content.Context;
 import android.util.Log;
 
 
@@ -19,7 +20,8 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 	private Set<String> extensions;
 
-	public ModPlugin() {		
+	public ModPlugin(Context ctx) {
+		super(ctx);
 		extensions = new HashSet<String>();
 		extensions.add("MOD");
 		extensions.add("XM");
