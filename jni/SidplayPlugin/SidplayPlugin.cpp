@@ -89,6 +89,9 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		player->sidtune->getInfo(player->sidInfo);
 
+		SidTuneInfo &i = player->sidInfo;
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "INFO CL %x SP %x / I %x L %x NO %x LEN %d", i.clockSpeed, i.songSpeed, i.initAddr, i.loadAddr, i.songs, i.c64dataLen);
 
 		player->sidemu = new sidplay2;
 
@@ -212,7 +215,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getIntIn
 	switch(what)
 	{
 	case INFO_LENGTH:
-		return 5*60*1000;
+		return-1;
 	case INFO_SUBTUNES:
 		return player->sidInfo.songs;
 	case INFO_STARTTUNE:

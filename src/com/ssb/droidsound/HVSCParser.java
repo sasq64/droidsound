@@ -4,134 +4,54 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import android.util.Log;
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
+import android.provider.BaseColumns;
 
 public class HVSCParser {
 	private static final String TAG = HVSCParser.class.getSimpleName();
+
+	static void parseSongLengths(InputStream is, SQLiteDatabase db) throws IOException {
 		
-	static private class XInfo {
-		List<String> names;
-		List<short[]> lengths;
-	};
-
-	static private class Info {
-		XInfo xinfo;
-		short length;
-	};
-	
-	
-	Map<Integer, Info> nameMap;
-	
-
-	short[] getSongLength(String name) {
-		String n = name.substring(8);
-		int hc = n.hashCode();
-		Info info = nameMap.get(hc);
-		if(info != null) {
-			if(info.xinfo == null) {
-				short [] s = new short [1];
-				s[0] = info.length;
-				return s;
-			}
-			for(int i = 0; i<info.xinfo.names.size(); i++) {
-				if(info.xinfo.names.get(i).equals(n)) {
-					return info.xinfo.lengths.get(i);
-				}
-			}
-		}
-		return null;
-	}
-	
-	void free() {
-		nameMap = null;
-	}
-
-	
-	void parseSongLengths(InputStream is) throws IOException {
+		ContentValues values = new ContentValues();
 		
 		InputStreamReader reader = new InputStreamReader(is);
 		BufferedReader breader = new BufferedReader(reader);
-		String line0, line1;
-
-		nameMap = new HashMap<Integer, Info>();
+		String line;
 		
-		line0 = breader.readLine();
-		if(line0.equals("[Database]")) {
-			int counter = 0;
+		line = breader.readLine();
+		if(line.equals("[Database]")) {
+			//int counter = 0;
+			
+			db.execSQL("DROP TABLE IF EXISTS SONGINFO");
+			db.execSQL("CREATE TABLE IF NOT EXISTS SONGINFO (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"HASH INTEGER," +
+					"MD5 TEXT," +
+					"COMMENT TEXT," +
+					"SONGLENGTH TEXT" + ");");
+			
+			//db.beginTransaction();
 			while(true) {
-				line0 = breader.readLine();
+				breader.readLine();
 				
-				counter++;
-				if(counter == 4630) {
-					break;
-				}
+				//counter++;
+				//if(counter == 4630) {
+				//	break;
+				//}
 				
-				if(line0 == null)
+				line = breader.readLine();
+				if(line == null)
 					break;
-				line1 = breader.readLine();
-				if(line1 == null)
-					break;
-				String name = line0.substring(2);
-				int eq = line1.indexOf('=');
+				int eq = line.indexOf('=');
 				if(eq > 0) {
-					short [] array = null;
-					
-					String [] lengths;
-					if(line1.indexOf(' ') < 0) {
-						lengths = new String [1];
-						lengths[0] = line1.substring(eq+1);
-					} else {
-						lengths = line1.substring(eq+1).split(" ");
-					}
-					//System.out.printf("%s = %s\n", name, length);
-					//int len = Integer.parseInt(arg0);
-					int hc = name.hashCode();
-					if(name.equals("/GAMES/0-9/5_A_Row.sid")) {
-						Log.v(TAG, String.format("Name '%s'%d %d : %s", name, hc, lengths.length, lengths[0]));
-					}
-											
-					Info info = nameMap.get(hc);
-					
-					if(info != null || lengths.length > 1) {
-						Log.v(TAG, "Allocating extra info");
-						if(info == null) {
-							info = new Info();
-							info.length = -1;
-						}
-						if(info.xinfo == null) {
-							info.xinfo = new XInfo();
-							info.xinfo.names = new ArrayList<String>();
-							info.xinfo.lengths = new ArrayList<short[]>();
-						}
-
-						info.xinfo.names.add(name);
-						array = new short [lengths.length];
-						info.xinfo.lengths.add(array);
-
-					} else {
-						info = new Info();
-					}
-					int i = 0;
-					for(String x : lengths) {
-						int colon = x.indexOf(':');
-						int para =  x.indexOf('(');
-						if(para > 0) {
-							x = x.substring(0,para);
-						}
-
-						info.length = (short) (Integer.parseInt(x.substring(0, colon)) * 60 + Integer.parseInt(x.substring(colon+1)));
-						if(array != null) {
-							array[i++] = info.length;
-						}
-					}
-					
-					nameMap.put(name.hashCode(), info);
-					
+					String md5 = line.substring(0,eq);
+					String lens = line.substring(eq+1);
+					int hash = (int)(Long.parseLong(md5.substring(24), 16) & 0xffffffff);
+					values.put("HASH", hash);
+					values.put("MD5", md5);
+					values.put("SONGLENGTH", lens);
+					db.insert("SONGINFO", "HASH", values);
 				}
 			}
 		}

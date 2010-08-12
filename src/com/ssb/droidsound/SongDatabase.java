@@ -62,6 +62,11 @@ public class SongDatabase implements Runnable {
 		void notifyScan(String path, int percent);
 	}
 	
+	public static class SongInfo {
+		String comment;
+		String length;
+	};
+	
 	public static interface DataSource {
 
 		boolean parseDump(File dump, SQLiteDatabase scanDb, ScanCallback scanCallback);
@@ -209,6 +214,7 @@ public class SongDatabase implements Runnable {
 				db.execSQL("DROP TABLE IF EXISTS FILES ;");
 				db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
 				db.execSQL("DROP TABLE IF EXISTS LINKS ;");
+				//db.execSQL("DROP TABLE IF EXISTS SONGINFO");
 				db.setVersion(DB_VERSION);
 			}
 	
@@ -217,6 +223,14 @@ public class SongDatabase implements Runnable {
 					scanCallback.notifyScan("Creating database", 0);
 				}
 			}
+			
+			/*
+			db.execSQL("CREATE TABLE IF NOT EXISTS SONGINFO (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"HASH INTEGER," +
+					"MD5 TEXT," +
+					"COMMENT TEXT," +
+					"SONGLENGTH TEXT" + ");"); */
+
 
 			db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"PATH" + " TEXT," +
@@ -291,17 +305,14 @@ public class SongDatabase implements Runnable {
 		NativeZipFile zfile = new NativeZipFile(zipFile);
 		Log.v(TAG, "ENTRY");
 		
+		String baseNameNoSlash = zipFile.getPath();
 		String baseName = zipFile.getPath() + "/";
 		// Basename = /sdcard/MODS/C64Music.zip/
 
-		
-		HVSCParser hvsc = null;
-		ZipEntry infoe = zfile.getEntry("C64Music/DOCUMENTS/Songlengths.txt");
-		if(infoe != null) {
-			hvsc = new HVSCParser();
-			hvsc.parseSongLengths(zfile.getInputStream(infoe));
-		}
-		
+		//ZipEntry infoe = zfile.getEntry("C64Music/DOCUMENTS/Songlengths.txt");
+		//if(infoe != null) {
+		//	HVSCParser.parseSongLengths(zfile.getInputStream(infoe), scanDb);
+		//}		
 		
 		Log.v(TAG, "ENUM");
 		Enumeration<? extends ZipEntry> entries = zfile.entries();
@@ -333,7 +344,12 @@ public class SongDatabase implements Runnable {
 			String n = ze.getName();			
 			int slash = n.lastIndexOf('/');				
 			String fileName = n.substring(slash+1);
-			String path = baseName + n.substring(0, slash);
+			String path;
+			if(slash >= 0) {
+				path = baseName + n.substring(0, slash);
+			} else {
+				path = baseNameNoSlash;
+			}
 
 			if(fileName.equals("")) {
 				pathSet.add(path);
@@ -344,12 +360,7 @@ public class SongDatabase implements Runnable {
 				is.close();
 	
 				if(info != null) {
-					
-					if(hvsc != null) {
-						short [] s = hvsc.getSongLength(n);
-						values.put("LENGTH", s[0]);
-					}
-					
+
 					values.put("TITLE", info.title);
 					values.put("COMPOSER", info.composer);
 					values.put("COPYRIGHT", info.copyright);
@@ -1128,4 +1139,41 @@ public class SongDatabase implements Runnable {
 			}
 		}
 	}
+	/*
+	public SongInfo getInfo(String md5) {
+		
+		int hash = (int)(Long.parseLong(md5.substring(24), 16) & 0xffffffff);
+		String hashStr = Integer.toString(hash);
+		
+		if(rdb == null) {
+			rdb = getReadableDatabase();
+		}
+
+		if(rdb.isDbLockedByOtherThreads()) {
+			return null;
+		}
+		
+		Cursor c = rdb.query("SONGINFO", new String [] { "MD5", "COMMENT", "SONGLENGTH" }, "HASH=?", new String[] { hashStr } ,null, null, null);
+
+		SongInfo info = new SongInfo();
+		
+		if(c.getCount() == 1) {
+			info.comment = c.getString(1);
+			info.length = c.getString(2);
+			return info;
+		}
+		
+		while(c.moveToNext()) {
+			String dbmd5 = c.getString(0);
+			Log.v(TAG, String.format("Comparing %s to %s", dbmd5, md5));
+			if(dbmd5.equals(md5)) {
+				info.comment = c.getString(1);
+				info.length = c.getString(2);
+				return info;
+			}			
+		}
+		
+		return null;
+	}
+	*/
 }

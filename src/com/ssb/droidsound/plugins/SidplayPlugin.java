@@ -1,10 +1,16 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
+import android.content.Context;
 import android.util.Log;
 
 public class SidplayPlugin extends DroidSoundPlugin {
@@ -23,10 +29,16 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	};
 	
 	final byte [] header = new byte [128];
+	private Context context;
+	private byte[] lenData;
 
 	public SidplayPlugin() {
 	}
 	
+	public SidplayPlugin(Context ctx) {
+		context = ctx;
+	}
+
 	@Override
 	public boolean canHandle(String name) { 
 		//return N_canHandle(name);
@@ -66,9 +78,34 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	native public String N_getStringInfo(long song, int what);
 	native public int N_getIntInfo(long song, int what);
 
+	
+	
 	@Override
 	public Object load(byte [] module, int size) {
-		long rc = N_load(module, size);		
+		long rc = N_load(module, size);
+		
+		
+		if(context != null) {		
+			if(lenData == null) {
+				try {
+					InputStream is = context.getAssets().open("songlengths.dat");
+					if(is != null) {
+						
+						DataInputStream dis = new DataInputStream(is);
+						int count = dis.readInt();
+						
+						
+						
+						lenData = new byte [is.available()];		
+						is.read(lenData);
+					}
+				} catch (IOException e) {
+				}
+			}
+		}
+		
+		findMD5(module, size);
+		
 		return rc != 0 ? rc : null; 
 	}
 
@@ -104,6 +141,78 @@ public class SidplayPlugin extends DroidSoundPlugin {
 			info[3] = sids[m];
 		}
 		return info;
+	}
+	
+	/* 					if(currentSongInfo.md5 != null) {					
+						final String HEX = "0123456789abcdef";
+						
+						StringBuilder sb = new StringBuilder(16);
+						for(int i=0; i<16; i++) {
+							byte x = currentSongInfo.md5[i];
+							sb.append(HEX.charAt((x>>4)&0xf)).append(HEX.charAt(x&0xf));
+						}
+						
+						info[SONG_MD5] = sb.toString();
+						Log.v(TAG, "MD5: " + info[SONG_MD5]);
+
+					} else {
+						Log.v(TAG, "No MD5!");
+					}
+
+	 */
+	private void findMD5(byte[] module, int size) {
+
+		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
+		src.order(ByteOrder.BIG_ENDIAN);
+		
+		src.position(4);
+		int version = src.getShort();
+		src.position(8);
+		short loadAdress = src.getShort();
+		short initAdress = src.getShort();
+		short playAdress = src.getShort();
+		short songs = src.getShort();
+		short startSong = src.getShort();
+		int speed = src.getInt();
+		
+		int offset = 120;
+		if(version == 2) {
+			offset = 126;
+		}
+		
+		Log.v(TAG, String.format("speed %08x, left %d songs %d init %x", speed, size - offset, songs, initAdress));
+		
+		byte[] md5 = null;
+		
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			
+			md.update(module, offset, size - offset);
+			
+			ByteBuffer dest = ByteBuffer.allocate(6 + songs);
+			dest.order(ByteOrder.LITTLE_ENDIAN);
+			
+			dest.putShort(initAdress);
+			dest.putShort(playAdress);
+			dest.putShort(songs);
+			
+			for(int i=0; i<songs; i++) {
+				if((speed & (1<<i)) != 0) {
+					dest.put((byte)0);
+				} else {
+					dest.put((byte)60);
+				}
+			}
+			byte [] d = dest.array();
+			md.update(d);
+			
+			md5 = md.digest();
+			Log.v(TAG, String.format("%d %02x %02x DIGEST %02x %02x %02x %02x", d.length, d[0], d[1], md5[0], md5[1], md5[2], md5[3])); 
+			
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 

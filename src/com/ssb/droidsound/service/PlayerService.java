@@ -51,10 +51,14 @@ public class PlayerService extends Service {
 	public static final int SONG_STATE = 11;
 	
 	public static final int SONG_DETAILS = 12;
+	public static final int SONG_MD5 = 13;
+	
+	public static final int SONG_SIZEOF = 14;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
 	public static final int OPTION_PLAYBACK_ORDER = 2;
+
 	
 	private Object info[];
 
@@ -116,6 +120,7 @@ public class PlayerService extends Service {
 					info[SONG_TOTALSONGS] = currentSongInfo.subTunes;
 					info[SONG_SUBSONG] = currentSongInfo.startTune;
 					info[SONG_GAMENAME] = currentSongInfo.game;
+					
 					info[SONG_STATE] = 1;
 
         			String text = "Unnamed song.";
@@ -143,7 +148,7 @@ public class PlayerService extends Service {
 
                 	
 
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_MD5, SONG_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
@@ -360,7 +365,7 @@ public class PlayerService extends Service {
 		public void registerCallback(IPlayerServiceCallback cb, int flags) throws RemoteException {
 			
 			if(cb != null) {
-				for(int i=0; i<10; i++) {
+				for(int i=1; i<SONG_SIZEOF; i++) {
 					try {
 						if(info[i] != null) {
 							if(info[i] instanceof String) {

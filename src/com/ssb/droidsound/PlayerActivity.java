@@ -37,6 +37,7 @@ import android.view.View;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
+import android.view.animation.Animation;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -240,6 +241,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 	
 	private void flipTo(int what) {
+		flipTo(what, true);
+	}
+	
+	private void flipTo(int what, boolean animate) {
+		Animation ia = null;
+		Animation oa = null;
+		if(!animate) {
+			ia = flipper.getInAnimation();
+			oa = flipper.getOutAnimation();
+			flipper.setInAnimation(null);
+			flipper.setOutAnimation(null);
+		}
 		
 		if(what < 3) {
 			if(flipper.getDisplayedChild() != what) {
@@ -250,6 +263,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		} else if(what == PREV_VIEW) {
 			flipper.showPrevious();
 		}
+		
+		if(ia != null) {
+			flipper.setInAnimation(ia);
+			flipper.setOutAnimation(oa);
+		}
+		
 		
 		switch(flipper.getDisplayedChild()) {
 		case INFO_VIEW:
@@ -484,7 +503,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			searchListView.setCursor(searchCursor, null);
 			songDatabase.setActivePlaylist(new File(lastConfig.activePlaylist));
 			searchQuery = lastConfig.query;
-	 		flipTo(lastConfig.flipper);
+	 		flipTo(lastConfig.flipper, false);
 		}
 		
 		if(!created && lastConfig == null) {
@@ -761,8 +780,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public void intChanged(int what, int value) {
 		switch(what) {
 		case PlayerService.SONG_LENGTH :
-			songLength = value/1000;
-			songTotalText.setText(String.format("%02d:%02d", songLength/60, songLength%60));
+			if(value >= 0) {
+				songLength = value/1000;
+				songTotalText.setText(String.format("%02d:%02d", songLength/60, songLength%60));
+			}
 			break;
 		case PlayerService.SONG_POS :
 			songPos = value/1000;
@@ -797,8 +818,26 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 	}
 
+	
+	private short [] parseLength(String l) {
+		String [] lengths = l.split(" ");
+		short [] array = new short [lengths.length];
+		int i = 0;
+		for(String x : lengths) {
+			int colon = x.indexOf(':');
+			int para =  x.indexOf('(');
+			if(para > 0) {
+				x = x.substring(0,para);
+			}
+			array[i++] = (short) (Integer.parseInt(x.substring(0, colon)) * 60 + Integer.parseInt(x.substring(colon+1)));
+		}
+		return array;
+	}
+		
+	
 	@Override
 	public void stringChanged(int what, String value) {
+		SongDatabase.SongInfo info;
 		switch(what) {
 		case PlayerService.SONG_FILENAME :
 			playListView.setHilighted(value);
