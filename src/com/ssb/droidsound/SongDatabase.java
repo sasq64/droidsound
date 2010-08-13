@@ -209,6 +209,10 @@ public class SongDatabase implements Runnable {
 			if(drop) {
 				if(scanCallback != null) {
 					scanCallback.notifyScan("Dropping database", 0);
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+					}
 				}
 				Log.v(TAG, "Dropping file tables!");
 				db.execSQL("DROP TABLE IF EXISTS FILES ;");
@@ -1053,12 +1057,23 @@ public class SongDatabase implements Runnable {
 			if(rdb == null) {
 				rdb = getReadableDatabase();
 			}
-			Cursor cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH" }, "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() }, null, null, null);
+			Cursor cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() }, null, null, null);
+			
 			
 			//Log.v(TAG, String.format("Got %d results from query", cursor.getCount()));
 			
 			if(cursor != null && cursor.moveToFirst()) {
-				pl.add(cursor);
+				int type = cursor.getInt(cursor.getColumnIndex("TYPE"));
+				if(type == SongDatabase.TYPE_DIR) {
+					cursor.close();
+					cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=?", new String[] { f.getPath() }, null, null, "TITLE");
+					if(cursor.moveToFirst()) {
+						pl.add(cursor);
+					}
+					
+				} else if(type == SongDatabase.TYPE_FILE) {
+					pl.add(cursor);
+				}
 			}
 			cursor.close();
 		}

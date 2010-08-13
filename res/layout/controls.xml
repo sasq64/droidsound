@@ -8,13 +8,18 @@
 		<com.ssb.droidsound.FontTextView android:id="@+id/total_text" style="@style/LEDText" font="led" android:text="00:00" 
 		android:layout_width="96dp"/>		
 	</LinearLayout>	
-	
-	<com.ssb.droidsound.FontTextView android:id="@+id/songs_text"  style="@style/LEDText" font="led"
-		android:layout_gravity="center_horizontal" android:text="[01/01]" />
 
+	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" 
+		android:layout_gravity="center_horizontal" >	
+		<com.ssb.droidsound.FontTextView android:id="@+id/songs_text"  style="@style/LEDText" font="led"
+			 android:text="[01/01]" android:layout_gravity="center_vertical" />
+		<com.ssb.droidsound.FontTextView android:id="@+id/shuffle_text" style="@style/LEDText" font="led"
+			android:textColor="#80ffc0" android:paddingLeft="30dp"
+			android:text="SEQ" android:textSize="26dp" android:layout_gravity="center_vertical" />
+	</LinearLayout>
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="horizontal"
 	    android:layout_width="wrap_content" android:layout_height="fill_parent"
-	    android:layout_gravity="center_horizontal"
+	    android:layout_gravity="center_horizontal" 
 	    >
 	<ImageButton android:id="@+id/back_button" android:background="@drawable/back_button" style="@style/Button" android:scaleType="fitCenter" />
 	<ImageButton android:id="@+id/play_button" android:background="@drawable/play_button" style="@style/Button" android:scaleType="fitCenter" />

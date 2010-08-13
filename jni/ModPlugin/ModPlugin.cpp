@@ -29,20 +29,18 @@
 #define INFO_PATTERNS 102
 
 
-jstring NewString(JNIEnv *env, const char *str)
+static jstring NewString(JNIEnv *env, const char *str)
 {
-	static char temp[256];
-	char *ptr = temp;
+	static jchar temp[256];
+	jchar *ptr = temp;
 	while(*str) {
-		char c = *str++;
-		*ptr++ = ((c < 0x7f) && (c >= 0x20)) || c == 0xa ? c : '?';
+		unsigned char c = (unsigned char)*str++;
+		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
 	}
-	*ptr++ = 0;
-	jstring j = env->NewStringUTF(temp);
+	//*ptr++ = 0;
+	jstring j = env->NewString(temp, ptr - temp);
 	return j;
 }
-
-
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
 {
@@ -289,13 +287,13 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getString
 		int ns = ModPlug_NumSamples(info->mod);
 		__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "%d / %d instruments", ni, ns);
 		if(ni > 0) {
-			for(int i=0; i<ni; i++) {
+			for(int i=1; i<ni; i++) {
 				ModPlug_InstrumentName(info->mod, i, ptr);
 				ptr += strlen(ptr);
 				*ptr++ = 0xa;
 			}
 		} else if(ns > 0) {
-			for(int i=0; i<ns; i++) {
+			for(int i=1; i<ns; i++) {
 				ModPlug_SampleName(info->mod, i, ptr);
 				ptr += strlen(ptr);
 				*ptr++ = 0xa;

@@ -61,6 +61,7 @@ public class Player implements Runnable {
 	public static final int MSG_STATE = 1;
 	public static final int MSG_PROGRESS = 3;
 	protected static final int MSG_SILENT = 4;
+	public static final int MSG_SUBTUNE = 5;
 	
 	public static class SongInfo {
 		String title;
@@ -355,6 +356,7 @@ public class Player implements Runnable {
 	@Override
 	public void run() {
 
+		boolean ok;
 		currentPlugin = null;
 
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
@@ -366,7 +368,7 @@ public class Player implements Runnable {
 				if(command != Command.NO_COMMAND) {
 					
 					Log.v(TAG, String.format("Command %s while in state %s", command.toString(), currentState.toString()));
-					
+
 					synchronized (cmdLock) {
 						switch(command) {
 						case PLAY:
@@ -392,7 +394,15 @@ public class Player implements Runnable {
 									lastPos = -1000;
 								}
 							case SET_TUNE:
-								currentPlugin.setTune(songRef, (Integer)argument);
+								if(currentPlugin.setTune(songRef, (Integer)argument)) {
+									currentPosition = 0;
+									lastPos = -1000;
+									audioTrack.flush();
+									//int pos = audioTrack.getPlaybackHeadPosition();
+									currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);									
+									Message msg = mHandler.obtainMessage(MSG_SUBTUNE, (Integer)argument, currentSong.length);
+									mHandler.sendMessage(msg);
+								}
 								break;
 							case PAUSE :
 								if(currentState == State.PLAYING) {

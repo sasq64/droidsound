@@ -16,6 +16,7 @@
 	<item android:id="@+id/add_to_plist" android:title="@string/add_to_plist" />
 
 	<group android:id="@+id/in_playlist">
+		<item android:id="@+id/go_author" android:title="@string/go_to_author" />
 		<item android:id="@+id/remove" android:title="@string/remove" />
 		<item android:id="@+id/remove_all" android:title="@string/remove_all" />
 	</group>

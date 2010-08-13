@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 import com.ssb.droidsound.service.Player.SongInfo;
 
@@ -57,8 +58,11 @@ public class PlayerService extends Service {
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
-	public static final int OPTION_PLAYBACK_ORDER = 2;
+	public static final int OPTION_RESPECT_LENGTH = 2;
+	public static final int OPTION_PLAYBACK_ORDER = 3;
 
+	private static Random rgen = new Random(System.currentTimeMillis());
+	private short[] shuffleArray;
 	
 	private Object info[];
 
@@ -73,6 +77,8 @@ public class PlayerService extends Service {
 	
 	private boolean userInterferred;
 	private boolean silenceDetect;
+	private boolean respectLength = true;
+	private boolean shuffleSongs;
 	
 	private TextToSpeech textToSpeech;
 	private int ttsStatus = -1;
@@ -105,6 +111,12 @@ public class PlayerService extends Service {
         public void handleMessage(Message msg) {
         	//Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
             switch (msg.what) {
+            	case Player.MSG_SUBTUNE:
+            		Log.v(TAG, String.format("SUBTUNE %d, Length %d", msg.arg1, msg.arg2));
+            		info[SONG_SUBSONG] = msg.arg1;
+            		info[SONG_LENGTH] = msg.arg2;
+        			performCallback(SONG_SUBSONG, SONG_LENGTH);
+            		break;
                 case Player.MSG_NEWSONG:
                 	
                 	player.getSongInfo(currentSongInfo);
@@ -155,12 +167,23 @@ public class PlayerService extends Service {
                 	playNextSong();
                     break;
                 case Player.MSG_PROGRESS:
-                	info[SONG_POS] = (Integer)msg.arg1;
-                	performCallback(SONG_POS);
+                	int l = (Integer)info[SONG_LENGTH];
+                	if(l > 0 && (msg.arg1 >= l) && respectLength && !userInterferred) {
+                		playNextSong();
+                	} else {                	
+                    	info[SONG_POS] = (Integer)msg.arg1;
+                		performCallback(SONG_POS);
+                	}
     				break;
                 case Player.MSG_STATE:
                 	info[SONG_STATE] = (Integer)msg.arg1;
-                	performCallback(SONG_STATE);
+                	
+                	if(msg.arg1 == 0) {
+                		info[SONG_POS] = info[SONG_SUBSONG] = info[SONG_TOTALSONGS] = info[SONG_LENGTH] = 0;
+                		performCallback(SONG_POS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_LENGTH, SONG_STATE);
+                	} else {                	
+                		performCallback(SONG_STATE);
+                	}
                 	break;
                 case Player.MSG_SILENT:
                 	if(silenceDetect) {
@@ -199,7 +222,8 @@ public class PlayerService extends Service {
     	if(musicList != null) {
     		musicListPos++;
     		if(musicListPos < musicList.length) {    			
-           		info[SONG_FILENAME] = musicList[musicListPos];
+           		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
+           		createThread();
            		player.playMod((String)info[SONG_FILENAME]);
            		return;
     		}
@@ -211,7 +235,8 @@ public class PlayerService extends Service {
     	if(musicList != null) {
     		musicListPos--;
     		if(musicListPos >= 0) {
-           		info[SONG_FILENAME] = musicList[musicListPos];
+           		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
+           		createThread();
            		player.playMod((String)info[SONG_FILENAME]);
            		return;
     		}
@@ -279,9 +304,13 @@ public class PlayerService extends Service {
 				String f =  b.getString("musicFile");
 				musicListPos = b.getInt("musicPos");
 				musicList = (String []) b.getSerializable("musicList");
+				if(musicList != null) {
+					shuffleArray = new short [musicList.length];
+					//unshuffle();
+				}
 				if(f == null) {
 					if(musicListPos >= 0) {
-						f = musicList[musicListPos];
+						f = musicList[shuffleArray[musicListPos]];
 					}
 				}
 				createThread();
@@ -346,12 +375,15 @@ public class PlayerService extends Service {
 	
 	private final IPlayerService.Stub mBinder = new IPlayerService.Stub() {
 
+
+
+
 		@Override
 		public boolean playMod(String name) throws RemoteException {
 			Log.v(TAG, "Playmod called " + name);
 			
 			if(musicList != null && musicListPos >= 0) {
-				musicList[musicListPos] = name;
+				musicList[shuffleArray[musicListPos]] = name;
 			}
 			
 			createThread();
@@ -395,11 +427,20 @@ public class PlayerService extends Service {
 		
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
-			if(player.isActive()) {
-				player.paused(!play);
-				return true;
+			if(!player.isActive() && play) {
+				if(musicList != null) {
+		    		if(musicListPos >= 0) {
+		           		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
+		           		createThread();
+		           		player.playMod((String)info[SONG_FILENAME]);
+		           		return true;
+		    		}
+				}
 			}
-			return false;
+			player.paused(!play);
+			return true;
+			//}
+			//return false;
 		}
 
 		@Override
@@ -421,8 +462,7 @@ public class PlayerService extends Service {
 		@Override
 		public boolean setSubSong(int song) throws RemoteException {
 			player.setSubSong(song);
-			info[SONG_SUBSONG] = (Integer)song;
-			performCallback(SONG_SUBSONG);
+			info[SONG_SUBSONG] = (Integer)song;			
 			userInterferred = true;
 			return true;
 			
@@ -438,6 +478,19 @@ public class PlayerService extends Service {
 			case OPTION_SILENCE_DETECT:
 				Log.v(TAG, "Silence detection " + arg);
 				silenceDetect = on;
+				break;
+			case OPTION_PLAYBACK_ORDER:
+				unshuffle();
+				if(arg.charAt(0) == 'R') {
+					shuffleSongs = true;
+					shuffle();
+				} else {
+					shuffleSongs = false;
+				}
+				break;
+			case OPTION_RESPECT_LENGTH:
+				Log.v(TAG, "Respect length " + arg);
+				respectLength = on;
 				break;
 			case OPTION_SPEECH:
 				if(on) {
@@ -462,11 +515,68 @@ public class PlayerService extends Service {
 				break;
 			}
 		}
+		
+
+		private void shuffle() {
+			if(shuffleArray != null) {
+				short t;
+				for (int i=musicListPos+1; i<shuffleArray.length; i++) {					
+				    int randomPosition = rgen.nextInt(shuffleArray.length-1) + 1;
+				    t = shuffleArray[i];
+				    shuffleArray[i] = shuffleArray[randomPosition];
+				    shuffleArray[randomPosition] = t;
+				}
+			}
+		}
+		
+		private void unshuffle() {
+			if(shuffleArray != null) {
+				musicListPos = shuffleArray[musicListPos];
+				for (int i=0; i<shuffleArray.length; i++) {
+					shuffleArray[i] = (short)i;
+				}
+			}
+		}
 
 		@Override
 		public boolean playList(String[] names, int startIndex) throws RemoteException {
 			musicList = names;
+			
+			shuffleArray = new short [musicList.length];
+			musicListPos = 0;
+			unshuffle();
 			musicListPos = startIndex;
+
+			if(shuffleSongs) {
+				musicListPos = 0;
+				shuffle();
+				for(int i=0; i<shuffleArray.length; i++) {
+					if(shuffleArray[i] == startIndex) {
+						shuffleArray[i] = 0;
+						shuffleArray[0] = (short) startIndex;
+						break;
+					}
+				}
+				
+			}		
+			
+			for(int i=0; i<shuffleArray.length; i++) {
+				Log.v(TAG, String.format("%02d: %02d", i, shuffleArray[i]));
+			}
+			/*
+				temp = musicList[0];
+				musicList[0] = musicList[startIndex];
+				musicList[startIndex] = temp;
+				startIndex = 0;
+				
+				for (int i=1; i<musicList.length; i++) {					
+				    int randomPosition = rgen.nextInt(musicList.length-1) + 1;
+				    temp = musicList[i];
+				    musicList[i] = musicList[randomPosition];
+				    musicList[randomPosition] = temp;
+				}
+			} */
+			
 			String name = names[startIndex];			
 			Log.v(TAG, "PlayList called " + name);
 			createThread();

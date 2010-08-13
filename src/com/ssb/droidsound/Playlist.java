@@ -164,7 +164,7 @@ public class Playlist {
 				lines.add(fileToLine(f));
 			}			
 		} else {
-			// Log.v(TAG, "Adding " + file.getPath());
+			Log.v(TAG, "Adding " + file.getPath());
 			lines.add(fileToLine(file));
 		}
 		cursor = null;
@@ -172,24 +172,29 @@ public class Playlist {
 	}
 	
 	public void add(Cursor c) {
-		String title = c.getString(c.getColumnIndex("TITLE"));
-		String composer = c.getString(c.getColumnIndex("COMPOSER"));
-		String filename = c.getString(c.getColumnIndex("FILENAME"));
-		String path = c.getString(c.getColumnIndex("PATH"));
-
-		String line = new File(path, filename).getPath();
-
-		if(title != null) {
-			line = line + "\t" + title;
-			if(composer != null) {
-				line = line + "\t" + composer;
-			}
-		}
-
-		// Log.v(TAG, "Adding ## " + line);
-
 		
-		lines.add(line);
+		while(true) {		
+			String title = c.getString(c.getColumnIndex("TITLE"));
+			String composer = c.getString(c.getColumnIndex("COMPOSER"));
+			String filename = c.getString(c.getColumnIndex("FILENAME"));
+			String path = c.getString(c.getColumnIndex("PATH"));
+	
+			String line = new File(path, filename).getPath();
+	
+			if(title != null) {
+				line = line + "\t" + title;
+				if(composer != null) {
+					line = line + "\t" + composer;
+				}
+			}
+	
+			Log.v(TAG, "Adding ## " + line);
+
+			lines.add(line);
+			if(!c.moveToNext())
+				break;
+		}
+		
 		changed = true;
 		cursor = null;
 	}
@@ -240,6 +245,7 @@ public class Playlist {
 	}
 
 	public void clear() {
+		Log.v(TAG, String.format("Clearing playlist %s with %d entries", plistFile.getPath(), lines.size()));
 		lines = new ArrayList<String>();
 		cursor = null;
 		changed = true;
