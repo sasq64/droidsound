@@ -2,9 +2,11 @@ package com.ssb.droidsound.service;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 
 import com.ssb.droidsound.service.Player.SongInfo;
@@ -104,6 +106,74 @@ public class PlayerService extends Service {
 		}
 	}
 
+	final static String stripChars = "[]!<>?#${}"; 
+	final static String blankChars = ".-^";
+	
+	final static Map<String, String> composerTranslation = new HashMap<String, String>();
+	
+	static {
+		
+		Map<String, String> ct = composerTranslation;
+		
+		ct.put("GOTO80", "Go to 80");
+		ct.put("RAVEGURU", "Rave guru");
+		ct.put("A MAN", "A.Man");
+		ct.put("SMALLTOWN BOY", "Small town boy");
+		ct.put("PVCF", "P V C F");
+		ct.put("AGEMIXER", "Age mixer");
+		ct.put("RADIANTX", "Radiant X");
+		ct.put("TWOFLOWER", "Two flower");
+		ct.put("NECROPOLO", "Necro Polo");
+		ct.put("MINDFLOW", "Mind Flow");
+		ct.put("MAKTONE", "Mac toane");
+		ct.put("NE7", "N.E 7");
+		ct.put("GLENN RUNE GALLEFOSS", "Glen Rooneh Galleh foss");
+	}
+	
+
+	private String fixSpeech(String s, boolean composer) {
+		StringBuilder sb = new StringBuilder();
+		
+		if(s.equals("<?>")) {
+			return "Unnamed";
+		}
+		
+		for(int i=0; i<s.length(); i++) {
+			char c = s.charAt(i);
+			if(stripChars.indexOf(c) == -1) {
+				if(blankChars.indexOf(c) != -1) {
+					c = ' ';
+				}
+				
+				switch(c) {
+				case '&':
+					sb.append(" and ");
+					break;
+				case '/':
+					if(composer) {
+						sb.append(" of ");
+					} else {
+						sb.append(' ');
+					}
+					break;
+				default:
+					sb.append(c);
+					break;
+				}
+			}
+		}
+		
+		if(composer) {
+			String a = sb.toString().toUpperCase();
+			String x = composerTranslation.get(a);
+			Log.v(TAG, String.format("Checked %s became %s", a, x == null ? "NULL" : x));
+			if(x != null) {
+				return x;
+			}
+		}
+		
+		return sb.toString();
+	}
 	
     private Handler mHandler = new Handler() {
 
@@ -136,26 +206,30 @@ public class PlayerService extends Service {
 					info[SONG_STATE] = 1;
 
         			String text = "Unnamed song.";
-        			String songComposer = (String) info[SONG_AUTHOR];
-        			String songTitle = (String) info[SONG_TITLE];
 
         			if(ttsStatus >= 0) {
-        				if(songComposer != null & songComposer.length() > 1) {
-        					
-        					if(songComposer.endsWith(")")) {
-        						int lpara = songComposer.lastIndexOf("(");
-        						int rpara = songComposer.lastIndexOf(")");
-        						if(lpara > 0) {
-        							songComposer = songComposer.substring(lpara+1, rpara);
-        						}
-        					}
-        					text = songTitle + ". By " + songComposer + ".";
-        					
+            			
+        				String songComposer = (String) info[SONG_AUTHOR];
+        				
+        				if(songComposer.endsWith(")")) {
+    						int lpara = songComposer.lastIndexOf("(");
+    						int rpara = songComposer.lastIndexOf(")");
+    						if(lpara > 0) {
+    							songComposer = songComposer.substring(lpara+1, rpara);
+    						}
+    					}
+        				
+            			String songTitle = fixSpeech((String) info[SONG_TITLE], false);            			
+            			songComposer = fixSpeech(songComposer, true);
+            			
+
+        				if(songComposer != null & songComposer.length() > 1) {        					        					
+        					text = songTitle + ". By " + songComposer + ".";        					
         				} else {
         					text = songTitle + ".";
         				}
         				Log.v(TAG, String.format("Saying '%s'", text));
-        				textToSpeech.speak(text, TextToSpeech.QUEUE_ADD, null);
+        				textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
         			}
 
                 	

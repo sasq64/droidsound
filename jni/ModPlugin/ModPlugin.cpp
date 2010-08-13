@@ -104,7 +104,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1loadInfo(JN
 }
 
 
-
+/*
 void guessAuthor(ModInfo *info)
 {
 	char temp[256];
@@ -176,6 +176,7 @@ void guessAuthor(ModInfo *info)
 	}
 
 }
+*/
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
@@ -197,10 +198,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 	{
 		info = new ModInfo();
 		info->mod = mod;
-		guessAuthor(info);
+		//guessAuthor(info);
 		strcpy(info->mod_name, ModPlug_GetName(mod));
 		info->mod_length = ModPlug_GetLength(mod);
 		info->modType = "MOD";
+		*info->author = 0;
 
 		settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
 		settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
