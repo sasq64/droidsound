@@ -1,10 +1,14 @@
 package com.ssb.droidsound;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipFile;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -56,7 +60,8 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
 	private static final String TAG = "PlayerActivity";
 	
-	public static final String DROIDSOUND_VERSION = "beta 4";
+	public static final String DROIDSOUND_VERSION = "beta 5";
+	public static final int VERSION = 15;
 	
 	private static class Config {
 		int ttsStatus;
@@ -377,7 +382,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		boolean indexUnknown = prefs.getBoolean("extensions", false);
 		FileIdentifier.setIndexUnknown(indexUnknown);
-
 		
 		currentPlaylistView = playListView;
 		
@@ -410,6 +414,43 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(!modsDir.exists()) {
 			showDialog(R.string.sdcard_not_found);
 		}
+		
+		
+		int version = prefs.getInt("version", -1);
+		if(version == -1) {
+			File tempFile = new File(modsDir, "Examples.zip");
+			if(!tempFile.exists()) {
+				try {
+					InputStream is = getAssets().open("Examples.zip");
+					if(is != null) {
+						
+						
+						FileOutputStream os = new FileOutputStream(tempFile);
+						
+						byte [] buffer = new byte [1024*64];
+						
+						int rc = 0;
+						while(rc >= 0) {
+							rc = is.read(buffer);
+							if(rc > 0) {
+								os.write(buffer, 0, rc);
+							}
+						}
+						os.close();
+						is.close();
+					}
+				
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} else {
+				version = 0;
+			}
+		}
+		
+		Editor e = prefs.edit();
+		e.putInt("version", VERSION);
+		e.commit();
 		
 		String cp = prefs.getString("currentPath", null);
 		if(cp == null) {
@@ -488,9 +529,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				FileWriter fw = new FileWriter(mf);
 				fw.close();
 				Log.v(TAG, "Done");
-			} catch (IOException e) {
+			} catch (IOException e2) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				e2.printStackTrace();
 			}
 		}
 		
@@ -676,6 +717,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 		
+		if(version == -1) {
+			showDialog(R.string.unpack_examples);
+		}
+		
 		/* shuffleButton.setOnCheckedChangeListener(new OnCheckedChangeListener() {			
 			@Override
 			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -707,6 +752,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		Log.v(TAG, String.format("DOWN %d", keyCode));
+		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
+		// 	Log.v(TAG, String.format("MEDIA BUTTON DOWN %d", event.getRepeatCount()));
+		// 	return true;
+		// }
 		if(keyCode == KeyEvent.KEYCODE_BACK) {
 			backDown++;			
 			if(backDown == 3) {
@@ -727,6 +776,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
+		// 	Log.v(TAG, String.format("MEDIA BUTTON UP %d", event.getRepeatCount()));
+		// 	return true;
+		// }
 		if(keyCode == KeyEvent.KEYCODE_BACK) {			
 			if(backDown > 0 && backDown < 3) {
 				backDown = 0;

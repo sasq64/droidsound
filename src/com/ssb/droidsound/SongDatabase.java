@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -69,7 +70,7 @@ public class SongDatabase implements Runnable {
 	
 	public static interface DataSource {
 
-		boolean parseDump(File dump, SQLiteDatabase scanDb, ScanCallback scanCallback);
+		boolean parseDump(InputStream is, int size, SQLiteDatabase scanDb, ScanCallback scanCallback);
 		String getTitle();
 		Cursor getCursorFromPath(File file, SQLiteDatabase db);
 		String getPathTitle(File file);
@@ -130,7 +131,9 @@ public class SongDatabase implements Runnable {
 	}
 
 	public void registerDataSource(String dumpname, DataSource ds) {
-		dbsources.put(dumpname, ds);
+		String s = dumpname.toUpperCase();
+		dbsources.put(s, ds);
+		dbsources.put(s + ".ZIP", ds);
 	}
 	
 	@Override
@@ -669,16 +672,54 @@ public class SongDatabase implements Runnable {
 				if(scanCallback != null) {
 					scanCallback.notifyScan(dump.getPath(), 0);
 				}
-				if(ds.parseDump(dump, scanDb, scanCallback)) {
-					ContentValues values = new ContentValues();
-					values.put("PATH", dump.getParentFile().getPath());
-					values.put("FILENAME", dump.getName());
-					values.put("TYPE", TYPE_ARCHIVE);
-					values.put("TITLE", ds.getTitle());
-					Log.v(TAG, String.format("Inserting %s from dump (%s)", ds.getTitle(), dump.getPath()));
-					scanDb.insert("FILES", "PATH", values);
-					//db.setTransactionSuccessful();
-					//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
+				
+				InputStream is = null;
+				int size = -1;
+				ZipFile zf = null;
+				if(dump.getName().toUpperCase().endsWith(".ZIP")) {
+					try {
+						zf = new ZipFile(dump);
+						Enumeration<? extends ZipEntry> entries = zf.entries();
+						while(entries.hasMoreElements()) {
+							ZipEntry ze = entries.nextElement();
+							if(!ze.isDirectory()) {
+								is = zf.getInputStream(ze);
+								size = (int) ze.getSize();
+								break;
+							}
+						}	
+					} catch (ZipException e) {
+					} catch (IOException e) {
+					}
+				} else {
+					try {
+						is = new FileInputStream(dump);
+						size = (int) dump.length();					
+					} catch (FileNotFoundException e) {
+					}
+				}
+				
+				try {
+					if(is != null) {
+						if(ds.parseDump(is, size, scanDb, scanCallback)) {
+							ContentValues values = new ContentValues();
+							values.put("PATH", dump.getParentFile().getPath());
+							values.put("FILENAME", dump.getName());
+							values.put("TYPE", TYPE_ARCHIVE);
+							values.put("TITLE", ds.getTitle());
+							Log.v(TAG, String.format("Inserting %s from dump (%s)", ds.getTitle(), dump.getPath()));
+							scanDb.insert("FILES", "PATH", values);
+							//db.setTransactionSuccessful();
+							//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
+						}
+						is.close();
+					}
+					if(zf != null) {
+						zf.close();
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 			

@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,6 +28,7 @@ import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.KeyEvent;
 
 public class PlayerService extends Service {
 	private static final String TAG = "PlayerService";
@@ -118,16 +120,31 @@ public class PlayerService extends Service {
 		ct.put("GOTO80", "Go to 80");
 		ct.put("RAVEGURU", "Rave guru");
 		ct.put("A MAN", "A.Man");
+		ct.put("LMAN", "L.Man");
+		ct.put("LFT", "LFT");
+		ct.put("GREGFEEL", "Greg feel");
+		ct.put("CUBEHEAD", "Cube head");
+		ct.put("LFT", "LFT");
+		ct.put("XINY6581", "Xiny 6 5 8 1");
+		ct.put("V0YAGER", "Voyager");
+		ct.put("SOUNDEMON", "Sound demon");
+		ct.put("SILVERFOX", "Silver fox");
+		ct.put("PUTERMAN", "Puter man");
+		ct.put("SANDMAN", "Sand man");
+		ct.put("LITTLE SID", "Little Sid");
+		ct.put("LORD SID", "Lord Sid");
+		ct.put("NOISE OF SID", "Noise of Sid");
 		ct.put("SMALLTOWN BOY", "Small town boy");
 		ct.put("PVCF", "P V C F");
 		ct.put("AGEMIXER", "Age mixer");
 		ct.put("RADIANTX", "Radiant X");
 		ct.put("TWOFLOWER", "Two flower");
 		ct.put("NECROPOLO", "Necro Polo");
-		ct.put("MINDFLOW", "Mind Flow");
+		ct.put("MINDFLOW", "Mind flow");
 		ct.put("MAKTONE", "Mac toane");
-		ct.put("NE7", "N.E 7");
-		ct.put("GLENN RUNE GALLEFOSS", "Glen Rooneh Galleh foss");
+		ct.put("NE7", "N E 7");
+		ct.put("CYCLEBURNER", "Cycle burner");
+		ct.put("GLENN RUNE GALLEFOSS", "Glen Ruh neh Galleh foss");
 	}
 	
 
@@ -275,6 +292,8 @@ public class PlayerService extends Service {
     };
 
 	private PhoneStateListener phoneStateListener;
+
+	private BroadcastReceiver mediaReceiver;
 	
     void createThread() {
     	
@@ -294,7 +313,12 @@ public class PlayerService extends Service {
 
     void playNextSong() {
     	if(musicList != null) {
+    		
     		musicListPos++;
+    		if(musicListPos >= musicList.length) {
+    			musicListPos -= musicList.length;
+    		}    		
+    		
     		if(musicListPos < musicList.length) {    			
            		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
            		createThread();
@@ -307,7 +331,11 @@ public class PlayerService extends Service {
 
     void playPrevSong() {    	
     	if(musicList != null) {
+
     		musicListPos--;
+    		if(musicListPos < 0) {
+    			musicListPos += musicList.length;
+    		}    		
     		if(musicListPos >= 0) {
            		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
            		createThread();
@@ -412,26 +440,80 @@ public class PlayerService extends Service {
 				player.playMod(intent.getDataString());
 			}
 		}
-        /*
-		BroadcastReceiver receiver = new BroadcastReceiver() {
+        
+        mediaReceiver = new BroadcastReceiver() {
+        	
+        	//boolean actionHandled = false;
+			private long downTime;
+			//MediaPlayer mp;
+        	
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				// TODO Auto-generated method stub
 				
-				if(player.isPlaying()) {
-					player.paused(true);
+				Log.v(TAG, String.format("MEDIA BUTTON %s", intent.getAction()));
+				
+				Bundle b = intent.getExtras();
+				KeyEvent evt = (KeyEvent)b.get("android.intent.extra.KEY_EVENT");
+				
+				if(player.isActive()) {
+					if(evt != null) {
+						if(evt.getAction() == KeyEvent.ACTION_DOWN) {
+							
+							downTime = evt.getDownTime();
+							//Log.v(TAG, String.format("TIME %d %d", downTime, evt.getEventTime()));
+							
+							/*if(!actionHandled) {
+								if(evt.getRepeatCount() > 2) {
+									playNextSong();
+									actionHandled = true;
+								}
+							} */
+						} else if(evt.getAction() == KeyEvent.ACTION_UP) {
+							
+							long t = evt.getEventTime() - downTime;
+							Log.v(TAG, String.format("DOWN TIME %d", t));
+							
+							if(t > 3000) {
+								if(textToSpeech == null) {
+									saySomething = "Speech on.";
+									activateSpeech(true);									
+								} else {
+									textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
+									try {
+										Thread.sleep(1000);
+									} catch (InterruptedException e) {
+										e.printStackTrace();
+									}
+									activateSpeech(false);
+								}
+							} else
+							if(t > 300) {
+								playNextSong();
+							} else  {
+								if(player.isPlaying()) {
+									player.paused(true);						
+								} else {
+									player.paused(false);
+								}
+							}
+							//actionHandled = false;
+						}
+					}				
+					
 					abortBroadcast();
 				}
+				
+				//for(String s : b.keySet()) {
+				//	Log.v(TAG, String.format("EXTRA %s -> %s", s, b.get(s).toString()));
+				//}
 			}
 		};
-		
+
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(Intent.ACTION_MEDIA_BUTTON);
-		filter.setPriority(1001);		
-		registerReceiver(receiver, filter);
-        */
-        
-		
+		filter.setPriority(600);		
+		registerReceiver(mediaReceiver, filter);		
 	}
 	
 	@Override
@@ -441,6 +523,8 @@ public class PlayerService extends Service {
 		
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, 0);
+		
+		unregisterReceiver(mediaReceiver);
 		
 		player.stop();
 		player = null;
@@ -554,12 +638,13 @@ public class PlayerService extends Service {
 				silenceDetect = on;
 				break;
 			case OPTION_PLAYBACK_ORDER:
-				unshuffle();
-				if(arg.charAt(0) == 'R') {
+				if(arg.charAt(0) == 'R' && shuffleSongs == false) {
 					shuffleSongs = true;
+					unshuffle();
 					shuffle();
-				} else {
+				} else if(arg.charAt(0) == 'S' && shuffleSongs == true) {
 					shuffleSongs = false;
+					unshuffle();
 				}
 				break;
 			case OPTION_RESPECT_LENGTH:
@@ -567,25 +652,7 @@ public class PlayerService extends Service {
 				respectLength = on;
 				break;
 			case OPTION_SPEECH:
-				if(on) {
-					if(textToSpeech == null) {
-						Log.v(TAG, "Turning on speech");
-						textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-							@Override
-							public void onInit(int status) {					
-								ttsStatus = status;
-								textToSpeech.setLanguage(Locale.US);
-							}
-						});
-					}
-				} else {
-					if(textToSpeech != null) {
-						textToSpeech.shutdown();
-						textToSpeech = null;
-						ttsStatus = -1;
-						Log.v(TAG, "Turning off speech");
-					}
-				}
+				activateSpeech(on);
 				break;
 			}
 		}
@@ -615,6 +682,7 @@ public class PlayerService extends Service {
 		@Override
 		public boolean playList(String[] names, int startIndex) throws RemoteException {
 			musicList = names;
+
 			
 			shuffleArray = new short [musicList.length];
 			musicListPos = 0;
@@ -680,6 +748,8 @@ public class PlayerService extends Service {
 		}
 
 		};
+
+	protected String saySomething;
 	
     @Override
     public IBinder onBind(Intent intent) {
@@ -687,7 +757,34 @@ public class PlayerService extends Service {
     	return mBinder;
     }
     
-    @Override
+    protected void activateSpeech(boolean on) {
+    	if(on) {
+			if(textToSpeech == null) {
+				Log.v(TAG, "Turning on speech");
+				textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+					@Override
+					public void onInit(int status) {					
+						ttsStatus = status;
+						textToSpeech.setLanguage(Locale.US);
+						if(saySomething != null) {
+							textToSpeech.speak(saySomething, TextToSpeech.QUEUE_FLUSH, null);
+							saySomething = null;
+						}
+							
+					}
+				});
+			}
+		} else {
+			if(textToSpeech != null) {
+				textToSpeech.shutdown();
+				textToSpeech = null;
+				ttsStatus = -1;
+				Log.v(TAG, "Turning off speech");
+			}
+		}
+    }
+   
+	@Override
     public boolean onUnbind(Intent intent) {
     	Log.v(TAG, "UNBOUND");
     	return super.onUnbind(intent);

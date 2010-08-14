@@ -41,7 +41,8 @@ public class Player implements Runnable {
 	public enum State {
 		STOPPED,
 		PAUSED,
-		PLAYING;
+		PLAYING, 
+		SWITCHING
 	};
 
 	public enum Command {
@@ -135,7 +136,7 @@ public class Player implements Runnable {
     		currentPlugin.unload(songRef);
     	}
     	currentPlugin = null;
-    	currentState = State.STOPPED;
+    	currentState = State.SWITCHING;
     	
     	List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
     	
@@ -342,7 +343,9 @@ public class Player implements Runnable {
 			currentState = State.PLAYING;
 			currentPosition = 0;
 			lastPos = -1000;
+			return;
         }
+		currentState = State.STOPPED;
     }
 
 	private String getPluginInfo(int info) {

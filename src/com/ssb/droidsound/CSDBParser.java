@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 
@@ -36,7 +37,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 	}
 		
 	
-	static boolean parseCSDB(File file, SQLiteDatabase db, SongDatabase.ScanCallback scanCallback) {
+	static boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, SongDatabase.ScanCallback scanCallback) {
 		
 		boolean ok = false;
 		
@@ -76,12 +77,12 @@ public class CSDBParser implements SongDatabase.DataSource {
 			int place = -1;
 			Log.v(TAG, "OPENING CSDB");			
 			
-			reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "ISO-8859-1"));			
+			reader = new BufferedReader(new InputStreamReader(is, "ISO-8859-1"));			
 			//reader = new BufferedReader(new FileReader(file));				
 			String line = reader.readLine();
 			int count = 0;
 			int total = line.length()+1;
-			int fileSize = (int) file.length();
+			//int fileSize = (int) is.available();
 			while(line != null) {
 				
 				count++;
@@ -337,7 +338,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		}
 
 		for(int i=0; i<n; i++) {
-			if(parts[i].toUpperCase().equals(DUMP_NAME)) {
+			if(parts[i].toUpperCase().startsWith(DUMP_NAME)) {
 				for(int j=0; j<(n-i); j++) {
 					parts[j] = parts[i+j];
 				}
@@ -480,8 +481,8 @@ public class CSDBParser implements SongDatabase.DataSource {
 
 
 	@Override
-	public boolean parseDump(File dump, SQLiteDatabase scanDb, ScanCallback scanCallback) {
-		return parseCSDB(dump, scanDb, scanCallback);
+	public boolean parseDump(InputStream is, int size, SQLiteDatabase scanDb, ScanCallback scanCallback) {
+		return parseCSDB(is, size, scanDb, scanCallback);
 	}
 
 

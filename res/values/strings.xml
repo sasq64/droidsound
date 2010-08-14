@@ -43,7 +43,8 @@
 <string name="name_playlist">Playlist name</string>
 <string name="name_folder">Folder name</string>
 <string name="settings">Settings</string>
-
+<string name="unpack_examples">Since this looks like the first time you are running Droidsound I have extracted some example
+music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.</string>
 
 <string-array name="new_opts">
 	<item>Folder</item>
