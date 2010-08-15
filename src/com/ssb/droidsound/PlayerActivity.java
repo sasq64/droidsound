@@ -609,7 +609,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					} else {
 						int index = 0;							
 						//File [] files = adapter.getFiles(true);
+
 						File [] files = plv.getFiles(true);
+						
+						Playlist plist = songDatabase.getCurrentPlaylist();
+						if(plist != null) {
+							for(int i=0; i<files.length; i++) {
+								if(files[i].equals(fi.file)) {
+									index = i;
+								}
+							}
+							Log.v(TAG, String.format("Playing Playlist %s %s", plist.getFile().getPath(), plist.toString()));
+							player.playPlaylist(plist.getFile().getPath(), index);
+							return;
+						}						
 						
 						String [] names = new String [files.length];
 						for(int i=0; i<files.length; i++) {

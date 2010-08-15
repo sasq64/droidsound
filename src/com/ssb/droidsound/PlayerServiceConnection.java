@@ -142,6 +142,16 @@ public class PlayerServiceConnection implements ServiceConnection {
 		}
 		return false;
 	}
+	public boolean playPlaylist(String path, int index) {
+		try {
+			return mService.playPlaylist(path, index);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
+
 	public void playPrev() {
 		try {
 			mService.playPrev();
@@ -212,6 +222,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		}
 		return null;
 	}
+
 	
 	
 

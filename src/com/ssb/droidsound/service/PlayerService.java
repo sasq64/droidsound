@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
+import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.service.Player.SongInfo;
 
 import android.app.Service;
@@ -66,11 +67,11 @@ public class PlayerService extends Service {
 	public static final int OPTION_PLAYBACK_ORDER = 3;
 
 	private static Random rgen = new Random(System.currentTimeMillis());
-	private short[] shuffleArray;
+	//private short[] shuffleArray;
 	
 	private Object info[];
 
-	protected String[] musicList;
+	protected List<String> musicList;
 	protected int musicListPos;
     	
 	private Player player;
@@ -294,6 +295,12 @@ public class PlayerService extends Service {
 	private PhoneStateListener phoneStateListener;
 
 	private BroadcastReceiver mediaReceiver;
+
+	protected Playlist currentPlaylist;
+
+	private int oldPlaylistHash;
+
+	protected String[] musicNames;
 	
     void createThread() {
     	
@@ -310,17 +317,47 @@ public class PlayerService extends Service {
 		    playerThread.start();
     	}
     }
+    
+    
+    void updatePlaylist() {
+    /*	if(currentPlaylist != null) {
+    		int hash = currentPlaylist.hashCode();
+    		if(hash != oldPlaylistHash) {
+    			Log.v(TAG, "Current playlist has changed!");    			
+    			List<File> files = currentPlaylist.getFiles();
+    			
+    			String current =  musicList[shuffleArray[musicListPos]];
+    			
+    			for(int i=0; i<files.size(); i++) {
+    				if(files.get(i).getPath().equals(current)) {
+    					break;
+    				}
+    			}
+    			
+    			
+    			musicList = new String [files.size()];
+    			int i = 0;
+    			for(File f : files) {
+    				musicList[i++] = f.getPath();				
+    			}
+    			
+    			
+    		}
+    		oldPlaylistHash = hash;
+    	} */
+    }
 
     void playNextSong() {
     	if(musicList != null) {
+    		updatePlaylist();
     		
     		musicListPos++;
-    		if(musicListPos >= musicList.length) {
-    			musicListPos -= musicList.length;
+    		if(musicListPos >= musicList.size()) {
+    			musicListPos -= musicList.size();
     		}    		
     		
-    		if(musicListPos < musicList.length) {    			
-           		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
+    		if(musicListPos < musicList.size()) {    			
+           		info[SONG_FILENAME] = musicList.get(musicListPos);
            		createThread();
            		player.playMod((String)info[SONG_FILENAME]);
            		return;
@@ -331,13 +368,13 @@ public class PlayerService extends Service {
 
     void playPrevSong() {    	
     	if(musicList != null) {
-
+    		updatePlaylist();
     		musicListPos--;
     		if(musicListPos < 0) {
-    			musicListPos += musicList.length;
+    			musicListPos += musicList.size();
     		}    		
     		if(musicListPos >= 0) {
-           		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
+           		info[SONG_FILENAME] = musicList.get(musicListPos);
            		createThread();
            		player.playMod((String)info[SONG_FILENAME]);
            		return;
@@ -405,14 +442,19 @@ public class PlayerService extends Service {
 				Bundle b = intent.getExtras();							
 				String f =  b.getString("musicFile");
 				musicListPos = b.getInt("musicPos");
-				musicList = (String []) b.getSerializable("musicList");
-				if(musicList != null) {
-					shuffleArray = new short [musicList.length];
-					//unshuffle();
+				musicList = new ArrayList<String>();
+				String [] names = (String []) b.getSerializable("musicList");
+				for(int i=0; i<names.length; i++) {
+					musicList.add(names[i]);
 				}
+				
+				//if(musicList != null) {
+				//	shuffleArray = new short [musicList.length];
+				//	//unshuffle();
+				//}
 				if(f == null) {
 					if(musicListPos >= 0) {
-						f = musicList[shuffleArray[musicListPos]];
+						f = musicList.get(musicListPos);
 					}
 				}
 				createThread();
@@ -420,8 +462,8 @@ public class PlayerService extends Service {
 					String modname = (String) info[SONG_FILENAME];
 					if(musicList != null && modname != null) {
 						Log.v(TAG, "Got playlist without song");
-						for(int i=0; i<musicList.length; i++) {
-							if(musicList[i].compareTo(modname) == 0) {
+						for(int i=0; i<musicList.size(); i++) {
+							if(musicList.get(i).compareTo(modname) == 0) {
 								musicListPos = i;
 								Log.v(TAG, String.format("Changing pos ftrom %d to %d", musicListPos, i));
 								break;
@@ -540,9 +582,10 @@ public class PlayerService extends Service {
 		public boolean playMod(String name) throws RemoteException {
 			Log.v(TAG, "Playmod called " + name);
 			
-			if(musicList != null && musicListPos >= 0) {
-				musicList[shuffleArray[musicListPos]] = name;
-			}
+			// TODO: Fix this, maybe?
+			//if(musicList != null && musicListPos >= 0) {
+				//musicList.get(musicListPos) = name;
+			//}
 			
 			createThread();
 			info[SONG_FILENAME] = name;
@@ -588,7 +631,7 @@ public class PlayerService extends Service {
 			if(!player.isActive() && play) {
 				if(musicList != null) {
 		    		if(musicListPos >= 0) {
-		           		info[SONG_FILENAME] = musicList[shuffleArray[musicListPos]];
+		           		info[SONG_FILENAME] = musicList.get(musicListPos);
 		           		createThread();
 		           		player.playMod((String)info[SONG_FILENAME]);
 		           		return true;
@@ -640,7 +683,7 @@ public class PlayerService extends Service {
 			case OPTION_PLAYBACK_ORDER:
 				if(arg.charAt(0) == 'R' && shuffleSongs == false) {
 					shuffleSongs = true;
-					unshuffle();
+					//unshuffle();
 					shuffle();
 				} else if(arg.charAt(0) == 'S' && shuffleSongs == true) {
 					shuffleSongs = false;
@@ -659,67 +702,56 @@ public class PlayerService extends Service {
 		
 
 		private void shuffle() {
-			if(shuffleArray != null) {
-				short t;
-				for (int i=musicListPos+1; i<shuffleArray.length; i++) {					
-				    int randomPosition = rgen.nextInt(shuffleArray.length-1) + 1;
-				    t = shuffleArray[i];
-				    shuffleArray[i] = shuffleArray[randomPosition];
-				    shuffleArray[randomPosition] = t;
-				}
+			String t;
+			int sz = musicList.size();
+			for (int i=musicListPos+1; i<sz; i++) {					
+			    int randomPosition = rgen.nextInt(sz-1) + 1;
+			    t = musicList.get(i);
+			    musicList.set(i, musicList.get(randomPosition));
+			    musicList.set(randomPosition, t);
 			}
 		}
 		
 		private void unshuffle() {
-			if(shuffleArray != null) {
-				musicListPos = shuffleArray[musicListPos];
-				for (int i=0; i<shuffleArray.length; i++) {
-					shuffleArray[i] = (short)i;
-				}
+			
+			musicList.clear();
+			for(int i=0; i<musicNames.length; i++) {
+				musicList.add(musicNames[i]);
 			}
 		}
 
 		@Override
-		public boolean playList(String[] names, int startIndex) throws RemoteException {
-			musicList = names;
-
+		public boolean playPlaylist(String name, int startIndex) throws RemoteException {
 			
-			shuffleArray = new short [musicList.length];
-			musicListPos = 0;
-			unshuffle();
-			musicListPos = startIndex;
-
-			if(shuffleSongs) {
-				musicListPos = 0;
-				shuffle();
-				for(int i=0; i<shuffleArray.length; i++) {
-					if(shuffleArray[i] == startIndex) {
-						shuffleArray[i] = 0;
-						shuffleArray[0] = (short) startIndex;
-						break;
-					}
-				}
-				
-			}		
-			
-			for(int i=0; i<shuffleArray.length; i++) {
-				Log.v(TAG, String.format("%02d: %02d", i, shuffleArray[i]));
+			File pf = new File(name);
+			currentPlaylist = Playlist.getPlaylist(pf);
+			Log.v(TAG, String.format("File %s is playlist %s", name, currentPlaylist.toString()));
+			List<File> files = currentPlaylist.getFiles();
+			int i = 0;
+			for(File f : files) {
+				musicNames[i] = f.getPath();
 			}
-			/*
-				temp = musicList[0];
-				musicList[0] = musicList[startIndex];
-				musicList[startIndex] = temp;
-				startIndex = 0;
-				
-				for (int i=1; i<musicList.length; i++) {					
-				    int randomPosition = rgen.nextInt(musicList.length-1) + 1;
-				    temp = musicList[i];
-				    musicList[i] = musicList[randomPosition];
-				    musicList[randomPosition] = temp;
-				}
-			} */
 			
-			String name = names[startIndex];			
+			return playList(null, startIndex);
+		}
+
+		@Override
+		public boolean playList(String[] names, int startIndex) throws RemoteException {
+			
+			if(names != null) {
+				musicNames = names;
+			}
+			musicList = new ArrayList<String>();
+			
+			for(int i=0; i<names.length; i++) {
+				musicList.add(names[i]);
+			}			
+			musicListPos = startIndex;
+			String name = musicList.get(startIndex);
+			if(shuffleSongs) {
+				shuffle();								
+			}
+
 			Log.v(TAG, "PlayList called " + name);
 			createThread();
 			info[SONG_FILENAME] = name;
@@ -746,6 +778,7 @@ public class PlayerService extends Service {
 			// TODO Auto-generated method stub
 			return currentSongInfo.details;
 		}
+
 
 		};
 

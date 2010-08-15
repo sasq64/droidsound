@@ -20,6 +20,37 @@ import android.util.Log;
 public class Playlist {
 	private static final String TAG = Playlist.class.getSimpleName();
 	
+	
+	private static Map<File, Playlist> allPlaylists = new HashMap<File, Playlist>();
+	
+	private static Object lock = new Object();
+	
+	public static Playlist getPlaylist(File file) {
+		
+		Playlist pl = null;
+		synchronized (lock) {			
+			pl = allPlaylists.get(file);
+			if(pl == null) {
+				Log.v(TAG, "Creating new playlist " + file.getPath());
+				pl = new Playlist(file);
+				allPlaylists.put(file, pl);
+			} else {
+				Log.v(TAG, "Found playlist " + file.getPath());
+			}
+		}
+		return pl;
+	}
+
+	public static void flushAll() {
+		synchronized (lock) {
+			for(File f : allPlaylists.keySet()) {
+				Playlist pl = allPlaylists.get(f);
+				pl.flush();
+			}
+		}
+	}
+
+	
 	private MatrixCursor cursor;
 	private File plistFile;
 	private List<String> lines;
@@ -27,8 +58,57 @@ public class Playlist {
 	private boolean changed;
 
 	private String title;
+	private String subtitle;
+
+
+	private boolean written;
+
+
+	private long fileModified;
 	
-	public Cursor getCursor() {
+	
+	 private Playlist(File file) {
+		
+		plistFile = file;
+		changed = false;
+		written = false;
+		Log.v(TAG, "Opening playlist " + file.getPath());
+		
+		title = file.getName();
+		int dot = title.lastIndexOf('.');
+		if(dot > 0) {
+			title = title.substring(0, dot);
+		}
+		readLines();		
+	}
+	
+	 private void readLines() {
+		BufferedReader reader;
+		lines = new ArrayList<String>();
+		try {
+			reader = new BufferedReader(new FileReader(plistFile));
+			String line = reader.readLine();
+			while(line != null) {
+				//Log.v(TAG, line);
+				lines.add(line);
+				line = reader.readLine();
+			}
+			reader.close();
+			
+			fileModified = plistFile.lastModified();
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}				
+	 }
+	 
+	 
+	
+	 synchronized public Cursor getCursor() {
 				
 		if(cursor == null) {
 			
@@ -74,62 +154,7 @@ public class Playlist {
 		
 		return cursor;
 	}
-	
-	private static Map<File, Playlist> allPlaylists = new HashMap<File, Playlist>();
-	
-	public static Playlist getPlaylist(File file) {
 		
-		Playlist pl = allPlaylists.get(file);
-		if(pl == null) {
-			Log.v(TAG, "Creating new playlist " + file.getPath());
-			pl = new Playlist(file);
-			allPlaylists.put(file, pl);
-		} else {
-			Log.v(TAG, "Found playlist " + file.getPath());
-		}
-		return pl;
-	}
-
-	public static void flushAll() {
-		
-		for(File f : allPlaylists.keySet()) {
-			Playlist pl = allPlaylists.get(f);
-			pl.flush();
-		}
-	}
-	
-	
-	private Playlist(File file) {
-		
-		plistFile = file;
-		changed = false;
-		Log.v(TAG, "Opening playlist " + file.getPath());
-		
-		title = file.getName();
-		int dot = title.lastIndexOf('.');
-		if(dot > 0) {
-			title = title.substring(0, dot);
-		}
-		
-		BufferedReader reader;
-		lines = new ArrayList<String>();
-		try {
-			reader = new BufferedReader(new FileReader(file));
-			String line = reader.readLine();
-			while(line != null) {
-				//Log.v(TAG, line);
-				lines.add(line);
-				line = reader.readLine();
-			}
-			reader.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}				
-	}
 	
 	
 	private String fileToLine(File file) {
@@ -156,7 +181,7 @@ public class Playlist {
 		return s;
 	}
 	
-	void add(File file) {
+	synchronized void add(File file) {
 		
 		if(file.isDirectory()) {			
 			File [] files = file.listFiles();
@@ -171,7 +196,7 @@ public class Playlist {
 		changed = true;
 	}
 	
-	public void add(Cursor c) {
+	synchronized public void add(Cursor c) {
 		
 		while(true) {		
 			String title = c.getString(c.getColumnIndex("TITLE"));
@@ -200,7 +225,7 @@ public class Playlist {
 	}
 
 	
-	void remove(File file) {
+	synchronized void remove(File file) {
 		
 		String removeMe = null;
 		for(String line : lines) {
@@ -219,7 +244,7 @@ public class Playlist {
 		}
 	}
 	
-	void flush() {
+	synchronized void flush() {
 		
 		if(!changed) {
 			//Log.v(TAG, "Not flushing unchanged " + plistFile.getPath());
@@ -227,6 +252,7 @@ public class Playlist {
 		}
 		
 		changed = false;
+		written = true;
 		
 		Log.v(TAG, "Flushing " + plistFile.getPath());
 		
@@ -244,18 +270,18 @@ public class Playlist {
 		}
 	}
 
-	public void clear() {
+	synchronized public void clear() {
 		Log.v(TAG, String.format("Clearing playlist %s with %d entries", plistFile.getPath(), lines.size()));
 		lines = new ArrayList<String>();
 		cursor = null;
 		changed = true;
 	}
 
-	public File getFile() {
+	synchronized public File getFile() {
 		return plistFile;
 	}
 
-	public String getTitle() {
+	synchronized public String getTitle() {
 		return title;
 	}
 	/*
@@ -269,7 +295,7 @@ public class Playlist {
 		changed = true;		
 	}*/
 
-	public List<File> getFiles() {
+	synchronized public List<File> getFiles() {
 		List<File> files = new ArrayList<File>();
 		for(String line : lines) {
 			if(line.length() > 0) {
@@ -288,6 +314,21 @@ public class Playlist {
 			}
 		}
 		return files;
-	}	
+	}
 	
+	@Override
+	public int hashCode() {
+		
+		if(!written && plistFile.lastModified() > fileModified) {
+			// Changed in another process
+			Log.v(TAG, "Rereading Playlst");
+			readLines();
+		}
+		
+		int hash = lines.size();
+		for(String line : lines) {
+			hash ^= line.hashCode();
+		}		
+		return hash;
+	}	
 }
