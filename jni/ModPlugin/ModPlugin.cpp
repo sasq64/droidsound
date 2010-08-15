@@ -10,6 +10,18 @@
 
 #include "modplug/modplug.h"
 
+#define MOD_TYPE_NONE		0x00
+#define MOD_TYPE_MOD		0x01
+#define MOD_TYPE_S3M		0x02
+#define MOD_TYPE_XM			0x04
+#define MOD_TYPE_MED		0x08
+#define MOD_TYPE_MTM		0x10
+#define MOD_TYPE_IT			0x20
+#define MOD_TYPE_669		0x40
+#define MOD_TYPE_ULT		0x80
+#define MOD_TYPE_STM		0x100
+
+
 #include "com_ssb_droidsound_plugins_ModPlugin.h"
 
 //#include "modplug/libmodplug/it_defs.h"
@@ -201,13 +213,34 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 		//guessAuthor(info);
 		strcpy(info->mod_name, ModPlug_GetName(mod));
 		info->mod_length = ModPlug_GetLength(mod);
-		info->modType = "MOD";
+		info->modType = "ModPlug";
 		*info->author = 0;
+
+		int t = ModPlug_GetModuleType(mod);
+
+		switch(t) {
+		case MOD_TYPE_MOD:
+			info->modType = "MOD";
+			break;
+		case MOD_TYPE_S3M:
+			info->modType = "S3M";
+			break;
+		case MOD_TYPE_XM:
+			info->modType = "XM";
+			break;
+		case MOD_TYPE_IT:
+			info->modType = "IT";
+			break;
+		case MOD_TYPE_STM:
+			info->modType = "STM";
+			break;
+		}
+
 
 		settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
 		settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
 
-		int t = ModPlug_GetModuleType(mod);
+		//int t = ModPlug_GetModuleType(mod);
 		__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Type is %d", t);
 		if(t == 1) {
 			settings.mResamplingMode = MODPLUG_RESAMPLE_NEAREST;

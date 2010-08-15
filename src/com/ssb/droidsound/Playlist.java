@@ -197,22 +197,27 @@ public class Playlist {
 		
 	
 	
-	private String fileToLine(File file) {
+	private String fileToLine(SongFile songFile) {
 		InputStream is;
 		FileIdentifier.MusicInfo minfo = null;
 		try {
-			is = new FileInputStream(file);
-			minfo = FileIdentifier.identify(file.getName(), is);
+			is = new FileInputStream(songFile.getFile());
+			minfo = FileIdentifier.identify(songFile.getName(), is);
 			is.close();
 		} catch (FileNotFoundException e1) {
 		} catch (IOException e) {
 		}
 		
-		String s = file.getPath();
+		String s = songFile.getPath();
 		if(minfo != null) {
 
 			if(minfo.title != null) {
 				s = s + "\t" + minfo.title;
+				
+				if(songFile.getSubtune() >= 0) {
+					s += String.format(" #%02d", songFile.getSubtune()+1);
+				}
+				
 				if(minfo.composer != null) {
 					s = s + "\t" + minfo.composer;
 				}
@@ -221,22 +226,22 @@ public class Playlist {
 		return s;
 	}
 	
-	synchronized void add(File file) {
+	synchronized void add(SongFile songFile) {
 		
-		if(file.isDirectory()) {			
-			File [] files = file.listFiles();
-			for(File f : files) {
+		if(songFile.isDirectory()) {			
+			SongFile [] files = songFile.listSongFiles();
+			for(SongFile f : files) {
 				lines.add(fileToLine(f));
 			}			
 		} else {
-			Log.v(TAG, "Adding " + file.getPath());
-			lines.add(fileToLine(file));
+			Log.v(TAG, "Adding " + songFile.getPath());
+			lines.add(fileToLine(songFile));
 		}
 		cursor = null;
 		changed = true;
 	}
 	
-	synchronized public void add(Cursor c) {
+	synchronized public void add(Cursor c, int subtune) {
 		
 		while(true) {		
 			String title = c.getString(c.getColumnIndex("TITLE"));
@@ -244,7 +249,17 @@ public class Playlist {
 			String filename = c.getString(c.getColumnIndex("FILENAME"));
 			String path = c.getString(c.getColumnIndex("PATH"));
 	
-			String line = new File(path, filename).getPath();
+			File f = new File(path, filename);
+			String line = f.getPath();
+			if(subtune >= 0) {
+				
+				if(title != null) {
+					title = String.format("%s #%02d", title, subtune+1);
+				}
+
+				line += (";" + subtune);
+
+			}
 	
 			if(title != null) {
 				line = line + "\t" + title;

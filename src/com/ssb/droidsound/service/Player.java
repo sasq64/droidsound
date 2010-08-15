@@ -312,7 +312,25 @@ public class Player implements Runnable {
 				currentSong.game = getPluginInfo(DroidSoundPlugin.INFO_GAME);
 				currentSong.subTunes = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_SUBTUNES);
 				currentSong.startTune = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_STARTTUNE);
-				currentSong.details = currentPlugin.getDetailedInfo(songRef);
+				String [] info  = currentPlugin.getDetailedInfo(songRef);								
+				currentSong.details = new String [info.length + 2];
+				for(int i=0; i<info.length; i++) {
+					currentSong.details[i] = info[i];
+				}
+				currentSong.details[info.length] = "Size";
+				
+				if(fileSize < 10*1024) {
+					currentSong.details[info.length+1] = String.format("%1.1fKB", (float)fileSize/1024F);
+				} else if(fileSize < 1024*1024) {
+					currentSong.details[info.length+1] = String.format("%dKB", fileSize/1024);
+				} else if(fileSize < 10*1024*1024) {
+					currentSong.details[info.length+1] = String.format("%1.1fMB", (float)fileSize/(1024F * 1024F));
+				} else {
+					currentSong.details[info.length+1] = String.format("%dMB", fileSize/(1024*1024));
+				}
+				info = null;
+				
+				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 				
 				if(currentSong.title == null || currentSong.title.equals("")) {
 					currentSong.title = currentSong.game;

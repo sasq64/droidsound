@@ -1,9 +1,12 @@
 package com.ssb.droidsound.plugins;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import android.content.Context;
+import android.util.Log;
 
 
 
@@ -34,6 +37,39 @@ public class GMEPlugin extends DroidSoundPlugin {
 		return extensions.contains(ext);
 	}
 
+	
+	@Override
+	public String[] getDetailedInfo(Object song) {
+		
+		List<String> list = new ArrayList<String>();
+		//String instruments = N_getStringInfo((Long)song, 100);
+		
+		String s = getStringInfo(song, INFO_TYPE);
+		if(s != null & s.length() > 0) {
+			list.add("Format");
+			list.add(s);
+		}
+		s = getStringInfo(song, INFO_COPYRIGHT);
+		if(s != null & s.length() > 0) {
+			list.add("Copyright");
+			list.add(s);
+		}
+		s = getStringInfo(song, INFO_GAME);
+		if(s != null & s.length() > 0) {
+			list.add("Game");
+			list.add(s);
+		}
+		
+		String [] info = new String [list.size()];
+		for(int i=0; i<info.length; i++) {
+			info[i] = list.get(i);
+		}
+		
+		return info;
+	}
+
+	
+	
 	@Override
 	public void unload(Object song) { N_unload((Long)song); }
 	

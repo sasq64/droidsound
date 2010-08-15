@@ -122,7 +122,7 @@ public class PlayerService extends Service {
 	}
 
 	final static String stripChars = "[]!<>?#${}"; 
-	final static String blankChars = ".-^";
+	final static String blankChars = ".-^,";
 	
 	final static Map<String, String> composerTranslation = new HashMap<String, String>();
 

@@ -1082,25 +1082,25 @@ public class SongDatabase implements Runnable {
 		return scanning;
 	}
 	
-	public void addToPlaylist(Playlist pl, File f) {
-		Log.v(TAG, String.format("Adding %s / %s to playlist %s", f.getPath(), f.getName(), pl.getFile().getName()));
-		if(f.exists()) {
-			if(f.getName().toUpperCase().endsWith(".PLIST")) {
-				Playlist newpl = Playlist.getPlaylist(f);
+	public void addToPlaylist(Playlist pl, SongFile songFile) {
+		Log.v(TAG, String.format("Adding %s / %s to playlist %s", songFile.getPath(), songFile.getName(), pl.getFile().getName()));
+		if(songFile.exists()) {
+			if(songFile.getName().toUpperCase().endsWith(".PLIST")) {
+				Playlist newpl = Playlist.getPlaylist(songFile.getFile());
 				List<File> files = newpl.getFiles();
 				Log.v(TAG, String.format("Adding %d files from playlist", files.size()));
 				for(File f2 : files) {
-					addToPlaylist(pl, f2);
+					addToPlaylist(pl, new SongFile(f2));
 				}
 				
 			} else {
-				pl.add(f);
+				pl.add(songFile);
 			}
 		} else {
 			if(rdb == null) {
 				rdb = getReadableDatabase();
 			}
-			Cursor cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() }, null, null, null);
+			Cursor cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { songFile.getParent(), songFile.getName() }, null, null, null);
 			
 			
 			//Log.v(TAG, String.format("Got %d results from query", cursor.getCount()));
@@ -1109,13 +1109,13 @@ public class SongDatabase implements Runnable {
 				int type = cursor.getInt(cursor.getColumnIndex("TYPE"));
 				if(type == SongDatabase.TYPE_DIR) {
 					cursor.close();
-					cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=?", new String[] { f.getPath() }, null, null, "TITLE");
+					cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=?", new String[] { songFile.getPath() }, null, null, "TITLE");
 					if(cursor.moveToFirst()) {
-						pl.add(cursor);
+						pl.add(cursor, -1);
 					}
 					
 				} else if(type == SongDatabase.TYPE_FILE) {
-					pl.add(cursor);
+					pl.add(cursor, songFile.getSubtune());
 				}
 			}
 			cursor.close();

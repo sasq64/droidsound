@@ -261,19 +261,22 @@ public class ModPlugin extends DroidSoundPlugin {
 	public String[] getDetailedInfo(Object song) {
 		
 		String instruments = N_getStringInfo((Long)song, 100);
+		String fmt = getStringInfo(song, INFO_TYPE);
 		Log.v(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo((Long)song, 101);
 
 		String[] info;
 		if(instruments != null && instruments.length() > 0) {
-			info = new String [4];
-			info[2] = "Instruments";
-			info[3] = instruments;
+			info = new String [6];
+			info[4] = "Instruments";
+			info[5] = instruments;
 		} else {
-			info = new String [2];
+			info = new String [4];
 		}
 		info[0] = "Channels";
 		info[1] = Integer.toString(channels);
+		info[2] = "Format";
+		info[3] = fmt;
 		return info;
 	}
 	

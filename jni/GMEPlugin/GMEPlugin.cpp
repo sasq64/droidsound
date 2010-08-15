@@ -83,6 +83,11 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1setTune(
 {
 	GMEInfo *info = (GMEInfo*)song;
 	gme_err_t err = gme_start_track(info->emu, tune);
+
+	track_info_t track;
+	gme_track_info(info->emu, &track, 0);
+	info->lastTrack = track;
+
 	info->currentSong = tune;
 	return true;
 }

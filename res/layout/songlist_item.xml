@@ -26,9 +26,10 @@
 	android:text="Author"
 />
 
-<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-	android:layout_alignParentRight="true"
+<TextView android:layout_width="wrap_content" android:layout_height="45dp"
 	android:layout_alignParentBottom="true"
+	android:layout_alignParentRight="true"
+	android:gravity="bottom"
 	android:id="@+id/sidetitle"
 	android:textColor="#a0a0a0" android:textSize="15dp"
 	android:layout_marginRight="8dp"

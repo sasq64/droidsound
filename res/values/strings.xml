@@ -5,7 +5,7 @@
 <string name="sdcard_not_found">Could not access sdcard!</string>
 <string name="search_hint">Search title</string>
 <string name="scan_db">Rescan database</string>
-<string name="about_droidsound">"Droidsound beta 5\nBy sasq64@gmail.com"</string>
+<string name="about_droidsound">"Droidsound beta 6\nBy sasq64@gmail.com"</string>
 <string name="recreate_confirm">This will recreate the entire database. It may take a long time. Are you absolutely sure?</string>
 <string-array name="scan_opts">
     <item>Full</item>
@@ -37,7 +37,7 @@
 <string name="composer">Composer</string>
 <string name="copyright">Copyright</string>
 <string name="upgrade_db">Database format has changed. Old database will be dropped and recreated.</string>
-<string name="add_to_plist">Add to playlist</string>
+<string name="add_to_plist">Add to \'[playlist]\'</string>
 <string name="create_playlist">Create playlist</string>
 <string name="set_plist">Set current playlist</string>
 <string name="name_playlist">Playlist name</string>

@@ -1,6 +1,5 @@
 package com.ssb.droidsound;
 
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -8,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipFile;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -43,16 +41,13 @@ import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.ToggleButton;
 import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.CompoundButton.OnCheckedChangeListener;
 
 import com.ssb.droidsound.PlayListView.FileInfo;
 import com.ssb.droidsound.service.PlayerService;
@@ -176,6 +171,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int songRepeat;
 
 	private TextView plusText;
+
+	protected int favSelection;
 
 	
 	protected void finalize() throws Throwable {
@@ -606,6 +603,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				PlayListView plv =  (PlayListView) parent;
 				
 				FileInfo fi = (FileInfo) plv.getItemAtPosition(position);
+				
+				Log.v(TAG, String.format("Clicked %s got file %s", plv, fi.file.getPath()));
+				
 				if(fi.file != null) {
 					
 					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
@@ -621,17 +621,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 						File [] files = plv.getFiles(true);
 						
-						Playlist plist = songDatabase.getCurrentPlaylist();
-						if(plist != null) {
-							for(int i=0; i<files.length; i++) {
-								if(files[i].equals(fi.file)) {
-									index = i;
+						if(currentPlaylistView == playListView) {
+							Playlist plist = songDatabase.getCurrentPlaylist();
+							if(plist != null) {
+								for(int i=0; i<files.length; i++) {
+									if(files[i].equals(fi.file)) {
+										index = i;
+									}
 								}
+								Log.v(TAG, String.format("Playing Playlist %s %s", plist.getFile().getPath(), plist.toString()));
+								player.playPlaylist(plist.getFile().getPath(), index);
+								return;
 							}
-							Log.v(TAG, String.format("Playing Playlist %s %s", plist.getFile().getPath(), plist.toString()));
-							player.playPlaylist(plist.getFile().getPath(), index);
-							return;
-						}						
+						}
 						
 						String [] names = new String [files.length];
 						for(int i=0; i<files.length; i++) {
@@ -829,7 +831,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				if(currentPlaylistView != playListView) {
 					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 						flipTo(FILE_VIEW);
-						playListView.setScrollPosition(new File(songName));
+						if(songName != null) {
+							playListView.setScrollPosition(new File(songName));
+						}
 						return true;
 					}
 				}
@@ -1138,7 +1142,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			});			
 			break;
 		case R.string.name_folder:			
-			final EditText input2 = new EditText(this);  
+			final EditText input2 = new EditText(this);
 			builder.setView(input2);  			  
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -1157,33 +1161,50 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			});			
 			break;
 		case R.string.add_to_plist:
-			builder.setTitle(id);
+			
+			
+			Playlist pl = songDatabase.getActivePlaylist();
+			if(pl != null) {
+				String s = getString(R.string.add_to_plist);
+				builder.setTitle(s.replace("[playlist]", pl.getTitle()));
+			} else {
+				builder.setTitle(id);
+			}
+			favSelection = -1;
 			builder.setSingleChoiceItems(R.array.fav_opts, -1, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					Log.v(TAG, "Clicked " + which);
+					favSelection = which;
+				}
+			});
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Log.v(TAG, "Clicked " + favSelection);
 					Playlist al = songDatabase.getActivePlaylist();
 					File file = new File(songName);
 					dialog.dismiss();
 					if(al == null) {
 						return;
 					}
-					if(currentPath.equals(al.getFile().getPath())) {
-						return;
-					}
+					//if(currentPath.equals(al.getFile().getPath())) {
+					//	return;
+					//}
 						
-					switch(which) {
+					switch(favSelection) {
 					case 0:			
-						songDatabase.addToPlaylist(al, file);
+						songDatabase.addToPlaylist(al, new SongFile(file));
 						break;
 					case 1:
-						songDatabase.addToPlaylist(al, file);						
+						songDatabase.addToPlaylist(al, new SongFile(file, subTune));						
 						break;
 					case 2:
-						songDatabase.addToPlaylist(al, file);						
+						for(int i=0; i<subTuneCount; i++) {
+							songDatabase.addToPlaylist(al, new SongFile(file, i));
+						}
 						break;
 					}
-				}
+				}				
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
 				@Override
@@ -1227,7 +1248,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		MenuItem aitem = menu.findItem(R.id.add_to_plist);
 		Playlist pl = songDatabase.getActivePlaylist();
 		if(pl != null) {
-			aitem.setTitle(String.format("Add to '%s'", pl.getTitle()));
+			String s = aitem.getTitle().toString();			
+			aitem.setTitle(s.replace("[playlist]", pl.getTitle()));
 		}
 
 		if(songDatabase.getCurrentPlaylist() != null) {
@@ -1293,7 +1315,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(al != null) {
 				if(!currentPath.equals(al.getFile().getPath())) {
 					//al.add(file);
-					songDatabase.addToPlaylist(al, file);
+					songDatabase.addToPlaylist(al, new SongFile(file));
 				}
 			}
 			break;

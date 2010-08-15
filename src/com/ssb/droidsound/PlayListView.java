@@ -150,7 +150,7 @@ public class PlayListView extends ListView {
 			LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
 
 			if(convertView == null) {
-				convertView = inflater.inflate(R.layout.songlist_item, null);
+				convertView = inflater.inflate(R.layout.songlist_item, parent, false);
 				ViewGroup vg = (ViewGroup)convertView;
 				TextView tv0 = (TextView)vg.getChildAt(1);
 				TextView tv1 = (TextView)vg.getChildAt(2);
@@ -190,6 +190,8 @@ public class PlayListView extends ListView {
 					side = String.format("(%04d)", date / 10000);
 				}
 			}
+			
+			String filename = mCursor.getString(mFileIndex);
 
 
 			if(mTitleIndex >= 0) {
@@ -197,7 +199,16 @@ public class PlayListView extends ListView {
 			}
 			
 			if(title == null && mFileIndex >= 0) {
-				title = mCursor.getString(mFileIndex);
+				title = filename;
+				int sc = title.lastIndexOf(';');
+				
+				if(sc >= 0) {
+					try {
+						int tune = Integer.parseInt(title.substring(sc+1));
+						title = String.format("%s [#%02d]", title.substring(0, sc), tune+1);
+					} catch (NumberFormatException e) {
+					}					
+				}
 			}
 			
 			if(title == null) {
