@@ -57,7 +57,7 @@ public class PlayerService extends Service {
 	public static final int SONG_STATE = 11;
 	
 	public static final int SONG_DETAILS = 12;
-	public static final int SONG_MD5 = 13;
+	public static final int SONG_REPEAT = 13;
 	
 	public static final int SONG_SIZEOF = 14;
 
@@ -65,14 +65,17 @@ public class PlayerService extends Service {
 	public static final int OPTION_SILENCE_DETECT = 1;
 	public static final int OPTION_RESPECT_LENGTH = 2;
 	public static final int OPTION_PLAYBACK_ORDER = 3;
+	public static final int OPTION_REPEATMODE = 4;
 
-	private static Random rgen = new Random(System.currentTimeMillis());
+
+	public static final int RM_CONTINUE = 0;
+	public static final int RM_KEEP_PLAYING = 1;
+	public static final int RM_REPEAT = 2;	
+	public static final int RM_CONTINUE_SUBSONGS = 3;
+	public static final int RM_REPEAT_SUBSONG = 4;
 	//private short[] shuffleArray;
 	
 	private Object info[];
-
-	protected List<String> musicList;
-	protected int musicListPos;
     	
 	private Player player;
 	private Thread playerThread;
@@ -80,10 +83,19 @@ public class PlayerService extends Service {
 
 	private SongInfo currentSongInfo = new SongInfo();
 	
-	private boolean userInterferred;
+	//private boolean userInterferred;
+	//int info[SONG_REPEAT] = RM_CONTINUE;
 	private boolean silenceDetect;
 	private boolean respectLength = true;
 	private boolean shuffleSongs;
+	
+	private PhoneStateListener phoneStateListener;
+	private BroadcastReceiver mediaReceiver;
+	private int oldPlaylistHash;
+	private int defaultRepeatMode = RM_CONTINUE;
+
+	
+	PlayQueue playQueue;
 	
 	private TextToSpeech textToSpeech;
 	private int ttsStatus = -1;
@@ -113,6 +125,7 @@ public class PlayerService extends Service {
 	final static String blankChars = ".-^";
 	
 	final static Map<String, String> composerTranslation = new HashMap<String, String>();
+
 	
 	static {
 		
@@ -142,10 +155,10 @@ public class PlayerService extends Service {
 		ct.put("TWOFLOWER", "Two flower");
 		ct.put("NECROPOLO", "Necro Polo");
 		ct.put("MINDFLOW", "Mind flow");
-		ct.put("MAKTONE", "Mac toane");
+		ct.put("MAKTONE", "Mact1");
 		ct.put("NE7", "N E 7");
 		ct.put("CYCLEBURNER", "Cycle burner");
-		ct.put("GLENN RUNE GALLEFOSS", "Glen Ruh neh Galleh foss");
+		ct.put("GLENN RUNE GALLEFOSS", "Glen Ruh neh Gah lefoss");
 	}
 	
 
@@ -220,6 +233,8 @@ public class PlayerService extends Service {
 					info[SONG_TOTALSONGS] = currentSongInfo.subTunes;
 					info[SONG_SUBSONG] = currentSongInfo.startTune;
 					info[SONG_GAMENAME] = currentSongInfo.game;
+					info[SONG_REPEAT] = defaultRepeatMode;
+
 					
 					info[SONG_STATE] = 1;
 
@@ -250,9 +265,7 @@ public class PlayerService extends Service {
         				textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
         			}
 
-                	
-
-					performCallback(SONG_FILENAME, SONG_MD5, SONG_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
@@ -260,7 +273,7 @@ public class PlayerService extends Service {
                     break;
                 case Player.MSG_PROGRESS:
                 	int l = (Integer)info[SONG_LENGTH];
-                	if(l > 0 && (msg.arg1 >= l) && respectLength && !userInterferred) {
+                	if(l > 0 && (msg.arg1 >= l) && respectLength && (Integer)info[SONG_REPEAT] == RM_CONTINUE) {
                 		playNextSong();
                 	} else {                	
                     	info[SONG_POS] = (Integer)msg.arg1;
@@ -279,7 +292,7 @@ public class PlayerService extends Service {
                 	break;
                 case Player.MSG_SILENT:
                 	if(silenceDetect) {
-	                	if(!userInterferred)
+	                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE)
 	                		playNextSong();
 	                	else
 	                		Log.v(TAG, "User has interferred, not switching");
@@ -292,15 +305,6 @@ public class PlayerService extends Service {
 
     };
 
-	private PhoneStateListener phoneStateListener;
-
-	private BroadcastReceiver mediaReceiver;
-
-	protected Playlist currentPlaylist;
-
-	private int oldPlaylistHash;
-
-	protected String[] musicNames;
 	
     void createThread() {
     	
@@ -347,39 +351,25 @@ public class PlayerService extends Service {
     	} */
     }
 
-    void playNextSong() {
-    	if(musicList != null) {
-    		updatePlaylist();
-    		
-    		musicListPos++;
-    		if(musicListPos >= musicList.size()) {
-    			musicListPos -= musicList.size();
-    		}    		
-    		
-    		if(musicListPos < musicList.size()) {    			
-           		info[SONG_FILENAME] = musicList.get(musicListPos);
-           		createThread();
-           		player.playMod((String)info[SONG_FILENAME]);
-           		return;
-    		}
-    		musicListPos--;;
+    void playNextSong() {    	
+    	String song = playQueue.next();    	
+		if(song != null) {    			
+       		song = playQueue.currentWithStartSong();       		
+       		info[SONG_FILENAME] = song;       		
+       		createThread();
+       		player.playMod(song);
+       		return;
     	}
     }
 
     void playPrevSong() {    	
-    	if(musicList != null) {
-    		updatePlaylist();
-    		musicListPos--;
-    		if(musicListPos < 0) {
-    			musicListPos += musicList.size();
-    		}    		
-    		if(musicListPos >= 0) {
-           		info[SONG_FILENAME] = musicList.get(musicListPos);
-           		createThread();
-           		player.playMod((String)info[SONG_FILENAME]);
-           		return;
-    		}
-    		musicListPos++;
+    	String song = playQueue.prev();    	
+		if(song != null) {    			
+       		song = playQueue.currentWithStartSong();
+       		info[SONG_FILENAME] = song;
+       		createThread();
+       		player.playMod(song);
+       		return;
     	}
     }
     
@@ -441,34 +431,20 @@ public class PlayerService extends Service {
 			if(uri == null) {
 				Bundle b = intent.getExtras();							
 				String f =  b.getString("musicFile");
-				musicListPos = b.getInt("musicPos");
-				musicList = new ArrayList<String>();
+				int index = b.getInt("musicPos");
 				String [] names = (String []) b.getSerializable("musicList");
-				for(int i=0; i<names.length; i++) {
-					musicList.add(names[i]);
-				}
 				
-				//if(musicList != null) {
-				//	shuffleArray = new short [musicList.length];
-				//	//unshuffle();
-				//}
+				playQueue = new PlayQueue(names, index, shuffleSongs);
+				
 				if(f == null) {
-					if(musicListPos >= 0) {
-						f = musicList.get(musicListPos);
-					}
+					f = playQueue.current();
 				}
+
 				createThread();
 				if(f == null) {
 					String modname = (String) info[SONG_FILENAME];
-					if(musicList != null && modname != null) {
+					if(names != null && modname != null) {
 						Log.v(TAG, "Got playlist without song");
-						for(int i=0; i<musicList.size(); i++) {
-							if(musicList.get(i).compareTo(modname) == 0) {
-								musicListPos = i;
-								Log.v(TAG, String.format("Changing pos ftrom %d to %d", musicListPos, i));
-								break;
-							}
-						}
 					}
 				} else {
 					Log.v(TAG, "Want to play list with " + f);
@@ -629,14 +605,13 @@ public class PlayerService extends Service {
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
 			if(!player.isActive() && play) {
-				if(musicList != null) {
-		    		if(musicListPos >= 0) {
-		           		info[SONG_FILENAME] = musicList.get(musicListPos);
-		           		createThread();
-		           		player.playMod((String)info[SONG_FILENAME]);
-		           		return true;
-		    		}
-				}
+				String s = playQueue.currentWithStartSong();
+				if(s != null) {
+	           		info[SONG_FILENAME] = s; 		           		
+	           		createThread();
+	           		player.playMod((String)info[SONG_FILENAME]);
+	           		return true;
+	    		}
 			}
 			player.paused(!play);
 			return true;
@@ -646,8 +621,10 @@ public class PlayerService extends Service {
 
 		@Override
 		public void stop() throws RemoteException {
-			player.stop();
-	    	userInterferred = false;
+			player.stop();			
+	    	//userInterferred = false;
+			info[SONG_REPEAT] = defaultRepeatMode;
+			performCallback(SONG_REPEAT);
 		}
 
 
@@ -656,7 +633,10 @@ public class PlayerService extends Service {
 			player.seekTo(msec);
 			info[SONG_POS] = msec;
 			performCallback(SONG_POS);
-			userInterferred = true;
+			if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
+				info[SONG_REPEAT] = RM_KEEP_PLAYING;
+				performCallback(SONG_REPEAT);
+			}
 			return true;
 		}
 
@@ -664,7 +644,10 @@ public class PlayerService extends Service {
 		public boolean setSubSong(int song) throws RemoteException {
 			player.setSubSong(song);
 			info[SONG_SUBSONG] = (Integer)song;			
-			userInterferred = true;
+			if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
+				info[SONG_REPEAT] = RM_KEEP_PLAYING;
+				performCallback(SONG_REPEAT);
+			}
 			return true;
 			
 		}
@@ -676,18 +659,22 @@ public class PlayerService extends Service {
 			boolean on = arg.equals("on");
 			
 			switch(opt) {
+			case OPTION_REPEATMODE:
+				info[SONG_REPEAT] = Integer.parseInt(arg);
+				performCallback(SONG_REPEAT);
+				break;
 			case OPTION_SILENCE_DETECT:
 				Log.v(TAG, "Silence detection " + arg);
 				silenceDetect = on;
 				break;
 			case OPTION_PLAYBACK_ORDER:
-				if(arg.charAt(0) == 'R' && shuffleSongs == false) {
+				if(arg.charAt(0) == 'R') {
 					shuffleSongs = true;
-					//unshuffle();
-					shuffle();
-				} else if(arg.charAt(0) == 'S' && shuffleSongs == true) {
+				} else if(arg.charAt(0) == 'S') {
 					shuffleSongs = false;
-					unshuffle();
+				}
+				if(playQueue != null) {
+					playQueue.setShuffle(shuffleSongs);
 				}
 				break;
 			case OPTION_RESPECT_LENGTH:
@@ -700,7 +687,7 @@ public class PlayerService extends Service {
 			}
 		}
 		
-
+/*
 		private void shuffle() {
 			String t;
 			int sz = musicList.size();
@@ -719,25 +706,44 @@ public class PlayerService extends Service {
 				musicList.add(musicNames[i]);
 			}
 		}
-
+*/
 		@Override
 		public boolean playPlaylist(String name, int startIndex) throws RemoteException {
 			
 			File pf = new File(name);
+			Playlist pl = Playlist.getPlaylist(pf);
+			playQueue = new PlayQueue(pl, startIndex, shuffleSongs);
+
+			String mod = playQueue.currentWithStartSong();       		
+
+			createThread();
+			info[SONG_FILENAME] = mod;
+
+			player.playMod(mod);
+	    	info[SONG_REPEAT] = defaultRepeatMode;
+			performCallback(SONG_REPEAT);
+	    	
+	    	return true;
+	    	
+			/*
+			File pf = new File(name);
 			currentPlaylist = Playlist.getPlaylist(pf);
 			Log.v(TAG, String.format("File %s is playlist %s", name, currentPlaylist.toString()));
 			List<File> files = currentPlaylist.getFiles();
-			int i = 0;
+			int i = 0;			
 			for(File f : files) {
 				musicNames[i] = f.getPath();
 			}
 			
-			return playList(null, startIndex);
+			return playList(null, startIndex); */
 		}
 
 		@Override
 		public boolean playList(String[] names, int startIndex) throws RemoteException {
 			
+			
+			playQueue = new PlayQueue(names, startIndex, shuffleSongs);
+			/*
 			if(names != null) {
 				musicNames = names;
 			}
@@ -750,26 +756,31 @@ public class PlayerService extends Service {
 			String name = musicList.get(startIndex);
 			if(shuffleSongs) {
 				shuffle();								
-			}
-
+			} */
+			String name = playQueue.currentWithStartSong();       		
 			Log.v(TAG, "PlayList called " + name);
 			createThread();
 			info[SONG_FILENAME] = name;
+
 			player.playMod(name);
-	    	userInterferred = false;
+	    	info[SONG_REPEAT] = defaultRepeatMode;
+			performCallback(SONG_REPEAT);
+
 
 			return false;
 		}
 
 		@Override
 		public void playNext() throws RemoteException {
-	    	userInterferred = false;
+	    	info[SONG_REPEAT] = defaultRepeatMode;
+			performCallback(SONG_REPEAT);
 			playNextSong();
 		}
 
 		@Override
 		public void playPrev() throws RemoteException {
-	    	userInterferred = false;
+	    	info[SONG_REPEAT] = defaultRepeatMode;
+			performCallback(SONG_REPEAT);
 			playPrevSong();
 		}
 

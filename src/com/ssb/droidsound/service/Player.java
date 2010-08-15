@@ -92,6 +92,7 @@ public class Player implements Runnable {
 	private Object cmdLock = new Object();
 	private Command command = Command.NO_COMMAND;
 	private Object argument;
+	private int intArgument;
 	
 	
 	// Player state
@@ -130,7 +131,7 @@ public class Player implements Runnable {
 		samples = new short [bufSize/2];
 	}
 
-    private void startSong(String songName) {
+    private void startSong(String songName, int startTune) {
     	    	
     	if(currentPlugin != null) {
     		currentPlugin.unload(songRef);
@@ -311,7 +312,6 @@ public class Player implements Runnable {
 				currentSong.game = getPluginInfo(DroidSoundPlugin.INFO_GAME);
 				currentSong.subTunes = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_SUBTUNES);
 				currentSong.startTune = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_STARTTUNE);
-				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 				currentSong.details = currentPlugin.getDetailedInfo(songRef);
 				
 				if(currentSong.title == null || currentSong.title.equals("")) {
@@ -331,6 +331,12 @@ public class Player implements Runnable {
 
 				if(currentSong.subTunes == -1)
 					currentSong.subTunes = 0;			
+			}
+			
+			if(startTune >= 0) {
+				currentSong.startTune = startTune;
+				currentPlugin.setTune(songRef, startTune);
+				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 			}
 
 			Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type));
@@ -375,7 +381,19 @@ public class Player implements Runnable {
 					synchronized (cmdLock) {
 						switch(command) {
 						case PLAY:
-							startSong((String)argument);
+							
+							int subtune = -1;
+							String song = (String)argument;
+							Log.v(TAG, "Playmod " + song);
+							int sc = song.indexOf(';');
+							if(sc > 0) {								
+								try {
+									subtune = Integer.parseInt(song.substring(sc+1));
+								} catch (NumberFormatException e) {
+								}
+								song = song.substring(0, sc);
+							}
+							startSong(song, subtune);
 							break;
 						case STOP:
 							if(currentState != State.STOPPED) {

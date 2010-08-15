@@ -53,7 +53,7 @@ import com.ssb.droidsound.utils.NativeZipFile;
 public class SongDatabase implements Runnable {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	
-	public static final int DB_VERSION = 3;
+	public static final int DB_VERSION = 4;
 	
 	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 
@@ -246,9 +246,9 @@ public class SongDatabase implements Runnable {
 	
 					"TITLE" + " TEXT," +
 					"COMPOSER" + " TEXT," +
-					"COPYRIGHT" + " TEXT," +
-					"FORMAT" + " TEXT," +
-					"LENGTH" + " INTEGER" + ");");
+					"DATE" + " INTEGER," +
+					"FORMAT" + " TEXT" + ");");
+					// "LENGTH" + " INTEGER" + 
 
 			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
 	
@@ -336,7 +336,7 @@ public class SongDatabase implements Runnable {
 		}
 
 		ContentValues values = new ContentValues();
-		values.put("LENGTH", 0);
+		//values.put("LENGTH", 0);
 		values.put("TYPE", TYPE_FILE);
 				
 		while(entries.hasMoreElements()) {
@@ -370,7 +370,8 @@ public class SongDatabase implements Runnable {
 
 					values.put("TITLE", info.title);
 					values.put("COMPOSER", info.composer);
-					values.put("COPYRIGHT", info.copyright);
+					//values.put("COPYRIGHT", info.copyright);
+					values.put("DATE", info.date);
 					values.put("FORMAT", info.format);
 					values.put("PATH", path);
 					values.put("FILENAME", fileName);
@@ -593,9 +594,10 @@ public class SongDatabase implements Runnable {
 									if(info != null) {
 										values.put("TITLE", info.title);
 										values.put("COMPOSER", info.composer);
-										values.put("COPYRIGHT", info.copyright);
+										//values.put("COPYRIGHT", info.copyright);
+										values.put("DATE", info.date);
 										values.put("FORMAT", info.format);
-										values.put("LENGTH", 0);
+										//values.put("LENGTH", 0);
 										ok = true;				
 									}/* else {
 										if(checkModule(f, values)) {
@@ -934,7 +936,7 @@ public class SongDatabase implements Runnable {
 
 		String q = "%" + query + "%" ;
 		
-		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE" }, "TITLE LIKE ?", new String[] { q }, null, null, "TITLE", "500");
+		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE", "DATE" }, "TITLE LIKE ?", new String[] { q }, null, null, "TITLE", "500");
 		Log.v(TAG, String.format("Got %d hits", c.getCount()));
 		return c;
 	}
@@ -1056,7 +1058,7 @@ public class SongDatabase implements Runnable {
 			}
 			c.close();
 		}
-		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
+		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
 		Log.v(TAG, "END");
 		return c;
 	}

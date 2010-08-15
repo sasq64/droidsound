@@ -20,10 +20,19 @@
 />
 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
 	android:layout_toRightOf="@id/icon"
+	android:id="@+id/subtitle"
 	android:layout_below="@id/title"
 	android:textColor="#FFFFFF" android:textSize="15dp"
 	android:text="Author"
 />
 
+<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+	android:layout_alignParentRight="true"
+	android:layout_alignParentBottom="true"
+	android:id="@+id/sidetitle"
+	android:textColor="#a0a0a0" android:textSize="15dp"
+	android:layout_marginRight="8dp"
+	android:text="(0000)"
+/>
 
 </RelativeLayout>

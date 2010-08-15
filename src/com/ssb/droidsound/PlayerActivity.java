@@ -171,6 +171,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private LinearLayout titleBar;
 
+	private TextView repeatText;
+
+	private int songRepeat;
+
+	private TextView plusText;
+
 	
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## Activity finalize");
@@ -376,6 +382,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 		titleBar = (LinearLayout) findViewById(R.id.title_bar);
 		shuffleText = (TextView) findViewById(R.id.shuffle_text);
+		repeatText = (TextView) findViewById(R.id.repeat_text);
+		plusText = (TextView) findViewById(R.id.plus_text);
 			
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		String md = prefs.getString("modsDir", null);
@@ -573,6 +581,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	 		flipTo(lastConfig.flipper, false);
 		}
  		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
+ 		//repeatText.setText("CONT");
 		
 		if(!created && lastConfig == null) {
 			songDatabase.scan(false, modsDir.getPath());
@@ -729,7 +738,28 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
 			}
 		});
+
 		
+		repeatText.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {
+				//shuffleSongs = !shuffleSongs;
+				if(songRepeat == 0) {
+					songRepeat = 1;
+				} else {
+					songRepeat = 0;
+				}
+				player.setOption(PlayerService.OPTION_REPEATMODE, Integer.toString(songRepeat));
+			}
+		});
+
+		plusText.setOnClickListener(new OnClickListener() {			
+			@Override
+			public void onClick(View v) {				
+				showDialog(R.string.add_to_plist);
+			}
+		});
+
 		if(version == -1) {
 			showDialog(R.string.unpack_examples);
 		}
@@ -778,7 +808,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					flipTo(SEARCH_VIEW);
 				} else {
 					setDirectory(modsDir, playListView);
-					currentPlaylistView.setScrollPosition(null);
+					currentPlaylistView.setScrollPosition(null); //new File(songName));
 				}
 			}
 			return true;
@@ -799,6 +829,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				if(currentPlaylistView != playListView) {
 					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 						flipTo(FILE_VIEW);
+						playListView.setScrollPosition(new File(songName));
 						return true;
 					}
 				}
@@ -898,9 +929,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		return c;
 	}
 
+	private static String [] repnames = { "CONT", "----", "REPT", "CS", "RS" };
+
 	@Override
 	public void intChanged(int what, int value) {
 		switch(what) {
+		case PlayerService.SONG_REPEAT:
+			songRepeat = value;
+			repeatText.setText(repnames[value]);
+			if(value == 1) {
+				repeatText.setTextColor(0xff308050);
+			} else {
+				repeatText.setTextColor(0xff80ffc0);
+			}
+				
+			break;
 		case PlayerService.SONG_LENGTH :
 			if(value >= 0) {
 				songLength = value/1000;
@@ -939,28 +982,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		}
 	}
-
-	
-	private short [] parseLength(String l) {
-		String [] lengths = l.split(" ");
-		short [] array = new short [lengths.length];
-		int i = 0;
-		for(String x : lengths) {
-			int colon = x.indexOf(':');
-			int para =  x.indexOf('(');
-			if(para > 0) {
-				x = x.substring(0,para);
-			}
-			array[i++] = (short) (Integer.parseInt(x.substring(0, colon)) * 60 + Integer.parseInt(x.substring(colon+1)));
-		}
-		return array;
-	}
-		
 	
 	@Override
 	public void stringChanged(int what, String value) {
-		SongDatabase.SongInfo info;
-		switch(what) {
+
+		switch(what) {						
 		case PlayerService.SONG_FILENAME :
 			playListView.setHilighted(value);
 			searchListView.setHilighted(value);
@@ -1097,8 +1123,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					String s = input.getText().toString();					
-					songDatabase.createPlaylist(new File(currentPath, s + ".plist"));
+					String s = input.getText().toString();
+					File file = new File(currentPath, s + ".plist");
+					songDatabase.createPlaylist(file);
+					songDatabase.setActivePlaylist(file);
 					playListView.rescan();
 				}
 			});
@@ -1127,6 +1155,42 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					dialog.cancel();
 				}				
 			});			
+			break;
+		case R.string.add_to_plist:
+			builder.setTitle(id);
+			builder.setSingleChoiceItems(R.array.fav_opts, -1, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Log.v(TAG, "Clicked " + which);
+					Playlist al = songDatabase.getActivePlaylist();
+					File file = new File(songName);
+					dialog.dismiss();
+					if(al == null) {
+						return;
+					}
+					if(currentPath.equals(al.getFile().getPath())) {
+						return;
+					}
+						
+					switch(which) {
+					case 0:			
+						songDatabase.addToPlaylist(al, file);
+						break;
+					case 1:
+						songDatabase.addToPlaylist(al, file);						
+						break;
+					case 2:
+						songDatabase.addToPlaylist(al, file);						
+						break;
+					}
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}				
+			});
 			break;
 		default:
 			builder.setMessage(id);

@@ -18,6 +18,34 @@ import android.database.MatrixCursor;
 import android.util.Log;
 
 public class Playlist {
+
+	public class Song {
+
+		public File file;
+		public String title;
+		public String subtitle;
+		public int startsong;
+		
+	/*	
+		@Override
+		public int hashCode() {
+			return file.getPath().hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if(o instanceof String) {
+				return file.getPath().equals(o);
+			} else
+			if(o instanceof Song) {
+				return file.getPath().equals(((Song)o).file.getPath());
+			}
+			return super.equals(o);
+		}
+*/
+		
+	}
+
 	private static final String TAG = Playlist.class.getSimpleName();
 	
 	
@@ -115,7 +143,7 @@ public class Playlist {
 			Log.v(TAG, "Creating cursor for " + plistFile.getPath());
 			
 			cursor  = new MatrixCursor(new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" });
-			String cols[] = new String [4];
+			Object cols[] = new Object [4];
 
 			for(String line : lines) {
 				Log.v(TAG, line);
@@ -123,17 +151,29 @@ public class Playlist {
 				if(line.length() > 0) {
 					
 					String [] linecols = line.split("\t");
+
+					// int sc = linecols[0].lastIndexOf(';');					
+					cols[2] = cols[3] = null;					
+					// if(sc >= 0) {
+					// 	try {
+					// 		cols[4] = Integer.parseInt(linecols[0].substring(sc+1));
+					// 	} catch (NumberFormatException e) {
+					// 	}
+					// 	linecols[0] = linecols[0].substring(0, sc);
+					// }
+					
 					File f = new File(linecols[0]);
 					
-					cols[0] = f.getParent();
+					String path = f.getParent();
 					cols[1] = f.getName();
-					cols[2] = cols[3] = null;
 					
-					if(cols[0].charAt(0) == '$') {
-						int slash = cols[0].indexOf('/');
-						String var = cols[0].substring(1, slash);
-						cols[0] = "/sdcard/MODS/C64Music.zip/C64Music" + cols[0].substring(slash);
+					if(path.charAt(0) == '$') {
+						int slash = path.indexOf('/');
+						String var = path.substring(1, slash);
+						path = "/sdcard/MODS/C64Music.zip/C64Music" + path.substring(slash);
 					}
+					
+					cols[0] = path;
 					
 					if(linecols.length > 1) {
 						cols[2] = linecols[1];
@@ -151,7 +191,7 @@ public class Playlist {
 				}
 			}
 		}		
-		
+		cursor.moveToPosition(-1);
 		return cursor;
 	}
 		
@@ -230,8 +270,13 @@ public class Playlist {
 		String removeMe = null;
 		for(String line : lines) {
 			String cols [] = line.split("\t");
+			//int sc = cols[0].lastIndexOf(';');
+			//if(sc >= 0) {
+			//	cols[0] = cols[0].substring(0, sc);
+			//}
 			if(cols != null && cols[0] != null) {
 				if(file.getPath().equals(cols[0])) {
+					Log.v(TAG, String.format("Removing %s", cols[0]));
 					removeMe = line;
 				}
 			}
@@ -300,7 +345,11 @@ public class Playlist {
 		for(String line : lines) {
 			if(line.length() > 0) {
 				int tab = line.indexOf('\t');
-				if(tab > 0) {
+				if(tab > 0) {					
+					//int sc = line.indexOf(';');
+					//if(sc >= 0 && sc < tab) {
+					//	tab = sc;
+					//}
 					line = new File(line.substring(0, tab)).getPath();
 				}				
 				if(line.charAt(0) == '$') {
@@ -330,5 +379,39 @@ public class Playlist {
 			hash ^= line.hashCode();
 		}		
 		return hash;
+	}
+
+	public List<Song> getSongs() {
+		List<Song> songs = new ArrayList<Song>();
+		
+		Cursor c = getCursor();
+		
+		while(c.moveToNext()) {
+			
+			Song song = new Song();
+			
+			String p = cursor.getString(cursor.getColumnIndex("PATH"));
+			String n = cursor.getString(cursor.getColumnIndex("FILENAME"));
+			song.startsong = -1;
+			int sc = n.lastIndexOf(';');
+			if(sc >= 0) {
+				try {
+					song.startsong = Integer.parseInt(n.substring(sc+1));
+				} catch (NumberFormatException e) {
+				}
+				n = n.substring(0, sc);
+			}
+			
+			song.subtitle = cursor.getString(cursor.getColumnIndex("SUBTITLE"));
+
+			
+			song.file = new File(p, n);
+			song.title = cursor.getString(cursor.getColumnIndex("TITLE"));
+			//song.startsong = cursor.getInt(cursor.getColumnIndex("STARTSONG"));
+			Log.v(TAG, String.format("Songlist sentry %s %d",song.file.getPath(), song.startsong));
+			songs.add(song);
+			
+		}
+		return songs;
 	}	
 }

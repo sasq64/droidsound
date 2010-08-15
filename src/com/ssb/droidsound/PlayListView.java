@@ -64,6 +64,8 @@ public class PlayListView extends ListView {
 		private float subtitleHeight;
 		private boolean subDate;
 		private File hilightedFile;
+		private int mSideTitleIndex;
+		private int mDateIndex;
 
 		PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
     		mContext = context;
@@ -100,6 +102,10 @@ public class PlayListView extends ListView {
     				subDate = true;
     			}
     		}
+    		mSideTitleIndex = mCursor.getColumnIndex("SIDETITLE");
+    		mDateIndex = mCursor.getColumnIndex("DATE");
+    		
+    		
     		mTitleIndex = mCursor.getColumnIndex("TITLE");
     		mTypeIndex = mCursor.getColumnIndex("TYPE");
     		mFileIndex = mCursor.getColumnIndex("FILENAME");
@@ -160,6 +166,8 @@ public class PlayListView extends ListView {
 			ImageView iv = (ImageView)vg.getChildAt(0);
 			TextView tv0 = (TextView)vg.getChildAt(1);
 			TextView tv1 = (TextView)vg.getChildAt(2);
+			TextView tv2 = (TextView)vg.getChildAt(3);
+			
 
 			mCursor.moveToPosition(position);
 			int type = SongDatabase.TYPE_FILE;
@@ -169,6 +177,20 @@ public class PlayListView extends ListView {
 			
 			String title = null;
 			String sub = null;
+			String side = null;
+			
+			Log.v(TAG, "DATEINDEX " + mDateIndex);
+			
+			if(mSideTitleIndex >= 0) {
+				side = mCursor.getString(mTitleIndex);
+			} else if(mDateIndex >= 0) {
+				int date = mCursor.getInt(mDateIndex);
+				if(date > 0) {
+					Log.v(TAG, "DATE " + date);
+					side = String.format("(%04d)", date / 10000);
+				}
+			}
+
 
 			if(mTitleIndex >= 0) {
 				title = mCursor.getString(mTitleIndex);
@@ -196,6 +218,7 @@ public class PlayListView extends ListView {
 				}
 			}
 
+			tv2.setText(side != null ? side : "");
 			
 			if(sub == null && type == SongDatabase.TYPE_FILE) {
 				sub = "Unknown";
@@ -412,10 +435,12 @@ public class PlayListView extends ListView {
 			for(int i=0; i<files.length; i++) {
 				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
 				if(f.equals(files[i])) {
+					Log.v(TAG, String.format("Scrolling to %s", f.getPath()));
 					setSelectionFromTop(i, 0);
-					break;
+					return;
 				}
 			}
+			Log.v(TAG, String.format("Could not scroll to %s", f.getPath()));
 		}
 	}
 

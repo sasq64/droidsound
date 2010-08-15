@@ -42,6 +42,7 @@ public class FileIdentifier {
 		String format;
 		int channels;
 		int type;
+		int date;
 	};
 
 
@@ -110,6 +111,17 @@ public class FileIdentifier {
 		if(info.title == null || info.title.length() == 0) {
 			info.title = fname;
 		}
+		
+		if(info.date < 0 && info.copyright != null && info.copyright.length() >= 4) {
+			int year = -1;
+			try {
+				year = Integer.parseInt(info.copyright.substring(0,4));
+			} catch (NumberFormatException e) {
+			}
+			if(year > 1000 && year < 2100) {
+				info.date = year * 10000;
+			}
+		}		
 	}
 	
 	private static String fromData(byte [] data, int start, int len) throws UnsupportedEncodingException {
@@ -143,7 +155,8 @@ public class FileIdentifier {
 			info.copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
 			info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
 			info.format = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
-			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);			
+			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
+			info.date = -1;
 			plugin.unload(songRef);
 			
 			Log.v(TAG, String.format("TITLE: %s -- COMPOSER: %s", info.title, info.composer));
@@ -176,7 +189,7 @@ public class FileIdentifier {
 			}
 			
 			
-			Log.v(TAG, "MarkSupported " + is.markSupported());
+			//Log.v(TAG, "MarkSupported " + is.markSupported());
 			
 			for(DroidSoundPlugin plugin : list) {
 				Log.v(TAG, "Trying " + plugin.getClass().getName());
@@ -220,6 +233,7 @@ public class FileIdentifier {
 
 		MusicInfo info = new MusicInfo();
 		info.type = extno;
+		info.date = -1;
 
 		try {
 			switch(extno) {

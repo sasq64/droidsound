@@ -166,7 +166,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		        		int n = 0;
 		        		while((xl & 0x8000) == 0) {
 		        			xl = extraLengths[len++] & 0xffff;
-		        			songLengths[n++] = ((xl & 0x7fff)-1) * 1000;
+		        			songLengths[n++] = (xl & 0x7fff) * 1000;
 		        		}
 		        		
 		        		//for(int i=0; i<n; i++) {
@@ -174,7 +174,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		        		//}
 		        	} else {
 		        		Log.v(TAG, String.format("SINGLE LEN: %02d:%02d", len/60, len%60));
-		        		songLengths[0] = (len-1) * 1000;
+		        		songLengths[0] = (len * 1000);
 		        	}
 		        	break;
 		        }
