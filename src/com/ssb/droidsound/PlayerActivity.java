@@ -949,11 +949,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 			break;
 		case PlayerService.SONG_LENGTH :
-			if(value >= 0) {
-				songLength = value/1000;
-				Log.v(TAG, String.format("Songlength %02d:%02d", songLength/60, songLength%60));
-				songTotalText.setText(String.format("%02d:%02d", songLength/60, songLength%60));
+			if(value < 0) {
+				// TODO: Hide length
+				value = 0;
 			}
+			songLength = value/1000;
+			Log.v(TAG, String.format("Songlength %02d:%02d", songLength/60, songLength%60));
+			songTotalText.setText(String.format("%02d:%02d", songLength/60, songLength%60));
 			break;
 		case PlayerService.SONG_POS :
 			songPos = value/1000;
