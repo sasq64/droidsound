@@ -59,7 +59,9 @@ public class PlayerService extends Service {
 	public static final int SONG_DETAILS = 12;
 	public static final int SONG_REPEAT = 13;
 	
-	public static final int SONG_SIZEOF = 14;
+	public static final int SONG_SUBTUNE_TITLE = 14;
+
+	public static final int SONG_SIZEOF = 15;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
@@ -216,7 +218,12 @@ public class PlayerService extends Service {
             		Log.v(TAG, String.format("SUBTUNE %d, Length %d", msg.arg1, msg.arg2));
             		info[SONG_SUBSONG] = msg.arg1;
             		info[SONG_LENGTH] = msg.arg2;
-        			performCallback(SONG_SUBSONG, SONG_LENGTH);
+            		if(msg.obj != null) {
+            			info[SONG_SUBTUNE_TITLE] = msg.obj;
+                		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE);
+                		break;                		
+            		}
+            		performCallback(SONG_SUBSONG, SONG_LENGTH);
             		break;
                 case Player.MSG_NEWSONG:
                 	
@@ -234,6 +241,7 @@ public class PlayerService extends Service {
 					info[SONG_SUBSONG] = currentSongInfo.startTune;
 					info[SONG_GAMENAME] = currentSongInfo.game;
 					info[SONG_REPEAT] = defaultRepeatMode;
+					info[SONG_SUBTUNE_TITLE] = currentSongInfo.subtuneTitle;
 
 					
 					info[SONG_STATE] = 1;
@@ -265,7 +273,7 @@ public class PlayerService extends Service {
         				textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
         			}
 
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_REPEAT, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
@@ -351,26 +359,28 @@ public class PlayerService extends Service {
     	} */
     }
 
-    void playNextSong() {    	
+    boolean playNextSong() {    	
     	String song = playQueue.next();    	
 		if(song != null) {    			
        		song = playQueue.currentWithStartSong();       		
        		info[SONG_FILENAME] = song;       		
        		createThread();
        		player.playMod(song);
-       		return;
+       		return true;
     	}
+		return false;
     }
 
-    void playPrevSong() {    	
+    boolean playPrevSong() {    	
     	String song = playQueue.prev();    	
 		if(song != null) {    			
        		song = playQueue.currentWithStartSong();
        		info[SONG_FILENAME] = song;
        		createThread();
        		player.playMod(song);
-       		return;
+       		return true;
     	}
+		return false;
     }
     
 
@@ -642,7 +652,10 @@ public class PlayerService extends Service {
 
 		@Override
 		public boolean setSubSong(int song) throws RemoteException {
-			player.setSubSong(song);
+
+			// TODO : Check if next song is the same file and the same sub song
+			
+ 			player.setSubSong(song);
 			info[SONG_SUBSONG] = (Integer)song;			
 			if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
 				info[SONG_REPEAT] = RM_KEEP_PLAYING;
@@ -651,7 +664,6 @@ public class PlayerService extends Service {
 			return true;
 			
 		}
-
 		
 		@Override
 		public void setOption(int opt, String arg) throws RemoteException {

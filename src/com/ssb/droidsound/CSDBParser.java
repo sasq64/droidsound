@@ -378,7 +378,14 @@ public class CSDBParser implements SongDatabase.DataSource {
 				} else {
 					hvsc = "/sdcard/MODS/C64Music.zip/C64Music";
 				}
+				
+				if(!(new File(hvsc).exists())) {
+					// TODO: This does not work since File() translates // to /
+					hvsc = "http://swimsuitboys.com/droidsound/dl/C64Music";
+				}
+				
 			}
+			Log.v(TAG, "HVSC is " + hvsc);
 			c.close();
 		}
 		

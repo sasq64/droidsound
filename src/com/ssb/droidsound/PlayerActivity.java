@@ -23,6 +23,7 @@ import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -45,6 +46,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
@@ -174,6 +176,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	protected int favSelection;
 
+	private String subtuneTitle;
+
+	private File moveFileHere;
+
 	
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## Activity finalize");
@@ -247,6 +253,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	protected void onNewIntent(Intent intent) {
 		setIntent(intent);
 		Log.v(TAG, "INTENT " + intent.getAction());
+		
+		if(Intent.ACTION_VIEW.equals(intent.getAction())) {			
+			String music = intent.getDataString();
+			if(music.toUpperCase().endsWith(".ZIP")) {				
+				if(music.startsWith("file:/")) {
+					music = music.substring(6);
+				}				
+				File f = new File(music);
+				Log.v(TAG, "MOVE FILE = " + f.getPath());
+				if(f.renameTo(new File(modsDir, f.getName()))) {
+					Log.v(TAG, "Successful");
+					songDatabase.scan(false, modsDir.getPath());
+				}
+			}
+		} else		
 		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
 	 		Log.v(TAG, "QUERY " + query);
@@ -297,7 +318,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			currentPlaylistView = null;
 			searchButton.setVisibility(View.GONE);
 			//shuffleButton.setVisibility(View.VISIBLE);
-			titleText.setText(songTitle);
+			if(subtuneTitle != null && subtuneTitle.length() > 0) {
+				titleText.setText(songTitle + " - " + subtuneTitle);
+			} else {
+				titleText.setText(songTitle);
+			}
 			subtitleText.setText(songComposer);
 			titleBar.setBackgroundColor(0xff000080);
 
@@ -342,17 +367,31 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		super.onCreate(savedInstanceState);
 		Log.v(TAG, "#### onCreate()");
+	
 
 		Intent intent = getIntent();
 		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
 		if(Intent.ACTION_VIEW.equals(intent.getAction())) {			
 			String music = intent.getDataString();
-			Intent newIntent = new Intent(intent);
-			newIntent.setClass(this, PlayerService.class);
-			startService(newIntent);
-			finish();
-			return;
+			
+			if(music.toUpperCase().endsWith(".ZIP")) {
+				
+				if(music.startsWith("file:/")) {
+					music = music.substring(6);
+				}
+				
+				File f = new File(music);
+				moveFileHere = f;
+			} else {			
+				Intent newIntent = new Intent(intent);
+				newIntent.setClass(this, PlayerService.class);
+				startService(newIntent);
+				finish();
+				return;
+			}
 		}
+		
+		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 		
 		player = new PlayerServiceConnection();		
 		
@@ -418,6 +457,24 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		if(!modsDir.exists()) {
 			showDialog(R.string.sdcard_not_found);
+		}
+		
+		File [] files = modsDir.listFiles();
+		if(files != null) {
+			for(File f : files) {
+				if(f.getName().endsWith(".temp")) {
+					f.delete();
+				}
+			}
+		}
+		
+		if(moveFileHere != null) {
+			Log.v(TAG, "MOVE FILE = " + moveFileHere.getPath());
+			if(moveFileHere.renameTo(new File(modsDir, moveFileHere.getName()))) {
+				Log.v(TAG, "Successful");
+				
+			}
+			moveFileHere = null;
 		}
 		
 		
@@ -514,6 +571,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						progressDialog.setMessage(String.format("Updating database...\n%s", path));
 					}
 				
+				} else
+				if(intent.getAction().equals("com.sddb.droidsound.DOWNLOAD_DONE")) {
+					String path = intent.getStringExtra("PATH");
+					Toast t = Toast.makeText(PlayerActivity.this, path + " downloaded", Toast.LENGTH_SHORT);
+					t.show();
+					songDatabase.scan(false, modsDir.getPath());
 				}
 			} 
 		};
@@ -522,6 +585,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		filter.addAction("com.sddb.droidsound.OPEN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_UPDATE");
+		filter.addAction("com.sddb.droidsound.DOWNLOAD_DONE");
 		registerReceiver(receiver, filter);
 
 
@@ -576,6 +640,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			searchQuery = lastConfig.query;
 			shuffleSongs = lastConfig.shuffleSongs;
 	 		flipTo(lastConfig.flipper, false);
+		} else {
+			songDatabase.setActivePlaylist(mf);
 		}
  		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
  		//repeatText.setText("CONT");
@@ -998,9 +1064,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			searchListView.setHilighted(value);
 			songName = value;
 			break;
+		case PlayerService.SONG_SUBTUNE_TITLE:
+			subtuneTitle = value;
+			flipTo(SAME_VIEW);
+			break;
 		case PlayerService.SONG_TITLE :
-			// songTitleText.setText(value);
 			songTitle = value;
+			flipTo(SAME_VIEW);			
 			songDetails = player.getSongInfo();
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
@@ -1030,7 +1100,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case PlayerService.SONG_AUTHOR :
 			// songComposerText.setText(value);
 			songComposer = value;
-			flipTo(SAME_VIEW);			
+			flipTo(SAME_VIEW);		
 			break;
 		case PlayerService.SONG_COPYRIGHT :
 			// songCopyrightText.setText(value);
@@ -1192,17 +1262,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					//if(currentPath.equals(al.getFile().getPath())) {
 					//	return;
 					//}
+					
+					String title = null;
+					if(songTitle != null && subtuneTitle != null) {
+						title = songTitle + " - " + subtuneTitle;
+					}
 						
 					switch(favSelection) {
 					case 0:			
 						songDatabase.addToPlaylist(al, new SongFile(file));
 						break;
 					case 1:
-						songDatabase.addToPlaylist(al, new SongFile(file, subTune));						
+						songDatabase.addToPlaylist(al, new SongFile(file, subTune, title));						
 						break;
 					case 2:
 						for(int i=0; i<subTuneCount; i++) {
-							songDatabase.addToPlaylist(al, new SongFile(file, i));
+							songDatabase.addToPlaylist(al, new SongFile(file, i, null));
 						}
 						break;
 					}
@@ -1304,7 +1379,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 
 		switch(item.getItemId()) {
-		case R.id.go_author:
+		case R.id.go_dir:
 			setDirectory(file.getParentFile(), playListView);
 			currentPlaylistView.setScrollPosition(file);
 			//flipper.setDisplayedChild(0);
@@ -1365,6 +1440,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					if(songDatabase.deleteFile(operationFile)) {
 						operationFile.delete();
 						setDirectory(null, null);
+						Playlist apl = songDatabase.getActivePlaylist();
+						if(apl.getFile().equals(operationFile)) {
+							File mf = new File(modsDir, "Favorites.plist");
+							songDatabase.setActivePlaylist(mf);
+						}
 					}
 				}
 			});

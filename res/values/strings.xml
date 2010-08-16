@@ -12,7 +12,7 @@
 </string-array>
 <string name="details">Details</string>
 <string name="favorite">Favorite</string>
-<string name="go_to_author">Go to author</string>
+<string name="go_to_dir">Go to directory</string>
 <string name="remove">Remove</string>
 <string name="remove_all">Remove all</string>
 <string name="do_remove_all">Really clear playlist?</string>
@@ -43,6 +43,19 @@
 <string name="name_playlist">Playlist name</string>
 <string name="name_folder">Folder name</string>
 <string name="settings">Settings</string>
+<string name="hvsc_downloaded">HVSC is already downloaded.</string>
+<string name="hvsc_downloading">HVSC is currently downloading...</string>
+<string name="csdb_downloaded">CSDb is already downloaded.</string>
+<string name="csdb_downloading">CSDb is currently downloading...</string>
+
+<string name="will_be_downloaded">will be downloaded.</string>
+<string name="is_downloading">is currently downloading...</string>
+<string name="is_downloaded">is already downloaded.</string>
+<string name="is_queued">is queued for downloading.</string>
+
+<string name="hvsc_desc">The High Voltage Sid Collection (230 MB)</string>
+<string name="csdb_desc">The CSDb Scene Database (660 KB)</string>
+<string name="testmods_desc">Some test mods</string>
 
 <string name="unpack_examples">Since this looks like the first time you are running Droidsound I have extracted some example
 music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.</string>

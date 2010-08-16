@@ -73,7 +73,8 @@ public class Player implements Runnable {
 		int length;
 		int subTunes;
 		int startTune;
-		public String[] details;		
+		public String[] details;
+		public String subtuneTitle;		
 	};
 	
 	private Handler mHandler;
@@ -346,6 +347,10 @@ public class Player implements Runnable {
 						Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
 					}
 				}
+				
+				currentSong.subtuneTitle =  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
+						
+				
 
 				if(currentSong.subTunes == -1)
 					currentSong.subTunes = 0;			
@@ -355,6 +360,7 @@ public class Player implements Runnable {
 				currentSong.startTune = startTune;
 				currentPlugin.setTune(songRef, startTune);
 				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
+				currentSong.subtuneTitle =  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
 			}
 
 			Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type));
@@ -439,7 +445,8 @@ public class Player implements Runnable {
 									audioTrack.flush();
 									//int pos = audioTrack.getPlaybackHeadPosition();
 									currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);									
-									Message msg = mHandler.obtainMessage(MSG_SUBTUNE, (Integer)argument, currentSong.length);
+									currentSong.subtuneTitle = currentPlugin.getStringInfo(songRef, DroidSoundPlugin.INFO_SUBTUNE_TITLE);
+									Message msg = mHandler.obtainMessage(MSG_SUBTUNE, (Integer)argument, currentSong.length, currentSong.subtuneTitle);
 									mHandler.sendMessage(msg);
 								}
 								break;
@@ -493,7 +500,7 @@ public class Player implements Runnable {
 					if(len > 0) {
 						audioTrack.write(samples, 0, len);
 					} else {
-						currentState = State.STOPPED;
+						currentState = State.SWITCHING;
 						Message msg = mHandler.obtainMessage(MSG_DONE);
 						mHandler.sendMessage(msg);
 					}	
@@ -531,6 +538,7 @@ public class Player implements Runnable {
 		target.subTunes = currentSong.subTunes;
 		target.startTune = currentSong.startTune;
 		target.details = currentSong.details;
+		target.subtuneTitle = currentSong.subtuneTitle;
 		return true;
 	}
 	

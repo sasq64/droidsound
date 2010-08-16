@@ -300,9 +300,12 @@ public class PlayListView extends ListView {
 		public Object getItem(int position) {
 			mCursor.moveToPosition(position);
 			String fileName = mCursor.getString(mFileIndex);
+			Log.v(TAG, "FILENAME " + fileName);
 			File f;
 			if(mPathIndex >= 0) {
-				f = new File(mCursor.getString(mPathIndex), fileName);
+				String p = mCursor.getString(mPathIndex);
+				Log.v(TAG, "PATH " + p);
+				f = new File(p, fileName);
 			} else {
 				f = new File(pathName, fileName);
 			}				

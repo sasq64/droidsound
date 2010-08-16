@@ -24,6 +24,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 		extensions.add("SPC");
 		extensions.add("GYM");
 		extensions.add("NSF");
+		extensions.add("NSFE");
 		extensions.add("GBS");
 		extensions.add("AY");
 		extensions.add("VGM");

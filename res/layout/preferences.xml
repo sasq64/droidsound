@@ -26,13 +26,13 @@
     <PreferenceScreen
             android:key="database_prefs"
             android:title="Database">
-        <ListPreference
+        <!--   ListPreference
                 android:key="indexing"
                 android:title="Indexing"
                 android:defaultValue="Basic"
                 android:entries="@array/indexing_opts"
                 android:entryValues="@array/indexing_opts"
-		/>
+		/> -->
 		<Preference android:key="rescan_pref"
 		android:title="Rescan database"
 		android:summary="Scan sdcard for changes and update database."
@@ -47,6 +47,19 @@
 		android:summary="Restore database from file on sdcard"
 		/>  -->
     </PreferenceScreen>
+    
+    <PreferenceScreen
+    	android:key="download_prefs"
+		android:title="Download"
+    >
+    <Preference
+    android:key="dl_info"
+    android:title="INFO"
+    android:summary="If you are a fan of C64 Music we highly recommend that you download both the High Voltage Sid Collection and the CSDb database."
+    android:selectable="false"
+    />
+    </PreferenceScreen>
+    
     <Preference android:key="about_pref"
 		android:title="About Droidsound"
 		/>

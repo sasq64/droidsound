@@ -1,14 +1,20 @@
 package com.ssb.droidsound;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -108,10 +114,14 @@ public class SongDatabase implements Runnable {
 	protected static final int MSG_SCAN = 0;
 	protected static final int MSG_BACKUP = 1;
 	protected static final int MSG_RESTORE = 2;
-
+	protected static final int MSG_DOWNLOAD = 3;
+	protected static final int MSG_CANCEL_DL = 4;
+	
 	public static final int INDEX_NONE = 0;
 	public static final int INDEX_BASIC = 1;
 	public static final int INDEX_FULL = 2;
+
+
 	
 	public SongDatabase(Context ctx) {		
 		context = ctx;		
@@ -135,7 +145,129 @@ public class SongDatabase implements Runnable {
 		dbsources.put(s, ds);
 		dbsources.put(s + ".ZIP", ds);
 	}
+/*
+	private volatile String cancelUrl;
 	
+	
+	private boolean downloadURL(String ref, File target) throws IOException, InterruptedException {
+		
+		URL url = new URL(ref);
+		
+		Log.v(TAG, "Opening URL " + ref);
+		
+		URLConnection conn = url.openConnection();
+		if (!(conn instanceof HttpURLConnection))
+			throw new IOException("Not a HTTP connection");
+
+		HttpURLConnection httpConn = (HttpURLConnection) conn;
+		httpConn.setAllowUserInteraction(false);
+		httpConn.setInstanceFollowRedirects(true);
+		httpConn.setRequestMethod("GET");
+		
+		Log.v(TAG, "Connecting");
+		Intent intent;
+		
+		httpConn.connect();
+
+		int response = httpConn.getResponseCode();
+		if(response == HttpURLConnection.HTTP_OK)
+		{			
+			int size;
+			byte[] buffer = new byte[64*1024];
+			Log.v(TAG, "HTTP connected");
+			InputStream in = httpConn.getInputStream();
+			//File f = File.createTempFile("music", null);
+			
+			intent = new Intent("com.sddb.droidsound.DOWNLOAD_START");
+			intent.putExtra("PATH", target.getPath());
+			intent.putExtra("SIZE", httpConn.getContentLength());
+			context.sendBroadcast(intent);
+			intent = new Intent("com.sddb.droidsound.DOWNLOAD");
+			intent.putExtra("PATH", target.getPath());
+			intent.putExtra("SIZE", httpConn.getContentLength());
+			
+			FileOutputStream fos = new FileOutputStream(target);
+			BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
+			int count = 0;
+			int totalBytes = 0;
+			while ((size = in.read(buffer)) != -1) {
+				bos.write(buffer, 0, size);
+				totalBytes += size;
+				if(count++ == 50) {
+					count = 0;
+					intent.putExtra("BYTES", totalBytes);
+					context.sendBroadcast(intent);
+					Thread.sleep(100);
+					
+					if(cancelUrl != null && cancelUrl.equals(ref)) {
+						cancelUrl = null;
+						Log.v(TAG, "Cancelling download");
+						return false;
+					}
+				}
+				
+				
+				
+			}
+			bos.flush();
+			bos.close();
+			
+			return true;
+		}
+		return false;
+		
+	}
+	
+	
+	private List<String> dlList = new ArrayList<String>();
+	private String targetDir = "/sdcard/MODS";
+
+	private void doDownload() {
+
+		while(true) {
+			String url;
+			File f;
+			synchronized (this) {
+				cancelUrl = null;
+				if(dlList.size() < 1) {
+					break;
+				}
+				url = dlList.get(0);				
+				f = new File(url);
+				dlList.remove(0);			
+			}
+			
+			File target = new File(targetDir, f.getName() + ".temp");		
+			try {
+				if(downloadURL(url, target)) {
+					File nf = new File(targetDir, f.getName());
+					target.renameTo(nf);
+					Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
+					intent.putExtra("PATH", nf.getPath());
+					intent.putExtra("RESULT", true);
+					context.sendBroadcast(intent);
+				} else {
+					target.delete();
+					File nf = new File(targetDir, f.getName());
+					Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
+					intent.putExtra("PATH", nf);
+					intent.putExtra("RESULT", false);
+					context.sendBroadcast(intent);
+				}
+			} catch (IOException e) {
+				target.delete();
+				Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
+				intent.putExtra("PATH", "");
+				context.sendBroadcast(intent);
+			} catch (InterruptedException e) {
+				target.delete();
+				Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
+				intent.putExtra("PATH", "");
+				context.sendBroadcast(intent);
+			}
+		}
+	}
+*/
 	@Override
 	public void run() {
 				
@@ -154,7 +286,10 @@ public class SongDatabase implements Runnable {
 	            		doScan((String)msg.obj, msg.arg1 != 0);
 	            	}
 	            	break;
-	            }
+	          /*  case MSG_DOWNLOAD:
+	            	doDownload();
+	            	break; */
+	            } 
 			}
 		};
 		
@@ -783,7 +918,31 @@ public class SongDatabase implements Runnable {
 		Message msg = mHandler.obtainMessage(MSG_SCAN, 2, 0, mdir);
 		mHandler.sendMessage(msg);
 	}
+/*
+	public void download(String url) {
 
+		synchronized (this) {
+	    	dlList.add((String)url);	    	
+		}		
+		Message msg = mHandler.obtainMessage(MSG_DOWNLOAD, url);
+		mHandler.sendMessage(msg);
+	}
+	
+	public boolean isQueued(String url) {
+		boolean rc;
+		synchronized (this) {
+	    	rc = dlList.contains(url);	    	
+		}
+		return rc;
+	}
+	
+	public void cancelDownload(String url) {
+		synchronized (this) {
+			cancelUrl = url;
+	    	dlList.remove(url);
+		}
+	}
+*/
 	
 	private void doScan(String modsDir, boolean full) {
 
@@ -1234,4 +1393,5 @@ public class SongDatabase implements Runnable {
 		return null;
 	}
 	*/
+
 }

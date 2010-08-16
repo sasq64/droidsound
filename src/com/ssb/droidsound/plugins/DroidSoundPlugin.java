@@ -17,8 +17,9 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_GAME = 5;
 	public static final int INFO_SUBTUNES = 6;
 	public static final int INFO_STARTTUNE = 7;
+	public static final int INFO_SUBTUNE_TITLE = 8;
 	
-	public static final int SIZEOF_INFO = 8;
+	public static final int SIZEOF_INFO = 9;
 	private Context context;
 
 	public boolean canHandle(String name) { return false; }

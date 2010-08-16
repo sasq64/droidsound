@@ -16,6 +16,7 @@
 #define INFO_GAME 5
 #define INFO_SUBTUNES 6
 #define INFO_STARTTUNE 7
+#define INFO_SUBTUNE_TITLE 8
 
 #include "gme/gme.h"
 
@@ -30,6 +31,7 @@ struct GMEInfo {
 	 Music_Emu *emu;
 	 int currentSong;
 	 track_info_t lastTrack;
+	 char mainTitle[256];
 };
 
 //static Music_Emu *emu = NULL;
@@ -52,16 +54,35 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1load(JNIEnv
 	if(!err) {
 		err = gme_start_track(emu, 0);
 
-		track_info_t track;
-		err = gme_track_info(emu, &track, 0);
+		track_info_t track0, track1;
+		track0.song[0] = 0;
+		track1.song[0] = 0;
+		err = gme_track_info(emu, &track0, 0);
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "START '%s' -> %s %d", err, track0.song, track0.length);
 
 
 		if(!err) {
-
 			GMEInfo *info = new GMEInfo();
+
+
+			if(!strlen(track0.song)) {
+				strcpy(info->mainTitle, track0.game);
+			} else {
+				strcpy(info->mainTitle, track0.song);
+				err = gme_track_info(emu, &track1, 1);
+
+				__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "'%s' vs '%s'", track0.song, track1.song);
+
+				if(!err && strcmp(track0.song, track1.song) != 0) {
+					// We have more than one subsong, and their names differ
+					strcpy(info->mainTitle, track0.game);
+				}
+			}
+
 			info->emu = emu;
 			info->currentSong = 0;
-			info->lastTrack = track;
+			info->lastTrack = track0;
 			env->ReleaseByteArrayElements(bArray, ptr, 0);
 			return (jlong)info;
 		}
@@ -85,8 +106,10 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1setTune(
 	gme_err_t err = gme_start_track(info->emu, tune);
 
 	track_info_t track;
-	gme_track_info(info->emu, &track, 0);
+	err = gme_track_info(info->emu, &track, tune);
 	info->lastTrack = track;
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "SetTune '%s' -> %s %d", err, track.song, track.length);
 
 	info->currentSong = tune;
 	return true;
@@ -96,6 +119,11 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1setTune(
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray bArray, int size)
 {
 	GMEInfo *info = (GMEInfo*)song;
+
+	if(gme_track_ended(info->emu)) {
+		return 0;
+	}
+
 	jshort *ptr = env->GetShortArrayElements(bArray, NULL);
 	//__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Getting %d shorts from %p", size, emu);
 	gme_err_t err = gme_play(info->emu, size, ptr);
@@ -118,10 +146,9 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getString
 	switch(what)
 	{
 	case INFO_TITLE:
-		if(!strlen(info->lastTrack.song))
-			return env->NewStringUTF(info->lastTrack.game);
-		else
-			return env->NewStringUTF(info->lastTrack.song);
+		return env->NewStringUTF(info->mainTitle);
+	case INFO_SUBTUNE_TITLE:
+		return env->NewStringUTF(info->lastTrack.song);
 	case INFO_AUTHOR:
 		return env->NewStringUTF(info->lastTrack.author);
 	case INFO_COPYRIGHT:

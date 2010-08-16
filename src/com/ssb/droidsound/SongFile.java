@@ -38,7 +38,7 @@ public class SongFile {
 		return subtune;
 	}
 
-	public SongFile(File f, int t) {
+	public SongFile(File f, int t, String title) {
 		file = f ;
 		subtune = t;
 		if(t >= 0) {
@@ -46,6 +46,7 @@ public class SongFile {
 		} else {
 			tuneString = "";
 		}
+		this.title = title;
 	}
 
 	public String getPath() {
