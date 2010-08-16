@@ -41,8 +41,26 @@ public class SongFile {
 	public SongFile(File f, int t, String title) {
 		file = f ;
 		subtune = t;
-		if(t >= 0) {
-			tuneString = ";" + t;
+		
+		String name = f.getName();
+		int sc = name.indexOf(';');
+		
+		if(sc > 0) {
+			try {
+				t = Integer.parseInt(name.substring(sc+1));
+			} catch (NumberFormatException e) {
+			}
+			
+			file = new File(f.getParent(), name.substring(0, sc));
+			
+			if(subtune == -1) {
+				subtune = t;
+			}
+		}
+		
+		
+		if(subtune >= 0) {
+			tuneString = ";" + subtune;
 		} else {
 			tuneString = "";
 		}

@@ -56,6 +56,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 
 import com.ssb.droidsound.PlayListView.FileInfo;
+import com.ssb.droidsound.R.string;
 import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
@@ -850,7 +851,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		plusText.setOnClickListener(new OnClickListener() {			
 			@Override
-			public void onClick(View v) {				
+			public void onClick(View v) {
+				
+				favSelection = -1;
+				operationFile = new File(songName);
+				operationTune = subTune;
+				operationTitle = null;
+				operationTuneCount = subTuneCount;
+				if(songTitle != null && subtuneTitle != null) {
+					operationTitle = songTitle + " - " + subtuneTitle;
+				}
 				showDialog(R.string.add_to_plist);
 			}
 		});
@@ -1202,13 +1212,39 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onPrepareDialog(int id, Dialog dialog) {
 		super.onPrepareDialog(id, dialog);
-		if(id == R.string.add_to_plist) {
-			AlertDialog ad = ((AlertDialog) dialog);
+		AlertDialog ad = ((AlertDialog) dialog);
+
+		switch(id) {
+		case R.string.do_del_dir :
+		case R.string.do_del_file :
+		case R.string.do_del_plist :
+		case R.string.do_remove_all :
+			if(operationFile == null) {
+				ad.cancel();
+				return;
+			}
+			break;
+		case R.string.add_to_plist :
+									
+			if(songTitle == null || operationFile == null) {
+				ad.cancel();
+				return;
+			}
+			
 			Button b = ad.getButton(DialogInterface.BUTTON_POSITIVE);
 			ListView lv = ad.getListView();
 			if(lv.getCheckedItemPosition() == ListView.INVALID_POSITION) {
 				b.setEnabled(false);
 			}
+			
+			Playlist pl = songDatabase.getActivePlaylist();
+			if(pl != null) {
+				String s = getString(R.string.add_to_plist);
+				ad.setTitle(s.replace("[playlist]", pl.getTitle()));
+			} else {
+				ad.setTitle(id);
+			}
+			break;
 		}
 	}
 
@@ -1263,6 +1299,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case R.string.name_playlist:			
 			final EditText input = new EditText(this);  
+			//builder.setTitle(id);
 			builder.setView(input);  			  
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -1308,23 +1345,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case R.string.add_to_plist:
 			
+			builder.setTitle(id);
 			
-			Playlist pl = songDatabase.getActivePlaylist();
-			if(pl != null) {
-				String s = getString(R.string.add_to_plist);
-				builder.setTitle(s.replace("[playlist]", pl.getTitle()));
-			} else {
-				builder.setTitle(id);
-			}
-			favSelection = -1;
-			operationFile = new File(songName);
-			operationTune = subTune;
-			operationTitle = null;
-			operationTuneCount = subTuneCount;
-			if(songTitle != null && subtuneTitle != null) {
-				operationTitle = songTitle + " - " + subtuneTitle;
-			}
-
 			builder.setSingleChoiceItems(R.array.fav_opts, -1, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
@@ -1340,12 +1362,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					Playlist al = songDatabase.getActivePlaylist();
 					//File file = new File(songName);
 					dialog.dismiss();
-					if(al == null) {
+					if(al == null || operationFile == null) {
 						return;
 					}
 					//if(currentPath.equals(al.getFile().getPath())) {
 					//	return;
 					//}
+					
+					Log.v(TAG, String.format("Adding '%s' to playlist '%s'", operationFile.getPath(), al.getFile().getPath()));  
 											
 					switch(favSelection) {
 					case 0:			
@@ -1487,12 +1511,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 
 		case R.id.del_dir:
-			final File dd = file;
+			operationFile = file;
 			runConfirmable(R.string.do_del_dir, new Runnable() {					
 				@Override
 				public void run() {
-					if(songDatabase.deleteDir(dd)) {
-						delDir(dd);
+					if(songDatabase.deleteDir(operationFile)) {
+						delDir(operationFile);
 						setDirectory(null, null);
 					}
 				}
