@@ -32,12 +32,48 @@ public class PlayListView extends ListView {
 	private static final String TAG = "PlayListView";
 	
 	public static class FileInfo {
-		File file;
+		//File file;
 		int type;
-		FileInfo(File f, int fl) {
-			file = f;
+		String path;
+		String name;
+		FileInfo(String p, String fn, int fl) {
+			path = p;
+			name = fn;
 			type = fl;
 		}
+
+		FileInfo(String p, String fn) {
+			path = p;
+			name = fn;
+			type = SongDatabase.TYPE_FILE;
+		}
+
+		File getFile() {
+			return new File(path, name);
+		}
+
+		public String getPath() {
+			return path + "/" + name;
+		}
+	
+		public String getName() {
+			return name;
+		}
+		
+		@Override
+		public int hashCode() {
+			return path.hashCode() ^ name.hashCode();
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if(o instanceof FileInfo) {
+				FileInfo fi = (FileInfo)o;
+				return (fi.path.equals(path) && fi.name.equals(name));
+			}
+			return super.equals(o);
+		}
+		
 	};
 	
 	public static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };
@@ -179,14 +215,14 @@ public class PlayListView extends ListView {
 			String sub = null;
 			String side = null;
 			
-			Log.v(TAG, "DATEINDEX " + mDateIndex);
+			//Log.v(TAG, "DATEINDEX " + mDateIndex);
 			
 			if(mSideTitleIndex >= 0) {
 				side = mCursor.getString(mTitleIndex);
 			} else if(mDateIndex >= 0) {
 				int date = mCursor.getInt(mDateIndex);
 				if(date > 0) {
-					Log.v(TAG, "DATE " + date);
+					//Log.v(TAG, "DATE " + date);
 					side = String.format("(%04d)", date / 10000);
 				}
 			}
@@ -300,20 +336,19 @@ public class PlayListView extends ListView {
 		public Object getItem(int position) {
 			mCursor.moveToPosition(position);
 			String fileName = mCursor.getString(mFileIndex);
+			String path = pathName;
 			Log.v(TAG, "FILENAME " + fileName);
 			File f;
 			if(mPathIndex >= 0) {
-				String p = mCursor.getString(mPathIndex);
-				Log.v(TAG, "PATH " + p);
-				f = new File(p, fileName);
-			} else {
-				f = new File(pathName, fileName);
-			}				
+				path = mCursor.getString(mPathIndex);
+				Log.v(TAG, "PATH " + path);
+			} 
+
 			int type = SongDatabase.TYPE_FILE;
 			if(mTypeIndex >= 0) {
 				type = mCursor.getInt(mTypeIndex);
 			}
-			return new FileInfo(f, type);
+			return new FileInfo(path, fileName, type);
 		}
 
 		@Override
@@ -321,23 +356,23 @@ public class PlayListView extends ListView {
 			return 0;
 		}
 
-		public File[] getFiles(boolean skipDirs) {
+		public FileInfo [] getFiles(boolean skipDirs) {
 			
 			if(mCursor == null) {
-				return new File [] {};
+				return new FileInfo [] {};
 			}
 			
 			//File [] names = new File [ mCursor.getCount() ];
-			ArrayList<File> files = new ArrayList<File>();
+			ArrayList<FileInfo> files = new ArrayList<FileInfo>();
 						
 			mCursor.moveToPosition(-1);
 			while(mCursor.moveToNext()) {
 				String fileName = mCursor.getString(mFileIndex);
-				File f;
+				FileInfo f;
 				if(mPathIndex >= 0) {
-					f = new File(mCursor.getString(mPathIndex), fileName);
+					f = new FileInfo(mCursor.getString(mPathIndex), fileName);
 				} else {
-					f = new File(pathName, fileName);
+					f = new FileInfo(pathName, fileName);
 				}	
 				//String pathName = mCursor.getString(mPathIndex);
 				
@@ -352,9 +387,9 @@ public class PlayListView extends ListView {
 					files.add(f);
 				}
 			}
-			File [] names = new File [ files.size() ];
+			FileInfo [] names = new FileInfo [ files.size() ];
 			int i = 0;
-			for(File f : files) {				
+			for(FileInfo f : files) {				
 				names[i++] = f;
 			}
 			return names;
@@ -371,10 +406,10 @@ public class PlayListView extends ListView {
 				return;
 			}
 			
-			File [] files = getFiles(false);
+			FileInfo [] files = getFiles(false);
 			for(int i=0; i<files.length; i++) {
 				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
-				if(hilightedFile.equals(files[i])) {
+				if(hilightedFile.equals(files[i].getFile())) {
 					hilightedPosition = i;
 					break;
 				}
@@ -445,10 +480,10 @@ public class PlayListView extends ListView {
 		if(f == null) {
 			setSelectionFromTop(0, 0);
 		} else {
-			File [] files = adapter.getFiles(false);
+			FileInfo [] files = adapter.getFiles(false);
 			for(int i=0; i<files.length; i++) {
 				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
-				if(f.equals(files[i])) {
+				if(f.equals(files[i].getFile())) {
 					Log.v(TAG, String.format("Scrolling to %s", f.getPath()));
 					setSelectionFromTop(i, 0);
 					return;
@@ -488,8 +523,9 @@ public class PlayListView extends ListView {
 		adapter.setCursor(cursor, dirName);
 	}
 
-	public File[] getFiles(boolean b) {
+	public FileInfo [] getFiles(boolean b) {
 		return adapter.getFiles(b);
 	}
+
 	
 }

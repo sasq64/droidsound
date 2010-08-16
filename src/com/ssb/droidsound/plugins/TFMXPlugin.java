@@ -89,6 +89,9 @@ public class TFMXPlugin extends DroidSoundPlugin {
 		
 		String name = mFile.getPath();
 		int ext = name.lastIndexOf('.');
+		if(ext == -1) {
+			return null;
+		}
 		File sFile = new File(name.substring(0, ext) + ".smpl");
 		
 		int l = (int)mFile.length();

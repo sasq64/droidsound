@@ -1,10 +1,12 @@
 package com.ssb.droidsound;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,9 +44,11 @@ import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
@@ -180,6 +184,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private File moveFileHere;
 
+	private int operationTune;
+
+	private String operationTitle;
+
+	private int operationTuneCount;
+
 	
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## Activity finalize");
@@ -261,11 +271,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					music = music.substring(6);
 				}				
 				File f = new File(music);
-				Log.v(TAG, "MOVE FILE = " + f.getPath());
-				if(f.renameTo(new File(modsDir, f.getName()))) {
-					Log.v(TAG, "Successful");
-					songDatabase.scan(false, modsDir.getPath());
-				}
+				moveFileHere(f);
 			}
 		} else		
 		if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
@@ -358,6 +364,29 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}		
 		
 	}
+	
+	private static boolean copyFile(File in, File out)
+    {
+		FileChannel inChannel = null;
+		FileChannel outChannel = null;
+        try {
+            inChannel = new FileInputStream(in).getChannel();
+            outChannel = new FileOutputStream(out).getChannel();
+            inChannel.transferTo(0, inChannel.size(), outChannel);
+        } 
+        catch (IOException e) {
+            return false;
+        }
+        finally {
+        	try {
+        		if (inChannel != null) inChannel.close();
+        		if (outChannel != null) outChannel.close();
+        	} catch (IOException e) {
+        		return false;
+        	}
+        }
+        return true;
+    }
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -381,7 +410,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 				
 				File f = new File(music);
-				moveFileHere = f;
+				
+				if(f.exists()) {				
+					moveFileHere = f;
+				}
 			} else {			
 				Intent newIntent = new Intent(intent);
 				newIntent.setClass(this, PlayerService.class);
@@ -468,13 +500,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		}
 		
-		if(moveFileHere != null) {
-			Log.v(TAG, "MOVE FILE = " + moveFileHere.getPath());
-			if(moveFileHere.renameTo(new File(modsDir, moveFileHere.getName()))) {
-				Log.v(TAG, "Successful");
-				
-			}
-			moveFileHere = null;
+		if(moveFileHere != null) {			
+			moveFileHere(moveFileHere);			
 		}
 		
 		
@@ -670,12 +697,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 				FileInfo fi = (FileInfo) plv.getItemAtPosition(position);
 				
-				Log.v(TAG, String.format("Clicked %s got file %s", plv, fi.file.getPath()));
+				Log.v(TAG, String.format("Clicked %s got file %s", plv, fi.getPath()));
 				
-				if(fi.file != null) {
+				if(fi != null) {
 					
 					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
-						setDirectory(fi.file, plv);
+						setDirectory(fi.getFile(), plv);
 						plv.setScrollPosition(null);
 						if(plv == searchListView) {
 							searchDirDepth++;
@@ -685,13 +712,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						int index = 0;							
 						//File [] files = adapter.getFiles(true);
 
-						File [] files = plv.getFiles(true);
+						FileInfo [] files = plv.getFiles(true);
 						
 						if(currentPlaylistView == playListView) {
 							Playlist plist = songDatabase.getCurrentPlaylist();
 							if(plist != null) {
 								for(int i=0; i<files.length; i++) {
-									if(files[i].equals(fi.file)) {
+									if(files[i].equals(fi)) {
 										index = i;
 									}
 								}
@@ -703,7 +730,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						
 						String [] names = new String [files.length];
 						for(int i=0; i<files.length; i++) {
-							if(files[i].equals(fi.file)) {
+							if(files[i].equals(fi)) {
 								index = i;
 							}
 							names[i] = files[i].getPath();
@@ -841,6 +868,35 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}); */
 
 	}
+
+	private void moveFileHere(File f) {
+		
+
+		File t = new File(modsDir, f.getName());
+
+		String n = t.getName();
+		int ext = n.indexOf('.');
+		if(ext > 2) {
+			if(Character.isDigit(n.charAt(ext-1)) && n.charAt(ext-2) == '-') {
+				t = new File(modsDir, n.substring(0,ext-2) + n.substring(ext));
+			}
+		}
+		
+		Log.v(TAG, "MOVE FILE " + f.getPath() + " TO " + t.getPath());
+
+		if(f.renameTo(t)) {
+			Log.v(TAG, "Successful");
+			songDatabase.scan(false, modsDir.getPath());
+		} else
+		if(copyFile(f, t)) {
+			Log.v(TAG, "COPY Successful");
+			songDatabase.scan(false, modsDir.getPath());
+		} else {
+			showDialog(R.string.zip_import_failed);
+		}
+		moveFileHere = null;
+	}
+
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -1144,6 +1200,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 	
 	@Override
+	protected void onPrepareDialog(int id, Dialog dialog) {
+		super.onPrepareDialog(id, dialog);
+		if(id == R.string.add_to_plist) {
+			AlertDialog ad = ((AlertDialog) dialog);
+			Button b = ad.getButton(DialogInterface.BUTTON_POSITIVE);
+			ListView lv = ad.getListView();
+			if(lv.getCheckedItemPosition() == ListView.INVALID_POSITION) {
+				b.setEnabled(false);
+			}
+		}
+	}
+
+	@Override
 	protected Dialog onCreateDialog(int id) {
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -1201,9 +1270,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				public void onClick(DialogInterface dialog, int which) {
 					String s = input.getText().toString();
 					File file = new File(currentPath, s + ".plist");
-					songDatabase.createPlaylist(file);
-					songDatabase.setActivePlaylist(file);
-					playListView.rescan();
+					if(!file.exists()) {
+						songDatabase.createPlaylist(file);
+						songDatabase.setActivePlaylist(file);
+						playListView.rescan();
+					}
 				}
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1220,9 +1291,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					String s = input2.getText().toString();					
-					songDatabase.createFolder(new File(currentPath, s));
-					playListView.rescan();
+					String s = input2.getText().toString();
+					File f = new File(currentPath, s);
+					if(!f.exists()) {
+						songDatabase.createFolder(f);
+						playListView.rescan();
+					}
 				}
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1243,10 +1317,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				builder.setTitle(id);
 			}
 			favSelection = -1;
+			operationFile = new File(songName);
+			operationTune = subTune;
+			operationTitle = null;
+			operationTuneCount = subTuneCount;
+			if(songTitle != null && subtuneTitle != null) {
+				operationTitle = songTitle + " - " + subtuneTitle;
+			}
+
 			builder.setSingleChoiceItems(R.array.fav_opts, -1, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					favSelection = which;
+					Button b = ((AlertDialog)dialog).getButton(DialogInterface.BUTTON_POSITIVE);
+					b.setEnabled(true);
 				}
 			});
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -1254,7 +1338,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				public void onClick(DialogInterface dialog, int which) {
 					Log.v(TAG, "Clicked " + favSelection);
 					Playlist al = songDatabase.getActivePlaylist();
-					File file = new File(songName);
+					//File file = new File(songName);
 					dialog.dismiss();
 					if(al == null) {
 						return;
@@ -1262,27 +1346,23 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					//if(currentPath.equals(al.getFile().getPath())) {
 					//	return;
 					//}
-					
-					String title = null;
-					if(songTitle != null && subtuneTitle != null) {
-						title = songTitle + " - " + subtuneTitle;
-					}
-						
+											
 					switch(favSelection) {
 					case 0:			
-						songDatabase.addToPlaylist(al, new SongFile(file));
+						songDatabase.addToPlaylist(al, new SongFile(operationFile));
 						break;
 					case 1:
-						songDatabase.addToPlaylist(al, new SongFile(file, subTune, title));						
+						songDatabase.addToPlaylist(al, new SongFile(operationFile, operationTune, operationTitle));						
 						break;
 					case 2:
-						for(int i=0; i<subTuneCount; i++) {
-							songDatabase.addToPlaylist(al, new SongFile(file, i, null));
+						for(int i=0; i<operationTuneCount; i++) {
+							songDatabase.addToPlaylist(al, new SongFile(operationFile, i, null));
 						}
 						break;
 					}
 				}				
 			});
+			
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {

@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.FileObserver;
 import android.preference.CheckBoxPreference;
@@ -143,6 +144,17 @@ public class SettingsActivity extends PreferenceActivity {
 				return false;
 			}
 		});
+		
+		pref = findPreference("download_link");
+		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
+				startActivity(intent);
+				return true;
+			}
+		});	
+		
 /*
 		dlPrefs = new HashMap<String, CheckBoxPreference>();
 		

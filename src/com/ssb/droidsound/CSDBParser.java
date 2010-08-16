@@ -23,8 +23,7 @@ import com.ssb.droidsound.SongDatabase.ScanCallback;
 public class CSDBParser implements SongDatabase.DataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
 
-	public static final String DUMP_NAME = "CSDB.DUMP";
-	
+	public static final String DUMP_NAME = "CSDBDUMP";
 	
 	private static String hvsc = null;
 	

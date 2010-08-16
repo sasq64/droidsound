@@ -247,7 +247,29 @@ public class PlayQueue {
     			
     			if(setCurrent(current) < 0) {
     				musicListPos = 0;
-    			}    			
+    			}
+    			
+    			Song[] newNames = new Song [musicList.size()];
+    			int j = 0;
+    			for(int i=0; i< musicNames.length; i++) {
+    				Song ns = musicNames[i];
+    				for(Song s : musicList) {
+    					Log.v(TAG, String.format("%s(%d) vs %s(%d)", s.filename, s.startSong, ns.filename, ns.startSong));
+    					if(s.startSong == ns.startSong && s.filename.equals(ns.filename)) {
+    						newNames[j++] = ns;
+    						break;
+    					}
+    				}
+    			}
+    			
+    			int s = musicList.size();
+    			while(j < s) {
+    				newNames[j] = musicList.get(j);
+    				j++;
+    			}
+    			
+    			musicNames = newNames;
+    			Log.v(TAG, String.format("Size %d", j));
     		}
     		oldPlaylistHash = hash;
        	}
@@ -255,10 +277,10 @@ public class PlayQueue {
 
 	
 	public String prev() {
+		updatePlaylist();
 		if(musicNames == null) {
 			return null;
 		}
-		updatePlaylist();
 		musicListPos--;
 		if(musicListPos < 0) {
 			musicListPos += musicList.size();
@@ -267,10 +289,10 @@ public class PlayQueue {
 	}
 	
 	public String next() {
+		updatePlaylist();
 		if(musicNames == null || musicNames.length < 2) {
 			return null;
 		}
-		updatePlaylist();
 		musicListPos++;
 		if(musicListPos >= musicList.size()) {
 			musicListPos -= musicList.size();
@@ -279,14 +301,14 @@ public class PlayQueue {
 	}
 	
 	public String current() { 
-		if(musicNames == null) {
+		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return null;
 		}
 		return musicList.get(musicListPos).filename;
 	}
 	
 	public int startSong() { 
-		if(musicNames == null) {
+		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return -1;
 		}
 		return musicList.get(musicListPos).startSong;
@@ -298,7 +320,7 @@ public class PlayQueue {
 	}
 
 	public String currentWithStartSong() {
-		if(musicNames == null) {
+		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return null;
 		}
 		String n =  musicList.get(musicListPos).filename;

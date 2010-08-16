@@ -208,6 +208,42 @@ public class PlayerService extends Service {
 		return sb.toString();
 	}
 	
+	private void speakTitle() {
+		String text = "Unnamed song.";
+
+		if(ttsStatus >= 0) {
+			
+			String songComposer = (String) info[SONG_AUTHOR];
+			
+			if(songComposer.endsWith(")")) {
+				int lpara = songComposer.lastIndexOf("(");
+				int rpara = songComposer.lastIndexOf(")");
+				if(lpara > 0) {
+					songComposer = songComposer.substring(lpara+1, rpara);
+				}
+			}
+			
+			String songTitle = fixSpeech((String) info[SONG_TITLE], false);            			
+			songComposer = fixSpeech(songComposer, true);
+			/*
+			String subtuneTitle = (String) info[SONG_SUBTUNE_TITLE];
+			
+			if(subtuneTitle != null) {
+				subtuneTitle = fixSpeech(subtuneTitle, false);
+				songTitle += (" " + subtuneTitle);
+			} */
+
+			if(songComposer != null & songComposer.length() > 1) {        					        					
+				text = songTitle + ". By " + songComposer + ".";        					
+			} else {
+				text = songTitle + ".";
+			}
+			Log.v(TAG, String.format("Saying '%s'", text));
+			textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+		}
+	}
+		
+	
     private Handler mHandler = new Handler() {
 
 		@Override
@@ -246,32 +282,7 @@ public class PlayerService extends Service {
 					
 					info[SONG_STATE] = 1;
 
-        			String text = "Unnamed song.";
-
-        			if(ttsStatus >= 0) {
-            			
-        				String songComposer = (String) info[SONG_AUTHOR];
-        				
-        				if(songComposer.endsWith(")")) {
-    						int lpara = songComposer.lastIndexOf("(");
-    						int rpara = songComposer.lastIndexOf(")");
-    						if(lpara > 0) {
-    							songComposer = songComposer.substring(lpara+1, rpara);
-    						}
-    					}
-        				
-            			String songTitle = fixSpeech((String) info[SONG_TITLE], false);            			
-            			songComposer = fixSpeech(songComposer, true);
-            			
-
-        				if(songComposer != null & songComposer.length() > 1) {        					        					
-        					text = songTitle + ". By " + songComposer + ".";        					
-        				} else {
-        					text = songTitle + ".";
-        				}
-        				Log.v(TAG, String.format("Saying '%s'", text));
-        				textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
-        			}
+					speakTitle();
 
 					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_REPEAT, SONG_STATE);
                 	break;
