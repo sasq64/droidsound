@@ -1243,13 +1243,25 @@ public class SongDatabase implements Runnable {
 	
 	public void addToPlaylist(Playlist pl, SongFile songFile) {
 		Log.v(TAG, String.format("Adding %s / %s to playlist %s", songFile.getPath(), songFile.getName(), pl.getFile().getName()));
+		
+		if(pl.contains(songFile)) {
+			Log.v(TAG, "Song exists, ignoring");
+			return;
+		}
+		
+		if(songFile.getName().toUpperCase().endsWith(".ZIP")) {
+			Log.v(TAG, "WONT add zip files");
+			return;
+		}
+		
+		
 		if(songFile.exists()) {
 			if(songFile.getName().toUpperCase().endsWith(".PLIST")) {
 				Playlist newpl = Playlist.getPlaylist(songFile.getFile());
-				List<File> files = newpl.getFiles();
+				List<Playlist.Song> files = newpl.getSongs();
 				Log.v(TAG, String.format("Adding %d files from playlist", files.size()));
-				for(File f2 : files) {
-					addToPlaylist(pl, new SongFile(f2));
+				for(Playlist.Song f2 : files) {
+					addToPlaylist(pl, new SongFile(f2.file, f2.startsong, f2.title));
 				}
 				
 			} else {

@@ -62,8 +62,8 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
 	private static final String TAG = "PlayerActivity";
 	
-	public static final String DROIDSOUND_VERSION = "beta 5";
-	public static final int VERSION = 15;
+	public static final String DROIDSOUND_VERSION = "beta 6";
+	public static final int VERSION = 16;
 	
 	private static class Config {
 		int ttsStatus;
@@ -179,7 +179,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private TextView plusText;
 
-	protected int favSelection;
+	//protected int favSelection;
 
 	private String subtuneTitle;
 
@@ -190,6 +190,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private String operationTitle;
 
 	private int operationTuneCount;
+
+	private TextView plinfoText;
+
+	private int foundVersion;
+
+	protected boolean dialogShowing;
 
 	
 	protected void finalize() throws Throwable {
@@ -306,6 +312,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		if(what < 3) {
 			if(flipper.getDisplayedChild() != what) {
+				
+				if(what == FILE_VIEW) {
+					String p = playListView.getPath();
+					Cursor cursor = songDatabase.getFilesInPath(p);
+					playListView.setCursor(cursor, p);
+				}
+				
 				flipper.setDisplayedChild(what);
 			}
 		} else if(what == NEXT_VIEW) {
@@ -453,6 +466,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		shuffleText = (TextView) findViewById(R.id.shuffle_text);
 		repeatText = (TextView) findViewById(R.id.repeat_text);
 		plusText = (TextView) findViewById(R.id.plus_text);
+		
+		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 			
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		String md = prefs.getString("modsDir", null);
@@ -473,6 +488,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 								
 				if(!mf.exists()) {
 					showDialog(R.string.create_moddir_failed);
+					dialogShowing = true;
 				} else {					
 					modsDir = mf;
 					Editor editor = prefs.edit();
@@ -483,6 +499,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 			} else {
 				showDialog(R.string.sdcard_not_found);
+				dialogShowing = true;
 			}
 		} else {
 			modsDir = new File(md);
@@ -490,6 +507,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		if(!modsDir.exists()) {
 			showDialog(R.string.sdcard_not_found);
+			dialogShowing = true;
 		}
 		
 		File [] files = modsDir.listFiles();
@@ -506,8 +524,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		
 		
-		int version = prefs.getInt("version", -1);
-		if(version == -1) {
+		foundVersion = prefs.getInt("version", -1);
+		if(foundVersion == -1) {
 			File tempFile = new File(modsDir, "Examples.zip");
 			if(!tempFile.exists()) {
 				try {
@@ -534,7 +552,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					e.printStackTrace();
 				}
 			} else {
-				version = 0;
+				foundVersion = 0;
 			}
 		}
 		
@@ -584,28 +602,24 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				} else
 				if(intent.getAction().equals("com.sddb.droidsound.SCAN_UPDATE")) {
 					Log.v(TAG, "Scan update!");
-					if(progressDialog == null) {
-						progressDialog = new ProgressDialog(PlayerActivity.this);
-						progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-						progressDialog.setMessage("Updating database...");
-						progressDialog.setCancelable(false);
-						progressDialog.show();
-					}
-					int percent = intent.getIntExtra("PERCENT", 0);
-					String path = intent.getStringExtra("PATH");
-					if(percent > 0) {
-						progressDialog.setMessage(String.format("Updating database...\n%s %02d%%", path, percent));
-					} else {
-						progressDialog.setMessage(String.format("Updating database...\n%s", path));
+					checkProgressDialog();
+					if(progressDialog != null) {
+						int percent = intent.getIntExtra("PERCENT", 0);
+						String path = intent.getStringExtra("PATH");
+						if(percent > 0) {
+							progressDialog.setMessage(String.format("Updating database...\n%s %02d%%", path, percent));
+						} else {
+							progressDialog.setMessage(String.format("Updating database...\n%s", path));
+						}
 					}
 				
-				} else
+				}/* else
 				if(intent.getAction().equals("com.sddb.droidsound.DOWNLOAD_DONE")) {
 					String path = intent.getStringExtra("PATH");
 					Toast t = Toast.makeText(PlayerActivity.this, path + " downloaded", Toast.LENGTH_SHORT);
 					t.show();
 					songDatabase.scan(false, modsDir.getPath());
-				}
+				} */
 			} 
 		};
 		
@@ -613,7 +627,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		filter.addAction("com.sddb.droidsound.OPEN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_UPDATE");
-		filter.addAction("com.sddb.droidsound.DOWNLOAD_DONE");
+		//filter.addAction("com.sddb.droidsound.DOWNLOAD_DONE");
 		registerReceiver(receiver, filter);
 
 
@@ -649,14 +663,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		setDirectory(currentPath, null);
-			
-		if(songDatabase.isScanning() && progressDialog == null) {
-				progressDialog = new ProgressDialog(PlayerActivity.this);
-				progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-				progressDialog.setMessage("Updating database...");
-				progressDialog.setCancelable(false);
-				progressDialog.show();
+		
+		if(foundVersion == -1) {
+			dialogShowing = true;
+			showDialog(R.string.unpack_examples);			
 		}
+
+		checkProgressDialog();
 		
 		lastConfig = (Config) getLastNonConfigurationInstance();
 		if(lastConfig != null) {
@@ -853,7 +866,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 				
-				favSelection = -1;
+				//favSelection = -1;
 				operationFile = new File(songName);
 				operationTune = subTune;
 				operationTitle = null;
@@ -864,10 +877,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				showDialog(R.string.add_to_plist);
 			}
 		});
-
-		if(version == -1) {
-			showDialog(R.string.unpack_examples);
-		}
 		
 		/* shuffleButton.setOnCheckedChangeListener(new OnCheckedChangeListener() {			
 			@Override
@@ -878,6 +887,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}); */
 
 	}
+
+	private void checkProgressDialog() {
+		if(!dialogShowing && songDatabase.isScanning() && progressDialog == null) {
+			progressDialog = new ProgressDialog(PlayerActivity.this);
+			progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+			progressDialog.setMessage("Updating database...");
+			progressDialog.setCancelable(false);
+			progressDialog.show();
+		}
+	}
+
 
 	private void moveFileHere(File f) {
 		
@@ -1125,6 +1145,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public void stringChanged(int what, String value) {
 
 		switch(what) {						
+		case PlayerService.SONG_PLAYLIST:
+			if(value != null && value.length() > 0) {
+				String n = new File(value).getName();
+				int dot = n.lastIndexOf('.');
+				if(dot > 0) {
+					n = n.substring(0, dot);
+				}
+				plinfoText.setText(n);
+			} else if(songName != null) {
+				String n = new File(songName).getParent();
+				n = n.replace(modsDir.getPath(), "");
+				plinfoText.setText(n);
+			} else {
+				plinfoText.setText("");
+			}
+			break;
 		case PlayerService.SONG_FILENAME :
 			playListView.setHilighted(value);
 			searchListView.setHilighted(value);
@@ -1231,9 +1267,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				return;
 			}
 			
+			
 			Button b = ad.getButton(DialogInterface.BUTTON_POSITIVE);
 			ListView lv = ad.getListView();
-			if(lv.getCheckedItemPosition() == ListView.INVALID_POSITION) {
+			int i = lv.getCheckedItemPosition();
+
+			if(i == ListView.INVALID_POSITION) {
+				b.setEnabled(false);
+			} else
+			if(operationTuneCount < 2 && i > 0) {
 				b.setEnabled(false);
 			}
 			
@@ -1350,14 +1392,26 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			builder.setSingleChoiceItems(R.array.fav_opts, -1, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					favSelection = which;
+					//favSelection = which;
 					Button b = ((AlertDialog)dialog).getButton(DialogInterface.BUTTON_POSITIVE);
-					b.setEnabled(true);
+					
+					if(operationTuneCount < 2) {
+						if(which == 0) {
+							b.setEnabled(true);
+						} else {
+							b.setEnabled(false);
+						}
+					} else {
+						b.setEnabled(true);
+					}
 				}
 			});
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
+					
+					int favSelection = ((AlertDialog)dialog).getListView().getCheckedItemPosition();
+					
 					Log.v(TAG, "Clicked " + favSelection);
 					Playlist al = songDatabase.getActivePlaylist();
 					//File file = new File(songName);
@@ -1384,13 +1438,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						}
 						break;
 					}
+					
+					//Playlist cpl = songDatabase.getCurrentPlaylist();
+					//if(cpl != null && cpl.equals(al)) {
+					//	setDirectory(null, null);
+					//}
+					
 				}				
 			});
 			
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
 				@Override
-				public void onClick(DialogInterface dialog, int which) {
+				public void onClick(DialogInterface dialog, int which) {					
 					dialog.cancel();
+					dialogShowing = false;
+					checkProgressDialog();
 				}				
 			});
 			break;

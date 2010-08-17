@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<string name="app_name">DroidSound</string>
+<string name="app_name">Droidsound</string>
 <string name="create_moddir_failed">Could not create MODS directory on sdcard!</string>
 <string name="sdcard_not_found">Could not access sdcard!</string>
 <string name="search_hint">Search title</string>
@@ -56,7 +56,7 @@
 
 
 <string name="unpack_examples">Since this looks like the first time you are running Droidsound I have extracted some example
-music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.\n\nCheck out \'Download\' in the Settings
+music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.\n\nAlso check out \'Download\' in the Settings
 to download more music from the web.</string>
 
 <string-array name="fav_opts">

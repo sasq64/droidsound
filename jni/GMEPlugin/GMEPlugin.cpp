@@ -59,6 +59,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1load(JNIEnv
 		track1.song[0] = 0;
 		err = gme_track_info(emu, &track0, 0);
 
+		//info->gme_track_count();
+
 		__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "START '%s' -> %s %d", err, track0.song, track0.length);
 
 
@@ -148,7 +150,11 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getString
 	case INFO_TITLE:
 		return env->NewStringUTF(info->mainTitle);
 	case INFO_SUBTUNE_TITLE:
-		return env->NewStringUTF(info->lastTrack.song);
+		if(info->lastTrack.track_count > 1) {
+			return env->NewStringUTF(info->lastTrack.song);
+		} else {
+			return 0;
+		}
 	case INFO_AUTHOR:
 		return env->NewStringUTF(info->lastTrack.author);
 	case INFO_COPYRIGHT:

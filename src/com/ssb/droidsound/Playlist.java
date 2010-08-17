@@ -355,6 +355,7 @@ public class Playlist {
 		changed = true;		
 	}*/
 
+	/*
 	synchronized public List<File> getFiles() {
 		List<File> files = new ArrayList<File>();
 		for(String line : lines) {
@@ -379,6 +380,22 @@ public class Playlist {
 		}
 		return files;
 	}
+	*/
+	public boolean contains(SongFile songFile) {
+		for(String line : lines) {
+			if(line.length() > 0) {
+				int tab = line.indexOf('\t');
+				if(tab > 0) {
+					line = line.substring(0, tab);
+				}					
+				if(songFile.getPath().equals(line)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}	
+
 	
 	@Override
 	public int hashCode() {
@@ -428,5 +445,6 @@ public class Playlist {
 			
 		}
 		return songs;
-	}	
+	}
+
 }

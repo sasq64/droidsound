@@ -60,8 +60,9 @@ public class PlayerService extends Service {
 	public static final int SONG_REPEAT = 13;
 	
 	public static final int SONG_SUBTUNE_TITLE = 14;
+	public static final int SONG_PLAYLIST = 15;
 
-	public static final int SONG_SIZEOF = 15;
+	public static final int SONG_SIZEOF = 16;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
@@ -278,13 +279,12 @@ public class PlayerService extends Service {
 					info[SONG_GAMENAME] = currentSongInfo.game;
 					info[SONG_REPEAT] = defaultRepeatMode;
 					info[SONG_SUBTUNE_TITLE] = currentSongInfo.subtuneTitle;
-
 					
 					info[SONG_STATE] = 1;
 
 					speakTitle();
 
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_REPEAT, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
@@ -470,11 +470,13 @@ public class PlayerService extends Service {
 				} else {
 					Log.v(TAG, "Want to play list with " + f);
 					info[SONG_FILENAME] = f;
+					info[SONG_PLAYLIST] = "";
 					player.playMod(f);
 				}
 			} else {
 				Log.v(TAG, "Want to play " + intent.getDataString());
 				createThread();
+				info[SONG_PLAYLIST] = "";
 				info[SONG_FILENAME] = uri.getLastPathSegment();
 				player.playMod(intent.getDataString());
 			}
@@ -538,7 +540,14 @@ public class PlayerService extends Service {
 							}
 							//actionHandled = false;
 						}
-					}				
+					} else {
+						
+						if(player.isPlaying()) {
+							player.paused(true);						
+						} else {
+							player.paused(false);
+						}
+					}
 					
 					abortBroadcast();
 				}
@@ -741,6 +750,7 @@ public class PlayerService extends Service {
 
 			createThread();
 			info[SONG_FILENAME] = mod;
+			info[SONG_PLAYLIST] = name;
 
 			player.playMod(mod);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
@@ -784,7 +794,7 @@ public class PlayerService extends Service {
 			Log.v(TAG, "PlayList called " + name);
 			createThread();
 			info[SONG_FILENAME] = name;
-
+			info[SONG_PLAYLIST] = "";
 			player.playMod(name);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
