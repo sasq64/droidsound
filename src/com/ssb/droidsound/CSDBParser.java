@@ -25,18 +25,18 @@ public class CSDBParser implements SongDatabase.DataSource {
 
 	public static final String DUMP_NAME = "CSDBDUMP";
 	
-	private static String hvsc = null;
+	private  String hvsc = null;
 	
 	//static Map<String, Integer> events = new HashMap<String, Integer>();
-	static HashMap<Integer, String> groups = null;
-	static String pathName = null;
+	HashMap<Integer, String> groups = null;
+	String pathName = null;
 	
-	public static void setPath(String p) {
+	public void setPath(String p) {
 		pathName = p;
 	}
 		
 	
-	static boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, SongDatabase.ScanCallback scanCallback) {
+	boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, SongDatabase.ScanCallback scanCallback) {
 		
 		boolean ok = false;
 		
@@ -201,7 +201,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		}
 	};
 
-	static class SidCursor extends CursorWrapper {
+	private class SidCursor extends CursorWrapper {
 		private int pathIndex;
 
 		public SidCursor(Cursor cursor) {
@@ -234,7 +234,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		
 	}
 
-	static class ReleaseCursor extends CursorWrapper {
+	private class ReleaseCursor extends CursorWrapper {
 		private int gidIndex;
 		private int nameIndex;
 		private int typeIndex;
