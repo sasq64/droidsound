@@ -697,10 +697,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			startActivityForResult(checkIntent, 1234);
 		}
 
-		if(mf.exists()) {
-			songDatabase.setActivePlaylist(mf);
-		}
-		
+		//if(mf.exists()) {
+		//	songDatabase.setActivePlaylist(mf);
+		//}
 
 		listClickListener = new OnItemClickListener() {
 
@@ -1155,7 +1154,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				plinfoText.setText(n);
 			} else if(songName != null) {
 				String n = new File(songName).getParent();
-				n = n.replace(modsDir.getPath(), "");
+				if(n != null) {
+					n = n.replace(modsDir.getPath(), "");
+				} else {
+					n = "";
+				}
 				plinfoText.setText(n);
 			} else {
 				plinfoText.setText("");

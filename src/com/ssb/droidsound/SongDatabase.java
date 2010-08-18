@@ -346,15 +346,23 @@ public class SongDatabase implements Runnable {
 		try {
 			if(drop) {
 				if(scanCallback != null) {
-					scanCallback.notifyScan("Dropping database", 0);
+					scanCallback.notifyScan("Clearing tables", 0);
 					try {
-						Thread.sleep(500);
+						Thread.sleep(1500);
 					} catch (InterruptedException e) {
 					}
 				}
-				Log.v(TAG, "Dropping file tables!");
-				db.execSQL("DROP TABLE IF EXISTS FILES ;");
-				db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
+				Log.v(TAG, "Deleting file tables!");
+				
+				try {
+					db.execSQL("DELETE FROM FILES;");
+					db.execSQL("DELETE FROM VARIABLES;");
+				} catch (SQLException e) {
+					Log.v(TAG, "No tables do delete from, thats OK");
+				}
+				
+				//db.execSQL("DROP TABLE IF EXISTS FILES ;");
+				//db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
 				db.execSQL("DROP TABLE IF EXISTS LINKS ;");
 				//db.execSQL("DROP TABLE IF EXISTS SONGINFO");
 				db.setVersion(DB_VERSION);
@@ -362,7 +370,7 @@ public class SongDatabase implements Runnable {
 	
 			if(drop) {
 				if(scanCallback != null) {
-					scanCallback.notifyScan("Creating database", 0);
+					scanCallback.notifyScan("Creating tables", 0);
 				}
 			}
 			

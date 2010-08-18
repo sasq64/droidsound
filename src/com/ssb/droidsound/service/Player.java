@@ -242,7 +242,7 @@ public class Player implements Runnable {
 					FileInputStream fs = new FileInputStream(f);
 					fs.read(songBuffer);
 					fs.close();
-
+					f.delete();
 				}
 			} else {
 				songFile = new File(songName);

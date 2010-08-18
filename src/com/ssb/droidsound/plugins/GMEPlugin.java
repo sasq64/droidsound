@@ -17,17 +17,15 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 
 	private Set<String> extensions;
+	
+	static String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "HES", "KSS" };   
 
 	public GMEPlugin(Context ctx) {
 		super(ctx);
 		extensions = new HashSet<String>();
-		extensions.add("SPC");
-		extensions.add("GYM");
-		extensions.add("NSF");
-		extensions.add("NSFE");
-		extensions.add("GBS");
-		extensions.add("AY");
-		extensions.add("VGM");
+		for(String s : ex) {			
+			extensions.add(s);
+		}
 	}
 	
 	@Override

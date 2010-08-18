@@ -13,6 +13,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.MatrixCursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.provider.BaseColumns;
@@ -40,10 +41,18 @@ public class CSDBParser implements SongDatabase.DataSource {
 		
 		boolean ok = false;
 		
-		db.execSQL("DROP TABLE IF EXISTS RELEASES;");
-		db.execSQL("DROP TABLE IF EXISTS GROUPS;");
-		db.execSQL("DROP TABLE IF EXISTS EVENTS;");
-		db.execSQL("DROP TABLE IF EXISTS RELEASESIDS;");
+		try {
+			db.execSQL("DELETE FROM RELEASES;");
+			db.execSQL("DELETE FROM GROUPS;");
+			db.execSQL("DELETE FROM EVENTS;");
+			db.execSQL("DELETE FROM RELEASESIDS;");
+		} catch (SQLException e) {
+		}
+		
+		// db.execSQL("DROP TABLE IF EXISTS RELEASES;");
+		// db.execSQL("DROP TABLE IF EXISTS GROUPS;");
+		// db.execSQL("DROP TABLE IF EXISTS EVENTS;");
+		// db.execSQL("DROP TABLE IF EXISTS RELEASESIDS;");
 		
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "RELEASES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"ID INTEGER," +

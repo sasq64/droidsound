@@ -161,7 +161,7 @@ public class PlayerService extends Service {
 		ct.put("MAKTONE", "Mact1");
 		ct.put("NE7", "N E 7");
 		ct.put("CYCLEBURNER", "Cycle burner");
-		ct.put("GLENN RUNE GALLEFOSS", "Glen Ruh neh Gah lefoss");
+		ct.put("GLENN RUNE GALLEFOSS", "Glen Runay Gallefoss");
 	}
 	
 
@@ -265,6 +265,9 @@ public class PlayerService extends Service {
                 case Player.MSG_NEWSONG:
                 	
                 	player.getSongInfo(currentSongInfo);
+                	
+                	// if(currentSongInfo.title.equals(info[TITLE])
+                	
                 	info[SONG_TITLE] = currentSongInfo.title;
                 	if(currentSongInfo.title == null || currentSongInfo.title.length() == 0) {
                 		File f = new File((String)info[SONG_FILENAME]);                	
@@ -512,33 +515,57 @@ public class PlayerService extends Service {
 							} */
 						} else if(evt.getAction() == KeyEvent.ACTION_UP) {
 							
+							int keycode = evt.getKeyCode();
 							long t = evt.getEventTime() - downTime;
 							Log.v(TAG, String.format("DOWN TIME %d", t));
-							
-							if(t > 3000) {
-								if(textToSpeech == null) {
-									saySomething = "Speech on.";
-									activateSpeech(true);									
-								} else {
-									textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
-									try {
-										Thread.sleep(1000);
-									} catch (InterruptedException e) {
-										e.printStackTrace();
-									}
-									activateSpeech(false);
-								}
-							} else
-							if(t > 300) {
-								playNextSong();
-							} else  {
-								if(player.isPlaying()) {
+						
+							switch (keycode) {							 
+			                case KeyEvent.KEYCODE_MEDIA_STOP:
+			                	player.stop();
+			        			info[SONG_REPEAT] = defaultRepeatMode;
+			        			performCallback(SONG_REPEAT);
+			                    break;
+			                case KeyEvent.KEYCODE_MEDIA_NEXT:
+			                	playNextSong();
+			                    break;
+			                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+			                	playPrevSong();
+			                    break;
+			                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+			                	if(player.isPlaying()) {
 									player.paused(true);						
 								} else {
 									player.paused(false);
 								}
-							}
-							//actionHandled = false;
+			                	break;
+			                default:
+			                case KeyEvent.KEYCODE_HEADSETHOOK:
+								if(t > 3000) {
+									if(textToSpeech == null) {
+										saySomething = "Speech on.";
+										activateSpeech(true);									
+									} else {
+										textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
+										try {
+											Thread.sleep(1000);
+										} catch (InterruptedException e) {
+											e.printStackTrace();
+										}
+										activateSpeech(false);
+									}
+								} else
+								if(t > 300) {
+									playNextSong();
+								} else  {
+									if(player.isPlaying()) {
+										player.paused(true);						
+									} else {
+										player.paused(false);
+									}
+								}
+								//actionHandled = false;
+								break;
+				            }							
 						}
 					} else {
 						
@@ -560,7 +587,7 @@ public class PlayerService extends Service {
 
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(Intent.ACTION_MEDIA_BUTTON);
-		filter.setPriority(600);		
+		filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY - 1);		
 		registerReceiver(mediaReceiver, filter);		
 	}
 	

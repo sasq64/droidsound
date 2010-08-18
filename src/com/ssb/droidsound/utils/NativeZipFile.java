@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 
+import android.util.Log;
+
 public class NativeZipFile {
 
 	static {
@@ -39,6 +41,11 @@ public class NativeZipFile {
 	native int findEntry(String name);
 	native int readData(int i, byte [] target);
 
+	native long open(int index);
+	native int read(long fd, byte [] target, int offs, int len);
+	native void close(long fd);
+	
+	
 	public NativeZipFile(String fileName) throws IOException {
 		openZipFile(fileName);
 		if(zipRef == 0) {
@@ -98,13 +105,77 @@ public class NativeZipFile {
 		return new MyEnumeration(this);
 	}
 	
+	static class NZInputStream extends InputStream {
+		private static final String TAG = NZInputStream.class.getSimpleName();
+
+		private NativeZipFile zipFile;
+		//private byte buffer [];
+		private long fd;
+		private int total;
+		
+		private NZInputStream(long fd, NativeZipFile zf, int len) {
+			zipFile = zf;
+			this.fd = fd;
+			total = len;
+//			buffer = new byte [];
+		}
+		
+		
+		
+		@Override
+		public int read() throws IOException {
+			byte [] b = new byte [1];
+			int rc = read(b, 0, 1);
+			if(rc > 0) {
+				return b[0];
+			} else {
+				return -1;
+			}
+		}
+
+		@Override
+		public void close() {
+			zipFile.close(fd);
+		}
+
+		@Override
+		public int available() throws IOException {
+			//Log.v(TAG, String.format("Available: %d bytes", total));
+			return total;
+		}
+		
+		@Override
+		public int read(byte[] b, int offset, int length) throws IOException {
+						
+			//Log.v(TAG, String.format("Reading %d bytes", length));
+			int rc = zipFile.read(fd, b, offset, length);
+			if(rc > 0) {
+				total -= rc;
+			}
+			return rc;
+		}
+		
+		@Override
+		public int read(byte[] b) throws IOException {
+			return read(b, 0, b.length);
+		}
+	}
+	
+	
 	public InputStream getInputStream(ZipEntry entry) {		
-		int index = ((MyZipEntry)entry).getIndex();		
-		byte [] data = new byte [ getSize(index) ];
+		int index = ((MyZipEntry)entry).getIndex();
 		
-		readData(index, data);
 		
-		return new ByteArrayInputStream(data);
+		long fd = open(index);
+		if(fd > 0) {
+			return new NZInputStream(fd, this, getSize(index));
+		} else {
+			return null;
+		}
+		
+		/*byte [] data = new byte [ getSize(index) ];		
+		readData(index, data);		
+		return new ByteArrayInputStream(data); */
 	}
 	
 	public int size() {

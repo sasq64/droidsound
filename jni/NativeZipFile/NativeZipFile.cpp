@@ -85,6 +85,40 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_findEntry(JNI
 	return e;
 }
 
+
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_open(JNIEnv *env, jobject obj, jint index)
+{
+	struct zip *zipFile = (struct zip*)env->GetLongField(obj, refField);
+	struct zip_file *zf = zip_fopen_index(zipFile, index, 0);
+	return (long)zf;
+
+}
+
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_read(JNIEnv *env, jobject obj, jlong fd, jbyteArray ba, jint offs, jint len)
+{
+	//struct zip *zipFile = (struct zip*)env->GetLongField(obj, refField);
+
+	jboolean iscopy;
+	jbyte *ptr = env->GetByteArrayElements(ba, NULL);
+	int blen = env->GetArrayLength(ba);
+	int rc = -1;
+	struct zip_file *zf = (struct zip_file*)fd;
+
+	if(zf) {
+		rc = zip_fread(zf, &ptr[offs], len);
+	}
+	env->ReleaseByteArrayElements(ba, ptr, 0);
+	return rc;
+}
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_close(JNIEnv *env, jobject obj, jlong fd)
+{
+	struct zip_file *zf = (struct zip_file*)fd;
+	if(zf) {
+		zip_fclose(zf);
+	}
+}
+
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_readData(JNIEnv *env, jobject obj, jint e, jbyteArray target)
 {
 	struct zip *zipFile = (struct zip*)env->GetLongField(obj, refField);
