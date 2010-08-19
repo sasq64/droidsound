@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <ctype.h>
 #include <jni.h>
 
 #include <android/log.h>
@@ -61,15 +61,32 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1load(JNIEnv
 
 		//info->gme_track_count();
 
-		__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "START '%s' -> %s %d", err, track0.song, track0.length);
+		__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "(RC %s) -> SONG '%s' GAME '%s' LEN '%d'", err, track0.song, track0.game, track0.length);
 
+		char *xptr = &track0.song[strlen(track0.song)-1];
+		while(xptr >= track0.song && *xptr == 0x20) {
+			*xptr = 0;
+			xptr--;
+		}
 
 		if(!err) {
 			GMEInfo *info = new GMEInfo();
 
 
 			if(!strlen(track0.song)) {
-				strcpy(info->mainTitle, track0.game);
+				bool nameOk = false;
+				// If name is all upper case it is most likely a rom name
+				for(int i=0; i<strlen(track0.game); i++) {
+					char c = track0.game[i];
+					if(isalpha(c) && !isupper(c)) {
+						nameOk = true;
+					}
+				}
+				if(nameOk) {
+					strcpy(info->mainTitle, track0.game);
+				} else {
+					info->mainTitle[0] = 0;
+				}
 			} else {
 				strcpy(info->mainTitle, track0.song);
 				err = gme_track_info(emu, &track1, 1);

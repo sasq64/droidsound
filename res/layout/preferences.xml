@@ -55,19 +55,10 @@
 		android:title="Download"
 		android:summary="Go to web page for quick downloading of music and databases."
    	/>
-    <!-- 
-    <Preference
-    android:key="dl_info"
-    android:title="INFO"
-    android:summary="If you are a fan of C64 Music we highly recommend that you download both the High Voltage Sid Collection and the CSDb database."
-    android:selectable="false"
-    />
-    <Preference
-    android:key="dl_go"
-    android:title="D"
-    />
-    </PreferenceScreen>
-    -->
+
+    <Preference android:key="help_pref"
+		android:title="Droidsound Help"
+		/>
     <Preference android:key="about_pref"
 		android:title="About Droidsound"
 		/>

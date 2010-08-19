@@ -74,7 +74,8 @@ public class Player implements Runnable {
 		int subTunes;
 		int startTune;
 		public String[] details;
-		public String subtuneTitle;		
+		public String subtuneTitle;
+		public String fileName;		
 	};
 	
 	private Handler mHandler;
@@ -306,6 +307,7 @@ public class Player implements Runnable {
 			Log.w(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
 
 			synchronized (this) {
+				currentSong.fileName = songName;
 				currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
 				currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
 				currentSong.copyright = getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT);
@@ -334,18 +336,14 @@ public class Player implements Runnable {
 				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 				
 				if(currentSong.title == null || currentSong.title.equals("")) {
-					currentSong.title = currentSong.game;
-					Log.v(TAG, String.format("G Title '%s'", currentSong.title));
-					if(currentSong.title == null || currentSong.title.equals("")) {
-						int slash = songName.lastIndexOf('/') + 1;
-						int dot = songName.lastIndexOf('.');
-						if(dot < 0) {
-							currentSong.title = songName.substring(slash);
-						} else {
-							currentSong.title = songName.substring(slash, dot);
-						}
-						Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
+					int slash = songName.lastIndexOf('/') + 1;
+					int dot = songName.lastIndexOf('.');
+					if(dot < 0) {
+						currentSong.title = songName.substring(slash);
+					} else {
+						currentSong.title = songName.substring(slash, dot);
 					}
+					Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
 				}
 				
 				currentSong.subtuneTitle =  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
@@ -539,6 +537,7 @@ public class Player implements Runnable {
 		target.startTune = currentSong.startTune;
 		target.details = currentSong.details;
 		target.subtuneTitle = currentSong.subtuneTitle;
+		target.fileName = currentSong.fileName;
 		return true;
 	}
 	

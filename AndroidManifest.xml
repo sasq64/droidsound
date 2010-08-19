@@ -54,11 +54,10 @@
 
 		</activity>
 		
-		<service android:name=".service.PlayerService">
-			
-		</service>
+		<service android:name=".service.PlayerService"/>
 		
 		<activity android:name=".SettingsActivity" />
+		<activity android:name=".HelpActivity" />
 		
 		<!-- provider android:name="com.ssb.droidsound.provider.SongProvider" android:authorities="com.ssb.droidsound.provider" / -->
 		

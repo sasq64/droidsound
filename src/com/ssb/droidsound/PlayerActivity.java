@@ -210,7 +210,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		
 		if(f == null) {
-			f = new File(plv.getPath());
+			String p = plv.getPath();
+			if(p != null) {
+				f = new File(p);
+			} else if(currentPlaylistView == searchListView) {
+				searchCursor.requery();
+				searchListView.setCursor(searchCursor, null);
+				flipTo(SEARCH_VIEW);
+				return;
+			} else {
+				return;
+			}
 		}
 		
 		Cursor cursor = songDatabase.getFilesInPath(f.getPath());

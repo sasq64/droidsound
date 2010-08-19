@@ -1,0 +1,139 @@
+<html>
+<head></head>
+<body>
+<h1>Droidsound Help</h1>
+
+<h2>The User Interface</h2>
+
+Droidsound lets you switch between 3 main screens using the button in the top-right corner;
+
+<h3>The Browser</h3>
+<p>
+This lets you browse through your music collection.</p>
+<p>
+Tapping a directory, archive or play list will enter it.<br/>
+Tapping a song will play it.<br/>
+Press <tt>BACK</tt> to go back up one level.<br/>
+Long press <tt>BACK</tt> to go up to the top level.<br/>
+Long press a song for more options.<br/>
+</p>
+<h3>The Info Screen</h3>
+
+<p>
+This screen shows information about the current song, and lets
+you control playback.</p>
+<p>
+Tapping the <tt>Forward</tt> / <tt>Back</tt> buttons will switch sub tunes. If there are
+no subtunes, it will switch song.<br/>
+Long pressing <tt>Forward</tt> / <tt>Back</tt> will always go to the next / previous song.<br>Pause and stop should be self-explanatory<br/>
+Tap the <tt>Plus</tt>-sign to add the current song to the active playlist.<br/>
+Tap <tt>SEQ</tt> / <tt>RND</tt> to switch between sequential and random order playback.<br/>
+Tap <tt>CONT</tt> to turn on/off continous playback, meaning the next song will
+play automatically when the current is done. <i>Note</i> that changing sub tunes
+will turn <tt>CONT</tt> off, to avoid switching song when the user may not want to.
+</p>
+<h3>The Search Screen</h3>
+
+This screen shows the latest search results, and also provides a button
+for searching (besides the one in the main menu). The search screen works
+similar to the Browser.
+
+<h3>Handling Playlists</h3>
+<p>
+You can add songs to playlists. There is always an <i>active</i> playlist, starting
+with the Favorites playlist which is created automatically. Long press on
+another playlist and choose &quot;Set as current&quot; to change the active playlist.
+</p>
+You can add songs, directories and even other playlists to the active playlist.
+<p>
+To add specific (or even all) sub tunes of a song, you need to start playing that
+song, and then tap the <tt>Plus</tt> sign on the Info screen.
+</p>
+
+<h3>Databases</h3>
+<p>
+Droidsound provides access for &quot;external&quot; databases. Currently only <i>CSDb</i> is available.
+When you enter a database Search will search that database instead of your normal music
+collection.
+</p>
+<h3>Headset &amp; Media Buttons</h3>
+<p>
+You can control Droidsound with the Media button on your headset;
+</p>
+<p>
+Single tap to play/pause.<br/>
+Squeeze ( > 0.5s) to change song.<br/>
+Hold for more than 3s to turn speech on/off.<br/>
+</p>
+<p><i>Note</i> that the button will not be activate unless the player is playing or paused.</p>
+
+<h2>The Song Database</h2>
+
+<p>Droidsound uses a database both for browsing and searching files, so it needs to
+keep the files on storage in sync with it's database. It does this by scanning for
+changes each time you start Droidsound (you can also do an explicit scan from the
+Settings menu).</p>
+<p>When changes are detected (an file that has been added, removed or changed) Droidsound
+locks the database and opens a dialog showing progress. This should only happen when 
+there are actual changes, if you see the dialog each time it probably means
+you have files that are not detected as songs somewhere in your <tt>MODS</tt>-direcotry.
+</p>
+
+<h2>File Formats</h2>
+
+<h4>libsidplay2</h4>
+<a href=http://sourceforge.net/projects/sidplay2/>http://sourceforge.net/projects/sidplay2/</a>
+
+<ul>
+<li>Plays <i>SID</i> files, music from the Commodore C64.</li>
+</ul>
+<h4>modplug</h4>
+
+<a href=http://sourceforge.net/projects/modplug/>http://sourceforge.net/projects/modplug/</a>
+
+<ul>
+<li>Composer 669 / UNIS 669 (669)</li>
+<li>ASYLUM Music Format / Advanced Music Format (AMF)</li>
+<li>Extreme's Tracker / Velvet Studio (AMS)</li>
+<li>DigiBooster (DBM)</li>
+<li>X-Tracker (DMF)</li>
+<li>DSIK Format (DSM)</li>
+<li>Farandole Composer (FAR)</li>
+<li>General Digital Music (GDM)</li>
+<li>Imago Orpheus (IMF)</li>
+<li>Impulse Tracker (Project) (IT / ITP)</li>
+<li>Jazz Jackrabbit 2 Music (J2B)</li>
+<li>DigiTracker (MDL)</li>
+<li>OctaMED (MED)</li>
+<li>MO3 compressed modules (MO3)</li>
+<li>ProTracker / NoiseTracker / etc. (MOD)</li>
+<li>OpenMPT (MPTM)</li>
+<li>MadTracker 2 (MT2)</li>
+<li>MultiTracker (MTM)</li>
+<li>Oktalyzer (OKT)</li>
+<li>Epic Megagames MASI (PSM)</li>
+<li>PolyTracker (PTM)</li>
+<li>ScreamTracker 3 (S3M)</li>
+<li>ScreamTracker 2 (STM)</li>
+<li>UltraTracker (ULT)</li>
+<li>Unreal Music Package (UMX)</li>
+<li>Grave Composer (WOW)</li>
+<li>FastTracker (XM)</li>
+</ul>
+
+
+<h4>GME</h4>
+<a href=http://slack.net/~ant/libs/audio.html>http://slack.net/~ant/libs/audio.html</a>
+<ul>
+<li>X Spectrum, Amstrad CPC (AY)</li>
+<li>Nintendo Game Boy (GBS)</li>
+<li>Sega Genesis, Mega Drive (GYM)</li>
+<li>NEC TurboGrafx-16, PC Engine (HES)</li>
+<li>MSX Home Computer, other Z80 systems (doesn't support FM sound) (KSS)</li>
+<li>Nintendo NES, Famicom (with VRC 6, Namco 106, and FME-7 sound) (NSF, NSFE)</li>
+<li>Atari systems using POKEY sound chip (SAP)</li>
+<li>Super Nintendo, Super Famicom (SPC)</li>
+<li>Sega Master System, Mark III, Sega Genesis, Mega Drive, BBC Micro (VGM)</li>
+</ul>
+</body>
+</html>

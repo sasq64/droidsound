@@ -240,7 +240,11 @@ public class PlayerService extends Service {
 				text = songTitle + ".";
 			}
 			Log.v(TAG, String.format("Saying '%s'", text));
-			textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+			if(textToSpeech != null) {
+				textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+			} else {
+				saySomething = text;
+			}	
 		}
 	}
 		
@@ -264,6 +268,9 @@ public class PlayerService extends Service {
             		break;
                 case Player.MSG_NEWSONG:
                 	
+                	
+                	String lastFileName = currentSongInfo.fileName;
+                	
                 	player.getSongInfo(currentSongInfo);
                 	
                 	// if(currentSongInfo.title.equals(info[TITLE])
@@ -285,7 +292,9 @@ public class PlayerService extends Service {
 					
 					info[SONG_STATE] = 1;
 
-					speakTitle();
+					if(lastFileName == null || !lastFileName.equals(currentSongInfo.fileName)) {
+						speakTitle();
+					}
 
 					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
                 	break;
@@ -307,6 +316,7 @@ public class PlayerService extends Service {
                 	
                 	if(msg.arg1 == 0) {
                 		info[SONG_POS] = info[SONG_SUBSONG] = info[SONG_TOTALSONGS] = info[SONG_LENGTH] = 0;
+                		currentSongInfo.fileName = null;
                 		performCallback(SONG_POS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_LENGTH, SONG_STATE);
                 	} else {                	
                 		performCallback(SONG_STATE);
@@ -502,6 +512,9 @@ public class PlayerService extends Service {
 				
 				if(player.isActive()) {
 					if(evt != null) {
+						
+						Log.v(TAG, String.format("MEDIA BUTTON KEY %s", evt.toString()));						
+						
 						if(evt.getAction() == KeyEvent.ACTION_DOWN) {
 							
 							downTime = evt.getDownTime();
@@ -542,7 +555,8 @@ public class PlayerService extends Service {
 			                case KeyEvent.KEYCODE_HEADSETHOOK:
 								if(t > 3000) {
 									if(textToSpeech == null) {
-										saySomething = "Speech on.";
+										//saySomething = "Speech on.";
+										speakTitle();
 										activateSpeech(true);									
 									} else {
 										textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
@@ -882,7 +896,7 @@ public class PlayerService extends Service {
 			if(textToSpeech != null) {
 				textToSpeech.shutdown();
 				textToSpeech = null;
-				ttsStatus = -1;
+				//ttsStatus = -1;
 				Log.v(TAG, "Turning off speech");
 			}
 		}

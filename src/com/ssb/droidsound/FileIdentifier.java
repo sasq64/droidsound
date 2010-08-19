@@ -105,7 +105,12 @@ public class FileIdentifier {
 		}
 					
 		if(info.title == null || info.title.length() == 0) {
-			info.title = info.game;
+			// SPC with no title and all uppercase game name is probably dumped from emu 
+			if(info.type == TYPE_SPC && info.game != null && info.game.toUpperCase().equals(info.game)) {
+				info.title = null;
+			} else {
+				info.title = info.game;
+			}
 		}
 
 		if(info.title == null || info.title.length() == 0) {
@@ -315,7 +320,7 @@ public class FileIdentifier {
 				if(data[0x23] == 0x1a) {
 					info.title = fromData(data, 0x2e, 32);
 					info.game = fromData(data, 0x4e, 32);
-					info.composer = fromData(data, 0xb1, 32);
+					info.composer = fromData(data, 0xb1, 32);					
 				}
 				break;
 			default:

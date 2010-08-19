@@ -132,7 +132,7 @@ public class SettingsActivity extends PreferenceActivity {
 			public boolean onPreferenceClick(Preference preference) {
 				Log.v(TAG, "Rescan database");
 				showDialog(R.string.scan_db);
-				return false;
+				return true;
 			}
 		});
 		
@@ -141,10 +141,19 @@ public class SettingsActivity extends PreferenceActivity {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				showDialog(R.string.about_droidsound);
-				return false;
+				return true;
 			}
 		});
 		
+		pref = findPreference("help_pref");
+		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				startActivity(new Intent(SettingsActivity.this, HelpActivity.class));
+				return true;
+			}
+		});
+
 		pref = findPreference("download_link");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
