@@ -87,7 +87,7 @@ public class PlayQueue {
 		for(Playlist.Song ps : songs) {
 			Song song = new Song(ps);
 			
-			Log.v(TAG, String.format("%s (%d)", song.filename, song.startSong));
+			// Log.v(TAG, String.format("%s (%d)", song.filename, song.startSong));
 			
 			names[i++] = song;
 		}
@@ -169,10 +169,10 @@ public class PlayQueue {
 		    musicList.set(randomPosition, t);
 		}
 		
-		Log.v(TAG, "###### SHUFFLE ORDER #####");
-		for(Song s : musicList) {
-			Log.v(TAG, s.filename);
-		}
+		// Log.v(TAG, "###### SHUFFLE ORDER #####");
+		// for(Song s : musicList) {
+		// 	Log.v(TAG, s.filename);
+		// }
 	}
 	
 	private void unshuffle() {
@@ -329,5 +329,29 @@ public class PlayQueue {
 			n = n + ";" + s;
 		}
 		return n;
+	}
+
+	public Song getNextSong() {
+		updatePlaylist();
+		if(musicNames == null || musicNames.length < 2) {
+			return null;
+		}
+		int i = musicListPos+1;
+		if(i >= musicList.size()) {
+			i -= musicList.size();
+		}    	
+		return musicList.get(i);
+	}	
+
+	public Song getPrevSong() {
+		updatePlaylist();
+		if(musicNames == null || musicNames.length < 2) {
+			return null;
+		}
+		int i = musicListPos-1;
+		if(i < 0) {
+			i += musicList.size();
+		}    	
+		return musicList.get(i);
 	}	
 }

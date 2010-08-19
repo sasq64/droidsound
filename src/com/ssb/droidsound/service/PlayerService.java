@@ -97,6 +97,8 @@ public class PlayerService extends Service {
 	private int oldPlaylistHash;
 	private int defaultRepeatMode = RM_CONTINUE;
 
+	protected String saySomething;
+
 	
 	PlayQueue playQueue;
 	
@@ -384,7 +386,24 @@ public class PlayerService extends Service {
     }
 
     boolean playNextSong() {    	
-    	String song = playQueue.next();    	
+    	String song = playQueue.next();
+    	/*
+    	int sc = song.indexOf(';');
+		if(sc > 0) {
+			int subtune = -2;
+			try {
+				subtune = Integer.parseInt(song.substring(sc+1));
+			} catch (NumberFormatException e) {
+			}			
+			if((Integer)info[SONG_SUBSONG] + 1 == subtune && currentSongInfo.fileName.equals(song.substring(0, sc))) {
+				createThread();
+				player.setSubSong(subtune);
+				info[SONG_SUBSONG] = (Integer)subtune;
+				return true;
+			}
+		} */
+        	
+    	
 		if(song != null) {    			
        		song = playQueue.currentWithStartSong();       		
        		info[SONG_FILENAME] = song;       		
@@ -499,98 +518,122 @@ public class PlayerService extends Service {
         	
         	//boolean actionHandled = false;
 			private long downTime;
+			private long unpluggedTime = -1;
+			private int lastState = -1;
 			//MediaPlayer mp;
         	
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				// TODO Auto-generated method stub
 				
-				Log.v(TAG, String.format("MEDIA BUTTON %s", intent.getAction()));
+				Log.v(TAG, String.format("##### GOT INTENT %s", intent.getAction()));
 				
-				Bundle b = intent.getExtras();
-				KeyEvent evt = (KeyEvent)b.get("android.intent.extra.KEY_EVENT");
-				
-				if(player.isActive()) {
-					if(evt != null) {
-						
-						Log.v(TAG, String.format("MEDIA BUTTON KEY %s", evt.toString()));						
-						
-						if(evt.getAction() == KeyEvent.ACTION_DOWN) {
-							
-							downTime = evt.getDownTime();
-							//Log.v(TAG, String.format("TIME %d %d", downTime, evt.getEventTime()));
-							
-							/*if(!actionHandled) {
-								if(evt.getRepeatCount() > 2) {
-									playNextSong();
-									actionHandled = true;
-								}
-							} */
-						} else if(evt.getAction() == KeyEvent.ACTION_UP) {
-							
-							int keycode = evt.getKeyCode();
-							long t = evt.getEventTime() - downTime;
-							Log.v(TAG, String.format("DOWN TIME %d", t));
-						
-							switch (keycode) {							 
-			                case KeyEvent.KEYCODE_MEDIA_STOP:
-			                	player.stop();
-			        			info[SONG_REPEAT] = defaultRepeatMode;
-			        			performCallback(SONG_REPEAT);
-			                    break;
-			                case KeyEvent.KEYCODE_MEDIA_NEXT:
-			                	playNextSong();
-			                    break;
-			                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
-			                	playPrevSong();
-			                    break;
-			                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-			                	if(player.isPlaying()) {
-									player.paused(true);						
-								} else {
-									player.paused(false);
-								}
-			                	break;
-			                default:
-			                case KeyEvent.KEYCODE_HEADSETHOOK:
-								if(t > 3000) {
-									if(textToSpeech == null) {
-										//saySomething = "Speech on.";
-										speakTitle();
-										activateSpeech(true);									
-									} else {
-										textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
-										try {
-											Thread.sleep(1000);
-										} catch (InterruptedException e) {
-											e.printStackTrace();
-										}
-										activateSpeech(false);
+				if(intent.getAction().equals(Intent.ACTION_MEDIA_BUTTON)) {
+					Log.v(TAG, "MEDIA BUTTON");
+					
+					Bundle b = intent.getExtras();
+					KeyEvent evt = (KeyEvent)b.get("android.intent.extra.KEY_EVENT");
+					
+					if(player.isActive()) {
+						if(evt != null) {
+							if(evt.getAction() == KeyEvent.ACTION_DOWN) {
+								
+								downTime = evt.getDownTime();
+								//Log.v(TAG, String.format("TIME %d %d", downTime, evt.getEventTime()));
+								
+								/*if(!actionHandled) {
+									if(evt.getRepeatCount() > 2) {
+										playNextSong();
+										actionHandled = true;
 									}
-								} else
-								if(t > 300) {
-									playNextSong();
-								} else  {
-									if(player.isPlaying()) {
+								} */
+							} else if(evt.getAction() == KeyEvent.ACTION_UP) {
+								
+								int keycode = evt.getKeyCode();
+								long t = evt.getEventTime() - downTime;
+								Log.v(TAG, String.format("DOWN TIME %d", t));							
+
+								switch (keycode) {							 
+				                case KeyEvent.KEYCODE_MEDIA_STOP:
+				                	player.stop();
+				        			info[SONG_REPEAT] = defaultRepeatMode;
+				        			performCallback(SONG_REPEAT);
+				                    break;
+				                case KeyEvent.KEYCODE_MEDIA_NEXT:
+				                	playNextSong();
+				                    break;
+				                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+				                	playPrevSong();
+				                    break;
+				                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
+				                	if(player.isPlaying()) {
+
 										player.paused(true);						
 									} else {
 										player.paused(false);
 									}
-								}
-								//actionHandled = false;
-								break;
-				            }							
-						}
-					} else {
-						
-						if(player.isPlaying()) {
-							player.paused(true);						
+				                	break;
+				                default:
+				                case KeyEvent.KEYCODE_HEADSETHOOK:
+									if(t > 3000) {
+										if(textToSpeech == null) {
+											speakTitle();
+											//saySomething = "Speech on.";
+											activateSpeech(true);									
+										} else {
+											textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
+											try {
+												Thread.sleep(1000);
+											} catch (InterruptedException e) {
+												e.printStackTrace();
+											}
+											activateSpeech(false);
+										}
+									} else
+									if(t > 300) {
+										playNextSong();
+									} else  {
+										if(player.isPlaying()) {
+											player.paused(true);						
+										} else {
+											player.paused(false);
+										}
+									}
+									//actionHandled = false;
+									break;
+					            }							
+							}
 						} else {
-							player.paused(false);
+							
+							if(player.isPlaying()) {
+								player.paused(true);						
+							} else {
+								player.paused(false);
+							}
+						}
+						
+						abortBroadcast();
+					}
+				} else if(intent.getAction().equals(Intent.ACTION_HEADSET_PLUG)) {
+					int state = intent.getIntExtra("state", -1);
+					
+					if(lastState  != -1 && lastState != state) {					
+						Log.v(TAG, "HEADSET PLUG " + state);
+						if(state == 0) {						
+							if(player.isPlaying()) {
+								unpluggedTime = System.currentTimeMillis();
+								player.paused(true);						
+							}
+						} else if(state == 1) {
+							if(unpluggedTime > 0 && (System.currentTimeMillis() - unpluggedTime) < 5000) {
+								if(!player.isPlaying()) {
+									player.paused(false);						
+								}							
+							}
+							unpluggedTime = -1;
 						}
 					}
-					
-					abortBroadcast();
+					lastState = state;
 				}
 				
 				//for(String s : b.keySet()) {
@@ -601,6 +644,7 @@ public class PlayerService extends Service {
 
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(Intent.ACTION_MEDIA_BUTTON);
+		filter.addAction(Intent.ACTION_HEADSET_PLUG);
 		filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY - 1);		
 		registerReceiver(mediaReceiver, filter);		
 	}
@@ -715,6 +759,27 @@ public class PlayerService extends Service {
 		public boolean setSubSong(int song) throws RemoteException {
 
 			// TODO : Check if next song is the same file and the same sub song
+			boolean ok = false;
+			Log.v(TAG, "Current song is " + currentSongInfo.fileName);
+			PlayQueue.Song nextSong = playQueue.getNextSong();			
+			if(nextSong != null) {
+				Log.v(TAG, "Next song is " + nextSong.filename);
+				if(song == nextSong.startSong && currentSongInfo.fileName.equals(nextSong.filename)) {
+					playQueue.next();
+					ok = true;
+				}
+			}
+			if(!ok) {
+				nextSong = playQueue.getPrevSong();				
+				if(nextSong != null) {
+					Log.v(TAG, "Prev song is " + nextSong.filename);
+					if(song == nextSong.startSong && currentSongInfo.fileName.equals(nextSong.filename)) {
+						playQueue.prev();
+						ok = true;						
+					}
+				}
+			}
+			
 			
  			player.setSubSong(song);
 			info[SONG_SUBSONG] = (Integer)song;			
@@ -722,6 +787,12 @@ public class PlayerService extends Service {
 				info[SONG_REPEAT] = RM_KEEP_PLAYING;
 				performCallback(SONG_REPEAT);
 			}
+			
+			if(ok) {
+				info[SONG_FILENAME] = nextSong.filename + ";" + song;
+				performCallback(SONG_FILENAME);
+			}
+			
 			return true;
 			
 		}
@@ -867,7 +938,6 @@ public class PlayerService extends Service {
 
 		};
 
-	protected String saySomething;
 	
     @Override
     public IBinder onBind(Intent intent) {

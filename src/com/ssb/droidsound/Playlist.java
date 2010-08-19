@@ -440,7 +440,7 @@ public class Playlist {
 			song.file = new File(p, n);
 			song.title = cursor.getString(cursor.getColumnIndex("TITLE"));
 			//song.startsong = cursor.getInt(cursor.getColumnIndex("STARTSONG"));
-			Log.v(TAG, String.format("Songlist sentry %s %d",song.file.getPath(), song.startsong));
+			//Log.v(TAG, String.format("Songlist sentry %s %d",song.file.getPath(), song.startsong));
 			songs.add(song);
 			
 		}
