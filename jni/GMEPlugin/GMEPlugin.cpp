@@ -21,6 +21,20 @@
 #include "gme/gme.h"
 
 //#include "log.h"
+static jstring NewString(JNIEnv *env, const char *str)
+{
+	static jchar temp[256];
+	jchar *ptr = temp;
+	while(*str) {
+		unsigned char c = (unsigned char)*str++;
+		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 ? c : '?';
+	}
+	//*ptr++ = 0;
+	jstring j = env->NewString(temp, ptr - temp);
+	return j;
+}
+
+
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
 {
@@ -190,21 +204,21 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getString
 	switch(what)
 	{
 	case INFO_TITLE:
-		return env->NewStringUTF(info->mainTitle);
+		return NewString(env, info->mainTitle);
 	case INFO_SUBTUNE_TITLE:
 		if(info->lastTrack.track_count > 1) {
-			return env->NewStringUTF(info->lastTrack.song);
+			return NewString(env, info->lastTrack.song);
 		} else {
 			return 0;
 		}
 	case INFO_AUTHOR:
-		return env->NewStringUTF(info->lastTrack.author);
+		return NewString(env, info->lastTrack.author);
 	case INFO_COPYRIGHT:
-		return env->NewStringUTF(info->lastTrack.copyright);
+		return NewString(env, info->lastTrack.copyright);
 	case INFO_TYPE:
-		return env->NewStringUTF(info->lastTrack.system);
+		return NewString(env, info->lastTrack.system);
 	case INFO_GAME:
-		return env->NewStringUTF(info->lastTrack.game);
+		return NewString(env, info->lastTrack.game);
 	}
 	return 0;
 }

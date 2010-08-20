@@ -213,41 +213,39 @@ public class PlayerService extends Service {
 	
 	private void speakTitle() {
 		String text = "Unnamed song.";
-
-		if(ttsStatus >= 0) {
 			
-			String songComposer = (String) info[SONG_AUTHOR];
-			
-			if(songComposer.endsWith(")")) {
-				int lpara = songComposer.lastIndexOf("(");
-				int rpara = songComposer.lastIndexOf(")");
-				if(lpara > 0) {
-					songComposer = songComposer.substring(lpara+1, rpara);
-				}
+		String songComposer = (String) info[SONG_AUTHOR];
+		
+		if(songComposer.endsWith(")")) {
+			int lpara = songComposer.lastIndexOf("(");
+			int rpara = songComposer.lastIndexOf(")");
+			if(lpara > 0) {
+				songComposer = songComposer.substring(lpara+1, rpara);
 			}
-			
-			String songTitle = fixSpeech((String) info[SONG_TITLE], false);            			
-			songComposer = fixSpeech(songComposer, true);
-			/*
-			String subtuneTitle = (String) info[SONG_SUBTUNE_TITLE];
-			
-			if(subtuneTitle != null) {
-				subtuneTitle = fixSpeech(subtuneTitle, false);
-				songTitle += (" " + subtuneTitle);
-			} */
-
-			if(songComposer != null & songComposer.length() > 1) {        					        					
-				text = songTitle + ". By " + songComposer + ".";        					
-			} else {
-				text = songTitle + ".";
-			}
-			Log.v(TAG, String.format("Saying '%s'", text));
-			if(textToSpeech != null) {
-				textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
-			} else {
-				saySomething = text;
-			}	
 		}
+		
+		String songTitle = fixSpeech((String) info[SONG_TITLE], false);            			
+		songComposer = fixSpeech(songComposer, true);
+		/*
+		String subtuneTitle = (String) info[SONG_SUBTUNE_TITLE];
+		
+		if(subtuneTitle != null) {
+			subtuneTitle = fixSpeech(subtuneTitle, false);
+			songTitle += (" " + subtuneTitle);
+		} */
+
+		if(songComposer != null & songComposer.length() > 1) {        					        					
+			text = songTitle + ". By " + songComposer + ".";        					
+		} else {
+			text = songTitle + ".";
+		}
+		Log.v(TAG, String.format("Saying '%s'", text));
+		if(ttsStatus >=0 && textToSpeech != null) {
+			textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+		} else {
+			saySomething = text;
+		}	
+
 	}
 		
 	
@@ -295,14 +293,18 @@ public class PlayerService extends Service {
 					info[SONG_STATE] = 1;
 
 					if(lastFileName == null || !lastFileName.equals(currentSongInfo.fileName)) {
-						speakTitle();
+						if(ttsStatus >= 0) {
+							speakTitle();
+						}
 					}
 
 					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
-                	playNextSong();
+                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
+                		playNextSong();
+                	}
                     break;
                 case Player.MSG_PROGRESS:
                 	int l = (Integer)info[SONG_LENGTH];
@@ -326,10 +328,11 @@ public class PlayerService extends Service {
                 	break;
                 case Player.MSG_SILENT:
                 	if(silenceDetect) {
-	                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE)
+	                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
 	                		playNextSong();
-	                	else
+	                	} else {
 	                		Log.v(TAG, "User has interferred, not switching");
+	                	}
                 	}
                 	break;
                 default:
@@ -966,7 +969,7 @@ public class PlayerService extends Service {
 			if(textToSpeech != null) {
 				textToSpeech.shutdown();
 				textToSpeech = null;
-				//ttsStatus = -1;
+				ttsStatus = -1;
 				Log.v(TAG, "Turning off speech");
 			}
 		}

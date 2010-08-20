@@ -62,7 +62,7 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
 	private static final String TAG = "PlayerActivity";
 	
-	public static final String DROIDSOUND_VERSION = "RC1";
+	//public static final String DROIDSOUND_VERSION = "RC1";
 	public static final int VERSION = 16;
 	
 	private static class Config {
@@ -642,6 +642,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 
 		Log.v(TAG, String.format("MODS at %s", modsDir));
+		
+		File ns = new File(modsDir, ".nomedia");
+		if(!ns.exists()) {
+			FileWriter fw;
+			try {
+				fw = new FileWriter(ns);
+				fw.close();
+			} catch (IOException e1) {
+			}
+		}
 
 		File mf = new File(modsDir, "Favorites.plist");
 		if(!mf.exists()) {

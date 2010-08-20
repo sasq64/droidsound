@@ -594,7 +594,8 @@ public class SongDatabase implements Runnable {
 			if(fileList != null) {
 				// Add all existing files to a hash set
 				for(File f : fileList) {
-					files.add(f.getName());
+					if(f.getName().charAt(0) != '.')
+						files.add(f.getName());
 				}
 			}
 

@@ -242,6 +242,9 @@ public class FileIdentifier {
 							is.reset();
 					}
 				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (Exception e2) {
+					e2.printStackTrace();
 				}
 				if(info != null) {
 					fixName(name, info);
@@ -263,7 +266,10 @@ public class FileIdentifier {
 									info = tryLoad(plugins[j], is);
 									is.reset();
 							}
-						} catch (IOException e) {						
+						} catch (IOException e) {
+							e.printStackTrace();
+						} catch (Exception e2) {
+							e2.printStackTrace();
 						}
 						if(info != null) {
 							fixName(name, info);

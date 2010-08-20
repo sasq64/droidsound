@@ -3,15 +3,12 @@ package com.ssb.droidsound.service;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -432,6 +429,9 @@ public class Player implements Runnable {
 							switch(command) {
 							case SET_POS:
 								int msec = (Integer)argument;
+								if(currentState == State.SWITCHING) {
+									currentState = State.PLAYING;
+								}
 								if(currentPlugin.seekTo(songRef, msec)) {
 									currentPosition = msec;
 									lastPos = -1000;
@@ -441,6 +441,10 @@ public class Player implements Runnable {
 									currentPosition = 0;
 									lastPos = -1000;
 									audioTrack.flush();
+
+									if(currentState == State.SWITCHING) {
+										currentState = State.PLAYING;
+									}
 									//int pos = audioTrack.getPlaybackHeadPosition();
 									currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);									
 									currentSong.subtuneTitle = currentPlugin.getStringInfo(songRef, DroidSoundPlugin.INFO_SUBTUNE_TITLE);
@@ -453,16 +457,18 @@ public class Player implements Runnable {
 									currentState = State.PAUSED;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 2, 0);
 									mHandler.sendMessage(msg);
+									audioTrack.pause();
 								}
-								audioTrack.pause();
+								
 								break;
 							case UNPAUSE :
 								if(currentState == State.PAUSED) {
 									currentState = State.PLAYING;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 1, 0);
 									mHandler.sendMessage(msg);
+									audioTrack.play();
 								}
-								audioTrack.play();
+								
 								break;
 							}								
 						}
