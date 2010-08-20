@@ -1,5 +1,7 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -66,9 +68,25 @@ public class GMEPlugin extends DroidSoundPlugin {
 		
 		return info;
 	}
+	
+	@Override
+	public Object load(File file) throws IOException {
+		long rc = N_loadFile(file.getPath());
+		if(rc == 0)
+			return null;
+		else
+			return rc;		
+	}
 
-	
-	
+	@Override
+	public Object load(byte [] module, int size) {
+		long rc = N_load(module, size);
+		if(rc == 0)
+			return null;
+		else
+			return rc;		
+	}
+
 	@Override
 	public void unload(Object song) { N_unload((Long)song); }
 	
@@ -86,6 +104,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	native public boolean N_canHandle(String name);
 	native public long N_load(byte [] module, int size);
+	native public long N_loadFile(String name);
 	native public void N_unload(long song);
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
@@ -95,11 +114,4 @@ public class GMEPlugin extends DroidSoundPlugin {
 	native public String N_getStringInfo(long song, int what);
 	native public int N_getIntInfo(long song, int what);
 
-	public Object load(byte [] module, int size) {
-		long rc = N_load(module, size);
-		if(rc == 0)
-			return null;
-		else
-			return rc;		
-	}
 }
