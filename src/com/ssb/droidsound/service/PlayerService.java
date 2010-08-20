@@ -719,7 +719,7 @@ public class PlayerService extends Service {
 		
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
-			if(!player.isActive() && play) {
+			if(!player.isActive() && play && playQueue != null) {
 				String s = playQueue.currentWithStartSong();
 				if(s != null) {
 	           		info[SONG_FILENAME] = s; 		           		

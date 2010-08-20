@@ -243,7 +243,12 @@ public class ModPlugin extends DroidSoundPlugin {
 	@Override
 	public Object loadInfo(File file) throws IOException {
 		int l = (int)file.length();
-		byte [] songBuffer = new byte [l];
+		byte [] songBuffer = null;
+		try {
+			songBuffer = new byte [l];
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
 

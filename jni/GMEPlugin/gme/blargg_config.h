@@ -4,7 +4,7 @@
 #define BLARGG_CONFIG_H
 
 // Uncomment to use zlib for transparent decompression of gzipped files
-//#define HAVE_ZLIB_H
+#define HAVE_ZLIB_H
 
 // Uncomment to support only the listed game music types. See gme_type_list.cpp
 // for a list of all types.

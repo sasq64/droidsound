@@ -20,7 +20,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	private Set<String> extensions;
 	
-	static String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "HES", "KSS" };   
+	static String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" };   
 
 	public GMEPlugin(Context ctx) {
 		super(ctx);
@@ -71,6 +71,14 @@ public class GMEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public Object load(File file) throws IOException {
+		long rc = N_loadFile(file.getPath());
+		if(rc == 0)
+			return null;
+		else
+			return rc;		
+	}
+	
+	public Object loadInfo(File file) throws IOException {
 		long rc = N_loadFile(file.getPath());
 		if(rc == 0)
 			return null;

@@ -1,6 +1,8 @@
 package com.ssb.droidsound;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -10,10 +12,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import com.ssb.droidsound.plugins.DroidSoundPlugin;
-
-import android.content.ContentValues;
 import android.util.Log;
+
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 
 public class FileIdentifier {
 	private static final String TAG = FileIdentifier.class.getSimpleName();
@@ -33,6 +34,7 @@ public class FileIdentifier {
 	public static final int TYPE_IT = 5;
 	public static final int TYPE_NSF = 6;
 	public static final int TYPE_SPC = 7;
+	//public static final int TYPE_VGM = 8;
 	
 	public static class MusicInfo {
 		String title;
@@ -55,6 +57,7 @@ public class FileIdentifier {
 		extensions.put("IT", TYPE_IT);
 		extensions.put("NSF", TYPE_NSF);
 		extensions.put("SPC", TYPE_SPC);
+		//extensions.put("VGM", TYPE_VGM);
 			
 		
 		modMagic = new HashSet<String>();
@@ -170,9 +173,39 @@ public class FileIdentifier {
 		}		
 		return null;
 	}
+	
+	
+	private static MusicInfo tryLoad(DroidSoundPlugin plugin, File file) throws IOException {
+		Object songRef = plugin.loadInfo(file);
+		if(songRef != null) {
+			MusicInfo info = new MusicInfo();
+			info.title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
+			info.composer = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
+			info.copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
+			info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
+			info.format = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
+			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
+			info.date = -1;
+			plugin.unload(songRef);
+			
+			Log.v(TAG, String.format("TITLE: %s -- COMPOSER: %s", info.title, info.composer));
+			
+			return info;
+		}		
+		return null;
+	}
 
 	
+	public static MusicInfo identify(File f) {
+		return identify(f.getName(), null, f);
+	}
+
 	public static MusicInfo identify(String name, InputStream is) {
+		return identify(name, is, null);
+	}
+
+	
+	public static MusicInfo identify(String name, InputStream is, File file) {
 
 		byte data [];
 		String magic;
@@ -199,10 +232,15 @@ public class FileIdentifier {
 			for(DroidSoundPlugin plugin : list) {
 				Log.v(TAG, "Trying " + plugin.getClass().getName());
 				MusicInfo info = null;
+				
 				try {
-					is.mark(is.available());
-					info = tryLoad(plugin, is);
-					is.reset();
+					if(file != null) {
+						info = tryLoad(plugin, file);
+					} else {				
+							is.mark(is.available());
+							info = tryLoad(plugin, is);
+							is.reset();
+					}
 				} catch (IOException e) {
 				}
 				if(info != null) {
@@ -218,10 +256,14 @@ public class FileIdentifier {
 						Log.v(TAG, "Trying " + plugins[j].getClass().getName());
 						MusicInfo info = null;
 						try {
-							is.mark(is.available());
-							info = tryLoad(plugins[j], is);
-							is.reset();
-						} catch (IOException e) {
+							if(file != null) {
+								info = tryLoad(plugins[j], file);
+							} else {
+									is.mark(is.available());
+									info = tryLoad(plugins[j], is);
+									is.reset();
+							}
+						} catch (IOException e) {						
 						}
 						if(info != null) {
 							fixName(name, info);
@@ -239,21 +281,40 @@ public class FileIdentifier {
 		MusicInfo info = new MusicInfo();
 		info.type = extno;
 		info.date = -1;
+		
+		if(is == null) {
+			try {
+				is = new FileInputStream(file);
+			} catch (FileNotFoundException e) {
+				return null;
+			}
+		}
 
 		try {
 			switch(extno) {
 			case TYPE_SID:
 				data = new byte [0x80];
 				is.read(data);
-				magic = new String(data, 0,4);
-				if(magic.equals("PSID") || magic.equals("RSID")) {
+				magic = new String(data, 1, 3);
+				if(magic.equals("SID")) {
 					info.title = fromData(data, 0x16, 32); //new String(data, 0x16, o-0x15, "ISO-8859-1");
 					info.composer = fromData(data, 0x36, 32); //new String(data, 0x36, o-0x35, "ISO-8859-1");
 					info.copyright = fromData(data, 0x56, 32); //new String(data, 0x56, o-0x55, "ISO-8859-1");
+					
+					int year = -1;
+					try {
+						year = Integer.parseInt(info.copyright.substring(0,4));
+					} catch (NumberFormatException e) {
+					}
+					if(year > 1000 && year < 2100) {
+						info.date = year * 10000;
+					}
+					return info;
+					
 				} else {
 					return null;
 				}
-				break;
+
 			case TYPE_MOD:
 				data = new byte [0x480];
 				is.read(data);
@@ -323,6 +384,21 @@ public class FileIdentifier {
 					info.composer = fromData(data, 0xb1, 32);					
 				}
 				break;
+			/* case TYPE_VGM:	
+				data = new byte [0x18];
+				is.read(data);
+				magic = new String(data, 0, 3);
+				if(!magic.equals("Vgm")) {
+					return null;
+				}
+				
+				magic = new String(data, 0, 3);
+				
+				int gd3offs = getInt(data, 0x14);
+				
+				is.skip(gd3offs - 18);
+				
+				break; */
 			default:
 				return null;
 			}
@@ -330,11 +406,22 @@ public class FileIdentifier {
 			return null;
 		}
 		
+		if(file != null) {
+			try {
+				is.close();
+			} catch (IOException e) {
+			}
+		}
 		fixName(name, info);
 		return info;
+	}
+	
+	static int getInt(byte [] data, int o) {		
+		return (data[o] & 0xff) | ((data[o+1] & 0xff)<<8) | ((data[o+2] & 0xff)<<16) | ((data[o+3] & 0xff)<<24);		
 	}
 
 	public static void setIndexUnknown(boolean idx) {		
 		indexUnknown = idx;
 	}
+
 }

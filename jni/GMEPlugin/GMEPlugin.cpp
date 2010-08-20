@@ -38,11 +38,87 @@ struct GMEInfo {
 //static int currentSong = 0;
 //static track_info_t lastTrack;
 
+jlong setUp(Music_Emu *emu)
+{
+	gme_err_t err = gme_start_track(emu, 0);
+
+	track_info_t track0, track1;
+	track0.song[0] = 0;
+	track1.song[0] = 0;
+	err = gme_track_info(emu, &track0, 0);
+
+	//info->gme_track_count();
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "(RC %s) -> SONG '%s' GAME '%s' LEN '%d'", err, track0.song, track0.game, track0.length);
+
+	char *xptr = &track0.song[strlen(track0.song)-1];
+	while(xptr >= track0.song && *xptr == 0x20) {
+		*xptr = 0;
+		xptr--;
+	}
+
+	if(!err) {
+		GMEInfo *info = new GMEInfo();
+
+
+		if(!strlen(track0.song)) {
+			bool nameOk = false;
+			// If name is all upper case it is most likely a rom name
+			for(int i=0; i<strlen(track0.game); i++) {
+				char c = track0.game[i];
+				if(isalpha(c) && !isupper(c)) {
+					nameOk = true;
+				}
+			}
+			if(nameOk) {
+				strcpy(info->mainTitle, track0.game);
+			} else {
+				info->mainTitle[0] = 0;
+			}
+		} else {
+			strcpy(info->mainTitle, track0.song);
+			err = gme_track_info(emu, &track1, 1);
+
+			__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "'%s' vs '%s'", track0.song, track1.song);
+
+			if(!err && strcmp(track0.song, track1.song) != 0) {
+				// We have more than one subsong, and their names differ
+				strcpy(info->mainTitle, track0.game);
+			}
+		}
+
+		info->emu = emu;
+		info->currentSong = 0;
+		info->lastTrack = track0;
+		return (jlong)info;
+	}
+	return 0;
+}
+
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1loadFile(JNIEnv *env, jobject obj, jstring fname)
+{
+	jboolean iscopy;
+	const char *s = env->GetStringUTFChars(fname, &iscopy);
+	Music_Emu *emu = NULL;
+	jlong rc = 0;
+	gme_err_t err = gme_open_file(s, &emu, 44100);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Loading from file '%s' => %s", s, err ? err : "OK");
+
+	if(!err) {
+		rc = setUp(emu);
+	}
+	env->ReleaseStringUTFChars(fname, s);
+
+	return rc;
+
+}
+
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, int size)
 {
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
 	Music_Emu *emu = NULL;
-
+	jlong rc = 0;
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "open %p %d", ptr, size);
 
@@ -52,64 +128,13 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1load(JNIEnv
 	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Done ERR '%s'", err);
 
 	if(!err) {
-		err = gme_start_track(emu, 0);
-
-		track_info_t track0, track1;
-		track0.song[0] = 0;
-		track1.song[0] = 0;
-		err = gme_track_info(emu, &track0, 0);
-
-		//info->gme_track_count();
-
-		__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "(RC %s) -> SONG '%s' GAME '%s' LEN '%d'", err, track0.song, track0.game, track0.length);
-
-		char *xptr = &track0.song[strlen(track0.song)-1];
-		while(xptr >= track0.song && *xptr == 0x20) {
-			*xptr = 0;
-			xptr--;
-		}
-
-		if(!err) {
-			GMEInfo *info = new GMEInfo();
-
-
-			if(!strlen(track0.song)) {
-				bool nameOk = false;
-				// If name is all upper case it is most likely a rom name
-				for(int i=0; i<strlen(track0.game); i++) {
-					char c = track0.game[i];
-					if(isalpha(c) && !isupper(c)) {
-						nameOk = true;
-					}
-				}
-				if(nameOk) {
-					strcpy(info->mainTitle, track0.game);
-				} else {
-					info->mainTitle[0] = 0;
-				}
-			} else {
-				strcpy(info->mainTitle, track0.song);
-				err = gme_track_info(emu, &track1, 1);
-
-				__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "'%s' vs '%s'", track0.song, track1.song);
-
-				if(!err && strcmp(track0.song, track1.song) != 0) {
-					// We have more than one subsong, and their names differ
-					strcpy(info->mainTitle, track0.game);
-				}
-			}
-
-			info->emu = emu;
-			info->currentSong = 0;
-			info->lastTrack = track0;
-			env->ReleaseByteArrayElements(bArray, ptr, 0);
-			return (jlong)info;
-		}
+		rc = setUp(emu);
 	}
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
-	return NULL;
+	return rc;
 }
+
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
 {

@@ -727,32 +727,28 @@ public class SongDatabase implements Runnable {
 								values.put("TITLE", fn.substring(0, end - 4));								
 							} else {
 								values.put("TYPE", TYPE_FILE);
-								try {
-									Log.v(TAG, String.format("Checking %s", f.getPath()));
-																		
-									InputStream is = new BufferedInputStream(new FileInputStream(f), 256);
-									FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), is);
-									is.close();
-									boolean ok = false;
-									if(info != null) {
-										values.put("TITLE", info.title);
-										values.put("COMPOSER", info.composer);
-										//values.put("COPYRIGHT", info.copyright);
-										values.put("DATE", info.date);
-										values.put("FORMAT", info.format);
-										//values.put("LENGTH", 0);
-										ok = true;				
-									}/* else {
-										if(checkModule(f, values)) {
-											ok = true;
-										}
-									} */
-									
-									if(!ok) {
-										values = null;
+								Log.v(TAG, String.format("Checking %s", f.getPath()));
+																	
+								//InputStream is = new BufferedInputStream(new FileInputStream(f), 256);
+								//FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), is);
+								//is.close();
+								FileIdentifier.MusicInfo info = FileIdentifier.identify(f);
+								boolean ok = false;
+								if(info != null) {
+									values.put("TITLE", info.title);
+									values.put("COMPOSER", info.composer);
+									//values.put("COPYRIGHT", info.copyright);
+									values.put("DATE", info.date);
+									values.put("FORMAT", info.format);
+									//values.put("LENGTH", 0);
+									ok = true;				
+								}/* else {
+									if(checkModule(f, values)) {
+										ok = true;
 									}
-								} catch (IOException e) {
-									e.printStackTrace();
+								} */
+								
+								if(!ok) {
 									values = null;
 								}
 							}
@@ -957,11 +953,11 @@ public class SongDatabase implements Runnable {
 		stopScanning = false;
 		scanning = true;
 
-		plugins = new DroidSoundPlugin[4];
+		plugins = new DroidSoundPlugin[3];
 		plugins[0] = new SidplayPlugin(context);
 		plugins[1] = new ModPlugin(context);
 		plugins[2] = new GMEPlugin(context);
-		plugins[3] = new TFMXPlugin(context);
+		//plugins[3] = new TFMXPlugin(context);
 		
 		FileIdentifier.setPlugins(plugins);
 

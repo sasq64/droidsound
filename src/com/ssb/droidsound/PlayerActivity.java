@@ -62,7 +62,7 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
 	private static final String TAG = "PlayerActivity";
 	
-	public static final String DROIDSOUND_VERSION = "beta 6";
+	public static final String DROIDSOUND_VERSION = "RC1";
 	public static final int VERSION = 16;
 	
 	private static class Config {
@@ -911,14 +911,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private void moveFileHere(File f) {
 		
 
-		File t = new File(modsDir, f.getName());
+		File t;// = new File(modsDir, f.getName());
 
-		String n = t.getName();
+		String n = f.getName();
+		
+		n = n.replace('_', ' ');
+		
 		int ext = n.indexOf('.');
-		if(ext > 2) {
-			if(Character.isDigit(n.charAt(ext-1)) && n.charAt(ext-2) == '-') {
-				t = new File(modsDir, n.substring(0,ext-2) + n.substring(ext));
-			}
+		if(ext > 2 && Character.isDigit(n.charAt(ext-1)) && n.charAt(ext-2) == '-') {
+			t = new File(modsDir, n.substring(0,ext-2) + n.substring(ext));
+		} else {
+			t = new File(modsDir, n);
 		}
 		
 		Log.v(TAG, "MOVE FILE " + f.getPath() + " TO " + t.getPath());
@@ -1362,7 +1365,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				public void onClick(DialogInterface dialog, int which) {
 					String s = input.getText().toString();
 					File file = new File(currentPath, s + ".plist");
-					if(!file.exists()) {
+					if(!file.exists() && !file.getName().equals("Favorites.plist")) {
 						songDatabase.createPlaylist(file);
 						songDatabase.setActivePlaylist(file);
 						playListView.rescan();
@@ -1613,6 +1616,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			
 		case R.id.del_plist:
 			operationFile = file;
+			if(operationFile.getName().equals("Favorites.plist")) {
+				break;
+			}
 			runConfirmable(R.string.do_del_plist, new Runnable() {					
 				@Override
 				public void run() {

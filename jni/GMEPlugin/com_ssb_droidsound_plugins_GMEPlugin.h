@@ -7,6 +7,26 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_TITLE
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_TITLE 0L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_AUTHOR
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_AUTHOR 1L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_LENGTH
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_LENGTH 2L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_TYPE
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_TYPE 3L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_COPYRIGHT
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_COPYRIGHT 4L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_GAME
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_GAME 5L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_SUBTUNES
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_SUBTUNES 6L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_STARTTUNE
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_STARTTUNE 7L
+#undef com_ssb_droidsound_plugins_GMEPlugin_INFO_SUBTUNE_TITLE
+#define com_ssb_droidsound_plugins_GMEPlugin_INFO_SUBTUNE_TITLE 8L
+#undef com_ssb_droidsound_plugins_GMEPlugin_SIZEOF_INFO
+#define com_ssb_droidsound_plugins_GMEPlugin_SIZEOF_INFO 9L
 /*
  * Class:     com_ssb_droidsound_plugins_GMEPlugin
  * Method:    N_canHandle
@@ -22,6 +42,14 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1canHandl
  */
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1load
   (JNIEnv *, jobject, jbyteArray, jint);
+
+/*
+ * Class:     com_ssb_droidsound_plugins_GMEPlugin
+ * Method:    N_loadFile
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1loadFile
+  (JNIEnv *, jobject, jstring);
 
 /*
  * Class:     com_ssb_droidsound_plugins_GMEPlugin

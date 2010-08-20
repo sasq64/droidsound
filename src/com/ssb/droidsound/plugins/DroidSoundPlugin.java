@@ -35,20 +35,37 @@ public abstract class DroidSoundPlugin {
 	}
 	
 	public Object load(InputStream is, int size) throws IOException {
-		byte [] songBuffer = new byte [size];
-		is.read(songBuffer);
-		return load(songBuffer, songBuffer.length);
+		Object rc = null;
+		try {
+			byte [] songBuffer = new byte [size];
+			is.read(songBuffer);
+			rc = load(songBuffer, songBuffer.length);
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}
+		return rc;
 	}
 	
 	public Object loadInfo(InputStream is, int size) throws IOException {
-		byte [] songBuffer = new byte [size];
-		is.read(songBuffer);
-		return loadInfo(songBuffer, songBuffer.length);
+		Object rc = null;
+		try {
+			byte [] songBuffer = new byte [size];
+			is.read(songBuffer);
+			rc = loadInfo(songBuffer, songBuffer.length);
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}
+		return rc;
 	}
 	
 	public Object load(File file) throws IOException {		
 		int l = (int)file.length();
-		byte [] songBuffer = new byte [l];
+		byte [] songBuffer = null;
+		try {
+			songBuffer = new byte [l];
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}		
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
 		return load(songBuffer, songBuffer.length);
@@ -56,7 +73,12 @@ public abstract class DroidSoundPlugin {
 
 	public Object loadInfo(File file) throws IOException {
 		int l = (int)file.length();
-		byte [] songBuffer = new byte [l];
+		byte [] songBuffer = null;
+		try {
+			songBuffer = new byte [l];
+		} catch (OutOfMemoryError e) {
+			e.printStackTrace();
+		}
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
 		return loadInfo(songBuffer, songBuffer.length);

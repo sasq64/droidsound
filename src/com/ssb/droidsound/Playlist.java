@@ -198,15 +198,8 @@ public class Playlist {
 	
 	
 	private String fileToLine(SongFile songFile) {
-		InputStream is;
-		FileIdentifier.MusicInfo minfo = null;
-		try {
-			is = new FileInputStream(songFile.getFile());
-			minfo = FileIdentifier.identify(songFile.getName(), is);
-			is.close();
-		} catch (FileNotFoundException e1) {
-		} catch (IOException e) {
-		}
+
+		FileIdentifier.MusicInfo minfo = FileIdentifier.identify(songFile.getFile());
 		
 		String s = songFile.getPath();
 		if(minfo != null) {
