@@ -25,8 +25,8 @@ public class CSDBParser implements SongDatabase.DataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
 
 	public static final String DUMP_NAME = "CSDBDUMP";
-	
-	private  String hvsc = null;
+
+	private static String hvsc = null;
 	
 	//static Map<String, Integer> events = new HashMap<String, Integer>();
 	HashMap<Integer, String> groups = null;
@@ -98,7 +98,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 					if(scanCallback != null) {
 						scanCallback.notifyScan(null, total * 100 / fileSize);
 					}
-					db.yieldIfContendedSafely();
+					// db.yieldIfContendedSafely();
 				}
 
 				if(line.equals("[Releases]")) {
@@ -532,6 +532,11 @@ public class CSDBParser implements SongDatabase.DataSource {
 			db.execSQL("CREATE INDEX IF NOT EXISTS evtindex ON EVENTS (NAME) ;");
 			break;
 		}		
+	}
+
+
+	public static void init() {
+		hvsc = null;
 	}
 
 

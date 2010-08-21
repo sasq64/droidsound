@@ -44,8 +44,10 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1canHandl
 struct GMEInfo {
 	 Music_Emu *emu;
 	 int currentSong;
+	 int trackCount;
 	 track_info_t lastTrack;
 	 char mainTitle[256];
+	 bool started;
 };
 
 //static Music_Emu *emu = NULL;
@@ -54,16 +56,19 @@ struct GMEInfo {
 
 jlong setUp(Music_Emu *emu)
 {
-	gme_err_t err = gme_start_track(emu, 0);
+	gme_err_t err;
 
 	track_info_t track0, track1;
 	track0.song[0] = 0;
 	track1.song[0] = 0;
 	err = gme_track_info(emu, &track0, 0);
 
+	int track_count = gme_track_count(emu);
+
+
 	//info->gme_track_count();
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "(RC %s) -> SONG '%s' GAME '%s' LEN '%d'", err, track0.song, track0.game, track0.length);
+	__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "(RC %s) -> SONG '%s' GAME '%s' LEN '%d' COUNT '%d'", err, track0.song, track0.game, track0.length, track_count);
 
 	char *xptr = &track0.song[strlen(track0.song)-1];
 	while(xptr >= track0.song && *xptr == 0x20) {
@@ -91,19 +96,24 @@ jlong setUp(Music_Emu *emu)
 			}
 		} else {
 			strcpy(info->mainTitle, track0.song);
-			err = gme_track_info(emu, &track1, 1);
 
-			__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "'%s' vs '%s'", track0.song, track1.song);
+			if(track_count > 1) {
+				err = gme_track_info(emu, &track1, 1);
 
-			if(!err && strcmp(track0.song, track1.song) != 0) {
-				// We have more than one subsong, and their names differ
-				strcpy(info->mainTitle, track0.game);
+				__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "'%s' vs '%s'", track0.song, track1.song);
+
+				if(!err && strcmp(track0.song, track1.song) != 0) {
+					// We have more than one subsong, and their names differ
+					strcpy(info->mainTitle, track0.game);
+				}
 			}
 		}
 
+		info->started = false;
 		info->emu = emu;
 		info->currentSong = 0;
 		info->lastTrack = track0;
+		info->trackCount = track_count;
 		return (jlong)info;
 	}
 	return 0;
@@ -162,6 +172,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1setTune(
 {
 	GMEInfo *info = (GMEInfo*)song;
 	gme_err_t err = gme_start_track(info->emu, tune);
+	info->started = true;
 
 	track_info_t track;
 	err = gme_track_info(info->emu, &track, tune);
@@ -177,6 +188,11 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1setTune(
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray bArray, int size)
 {
 	GMEInfo *info = (GMEInfo*)song;
+
+	if(!info->started) {
+		gme_err_t err = gme_start_track(info->emu, 0);
+		info->started = true;
+	}
 
 	if(gme_track_ended(info->emu)) {
 		return 0;
@@ -231,7 +247,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getIntInfo(J
 	case INFO_LENGTH:
 		return info->lastTrack.length;
 	case INFO_SUBTUNES:
-		return info->lastTrack.track_count;
+		return info->trackCount;
 	case INFO_STARTTUNE:
 		return 0;
 	}

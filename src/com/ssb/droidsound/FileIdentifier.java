@@ -1,5 +1,6 @@
 package com.ssb.droidsound;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -201,6 +202,7 @@ public class FileIdentifier {
 	}
 
 	public static MusicInfo identify(String name, InputStream is) {
+		
 		return identify(name, is, null);
 	}
 
@@ -216,7 +218,11 @@ public class FileIdentifier {
 		//Log.v(TAG, String.format("hash %s %d", extensions.toString(), extensions.size()));
 		Integer i = extensions.get(ext);
 		if(i == null) {
-			
+
+			if(is != null && !is.markSupported()) {
+				is = new BufferedInputStream(is);
+			}
+
 			
 			List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 			for(int j = 0; j < plugins.length; j++) {

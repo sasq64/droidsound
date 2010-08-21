@@ -578,7 +578,7 @@ public class PlayerService extends Service {
 				                	break;
 				                default:
 				                case KeyEvent.KEYCODE_HEADSETHOOK:
-									if(t > 3000) {
+									if(t > 2000) {
 										if(textToSpeech == null) {
 											speakTitle();
 											//saySomething = "Speech on.";

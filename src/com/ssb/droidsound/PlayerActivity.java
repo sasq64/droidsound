@@ -62,7 +62,7 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
 	private static final String TAG = "PlayerActivity";
 	
-	//public static final String DROIDSOUND_VERSION = "RC1";
+	public static final String DROIDSOUND_VERSION = "1.0";
 	public static final int VERSION = 16;
 	
 	private static class Config {
@@ -702,6 +702,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			shuffleSongs = lastConfig.shuffleSongs;
 	 		flipTo(lastConfig.flipper, false);
 		} else {
+			CSDBParser.init();
 			songDatabase.setActivePlaylist(mf);
 		}
  		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
