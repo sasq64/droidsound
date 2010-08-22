@@ -1,0 +1,66 @@
+
+CC = gcc
+CFLAGS = -Wall -O2 -I../../include -I../common    -g
+CLIBS =  
+MODULES = uade123.o strlrep.o unixatomic.o uadeipc.o amifilemagic.o \
+	chrarray.o playlist.o eagleplayer.o unixwalkdir.o effects.o \
+	playloop.o audio.o terminal.o uadecontrol.o uadeconf.o md5.o \
+	unixipc.o
+
+uade123:	$(MODULES)
+	$(CC) $(CFLAGS) -o $@ $(MODULES) $(CLIBS)
+
+clean:	
+	rm -f uade123 *.o
+
+
+amifilemagic.o:	../common/amifilemagic.c ../common/amifilemagic.h
+	$(CC) $(CFLAGS) -c $<
+
+audio.o:	audio.c audio.h
+	$(CC) $(CFLAGS) -c $<
+
+chrarray.o:	chrarray.c chrarray.h
+	$(CC) $(CFLAGS) -c $<
+
+eagleplayer.o:	../common/eagleplayer.c ../common/eagleplayer.h ../common/md5.h
+	$(CC) $(CFLAGS) -c $<
+
+effects.o:	../common/effects.c ../common/effects.h
+	$(CC) $(CFLAGS) -c $<
+
+md5.o:	../common/md5.c ../common/md5.h
+	$(CC) $(CFLAGS) -c $<
+
+playlist.o:	playlist.c playlist.h uade123.h ../../include/uadeconfig.h
+	$(CC) $(CFLAGS) -c $<
+
+playloop.o:	playloop.c playloop.h uade123.h ../common/uadecontrol.h ../common/uadeconf.h ../../include/uadeipc.h
+	$(CC) $(CFLAGS) -c $<
+
+strlrep.o:	../../strlrep.c ../../include/strlrep.h
+	$(CC) $(CFLAGS) -c $<
+
+terminal.o:	terminal.c terminal.h
+	$(CC) $(CFLAGS) -c $<
+
+uade123.o:	uade123.c uade123.h ../../include/uadeipc.h ../../include/uadeconfig.h ../../include/amigafilter.h ../common/eagleplayer.h ../common/amifilemagic.h ../common/uadecontrol.h ../common/uadeconf.h
+	$(CC) $(CFLAGS) -c $<
+
+uadeconf.o:	../common/uadeconf.c ../common/uadeconf.h
+	$(CC) $(CFLAGS) -c $<
+
+uadecontrol.o:	../common/uadecontrol.c ../common/uadecontrol.h ../../include/uadeipc.h
+	$(CC) $(CFLAGS) -c $<
+
+uadeipc.o:	../../uadeipc.c ../../include/uadeipc.h
+	$(CC) $(CFLAGS) -c $<
+
+unixatomic.o:	../../unixatomic.c ../../include/unixatomic.h
+	$(CC) $(CFLAGS) -c $<
+
+unixipc.o:	../../unixipc.c ../../include/ipcsupport.h
+	$(CC) $(CFLAGS) -c $<
+
+unixwalkdir.o:	../common/unixwalkdir.c ../common/unixwalkdir.h
+	$(CC) $(CFLAGS) -c $<
