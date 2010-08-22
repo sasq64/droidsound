@@ -28,13 +28,14 @@
             android:title="Database"
             android:summary="Database options"
             >
-        <!--   ListPreference
+        <ListPreference
                 android:key="indexing"
                 android:title="Indexing"
+                android:summary="Database index level. Don't change unless you know you need to"
                 android:defaultValue="Basic"
                 android:entries="@array/indexing_opts"
                 android:entryValues="@array/indexing_opts"
-		/> -->
+		/>
 		<Preference android:key="rescan_pref"
 		android:title="Rescan database"
 		android:summary="Scan sdcard for changes and update database."

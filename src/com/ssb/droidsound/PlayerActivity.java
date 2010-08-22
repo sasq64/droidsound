@@ -299,10 +299,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	 		}
 	 		searchCursor = new SearchCursor(songDatabase.search(query, currentPath.getPath()));
 	 		searchQuery = query;
-	 		searchListView.setCursor(searchCursor, null);
-	 		currentPlaylistView = searchListView;
 	 		searchDirDepth = 0;
-	 		flipTo(SEARCH_VIEW);
+	 		if(searchCursor != null) {
+	 			searchListView.setCursor(searchCursor, null);
+	 			currentPlaylistView = searchListView;	 			
+	 			flipTo(SEARCH_VIEW);
+	 		}
 		}
 	}
 	
@@ -937,6 +939,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		
 		Log.v(TAG, "MOVE FILE " + f.getPath() + " TO " + t.getPath());
+		
+		if(t.exists()) {
+			showDialog(R.string.zip_import_replace);
+			moveFileHere = null;
+			return;
+		}
 
 		if(f.renameTo(t)) {
 			Log.v(TAG, "Successful");
@@ -1046,6 +1054,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		player.setOption(PlayerService.OPTION_SPEECH, prefs.getBoolean("speech", false) ? "on" : "off");
 		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
+		
+		String s = prefs.getString("indexing", "Basic");
+		int imode = SongDatabase.INDEX_BASIC;
+		if(s.equals("Full")) {
+			imode = SongDatabase.INDEX_FULL;
+		} else if(s.equals("None")) {
+			imode = SongDatabase.INDEX_NONE;
+		}
+		
+		songDatabase.setIndexMode(imode);
+		
 		FileIdentifier.setIndexUnknown(prefs.getBoolean("extensions", false));
 	}
 	
@@ -1209,8 +1228,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i=0; i<songDetails.length; i+=2) {
-					Log.v(TAG, songDetails[i]);
-					Log.v(TAG, songDetails[i+1]);
+					// Log.v(TAG, songDetails[i]);
+					// Log.v(TAG, songDetails[i+1]);
 					sb.append("<font color='yellow'><b>").append(songDetails[i]).append("</font></b><br/>");
 					if(songDetails[i].equals("Instruments")) {
 						//sb.append(songDetails[i+1].replace("\n", "<br/><font color='white'>"));

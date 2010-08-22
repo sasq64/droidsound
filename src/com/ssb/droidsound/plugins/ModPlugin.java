@@ -63,7 +63,7 @@ public class ModPlugin extends DroidSoundPlugin {
 			String d [] = s[k].split("\\s+");
 			
 			for(int i=0; i<d.length; i++) {
-				Log.v(TAG, d[i]);
+				//Log.v(TAG, d[i]);
 				String x = "";
 				if(d[i].equals("/")) {
 					//Log.v(TAG, "/BY/");
@@ -267,7 +267,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		
 		String instruments = N_getStringInfo((Long)song, 100);
 		String fmt = getStringInfo(song, INFO_TYPE);
-		Log.v(TAG, "INSTRUMENTS: " + instruments);
+		//Log.v(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo((Long)song, 101);
 
 		String[] info;

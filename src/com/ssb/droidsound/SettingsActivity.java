@@ -15,6 +15,9 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.FileObserver;
@@ -139,7 +142,7 @@ public class SettingsActivity extends PreferenceActivity {
 		pref = findPreference("about_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
-			public boolean onPreferenceClick(Preference preference) {
+			public boolean onPreferenceClick(Preference preference) {				
 				showDialog(R.string.about_droidsound);
 				return true;
 			}
@@ -267,6 +270,24 @@ public class SettingsActivity extends PreferenceActivity {
 						songDatabase.scan(true, modsDir);
 						finish();
 					}
+				}
+			});
+			break;
+		case R.string.about_droidsound:
+			String fullName = "<ERROR>";
+			try {
+				PackageInfo pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+				
+				String appName = getString(pinfo.applicationInfo.labelRes);
+				fullName = String.format("%s %s (vc%d)\n%s", appName, pinfo.versionName, pinfo.versionCode, getString(R.string.about_droidsound)); 					
+			} catch (NameNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			builder.setMessage(fullName);
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					dialog.cancel();
 				}
 			});
 			break;

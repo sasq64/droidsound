@@ -104,6 +104,8 @@ public class SongDatabase implements Runnable {
 	private volatile boolean scanning;
 
 	private volatile boolean isReady;
+
+	private int indexMode = -1;
 	
 	public static final int TYPE_ARCHIVE = 0x100;
 	public static final int TYPE_DIR = 0x200;
@@ -116,11 +118,13 @@ public class SongDatabase implements Runnable {
 	protected static final int MSG_RESTORE = 2;
 	protected static final int MSG_DOWNLOAD = 3;
 	protected static final int MSG_CANCEL_DL = 4;
+	protected static final int MSG_INDEXMODE = 5;
 	
 	public static final int INDEX_NONE = 0;
 	public static final int INDEX_BASIC = 1;
 	public static final int INDEX_FULL = 2;
 
+	
 
 	
 	public SongDatabase(Context ctx) {		
@@ -276,7 +280,7 @@ public class SongDatabase implements Runnable {
 		mHandler = new Handler() {
 			@Override
 	        public void handleMessage(Message msg) {
-	        	Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
+	        	Log.v(TAG, String.format("Got msg %d with arg %d", msg.what, msg.arg1));
 	            switch (msg.what) {
 	            case MSG_SCAN:
 	            	if(msg.arg1 == 2) {
@@ -285,6 +289,9 @@ public class SongDatabase implements Runnable {
 	            	} else {
 	            		doScan((String)msg.obj, msg.arg1 != 0);
 	            	}
+	            	break;
+	            case MSG_INDEXMODE:
+	            	createIndex(msg.arg1);
 	            	break;
 	          /*  case MSG_DOWNLOAD:
 	            	doDownload();
@@ -394,9 +401,9 @@ public class SongDatabase implements Runnable {
 					"FORMAT" + " TEXT" + ");");
 					// "LENGTH" + " INTEGER" + 
 
-			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
-	
-			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (TITLE) ;");
+			//db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
+			//db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
+			//db.execSQL("CREATE INDEX IF NOT EXISTS composerindex ON FILES (TITLE) ;");
 			
 			db.execSQL("CREATE TABLE IF NOT EXISTS " + "VARIABLES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"VAR" + " TEXT," +
@@ -408,37 +415,53 @@ public class SongDatabase implements Runnable {
 	}
 	
 	private void createIndex(int mode) {
-
-		SQLiteDatabase db = getWritableDatabase();
 		
-		if(scanCallback != null) {
-			scanCallback.notifyScan("Updating indexes", 0);
-		}
-		
-		switch(mode) {
-		case INDEX_NONE:
-			db.execSQL("DROP INDEX IF EXISTS fileindex ;");		
-			db.execSQL("DROP INDEX IF EXISTS titleindex ;");
-			db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
-			break;
-		case INDEX_BASIC:
-			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
-			db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
-			db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
-			break;
-		case INDEX_FULL:
-			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
-			db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
-			db.execSQL("CREATE INDEX IF NOT EXISTS filenameindex ON FILES (FILENAME) ;");
-			break;
-		}
-		
-		for(Entry<String, DataSource> ds : dbsources.entrySet()) {			
-			ds.getValue().createIndex(mode, db);			
-		}
-		
-		if(scanCallback != null) {
-			scanCallback.notifyScan(null, -1);
+		if(mode != indexMode) {
+			
+			scanning = true;
+	
+			SQLiteDatabase db = getWritableDatabase();
+			
+			if(scanCallback != null) {
+				scanCallback.notifyScan("Updating indexes", 0);
+			}
+			
+			Log.v(TAG, "Updating indexes to mode " + mode);
+			
+			switch(mode) {
+			case INDEX_NONE:
+				db.execSQL("DROP INDEX IF EXISTS fileindex ;");		
+				db.execSQL("DROP INDEX IF EXISTS titleindex ;");
+				db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
+				db.execSQL("DROP INDEX IF EXISTS composerindex ;");
+				break;
+			case INDEX_BASIC:
+				db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
+				db.execSQL("DROP INDEX IF EXISTS titleindex ;");
+				db.execSQL("DROP INDEX IF EXISTS composerindex ;");
+				db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
+				break;
+			case INDEX_FULL:
+				db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
+				db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
+				db.execSQL("CREATE INDEX IF NOT EXISTS composerindex ON FILES (COMPOSER) ;");;
+				db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
+				break;
+			}
+			
+			for(Entry<String, DataSource> ds : dbsources.entrySet()) {			
+				ds.getValue().createIndex(mode, db);			
+			}
+			
+			if(scanCallback != null) {
+				scanCallback.notifyScan(null, -1);
+			}
+			
+			db.close();
+			
+			scanning = false;
+			
+			indexMode = mode; 
 		}
 	}
 	
@@ -924,6 +947,19 @@ public class SongDatabase implements Runnable {
 		Message msg = mHandler.obtainMessage(MSG_SCAN, 2, 0, mdir);
 		mHandler.sendMessage(msg);
 	}
+	
+	public void setIndexMode(int mode) {
+		
+		 Log.v(TAG, "INDEX MODE " + mode);
+		
+		if(indexMode != mode) {
+			Message msg = mHandler.obtainMessage(MSG_INDEXMODE, mode, 0);
+			mHandler.sendMessage(msg);
+		}
+		
+	}
+
+	
 /*
 	public void download(String url) {
 
@@ -1098,11 +1134,33 @@ public class SongDatabase implements Runnable {
 				}
 			}
 		}
-
-		String q = "%" + query + "%" ;
+		Cursor c = null;
 		
-		Cursor c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE", "DATE" }, "TITLE LIKE ?", new String[] { q }, null, null, "TITLE", "500");
-		Log.v(TAG, String.format("Got %d hits", c.getCount()));
+		String [] columns = new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE", "DATE" };
+		if(query.charAt(0) == '.') {
+			char x = query.toUpperCase().charAt(1);
+			String q = "%" + query.substring(2).trim() + "%" ;			
+			switch(x) {
+			case 'C':
+				c = rdb.query("FILES", columns, "COMPOSER LIKE ?", new String[] { q }, null, null, "TITLE", "500");
+				break;
+			case 'T':
+				c = rdb.query("FILES", columns, "TITLE LIKE ?", new String[] { q }, null, null, "TITLE", "500");
+				break;
+			case 'Q':
+				c = rdb.query("FILES", columns, query.substring(2).trim(), null, null, null, "TITLE", "500");
+				break;
+			default:
+				break;
+			}
+		}
+		else {
+			String q = "%" + query + "%" ;		
+			c = rdb.query("FILES", columns, "TITLE LIKE ? OR COMPOSER LIKE ?", new String[] { q, q }, null, null, "TITLE", "500");
+		}
+		if(c != null) {
+			Log.v(TAG, String.format("Got %d hits", c.getCount()));
+		}
 		return c;
 	}
 	

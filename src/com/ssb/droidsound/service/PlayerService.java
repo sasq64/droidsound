@@ -388,7 +388,10 @@ public class PlayerService extends Service {
     	} */
     }
 
-    boolean playNextSong() {    	
+    boolean playNextSong() {
+    	if(playQueue == null) {
+    		return false;
+    	}
     	String song = playQueue.next();
     	/*
     	int sc = song.indexOf(';');
@@ -417,7 +420,10 @@ public class PlayerService extends Service {
 		return false;
     }
 
-    boolean playPrevSong() {    	
+    boolean playPrevSong() {
+    	if(playQueue == null) {
+    		return false;
+    	}
     	String song = playQueue.prev();    	
 		if(song != null) {    			
        		song = playQueue.currentWithStartSong();
@@ -761,6 +767,10 @@ public class PlayerService extends Service {
 		@Override
 		public boolean setSubSong(int song) throws RemoteException {
 
+	    	if(playQueue == null) {
+	    		return false;
+	    	}
+			
 			// TODO : Check if next song is the same file and the same sub song
 			boolean ok = false;
 			Log.v(TAG, "Current song is " + currentSongInfo.fileName);

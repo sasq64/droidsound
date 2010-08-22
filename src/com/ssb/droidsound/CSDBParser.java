@@ -515,6 +515,9 @@ public class CSDBParser implements SongDatabase.DataSource {
 
 	@Override
 	public void createIndex(int mode, SQLiteDatabase db) {
+		
+		// TODO: Check that tables exist (csdb was imported)
+		/*
 		switch(mode) {
 		case SongDatabase.INDEX_NONE:
 			db.execSQL("DROP INDEX IF EXISTS relindex ;");		
@@ -531,7 +534,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 			db.execSQL("CREATE INDEX IF NOT EXISTS grpindex ON GROUPS (NAME) ;");
 			db.execSQL("CREATE INDEX IF NOT EXISTS evtindex ON EVENTS (NAME) ;");
 			break;
-		}		
+		} */
 	}
 
 
