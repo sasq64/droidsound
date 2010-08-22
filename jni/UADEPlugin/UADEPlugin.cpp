@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+
+#include <pthread.h>
 
 #include <android/log.h>
 #include "com_ssb_droidsound_plugins_UADEPlugin.h"
@@ -148,6 +150,9 @@ static int run_client(short *soundptr)
 		case UADE_REPLY_DATA:
 			sm = (uint16_t *)um->data;
 
+			if(!soundptr)
+				return -1;
+
 			if(subsong_end)
 			{
 				playbytes = tailbytes; /* Determined by UADE_REPLY_SONG_END */
@@ -259,14 +264,51 @@ void *init()
 	uade_set_peer(&uadeipc, 1, "client", "server");
 }
 
+struct Player
+{
+};
+
+extern "C" {
+
+void client_sleep()
+{
+	//pthread_yield();
+	usleep(10000);
+}
 
 
+int get_write_mutex(void **m)
+{
+	if(!*m) {
+		pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+		memset(mutex, 0, sizeof(pthread_mutex_t));
+		*m = (void*)mutex;
+	}
+	return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
+}
 
+int release_write_mutex(void **m)
+{
+	return (pthread_mutex_unlock((pthread_mutex_t*)*m) == 0);
+}
 
+int get_read_mutex(void **m)
+{
+	if(!*m) {
+		pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+		//*mutex = PTHREAD_MUTEX_INITIALIZER;
+		memset(mutex, 0, sizeof(pthread_mutex_t));
+		*m = (void*)mutex;
+	}
+	return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
+}
 
+int release_read_mutex(void **m)
+{
+	return (pthread_mutex_unlock((pthread_mutex_t*)*m) == 0);
+}
 
-
-
+}
 
 static jstring NewString(JNIEnv *env, const char *str)
 {
@@ -281,29 +323,77 @@ static jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
+static pthread_t thread = 0;
+
+
+static void *threadProc(void *arg) {
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Starting thread");
+	uade_init();
+	uade_go();
+	return NULL;
+}
+
+void initTread() {
+
+	if(thread == 0) {
+	    pthread_create(&thread, NULL, threadProc, NULL);
+	}
+}
+
+
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
 {
 	return true;
 }
 
-
-struct Player
-{
-};
-
-
-
-
-JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(JNIEnv *env, jobject obj, jstring fname)
 {
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "in load()");
 
-	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
+	jboolean iscopy;
+	const char *filename = env->GetStringUTFChars(fname, &iscopy);
 
 
-	env->ReleaseByteArrayElements(bArray, ptr, 0);
+	struct eagleplayer *player = get_player(filename);
+
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING %s\n", player->playername);
+	char tmp[128];
+	sprintf(tmp, "players/%s", player->playername);
+
+	int rc;
+
+	strcpy(current_format, "");
+
+	if(strcmp("custom", player->playername) == 0)
+	{
+		rc = uade_song_initialization("score" ,filename, "", &uadeipc);
+		strcpy(current_format, "Amiga Custom");
+
+	}
+	else
+		rc = uade_song_initialization("score" ,tmp, filename, &uadeipc);
+
+	uade_song_end_trigger = 0;
+
+	if(rc)
+		return rc;
+
+
+	uade_config_set_defaults(&uadeconf);
+
+	uadeconf.filter_type = 0;
+
+    uade_send_filter_command(uadeconf.filter_type, uadeconf.led_state, uadeconf.led_forced, &uadeipc);
+    uade_send_interpolation_command(uadeconf.interpolator, &uadeipc);
+
+
+	run_client(NULL);
+
+
+	env->ReleaseStringUTFChars(fname, filename);
 	return 0;
 }
 
@@ -321,6 +411,8 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 	jshort *ptr = env->GetShortArrayElements(sArray, NULL);
 	int orgsize = size;
 	jshort *orgptr = ptr;
+
+	run_client(ptr);
 
     env->ReleaseShortArrayElements(sArray, ptr, 0);
 	return orgsize;

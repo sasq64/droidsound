@@ -1,9 +1,13 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.File;
+import java.io.IOException;
+
 import android.content.Context;
 
 public class UADEPlugin extends DroidSoundPlugin {
 
+	private Thread thread;
 	public UADEPlugin(Context ctx) {
 		super(ctx);
 	}
@@ -33,10 +37,28 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
+	public Object load(File file) throws IOException {
+		
+		if(thread == null) {
+			thread = new Thread(new Runnable() {			
+				@Override
+				public void run() {
+					N_runThread();
+				}
+			});
+			thread.start();
+		}
+		
+		return null;
+	}
+
+	@Override
 	public void unload(Object song) {
 		// TODO Auto-generated method stub
 
 	}
+	
+	native public void N_runThread();
 	
 	native public boolean N_canHandle(String name);
 	native public long N_load(byte [] module, int size);

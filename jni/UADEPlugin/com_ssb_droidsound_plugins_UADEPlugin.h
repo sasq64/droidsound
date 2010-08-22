@@ -27,6 +27,11 @@ extern "C" {
 #define com_ssb_droidsound_plugins_UADEPlugin_INFO_SUBTUNE_TITLE 8L
 #undef com_ssb_droidsound_plugins_UADEPlugin_SIZEOF_INFO
 #define com_ssb_droidsound_plugins_UADEPlugin_SIZEOF_INFO 9L
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1runThread
+  (JNIEnv *, jobject);
+
+
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin
  * Method:    N_canHandle

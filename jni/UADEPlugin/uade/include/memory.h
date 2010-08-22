@@ -15,9 +15,6 @@
 #define SAVE_MEMORY_BANKS
 #endif
 
-uae_u32 dummy12 = 8;
-uaecptr kalle19 = 3;
-
 typedef uae_u32 (*mem_get_func)(uaecptr) REGPARAM;
 typedef void (*mem_put_func)(uaecptr, uae_u32) REGPARAM;
 typedef uae_u8 *(*xlate_func)(uaecptr) REGPARAM;
