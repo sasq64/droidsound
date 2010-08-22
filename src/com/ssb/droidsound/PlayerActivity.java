@@ -886,15 +886,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 				
-				//favSelection = -1;
-				operationFile = new File(songName);
-				operationTune = subTune;
-				operationTitle = null;
-				operationTuneCount = subTuneCount;
-				if(songTitle != null && subtuneTitle != null) {
-					operationTitle = songTitle + " - " + subtuneTitle;
+				if(songName != null) {
+					operationFile = new File(songName);
+					operationTune = subTune;
+					operationTitle = null;
+					operationTuneCount = subTuneCount;
+					if(songTitle != null && subtuneTitle != null) {
+						operationTitle = songTitle + " - " + subtuneTitle;
+					}
+					showDialog(R.string.add_to_plist);
 				}
-				showDialog(R.string.add_to_plist);
 			}
 		});
 		
@@ -939,11 +940,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		if(f.renameTo(t)) {
 			Log.v(TAG, "Successful");
-			songDatabase.scan(false, modsDir.getPath());
+			if(songDatabase != null) {
+				songDatabase.scan(false, modsDir.getPath());
+			}
 		} else
 		if(copyFile(f, t)) {
 			Log.v(TAG, "COPY Successful");
-			songDatabase.scan(false, modsDir.getPath());
+			if(songDatabase != null) {
+				songDatabase.scan(false, modsDir.getPath());
+			}
 		} else {
 			showDialog(R.string.zip_import_failed);
 		}
