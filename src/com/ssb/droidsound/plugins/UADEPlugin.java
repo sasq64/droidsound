@@ -24,7 +24,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	private boolean inited;
 	
-	static String [] ex = { "FC", "MDAT", "" };   
+	static String [] ex = { "FC", "MDAT", "ML", "CUST", "MC", "DW", "MA" };   
 
 	public UADEPlugin(Context ctx) {
 		super(ctx);
@@ -44,24 +44,29 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public int getIntInfo(Object song, int what) {
-		// TODO Auto-generated method stub
-		return 0;
+		if(song instanceof String) {
+			return -1;
+		}
+		return N_getIntInfo((Long)song, what);
 	}
 
 	@Override
 	public int getSoundData(Object song, short [] dest, int size) {
-		Log.v(TAG, "getSoundData()");
+		//Log.v(TAG, "getSoundData()");
 		return N_getSoundData((Long)song, dest, size);
 	}	
 
 	@Override
 	public String getStringInfo(Object song, int what) {
-		// TODO Auto-generated method stub
-		return null;
+		if(song instanceof String) {
+			return "";
+		}
+		return N_getStringInfo((Long)song, what);
 	}
 
 	@Override
 	public Object load(byte[] module, int size) {
+		
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -72,7 +77,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 		Context context = getContext();
 		
 		File filesDir = context.getFilesDir();
-		File eagleDir = new File(filesDir, "eagleplayers");
+		File eagleDir = new File(filesDir, "players");
 		
 		boolean extract = true;
 		
@@ -153,15 +158,34 @@ public class UADEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public Object loadInfo(File file) throws IOException {
-		return load(file);
+		return file.getName();
+		//return load(file);
 	}
 	
 	
 
 	@Override
 	public void unload(Object song) {
-		// TODO Auto-generated method stub
-
+		if(song instanceof String) {
+			return;
+		}
+		N_unload((Long)song);
+	}
+	
+	@Override
+	public boolean setTune(Object song, int tune) {
+		if(song instanceof String) {
+			return false;
+		}
+		return N_setTune((Long)song, tune);
+	}
+	
+	@Override
+	public boolean seekTo(Object song, int msec) {
+		if(song instanceof String) {
+			return false;
+		}
+		return N_seekTo((Long)song, msec);
 	}
 	
 	native public void N_init(String baseDir);

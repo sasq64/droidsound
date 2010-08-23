@@ -94,6 +94,8 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 	DIR *dir;
 	FILE *file;
 
+	*real = 0;
+
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Looking for %s (%s)\n", aname, playerdir);
 
 	if (strlcpy(copy, aname, sizeof(copy)) >= sizeof(copy)) {

@@ -29,7 +29,6 @@ import com.ssb.droidsound.plugins.TFMXPlugin;
 import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
-
 /*
  * The Player thread 
  */
@@ -332,7 +331,10 @@ public class Player implements Runnable {
 						currentSong.details[info.length+1] = String.format("%dMB", fileSize/(1024*1024));
 					}
 					info = null;
+				} else {
+					currentSong.details = new String [0];
 				}
+						
 				
 				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 				
@@ -481,7 +483,6 @@ public class Player implements Runnable {
 				}
 				
 				if(currentState == State.PLAYING) {
-					
 					int len = currentPlugin.getSoundData(songRef, samples, bufSize/4);
 					currentPosition += ((len * 1000) / (FREQ*2));						
 					if(currentPosition >= lastPos + 1000) {

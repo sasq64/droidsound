@@ -76,7 +76,7 @@ int uade_receive_message(struct uade_msg *um, size_t maxbytes, struct uade_ipc *
 {
   size_t fullsize;
 
-  __android_log_print(ANDROID_LOG_VERBOSE, "uadecontrol", "STATE %d", ipc->state);
+  //__android_log_print(ANDROID_LOG_VERBOSE, "uadecontrol", "STATE %d", ipc->state);
 
   if (ipc->state == UADE_INITIAL_STATE) {
     ipc->state = UADE_R_STATE;
