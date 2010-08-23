@@ -19,6 +19,7 @@
 #include <strlrep.h>
 #include <ipcsupport.h>
 
+#include <android/log.h>
 
 static int valid_message(struct uade_msg *uc);
 
@@ -29,18 +30,18 @@ void uade_check_fix_string(struct uade_msg *um, size_t maxlen)
   size_t safelen;
   if (um->size == 0) {
     s[0] = 0;
-    fprintf(stderr, "zero string detected\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "zero string detected\n");
   }
   safelen = 0;
   while (s[safelen] != 0 && safelen < maxlen)
     safelen++;
   if (safelen == maxlen) {
     safelen--;
-    fprintf(stderr, "too long a string\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "too long a string\n");
     s[safelen] = 0;
   }
   if (um->size != (safelen + 1)) {
-    fprintf(stderr, "string size does not match\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "string size does not match\n");
     um->size = safelen + 1;
     s[safelen] = 0;
   }
@@ -62,7 +63,7 @@ static ssize_t get_more(size_t bytes, struct uade_ipc *ipc)
 static void copy_from_inputbuffer(void *dst, int bytes, struct uade_ipc *ipc)
 {
   if (ipc->inputbytes < bytes) {
-    fprintf(stderr, "not enough bytes in input buffer\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "not enough bytes in input buffer\n");
     exit(-1);
   }
   memcpy(dst, ipc->inputbuffer, bytes);
@@ -75,10 +76,12 @@ int uade_receive_message(struct uade_msg *um, size_t maxbytes, struct uade_ipc *
 {
   size_t fullsize;
 
+  __android_log_print(ANDROID_LOG_VERBOSE, "uadecontrol", "STATE %d", ipc->state);
+
   if (ipc->state == UADE_INITIAL_STATE) {
     ipc->state = UADE_R_STATE;
   } else if (ipc->state == UADE_S_STATE) {
-    fprintf(stderr, "protocol error: receiving in S state is forbidden\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "protocol error: receiving in S state is forbidden\n");
     return -1;
   }
 
@@ -92,12 +95,12 @@ int uade_receive_message(struct uade_msg *um, size_t maxbytes, struct uade_ipc *
   um->msgtype = ntohl(um->msgtype);
   um->size = ntohl(um->size);
 
-  if (!valid_message(um))
+if (!valid_message(um))
     return -1;
 
   fullsize = um->size + sizeof(*um);
   if (fullsize > maxbytes) {
-    fprintf(stderr, "too big a command: %zu\n", fullsize);
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "too big a command: %zu\n", fullsize);
     return -1;
   }
   if (ipc->inputbytes < um->size) {
@@ -120,12 +123,12 @@ int uade_receive_short_message(enum uade_msgtype msgtype, struct uade_ipc *ipc)
   if (ipc->state == UADE_INITIAL_STATE) {
     ipc->state = UADE_R_STATE;
   } else if (ipc->state == UADE_S_STATE) {
-    fprintf(stderr, "protocol error: receiving (%d) in S state is forbidden\n", msgtype);
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "protocol error: receiving (%d) in S state is forbidden\n", msgtype);
     return -1;
   }
 
   if (uade_receive_message(&um, sizeof(um), ipc) <= 0) {
-    fprintf(stderr, "can not receive short message: %d\n", msgtype);
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "can not receive short message: %d\n", msgtype);
     return -1;
   }
   return (um.msgtype == msgtype) ? 0 : -1;
@@ -143,7 +146,7 @@ int uade_receive_string(char *s, enum uade_msgtype com,
   if (ipc->state == UADE_INITIAL_STATE) {
     ipc->state = UADE_R_STATE;
   } else if (ipc->state == UADE_S_STATE) {
-    fprintf(stderr, "protocol error: receiving in S state is forbidden\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "protocol error: receiving in S state is forbidden\n");
     return -1;
   }
 
@@ -168,7 +171,7 @@ int uade_send_message(struct uade_msg *um, struct uade_ipc *ipc)
   if (ipc->state == UADE_INITIAL_STATE) {
     ipc->state = UADE_S_STATE;
   } else if (ipc->state == UADE_R_STATE) {
-    fprintf(stderr, "protocol error: sending in R state is forbidden\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "protocol error: sending in R state is forbidden\n");
     return -1;
   }
 
@@ -188,7 +191,7 @@ int uade_send_message(struct uade_msg *um, struct uade_ipc *ipc)
 int uade_send_short_message(enum uade_msgtype msgtype, struct uade_ipc *ipc)
 {
   if (uade_send_message(& (struct uade_msg) {.msgtype = msgtype}, ipc)) {
-    fprintf(stderr, "can not send short message: %d\n", msgtype);
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "can not send short message: %d\n", msgtype);
     return -1;
   }
   return 0;
@@ -203,7 +206,7 @@ int uade_send_string(enum uade_msgtype com, const char *str, struct uade_ipc *ip
   if (ipc->state == UADE_INITIAL_STATE) {
     ipc->state = UADE_S_STATE;
   } else if (ipc->state == UADE_R_STATE) {
-    fprintf(stderr, "protocol error: sending in R state is forbidden\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "protocol error: sending in R state is forbidden\n");
     return -1;
   }
 
@@ -234,12 +237,12 @@ static int valid_message(struct uade_msg *um)
 {
   size_t len;
   if (um->msgtype <= UADE_MSG_FIRST || um->msgtype >= UADE_MSG_LAST) {
-    fprintf(stderr, "unknown command: %d\n", um->msgtype);
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "unknown command: %d\n", um->msgtype);
     return 0;
   }
   len = sizeof(*um) + um->size;
   if (len > UADE_MAX_MESSAGE_SIZE) {
-    fprintf(stderr, "too long a message: %zd\n", len);
+    __android_log_print(ANDROID_LOG_VERBOSE, "uadeipc", "too long a message: %zd\n", len);
     return 0;
   }
   return 1;

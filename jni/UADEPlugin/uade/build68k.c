@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 #if 0
     tablef = fopen("table68k","r");
     if (tablef == NULL) {
-	fprintf(stderr, "table68k not found\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "table68k not found\n");
 	exit(1);
     }
 #else

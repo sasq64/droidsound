@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include <strlrep.h>
+#include <android/log.h>
 
 #include "uadeconf.h"
 
@@ -72,7 +73,7 @@ int uade_get_filter_type(const char *model)
   } else if (strcasecmp(model, "a1200e") == 0) {
     filter = FILTER_MODEL_A1200E;
   } else {
-    fprintf(stderr, "Unknown filter model: %s\n", model);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter model: %s\n", model);
   }
 
   return filter;
@@ -84,12 +85,12 @@ int uade_get_silence_timeout(const char *value)
   char *endptr;
   int t;
   if (value == NULL || value[0] == 0) {
-    fprintf(stderr, "Must have a parameter value for silence timeout in config file %s\n", config_filename);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Must have a parameter value for silence timeout in config file %s\n", config_filename);
     return -1;
   }
   t = strtol(value, &endptr, 10);
   if (*endptr != 0 || t < -1) {
-    fprintf(stderr, "Invalid silence timeout value: %s\n", value);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid silence timeout value: %s\n", value);
     t = -1;
   }
   return t;
@@ -101,12 +102,12 @@ int uade_get_subsong_timeout(const char *value)
   char *endptr;
   int t;
   if (value == NULL || value[0] == 0) {
-    fprintf(stderr, "Must have a parameter value for subsong timeout in config file %s\n", config_filename);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Must have a parameter value for subsong timeout in config file %s\n", config_filename);
     return -1;
   }
   t = strtol(value, &endptr, 10);
   if (*endptr != 0 || t < -1) {
-    fprintf(stderr, "Invalid subsong timeout value: %s\n", value);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid subsong timeout value: %s\n", value);
     t = -1;
   }
   return t;
@@ -118,12 +119,12 @@ int uade_get_timeout(const char *value)
   char *endptr;
   int t;
   if (value == NULL) {
-    fprintf(stderr, "Must have a parameter value for timeout value in config file %s\n", config_filename);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Must have a parameter value for timeout value in config file %s\n", config_filename);
     return -1;
   }
   t = strtol(value, &endptr, 10);
   if (*endptr != 0 || t < -1) {
-    fprintf(stderr, "Invalid timeout value: %s\n", value);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid timeout value: %s\n", value);
     t = -1;
   }
   return t;
@@ -135,12 +136,12 @@ double uade_convert_to_double(const char *value, double def, double low, double 
   char *endptr;
   double v;
   if (value == NULL) {
-    fprintf(stderr, "Must have a parameter value for %s in config file %s\n", config_filename, type);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Must have a parameter value for %s in config file %s\n", config_filename, type);
     return def;
   }
   v = strtod(value, &endptr);
   if (*endptr != 0 || v < low || v > high) {
-    fprintf(stderr, "Invalid %s value: %s\n", type, value);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid %s value: %s\n", type, value);
     v = def;
   }
   return v;
@@ -181,7 +182,7 @@ int uade_load_config(struct uade_config *uc, const char *filename)
 	} else if (strcasecmp(value, "off") == 0) {
 	  uc->action_keys = 0;
 	} else {
-	  fprintf(stderr, "uade.conf: Unknown setting for action keys: %s\n", value);
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade.conf: Unknown setting for action keys: %s\n", value);
 	}
       }
     } else if (strncmp(key, "filter", 6) == 0) {
@@ -202,7 +203,7 @@ int uade_load_config(struct uade_config *uc, const char *filename)
       uc->ignore_player_check = 1;
     } else if (strncmp(key, "interpolator", 5) == 0) {
       if (value == NULL) {
-	fprintf(stderr, "uade.conf: No interpolator given.\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade.conf: No interpolator given.\n");
       } else {
 	uc->interpolator = strdup(value);
       }
@@ -225,7 +226,7 @@ int uade_load_config(struct uade_config *uc, const char *filename)
     } else if (strncmp(key, "timeout_value", 7) == 0) {
       uc->timeout = uade_get_timeout(value);
     } else {
-      fprintf(stderr, "Unknown config key in %s on line %d: %s\n", filename, linenumber, key);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown config key in %s on line %d: %s\n", filename, linenumber, key);
     }
   }
 

@@ -12,6 +12,8 @@
 
 #include <ctype.h>
 #include <assert.h>
+#include <android/log.h>
+
 
 #include "options.h"
 #include "uae.h"
@@ -464,7 +466,7 @@ static void DMACON (uae_u16 v)
 static __inline__ void INTENA (uae_u16 v)
 {
 /*    if (trace_intena)
-	fprintf (stderr, "INTENA: %04x\n", v);*/
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "INTENA: %04x\n", v);*/
     setclr(&intena,v); regs.spcflags |= SPCFLAG_INT;
 }
 void INTREQ (uae_u16 v)
@@ -1107,7 +1109,7 @@ static void prepare_copper_1 (void)
 #if 0
 	    if (nexthpos != -1)
 		if (nexthpos != cst.count)
-		    fprintf (stderr,"ERROR\n");
+		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","ERROR\n");
 	    nexthpos = -1;
 #endif
 	    /* Now we know that the comparisons were successful.  */
@@ -1157,7 +1159,7 @@ static void adjust_array_sizes (void)
 	if (p1) sprite_positions[0] = p1;
 	if (p2) sprite_positions[1] = p2;
 	if (p1 && p2) {
-	    fprintf (stderr, "new max_sprite_draw=%d\n",mcc);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_sprite_draw=%d\n",mcc);
 	    max_sprite_draw = mcc;
 	}
     }
@@ -1170,7 +1172,7 @@ static void adjust_array_sizes (void)
 	if (p1) color_changes[0] = p1;
 	if (p2) color_changes[1] = p2;
 	if (p1 && p2) {
-	    fprintf (stderr, "new max_color_change=%d\n",mcc);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_color_change=%d\n",mcc);
 	    max_color_change = mcc;
 	}
     }
@@ -1180,7 +1182,7 @@ static void adjust_array_sizes (void)
 	delta_delay_change = 0;
 	p = realloc (delay_changes, mcc * sizeof (struct delay_change));
 	if (p) {
-	    fprintf (stderr, "new max_delay_change=%d\n",mcc);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_delay_change=%d\n",mcc);
 	    delay_changes = p;
 	    max_delay_change = mcc;
 	}
@@ -1268,7 +1270,7 @@ static void hsync_handler (void)
 
 #if AUDIO_DEBUG	   
 	    if (cdp->state != 0 && cdp->pt >= cdp->ptend) {
-		fprintf(stderr, "Audio DMA fetch overrun on channel %d: %.8x/%.8x\n", nr, cdp->pt, cdp->ptend);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio DMA fetch overrun on channel %d: %.8x/%.8x\n", nr, cdp->pt, cdp->ptend);
 	    }
 #endif
 
@@ -1655,7 +1657,7 @@ void REGPARAM2 custom_bput (uaecptr addr, uae_u32 value)
     custom_wput(addr, rval);
     if (!warned) {
         warned++;
-	fprintf(stderr, "uade: Byte put to custom register (0x%x to $%x)\n", rval, addr);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Byte put to custom register (0x%x to $%x)\n", rval, addr);
     }
 }
 

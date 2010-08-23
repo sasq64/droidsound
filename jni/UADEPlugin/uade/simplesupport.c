@@ -16,24 +16,24 @@
 #include <uade.h>
 #include <unixsupport.h>
 #include <strlrep.h>
-
+#include <android/log.h>
 
 static int uade_amiga_scandir(char *real, char *dirname, char *fake, int ml)
 {
   DIR *dir;
   struct dirent *direntry;
 
-  fprintf(stderr, "scandir: %s %s %s %d\n", real, dirname, fake, ml);
+  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "scandir: %s %s %s %d\n", real, dirname, fake, ml);
 
 
   if (!(dir = opendir(dirname))) {
-    fprintf(stderr, "uade: can't open dir (%s) (amiga scandir)\n", dirname);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't open dir (%s) (amiga scandir)\n", dirname);
     return 0;
   }
   while ((direntry = readdir(dir))) {
     if (!strcmp(fake, direntry->d_name)) {
       if (((int) strlcpy(real, direntry->d_name, ml)) >= ml) {
-	fprintf(stderr, "uade: %s does not fit real", direntry->d_name);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s does not fit real", direntry->d_name);
 	closedir(dir);
 	return 0;
       }
@@ -48,7 +48,7 @@ static int uade_amiga_scandir(char *real, char *dirname, char *fake, int ml)
   while ((direntry = readdir(dir))) {
     if (!strcasecmp(fake, direntry->d_name)) {
       if (((int) strlcpy(real, direntry->d_name, ml)) >= ml) {
-	fprintf(stderr, "uade: %s does not fit real", direntry->d_name);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s does not fit real", direntry->d_name);
 	closedir(dir);
 	return 0;
       }
@@ -94,15 +94,15 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 	DIR *dir;
 	FILE *file;
 
-	fprintf(stderr, "Looking for %s (%s)\n", aname, playerdir);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Looking for %s (%s)\n", aname, playerdir);
 
 	if (strlcpy(copy, aname, sizeof(copy)) >= sizeof(copy)) {
-		fprintf(stderr, "uade: error: amiga tried to open a very long filename\nplease REPORT THIS!\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: error: amiga tried to open a very long filename\nplease REPORT THIS!\n");
 		return 0;
 	}
 
 	ptr = copy;
-	/* fprintf(stderr, "uade: opening %s\n", ptr); */
+	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: opening %s\n", ptr); */
 	if ((separator = strchr(ptr, (int) ':')))
 	{
 		len = (int) (separator - ptr);
@@ -120,15 +120,15 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 		{
 			snprintf(dirname, sizeof(dirname), "%c:/", *ptr);
 			separator++;
-			//fprintf(stderr, "uade: open_amiga_file: unknown amiga volume (%s)\n", aname);
+			//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: open_amiga_file: unknown amiga volume (%s)\n", aname);
 			//return 0;
 		}
 		if (!(dir = opendir(dirname))) {
-			fprintf(stderr, "uade: can't open dir (%s) (volume parsing)\n", dirname);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't open dir (%s) (volume parsing)\n", dirname);
 			return 0;
 		}
 		closedir(dir);
-		/* fprintf(stderr, "uade: opening from dir %s\n", dirname); */
+		/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: opening from dir %s\n", dirname); */
 		ptr = separator + 1;
 	}
 	else
@@ -154,24 +154,24 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 		if (uade_amiga_scandir(real, dirname, fake, sizeof(real))) {
 			/* found matching entry */
 			if (strlcat(dirname, real, sizeof(dirname)) >= sizeof(dirname)) {
-				fprintf(stderr, "uade: too long dir path (%s + %s)\n", dirname, real);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: too long dir path (%s + %s)\n", dirname, real);
 				return 0;
 			}
 			if (strlcat(dirname, "/", sizeof(dirname)) >= sizeof(dirname)) {
-				fprintf(stderr, "uade: too long dir path (%s + %s)\n", dirname, "/");
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: too long dir path (%s + %s)\n", dirname, "/");
 				return 0;
 			}
 		} else {
 			/* didn't find entry */
-			/* fprintf (stderr, "uade: %s not found from (%s) (dir scanning)\n", fake, dirname); */
+			/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s not found from (%s) (dir scanning)\n", fake, dirname); */
 			return 0;
 		}
 		ptr = separator + 1;
 	}
-	/* fprintf(stderr, "uade: pass 3: (%s) (%s)\n", dirname, ptr); */
+	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: pass 3: (%s) (%s)\n", dirname, ptr); */
 
 	if (!(dir = opendir(dirname))) {
-		fprintf(stderr, "can't open dir (%s) (after dir scanning)\n", dirname);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can't open dir (%s) (after dir scanning)\n", dirname);
 		return 0;
 	}
 	closedir(dir);
@@ -188,19 +188,19 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 	if (uade_amiga_scandir(real, dirname, ptr, sizeof(real))) {
 		/* found matching entry */
 		if (strlcat(dirname, real, sizeof(dirname)) >= sizeof(dirname)) {
-			fprintf(stderr, "uade: too long dir path (%s + %s)\n", dirname, real);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: too long dir path (%s + %s)\n", dirname, real);
 			return 0;
 		}
 	} else {
 		/* didn't find entry */
-		fprintf (stderr, "uade: %s not found from %s\n", ptr, dirname);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s not found from %s\n", ptr, dirname);
 		return 0;
 	}
 
-	fprintf(stderr, "Became '%s'\n", dirname);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Became '%s'\n", dirname);
 
 	if (!(file = fopen(dirname, "rb"))) {
-		fprintf (stderr, "uade: couldn't open file (%s) induced by (%s)\n", dirname, aname);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: couldn't open file (%s) induced by (%s)\n", dirname, aname);
 	}
 	return file;
 }

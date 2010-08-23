@@ -2,7 +2,7 @@
 #include <errno.h>
 
 #include <unixatomic.h>
-
+#include <android/log.h>
 
 int atomic_close(int fd)
 {
@@ -47,7 +47,7 @@ ssize_t atomic_read(int fd, const void *buf, size_t count)
 	FD_ZERO(&s);
 	FD_SET(fd, &s);
 	if (select(fd + 1, &s, NULL, NULL, NULL) == 0)
-	  fprintf(stderr, "atomic_read: very strange. infinite select() returned 0. report this!\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "atomic_read: very strange. infinite select() returned 0. report this!\n");
 	continue;
       }
       return -1;
@@ -75,7 +75,7 @@ ssize_t atomic_write(int fd, const void *buf, size_t count)
 	FD_ZERO(&s);
 	FD_SET(fd, &s);
 	if (select(fd + 1, NULL, &s, NULL, NULL) == 0)
-	  fprintf(stderr, "atomic_write: very strange. infinite select() returned 0. report this!\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "atomic_write: very strange. infinite select() returned 0. report this!\n");
 	continue;
       }
       return -1;

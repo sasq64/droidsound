@@ -5,7 +5,7 @@
  * 
  * Copyright 2000 - 2005 Heikki Orsila <heikki.orsila@iki.fi>
  */
-
+#include <android/log.h>
 #include "sysconfig.h"
 #include "sysdeps.h"
 
@@ -41,7 +41,7 @@ void init_sound (void)
   unsigned int rate;
   
   if (currprefs.sound_maxbsiz < 128 || currprefs.sound_maxbsiz > 16384) {
-    fprintf (stderr, "Sound buffer size %d out of range.\n", currprefs.sound_maxbsiz);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Sound buffer size %d out of range.\n", currprefs.sound_maxbsiz);
     currprefs.sound_maxbsiz = 8192;
   }
   sndbufsize = 8192;
@@ -51,11 +51,11 @@ void init_sound (void)
   channels = currprefs.stereo ? 2 : 1;
 
   if (dspbits != (UADE_BYTES_PER_SAMPLE * 8)) {
-    fprintf(stderr, "Only 16 bit sounds supported.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Only 16 bit sounds supported.\n");
     exit(-1);
   }
   if (channels != UADE_CHANNELS) {
-    fprintf(stderr, "Only stereo supported.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Only stereo supported.\n");
     exit(-1);
   }
 

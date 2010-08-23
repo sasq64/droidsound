@@ -10,6 +10,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include <assert.h>
+#include <android/log.h>
 
 #include "options.h"
 #include "events.h"
@@ -292,7 +293,7 @@ static uae_u8 ReadCIAA(unsigned int addr)
 	return ciaatb >> 8;
      case 8:
 	if (ciaatod_read < 8) {
-	    fprintf(stderr, "uadecore warning: CIAA 0xbfe801 read. The player might not work.\n");
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore warning: CIAA 0xbfe801 read. The player might not work.\n");
 	    ciaatod_read++;
 	}
 	if (ciaatlatch) {
@@ -346,7 +347,7 @@ static uae_u8 ReadCIAB(unsigned int addr)
      case 8:
 	if (ciabtod_read < 8) {
 	     ciabtod_read++;
-	     fprintf(stderr, "uadecore warning: CIAB 0xbfd800 read. The player might not work.\n");
+	     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore warning: CIAB 0xbfd800 read. The player might not work.\n");
 	}
 	if (ciabtlatch) {
 	    ciabtlatch = 0;

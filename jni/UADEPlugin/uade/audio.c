@@ -9,6 +9,7 @@
   */
 
 #include <math.h>
+#include <android/log.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -127,7 +128,7 @@ static int filter(int input, struct filter_state *fs)
         break;
 
     default:
-	fprintf(stderr, "Unknown filter mode\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter mode\n");
 	exit(-1);
     }
 
@@ -159,7 +160,7 @@ static void check_sound_buffers (void)
 	/* if sound core doesn't report audio output start in 3 seconds from
 	   the reboot, begin audio output anyway */
 	if (uade_audio_skip >= (sound_bytes_per_second * 3)) {
-	    fprintf(stderr, "involuntary audio output start\n");
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "involuntary audio output start\n");
 	    uade_audio_output = 1;
 	}
 	sndbufpt = sndbuffer;
@@ -174,7 +175,7 @@ static inline void sample_backend(int left, int right)
     for (nr = 0; nr < 4; nr++) {
 	struct audio_channel_data *cdp = audio_channel + nr;
 	if (cdp->state != 0 && cdp->datpt != 0 && (dmacon & (1 << nr)) && cdp->datpt >= cdp->datptend) {
-	    fprintf(stderr, "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
 	}
     }
 #endif
@@ -233,7 +234,7 @@ static void audio_handler (int nr)
 
     switch (cdp->state) {
      case 0:
-	fprintf(stderr, "Bug in sound code\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bug in sound code\n");
 	break;
 
      case 1:
@@ -418,7 +419,7 @@ void select_audio_interpolator(char *name)
     sample_handler = sample16si_anti_handler;
   } else {
     sample_handler = sample16s_handler;
-    fprintf(stderr, "\nUnknown interpolation mode: %s. Using default.\n", name);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nUnknown interpolation mode: %s. Using default.\n", name);
   }
 }
 

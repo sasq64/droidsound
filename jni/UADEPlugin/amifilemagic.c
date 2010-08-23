@@ -28,10 +28,13 @@
 
 #include <amifilemagic.h>
 
+#include <android/log.h>
+
+
 #define FILEMAGIC_DEBUG 0
 
 #if FILEMAGIC_DEBUG
-#define amifiledebug(fmt, args...) do { fprintf(stderr, "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); } while(0)
+#define amifiledebug(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); } while(0)
 #else
 #define amifiledebug(fmt, args...) 
 #endif
@@ -424,7 +427,7 @@ static int mod32check(unsigned char *buf, size_t bufsize, size_t realfilesize)
       slen = ((buf[42 + i * 30] << 8) + buf[43 + i * 30]) * 2;
       srep = ((buf[46 + i * 30] << 8) + buf[47 + i * 30]) *2;
       sreplen = ((buf[48 + i * 30] << 8) + buf[49 + i * 30]) * 2;
-      //fprintf (stderr, "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol);
+      //__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol);
 
       if (vol > 64) return 0;
       if (buf[44+i*30] != 0) {
@@ -489,10 +492,10 @@ static int mod32check(unsigned char *buf, size_t bufsize, size_t realfilesize)
     	 }
 	}
 
-//	fprintf (stderr, "has_slen_sreplen_zero: %d\n",has_slen_sreplen_zero);
-//	fprintf (stderr, "has_slen_sreplen_one: %d\n",has_slen_sreplen_one);
-//	fprintf (stderr, "no_slen_sreplen_zero: %d\n",no_slen_sreplen_zero);
-//	fprintf (stderr, "no_slen_sreplen_one: %d\n\n",no_slen_sreplen_one);
+//	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "has_slen_sreplen_zero: %d\n",has_slen_sreplen_zero);
+//	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "has_slen_sreplen_one: %d\n",has_slen_sreplen_one);
+//	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "no_slen_sreplen_zero: %d\n",no_slen_sreplen_zero);
+//	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "no_slen_sreplen_one: %d\n\n",no_slen_sreplen_one);
 
 	if ((buf[0x3b7] == 0x7f) && 
 	    (has_slen_sreplen_zero <= has_slen_sreplen_one) &&
@@ -589,7 +592,7 @@ static int mod15check(unsigned char *buf, size_t bufsize, size_t realfilesize)
       slen = ((buf[42 + i * 30] << 8) + buf[43 + i * 30]) * 2;
       srep = ((buf[46 + i * 30] << 8) + buf[47 + i * 30]);
       sreplen = ((buf[48 + i * 30] << 8) + buf[49 + i * 30]) * 2;
-      //fprintf (stderr, "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol);
+      //__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol);
 
       if (vol > 64 && buf[44+i*30] != 0) return 0; /* vol and finetune */
 
@@ -1014,7 +1017,7 @@ void uade_filemagic(unsigned char *buf, size_t bufsize, char *pre, size_t realfi
   } else if (buf[0] == 'X' && buf[1] == 'P' && buf[2] == 'K' && buf[3] == 'F'&&
 	     read_be_u32(&buf[4]) + 8 == realfilesize &&
 	     buf[8] == 'S' && buf[9] == 'Q' && buf[10] == 'S' && buf[11] == 'H') {
-    fprintf(stderr, "uade: The file is SQSH packed. Please depack first.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: The file is SQSH packed. Please depack first.\n");
     strcpy(pre, "packed");
 
     /* Custom file check */

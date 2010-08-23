@@ -33,7 +33,7 @@ void uade_go();
 
 /// UADE STUFF
 
-static struct eagleplayerstore *eaglestore;
+static struct eagleplayerstore *eaglestore = NULL;
 struct eagleplayer *lastplayer = NULL;
 char lastext[16] = "";
 char current_format[80] = "";
@@ -66,11 +66,11 @@ struct eagleplayer *get_player(const char *name)
 	else
 		sext++;
 
-	//fprintf(stderr, "extcheck %s \n", sext);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "extcheck %s \n", sext);
 
 	if(lastplayer && strcasecmp(sext, lastext) == 0)
 	{
-		//fprintf(stderr, "=> %s\n", lastplayer->playername);
+		//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "=> %s\n", lastplayer->playername);
 		return lastplayer;
 	}
 	else
@@ -80,7 +80,7 @@ struct eagleplayer *get_player(const char *name)
 		{
 			lastplayer = plr;
 			strcpy(lastext, sext);
-			//fprintf(stderr, "=> %s\n", lastplayer->playername);
+			//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "=> %s\n", lastplayer->playername);
 		}
 		return plr;
 	}
@@ -95,9 +95,13 @@ struct eagleplayer *get_player(const char *name)
 //}
 
 
-static int run_client(short *soundptr)
+
+short *soundBuffer = NULL;
+short *soundPtr = NULL;
+
+static int run_client()
 {
-	short *op = soundptr;
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", state);
 
 	if(state == UADE_S_STATE)
 	{
@@ -108,7 +112,7 @@ static int run_client(short *soundptr)
 			next_song = 1;
 			if(uade_send_short_message(UADE_COMMAND_REBOOT, &uadeipc))
 			{
-				fprintf(stderr, "\nCan not send reboot\n");
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send reboot\n");
 				return 0;
 			}
 		}
@@ -124,7 +128,7 @@ static int run_client(short *soundptr)
 
 		if(uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc))
 		{
-			fprintf(stderr, "\nCan not send token\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send token\n");
 			return 0;
 		}
 		state = UADE_R_STATE;
@@ -137,9 +141,11 @@ static int run_client(short *soundptr)
 
 		if (uade_receive_message(um, sizeof(space), &uadeipc) <= 0)
 		{
-			fprintf(stderr, "\nCan not receive events from uade\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not receive events from uade\n");
 			return 0;
 		}
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Got msg %d", um->msgtype);
 
 		switch (um->msgtype)
 		{
@@ -150,7 +156,7 @@ static int run_client(short *soundptr)
 		case UADE_REPLY_DATA:
 			sm = (uint16_t *)um->data;
 
-			if(!soundptr)
+			if(!soundPtr)
 				return -1;
 
 			if(subsong_end)
@@ -165,20 +171,20 @@ static int run_client(short *soundptr)
 			if(1) //plugin.freq == 44100)
 			{
 				for (int i = 0; i < um->size/2; i++)
-					soundptr[i] = ntohs(sm[i]);
+					soundPtr[i] = ntohs(sm[i]);
 
-				soundptr += (playbytes/2);
+				soundPtr += (playbytes/2);
 			}
 			else
 			if(0) // plugin.freq == 22050)
 			{
 				for (int i = 0; i < um->size/2; i+=4)
 				{
-					soundptr[i/2] = (ntohs(sm[i]) + ntohs(sm[i+2])) / 2;
-					soundptr[i/2+1] = (ntohs(sm[i+1]) + ntohs(sm[i+3])) / 2;
+					soundPtr[i/2] = (ntohs(sm[i]) + ntohs(sm[i+2])) / 2;
+					soundPtr[i/2+1] = (ntohs(sm[i+1]) + ntohs(sm[i+3])) / 2;
 				}
 
-				soundptr += (playbytes/4);
+				soundPtr += (playbytes/4);
 			}
 
 			//dbprintf("Got %d bytes sampledata\n", playbytes);
@@ -188,47 +194,47 @@ static int run_client(short *soundptr)
 			//assert(left >= um->size);
 			left -= um->size;
 
-			return (op - soundptr);
+			return 0;
 
 			break;
 
 		case UADE_REPLY_FORMATNAME:
 			uade_check_fix_string(um, 128);
-			fprintf(stderr, "\nFormat name: %s\n", (char*) um->data);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nFormat name: %s\n", (char*) um->data);
 			strcpy(current_format, (char *)um->data);
 			break;
 
 		case UADE_REPLY_MODULENAME:
 			uade_check_fix_string(um, 128);
-			fprintf(stderr, "\nModule name: %s\n", (char*) um->data);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nModule name: %s\n", (char*) um->data);
 			break;
 
 		case UADE_REPLY_MSG:
 			uade_check_fix_string(um, 128);
-			fprintf(stderr, "\nMessage: %s\n", (char *) um->data);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nMessage: %s\n", (char *) um->data);
 			break;
 
 		case UADE_REPLY_PLAYERNAME:
 			uade_check_fix_string(um, 128);
-			fprintf(stderr, "Player name: %s\n", (char*) um->data);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Player name: %s\n", (char*) um->data);
 			strcpy(current_format, (char *)um->data);
 			break;
 
 		case UADE_REPLY_SONG_END:
 			if (um->size < 9)
 			{
-				fprintf(stderr, "\nInvalid song end reply\n");
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nInvalid song end reply\n");
 				exit(-1);
 			}
 			tailbytes = ntohl(((uint32_t *) um->data)[0]);
 			uade_song_end_trigger = 1;
-			fprintf(stderr, "\nSong end\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nSong end\n");
 			break;
 
 		case UADE_REPLY_SUBSONG_INFO:
 			if(um->size != 12)
 			{
-				fprintf(stderr, "\nsubsong info: too short a message\n");
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nsubsong info: too short a message\n");
 			}
 			{
 				unsigned int *u32ptr = (unsigned int *)um->data;
@@ -237,13 +243,13 @@ static int run_client(short *soundptr)
 				int cur_sub = ntohl(u32ptr[2]);
 				/// plugin.subtunes = max_sub;
 				/// plugin.tune = cur_sub;
-				fprintf(stderr, "\nsubsong: %d from range [%d, %d]\n", cur_sub, min_sub, max_sub);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nsubsong: %d from range [%d, %d]\n", cur_sub, min_sub, max_sub);
 			}
 			break;
 		case UADE_REPLY_CANT_PLAY:
 		case UADE_REPLY_CAN_PLAY:
 		default:
-			fprintf(stderr, "\nExpected sound data. got %d.\n", um->msgtype);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nExpected sound data. got %d.\n", um->msgtype);
 			return 0;
 		}
 	}
@@ -252,25 +258,76 @@ static int run_client(short *soundptr)
 
 
 
+static pthread_t thread = 0;
 
-void *init()
-{
-	eaglestore = uade_read_eagleplayer_conf("eagleplayer.conf");
 
-	if(!eaglestore)
-		return NULL;
-
-	// fprintf(stderr, "%d eagleplayer extentions\n", eaglestore->nextensions);
-	uade_set_peer(&uadeipc, 1, "client", "server");
+static void *threadProc(void *arg) {
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Starting thread");
+	uade_init();
+	uade_go();
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Thread ended");
+	return NULL;
 }
+
 
 struct Player
 {
 };
 
+char baseDir[256] = "";
+
+int init()
+{
+
+	char temp[256];
+
+	if(eaglestore == NULL) {
+
+		sprintf(temp, "%s/eagleplayer.conf", baseDir);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Loading conf '%s'", temp);
+
+		eaglestore = uade_read_eagleplayer_conf(temp);
+
+		if(!eaglestore)
+			return -1;
+
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "%d eagleplayer extentions\n", eaglestore->nextensions);
+
+		// __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%d eagleplayer extentions\n", eaglestore->nextensions);
+		uade_set_peer(&uadeipc, 1, "client", "server");
+	}
+
+
+	if(thread == 0) {
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating thread");
+	    pthread_create(&thread, NULL, threadProc, NULL);
+
+		sprintf(temp, "%s/uaerc", baseDir);
+		if(uade_send_string(UADE_COMMAND_CONFIG, temp, &uadeipc)) {
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send config name\n");
+		}
+	}
+
+	return 0;
+}
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv *env, jobject obj, jstring basedir)
+{
+	jboolean iscopy;
+	const char *s = env->GetStringUTFChars(basedir, &iscopy);
+	strcpy(baseDir, s);
+	env->ReleaseStringUTFChars(basedir, s);
+
+	init();
+
+}
+
+
+
 extern "C" {
 
-void client_sleep()
+void client_sleep(void)
 {
 	//pthread_yield();
 	usleep(10000);
@@ -283,6 +340,7 @@ int get_write_mutex(void **m)
 		pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 		memset(mutex, 0, sizeof(pthread_mutex_t));
 		*m = (void*)mutex;
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating write mutex in ptr %p", m);
 	}
 	return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
 }
@@ -294,11 +352,14 @@ int release_write_mutex(void **m)
 
 int get_read_mutex(void **m)
 {
+
+
 	if(!*m) {
 		pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 		//*mutex = PTHREAD_MUTEX_INITIALIZER;
 		memset(mutex, 0, sizeof(pthread_mutex_t));
 		*m = (void*)mutex;
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating read mutex in ptr %p", m);
 	}
 	return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
 }
@@ -323,23 +384,6 @@ static jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
-static pthread_t thread = 0;
-
-
-static void *threadProc(void *arg) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Starting thread");
-	uade_init();
-	uade_go();
-	return NULL;
-}
-
-void initTread() {
-
-	if(thread == 0) {
-	    pthread_create(&thread, NULL, threadProc, NULL);
-	}
-}
-
 
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
@@ -356,31 +400,41 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	const char *filename = env->GetStringUTFChars(fname, &iscopy);
 
 
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Getting player");
+
 	struct eagleplayer *player = get_player(filename);
 
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING %s\n", player->playername);
-	char tmp[128];
-	sprintf(tmp, "players/%s", player->playername);
+
+
+	char plname[256];
+	char score[256];
+
+	sprintf(plname, "%s/eagleplayers/%s", baseDir, player->playername);
+	sprintf(score, "%s/score", baseDir);
 
 	int rc;
 
 	strcpy(current_format, "");
 
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "INIT SONG");
 	if(strcmp("custom", player->playername) == 0)
 	{
-		rc = uade_song_initialization("score" ,filename, "", &uadeipc);
+		rc = uade_song_initialization(score, filename, "", &uadeipc);
 		strcpy(current_format, "Amiga Custom");
 
 	}
 	else
-		rc = uade_song_initialization("score" ,tmp, filename, &uadeipc);
+		rc = uade_song_initialization(score, plname, filename, &uadeipc);
 
 	uade_song_end_trigger = 0;
 
 	if(rc)
 		return rc;
 
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "CONF");
 
 	uade_config_set_defaults(&uadeconf);
 
@@ -389,12 +443,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
     uade_send_filter_command(uadeconf.filter_type, uadeconf.led_state, uadeconf.led_forced, &uadeipc);
     uade_send_interpolation_command(uadeconf.interpolator, &uadeipc);
 
-
-	run_client(NULL);
-
+	//run_client();
 
 	env->ReleaseStringUTFChars(fname, filename);
-	return 0;
+
+	return 1;
 }
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *, jobject, jlong song)
@@ -403,19 +456,43 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIE
 	delete player;
 }
 
+
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray sArray, jint size)
 {
 
 	Player *player = (Player*)song;
 
-	jshort *ptr = env->GetShortArrayElements(sArray, NULL);
-	int orgsize = size;
-	jshort *orgptr = ptr;
+	jshort *dest = env->GetShortArrayElements(sArray, NULL);
 
-	run_client(ptr);
 
-    env->ReleaseShortArrayElements(sArray, ptr, 0);
-	return orgsize;
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "getSoundData");
+
+	if(soundBuffer == NULL) {
+		soundBuffer = (short*)malloc(size * 4);
+		soundPtr = soundBuffer;
+	}
+
+	//if(run_client() < 0)
+	//	return 0;
+
+
+
+	int filled = (soundPtr - soundBuffer);
+	int len = size;
+
+	while(filled < len)
+	{
+		if(run_client() < 0)
+			return 0;
+		filled = (soundPtr - soundBuffer);
+	}
+
+	memcpy(dest, soundBuffer, len*2);
+	memmove(soundBuffer, soundBuffer+len, filled-len);
+	soundPtr -= len;
+
+    env->ReleaseShortArrayElements(sArray, dest, 0);
+	return len;
 }
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1seekTo(JNIEnv *, jobject, jlong, jint)
@@ -451,7 +528,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getIntInfo(
 	switch(what)
 	{
 	case INFO_LENGTH:
-		return-1;
+		return -1;
 	case INFO_SUBTUNES:
 		return 0;
 	case INFO_STARTTUNE:

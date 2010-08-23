@@ -10,13 +10,13 @@
 #include <netinet/in.h>
 
 #include <ipcsupport.h>
+#include <android/log.h>
 
-int get_write_mutex(void **);
-int release_write_mutex(void **);
-int get_read_mutex(void **);
-int release_read_mutex(void **);
-
-void client_sleep();
+extern int get_write_mutex(volatile void **);
+extern int release_write_mutex(volatile void **);
+extern int get_read_mutex(volatile void **);
+extern int release_read_mutex(volatile void **);
+extern void client_sleep(void);
 
 /*
 unsigned int htonl(unsigned int l)
@@ -36,7 +36,7 @@ struct buffer
 {
 	unsigned char *inbuffer;
 	unsigned char *add_ptr;
-	void *mutex;
+	volatile void *mutex;
 };
 
 static struct buffer *server_buf = NULL;
@@ -60,7 +60,7 @@ ssize_t uade_ipc_read(void *f, const void *data, size_t size)
 {
 	struct buffer *b = (struct buffer*)f;
 
-	//fprintf(stderr, "%s tries to read %d bytes from %p\n", (b == client_buf ? "CLIENT" : "SERVER"), size, b);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s tries to read %d bytes from %p\n", (b == client_buf ? "CLIENT" : "SERVER"), size, b);
 
 	if(get_read_mutex(&b->mutex))
 	{
@@ -79,13 +79,13 @@ ssize_t uade_ipc_read(void *f, const void *data, size_t size)
 
 		if(size)
 		{
-			memcpy(data, b->inbuffer, size);
+			memcpy((void*)data, b->inbuffer, size);
 			memmove(b->inbuffer, b->inbuffer+size, BUF_SIZE-size);
 			b->add_ptr -= size;
 		}
 		release_read_mutex(&b->mutex);
 
-		//fprintf(stderr, "%s read %d bytes, %d bytes left\n", (b == client_buf ? "CLIENT" : "SERVER"), size, b->add_ptr - b->inbuffer);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s read %d bytes, %d bytes left\n", (b == client_buf ? "CLIENT" : "SERVER"), size, b->add_ptr - b->inbuffer);
 
 		return size;
 	}
@@ -98,7 +98,7 @@ ssize_t uade_ipc_write(void *f, const void *data, size_t size)
 {
 	struct buffer *b = (struct buffer*)f;
 
-	//fprintf(stderr, "%s tries to write %d bytes to %p\n",  (b == server_buf ? "CLIENT" : "SERVER"), size, b);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s tries to write %d bytes to %p\n",  (b == server_buf ? "CLIENT" : "SERVER"), size, b);
 
 	if(get_write_mutex(&b->mutex))
 	{
@@ -113,14 +113,14 @@ ssize_t uade_ipc_write(void *f, const void *data, size_t size)
 			memcpy(b->add_ptr, data, size);
 			b->add_ptr += size;
 		}
-		//fprintf(stderr, "%s wrote %d bytes\n", (b == server_buf ? "CLIENT" : "SERVER"), size);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s wrote %d bytes\n", (b == server_buf ? "CLIENT" : "SERVER"), size);
 		release_write_mutex(&b->mutex);
 		return size;
 	}
 	return -1;
 }
 
-struct buffer *new_buf()
+struct buffer *new_buf(void)
 {
 	struct buffer *b = malloc(sizeof(struct buffer));
 	b->inbuffer = malloc(BUF_SIZE);

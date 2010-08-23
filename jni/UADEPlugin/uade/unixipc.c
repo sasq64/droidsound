@@ -9,7 +9,7 @@
 
 #include <ipcsupport.h>
 #include <unixatomic.h>
-
+#include <android/log.h>
 
 static int url_to_fd(const char *url, int flags, mode_t mode)
 {
@@ -56,7 +56,7 @@ void *uade_ipc_set_input(const char *input)
 {
   int fd;
   if ((fd = url_to_fd(input, O_RDONLY, 0)) < 0) {
-    fprintf(stderr, "can not open input file %s: %s\n", input, strerror(errno));
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not open input file %s: %s\n", input, strerror(errno));
     exit(-1);
   }
   return (void *) ((intptr_t) fd);
@@ -67,7 +67,7 @@ void *uade_ipc_set_output(const char *output)
 {
   int fd;
   if ((fd = url_to_fd(output, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-    fprintf(stderr, "can not open output file %s: %s\n", output, strerror(errno));
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not open output file %s: %s\n", output, strerror(errno));
     exit(-1);
   }
   return (void *) ((intptr_t) fd);

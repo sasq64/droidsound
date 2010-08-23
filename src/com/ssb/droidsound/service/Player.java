@@ -26,6 +26,7 @@ import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.TFMXPlugin;
+import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 
@@ -112,11 +113,12 @@ public class Player implements Runnable {
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
-		plugins = new DroidSoundPlugin [3];
+		plugins = new DroidSoundPlugin [4];
 		plugins[0] = new SidplayPlugin(ctx);
 		//plugins[0] = new TinySidPlugin();
 		plugins[1] = new ModPlugin(ctx);
 		plugins[2] = new GMEPlugin(ctx);
+		plugins[3] = new UADEPlugin(ctx);
 		//plugins[3] = new TFMXPlugin(ctx);
 
 		//bufSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT);
@@ -312,23 +314,25 @@ public class Player implements Runnable {
 				currentSong.game = getPluginInfo(DroidSoundPlugin.INFO_GAME);
 				currentSong.subTunes = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_SUBTUNES);
 				currentSong.startTune = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_STARTTUNE);
-				String [] info  = currentPlugin.getDetailedInfo(songRef);								
-				currentSong.details = new String [info.length + 2];
-				for(int i=0; i<info.length; i++) {
-					currentSong.details[i] = info[i];
+				String [] info  = currentPlugin.getDetailedInfo(songRef);
+				if(info != null) {
+					currentSong.details = new String [info.length + 2];
+					for(int i=0; i<info.length; i++) {
+						currentSong.details[i] = info[i];
+					}
+					currentSong.details[info.length] = "Size";
+					
+					if(fileSize < 10*1024) {
+						currentSong.details[info.length+1] = String.format("%1.1fKB", (float)fileSize/1024F);
+					} else if(fileSize < 1024*1024) {
+						currentSong.details[info.length+1] = String.format("%dKB", fileSize/1024);
+					} else if(fileSize < 10*1024*1024) {
+						currentSong.details[info.length+1] = String.format("%1.1fMB", (float)fileSize/(1024F * 1024F));
+					} else {
+						currentSong.details[info.length+1] = String.format("%dMB", fileSize/(1024*1024));
+					}
+					info = null;
 				}
-				currentSong.details[info.length] = "Size";
-				
-				if(fileSize < 10*1024) {
-					currentSong.details[info.length+1] = String.format("%1.1fKB", (float)fileSize/1024F);
-				} else if(fileSize < 1024*1024) {
-					currentSong.details[info.length+1] = String.format("%dKB", fileSize/1024);
-				} else if(fileSize < 10*1024*1024) {
-					currentSong.details[info.length+1] = String.format("%1.1fMB", (float)fileSize/(1024F * 1024F));
-				} else {
-					currentSong.details[info.length+1] = String.format("%dMB", fileSize/(1024*1024));
-				}
-				info = null;
 				
 				currentSong.length = currentPlugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 				

@@ -273,7 +273,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getSoundData
 
 	jbyte *ptr = (jbyte*)env->GetShortArrayElements(bArray, NULL);
 
-	fprintf(stderr, "ptr %p, size %d\n", ptr, size);
+	//fprintf(stderr, "ptr %p, size %d\n", ptr, size);
 	int rc = ModPlug_Read(info->mod, (void*)ptr, size*2);
 	/*for(int i=0; i<size; i++)
 	{

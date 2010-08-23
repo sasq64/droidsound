@@ -7,6 +7,7 @@
   */
 
 #include <time.h>
+#include <android/log.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -1088,7 +1089,7 @@ unsigned long REGPARAM2 op_illg (uae_u32 opcode)
     uaecptr pc = m68k_getpc ();
 
     if (uade_debug) {
-      fprintf(stderr, "op_illg(): going into debug\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "op_illg(): going into debug\n");
       activate_debugger();
     }
 
@@ -1280,14 +1281,14 @@ void m68k_run_1 (void)
       i = time(0);
       if ((i - uade_otime) > 0) {
 	uade_otime = i;
-	/* fprintf(stderr, "insts: %d\n", uade_insts); */
+	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "insts: %d\n", uade_insts); */
 	uade_insts = 0;
-	fprintf(stderr, "exceptions: ");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "exceptions: ");
 	for (i=1; i<64; i++) {
 	  if (exception_freq[i])
-	    fprintf(stderr, "%.3x: %.8d ", i*4, exception_freq[i]);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%.3x: %.8d ", i*4, exception_freq[i]);
 	}
-	fprintf(stderr, "\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\n");
       }
     }
 #endif
@@ -1318,7 +1319,7 @@ void m68k_go (void)
 
     if (uade_reboot) {
       if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc) < 0) {
-	fprintf(stderr, "can not send reboot ack token\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not send reboot ack token\n");
 	exit(-1);
       }
     }

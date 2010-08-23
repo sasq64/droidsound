@@ -44,6 +44,7 @@ import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.TFMXPlugin;
+import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
@@ -991,10 +992,11 @@ public class SongDatabase implements Runnable {
 		stopScanning = false;
 		scanning = true;
 
-		plugins = new DroidSoundPlugin[3];
+		plugins = new DroidSoundPlugin[4];
 		plugins[0] = new SidplayPlugin(context);
 		plugins[1] = new ModPlugin(context);
 		plugins[2] = new GMEPlugin(context);
+		plugins[3] = new UADEPlugin(context);
 		//plugins[3] = new TFMXPlugin(context);
 		
 		FileIdentifier.setPlugins(plugins);

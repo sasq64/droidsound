@@ -11,6 +11,7 @@
 #include "sysdeps.h"
 
 #include <ctype.h>
+#include <android/log.h>
 
 #include "options.h"
 #include "uae.h"
@@ -156,7 +157,7 @@ static uae_u32 uade_debug_search (char *name) {
     }
   }
   if (!baseptr) {
-    fprintf (stderr, "uade debug info not found\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade debug info not found\n");
     return 0;
   }
 

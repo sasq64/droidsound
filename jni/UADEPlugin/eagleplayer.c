@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include <strlrep.h>
+#include <android/log.h>
 
 #include <eagleplayer.h>
 #include <amifilemagic.h>
@@ -77,7 +78,7 @@ char *strsep(char **stringp, const char *delim)
 
 #endif
 
-#define eperror(fmt, args...) do { fprintf(stderr, "Eagleplayer.conf error on line %zd: " fmt "\n", lineno, ## args); exit(-1); } while (0)
+#define eperror(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Eagleplayer.conf error on line %zd: " fmt "\n", lineno, ## args); exit(-1); } while (0)
 
 
 struct contentchecksum {
@@ -144,7 +145,7 @@ int uade_add_playtime(const char *md5, uint32_t playtime, int replaceandsort)
     nccalloc *= 2;
     n = realloc(contentchecksums, nccalloc * sizeof(struct contentchecksum));
     if (n == NULL) {
-      fprintf(stderr, "uade: No memory for new md5s.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: No memory for new md5s.\n");
       return 0;
     }
     contentchecksums = n;
@@ -174,11 +175,11 @@ struct eagleplayer *uade_analyze_file_format(const char *modulename,
   size_t bufsize;
 
   if ((f = fopen(modulename, "rb")) == NULL) {
-    fprintf(stderr, "Can not open module: %s\n", modulename);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not open module: %s\n", modulename);
     return NULL;
   }
   if (fstat(fileno(f), &st)) {
-    fprintf(stderr, "Very weird stat error: %s (%s)\n", modulename, strerror(errno));
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Very weird stat error: %s (%s)\n", modulename, strerror(errno));
     exit(-1);
   }
   bufsize = sizeof fileformat_buf;
@@ -191,7 +192,7 @@ struct eagleplayer *uade_analyze_file_format(const char *modulename,
   uade_filemagic(fileformat_buf, bufsize, extension, st.st_size);
 
   if (verbose == 2)
-    fprintf(stderr, "%s: deduced extension: %s\n", modulename, extension);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s: deduced extension: %s\n", modulename, extension);
 
   if (strcmp(extension, "packed") == 0)
     return NULL;
@@ -201,7 +202,7 @@ struct eagleplayer *uade_analyze_file_format(const char *modulename,
     snprintf(formatsfile, sizeof(formatsfile), "%s/eagleplayer.conf", basedir);
     if ((playerstore = uade_read_eagleplayer_conf(formatsfile)) == NULL) {
       if (warnings)
-	fprintf(stderr, "Tried to load uadeformats file from %s, but failed\n", formatsfile);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Tried to load uadeformats file from %s, but failed\n", formatsfile);
       warnings = 0;
       return NULL;
     }
@@ -216,7 +217,7 @@ struct eagleplayer *uade_analyze_file_format(const char *modulename,
     if (candidate)
       return candidate;
     if (verbose >= 1)
-      fprintf(stderr, "Deduced file extension (%s) is not on the uadeformats list.\n", extension);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Deduced file extension (%s) is not on the uadeformats list.\n", extension);
   }
 
   /* magic wasn't able to deduce the format, so we'll try prefix and postfix
@@ -232,7 +233,7 @@ struct eagleplayer *uade_analyze_file_format(const char *modulename,
   tn = strchr(t, '.');
   if (tn == NULL) {
     if (verbose >= 1)
-      fprintf(stderr, "Unknown format: %s\n", modulename);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown format: %s\n", modulename);
     return NULL;
   }
   len = ((intptr_t) tn) - ((intptr_t) t);
@@ -249,7 +250,7 @@ struct eagleplayer *uade_analyze_file_format(const char *modulename,
   if (strlcpy(extension, t + 1, sizeof(extension)) >= sizeof(extension)) {
     /* too long to be an extension */
     if (verbose >= 1)
-      fprintf(stderr, "Unknown format: %s\n", modulename);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown format: %s\n", modulename);
     return NULL;
   }
 
@@ -265,7 +266,7 @@ struct eaglesong *uade_analyze_song(const char *asciimd5)
 {
   struct eaglesong key;
   if (strlcpy(key.md5, asciimd5, sizeof key.md5) != ((sizeof key.md5) - 1)) {
-    fprintf(stderr, "Invalid md5sum: %s\n", asciimd5);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid md5sum: %s\n", asciimd5);
     exit(-1);
   }
   return bsearch(&key, songstore, nsongs, sizeof songstore[0], escompare);
@@ -368,7 +369,7 @@ static char **split_line(size_t *nitems, size_t *lineno, FILE *f,
     return NULL;
 
   if ((items = malloc(sizeof(items[0]) * (*nitems + 1))) == NULL) {
-    fprintf(stderr, "No memory for nws items.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No memory for nws items.\n");
     exit(-1);
   }
 
@@ -378,7 +379,7 @@ static char **split_line(size_t *nitems, size_t *lineno, FILE *f,
     if (*s == 0)
       continue;
     if ((items[pos] = strdup(s)) == NULL) {
-      fprintf(stderr, "No memory for an nws item.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No memory for an nws item.\n");
       exit(-1);
     }
     pos++;
@@ -399,12 +400,12 @@ int uade_read_content_db(const char *filename)
     nccalloc = 16;
     contentchecksums = malloc(nccalloc * sizeof(struct contentchecksum));
     if (contentchecksums == NULL) {
-      fprintf(stderr, "uade: No memory for content checksums\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: No memory for content checksums\n");
       return 0;
     }
   }
   if ((f = fopen(filename, "r")) == NULL) {
-    fprintf(stderr, "uade: Can not find %s\n", filename);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Can not find %s\n", filename);
     return 0;
   }
 
@@ -435,7 +436,7 @@ int uade_read_content_db(const char *filename)
   qsort(contentchecksums, nccused, sizeof contentchecksums[0], contentcompare);
   ccmodified = 0;
 
-  /* fprintf(stderr, "uade: Read content database with %zd entries\n", nccused); */
+  /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Read content database with %zd entries\n", nccused); */
   return 1;
 }
 
@@ -487,7 +488,7 @@ struct eagleplayerstore *uade_read_eagleplayer_conf(const char *filename)
 
     p->playername = strdup(items[0]);
     if (p->playername == NULL) {
-      fprintf(stderr, "No memory for playername.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No memory for playername.\n");
       exit(-1);
     }
 
@@ -538,7 +539,7 @@ struct eagleplayerstore *uade_read_eagleplayer_conf(const char *filename)
       } else if (strncasecmp(items[i], "comment:", 8) == 0) {
 	break;
       } else {
-	fprintf(stderr, "Unrecognized option: %s\n", items[i]);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unrecognized option: %s\n", items[i]);
       }
     }
 
@@ -564,7 +565,7 @@ struct eagleplayerstore *uade_read_eagleplayer_conf(const char *filename)
   for (i = 0; i < ps->nplayers; i++) {
     size_t j;
     if (exti >= ps->nextensions) {
-      fprintf(stderr, "pname %s\n", ps->players[i].playername);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "pname %s\n", ps->players[i].playername);
       fflush(stderr);
     }
     assert(exti < ps->nextensions);
@@ -631,12 +632,12 @@ int uade_read_song_conf(const char *filename)
     memset(s, 0, sizeof s[0]);
 
     if (strncasecmp(items[0], "md5=", 4) != 0) {
-      fprintf(stderr, "Line %zd must begin with md5= in %s\n", lineno, filename);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Line %zd must begin with md5= in %s\n", lineno, filename);
       free(items);
       continue;
     }
     if (strlcpy(s->md5, items[0] + 4, sizeof s->md5) != ((sizeof s->md5) - 1)) {
-      fprintf(stderr, "Line %zd in %s has too long an md5sum.\n", lineno, filename);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Line %zd in %s has too long an md5sum.\n", lineno, filename);
       free(items);
       continue;
     }
@@ -714,13 +715,13 @@ void uade_save_content_db(const char *filename)
   if (ccmodified == 0)
     return;
   if ((f = fopen(filename, "w")) == NULL) {
-    fprintf(stderr, "uade: Can not write content db: %s\n", filename);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Can not write content db: %s\n", filename);
     return;
   }
   for (i = 0; i < nccused; i++)
     fprintf(f, "%s %d\n", contentchecksums[i].md5, contentchecksums[i].playtime);
   fclose(f);
-  fprintf(stderr, "uade: Saved %zd entries into content db.\n", nccused);
+  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Saved %zd entries into content db.\n", nccused);
 }
 
 
