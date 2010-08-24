@@ -104,7 +104,7 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 	}
 
 	ptr = copy;
-	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: opening %s\n", ptr); */
+	 __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: opening %s\n", ptr);
 	if ((separator = strchr(ptr, (int) ':')))
 	{
 		len = (int) (separator - ptr);
@@ -182,9 +182,10 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 	if(strncmp(ptr, "smpl.", 5) == 0)
 	{
 		ptr += 5;
-		char *ext = strrchr(ptr, '.');
-		if(ext)
-			strcpy(ext, ".smpl");
+		//char *ext = strrchr(ptr, '.');
+		//if(ext)
+		//	strcpy(ext, ".smpl");
+		strcpy(ptr + strlen(ptr), ".smpl");
 	}
 
 	if (uade_amiga_scandir(real, dirname, ptr, sizeof(real))) {

@@ -1,0 +1,37 @@
+AUDACIOUSPLUGINDIR = 
+
+ARCHFLAGS=
+CC=gcc
+OBJCOPY=objcopy
+DEBUGFLAGS=-g
+AUDACIOUSFLAGS=
+AUDACIOUSLIBS=
+SHAREDLIBRARYFLAGS=-fPIC -shared
+CFLAGS = -Wall -O2 $(SHAREDLIBRARYFLAGS) $(AUDACIOUSFLAGS) $(ARCHFLAGS) $(DEBUGFLAGS) -I../common -I../../include
+CLIBS = $(XMLIBS) -lm
+
+all:	libuade2.so
+
+include ../common/Makefile.common
+
+MODULES = plugin.o subsongseek.o fileinfo.o $(COMMONMODULES)
+
+libuade2.so:	$(MODULES)
+	$(CC) $(CFLAGS) -o $@ $(MODULES) $(CLIBS)
+	$(OBJCOPY) -G get_iplugin_info $@
+
+fileinfo.o:	fileinfo.c fileinfo.h
+	$(CC) $(CFLAGS) -c $<
+
+plugin.o:	plugin.c plugin.h subsongseek.h fileinfo.h ../common/uadecontrol.h ../../include/uadeipc.h ../../include/uadeconstants.h subsongseek.h ../common/effects.h ../common/md5.h $(PLAYERHEADERS)
+	$(CC) $(CFLAGS) -c $<
+
+subsongseek.o:	subsongseek.c subsongseek.h plugin.h
+	$(CC) $(CFLAGS) -c $<
+
+install:	
+	mkdir -p "$(AUDACIOUSPLUGINDIR)"
+	install libuade2.so "$(AUDACIOUSPLUGINDIR)"
+
+clean:	
+	rm -f *.so *.o

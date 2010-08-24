@@ -70,20 +70,21 @@ int startSong = -1;
 struct eagleplayer *get_player(const char *name)
 {
 	const char *sext = strrchr(name, '.');
+	char prefix[128];
 	if(!sext)
 		sext = "";
 	else
 		sext++;
 
-	//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "extcheck %s \n", sext);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "extcheck %s \n", sext);
 
-	if(lastplayer && strcasecmp(sext, lastext) == 0)
-	{
+	//if(lastplayer && strcasecmp(sext, lastext) == 0)
+	//{
 		//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "=> %s\n", lastplayer->playername);
-		return lastplayer;
-	}
-	else
-	{
+		//return lastplayer;
+	//}
+	//else
+	//{
 		struct eagleplayer *plr = uade_get_eagleplayer(sext, eaglestore);
 		if(plr)
 		{
@@ -92,7 +93,7 @@ struct eagleplayer *get_player(const char *name)
 			//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "=> %s\n", lastplayer->playername);
 		}
 		return plr;
-	}
+	//}
 
 }
 
@@ -409,10 +410,29 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	jboolean iscopy;
 	const char *filename = env->GetStringUTFChars(fname, &iscopy);
 
+	uint16_t atest[5] = { 0x1234, 0x5678, 0x9abc, 0xdef0, 0x2468 } ;
+	uint32_t *ap = (uint32_t*)&atest[1];
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
+	ap = (uint32_t*)&atest[0];
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Getting player");
 
-	struct eagleplayer *player = get_player(filename);
+	// const char *slash = strrchr(filename, '/');
+	// if(slash)
+	//	slash++;
+	// else
+	//	slash = filename;
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Getting player for %s", filename);
+
+
+	struct eagleplayer *player = uade_analyze_file_format(filename, baseDir, 1);
+	//struct eagleplayer *player = get_player(filename);
+	//struct eagleplayer *player = uade_get_eagleplayer("mdat", eaglestore);
+
+	if(!player) {
+		return 0;
+	}
 
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING '%s' with %s\n", filename, player->playername);
