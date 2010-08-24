@@ -10,10 +10,10 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include <assert.h>
-
+#include <android/log.h>
 #include "options.h"
 #include "events.h"
-#include "memory.h"
+#include "include/memory.h"
 #include "custom.h"
 #include "cia.h"
 
@@ -231,7 +231,7 @@ void diskindex_handler(void)
 {
     eventtab[ev_diskindex].evtime += cycles - eventtab[ev_diskindex].oldcycles;
     eventtab[ev_diskindex].oldcycles = cycles;
-/*    fprintf(stderr,".\n");*/
+/*    __android_log_print(ANDROID_LOG_VERBOSE, "UADE",".\n");*/
     ciabicr |= 0x10;
     RethinkICRB();
 }
@@ -630,10 +630,10 @@ void CIA_reset(void)
 
 void dumpcia(void)
 {
-    fprintf(stderr,"A: CRA: %02x, CRB: %02x, IMASK: %02x, TOD: %08lx %7s TA: %04lx, TB: %04lx\n",
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","A: CRA: %02x, CRB: %02x, IMASK: %02x, TOD: %08lx %7s TA: %04lx, TB: %04lx\n",
 	   (int)ciaacra, (int)ciaacrb, (int)ciaaimask, ciaatod,
 	   ciaatlatch ? " latched" : "", ciaata, ciaatb);
-    fprintf(stderr,"B: CRA: %02x, CRB: %02x, IMASK: %02x, TOD: %08lx %7s TA: %04lx, TB: %04lx\n",
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","B: CRA: %02x, CRB: %02x, IMASK: %02x, TOD: %08lx %7s TA: %04lx, TB: %04lx\n",
 	   (int)ciabcra, (int)ciabcrb, (int)ciabimask, ciabtod,
 	   ciabtlatch ? " latched" : "", ciabta, ciabtb);
 }

@@ -46,18 +46,18 @@ static int get_random(int max)
     if (random_fd == -1) {
       random_fd = open("/dev/urandom", O_RDONLY);
       if (random_fd < 0) {
-	fprintf(stderr, "not using urandom anymore: %s\n", strerror(errno));
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "not using urandom anymore: %s\n", strerror(errno));
 	using_urandom = 0;
 	goto nourandom;
       }
     }
     ret = atomic_read(random_fd, buf, sizeof(buf));
     if (ret < 0) {
-      fprintf(stderr, "error on reading urandom: %s\n", strerror(errno));
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "error on reading urandom: %s\n", strerror(errno));
       using_urandom = 0;
       goto nourandom;
     } else if (ret == 0) {
-      fprintf(stderr, "unexpected eof on urandom\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "unexpected eof on urandom\n");
       using_urandom = 0;
       goto nourandom;
     }
@@ -160,7 +160,7 @@ void playlist_repeat(struct playlist *pl)
 int playlist_empty(struct playlist *pl)
 {
   if (!pl->valid) {
-    fprintf(stderr, "playlist invalid\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "playlist invalid\n");
     return 1;
   }
   if (pl->list.n_entries == 0)
@@ -175,7 +175,7 @@ static void *recursive_func(const char *file, enum uade_wtype wtype, void *pl)
 {
   if (wtype == UADE_WALK_REGULAR_FILE) {
     if (!playlist_add(pl, file, 0, 0))
-      fprintf(stderr, "error enqueuing %s\n", file);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "error enqueuing %s\n", file);
   }
   return NULL;
 }
@@ -202,7 +202,7 @@ int playlist_add(struct playlist *pl, const char *name, int recursive,
     goto out;
 
   if (S_ISREG(st.st_mode)) {
-    /* fprintf(stderr, "enqueuing regular: %s\n", path); */
+    /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "enqueuing regular: %s\n", path); */
     ret = chrarray_add(&pl->list, path, strlen(path) + 1);
 
   } else if (S_ISDIR(st.st_mode)) {
@@ -318,7 +318,7 @@ int playlist_get(char *name, size_t maxlen, struct playlist *pl, int dir)
     return 0;
 
   if (!maxlen) {
-    fprintf(stderr, "uade123: playlist_get(): given maxlen = 0\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade123: playlist_get(): given maxlen = 0\n");
     return 0;
   }
 
@@ -339,7 +339,7 @@ int playlist_get(char *name, size_t maxlen, struct playlist *pl, int dir)
   }
 
   if (len > maxlen) {
-    fprintf(stderr, "uade: playlist_get(): too long a string: %s\n", s);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: playlist_get(): too long a string: %s\n", s);
     return 0;
   }
 

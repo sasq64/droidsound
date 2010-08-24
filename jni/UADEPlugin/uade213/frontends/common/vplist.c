@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-
+#include <android/log.h>
 #include "vplist.h"
 
 
@@ -12,7 +12,7 @@ static void shrink_vplist(struct vplist *v, size_t newsize)
   size_t ncopied = v->tail - v->head;
   void **newl;
   if (newsize >= v->allocated) {
-    fprintf(stderr, "vplist not shrinked.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "vplist not shrinked.\n");
     return;
   }
   memmove(v->l, &v->l[v->head], ncopied * sizeof(v->l[0]));
@@ -20,7 +20,7 @@ static void shrink_vplist(struct vplist *v, size_t newsize)
   v->tail = ncopied;
   v->allocated = newsize;
   if ((newl = realloc(v->l, v->allocated * sizeof(v->l[0]))) == NULL) {
-    fprintf(stderr, "Not enough memory for shrinking vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Not enough memory for shrinking vplist.\n");
     exit(-1);
   }
   v->l = newl;
@@ -35,7 +35,7 @@ void vplist_grow(struct vplist *v)
     newsize = VPLIST_BASIC_LENGTH;
   newl = realloc(v->l, newsize * sizeof(v->l[0]));
   if (newl == NULL) {
-    fprintf(stderr, "Not enough memory for growing vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Not enough memory for growing vplist.\n");
     exit(-1);
   }
   v->l = newl;
@@ -47,14 +47,14 @@ struct vplist *vplist_create(size_t initial_length)
 {
   struct vplist *v;
   if ((v = calloc(1, sizeof(*v))) == NULL) {
-    fprintf(stderr, "No memory for vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No memory for vplist.\n");
     exit(-1);
   }
   if (initial_length == 0)
     initial_length = VPLIST_BASIC_LENGTH;
   v->allocated = initial_length;
   if ((v->l = malloc(v->allocated * sizeof(v->l[0]))) == NULL) {
-    fprintf(stderr, "Can not create a vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not create a vplist.\n");
     exit(-1);
   }
   return v;
@@ -82,7 +82,7 @@ void *vplist_pop_head(struct vplist *v)
   void *item;
 
   if (v->head == v->tail) {
-    fprintf(stderr, "Error: can not pop head from an empty vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: can not pop head from an empty vplist.\n");
     exit(-1);
   }
 
@@ -101,7 +101,7 @@ void *vplist_pop_tail(struct vplist *v)
   void *item;
 
   if (v->head == v->tail) {
-    fprintf(stderr, "Error: can not pop tail from an empty vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: can not pop tail from an empty vplist.\n");
     exit(-1);
   }
 

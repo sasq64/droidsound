@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-
+#include <android/log.h>
 #include "songdb.h"
 #include "uadeconf.h"
 #include "md5.h"
@@ -22,7 +22,7 @@
 #define NORM_ID "n="
 #define NORM_ID_LENGTH 2
 
-#define eserror(fmt, args...) do { fprintf(stderr, "song.conf error on line %zd: " fmt "\n", lineno, ## args); exit(-1); } while (0)
+#define eserror(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "song.conf error on line %zd: " fmt "\n", lineno, ## args); exit(-1); } while (0)
 
 
 struct eaglesong {
@@ -60,7 +60,7 @@ static void add_sub_normalisation(struct uade_content *n, char *normalisation)
 
 	subinfo->sub = strtol(normalisation, &endptr, 10);
 	if (*endptr != ',' || subinfo->sub < 0) {
-		fprintf(stderr, "Invalid normalisation entry: %s\n", normalisation);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid normalisation entry: %s\n", normalisation);
 		return;
 	}
 
@@ -109,7 +109,7 @@ static struct uade_content *create_content_checksum(const char *md5,
 		n = realloc(contentchecksums,
 			    nccalloc * sizeof(struct uade_content));
 		if (n == NULL) {
-			fprintf(stderr,
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"uade: No memory for new content checksums.\n");
 			return NULL;
 		}
@@ -150,7 +150,7 @@ static void md5_from_buffer(char *dest, size_t destlen,
 		     md5[7], md5[8], md5[9], md5[10], md5[11], md5[12], md5[13],
 		     md5[14], md5[15]);
 	if (ret >= destlen || ret != 32) {
-		fprintf(stderr, "md5 buffer error (%d/%zd)\n", ret, destlen);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "md5 buffer error (%d/%zd)\n", ret, destlen);
 		exit(1);
 	}
 }
@@ -305,10 +305,11 @@ static int uade_open_and_lock(const char *filename, int create)
 			return -1;
 		}
 	}
-#ifndef UADE_HAVE_CYGWIN
+
+#if 0 //ndef UADE_HAVE_CYGWIN
 	ret = lockf(fd, F_LOCK, 0);
 	if (ret) {
-		fprintf(stderr, "uade: Unable to lock song.conf: %s (%s)\n",
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Unable to lock song.conf: %s (%s)\n",
 			filename, strerror(errno));
 		atomic_close(fd);
 		return -1;
@@ -350,7 +351,7 @@ static struct uade_content *store_playtime(const char *md5, long playtime,
 	if (n == NULL) {
 		/* No memory, fuck. We shouldn't save anything to
 		   avoid losing data. */
-		fprintf(stderr,
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 			"uade: Warning, no memory for the song database\n");
 		cccorrupted = 1;
 	}
@@ -389,13 +390,13 @@ int uade_read_content_db(const char *filename)
 
 	fd = uade_open_and_lock(filename, 0);
 	if (fd < 0) {
-		fprintf(stderr, "uade: Can not find %s\n", filename);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Can not find %s\n", filename);
 		return 0;
 	}
 
 	f = fdopen(fd, "r");
 	if (f == NULL) {
-		fprintf(stderr, "uade: Can not create FILE structure for %s\n",
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Can not create FILE structure for %s\n",
 			filename);
 		close(fd);
 		return 0;
@@ -422,7 +423,7 @@ int uade_read_content_db(const char *filename)
 
 		playtime = strtol(&line[i], &eptr, 10);
 		if (*eptr != 0 || playtime < 0) {
-			fprintf(stderr, "Invalid playtime for md5 %s on contentdb line %zd: %s\n", md5, lineno, numberstr);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid playtime for md5 %s on contentdb line %zd: %s\n", md5, lineno, numberstr);
 			continue;
 		}
 
@@ -442,7 +443,7 @@ int uade_read_content_db(const char *filename)
 				id += NORM_ID_LENGTH;
 				add_sub_normalisation(n, id);
 			} else {
-				fprintf(stderr,	"Unknown contentdb directive on line %zd: %s\n", lineno, id);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"Unknown contentdb directive on line %zd: %s\n", lineno, id);
 			}
 		}
 	}
@@ -503,14 +504,14 @@ int uade_read_song_conf(const char *filename)
 		memset(s, 0, sizeof s[0]);
 
 		if (strncasecmp(items[0], "md5=", 4) != 0) {
-			fprintf(stderr, "Line %zd must begin with md5= in %s\n",
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Line %zd must begin with md5= in %s\n",
 				lineno, filename);
 			free(items);
 			continue;
 		}
 		if (strlcpy(s->md5, items[0] + 4, sizeof s->md5) !=
 		    ((sizeof s->md5) - 1)) {
-			fprintf(stderr,
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"Line %zd in %s has too long an md5sum.\n",
 				lineno, filename);
 			free(items);
@@ -522,7 +523,7 @@ int uade_read_song_conf(const char *filename)
 				break;
 			if (uade_song_and_player_attribute(&s->attributes, &s->flags, items[i], lineno))
 				continue;
-			fprintf(stderr, "song option %s is invalid\n", items[i]);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "song option %s is invalid\n", items[i]);
 		}
 
 		for (i = 0; items[i] != NULL; i++)
@@ -560,14 +561,14 @@ void uade_save_content_db(const char *filename)
 
 	fd = uade_open_and_lock(filename, 1);
 	if (fd < 0) {
-		fprintf(stderr, "uade: Can not write content db: %s\n",
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Can not write content db: %s\n",
 			filename);
 		return;
 	}
 
 	f = fdopen(fd, "w");
 	if (f == NULL) {
-		fprintf(stderr,
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 			"uade: Can not create a FILE structure for content db: %s\n",
 			filename);
 		close(fd);
@@ -594,7 +595,7 @@ void uade_save_content_db(const char *filename)
 			    snprintf(&str[bindex], bleft, NORM_ID "%s ",
 				     sub->normalisation);
 			if (ret >= bleft) {
-				fprintf(stderr,
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 					"Too much subsong infos for %s\n",
 					n->md5);
 				break;
@@ -610,7 +611,7 @@ void uade_save_content_db(const char *filename)
 	ccmodified = 0;
 
 	fclose(f);
-	fprintf(stderr, "uade: Saved %zd entries into content db.\n", nccused);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Saved %zd entries into content db.\n", nccused);
 }
 
 int uade_test_silence(void *buf, size_t size, struct uade_state *state)
@@ -678,7 +679,7 @@ int uade_update_song_conf(const char *songconfin, const char *songconfout,
 	int need_newline = 0;
 
 	if (strlen(options) > 128) {
-		fprintf(stderr, "Too long song.conf options.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Too long song.conf options.\n");
 		return 0;
 	}
 
@@ -686,7 +687,7 @@ int uade_update_song_conf(const char *songconfin, const char *songconfout,
 
 	input = atomic_read_file(&inputsize, songconfin);
 	if (input == NULL) {
-		fprintf(stderr, "Can not read song.conf: %s\n", songconfin);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not read song.conf: %s\n", songconfin);
 		atomic_close(fd);	/* closes the lock too */
 		return 0;
 	}
@@ -694,7 +695,7 @@ int uade_update_song_conf(const char *songconfin, const char *songconfout,
 	newsize = inputsize + strlen(options) + strlen(songname) + 64;
 	mem = realloc(input, newsize);
 	if (mem == NULL) {
-		fprintf(stderr,
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 			"Can not realloc the input file buffer for song.conf.\n");
 		free(input);
 		atomic_close(fd);	/* closes the lock too */
@@ -723,7 +724,7 @@ int uade_update_song_conf(const char *songconfin, const char *songconfout,
 
 		if (strncasecmp(inputptr + 4, md5, 32) == 0) {
 			if (found) {
-				fprintf(stderr,
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 					"Warning: dupe entry in song.conf: %s (%s)\n"
 					"Need manual resolving.\n", songname,
 					md5);
@@ -779,7 +780,7 @@ int uade_update_song_conf(const char *songconfin, const char *songconfout,
 	outputptr += ret;
 
 	if (ftruncate(fd, 0)) {
-		fprintf(stderr, "Can not truncate the file.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not truncate the file.\n");
 		goto error;
 	}
 
@@ -787,7 +788,7 @@ int uade_update_song_conf(const char *songconfin, const char *songconfout,
 	i = (size_t) (outputptr - input);
 
 	if (atomic_write(fd, input, i) < i)
-		fprintf(stderr,
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 			"Unable to write file contents back. Data loss happened. CRAP!\n");
 
       error:

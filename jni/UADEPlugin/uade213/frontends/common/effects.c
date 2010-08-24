@@ -10,7 +10,7 @@
 #include <assert.h>
 #include <string.h>
 #include <math.h>
-
+#include <android/log.h>
 #include <compilersupport.h>
 
 #include "effects.h"
@@ -245,7 +245,7 @@ void uade_effect_set_sample_rate(struct uade_effect *ue, int rate)
 	calculate_rc(rate, HEADPHONE2_SHADOW_FREQ, &headphone2_rc_r);
 	headphone2_delay_length = HEADPHONE2_DELAY_TIME * rate + 0.5;
 	if (headphone2_delay_length > HEADPHONE2_DELAY_MAX_LENGTH) {
-		fprintf(stderr,	"effects.c: truncating headphone delay line due to samplerate exceeding 96 kHz.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"effects.c: truncating headphone delay line due to samplerate exceeding 96 kHz.\n");
 		headphone2_delay_length = HEADPHONE2_DELAY_MAX_LENGTH;
 	}
 }
@@ -302,7 +302,7 @@ void uade_effect_normalise_serialise(char *buf, size_t len)
 		peak = normalise_historic_maximum_peak;
 
 	if (snprintf(buf, len, "v=1,p=%d", peak) >= len) {
-		fprintf(stderr,	"normalise effect: buffer too short, gain would be truncated. This is a bug in UADE.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"normalise effect: buffer too short, gain would be truncated. This is a bug in UADE.\n");
 		exit(-1);
 	}
 }
@@ -322,17 +322,17 @@ void uade_effect_normalise_unserialise(const char *buf)
 	readcount = sscanf(buf, "v=%d,p=%f", &version, &peak);
 
 	if (readcount == 0) {
-		fprintf(stderr, "normalise effect: gain string invalid: '%s'\n", buf);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "normalise effect: gain string invalid: '%s'\n", buf);
 		exit(-1);
 	}
 
 	if (version != 1) {
-		fprintf(stderr,	"normalise effect: unrecognized gain version: '%s'\n", buf);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"normalise effect: unrecognized gain version: '%s'\n", buf);
 		exit(-1);
 	}
 
 	if (readcount != 2) {
-		fprintf(stderr,	"Could not read peak value for version 1: '%s'\n", buf);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"Could not read peak value for version 1: '%s'\n", buf);
 		exit(-1);
 	}
 
@@ -340,7 +340,7 @@ void uade_effect_normalise_unserialise(const char *buf)
 		normalise_oldlevel = normalise_historic_maximum_peak =
 		    32768 * peak;
 	} else {
-		fprintf(stderr, "normalise effect: invalid peak level: '%s'\n", buf);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "normalise effect: invalid peak level: '%s'\n", buf);
 	}
 }
 

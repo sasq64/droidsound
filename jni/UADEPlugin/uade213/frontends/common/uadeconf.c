@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include <android/log.h>
 #include "ossupport.h"
 #include "uadeconf.h"
 #include "uadeconfig.h"
@@ -140,7 +140,7 @@ double uade_convert_to_double(const char *value, double def, double low,
 	}
 
 	if (*endptr != 0 || v < low || v > high) {
-		fprintf(stderr, "Invalid %s value: %s\n", type, value);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid %s value: %s\n", type, value);
 		v = def;
 	}
 
@@ -152,7 +152,7 @@ static void uade_add_ep_option(struct uade_ep_options *opts, const char *s)
 	size_t freespace = sizeof(opts->o) - opts->s;
 
 	if (strlcpy(&opts->o[opts->s], s, freespace) >= freespace) {
-		fprintf(stderr, "Warning: uade eagleplayer option overflow: %s\n", s);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Warning: uade eagleplayer option overflow: %s\n", s);
 		return;
 	}
 
@@ -178,7 +178,7 @@ static int handle_attributes(struct uade_config *uc, struct uade_song *us,
 	}
 
 	if (flags & ES_NEVER_ENDS)
-		fprintf(stderr, "uade: ES_NEVER_ENDS is not implemented. What should it do?\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: ES_NEVER_ENDS is not implemented. What should it do?\n");
 
 	if (flags & ES_REJECT)
 		return -1;
@@ -190,7 +190,7 @@ static int handle_attributes(struct uade_config *uc, struct uade_song *us,
 		switch (a->type) {
 		case ES_EP_OPTION:
 			if (uc->verbose)
-				fprintf(stderr, "Using eagleplayer option %s\n", a->s);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Using eagleplayer option %s\n", a->s);
 			uade_add_ep_option(&us->ep_options, a->s);
 			break;
 
@@ -210,7 +210,7 @@ static int handle_attributes(struct uade_config *uc, struct uade_song *us,
 			if (playername) {
 				snprintf(playername, playernamelen, "%s/players/%s", uc->basedir.name, a->s);
 			} else {
-				fprintf(stderr, "Error: attribute handling was given playername == NULL.\n");
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: attribute handling was given playername == NULL.\n");
 			}
 			break;
 
@@ -219,7 +219,7 @@ static int handle_attributes(struct uade_config *uc, struct uade_song *us,
 			break;
 
 		case ES_SUBSONGS:
-			fprintf(stderr, "Subsongs not implemented.\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Subsongs not implemented.\n");
 			break;
 
 		case ES_SUBSONG_TIMEOUT:
@@ -231,7 +231,7 @@ static int handle_attributes(struct uade_config *uc, struct uade_song *us,
 			break;
 
 		default:
-			fprintf(stderr,	"Unknown song attribute integer: 0x%x\n", a->type);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"Unknown song attribute integer: 0x%x\n", a->type);
 			break;
 		}
 
@@ -282,7 +282,7 @@ int uade_load_config(struct uade_config *uc, const char *filename)
 		if (opt) {
 			uade_set_config_option(uc, opt, value);
 		} else {
-			fprintf(stderr,	"Unknown config key in %s on line %d: %s\n", filename, linenumber, key);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"Unknown config key in %s on line %d: %s\n", filename, linenumber, key);
 		}
 	}
 
@@ -342,7 +342,7 @@ int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 	if (ucbase != NULL && ucbase->basedir_set) {
 		snprintf(songconfname, maxlen, "%s/song.conf",
 			 ucbase->basedir.name);
-		loaded = uade_read_song_conf(songconfname);
+		// loaded = uade_read_song_conf(songconfname);
 	}
 
 	/* Avoid unwanted home directory creation for test mode */
@@ -354,14 +354,14 @@ int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 	/* Try to load from home dir */
 	if (loaded == 0 && home != NULL) {
 		snprintf(songconfname, maxlen, "%s/.uade2/song.conf", home);
-		loaded = uade_read_song_conf(songconfname);
+		// loaded = uade_read_song_conf(songconfname);
 	}
 
 	/* No? Try install path */
 	if (loaded == 0) {
 		snprintf(songconfname, maxlen, "%s/song.conf",
 			 uc->basedir.name);
-		loaded = uade_read_song_conf(songconfname);
+		// loaded = uade_read_song_conf(songconfname);
 	}
 
 	return loaded;
@@ -447,7 +447,7 @@ int uade_parse_subsongs(int **subsongs, char *option)
 	*subsongs = NULL;
 
 	if (strlcpy(substr, option, sizeof subsongs) >= sizeof subsongs) {
-		fprintf(stderr, "Too long a subsong option: %s\n", option);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Too long a subsong option: %s\n", option);
 		return -1;
 	}
 
@@ -460,7 +460,7 @@ int uade_parse_subsongs(int **subsongs, char *option)
 
 	*subsongs = malloc((nsubsongs + 1) * sizeof((*subsongs)[0]));
 	if (*subsongs == NULL) {
-		fprintf(stderr, "No memory for subsongs.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No memory for subsongs.\n");
 		return -1;
 	}
 
@@ -533,7 +533,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 				   !strcmp(value, "0")) {
 				uc->action_keys = 0;
 			} else {
-				fprintf(stderr,
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 					"uade.conf: Unknown setting for action keys: %s\n",
 					value);
 			}
@@ -552,7 +552,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 				sizeof uc->basedir.name);
 			uc->basedir_set = 1;
 		} else {
-			fprintf(stderr, "uade: Passed NULL to UC_BASE_DIR.\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Passed NULL to UC_BASE_DIR.\n");
 		}
 		break;
 
@@ -561,12 +561,12 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 			uc->buffer_time_set = 1;
 			uc->buffer_time = strtol(value, &endptr, 10);
 			if (uc->buffer_time <= 0 || *endptr != 0) {
-				fprintf(stderr, "Invalid buffer_time: %s\n",
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid buffer_time: %s\n",
 					value);
 				uc->buffer_time = 0;
 			}
 		} else {
-			fprintf(stderr,
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"uade: Passed NULL to UC_BUFFER_TIME.\n");
 		}
 		break;
@@ -592,7 +592,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 			uade_add_ep_option(&uc->ep_options, value);
 			uc->ep_options_set = 1;
 		} else {
-			fprintf(stderr,
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"uade: Passed NULL to UC_EAGLEPLAYER_OPTION.\n");
 		}
 		break;
@@ -614,7 +614,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_FORCE_LED:
 		if (value == NULL) {
-			fprintf(stderr, "uade: UC_FORCE_LED value is NULL\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: UC_FORCE_LED value is NULL\n");
 			break;
 		}
 		if (strcasecmp(value, "off") == 0 || strcmp(value, "0") == 0) {
@@ -623,7 +623,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 			   || strcmp(value, "1") == 0) {
 			uc->led_state = 1;
 		} else {
-			fprintf(stderr, "Unknown force led argument: %s\n",
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown force led argument: %s\n",
 				value);
 			break;
 		}
@@ -644,18 +644,18 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_FREQUENCY:
 		if (value == NULL) {
-			fprintf(stderr, "uade: UC_FREQUENCY value is NULL\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: UC_FREQUENCY value is NULL\n");
 			break;
 		}
 		x = strtol(value, &endptr, 10);
 		if (*endptr != 0) {
-			fprintf(stderr, "Invalid frequency number: %s\n",
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid frequency number: %s\n",
 				value);
 			break;
 		}
 		/* The upper bound is NTSC Amigas bus freq */
 		if (x < 1 || x > 3579545) {
-			fprintf(stderr, "Frequency out of bounds: %ld\n", x);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Frequency out of bounds: %ld\n", x);
 			x = UADE_DEFAULT_FREQUENCY;
 		}
 		SET_OPTION(frequency, x);
@@ -663,7 +663,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_GAIN:
 		if (value == NULL) {
-			fprintf(stderr, "uade: UC_GAIN value is NULL\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: UC_GAIN value is NULL\n");
 			break;
 		}
 		SET_OPTION(gain_enable, 1);
@@ -684,14 +684,14 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_RESAMPLER:
 		if (value == NULL) {
-			fprintf(stderr, "uade.conf: No resampler given.\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade.conf: No resampler given.\n");
 			break;
 		}
 		uc->resampler = strdup(value);
 		if (uc->resampler != NULL) {
 			uc->resampler_set = 1;
 		} else {
-			fprintf(stderr,	"uade.conf: no memory for resampler.\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"uade.conf: no memory for resampler.\n");
 		}
 		break;
 
@@ -718,7 +718,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_NORMALISE:
 		if (value == NULL) {
-			fprintf(stderr, "uade: UC_NORMALISE is NULL\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: UC_NORMALISE is NULL\n");
 			break;
 		}
 		SET_OPTION(normalise, 1);
@@ -739,7 +739,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_PANNING_VALUE:
 		if (value == NULL) {
-			fprintf(stderr, "uade: UC_PANNING_VALUE is NULL\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: UC_PANNING_VALUE is NULL\n");
 			break;
 		}
 		SET_OPTION(panning_enable, 1);
@@ -756,7 +756,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_SILENCE_TIMEOUT_VALUE:
 		if (value == NULL) {
-			fprintf(stderr,
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"uade: UC_SILENCE_TIMEOUT_VALUE is NULL\n");
 			break;
 		}
@@ -765,11 +765,11 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_SONG_TITLE:
 		if (value == NULL) {
-			fprintf(stderr, "uade: No song_title format given.\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: No song_title format given.\n");
 			break;
 		}
 		if ((uc->song_title = strdup(value)) == NULL) {
-			fprintf(stderr, "No memory for song title format\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No memory for song title format\n");
 		} else {
 			uc->song_title_set = 1;
 		}
@@ -781,7 +781,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_SUBSONG_TIMEOUT_VALUE:
 		if (value == NULL) {
-			fprintf(stderr,
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"uade: UC_SUBSONG_TIMEOUT_VALUE is NULL\n");
 			break;
 		}
@@ -790,7 +790,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 
 	case UC_TIMEOUT_VALUE:
 		if (value == NULL) {
-			fprintf(stderr, "uade: UC_TIMEOUT_VALUE is NULL\n");
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: UC_TIMEOUT_VALUE is NULL\n");
 			break;
 		}
 		uade_set_timeout(uc, value);
@@ -805,7 +805,7 @@ void uade_set_config_option(struct uade_config *uc, enum uade_option opt,
 		break;
 
 	default:
-		fprintf(stderr, "uade_set_config_option(): unknown enum: %d\n",
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade_set_config_option(): unknown enum: %d\n",
 			opt);
 		exit(1);
 	}
@@ -832,7 +832,7 @@ void uade_set_filter_type(struct uade_config *uc, const char *model)
 		uc->filter_type = FILTER_MODEL_A1200;
 
 	} else {
-		fprintf(stderr, "Unknown filter model: %s\n", model);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter model: %s\n", model);
 	}
 }
 
@@ -845,7 +845,7 @@ static int uade_set_silence_timeout(struct uade_config *uc, const char *value)
 	}
 	t = strtol(value, &endptr, 10);
 	if (*endptr != 0 || t < -1) {
-		fprintf(stderr, "Invalid silence timeout value: %s\n", value);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid silence timeout value: %s\n", value);
 		return -1;
 	}
 	uc->silence_timeout = t;
@@ -862,7 +862,7 @@ static int uade_set_subsong_timeout(struct uade_config *uc, const char *value)
 	}
 	t = strtol(value, &endptr, 10);
 	if (*endptr != 0 || t < -1) {
-		fprintf(stderr, "Invalid subsong timeout value: %s\n", value);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid subsong timeout value: %s\n", value);
 		return -1;
 	}
 	uc->subsong_timeout = t;
@@ -879,7 +879,7 @@ static int uade_set_timeout(struct uade_config *uc, const char *value)
 	}
 	t = strtol(value, &endptr, 10);
 	if (*endptr != 0 || t < -1) {
-		fprintf(stderr, "Invalid timeout value: %s\n", value);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid timeout value: %s\n", value);
 		return -1;
 	}
 	uc->timeout = t;

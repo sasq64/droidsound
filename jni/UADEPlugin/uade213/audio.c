@@ -9,12 +9,12 @@
   */
 
 #include <math.h>
-
+#include <android/log.h>
 #include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
-#include "memory.h"
+#include "include/memory.h"
 #include "custom.h"
 #include "gensound.h"
 #include "sd-sound.h"
@@ -119,7 +119,7 @@ static int filter(int input, struct filter_state *fs)
         break;
 
     default:
-	fprintf(stderr, "Unknown filter mode\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter mode\n");
 	exit(-1);
     }
 
@@ -148,7 +148,7 @@ static void check_sound_buffers (void)
 	/* if sound core doesn't report audio output start in 3 seconds from
 	   the reboot, begin audio output anyway */
 	if (uade_audio_skip >= (sound_bytes_per_second * 3)) {
-	    fprintf(stderr, "involuntary audio output start\n");
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "involuntary audio output start\n");
 	    uade_audio_output = 1;
 	}
 	sndbufpt = sndbuffer;
@@ -163,7 +163,7 @@ static inline void sample_backend(int left, int right)
     for (nr = 0; nr < 4; nr++) {
 	struct audio_channel_data *cdp = audio_channel + nr;
 	if (cdp->state != 0 && cdp->datpt != 0 && (dmacon & (1 << nr)) && cdp->datpt >= cdp->datptend) {
-	    fprintf(stderr, "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
 	}
     }
 #endif
@@ -301,7 +301,7 @@ static void audio_handler (int nr)
 
     switch (cdp->state) {
      case 0:
-	fprintf(stderr, "Bug in sound code\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bug in sound code\n");
 	break;
 
      case 1:
@@ -463,7 +463,7 @@ void audio_set_filter(int filter_type, int filter_force)
   /* If filter_type is zero, filtering is disabled, but if it's
      non-zero, it contains the filter type (a500 or a1200) */
   if (filter_type < 0 || filter_type >= FILTER_MODEL_UPPER_BOUND) {
-    fprintf(stderr, "Invalid filter number: %d\n", filter_type);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid filter number: %d\n", filter_type);
     exit(-1);
   }
   sound_use_filter = filter_type;
@@ -509,7 +509,7 @@ void audio_set_resampler(char *name)
 	sample_handler = sample16s_handler;
 	sample_prehandler = NULL;
     } else {
-	fprintf(stderr, "\nUnknown resampling method: %s. Using the default.\n", name);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nUnknown resampling method: %s. Using the default.\n", name);
     }
 }
 

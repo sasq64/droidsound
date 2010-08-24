@@ -36,7 +36,7 @@
 #define PLUGIN_DEBUG 0
 
 #if PLUGIN_DEBUG
-#define plugindebug(fmt, args...) do { fprintf(stderr, "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); } while(0)
+#define plugindebug(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); } while(0)
 #else
 #define plugindebug(fmt, args...)
 #endif
@@ -254,7 +254,7 @@ int uade_get_min_subsong(int def)
 void uade_lock(void)
 {
   if (pthread_mutex_lock(&vlock)) {
-    fprintf(stderr, "UADE2 locking error.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 locking error.\n");
     exit(-1);
   }
 }
@@ -263,7 +263,7 @@ void uade_lock(void)
 void uade_unlock(void)
 {
   if (pthread_mutex_unlock(&vlock)) {
-    fprintf(stderr, "UADE2 unlocking error.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 unlocking error.\n");
     exit(-1);
   }
 }
@@ -300,8 +300,8 @@ static void uade_init(void)
   }
 
   if (config_loaded == 0) {
-    fprintf(stderr, "No config file found for UADE XMMS plugin. Will try to load config from\n");
-    fprintf(stderr, "$HOME/.uade2/uade.conf in the future.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No config file found for UADE XMMS plugin. Will try to load config from\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "$HOME/.uade2/uade.conf in the future.\n");
   }
 }
 
@@ -385,7 +385,7 @@ static int initialize_song(char *filename)
   ret = uade_song_initialization(scorename, playername, modulename, &state);
   if (ret) {
     if (ret != UADECORE_CANT_PLAY && ret != UADECORE_INIT_ERROR) {
-      fprintf(stderr, "Can not initialize song. Unknown error.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not initialize song. Unknown error.\n");
       plugin_disabled = 1;
     }
     uade_unalloc_song(&state);
@@ -478,7 +478,7 @@ static void *play_loop(void *arg)
 	    while (uade_ip.output->buffer_playing()) {
 	      /* Sleep at most 5 secs */
 	      if (x >= 500) {
-		fprintf(stderr, "UADE: blocking work-around activated.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: blocking work-around activated.\n");
 		break;
 	      }
 	      x++;
@@ -508,7 +508,7 @@ static void *play_loop(void *arg)
       left = uade_read_request(&state.ipc);
 
       if (uade_send_short_message(UADE_COMMAND_TOKEN, &state.ipc)) {
-	fprintf(stderr, "Can not send token.\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send token.\n");
 	return NULL;
       }
       controlstate = UADE_R_STATE;
@@ -516,7 +516,7 @@ static void *play_loop(void *arg)
     } else {
 
       if (uade_receive_message(um, sizeof(space), &state.ipc) <= 0) {
-	fprintf(stderr, "Can not receive events from uade\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive events from uade\n");
 	exit(-1);
       }
 
@@ -632,7 +632,7 @@ static void *play_loop(void *arg)
 
       case UADE_REPLY_SONG_END:
 	if (um->size < 9) {
-	  fprintf(stderr, "Invalid song end reply\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song end reply\n");
 	  exit(-1);
 	}
 	tailbytes = ntohl(((uint32_t *) um->data)[0]);
@@ -650,15 +650,15 @@ static void *play_loop(void *arg)
 	while (reason[i] && i < (um->size - 8))
 	  i++;
 	if (reason[i] != 0 || (i != (um->size - 9))) {
-	  fprintf(stderr, "Broken reason string with song end notice\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Broken reason string with song end notice\n");
 	  exit(-1);
 	}
-	/* fprintf(stderr, "Song end (%s)\n", reason); */
+	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song end (%s)\n", reason); */
 	break;
 
       case UADE_REPLY_SUBSONG_INFO:
 	if (um->size != 12) {
-	  fprintf(stderr, "subsong info: too short a message\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "subsong info: too short a message\n");
 	  exit(-1);
 	}
 	u32ptr = (uint32_t *) um->data;
@@ -669,7 +669,7 @@ static void *play_loop(void *arg)
 
 	if (!(-1 <= state.song->min_subsong && state.song->min_subsong <= state.song->cur_subsong && state.song->cur_subsong <= state.song->max_subsong)) {
 	  int tempmin = state.song->min_subsong, tempmax = state.song->max_subsong;
-	  fprintf(stderr, "uade: The player is broken. Subsong info does not match with %s.\n", gui_filename);
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: The player is broken. Subsong info does not match with %s.\n", gui_filename);
 	  state.song->min_subsong = tempmin <= tempmax ? tempmin : tempmax;
 	  state.song->max_subsong = tempmax >= tempmin ? tempmax : tempmin;
 	  if (state.song->cur_subsong > state.song->max_subsong)
@@ -681,7 +681,7 @@ static void *play_loop(void *arg)
 	break;
 
       default:
-	fprintf(stderr, "Expected sound data. got %d.\n", um->msgtype);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Expected sound data. got %d.\n", um->msgtype);
 	plugin_disabled = 1;
 	return NULL;
       }
@@ -691,23 +691,23 @@ static void *play_loop(void *arg)
   last_beat_played = 1;
 
   if (uade_send_short_message(UADE_COMMAND_REBOOT, &state.ipc)) {
-    fprintf(stderr, "Can not send reboot.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send reboot.\n");
     return NULL;
   }
 
   if (uade_send_short_message(UADE_COMMAND_TOKEN, &state.ipc)) {
-    fprintf(stderr, "Can not send token.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send token.\n");
     return NULL;
   }
 
   do {
     ret = uade_receive_message(um, sizeof(space), &state.ipc);
     if (ret < 0) {
-      fprintf(stderr, "Can not receive events from uade.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive events from uade.\n");
       return NULL;
     }
     if (ret == 0) {
-      fprintf(stderr, "End of input after reboot.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "End of input after reboot.\n");
       return NULL;
     }
   } while (um->msgtype != UADE_COMMAND_TOKEN);
@@ -765,7 +765,7 @@ static void uade_play_file(char *filename)
   }
 
   if (plugin_disabled) {
-    fprintf(stderr, "An error has occured. uade plugin is internally disabled.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "An error has occured. uade plugin is internally disabled.\n");
     goto err;
   }
 
@@ -788,7 +788,7 @@ static void uade_play_file(char *filename)
     goto err;
 
   if (pthread_create(&decode_thread, NULL, play_loop, NULL)) {
-    fprintf(stderr, "uade: can't create play_loop() thread\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't create play_loop() thread\n");
     goto err;
   }
 

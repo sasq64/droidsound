@@ -50,16 +50,24 @@ INCLUDES= $(ARCHINCLUDES) -I. -I./include
 
 CPUEMUOBJS = cpuemu1.o cpuemu2.o cpuemu3.o cpuemu4.o cpuemu5.o cpuemu6.o cpuemu7.o cpuemu8.o
 
-OBJS = main.o newcpu.o memory.o custom.o cia.o audio.o compiler.o cpustbl.o \
+BASEOBJS = main.o newcpu.o memory.o custom.o cia.o audio.o compiler.o cpustbl.o \
        missing.o sd-sound.o md-support.o cfgfile.o fpp.o debug.o \
        readcpu.o cpudefs.o $(CPUEMUOBJS) \
-       uade.o uadeipc.o unixatomic.o ossupport.o \
+       uade.o uadeipc.o \
        uademain.o sinctable.o text_scope.o
+
+OBJS = main.o $(BASEOBJS) unixatomic.o ossupport.o
+LIBOBJS = $(BASEOBJS) simpleipc.o simplesupport.o
+
 
 all:	uadecore
 
 uadecore:	$(OBJS)
 	$(CC) $(ARCHFLAGS) -o $@ $(OBJS) $(LIBRARIES)
+
+libuade.a:	$(LIBOBJS)
+	$(AR) rs $@ $(LIBOBJS) 
+
 
 clean:
 	-rm -f $(OBJS) *.o uadecore

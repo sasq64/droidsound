@@ -57,7 +57,7 @@ void process_config_options(const struct uade_config *uc)
 
     value = strchr(key, ':');
     if (value == NULL) {
-      fprintf(stderr, "uade: Invalid ao option: %s\n", key);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Invalid ao option: %s\n", key);
       continue;
     }
     *value = 0;
@@ -81,7 +81,7 @@ int audio_init(const struct uade_config *uc)
   if (uade_output_file_name[0]) {
     driver = ao_driver_id(uade_output_file_format[0] ? uade_output_file_format : "wav");
     if (driver < 0) {
-      fprintf(stderr, "Invalid libao driver\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid libao driver\n");
       return 0;
     }
     libao_device = ao_open_file(driver, uade_output_file_name, 1, &format, NULL);
@@ -91,7 +91,7 @@ int audio_init(const struct uade_config *uc)
   }
 
   if (libao_device == NULL) {
-    fprintf(stderr, "Can not open ao device: %d\n", errno);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not open ao device: %d\n", errno);
     return 0;
   }
 

@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define uade_error(fmt, args...) do { \
-    fprintf(stderr, "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); \
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); \
     abort(); \
   } while (0)
 

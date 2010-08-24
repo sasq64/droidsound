@@ -10,9 +10,9 @@
 #include "uadeipc.h"
 
 
-#define die(fmt, args...) do { fprintf(stderr, "uade: " fmt, ## args); exit(1); } while(0)
+#define die(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: " fmt, ## args); exit(1); } while(0)
 
-#define dieerror(fmt, args...) do { fprintf(stderr, "uade: " fmt ": %s\n", ## args, strerror(errno)); exit(1); } while(0)
+#define dieerror(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: " fmt ": %s\n", ## args, strerror(errno)); exit(1); } while(0)
 
 
 char *uade_dirname(char *dst, char *src, size_t maxlen);

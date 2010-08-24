@@ -1,5 +1,5 @@
 #include "ossupport.h"
-
+#include <android/log.h>
 #include "unixsupport.c"
 /* This module was written by Heikki Orsila <heikki.orsila@iki.fi> 2000-2005.
  * No copyrights claimed, so this module is in Public Domain (only this

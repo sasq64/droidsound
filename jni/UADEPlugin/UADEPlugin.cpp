@@ -13,12 +13,13 @@ extern "C" {
 #include "eagleplayer.h"
 #include "uadeipc.h"
 #include "uadecontrol.h"
-
-#include "uadecontrol.h"
 #include "uadeconf.h"
+#include "songdb.h"
 
-int uade_init();
-void uade_go();
+// int uade_init();
+// void uade_go();
+int uade_main (int argc, char **argv);
+
 }
 
 #define INFO_TITLE 0
@@ -33,7 +34,8 @@ void uade_go();
 
 /// UADE STUFF
 
-static struct eagleplayerstore *eaglestore = NULL;
+//static struct eagleplayerstore *eaglestore = NULL;
+int eaglestore = 0;
 struct eagleplayer *lastplayer = NULL;
 char lastext[16] = "";
 char current_format[80] = "";
@@ -54,7 +56,7 @@ static int playbytes;
 static int uade_song_end_trigger = 0;
 static int subsong_end = 0;
 
-enum uade_control_state state = UADE_S_STATE;
+//enum uade_control_state state = UADE_S_STATE;
 
 int new_subsong = -1;
 
@@ -66,7 +68,7 @@ struct Player
 int totalSongs = -1;
 int startSong = -1;
 
-
+/*
 struct eagleplayer *get_player(const char *name)
 {
 	const char *sext = strrchr(name, '.');
@@ -96,7 +98,7 @@ struct eagleplayer *get_player(const char *name)
 	//}
 
 }
-
+*/
 
 //#if (defined _WIN32 || defined GP2X)
 //unsigned int htonl(unsigned int l)
@@ -109,11 +111,14 @@ struct eagleplayer *get_player(const char *name)
 short *soundBuffer = NULL;
 short *soundPtr = NULL;
 
+enum uade_control_state ctrlstate = UADE_S_STATE;
+
 static int run_client()
 {
-	//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", state);
 
-	if(state == UADE_S_STATE)
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
+
+	if(ctrlstate == UADE_S_STATE)
 	{
 		if(uade_song_end_trigger) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "song_end_trigger");
@@ -132,7 +137,7 @@ static int run_client()
 
 		if(new_subsong >= 0)
 		{
-			uade_change_subsong(new_subsong, &uadeipc);
+			// uade_change_subsong(new_subsong, &uadeipc);
 			new_subsong = -1;
 		}
 
@@ -143,11 +148,11 @@ static int run_client()
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send token\n");
 			return 0;
 		}
-		state = UADE_R_STATE;
+		ctrlstate = UADE_R_STATE;
 	}
 
-	/* receive state */
-	if(state == UADE_R_STATE)
+	/* receive ctrlstate */
+	if(ctrlstate == UADE_R_STATE)
 	{
 		uint16_t *sm;
 
@@ -162,7 +167,7 @@ static int run_client()
 		switch (um->msgtype)
 		{
 		case UADE_COMMAND_TOKEN:
-			state = UADE_S_STATE;
+			ctrlstate = UADE_S_STATE;
 			break;
 
 		case UADE_REPLY_DATA:
@@ -273,40 +278,68 @@ static int run_client()
 }
 
 
-
 static pthread_t thread = 0;
+
+
 
 
 static void *threadProc(void *arg) {
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Starting thread");
-	uade_init();
-	uade_go();
+
+	const char *argv[5] = {"uadecore", "-i", "server", "-o", "client"};
+	uade_main(5, (char**)argv);
+
+	//uade_init();
+	//uade_go();
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Thread ended");
 	return NULL;
 }
 
 char baseDir[256] = "";
+struct uade_state state;
+int uadeconf_loaded;
+char uadeconfname[256];
 
 int init()
 {
 
 	char temp[256];
 
-	if(eaglestore == NULL) {
 
-		sprintf(temp, "%s/eagleplayer.conf", baseDir);
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Loading conf '%s'", temp);
-
-		eaglestore = uade_read_eagleplayer_conf(temp);
-
-		if(!eaglestore)
-			return -1;
+    //uadeconf_loaded = uade_load_initial_config(uadeconfname,
+		//			       sizeof uadeconfname,
+			//		       &state.config, NULL);
 
 
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "%d eagleplayer extentions\n", eaglestore->nextensions);
+
+	if(eaglestore == 0) {
+
+	   memset(&state, 0, sizeof state);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "baseDir os '%s'", baseDir);
+
+		uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof(uadeconfname), &state.config, NULL);
+
+	    strcpy(state.config.basedir.name, baseDir);
+
+		//if (!audio_init(state.config.frequency, state.config.buffer_time)) {
+		//	 __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "audio init failed");
+		//}
+
+		//sprintf(temp, "%s/eagleplayer.conf", baseDir);
+		//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Loading conf '%s'", temp);
+
+		//eaglestore = uade_read_eagleplayer_conf(temp);
+
+		//if(!eaglestore)
+		//	return -1;
+
+
+		//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "%d eagleplayer extentions\n", eaglestore->nextensions);
 
 		// __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%d eagleplayer extentions\n", eaglestore->nextensions);
 		uade_set_peer(&uadeipc, 1, "client", "server");
+		state.ipc = uadeipc;
+		eaglestore = 1;
 	}
 
 
@@ -410,11 +443,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	jboolean iscopy;
 	const char *filename = env->GetStringUTFChars(fname, &iscopy);
 
-	uint16_t atest[5] = { 0x1234, 0x5678, 0x9abc, 0xdef0, 0x2468 } ;
-	uint32_t *ap = (uint32_t*)&atest[1];
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
-	ap = (uint32_t*)&atest[0];
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
+	// uint16_t atest[5] = { 0x1234, 0x5678, 0x9abc, 0xdef0, 0x2468 } ;
+	// uint32_t *ap = (uint32_t*)&atest[1];
+	// __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
+	// ap = (uint32_t*)&atest[0];
+	// __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
 
 
 	// const char *slash = strrchr(filename, '/');
@@ -423,19 +456,25 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	// else
 	//	slash = filename;
 
+
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Getting player for %s", filename);
 
+	if(!uade_is_our_file(filename, 0, &state)) {
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Failed %s", filename);
+		return 0;
+	}
 
-	struct eagleplayer *player = uade_analyze_file_format(filename, baseDir, 1);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Player candidate: %s\n", state.ep->playername);
+
+	//struct eagleplayer *player = uade_analyze_file_format(filename, baseDir, 1);
 	//struct eagleplayer *player = get_player(filename);
 	//struct eagleplayer *player = uade_get_eagleplayer("mdat", eaglestore);
+
+	struct eagleplayer *player = state.ep;
 
 	if(!player) {
 		return 0;
 	}
-
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING '%s' with %s\n", filename, player->playername);
 
 
 	char plname[256];
@@ -455,6 +494,44 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "!! Could not open '%s'", filename);
 	}
 
+	if(strcmp(state.ep->playername, "custom") == 0) {
+		strcpy(plname, filename);
+	}
+
+
+	if (!uade_alloc_song(&state, filename)) {
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "alloc song failed '%s'", filename);
+	}
+	// state.song = (uade_song*)malloc(sizeof(uade_song));
+	// state.song->buf = 0;
+	// strcpy(state.song->module_filename, filename);
+
+
+	if (state.ep != NULL)
+	    uade_set_ep_attributes(&state);
+
+	// Now we have the final configuration in "uc".
+	uade_set_effects(&state);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING '%s' with %s\n", filename, plname);
+
+	if(strcmp("custom", player->playername) == 0) {
+		rc = uade_song_initialization(score, filename, "", &state);
+	} else {
+		rc = uade_song_initialization(score, plname, filename, &state);
+	}
+
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "RES %d", rc);
+
+
+	soundBuffer = (short*)malloc(44100 * 4);
+	soundPtr = soundBuffer;
+
+	run_client();
+
+
+/*
 
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "INIT SONG");
@@ -496,7 +573,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	}
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Totalsongs %d", totalSongs);
-
+*/
 
 	//run_client();
 
@@ -530,7 +607,7 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 	Player *player = (Player*)song;
 	//delete player;
 
-	if(state == UADE_R_STATE)
+	if(ctrlstate == UADE_R_STATE)
 		wait_token();
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "close2\n");
@@ -549,7 +626,7 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 
 	wait_token();
 
-	state = UADE_S_STATE;
+	ctrlstate = UADE_S_STATE;
 
 }
 

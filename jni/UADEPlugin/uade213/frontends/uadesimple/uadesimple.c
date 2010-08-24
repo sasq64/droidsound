@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     do {
 	DIR *bd;
 	if ((bd = opendir(state.config.basedir.name)) == NULL) {
-	    fprintf(stderr, "Could not access dir %s: %s\n",
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not access dir %s: %s\n",
 		    state.config.basedir.name, strerror(errno));
 	    exit(1);
 	}
@@ -87,17 +87,17 @@ int main(int argc, char *argv[])
 	    strlcpy(uadename, UADE_CONFIG_UADE_CORE, sizeof uadename);
 
 	if (access(configname, R_OK)) {
-	    fprintf(stderr, "Could not read %s: %s\n", configname,
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not read %s: %s\n", configname,
 		    strerror(errno));
 	    exit(1);
 	}
 	if (access(scorename, R_OK)) {
-	    fprintf(stderr, "Could not read %s: %s\n", scorename,
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not read %s: %s\n", scorename,
 		    strerror(errno));
 	    exit(1);
 	}
 	if (access(uadename, X_OK)) {
-	    fprintf(stderr, "Could not execute %s: %s\n", uadename,
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not execute %s: %s\n", uadename,
 		    strerror(errno));
 	    exit(1);
 	}
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	state.ep = NULL;
 
 	if (!uade_is_our_file(modulename, 0, &state)) {
-	    fprintf(stderr, "Unknown format: %s\n", modulename);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown format: %s\n", modulename);
 	    continue;
 	}
 
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (strlen(playername) == 0) {
-	    fprintf(stderr, "Error: an empty player name given\n");
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: an empty player name given\n");
 	    goto cleanup;
 	}
 
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 		sizeof songname);
 
 	if (!uade_alloc_song(&state, songname)) {
-	    fprintf(stderr, "Can not read %s: %s\n", songname,
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not read %s: %s\n", songname,
 		    strerror(errno));
 	    continue;
 	}
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 
 	playerfile = fopen(playername, "r");
 	if (playerfile == NULL) {
-	    fprintf(stderr, "Can not find player: %s (%s)\n", playername,
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not find player: %s (%s)\n", playername,
 		    strerror(errno));
 	    uade_unalloc_song(&state);
 	    continue;
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
 
 	debug(state.config.verbose, "Player: %s\n", playername);
 
-	fprintf(stderr, "Song: %s (%zd bytes)\n",
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song: %s (%zd bytes)\n",
 		state.song->module_filename, state.song->bufsize);
 
 	ret = uade_song_initialization(scorename, playername, modulename,
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 		continue;
 	    }
 
-	    fprintf(stderr, "Unknown error from uade_song_initialization()\n");
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown error from uade_song_initialization()\n");
 	    exit(1);
 	}
 

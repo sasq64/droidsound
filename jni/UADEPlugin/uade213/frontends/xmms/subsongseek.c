@@ -77,7 +77,7 @@ void uade_gui_seek_subsong(int to)
     GtkWidget *ffwd_button_frame;
 
     if (!uade_thread_running) {
-	fprintf(stderr, "uade: BUG! Seek not possible.\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: BUG! Seek not possible.\n");
 	return;
     }
 

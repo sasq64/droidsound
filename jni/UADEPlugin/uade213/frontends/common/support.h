@@ -5,7 +5,7 @@
 
 #define UADE_LINESIZE 1024
 
-#define uadeerror(fmt, args...) do { fprintf(stderr, "uade: " fmt, ## args); exit(1); } while (0)
+#define uadeerror(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: " fmt, ## args); exit(1); } while (0)
 
 #define MAX(x, y) ((x) >= (y) ? (x) : (y))
 #define MIN(x, y) ((x) < (y) ? (x) : (y))

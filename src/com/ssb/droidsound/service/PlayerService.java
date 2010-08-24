@@ -479,50 +479,6 @@ public class PlayerService extends Service {
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
-		
-		Log.v(TAG, "PlayerService created");
-	}
-	
-	@Override
-	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);
-		Log.v(TAG, "Service started");
-		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));		
-        if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
-			Uri uri = intent.getData();
-			if(uri == null) {
-				Bundle b = intent.getExtras();							
-				String f =  b.getString("musicFile");
-				int index = b.getInt("musicPos");
-				String [] names = (String []) b.getSerializable("musicList");
-				
-				playQueue = new PlayQueue(names, index, shuffleSongs);
-				
-				if(f == null) {
-					f = playQueue.current();
-				}
-
-				createThread();
-				if(f == null) {
-					String modname = (String) info[SONG_FILENAME];
-					if(names != null && modname != null) {
-						Log.v(TAG, "Got playlist without song");
-					}
-				} else {
-					Log.v(TAG, "Want to play list with " + f);
-					info[SONG_FILENAME] = f;
-					info[SONG_PLAYLIST] = "";
-					player.playMod(f);
-				}
-			} else {
-				Log.v(TAG, "Want to play " + intent.getDataString());
-				createThread();
-				info[SONG_PLAYLIST] = "";
-				info[SONG_FILENAME] = uri.getLastPathSegment();
-				player.playMod(intent.getDataString());
-			}
-		}
-        
         mediaReceiver = new BroadcastReceiver() {
         	
         	//boolean actionHandled = false;
@@ -656,6 +612,50 @@ public class PlayerService extends Service {
 		filter.addAction(Intent.ACTION_HEADSET_PLUG);
 		filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY - 1);		
 		registerReceiver(mediaReceiver, filter);		
+		
+		Log.v(TAG, "PlayerService created");
+	}
+	
+	@Override
+	public void onStart(Intent intent, int startId) {
+		super.onStart(intent, startId);
+		Log.v(TAG, "Service started");
+		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));		
+        if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
+			Uri uri = intent.getData();
+			if(uri == null) {
+				Bundle b = intent.getExtras();							
+				String f =  b.getString("musicFile");
+				int index = b.getInt("musicPos");
+				String [] names = (String []) b.getSerializable("musicList");
+				
+				playQueue = new PlayQueue(names, index, shuffleSongs);
+				
+				if(f == null) {
+					f = playQueue.current();
+				}
+
+				createThread();
+				if(f == null) {
+					String modname = (String) info[SONG_FILENAME];
+					if(names != null && modname != null) {
+						Log.v(TAG, "Got playlist without song");
+					}
+				} else {
+					Log.v(TAG, "Want to play list with " + f);
+					info[SONG_FILENAME] = f;
+					info[SONG_PLAYLIST] = "";
+					player.playMod(f);
+				}
+			} else {
+				Log.v(TAG, "Want to play " + intent.getDataString());
+				createThread();
+				info[SONG_PLAYLIST] = "";
+				info[SONG_FILENAME] = uri.getLastPathSegment();
+				player.playMod(intent.getDataString());
+			}
+		}
+        
 	}
 	
 	@Override

@@ -68,7 +68,7 @@
 #define STASH_SIZE (CACHE_BLOCK_SIZE * STASH_CACHE_BLOCKS)
 #define STASH_TIME 30
 
-#define DEBUG(fmt, args...) if (debugmode) { fprintf(stderr, fmt, ## args); }
+#define DEBUG(fmt, args...) if (debugmode) { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", fmt, ## args); }
 
 #define LOG(fmt, args...) if (debugfd != -1) { \
         char debugmsg[4096]; \
@@ -78,7 +78,7 @@
         xwrite(debugfd, debugmsg, debuglen); \
     }
 
-#define DIE(fmt, args...) do {fprintf(stderr, fmt, ## args); exit(1); } while (0)
+#define DIE(fmt, args...) do {__android_log_print(ANDROID_LOG_VERBOSE, "UADE", fmt, ## args); exit(1); } while (0)
 
 #define LOGDIE(fmt, args...) do {LOG(fmt, ## args); abort();} while (0)
 
@@ -1190,7 +1190,7 @@ static struct fuse_operations uadefs_oper = {
 
 static void usage(const char *progname)
 {
-	fprintf(stderr,
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 "usage: %s musicdir mountpoint [options]\n"
 "\n"
 "general options:\n"
@@ -1273,7 +1273,7 @@ static int uadefs_opt_proc(void *data, const char *arg, int key,
 		exit(1);
 
 	case KEY_VERSION:
-		fprintf(stderr, "uadefs version %s\n", UADE_VERSION);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadefs version %s\n", UADE_VERSION);
 #if FUSE_VERSION >= 25
 		fuse_opt_add_arg(outargs, "--version");
 		uadefs_fuse_main(outargs);
@@ -1285,7 +1285,7 @@ static int uadefs_opt_proc(void *data, const char *arg, int key,
 		return 1;
 
 	default:
-		fprintf(stderr, "internal error\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "internal error\n");
 		abort();
 	}
 

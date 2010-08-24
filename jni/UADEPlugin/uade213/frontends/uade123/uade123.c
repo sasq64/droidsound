@@ -173,7 +173,7 @@ static void set_song_options(int *songconf_loaded, char *songoptions,
       break;
 
     if (!uade_update_song_conf(songconfname, homesongconfname, songfile, songoptions))
-      fprintf(stderr, "Could not update song.conf entry for %s\n", songfile);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not update song.conf entry for %s\n", songfile);
   }
 }
 
@@ -586,7 +586,7 @@ int main(int argc, char *argv[])
       debug(state.config.verbose, "\n");
 
       if (!uade_is_our_file(modulename, 0, &state)) {
-	fprintf(stderr, "Unknown format: %s\n", modulename);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown format: %s\n", modulename);
 	continue;
       }
 
@@ -601,7 +601,7 @@ int main(int argc, char *argv[])
     }
 
     if (strlen(playername) == 0) {
-      fprintf(stderr, "Error: an empty player name given\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: an empty player name given\n");
       goto cleanup;
     }
 
@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
     strlcpy(songname, modulename[0] ? modulename : playername, sizeof songname);
 
     if (!uade_alloc_song(&state, songname)) {
-      fprintf(stderr, "Can not read %s: %s\n", songname, strerror(errno));
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not read %s: %s\n", songname, strerror(errno));
       continue;
     }
 
@@ -637,14 +637,14 @@ int main(int argc, char *argv[])
     uade_set_effects(&state);
 
     if ((filesize = stat_file_size(playername)) < 0) {
-      fprintf(stderr, "Can not find player: %s (%s)\n", playername, strerror(errno));
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not find player: %s (%s)\n", playername, strerror(errno));
       uade_unalloc_song(&state);
       continue;
     }
 
     debug(state.config.verbose, "Player: %s (%zd bytes)\n", playername, filesize);
 
-    fprintf(stderr, "Song: %s (%zd bytes)\n", state.song->module_filename, state.song->bufsize);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song: %s (%zd bytes)\n", state.song->module_filename, state.song->bufsize);
 
     ret = uade_song_initialization(scorename, playername, modulename, &state);
     switch (ret) {
@@ -908,7 +908,7 @@ static void trivial_sigint(int sig)
   /* counts number of milliseconds between ctrl-c pushes, and terminates the
      prog if they are less than 100 msecs apart. */ 
   if (gettimeofday(&tv, NULL)) {
-    fprintf(stderr, "Gettimeofday() does not work.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Gettimeofday() does not work.\n");
     return;
   }
 

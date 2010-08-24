@@ -8,10 +8,10 @@
 
 #include "sysconfig.h"
 #include "sysdeps.h"
-
+#include <android/log.h>
 #include "options.h"
 #include "uae.h"
-#include "memory.h"
+#include "include/memory.h"
 
 #include "uade.h"
 
@@ -598,7 +598,7 @@ void memory_init (void)
 	allocated_chipmem >>= 1;
 	chipmemory = (uae_u8 *) calloc (1, allocated_chipmem);
 	if (chipmemory)
-	    fprintf (stderr, "Reducing chipmem size to %dkb\n", allocated_chipmem >> 10);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Reducing chipmem size to %dkb\n", allocated_chipmem >> 10);
     }
     if (! chipmemory) {
 	write_log ("virtual memory exhausted (chipmemory)!\n");

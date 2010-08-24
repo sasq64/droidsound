@@ -7,7 +7,7 @@
 #include <effects.h>
 
 
-#define debug(verbose, fmt, args...) if (verbose) { fprintf(stderr, fmt, ## args); }
+#define debug(verbose, fmt, args...) if (verbose) { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", fmt, ## args); }
 #define tprintf(fmt, args...) do {fprintf(stdout, fmt, ## args); } while (0)
 
 extern int uade_song_end_trigger;

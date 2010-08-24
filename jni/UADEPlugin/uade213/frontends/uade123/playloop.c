@@ -129,7 +129,7 @@ int play_loop(struct uade_state *state)
 	  break;
 	case '.':
 	  if (skip_bytes == 0) {
-	    fprintf(stderr, "\nSkipping 10 seconds\n");
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nSkipping 10 seconds\n");
 	    skip_bytes = bytes_per_second * 10;
 	  }
 	  break;
@@ -224,11 +224,11 @@ int play_loop(struct uade_state *state)
 	  if (isdigit(ret)) {
 	    new_sub = ret - '0';
 	    if (us->min_subsong >= 0 && new_sub < us->min_subsong) {
-	      fprintf(stderr, "\ntoo low a subsong number\n");
+	      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\ntoo low a subsong number\n");
 	      break;
 	    }
 	    if (us->max_subsong >= 0 && new_sub > us->max_subsong) {
-	      fprintf(stderr, "\ntoo high a subsong number\n");
+	      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\ntoo high a subsong number\n");
 	      break;
 	    }
 	    us->cur_subsong = new_sub - 1;
@@ -237,14 +237,14 @@ int play_loop(struct uade_state *state)
 	    us->out_bytes = 0; /* to prevent timeout */
 	    record_playtime = 0; /* to not record playtime */
 	  } else if (!isspace(ret)) {
-	    fprintf(stderr, "\n%c is not a valid command\n", ret);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\n%c is not a valid command\n", ret);
 	  }
 	}
       }
 
       if (uade_debug_trigger == 1) {
 	if (uade_send_short_message(UADE_COMMAND_ACTIVATE_DEBUGGER, ipc)) {
-	  fprintf(stderr, "\nCan not active debugger\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not active debugger\n");
 	  return UADE_PLAY_FAILURE;
 	}
 	uade_debug_trigger = 0;
@@ -275,7 +275,7 @@ int play_loop(struct uade_state *state)
 
 	    uade_change_subsong(state);
 
-	    fprintf(stderr, "\nChanging to subsong %d from range [%d, %d]\n", us->cur_subsong, us->min_subsong, us->max_subsong);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nChanging to subsong %d from range [%d, %d]\n", us->cur_subsong, us->min_subsong, us->max_subsong);
 	  }
 	} else {
 	  uade_song_end_trigger = 1;
@@ -285,7 +285,7 @@ int play_loop(struct uade_state *state)
       if (uade_song_end_trigger) {
 	next_song = 1;
 	if (uade_send_short_message(UADE_COMMAND_REBOOT, ipc)) {
-	  fprintf(stderr, "\nCan not send reboot\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send reboot\n");
 	  return UADE_PLAY_FAILURE;
 	}
 	goto sendtoken;
@@ -295,7 +295,7 @@ int play_loop(struct uade_state *state)
 
     sendtoken:
       if (uade_send_short_message(UADE_COMMAND_TOKEN, ipc)) {
-	fprintf(stderr, "\nCan not send token\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send token\n");
 	return UADE_PLAY_FAILURE;
       }
 
@@ -314,7 +314,7 @@ int play_loop(struct uade_state *state)
 	if (subsong_end == 0 && uade_song_end_trigger == 0 &&
 	    uade_test_silence(um->data, playbytes, state)) {
 	    
-	  fprintf(stderr, "\nsilence detected (%d seconds)\n", uc->silence_timeout);
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nsilence detected (%d seconds)\n", uc->silence_timeout);
 	  subsong_end = 1;
 	}
 
@@ -335,14 +335,14 @@ int play_loop(struct uade_state *state)
 	uade_effect_run(ue, (int16_t *) sampledata, playbytes / framesize);
 
 	if (!audio_play(sampledata, playbytes)) {
-	  fprintf(stderr, "\nlibao error detected.\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nlibao error detected.\n");
 	  return UADE_PLAY_FAILURE;
 	}
 
 	if (uc->timeout != -1 && uc->use_timeouts) {
 	  if (uade_song_end_trigger == 0) {
 	    if (us->out_bytes / bytes_per_second >= uc->timeout) {
-	      fprintf(stderr, "\nSong end (timeout %ds)\n", uc->timeout);
+	      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nSong end (timeout %ds)\n", uc->timeout);
 	      uade_song_end_trigger = 1;
 	      record_playtime = 0;
 	    }
@@ -352,7 +352,7 @@ int play_loop(struct uade_state *state)
 	if (uc->subsong_timeout != -1 && uc->use_timeouts) {
 	  if (subsong_end == 0 && uade_song_end_trigger == 0) {
 	    if (subsong_bytes / bytes_per_second >= uc->subsong_timeout) {
-	      fprintf(stderr, "\nSong end (subsong timeout %ds)\n", uc->subsong_timeout);
+	      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nSong end (subsong timeout %ds)\n", uc->subsong_timeout);
 	      subsong_end = 1;
 	      record_playtime = 0;
 	    }
@@ -365,7 +365,7 @@ int play_loop(struct uade_state *state)
       /* receive state */
 
       if (uade_receive_message(um, sizeof(space), ipc) <= 0) {
-	fprintf(stderr, "\nCan not receive events from uade\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not receive events from uade\n");
 	return UADE_PLAY_FAILURE;
       }
       
@@ -419,7 +419,7 @@ int play_loop(struct uade_state *state)
 
       case UADE_REPLY_SONG_END:
 	if (um->size < 9) {
-	  fprintf(stderr, "\nInvalid song end reply\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nInvalid song end reply\n");
 	  exit(-1);
 	}
 	tailbytes = ntohl(((uint32_t *) um->data)[0]);
@@ -437,15 +437,15 @@ int play_loop(struct uade_state *state)
 	while (reason[i] && i < (um->size - 8))
 	  i++;
 	if (reason[i] != 0 || (i != (um->size - 9))) {
-	  fprintf(stderr, "\nbroken reason string with song end notice\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nbroken reason string with song end notice\n");
 	  exit(-1);
 	}
-	fprintf(stderr, "\nSong end (%s)\n", reason);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nSong end (%s)\n", reason);
 	break;
 
       case UADE_REPLY_SUBSONG_INFO:
 	if (um->size != 12) {
-	  fprintf(stderr, "\nsubsong info: too short a message\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nsubsong info: too short a message\n");
 	  exit(-1);
 	}
 
@@ -458,7 +458,7 @@ int play_loop(struct uade_state *state)
 
 	if (!(-1 <= us->min_subsong && us->min_subsong <= us->cur_subsong && us->cur_subsong <= us->max_subsong)) {
 	  int tempmin = us->min_subsong, tempmax = us->max_subsong;
-	  fprintf(stderr, "\nThe player is broken. Subsong info does not match.\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nThe player is broken. Subsong info does not match.\n");
 	  us->min_subsong = tempmin <= tempmax ? tempmin : tempmax;
 	  us->max_subsong = tempmax >= tempmin ? tempmax : tempmin;
 	  if (us->cur_subsong > us->max_subsong)
@@ -468,7 +468,7 @@ int play_loop(struct uade_state *state)
 	}
 
 	if ((us->max_subsong - us->min_subsong) != 0)
-	  fprintf(stderr, "\nThere are %d subsongs in range [%d, %d].\n", 1 + us->max_subsong - us->min_subsong, us->min_subsong, us->max_subsong);
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nThere are %d subsongs in range [%d, %d].\n", 1 + us->max_subsong - us->min_subsong, us->min_subsong, us->max_subsong);
 
 	uade_lookup_volume_normalisation(state);
 
@@ -479,7 +479,7 @@ int play_loop(struct uade_state *state)
 	break;
 	
       default:
-	fprintf(stderr, "\nExpected sound data. got %u.\n", (unsigned int) um->msgtype);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nExpected sound data. got %u.\n", (unsigned int) um->msgtype);
 	return UADE_PLAY_FAILURE;
       }
     }
@@ -493,11 +493,11 @@ int play_loop(struct uade_state *state)
   do {
     ret = uade_receive_message(um, sizeof(space), ipc);
     if (ret < 0) {
-      fprintf(stderr, "\nCan not receive events (TOKEN) from uade.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not receive events (TOKEN) from uade.\n");
       return UADE_PLAY_FAILURE;
     }
     if (ret == 0) {
-      fprintf(stderr, "\nEnd of input after reboot.\n");
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nEnd of input after reboot.\n");
       return UADE_PLAY_FAILURE;
     }
   } while (um->msgtype != UADE_COMMAND_TOKEN);

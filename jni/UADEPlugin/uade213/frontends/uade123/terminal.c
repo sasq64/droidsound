@@ -95,7 +95,7 @@ void setup_terminal(void)
 
   fd = open("/dev/tty", O_RDONLY);
   if (fd < 0) {
-    fprintf(stderr, "Can not use /dev/tty for control. Trying to use stdin.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not use /dev/tty for control. Trying to use stdin.\n");
     fd = 0;
   }
 

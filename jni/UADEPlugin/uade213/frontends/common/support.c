@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
-
+#include <android/log.h>
 #include "support.h"
 #include "ossupport.h"
 

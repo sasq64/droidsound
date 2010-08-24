@@ -15,7 +15,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <stdint.h>
-
+#include <android/log.h>
 #include <errno.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -103,14 +103,14 @@ static int load_playerstore(struct uade_state *state)
 		state->playerstore = read_eagleplayer_conf(formatsfile);
 		if (state->playerstore == NULL) {
 			if (warnings) {
-				fprintf(stderr,	"Tried to load eagleplayer.conf from %s, but failed\n",	formatsfile);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"Tried to load eagleplayer.conf from %s, but failed\n",	formatsfile);
 			}
 			warnings = 0;
 			return 0;
 		}
 
 		if (state->config.verbose)
-			fprintf(stderr, "Loaded eagleplayer.conf: %s\n",
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Loaded eagleplayer.conf: %s\n",
 				formatsfile);
 	}
 
@@ -140,7 +140,7 @@ static struct eagleplayer *analyze_file_format(int *content,
 		uadeerror("Very weird stat error: %s (%s)\n", modulename, strerror(errno));
 
 	bufsize = sizeof buf;
-	bytesread = atomic_fread(buf, 1, bufsize, f);
+	bytesread = fread(buf, 1, bufsize, f);
 	fclose(f);
 	if (bytesread == 0)
 		return NULL;
@@ -152,7 +152,7 @@ static struct eagleplayer *analyze_file_format(int *content,
 		return NULL;
 
 	if (ext[0] != 0 && state->config.verbose)
-		fprintf(stderr, "Content recognized: %s (%s)\n", ext, modulename);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Content recognized: %s (%s)\n", ext, modulename);
 
 	if (strcmp(ext, "packed") == 0)
 		return NULL;
@@ -200,12 +200,12 @@ static struct eagleplayer *analyze_file_format(int *content,
 			}
 		} else {
 			if (state->config.verbose)
-				fprintf(stderr,	"%s not in eagleplayer.conf\n", ext);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"%s not in eagleplayer.conf\n", ext);
 		}
 	}
 
 	if (state->config.verbose)
-		fprintf(stderr, "Format detection by filename\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Format detection by filename\n");
 
 	return namecandidate;
 }
@@ -220,7 +220,7 @@ static void handle_attribute(struct uade_attribute **attributelist,
 	int success = 0;
 
 	if (item[len] != '=') {
-		fprintf(stderr, "Invalid song item: %s\n", item);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song item: %s\n", item);
 		return;
 	}
 	str = item + len + 1;
@@ -246,7 +246,7 @@ static void handle_attribute(struct uade_attribute **attributelist,
 		success = 1;
 		break;
 	default:
-		fprintf(stderr, "Unknown song option: %s\n",
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown song option: %s\n",
 			item);
 		break;
 	}
@@ -256,7 +256,7 @@ static void handle_attribute(struct uade_attribute **attributelist,
 		a->next = *attributelist;
 		*attributelist = a;
 	} else {
-		fprintf(stderr, "Invalid song option: %s\n", item);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song option: %s\n", item);
 		free(a);
 	}
 }
@@ -436,7 +436,7 @@ static struct eagleplayerstore *read_eagleplayer_conf(const char *filename)
 			if (uade_song_and_player_attribute(&p->attributelist, &p->flags, items[i], lineno))
 				continue;
 
-			fprintf(stderr, "Unrecognized option: %s\n", items[i]);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unrecognized option: %s\n", items[i]);
 		}
 
 		for (i = 0; items[i] != NULL; i++)
@@ -466,7 +466,7 @@ static struct eagleplayerstore *read_eagleplayer_conf(const char *filename)
 		p = &ps->players[i];
 		if (p->nextensions == 0) {
 			if (epwarning == 0) {
-				fprintf(stderr,
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 					"uade warning: %s eagleplayer lacks prefixes in "
 					"eagleplayer.conf, which makes it unusable for any kind of "
 					"file type detection. If you don't want name based file type "

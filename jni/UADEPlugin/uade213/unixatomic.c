@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <stdint.h>
 #include <assert.h>
-
+#include <android/log.h>
 #include "unixatomic.h"
 #include "sysincludes.h"
 
@@ -67,7 +67,7 @@ ssize_t atomic_read(int fd, const void *buf, size_t count)
 	FD_ZERO(&s);
 	FD_SET(fd, &s);
 	if (select(fd + 1, &s, NULL, NULL, NULL) == 0)
-	  fprintf(stderr, "atomic_read: very strange. infinite select() returned 0. report this!\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "atomic_read: very strange. infinite select() returned 0. report this!\n");
 	continue;
       }
       return -1;
@@ -107,7 +107,7 @@ void *atomic_read_file(size_t *fs, const char *filename)
 
   off = atomic_fread(mem, 1, *fs, f);
   if (off < *fs) {
-    fprintf(stderr, "Not able to read the whole file %s\n", filename);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Not able to read the whole file %s\n", filename);
     goto error;
   }
 
@@ -138,7 +138,7 @@ ssize_t atomic_write(int fd, const void *buf, size_t count)
 	FD_ZERO(&s);
 	FD_SET(fd, &s);
 	if (select(fd + 1, NULL, &s, NULL, NULL) == 0)
-	  fprintf(stderr, "atomic_write: very strange. infinite select() returned 0. report this!\n");
+	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "atomic_write: very strange. infinite select() returned 0. report this!\n");
 	continue;
       }
       return -1;

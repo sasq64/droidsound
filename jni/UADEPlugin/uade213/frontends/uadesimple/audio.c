@@ -49,7 +49,7 @@ int audio_init(int frequency, int buffer_time)
   }
 
   if (libao_device == NULL) {
-    fprintf(stderr, "Error opening device: errno %d\n", errno);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error opening device: errno %d\n", errno);
     return 0;
   }
   return 1;

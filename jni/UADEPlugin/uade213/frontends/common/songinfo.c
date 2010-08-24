@@ -450,7 +450,7 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	modfilelen = st.st_size;
 
 	if ((buf = malloc(modfilelen)) == NULL) {
-		fprintf(stderr, "uade: can't allocate mem in process_module()");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't allocate mem in process_module()");
 		fclose(modfile);
 		return 0;
 	}
@@ -466,7 +466,7 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	fclose(modfile);
 
 	if (rb < modfilelen) {
-		fprintf(stderr, "uade: song info could not read %s fully\n",
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: song info could not read %s fully\n",
 			filename);
 		free(buf);
 		return 0;
@@ -590,7 +590,7 @@ int uade_generate_song_title(char *title, size_t dstlen,
 		format = default_format;
 
 	if ((srclen = strlen(format)) == 0) {
-		fprintf(stderr, "Warning: empty song_title format string.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Warning: empty song_title format string.\n");
 		return 1;
 	}
 
@@ -637,7 +637,7 @@ int uade_generate_song_title(char *title, size_t dstlen,
 			char tmp[32];
 
 			if ((srcoffs + 1) >= srclen) {
-				fprintf(stderr, "Error: no identifier given in song title format: %s\n", format);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: no identifier given in song title format: %s\n", format);
 				title[dstoffs] = 0;
 				return 1;
 			}
@@ -684,7 +684,7 @@ int uade_generate_song_title(char *title, size_t dstlen,
 				dat = tmp;
 				break;
 			default:
-				fprintf(stderr,
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 					"Unknown identifier %%%c in song_title format: %s\n",
 					c, format);
 				title[dstoffs] = 0;
@@ -714,7 +714,7 @@ int uade_song_info(char *info, size_t maxlen, char *filename,
 	case UADE_HEX_DUMP_INFO:
 		return hexdump(info, maxlen, filename, 2048);
 	default:
-		fprintf(stderr, "Illegal info requested.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Illegal info requested.\n");
 		exit(-1);
 	}
 	return 0;
