@@ -342,7 +342,7 @@ int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 	if (ucbase != NULL && ucbase->basedir_set) {
 		snprintf(songconfname, maxlen, "%s/song.conf",
 			 ucbase->basedir.name);
-		// loaded = uade_read_song_conf(songconfname);
+		loaded = uade_read_song_conf(songconfname);
 	}
 
 	/* Avoid unwanted home directory creation for test mode */
@@ -354,14 +354,14 @@ int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 	/* Try to load from home dir */
 	if (loaded == 0 && home != NULL) {
 		snprintf(songconfname, maxlen, "%s/.uade2/song.conf", home);
-		// loaded = uade_read_song_conf(songconfname);
+		loaded = uade_read_song_conf(songconfname);
 	}
 
 	/* No? Try install path */
 	if (loaded == 0) {
 		snprintf(songconfname, maxlen, "%s/song.conf",
 			 uc->basedir.name);
-		// loaded = uade_read_song_conf(songconfname);
+		loaded = uade_read_song_conf(songconfname);
 	}
 
 	return loaded;

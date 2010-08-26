@@ -56,6 +56,13 @@ static int playbytes;
 static int uade_song_end_trigger = 0;
 static int subsong_end = 0;
 
+static pthread_t thread = 0;
+
+char baseDir[256] = "";
+struct uade_state state;
+int uadeconf_loaded;
+char uadeconfname[256];
+
 //enum uade_control_state state = UADE_S_STATE;
 
 int new_subsong = -1;
@@ -65,7 +72,7 @@ struct Player
 
 };
 
-int totalSongs = -1;
+//int totalSongs = -1;
 int startSong = -1;
 
 /*
@@ -116,7 +123,7 @@ enum uade_control_state ctrlstate = UADE_S_STATE;
 static int run_client()
 {
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
 
 	if(ctrlstate == UADE_S_STATE)
 	{
@@ -137,7 +144,10 @@ static int run_client()
 
 		if(new_subsong >= 0)
 		{
-			// uade_change_subsong(new_subsong, &uadeipc);
+			state.song->cur_subsong = state.song->min_subsong + new_subsong;
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "New subsong %d", state.song->cur_subsong);
+			uade_change_subsong(&state);
+			//uade_change_subsong(new_subsong, &uadeipc);
 			new_subsong = -1;
 		}
 
@@ -213,7 +223,7 @@ static int run_client()
 			//assert(left >= um->size);
 			left -= um->size;
 
-			return 0;
+			return 1;
 
 			break;
 
@@ -262,8 +272,12 @@ static int run_client()
 				int min_sub = ntohl(u32ptr[0]);
 				int max_sub = ntohl(u32ptr[1]);
 				int cur_sub = ntohl(u32ptr[2]);
-				totalSongs = max_sub;
-				startSong = cur_sub;
+
+				state.song->min_subsong = min_sub;
+				state.song->max_subsong = max_sub;
+				state.song->cur_subsong = cur_sub;
+				startSong = cur_sub - min_sub;
+
 				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "subsong: %d from range [%d, %d]\n", cur_sub, min_sub, max_sub);
 			}
 			break;
@@ -276,9 +290,6 @@ static int run_client()
 	}
 	return 0;
 }
-
-
-static pthread_t thread = 0;
 
 
 
@@ -295,10 +306,6 @@ static void *threadProc(void *arg) {
 	return NULL;
 }
 
-char baseDir[256] = "";
-struct uade_state state;
-int uadeconf_loaded;
-char uadeconfname[256];
 
 int init()
 {
@@ -321,22 +328,6 @@ int init()
 
 	    strcpy(state.config.basedir.name, baseDir);
 
-		//if (!audio_init(state.config.frequency, state.config.buffer_time)) {
-		//	 __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "audio init failed");
-		//}
-
-		//sprintf(temp, "%s/eagleplayer.conf", baseDir);
-		//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Loading conf '%s'", temp);
-
-		//eaglestore = uade_read_eagleplayer_conf(temp);
-
-		//if(!eaglestore)
-		//	return -1;
-
-
-		//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "%d eagleplayer extentions\n", eaglestore->nextensions);
-
-		// __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%d eagleplayer extentions\n", eaglestore->nextensions);
 		uade_set_peer(&uadeipc, 1, "client", "server");
 		state.ipc = uadeipc;
 		eaglestore = 1;
@@ -443,20 +434,6 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	jboolean iscopy;
 	const char *filename = env->GetStringUTFChars(fname, &iscopy);
 
-	// uint16_t atest[5] = { 0x1234, 0x5678, 0x9abc, 0xdef0, 0x2468 } ;
-	// uint32_t *ap = (uint32_t*)&atest[1];
-	// __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
-	// ap = (uint32_t*)&atest[0];
-	// __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Look %x %x", ap[0], ap[1]);
-
-
-	// const char *slash = strrchr(filename, '/');
-	// if(slash)
-	//	slash++;
-	// else
-	//	slash = filename;
-
-
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Getting player for %s", filename);
 
 	if(!uade_is_our_file(filename, 0, &state)) {
@@ -466,16 +443,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Player candidate: %s\n", state.ep->playername);
 
-	//struct eagleplayer *player = uade_analyze_file_format(filename, baseDir, 1);
-	//struct eagleplayer *player = get_player(filename);
-	//struct eagleplayer *player = uade_get_eagleplayer("mdat", eaglestore);
-
 	struct eagleplayer *player = state.ep;
 
 	if(!player) {
 		return 0;
 	}
-
 
 	char plname[256];
 	char score[256];
@@ -520,7 +492,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	} else {
 		rc = uade_song_initialization(score, plname, filename, &state);
 	}
-
+	uade_song_end_trigger = 0;
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "RES %d", rc);
 
@@ -528,54 +500,10 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	soundBuffer = (short*)malloc(44100 * 4);
 	soundPtr = soundBuffer;
 
-	run_client();
-
-
-/*
-
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "INIT SONG");
-	if(strcmp("custom", player->playername) == 0)
-	{
-		rc = uade_song_initialization(score, filename, "", &uadeipc);
-		strcpy(current_format, "Amiga Custom");
-
+	rc = 0;
+	while(rc <= 0) {
+		rc = run_client();
 	}
-	else
-		rc = uade_song_initialization(score, plname, filename, &uadeipc);
-
-	uade_song_end_trigger = 0;
-
-	if(rc)
-		return rc;
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "CONF");
-
-	uade_config_set_defaults(&uadeconf);
-
-	uadeconf.filter_type = 0;
-
-    uade_send_filter_command(uadeconf.filter_type, uadeconf.led_state, uadeconf.led_forced, &uadeipc);
-    uade_send_interpolation_command(uadeconf.interpolator, &uadeipc);
-
-
-	soundBuffer = (short*)malloc(44100 * 4);
-	soundPtr = soundBuffer;
-
-	totalSongs = -2;
-	startSong = 0;
-	new_subsong = startSong;
-
-	while(totalSongs < 0) {
-		totalSongs++;
-		run_client();
-		usleep(1000);
-	}
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Totalsongs %d", totalSongs);
-*/
-
-	//run_client();
 
 	env->ReleaseStringUTFChars(fname, filename);
 
@@ -703,7 +631,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getIntInfo(
 	case INFO_LENGTH:
 		return -1;
 	case INFO_SUBTUNES:
-		return totalSongs + 1;
+		return state.song->max_subsong - state.song->min_subsong + 1;
 	case INFO_STARTTUNE:
 		return startSong;
 	}

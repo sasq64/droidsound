@@ -28,9 +28,9 @@ void uade_change_subsong(struct uade_state *state)
 {
 	state->song->silence_count = 0;
 
-#ifdef USE_SONGDB
+
 	uade_lookup_volume_normalisation(state);
-#endif
+
 
 	subsong_control(state->song->cur_subsong, UADE_COMMAND_CHANGE_SUBSONG, &state->ipc);
 }

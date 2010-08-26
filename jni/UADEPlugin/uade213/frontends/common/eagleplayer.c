@@ -140,7 +140,7 @@ static struct eagleplayer *analyze_file_format(int *content,
 		uadeerror("Very weird stat error: %s (%s)\n", modulename, strerror(errno));
 
 	bufsize = sizeof buf;
-	bytesread = fread(buf, 1, bufsize, f);
+	bytesread = atomic_fread(buf, 1, bufsize, f);
 	fclose(f);
 	if (bytesread == 0)
 		return NULL;

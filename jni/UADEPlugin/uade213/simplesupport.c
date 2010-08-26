@@ -182,10 +182,10 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 	if(strncmp(ptr, "smpl.", 5) == 0)
 	{
 		ptr += 5;
-		//char *ext = strrchr(ptr, '.');
-		//if(ext)
-		//	strcpy(ext, ".smpl");
-		strcpy(ptr + strlen(ptr), ".smpl");
+		char *ext = strrchr(ptr, '.');
+		if(ext)
+			strcpy(ext, ".smpl");
+		//strcpy(ptr + strlen(ptr), ".smpl");
 	}
 
 	if (uade_amiga_scandir(real, dirname, ptr, sizeof(real))) {
