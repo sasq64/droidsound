@@ -264,6 +264,8 @@ void uade_get_amiga_message(void)
 
   x = uade_get_u32(SCORE_INPUT_MSG);  /* message type from amiga */
 
+  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Message %d", x);
+
   switch (x) {
 
   case AMIGAMSG_SONG_END:
@@ -340,12 +342,16 @@ void uade_get_amiga_message(void)
   case AMIGAMSG_LOADFILE:
     /* load a file named at 0x204 (name pointer) to address pointed by
        0x208 and insert the length to 0x20C */
+
     src = uade_get_u32(0x204);
     if (!uade_valid_string(src)) {
       __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Load name in invalid address range.\n");
       break;
     }
     nameptr = get_real_address(src);
+
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Loading %s\n", nameptr);
+
     if ((file = uade_open_amiga_file((char *) nameptr, uade_player_dir))) {
       dst = uade_get_u32(0x208);
       len = uade_safe_load(dst, file, uade_highmem - dst);
@@ -363,10 +369,14 @@ void uade_get_amiga_message(void)
       __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Read name in invalid address range.\n");
       break;
     }
+
     nameptr = get_real_address(src);
     dst = uade_get_u32(0x208);
     off = uade_get_u32(0x20C);
     len = uade_get_u32(0x210);
+
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Reading %s\n", nameptr);
+
     if ((file = uade_open_amiga_file((char *) nameptr, uade_player_dir))) {
       if (fseek(file, off, SEEK_SET)) {
 	perror("can not fseek to position");
@@ -726,6 +736,11 @@ static int uade_safe_load_name(int vaddr, char *name, const char *expl,
 {
   int bytesread;
   FILE *file;
+
+
+  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: safe_load %s to %08x", name, vaddr);
+
+
   file = fopen(name, "rb");
   if (!file) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Could not load %s %s.\n", expl, name);
@@ -908,7 +923,7 @@ void uade_reset(void)
   m68k_setpc(scoreaddr);
 
   /* obey player format checking */
-  uade_put_long(SCORE_FORCE, 0);
+  uade_put_long(SCORE_FORCE, 1);
   /* set default subsong */
   uade_put_long(SCORE_SET_SUBSONG, 0);
   uade_put_long(SCORE_SUBSONG, 0);

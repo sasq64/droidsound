@@ -126,7 +126,7 @@ public class Player implements Runnable {
 		//}
 		silentPosition = -1;
 		// Enough for 1000ms
-		bufSize = FREQ*4;
+		bufSize = FREQ*8;
 
 		samples = new short [bufSize/2];
 	}

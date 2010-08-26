@@ -1,35 +1,41 @@
 package com.ssb.droidsound.service;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 
-import com.ssb.droidsound.Playlist;
-import com.ssb.droidsound.service.Player.SongInfo;
-
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
+
+import com.ssb.droidsound.PlayerActivity;
+import com.ssb.droidsound.Playlist;
+import com.ssb.droidsound.R;
+import com.ssb.droidsound.service.Player.SongInfo;
 
 public class PlayerService extends Service {
 	private static final String TAG = "PlayerService";
@@ -436,6 +442,77 @@ public class PlayerService extends Service {
     }
     
 
+    
+    private static final Class[] mStartForegroundSignature = new Class[] {
+        int.class, Notification.class};
+    private static final Class[] mStopForegroundSignature = new Class[] {
+        boolean.class};
+
+    private NotificationManager mNM;
+    private Method mStartForeground;
+    private Method mStopForeground;
+    private Object[] mStartForegroundArgs = new Object[2];
+    private Object[] mStopForegroundArgs = new Object[1];
+
+	private PowerManager.WakeLock wakeLock;
+
+	private Notification notification;
+
+	private PendingIntent contentIntent;
+
+    /**
+     * This is a wrapper around the new startForeground method, using the older
+     * APIs if it is not available.
+     */
+    void startForegroundCompat(int id, Notification notification) {
+        // If we have the new startForeground API, then use it.
+        if (mStartForeground != null) {
+            mStartForegroundArgs[0] = Integer.valueOf(id);
+            mStartForegroundArgs[1] = notification;
+            try {
+                mStartForeground.invoke(this, mStartForegroundArgs);
+            } catch (InvocationTargetException e) {
+                // Should not happen.
+                Log.w("ApiDemos", "Unable to invoke startForeground", e);
+            } catch (IllegalAccessException e) {
+                // Should not happen.
+                Log.w("ApiDemos", "Unable to invoke startForeground", e);
+            }
+            return;
+        }
+
+        // Fall back on the old API.
+        setForeground(true);
+        mNM.notify(id, notification);
+    }
+
+    /**
+     * This is a wrapper around the new stopForeground method, using the older
+     * APIs if it is not available.
+     */
+    void stopForegroundCompat(int id) {
+        // If we have the new stopForeground API, then use it.
+        if (mStopForeground != null) {
+            mStopForegroundArgs[0] = Boolean.TRUE;
+            try {
+                mStopForeground.invoke(this, mStopForegroundArgs);
+            } catch (InvocationTargetException e) {
+                // Should not happen.
+                Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+            } catch (IllegalAccessException e) {
+                // Should not happen.
+                Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+            }
+            return;
+        }
+
+        // Fall back on the old API.  Note to cancel BEFORE changing the
+        // foreground state, since we could be killed at that point.
+        mNM.cancel(id);
+        setForeground(false);
+    }
+
+    
 	@Override
 	public void onCreate() {
 		super.onCreate();		
@@ -468,6 +545,10 @@ public class PlayerService extends Service {
 					didPause = false;
 					break;
 				case TelephonyManager.CALL_STATE_OFFHOOK:
+					if(player != null && player.isPlaying()) {
+						player.paused(true);
+						didPause = true;
+					}
 					break;
 				}
 				
@@ -614,6 +695,40 @@ public class PlayerService extends Service {
 		registerReceiver(mediaReceiver, filter);		
 		
 		Log.v(TAG, "PlayerService created");
+		
+		 mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+	    try {
+	        mStartForeground = getClass().getMethod("startForeground", mStartForegroundSignature);
+	        mStopForeground = getClass().getMethod("stopForeground", mStopForegroundSignature);
+	    } catch (NoSuchMethodException e) {
+	        // Running on an older platform.
+	        mStartForeground = mStopForeground = null;
+	    }
+	    
+	    // notification = new Notification(R.drawable.note, "Droidsound", System.currentTimeMillis());				
+		// Intent notificationIntent = new Intent(this, PlayerActivity.class);
+		// contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
+	    // notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
+	    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+	    //wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Droidsound");
+	    //wakeLock.acquire();
+	}
+	
+	void beforePlay(String name) {
+		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
+		
+		if(!wakeLock.isHeld()) {
+			wakeLock.acquire();
+		}
+	    startForegroundCompat(R.string.notification, notification);
+	    
+	}
+	
+	void whenStopped() {
+		stopForegroundCompat(R.string.notification);
+		if(wakeLock.isHeld()) {
+			wakeLock.release();
+		}
 	}
 	
 	@Override
@@ -662,6 +777,10 @@ public class PlayerService extends Service {
 	public void onDestroy() {
 		
 		super.onDestroy();
+		
+		//wakeLock.release();
+		
+		//stopForegroundCompat(R.string.notification);
 		
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, 0);

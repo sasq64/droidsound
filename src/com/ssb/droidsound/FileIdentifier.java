@@ -198,12 +198,20 @@ public class FileIdentifier {
 
 	
 	public static MusicInfo identify(File f) {
-		return identify(f.getName(), null, f);
+		try {
+			return identify(f.getName(), null, f);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	public static MusicInfo identify(String name, InputStream is) {
 		
-		return identify(name, is, null);
+		try {
+			return identify(name, is, null);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	
@@ -314,12 +322,14 @@ public class FileIdentifier {
 					info.copyright = fromData(data, 0x56, 32); //new String(data, 0x56, o-0x55, "ISO-8859-1");
 					
 					int year = -1;
-					try {
-						year = Integer.parseInt(info.copyright.substring(0,4));
-					} catch (NumberFormatException e) {
-					}
-					if(year > 1000 && year < 2100) {
-						info.date = year * 10000;
+					if(info.copyright.length() >= 4) {
+						try {
+							year = Integer.parseInt(info.copyright.substring(0,4));
+						} catch (NumberFormatException e) {
+						}
+						if(year > 1000 && year < 2100) {
+							info.date = year * 10000;
+						}
 					}
 					return info;
 					

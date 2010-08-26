@@ -55,6 +55,7 @@
 <string name="zip_import_failed">Failed to import zip file.</string>
 <string name="zip_import_replace">Will not replace existing zip file. Remove it first.</string>
 
+<string name="notification">Droidsound playing</string>
 
 <string name="unpack_examples">Since this looks like the first time you are running Droidsound I have extracted some example
 music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.\n\nAlso check out \'Download\' in the Settings

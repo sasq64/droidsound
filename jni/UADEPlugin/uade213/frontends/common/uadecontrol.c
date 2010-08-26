@@ -129,14 +129,11 @@ int uade_song_initialization(const char *scorename,
 	struct uade_config *uc = &state->config;
 	struct uade_song *us = state->song;
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
-
 	if (uade_send_string(UADE_COMMAND_SCORE, scorename, ipc)) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send score name.\n");
 		goto cleanup;
 	}
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 	if (uade_send_string(UADE_COMMAND_PLAYER, playername, ipc)) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send player name.\n");
 		goto cleanup;
@@ -157,7 +154,6 @@ int uade_song_initialization(const char *scorename,
 		goto cleanup;
 	}
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 	if (um->msgtype == UADE_REPLY_CANT_PLAY) {
 		if (uade_receive_short_message(UADE_COMMAND_TOKEN, ipc)) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
@@ -167,19 +163,16 @@ int uade_song_initialization(const char *scorename,
 		return UADECORE_CANT_PLAY;
 	}
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 	if (um->msgtype != UADE_REPLY_CAN_PLAY) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unexpected reply from uade: %u\n",
 			(unsigned int)um->msgtype);
 		goto cleanup;
 	}
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 
 	if (uade_receive_short_message(UADE_COMMAND_TOKEN, ipc) < 0) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive token after play ack.\n");
 		goto cleanup;
 	}
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 
 	if (uc->ignore_player_check) {
 		if (uade_send_short_message(UADE_COMMAND_IGNORE_CHECK, ipc) < 0) {
@@ -188,7 +181,6 @@ int uade_song_initialization(const char *scorename,
 		}
 	}
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 	if (uc->no_ep_end) {
 		if (uade_send_short_message
 		    (UADE_COMMAND_SONG_END_NOT_POSSIBLE, ipc) < 0) {
@@ -198,12 +190,9 @@ int uade_song_initialization(const char *scorename,
 		}
 	}
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 	uade_send_filter_command(state);
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 
 	send_resampling_command(ipc, uc);
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 
 	if (uc->speed_hack) {
 		if (uade_send_short_message(UADE_COMMAND_SPEED_HACK, ipc)) {
@@ -211,7 +200,6 @@ int uade_song_initialization(const char *scorename,
 			goto cleanup;
 		}
 	}
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "1");
 
 	if (uc->use_ntsc) {
 		if (uade_send_short_message(UADE_COMMAND_SET_NTSC, ipc)) {

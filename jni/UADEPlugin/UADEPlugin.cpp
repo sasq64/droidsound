@@ -326,6 +326,9 @@ int init()
 
 		uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof(uadeconfname), &state.config, NULL);
 
+		state.config.no_filter = 1;
+
+
 	    strcpy(state.config.basedir.name, baseDir);
 
 		uade_set_peer(&uadeipc, 1, "client", "server");
@@ -485,6 +488,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	// Now we have the final configuration in "uc".
 	uade_set_effects(&state);
 
+
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING '%s' with %s\n", filename, plname);
 
 	if(strcmp("custom", player->playername) == 0) {
@@ -497,7 +501,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "RES %d", rc);
 
 
-	soundBuffer = (short*)malloc(44100 * 4);
+	soundBuffer = (short*)malloc(44100 * 8);
 	soundPtr = soundBuffer;
 
 	rc = 0;

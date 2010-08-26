@@ -24,7 +24,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	private boolean inited;
 	
-	static String [] ex = { "FC", "MDAT", "ML", "CUST", "MC", "DW", "MA" };   
+	static String [] ex = { "FC", "MDAT", "ML", "CUST", "CUS", "RK", "MC", "DW", "MA", "FRED", "BD", "SNG", "RH", "JAM", "DM", "DM2" };   
 
 	public UADEPlugin(Context ctx) {
 		super(ctx);
@@ -36,6 +36,16 @@ public class UADEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public boolean canHandle(String name) {
+		/*
+		File f = new File(name);
+		
+		String n = f.getName().toUpperCase();
+		Log.v(TAG, "CAN HANDLE : " + n);
+		
+		if(n.startsWith("MDAT.")) {
+			return true;
+		} */
+		
 		int x = name.lastIndexOf('.');
 		if(x < 0) return false;
 		String ext = name.substring(x+1).toUpperCase();
