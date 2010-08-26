@@ -123,7 +123,7 @@ enum uade_control_state ctrlstate = UADE_S_STATE;
 static int run_client()
 {
 
-	//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
 
 	if(ctrlstate == UADE_S_STATE)
 	{
@@ -217,7 +217,7 @@ static int run_client()
 			}
 
 			//dbprintf("Got %d bytes sampledata\n", playbytes);
-			//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Got %d bytes sampledata\n", playbytes);
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Got %d bytes sampledata\n", playbytes);
 
 //			time_bytes += playbytes;
 			//assert(left >= um->size);
@@ -326,7 +326,7 @@ int init()
 
 		uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof(uadeconfname), &state.config, NULL);
 
-		state.config.no_filter = 1;
+		// state.config.no_filter = 1;
 
 
 	    strcpy(state.config.basedir.name, baseDir);

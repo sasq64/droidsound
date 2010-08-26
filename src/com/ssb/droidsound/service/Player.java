@@ -125,8 +125,8 @@ public class Player implements Runnable {
 		//	bufSize = 32768*2;
 		//}
 		silentPosition = -1;
-		// Enough for 1000ms
-		bufSize = FREQ*8;
+		// Enough for 3000ms
+		bufSize = 0x40000;
 
 		samples = new short [bufSize/2];
 	}
@@ -369,7 +369,18 @@ public class Player implements Runnable {
 			Message msg = mHandler.obtainMessage(MSG_NEWSONG);
 			mHandler.sendMessage(msg);
 
-			audioTrack.flush();
+			audioTrack.stop();
+			audioTrack.flush();			
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			//audioTrack.stop();
+			//audioTrack.flush();
+
+			Log.v(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
 			audioTrack.play();				
 			currentState = State.PLAYING;
 			currentPosition = 0;
@@ -422,7 +433,11 @@ public class Player implements Runnable {
 							break;
 						case STOP:
 							if(currentState != State.STOPPED) {
+								//audioTrack.pause();
+								Log.v(TAG, "STOP");
 								audioTrack.stop();
+								audioTrack.flush();
+								
 								currentPlugin.unload(songRef);
 								currentPlugin = null;
 								currentState = State.STOPPED;
@@ -446,7 +461,17 @@ public class Player implements Runnable {
 								if(currentPlugin.setTune(songRef, (Integer)argument)) {
 									currentPosition = 0;
 									lastPos = -1000;
-									audioTrack.flush();
+									//audioTrack.pause();
+									//Log.v(TAG, "TUNE, pos " + audioTrack.getPlaybackHeadPosition());
+									audioTrack.pause();
+									audioTrack.flush();			
+									try {
+										Thread.sleep(100);
+									} catch (InterruptedException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+									//Log.v(TAG, "TUNE, pos " + audioTrack.getPlaybackHeadPosition());
 
 									if(currentState == State.SWITCHING) {
 										currentState = State.PLAYING;
@@ -456,6 +481,8 @@ public class Player implements Runnable {
 									currentSong.subtuneTitle = currentPlugin.getStringInfo(songRef, DroidSoundPlugin.INFO_SUBTUNE_TITLE);
 									Message msg = mHandler.obtainMessage(MSG_SUBTUNE, (Integer)argument, currentSong.length, currentSong.subtuneTitle);
 									mHandler.sendMessage(msg);
+									
+									audioTrack.play();
 								}
 								break;
 							case PAUSE :
@@ -483,10 +510,16 @@ public class Player implements Runnable {
 				}
 				
 				if(currentState == State.PLAYING) {
-					int len = currentPlugin.getSoundData(songRef, samples, bufSize/4);
+					Log.v(TAG, "Get sound data");
+					int len = currentPlugin.getSoundData(songRef, samples, bufSize/16);
 					currentPosition += ((len * 1000) / (FREQ*2));						
+					Log.v(TAG, "pos " + currentPosition);
 					if(currentPosition >= lastPos + 1000) {
-						Message msg = mHandler.obtainMessage(MSG_PROGRESS, currentPosition, 0);
+						int pos = audioTrack.getPlaybackHeadPosition();
+						//Log.v(TAG, String.format("PLAY %d sec %d pos = %d msec ", currentPosition, pos, pos * 1000 / 44100));
+
+						
+						Message msg = mHandler.obtainMessage(MSG_PROGRESS, pos * 10 / 441, 0);
 						mHandler.sendMessage(msg);
 						lastPos = currentPosition;
 												
@@ -506,13 +539,15 @@ public class Player implements Runnable {
 						}
 						
 					}
+					Log.v(TAG, "write " + len);
 					if(len > 0) {
-						audioTrack.write(samples, 0, len);
+						audioTrack.write(samples, 0, len);						
 					} else {
 						currentState = State.SWITCHING;
 						Message msg = mHandler.obtainMessage(MSG_DONE);
 						mHandler.sendMessage(msg);
-					}	
+					}
+					Log.v(TAG, "loop");
 					noPlayWait = 0;
 				}
 				else {

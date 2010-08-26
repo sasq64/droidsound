@@ -95,7 +95,7 @@ public class PlayerService extends Service {
 	//private boolean userInterferred;
 	//int info[SONG_REPEAT] = RM_CONTINUE;
 	private boolean silenceDetect;
-	private boolean respectLength = true;
+	private boolean respectLength = false;
 	private boolean shuffleSongs;
 	
 	private PhoneStateListener phoneStateListener;
@@ -533,6 +533,7 @@ public class PlayerService extends Service {
 				
 				switch(state) {
 				case TelephonyManager.CALL_STATE_RINGING:
+				case TelephonyManager.CALL_STATE_OFFHOOK:
 					if(player != null && player.isPlaying()) {
 						player.paused(true);
 						didPause = true;
@@ -543,12 +544,6 @@ public class PlayerService extends Service {
 						player.paused(false);
 					}
 					didPause = false;
-					break;
-				case TelephonyManager.CALL_STATE_OFFHOOK:
-					if(player != null && player.isPlaying()) {
-						player.paused(true);
-						didPause = true;
-					}
 					break;
 				}
 				
