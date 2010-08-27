@@ -1,7 +1,11 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
@@ -24,34 +28,164 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	private boolean inited;
 	
-	static String [] ex = { "FC", "MDAT", "ML", "CUST", "CUS", "RK", "MC", "DW", "MA", "FRED", "BD", "SNG", "RH", "JAM", "DM", "DM2" };   
+	static String [] ex = { "FC", "MDAT", "ML", "CUST", "CUS", "RK", "MC", "DW", "MA", 
+		"FRED", "BD", "SNG", "RH", "JAM", "DM", "DM2",
+		"SFX", "BSS", "FC", "FC13", "FC14"
+		};   
 
 	public UADEPlugin(Context ctx) {
 		super(ctx);
-		extensions = new HashSet<String>();
-		for(String s : ex) {			
-			extensions.add(s);
+		
+		
+		File filesDir = ctx.getFilesDir();
+		File eagleDir = new File(filesDir, "players");
+		
+		File confFile = new File(filesDir, "eagleplayer.conf");
+		
+		boolean extract = true;
+		
+		if(eagleDir.exists()) {
+			
+			if(confFile.exists()) {			
+				extract = false;
+			}			
 		}
+		
+		if(extract) {
+			try {			
+				File tempFile = new File(filesDir, "ep.zip");
+				
+				FileOutputStream os;
+				os = new FileOutputStream(tempFile);
+				
+				InputStream is = ctx.getAssets().open("eagleplayers.zip");
+				
+				byte [] buffer = new byte [128*1024];
+				while(true) {
+					int rc = is.read(buffer);
+					if(rc <= 0) {
+						break;
+					}
+					os.write(buffer, 0, rc);
+				}
+				is.close();
+				os.close();
+				
+				ZipFile zf = new ZipFile(tempFile);
+				Enumeration<? extends ZipEntry> entries = zf.entries();
+				while(entries.hasMoreElements()) {
+					ZipEntry entry = entries.nextElement();
+					is = zf.getInputStream(entry);
+					String name = entry.getName();	
+					File efile = new File(filesDir, name);
+					
+					Log.v(TAG, String.format("Extracting %s / %s", name, efile.getPath()));
+					
+					if(name.endsWith("/")) {
+						continue;
+					}
+					
+					efile.getParentFile().mkdirs();
+					
+					os = new FileOutputStream(efile);
+	
+					while(true) {
+						int rc = is.read(buffer);
+						if(rc <= 0) {
+							break;
+						}
+						os.write(buffer, 0, rc);
+					}
+					is.close();
+					os.close();
+				}
+				
+				tempFile.delete();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+
+		extensions = new HashSet<String>();
+
+		extensions.add("CUST");		
+		extensions.add("CUS");
+		extensions.add("CUSTOM");
+		extensions.add("DM");
+		
+		BufferedReader reader;
+		try {
+			reader = new BufferedReader(new FileReader(confFile));
+			String line = reader.readLine();
+			while(line != null) {
+				int x = line.indexOf("prefixes=");
+				if(x >= 0) {
+					String[] exts = line.substring(x+9).split(",");
+					for(String ex : exts) {
+						int sp = ex.indexOf(' ');
+						if(sp >= 0) {
+							ex = ex.substring(0, sp);
+						}
+						Log.v(TAG, "Ext " + ex);
+						extensions.add(ex.toUpperCase());
+					}
+				}
+				line = reader.readLine();
+			}
+			reader.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//for(String s : ex) {			
+		//	extensions.add(s);
+		//}
 	}
 	
 	@Override
 	public boolean canHandle(String name) {
-		/*
-		File f = new File(name);
-		
-		String n = f.getName().toUpperCase();
-		Log.v(TAG, "CAN HANDLE : " + n);
-		
-		if(n.startsWith("MDAT.")) {
-			return true;
-		} */
-		
+
 		int x = name.lastIndexOf('.');
+		
 		if(x < 0) return false;
 		String ext = name.substring(x+1).toUpperCase();
-		return extensions.contains(ext);
+		if(!extensions.contains(ext)) {
+			int slash = name.lastIndexOf('/');
+			x = name.indexOf('.', slash+1);
+			ext = name.substring(slash+1, x).toUpperCase();
+			Log.v(TAG, "Checking prefix " + ext);
+			return extensions.contains(ext);
+		}
+		return true;
+		
 	}
 
+	
+	@Override
+	public String getBaseName(String name) {
+				
+		name = name.substring(name.lastIndexOf('/')+1);
+		
+		int x = name.lastIndexOf('.');
+		if(x >= 0) {
+			String ext = name.substring(x+1).toUpperCase();
+			if(!extensions.contains(ext)) {	
+				x = name.indexOf('.');
+				ext = name.substring(0, x).toUpperCase();
+
+				if(extensions.contains(ext)) {
+					return name.substring(x+1);
+				}
+			}
+			return name.substring(0, x);			
+		}
+		return name;
+	}
+	
 	@Override
 	public int getIntInfo(Object song, int what) {
 		if(song instanceof String) {
@@ -64,11 +198,37 @@ public class UADEPlugin extends DroidSoundPlugin {
 	public int getSoundData(Object song, short [] dest, int size) {
 		//Log.v(TAG, "getSoundData()");
 		return N_getSoundData((Long)song, dest, size);
-	}	
+	}
+	
+	@Override
+	public String[] getDetailedInfo(Object song) {
+
+		String [] details = new String [2];
+		details[0] = "Format";
+		details[1] = N_getStringInfo((Long)song, INFO_TYPE);
+		return details;
+	}
 
 	@Override
 	public String getStringInfo(Object song, int what) {
 		if(song instanceof String) {
+			/*
+			if(what == INFO_TITLE) {
+				Log.v(TAG, "Getting info for " + song);
+				String name = (String)song;
+				int x = name.lastIndexOf('.');
+				if(x < 0) return name;
+				String ext = name.substring(x+1).toUpperCase();
+				if(extensions.contains(ext)) {
+					return name.substring(0, x);
+				}
+				x = name.indexOf('.');
+				ext = name.substring(0, x).toUpperCase();
+				if(extensions.contains(ext)) {
+					return name.substring(x+1);
+				}
+			} */
+			
 			return "";
 		}
 		return N_getStringInfo((Long)song, what);
@@ -76,8 +236,20 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public Object load(byte[] module, int size) {
-		
-		// TODO Auto-generated method stub
+	
+		try {
+			File file = File.createTempFile("uade", ".cust");
+			
+			FileOutputStream fo = new FileOutputStream(file);
+			fo.write(module);
+			fo.close();
+			Object rc = load(file);
+			file.delete();
+			return rc;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return null;
 	}
 
@@ -85,70 +257,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	public Object load(File file) throws IOException {
 		
 		Context context = getContext();
-		
+
 		File filesDir = context.getFilesDir();
-		File eagleDir = new File(filesDir, "players");
-		
-		boolean extract = true;
-		
-		if(eagleDir.exists()) {
-			
-			if(new File(filesDir, "eagleplayer.conf").exists()) {			
-				extract = false;
-			}			
-		}
-		
-		if(extract) {
-
-			File tempFile = new File(filesDir, "ep.zip");
-			
-			FileOutputStream os = new FileOutputStream(tempFile);
-			
-			InputStream is = context.getAssets().open("eagleplayers.zip");
-			
-			byte [] buffer = new byte [128*1024];
-			while(true) {
-				int rc = is.read(buffer);
-				if(rc <= 0) {
-					break;
-				}
-				os.write(buffer, 0, rc);
-			}
-			is.close();
-			os.close();
-			
-			ZipFile zf = new ZipFile(tempFile);
-			Enumeration<? extends ZipEntry> entries = zf.entries();
-			while(entries.hasMoreElements()) {
-				ZipEntry entry = entries.nextElement();
-				is = zf.getInputStream(entry);
-				String name = entry.getName();	
-				File efile = new File(filesDir, name);
-				
-				Log.v(TAG, String.format("Extracting %s / %s", name, efile.getPath()));
-				
-				if(name.endsWith("/")) {
-					continue;
-				}
-				
-				efile.getParentFile().mkdirs();
-				
-				os = new FileOutputStream(efile);
-
-				while(true) {
-					int rc = is.read(buffer);
-					if(rc <= 0) {
-						break;
-					}
-					os.write(buffer, 0, rc);
-				}
-				is.close();
-				os.close();
-			}
-			
-			tempFile.delete();
-			
-		}
 
 		if(!inited) {
 			N_init(filesDir.getPath());
@@ -171,6 +281,17 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return file.getName();
 		//return load(file);
 	}
+
+	@Override
+	public Object loadInfo(InputStream is, int size) throws IOException {
+		return "";
+	}
+	
+	@Override
+	public Object loadInfo(byte[] module, int size) {
+		return "";
+	}
+
 	
 	
 

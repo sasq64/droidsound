@@ -63,6 +63,8 @@ struct uade_state state;
 int uadeconf_loaded;
 char uadeconfname[256];
 
+char format[128];
+
 //enum uade_control_state state = UADE_S_STATE;
 
 int new_subsong = -1;
@@ -123,7 +125,7 @@ enum uade_control_state ctrlstate = UADE_S_STATE;
 static int run_client()
 {
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
 
 	if(ctrlstate == UADE_S_STATE)
 	{
@@ -217,7 +219,7 @@ static int run_client()
 			}
 
 			//dbprintf("Got %d bytes sampledata\n", playbytes);
-			__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Got %d bytes sampledata\n", playbytes);
+			//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Got %d bytes sampledata\n", playbytes);
 
 //			time_bytes += playbytes;
 			//assert(left >= um->size);
@@ -424,6 +426,7 @@ static jstring NewString(JNIEnv *env, const char *str)
 
 
 
+
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
 {
 	return true;
@@ -616,12 +619,14 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getStrin
 	Player *player = (Player*)song;
 	switch(what)
 	{
-	case INFO_TITLE:
-		return NewString(env, "");
-	case INFO_AUTHOR:
-		return NewString(env, "");
-	case INFO_COPYRIGHT:
-		return NewString(env, "");
+	// case INFO_TITLE:
+// 		return NewString(env, "");
+	// case INFO_AUTHOR:
+		// return NewString(env, "");
+	// case INFO_COPYRIGHT:
+		// return NewString(env, "");
+	case INFO_TYPE:
+		return NewString(env, current_format);
 		//return player->sidInfo.
 	}
 	return NewString(env, "");

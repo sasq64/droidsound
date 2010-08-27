@@ -9,6 +9,7 @@ import android.content.Context;
 
 public abstract class DroidSoundPlugin {
 
+	
 	public static final int INFO_TITLE = 0;
 	public static final int INFO_AUTHOR = 1;
 	public static final int INFO_LENGTH = 2;
@@ -115,5 +116,17 @@ public abstract class DroidSoundPlugin {
 	
 	public boolean isSilent(Object song) {
 		return false;
+	}
+
+	public String getBaseName(String fname) {
+		int slash = fname.lastIndexOf('/');
+		if(slash >= 0) {
+			fname = fname.substring(slash+1);
+		}
+		int dot = fname.lastIndexOf('.');
+		if(dot > 0) {
+			fname = fname.substring(0, dot);
+		}
+		return fname;
 	}
 }

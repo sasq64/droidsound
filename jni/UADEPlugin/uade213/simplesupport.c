@@ -179,13 +179,24 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 	closedir(dir);
 
 	// TFMX HACK
-	if(strncmp(ptr, "smpl.", 5) == 0)
+	if(strncasecmp(ptr, "smpl.", 5) == 0)
 	{
-		ptr += 5;
-		char *ext = strrchr(ptr, '.');
-		if(ext)
+		char *ext = strcasestr(ptr, ".mdat");
+		if(ext) {
 			strcpy(ext, ".smpl");
-		//strcpy(ptr + strlen(ptr), ".smpl");
+			ptr += 5;
+		}
+	} else if(strncasecmp(ptr, "ins.", 4) == 0)
+	{
+		char *ext = strcasestr(ptr, ".sng");
+
+		if(!ext)
+			ext = strcasestr(ptr, ".dum");
+
+		if(ext) {
+			strcpy(ext, ".ins");
+			ptr += 4;
+		}
 	}
 
 	if (uade_amiga_scandir(real, dirname, ptr, sizeof(real))) {

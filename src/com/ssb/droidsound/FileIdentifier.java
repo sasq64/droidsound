@@ -41,8 +41,9 @@ public class FileIdentifier {
 		String title;
 		String composer;
 		String copyright;
-		String game;
+		//String game;
 		String format;
+
 		int channels;
 		int type;
 		int date;
@@ -84,9 +85,9 @@ public class FileIdentifier {
 	 * If title still not found, use filename (without extension) as title 
 	 * 
 	 */
-	private static void fixName(String fname, MusicInfo info) {
+	private static void fixName(String basename, MusicInfo info) {
 		//String ext = "";
-		int slash = fname.lastIndexOf('/');
+		/* int slash = fname.lastIndexOf('/');
 		if(slash >= 0) {
 			fname = fname.substring(slash+1);
 		}
@@ -94,20 +95,21 @@ public class FileIdentifier {
 		if(dot > 0) {
 			//ext = fname.substring(dot+1).toUpperCase();
 			fname = fname.substring(0, dot);
-		}
+		} */
 		
 		if(info.composer == null || info.composer.length() == 0) {
-			int sep = fname.indexOf(" - ");
+			int sep = basename.indexOf(" - ");
 			if(sep > 0) {
-				info.composer = fname.substring(0, sep);
-				info.title = fname.substring(sep+3);
+				info.composer = basename.substring(0, sep);
+				info.title = basename.substring(sep+3);
 			}
 		}
 
 		if(info.composer != null && info.composer.length() == 0) {
 			info.composer = null;
 		}
-					
+
+		/*
 		if(info.title == null || info.title.length() == 0) {
 			// SPC with no title and all uppercase game name is probably dumped from emu 
 			if(info.type == TYPE_SPC && info.game != null && info.game.toUpperCase().equals(info.game)) {
@@ -116,9 +118,10 @@ public class FileIdentifier {
 				info.title = info.game;
 			}
 		}
+		*/
 
 		if(info.title == null || info.title.length() == 0) {
-			info.title = fname;
+			info.title = basename;
 		}
 		
 		if(info.date < 0 && info.copyright != null && info.copyright.length() >= 4) {
@@ -162,7 +165,7 @@ public class FileIdentifier {
 			info.title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
 			info.composer = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
 			info.copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
-			info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
+			//info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
 			info.format = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
 			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 			info.date = -1;
@@ -183,7 +186,7 @@ public class FileIdentifier {
 			info.title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
 			info.composer = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
 			info.copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
-			info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
+			//info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
 			info.format = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
 			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 			info.date = -1;
@@ -261,6 +264,8 @@ public class FileIdentifier {
 					e2.printStackTrace();
 				}
 				if(info != null) {
+					
+					name = plugin.getBaseName(name);
 					fixName(name, info);
 					return info;
 				}
@@ -286,6 +291,7 @@ public class FileIdentifier {
 							e2.printStackTrace();
 						}
 						if(info != null) {
+							name = plugins[j].getBaseName(name);
 							fixName(name, info);
 							return info;
 						}
@@ -402,7 +408,12 @@ public class FileIdentifier {
 				
 				if(data[0x23] == 0x1a) {
 					info.title = fromData(data, 0x2e, 32);
-					info.game = fromData(data, 0x4e, 32);
+					String game = fromData(data, 0x4e, 32);
+					
+					if(game.length() > 0) {
+						info.title = game + " - " + info.title;
+					}
+					
 					info.composer = fromData(data, 0xb1, 32);					
 				}
 				break;
@@ -434,6 +445,15 @@ public class FileIdentifier {
 			} catch (IOException e) {
 			}
 		}
+		
+		if(dot > 0) {
+			name = name.substring(0, dot);
+		}
+		int slash = name.lastIndexOf('/');
+		if(slash >= 0) {
+			name = name.substring(slash+1);
+		}
+
 		fixName(name, info);
 		return info;
 	}
