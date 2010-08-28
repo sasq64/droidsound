@@ -33,6 +33,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -333,6 +334,7 @@ public class SongDatabase implements Runnable {
 
 	private void open(boolean drop) {	
 		File myDir = context.getFilesDir();
+		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 		
 		isReady = false;
 		
@@ -340,10 +342,24 @@ public class SongDatabase implements Runnable {
 			rdb.close();
 			rdb = null;
 		}
+
+		File dbFile  = new File(droidDir, "songs.db");
 		
-		dbName = new File(myDir, "songs.db").getAbsolutePath();
-		Log.v(TAG, String.format("Database path %s", dbName));
+		File oldDb = new File(myDir, "songs.db");
+		if(oldDb.exists()) {
+			if(scanCallback != null) {
+				scanCallback.notifyScan("Moving database", 0);
+			}
+			droidDir.mkdir();
+			if(!PlayerActivity.moveFile(oldDb, new File(droidDir, "songs.db"))) {
+				dbFile = oldDb;
+			}
+		}
 		
+
+		dbName = dbFile.getAbsolutePath();
+		Log.v(TAG, String.format("Database path %s", dbName));		
+
 		SQLiteDatabase db = getWritableDatabase();
 
 		if(db.needUpgrade(DB_VERSION)) {

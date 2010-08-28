@@ -51,7 +51,7 @@ public class PlayerService extends Service {
 	public static final int SONG_TITLE = 1;
 	public static final int SONG_AUTHOR = 2;
 	public static final int SONG_COPYRIGHT = 3;
-	public static final int SONG_GAMENAME = 4;	
+	//public static final int SONG_GAMENAME = 4;	
 	public static final int SONG_FORMAT = 5;
 	
 	public static final int SONG_POS = 6;
@@ -95,7 +95,7 @@ public class PlayerService extends Service {
 	//private boolean userInterferred;
 	//int info[SONG_REPEAT] = RM_CONTINUE;
 	private boolean silenceDetect;
-	private boolean respectLength = false;
+	private boolean respectLength = true;
 	private boolean shuffleSongs;
 	
 	private PhoneStateListener phoneStateListener;
@@ -292,7 +292,7 @@ public class PlayerService extends Service {
 					info[SONG_LENGTH] = currentSongInfo.length;
 					info[SONG_TOTALSONGS] = currentSongInfo.subTunes;
 					info[SONG_SUBSONG] = currentSongInfo.startTune;
-					info[SONG_GAMENAME] = currentSongInfo.game;
+					//info[SONG_GAMENAME] = currentSongInfo.game;
 					info[SONG_REPEAT] = defaultRepeatMode;
 					info[SONG_SUBTUNE_TITLE] = currentSongInfo.subtuneTitle;
 					
@@ -304,7 +304,7 @@ public class PlayerService extends Service {
 						}
 					}
 
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_GAMENAME, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");

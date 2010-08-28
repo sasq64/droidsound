@@ -15,80 +15,51 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import android.content.Context;
+import android.os.Environment;
 import android.util.Log;
 
 public class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
 
 	static {
-		System.loadLibrary("uade");
+		//System.loadLibrary("uade");
 	}
 
-	private Set<String> extensions;
+	private static Set<String> extensions = new HashSet<String>();
 
-	private boolean inited;
-	
-	static String [] ex = { "FC", "MDAT", "ML", "CUST", "CUS", "RK", "MC", "DW", "MA", 
-		"FRED", "BD", "SNG", "RH", "JAM", "DM", "DM2",
-		"SFX", "BSS", "FC", "FC13", "FC14"
-		};   
+	private static boolean inited;
 
 	public UADEPlugin(Context ctx) {
 		super(ctx);
 		
 		
-		File filesDir = ctx.getFilesDir();
-		File eagleDir = new File(filesDir, "players");
+		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+		//File filesDir = ctx.getFilesDir();
+		File eagleDir = new File(droidDir, "players");
 		
-		File confFile = new File(filesDir, "eagleplayer.conf");
+		File confFile = new File(droidDir, "eagleplayer.conf");
 		
 		boolean extract = true;
 		
-		if(eagleDir.exists()) {
+		synchronized (extensions) {
+					
+			if(eagleDir.exists()) {
+				
+				if(confFile.exists()) {			
+					extract = false;
+				}			
+			}
 			
-			if(confFile.exists()) {			
-				extract = false;
-			}			
-		}
-		
-		if(extract) {
-			try {			
-				File tempFile = new File(filesDir, "ep.zip");
-				
-				FileOutputStream os;
-				os = new FileOutputStream(tempFile);
-				
-				InputStream is = ctx.getAssets().open("eagleplayers.zip");
-				
-				byte [] buffer = new byte [128*1024];
-				while(true) {
-					int rc = is.read(buffer);
-					if(rc <= 0) {
-						break;
-					}
-					os.write(buffer, 0, rc);
-				}
-				is.close();
-				os.close();
-				
-				ZipFile zf = new ZipFile(tempFile);
-				Enumeration<? extends ZipEntry> entries = zf.entries();
-				while(entries.hasMoreElements()) {
-					ZipEntry entry = entries.nextElement();
-					is = zf.getInputStream(entry);
-					String name = entry.getName();	
-					File efile = new File(filesDir, name);
+			if(extract) {
+				try {			
+					File tempFile = new File(droidDir, "ep.zip");
 					
-					Log.v(TAG, String.format("Extracting %s / %s", name, efile.getPath()));
+					FileOutputStream os;
+					os = new FileOutputStream(tempFile);
 					
-					if(name.endsWith("/")) {
-						continue;
-					}
+					InputStream is = ctx.getAssets().open("eagleplayers.zip");
 					
-					efile.getParentFile().mkdirs();
-					
-					os = new FileOutputStream(efile);
-	
+					byte [] buffer = new byte [128*1024];
 					while(true) {
 						int rc = is.read(buffer);
 						if(rc <= 0) {
@@ -98,49 +69,78 @@ public class UADEPlugin extends DroidSoundPlugin {
 					}
 					is.close();
 					os.close();
+					
+					ZipFile zf = new ZipFile(tempFile);
+					Enumeration<? extends ZipEntry> entries = zf.entries();
+					while(entries.hasMoreElements()) {
+						ZipEntry entry = entries.nextElement();
+						is = zf.getInputStream(entry);
+						String name = entry.getName();	
+						File efile = new File(droidDir, name);
+						
+						Log.v(TAG, String.format("Extracting %s / %s", name, efile.getPath()));
+						
+						if(name.endsWith("/")) {
+							continue;
+						}
+						
+						efile.getParentFile().mkdirs();
+						
+						os = new FileOutputStream(efile);
+		
+						while(true) {
+							int rc = is.read(buffer);
+							if(rc <= 0) {
+								break;
+							}
+							os.write(buffer, 0, rc);
+						}
+						is.close();
+						os.close();
+					}
+					
+					tempFile.delete();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 				
-				tempFile.delete();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
+			}		
 
-		extensions = new HashSet<String>();
-
-		extensions.add("CUST");		
-		extensions.add("CUS");
-		extensions.add("CUSTOM");
-		extensions.add("DM");
+			if(extensions.size() == 0) {
 		
-		BufferedReader reader;
-		try {
-			reader = new BufferedReader(new FileReader(confFile));
-			String line = reader.readLine();
-			while(line != null) {
-				int x = line.indexOf("prefixes=");
-				if(x >= 0) {
-					String[] exts = line.substring(x+9).split(",");
-					for(String ex : exts) {
-						int sp = ex.indexOf(' ');
-						if(sp >= 0) {
-							ex = ex.substring(0, sp);
+				extensions.add("CUST");		
+				extensions.add("CUS");
+				extensions.add("CUSTOM");
+				extensions.add("DM");
+				
+				BufferedReader reader;
+				try {
+					reader = new BufferedReader(new FileReader(confFile));
+					String line = reader.readLine();
+					while(line != null) {
+						int x = line.indexOf("prefixes=");
+						if(x >= 0) {
+							String[] exts = line.substring(x+9).split(",");
+							for(String ex : exts) {
+								int sp = ex.indexOf('\t');
+								if(sp >= 0) {
+									ex = ex.substring(0, sp);
+								}
+								//Log.v(TAG, "Ext " + ex);
+								extensions.add(ex.toUpperCase());
+							}
 						}
-						Log.v(TAG, "Ext " + ex);
-						extensions.add(ex.toUpperCase());
+						line = reader.readLine();
 					}
+					reader.close();
+					
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
-				line = reader.readLine();
-			}
-			reader.close();
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			}			
 		}
-		
 		//for(String s : ex) {			
 		//	extensions.add(s);
 		//}
@@ -258,10 +258,15 @@ public class UADEPlugin extends DroidSoundPlugin {
 		
 		Context context = getContext();
 
-		File filesDir = context.getFilesDir();
+		//File filesDir = context.getFilesDir();
+		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 
 		if(!inited) {
-			N_init(filesDir.getPath());
+			
+			Log.v(TAG, "Loading library");
+			System.loadLibrary("uade");
+			
+			N_init(droidDir.getPath());
 			/*try {
 				Thread.sleep(2000);
 			} catch (InterruptedException e) {

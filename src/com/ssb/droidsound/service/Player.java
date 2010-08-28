@@ -65,7 +65,7 @@ public class Player implements Runnable {
 		String author;
 		String copyright;
 		String type;
-		String game;
+		//String game;
 		int length;
 		int subTunes;
 		int startTune;
@@ -94,7 +94,7 @@ public class Player implements Runnable {
 	
 	
 	// Player state
-	private int currentPosition;
+	//private int currentPosition;
 	private int noPlayWait;
 	private int lastPos;
 	private SongInfo currentSong = new SongInfo();
@@ -384,7 +384,7 @@ public class Player implements Runnable {
 			Log.v(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
 			audioTrack.play();				
 			currentState = State.PLAYING;
-			currentPosition = 0;
+			//currentPosition = 0;
 			lastPos = -1000;
 			return;
         }
@@ -455,12 +455,12 @@ public class Player implements Runnable {
 									currentState = State.PLAYING;
 								}
 								if(currentPlugin.seekTo(songRef, msec)) {
-									currentPosition = msec;
-									lastPos = -1000;
+									//currentPosition = msec;
+									//lastPos = -1000;
 								}
 							case SET_TUNE:
 								if(currentPlugin.setTune(songRef, (Integer)argument)) {
-									currentPosition = 0;
+									//currentPosition = 0;
 									lastPos = -1000;
 									//audioTrack.pause();
 									//Log.v(TAG, "TUNE, pos " + audioTrack.getPlaybackHeadPosition());
@@ -513,23 +513,23 @@ public class Player implements Runnable {
 				if(currentState == State.PLAYING) {
 					//Log.v(TAG, "Get sound data");
 					int len = currentPlugin.getSoundData(songRef, samples, bufSize/16);
-					currentPosition += ((len * 1000) / (FREQ*2));						
+					int pos = audioTrack.getPlaybackHeadPosition();
+					//currentPosition += ((len * 1000) / (FREQ*2));						
 					//Log.v(TAG, "pos " + currentPosition);
-					if(currentPosition >= lastPos + 1000) {
-						int pos = audioTrack.getPlaybackHeadPosition();
+					if(pos >= lastPos + 1000) {
 						//Log.v(TAG, String.format("PLAY %d sec %d pos = %d msec ", currentPosition, pos, pos * 1000 / 44100));
 
 						
 						Message msg = mHandler.obtainMessage(MSG_PROGRESS, pos * 10 / 441, 0);
 						mHandler.sendMessage(msg);
-						lastPos = currentPosition;
+						lastPos = pos;
 												
 						if(currentPlugin.isSilent(songRef)) {
 							if(silentPosition < 0) {
-								silentPosition = currentPosition;
+								silentPosition = pos;
 							}
 							else
-							if(currentPosition > silentPosition + 2500) {
+							if(pos > silentPosition + 2500) {
 								msg = mHandler.obtainMessage(MSG_SILENT);
 								mHandler.sendMessage(msg);
 								Log.v(TAG, "Silence");
@@ -570,14 +570,14 @@ public class Player implements Runnable {
 	}
 	
 	synchronized int getPosition() {
-		return currentPosition;
+		return audioTrack.getPlaybackHeadPosition();
 	}
 	
 	synchronized public boolean getSongInfo(SongInfo target) {		
 		target.title = new String(currentSong.title);
 		target.author = new String(currentSong.author);
 		target.copyright = new String(currentSong.copyright);
-		target.game = new String(currentSong.game);
+		//target.game = new String(currentSong.game);
 		target.type = new String(currentSong.type);
 		target.length = currentSong.length;
 		target.subTunes = currentSong.subTunes;

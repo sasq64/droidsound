@@ -674,6 +674,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		if(songDatabase == null) {
 			Log.v(TAG, "############ CREATING static SongDatabase object ##############");
+						
 			songDatabase = new SongDatabase(getApplicationContext());
 			
 			CSDBParser csdb = new CSDBParser();
@@ -922,6 +923,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 
+	public static boolean moveFile(File src, File dest) {
+		if(src.renameTo(dest)) {
+			Log.v(TAG, "Successful");
+			return true;
+		} else
+		if(copyFile(src, dest)) {
+			Log.v(TAG, "COPY Successful");
+			src.delete();
+			return true;
+		}
+		return false;
+	}
+	
 	private void moveFileHere(File f) {
 		
 
@@ -1258,11 +1272,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case PlayerService.SONG_COPYRIGHT :
 			// songCopyrightText.setText(value);
 			break;
-		case PlayerService.SONG_GAMENAME :
+		//case PlayerService.SONG_GAMENAME :
 			// if(value != null && value.length() > 0) {
 			// 	songCopyrightText.setText(value);
 			// }
-			break;
+			//break;
 		}
 	}
 		
