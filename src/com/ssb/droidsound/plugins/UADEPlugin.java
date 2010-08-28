@@ -2,10 +2,8 @@ package com.ssb.droidsound.plugins;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
@@ -29,10 +27,12 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	private static boolean inited;
 
-	public UADEPlugin(Context ctx) {
-		super(ctx);
-		
-		
+	private long currentSong = 0;
+	
+	public UADEPlugin() {
+
+		Context ctx = getContext();
+
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 		//File filesDir = ctx.getFilesDir();
 		File eagleDir = new File(droidDir, "players");
@@ -187,74 +187,69 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public int getIntInfo(Object song, int what) {
-		if(song instanceof String) {
+	public int getIntInfo(int what) {
+		if(currentSong == 0) {
 			return -1;
 		}
-		return N_getIntInfo((Long)song, what);
+		return N_getIntInfo(currentSong, what);
 	}
 
 	@Override
-	public int getSoundData(Object song, short [] dest, int size) {
+	public int getSoundData(short [] dest, int size) {
 		//Log.v(TAG, "getSoundData()");
-		return N_getSoundData((Long)song, dest, size);
+		return N_getSoundData(currentSong, dest, size);
 	}
 	
 	@Override
-	public String[] getDetailedInfo(Object song) {
+	public String[] getDetailedInfo() {
+
+		if(currentSong == 0) {
+			return null;
+		}
 
 		String [] details = new String [2];
 		details[0] = "Format";
-		details[1] = N_getStringInfo((Long)song, INFO_TYPE);
+		details[1] = N_getStringInfo(currentSong, INFO_TYPE);
 		return details;
 	}
 
 	@Override
-	public String getStringInfo(Object song, int what) {
-		if(song instanceof String) {
-			/*
-			if(what == INFO_TITLE) {
-				Log.v(TAG, "Getting info for " + song);
-				String name = (String)song;
-				int x = name.lastIndexOf('.');
-				if(x < 0) return name;
-				String ext = name.substring(x+1).toUpperCase();
-				if(extensions.contains(ext)) {
-					return name.substring(0, x);
-				}
-				x = name.indexOf('.');
-				ext = name.substring(0, x).toUpperCase();
-				if(extensions.contains(ext)) {
-					return name.substring(x+1);
-				}
-			} */
-			
+	public String getStringInfo(int what) {
+		if(currentSong == 0) {
 			return "";
 		}
-		return N_getStringInfo((Long)song, what);
+		return N_getStringInfo(currentSong, what);
 	}
 
 	@Override
-	public Object load(byte[] module, int size) {
+	public boolean load(String name, byte[] module, int size) {
 	
 		try {
-			File file = File.createTempFile("uade", ".cust");
+			File file;
+			int dot = name.indexOf('.');
+			int lastDot = name.lastIndexOf('.');
+			if(dot == -1) {
+				file = File.createTempFile(name, "");
+			}
+			else {
+				file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
+			}
 			
 			FileOutputStream fo = new FileOutputStream(file);
 			fo.write(module);
 			fo.close();
-			Object rc = load(file);
+			boolean rc = load(file);
 			file.delete();
 			return rc;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;
+		return false;
 	}
 
 	@Override
-	public Object load(File file) throws IOException {
+	public boolean load(File file) throws IOException {
 		
 		Context context = getContext();
 
@@ -277,51 +272,52 @@ public class UADEPlugin extends DroidSoundPlugin {
 		}
 
 		
-		long rc = N_loadFile(file.getPath());
-		return (rc == 0 ? null : (Long)rc);
+		currentSong = N_loadFile(file.getPath());
+		return (currentSong != 0);
 	}
 	
 	@Override
-	public Object loadInfo(File file) throws IOException {
-		return file.getName();
+	public boolean loadInfo(File file) throws IOException {
+		currentSong = 0;
+		return true;
 		//return load(file);
 	}
 
 	@Override
-	public Object loadInfo(InputStream is, int size) throws IOException {
-		return "";
+	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
+		currentSong = 0;
+		return true;
 	}
 	
 	@Override
-	public Object loadInfo(byte[] module, int size) {
-		return "";
+	public boolean loadInfo(String name, byte[] module, int size) {
+		currentSong = 0;
+		return true;
 	}
 
-	
-	
-
 	@Override
-	public void unload(Object song) {
-		if(song instanceof String) {
+	public void unload() {
+		if(currentSong == 0) {
 			return;
 		}
-		N_unload((Long)song);
+		N_unload(currentSong);
+		currentSong = 0;
 	}
 	
 	@Override
-	public boolean setTune(Object song, int tune) {
-		if(song instanceof String) {
+	public boolean setTune(int tune) {
+		if(currentSong == 0) {
 			return false;
 		}
-		return N_setTune((Long)song, tune);
+		return N_setTune(currentSong, tune);
 	}
 	
 	@Override
-	public boolean seekTo(Object song, int msec) {
-		if(song instanceof String) {
+	public boolean seekTo( int msec) {
+		if(currentSong == 0) {
 			return false;
 		}
-		return N_seekTo((Long)song, msec);
+		return N_seekTo(currentSong, msec);
 	}
 	
 	native public void N_init(String baseDir);

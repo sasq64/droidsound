@@ -7,9 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import android.content.Context;
-import android.util.Log;
-
 
 
 public class GMEPlugin extends DroidSoundPlugin {
@@ -20,10 +17,11 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	private Set<String> extensions;
 	
-	static String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" };   
+	static String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" };
+	
+	long currentSong = 0;
 
-	public GMEPlugin(Context ctx) {
-		super(ctx);
+	public GMEPlugin() {
 		extensions = new HashSet<String>();
 		for(String s : ex) {			
 			extensions.add(s);
@@ -40,22 +38,22 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	
 	@Override
-	public String[] getDetailedInfo(Object song) {
+	public String[] getDetailedInfo() {
 		
 		List<String> list = new ArrayList<String>();
 		//String instruments = N_getStringInfo((Long)song, 100);
 		
-		String s = getStringInfo(song, INFO_TYPE);
+		String s = N_getStringInfo(currentSong, INFO_TYPE);
 		if(s != null & s.length() > 0) {
 			list.add("Format");
 			list.add(s);
 		}
-		s = getStringInfo(song, INFO_COPYRIGHT);
+		s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
 		if(s != null & s.length() > 0) {
 			list.add("Copyright");
 			list.add(s);
 		}
-		s = getStringInfo(song, INFO_GAME);
+		s = N_getStringInfo(currentSong, INFO_GAME);
 		if(s != null & s.length() > 0) {
 			list.add("Game");
 			list.add(s);
@@ -70,45 +68,39 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public Object load(File file) throws IOException {
-		long rc = N_loadFile(file.getPath());
-		if(rc == 0)
-			return null;
-		else
-			return rc;		
+	public boolean load(File file) throws IOException {
+		currentSong = N_loadFile(file.getPath());
+		return (currentSong != 0);
 	}
 	
-	public Object loadInfo(File file) throws IOException {
-		long rc = N_loadFile(file.getPath());
-		if(rc == 0)
-			return null;
-		else
-			return rc;		
+	public boolean loadInfo(File file) throws IOException {
+		currentSong = N_loadFile(file.getPath());
+		return (currentSong != 0);
 	}
 
 	@Override
-	public Object load(byte [] module, int size) {
-		long rc = N_load(module, size);
-		if(rc == 0)
-			return null;
-		else
-			return rc;		
+	public boolean load(String name, byte [] module, int size) {
+		currentSong = N_load(module, size);
+		return (currentSong != 0);
 	}
 
 	@Override
-	public void unload(Object song) { N_unload((Long)song); }
+	public void unload() {
+		N_unload(currentSong);
+		currentSong = 0;
+	}
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(Object song, short [] dest, int size) { return N_getSoundData((Long)song, dest, size); }	
+	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }	
 	@Override
-	public boolean seekTo(Object song, int seconds) { return N_seekTo((Long)song, seconds); }
+	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
-	public boolean setTune(Object song, int tune) { return N_setTune((Long)song, tune); }
+	public boolean setTune(int tune) { return N_setTune(currentSong, tune); }
 	@Override
-	public String getStringInfo(Object song, int what) { return N_getStringInfo((Long)song, what); }
+	public String getStringInfo(int what) { return N_getStringInfo(currentSong, what); }
 	@Override
-	public int getIntInfo(Object song, int what) { return N_getIntInfo((Long)song, what); }
+	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
 
 	native public boolean N_canHandle(String name);
 	native public long N_load(byte [] module, int size);

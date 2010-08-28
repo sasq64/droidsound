@@ -24,7 +24,7 @@ public class FileIdentifier {
 
 	private static HashSet<String> modMagic;
 
-	private static DroidSoundPlugin[] plugins;
+	private static List<DroidSoundPlugin> plugins;
 
 	private static boolean indexUnknown;
 	
@@ -153,23 +153,18 @@ public class FileIdentifier {
 	}
 	
 	
-	public static void setPlugins(DroidSoundPlugin[] pl) {
-		plugins = pl;
-	}
-	
-	
-	private static MusicInfo tryLoad(DroidSoundPlugin plugin, InputStream is) throws IOException {
-		Object songRef = plugin.loadInfo(is, is.available());
-		if(songRef != null) {
+	private static MusicInfo tryLoad(DroidSoundPlugin plugin, InputStream is, String name) throws IOException {
+
+		if(plugin.loadInfo(name, is, is.available())) {
 			MusicInfo info = new MusicInfo();
-			info.title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
-			info.composer = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
-			info.copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
+			info.title = plugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
+			info.composer = plugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
+			info.copyright = plugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
 			//info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
-			info.format = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
+			info.format = plugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
 			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 			info.date = -1;
-			plugin.unload(songRef);
+			plugin.unload();
 			
 			Log.v(TAG, String.format("TITLE: %s -- COMPOSER: %s", info.title, info.composer));
 			
@@ -180,17 +175,17 @@ public class FileIdentifier {
 	
 	
 	private static MusicInfo tryLoad(DroidSoundPlugin plugin, File file) throws IOException {
-		Object songRef = plugin.loadInfo(file);
-		if(songRef != null) {
+
+		if(plugin.loadInfo(file)) {
 			MusicInfo info = new MusicInfo();
-			info.title = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TITLE);
-			info.composer = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_AUTHOR);
-			info.copyright = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_COPYRIGHT);
+			info.title = plugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
+			info.composer = plugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
+			info.copyright = plugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
 			//info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
-			info.format = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_TYPE);
+			info.format = plugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
 			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
 			info.date = -1;
-			plugin.unload(songRef);
+			plugin.unload();
 			
 			Log.v(TAG, String.format("TITLE: %s -- COMPOSER: %s", info.title, info.composer));
 			
@@ -222,6 +217,10 @@ public class FileIdentifier {
 
 		byte data [];
 		String magic;
+		
+		if(plugins == null) {
+			plugins = DroidSoundPlugin.createPluginList();
+		}
 
 		int dot = name.lastIndexOf('.');
 		
@@ -236,10 +235,10 @@ public class FileIdentifier {
 
 			
 			List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
-			for(int j = 0; j < plugins.length; j++) {
-				if(plugins[j].canHandle(name)) {
-					list.add(plugins[j]);
-					Log.v(TAG, String.format("%s handled by %d", name, j));
+			for(DroidSoundPlugin plugin : plugins) {
+				if(plugin.canHandle(name)) {
+					list.add(plugin);
+					Log.v(TAG, String.format("%s handled by %s", name, plugin.getClass().getSimpleName()));
 				}
 			}
 			
@@ -255,7 +254,7 @@ public class FileIdentifier {
 						info = tryLoad(plugin, file);
 					} else {				
 							is.mark(is.available());
-							info = tryLoad(plugin, is);
+							info = tryLoad(plugin, is, name);
 							is.reset();
 					}
 				} catch (IOException e) {
@@ -273,16 +272,16 @@ public class FileIdentifier {
 			
 			if(indexUnknown) {
 				Log.v(TAG, "Trying non-handling plugins");
-				for(int j = 0; j < plugins.length; j++) {
-					if(!plugins[j].canHandle(name)) {
-						Log.v(TAG, "Trying " + plugins[j].getClass().getName());
+				for(DroidSoundPlugin plugin : plugins) {
+					if(!plugin.canHandle(name)) {
+						Log.v(TAG, "Trying " + plugin.getClass().getSimpleName());
 						MusicInfo info = null;
 						try {
 							if(file != null) {
-								info = tryLoad(plugins[j], file);
+								info = tryLoad(plugin, file);
 							} else {
 									is.mark(is.available());
-									info = tryLoad(plugins[j], is);
+									info = tryLoad(plugin, is, name);
 									is.reset();
 							}
 						} catch (IOException e) {
@@ -291,7 +290,7 @@ public class FileIdentifier {
 							e2.printStackTrace();
 						}
 						if(info != null) {
-							name = plugins[j].getBaseName(name);
+							name = plugin.getBaseName(name);
 							fixName(name, info);
 							return info;
 						}

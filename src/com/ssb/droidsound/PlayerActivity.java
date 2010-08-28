@@ -50,13 +50,12 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 
 import com.ssb.droidsound.PlayListView.FileInfo;
-import com.ssb.droidsound.R.string;
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
@@ -422,6 +421,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		super.onCreate(savedInstanceState);
 		Log.v(TAG, "#### onCreate()");
+		
+		DroidSoundPlugin.setContext(getApplicationContext());
 	
 
 		Intent intent = getIntent();

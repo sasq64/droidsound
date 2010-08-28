@@ -32,12 +32,10 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	
 	
 	private int songLengths[] = new int [256];
-	private int currentSong;
+	private int currentTune;
 
-	public SidplayPlugin(Context ctx) {
-		super(ctx);
-	}
-
+	private long currentSong = 0;
+	
 	static class Option {
 		String name;
 		String description;
@@ -48,7 +46,8 @@ public class SidplayPlugin extends DroidSoundPlugin {
 			"Hz", "50", "60", "The TV system to use",
 			"Filter", "SID Filtering",
 			
-	};	
+	};
+	private Info songInfo;	
 	
 	public Option [] getOptions() {
 		return null;
@@ -66,37 +65,39 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void unload(Object song) {
-		if(song instanceof Info) {
+	public void unload() {
+		songInfo = null;
+		if(currentSong <= 0) {
 			return;
 		}
-		N_unload((Long)song);
+		N_unload(currentSong);
+		currentSong = 0;
 	}
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(Object song, short [] dest, int size) { return N_getSoundData((Long)song, dest, size); }	
+	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }	
 	@Override
-	public boolean seekTo(Object song, int seconds) { return N_seekTo((Long)song, seconds); }
+	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
-	public boolean setTune(Object song, int tune) {
-		boolean ok = N_setTune((Long)song, tune);
+	public boolean setTune(int tune) {
+		boolean ok = N_setTune(currentSong, tune);
 		if(ok) {
-			currentSong = tune;
+			currentTune = tune;
 		}
 		return ok;
 	}
 	@Override
-	public int getIntInfo(Object song, int what) {
-		if(song instanceof Info) {
+	public int getIntInfo(int what) {
+		if(currentSong <= 0) {
 			return 0;
 		}
 		
 		if(what == INFO_LENGTH) {
-			return songLengths[currentSong];
+			return songLengths[currentTune];
 		}
 		
-		return N_getIntInfo((Long)song, what);
+		return N_getIntInfo(currentSong, what);
 	}
 
 	native public long N_load(byte [] module, int size);
@@ -112,17 +113,17 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	native public void N_setOption(int option, int value);
 	
 	@Override
-	public Object load(byte [] module, int size) {
+	public boolean load(String name, byte [] module, int size) {
 		
-		currentSong = 0;
+		currentTune = 0;
 		
-		long rc = N_load(module, size);
+		currentSong = N_load(module, size);
 		
-		if(rc == 0) {
-			return null;
+		if(currentSong == 0) {
+			return false;
 		}
 
-		currentSong = getIntInfo(rc, DroidSoundPlugin.INFO_STARTTUNE);
+		currentTune = N_getIntInfo(currentSong, DroidSoundPlugin.INFO_STARTTUNE);
 		
 		for(int i=0; i<256; i++) {
 			songLengths[i] = 60*60*1000;
@@ -201,35 +202,34 @@ public class SidplayPlugin extends DroidSoundPlugin {
 			
 			Log.v(TAG, String.format("Found md5 at offset %d", found));
 		}		
-		return rc; 
+		return true; 
 	}
 
 	@Override
-	public String getStringInfo(Object song, int what) {
-		if(song instanceof Info) {
-			Info info = (Info)song;
+	public String getStringInfo(int what) {
+		if(currentSong <= 0 && songInfo != null) {
 			switch(what) {
 			case INFO_AUTHOR:
-				return info.composer;
+				return songInfo.composer;
 			case INFO_COPYRIGHT:
-				return info.copyright;
+				return songInfo.copyright;
 			case INFO_TITLE:
-				return info.name;
+				return songInfo.name;
 			}
 			return null;
 		}
-		return N_getStringInfo((Long)song, what);
+		return N_getStringInfo(currentSong, what);
 	}
 	
 	@Override
-	public String[] getDetailedInfo(Object song) {
+	public String[] getDetailedInfo() {
 
 		final String sids [] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
 		
 		String[] info = new String [4];
 		info[0] = "Copyright";
-		info[1] = N_getStringInfo((Long)song, INFO_COPYRIGHT);
-		int m = N_getIntInfo((Long)song, 101);
+		info[1] = N_getStringInfo(currentSong, INFO_COPYRIGHT);
+		int m = N_getIntInfo(currentSong, 101);
 		Log.v(TAG, "Sid model " + m);
 		if(m <= 3 && m >= 0) {
 			info[2] = "SID Model";
@@ -309,15 +309,17 @@ public class SidplayPlugin extends DroidSoundPlugin {
 
 
 	@Override
-	public Object loadInfo(InputStream is, int size) throws IOException {
+	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
 		
-		Info info = new Info();
+		songInfo = new Info();
+		Info info = songInfo;
+		
 		
 		is.read(header);
 		
 		String s = new String(header, 0, 4);
 		if(!(s.equals("PSID") || s.equals("RSID"))) {
-			return null;
+			return false;
 		}
 
 		int o = 0x35;
@@ -338,13 +340,13 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		}
 		info.copyright = new String(header, 0x56, o-0x55, "ISO-8859-1");
 
-		return info;	
+		return true;	
 	}
 	
 	@Override
-	public boolean isSilent(Object song) {
+	public boolean isSilent() {
 		
-		return (N_getIntInfo((Long)song, 100) != 0);
+		return (N_getIntInfo(currentSong, 100) != 0);
 	}
 	
 /*

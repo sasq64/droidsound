@@ -1,20 +1,13 @@
 package com.ssb.droidsound;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -40,11 +33,6 @@ import android.os.Message;
 import android.provider.BaseColumns;
 import android.util.Log;
 
-import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.plugins.GMEPlugin;
-import com.ssb.droidsound.plugins.ModPlugin;
-import com.ssb.droidsound.plugins.SidplayPlugin;
-import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
@@ -90,15 +78,11 @@ public class SongDatabase implements Runnable {
 	
 	private SQLiteDatabase scanDb;
 	private SQLiteDatabase rdb;
-	private DroidSoundPlugin[] plugins;
 	
 	private String dbName;
 	private volatile boolean stopScanning;
 
-
 	private Context context;
-
-	private boolean doQuit;
 
 	private Handler mHandler;
 
@@ -1007,14 +991,8 @@ public class SongDatabase implements Runnable {
 		stopScanning = false;
 		scanning = true;
 
-		plugins = new DroidSoundPlugin[4];
-		plugins[0] = new SidplayPlugin(context);
-		plugins[1] = new ModPlugin(context);
-		plugins[2] = new GMEPlugin(context);
-		plugins[3] = new UADEPlugin(context);
-		//plugins[3] = new TFMXPlugin(context);
-		
-		FileIdentifier.setPlugins(plugins);
+				
+		// FileIdentifier.setPlugins(plugins);
 
 
 		//rdb = getReadableDatabase();

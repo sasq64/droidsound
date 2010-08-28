@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import android.content.Context;
 
@@ -21,45 +23,62 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_SUBTUNE_TITLE = 8;
 	
 	public static final int SIZEOF_INFO = 9;
-	private Context context;
 
-	public boolean canHandle(String name) { return false; }
+	private static Context context;
 	
-	public DroidSoundPlugin(Context ctx) { context = ctx; }
-	
-	public Context getContext() { return context; }
+	static Object lock = new Object();
 
-	public abstract Object load(byte [] module, int size);
-
-	public Object loadInfo(byte [] module, int size) {
-		return load(module, size);
+	public static void setContext(Context ctx) {
+		context = ctx;
 	}
 	
-	public Object load(InputStream is, int size) throws IOException {
-		Object rc = null;
+	public static Context getContext() { return context; }
+
+	
+	public static List<DroidSoundPlugin> createPluginList() {
+		
+		List<DroidSoundPlugin> pluginList;
+		synchronized (lock) {				
+			pluginList = new ArrayList<DroidSoundPlugin>();
+			pluginList.add(new SidplayPlugin());
+			pluginList.add(new ModPlugin());
+			pluginList.add(new GMEPlugin());
+			pluginList.add(new UADEPlugin());
+		}
+		return pluginList;				
+	}
+	
+	
+
+	public boolean loadInfo(String name, byte [] module, int size) {
+		return load(name, module, size);
+	}
+	
+	public boolean load(String name, InputStream is, int size) throws IOException {
+		boolean rc = false;
 		try {
 			byte [] songBuffer = new byte [size];
 			is.read(songBuffer);
-			rc = load(songBuffer, songBuffer.length);
+			rc = load(name, songBuffer, songBuffer.length);
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}
 		return rc;
 	}
 	
-	public Object loadInfo(InputStream is, int size) throws IOException {
-		Object rc = null;
+	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
+		boolean rc = false;
 		try {
 			byte [] songBuffer = new byte [size];
 			is.read(songBuffer);
-			rc = loadInfo(songBuffer, songBuffer.length);
+			rc = loadInfo(name, songBuffer, songBuffer.length);
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}
 		return rc;
 	}
 	
-	public Object load(File file) throws IOException {		
+	public boolean load(File file) throws IOException {		
 		int l = (int)file.length();
 		byte [] songBuffer = null;
 		try {
@@ -69,10 +88,10 @@ public abstract class DroidSoundPlugin {
 		}		
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
-		return load(songBuffer, songBuffer.length);
+		return load(file.getName(), songBuffer, songBuffer.length);
 	}
 
-	public Object loadInfo(File file) throws IOException {
+	public boolean loadInfo(File file) throws IOException {
 		int l = (int)file.length();
 		byte [] songBuffer = null;
 		try {
@@ -82,19 +101,24 @@ public abstract class DroidSoundPlugin {
 		}
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
-		return loadInfo(songBuffer, songBuffer.length);
+		return loadInfo(file.getName(), songBuffer, songBuffer.length);
 	}
 
-	public abstract void unload(Object song);
+	public abstract void unload();
+	
+	public boolean canHandle(String name) { return false; }
+	
+	public abstract boolean load(String name, byte [] module, int size);
 
+	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	public abstract int getSoundData(Object song, short [] dest, int size);	
+	public abstract int getSoundData(short [] dest, int size);	
 
-	public boolean seekTo(Object song, int msec) {
+	public boolean seekTo(int msec) {
 		return false;
 	}
 
-	public boolean setTune(Object song, int tune) {
+	public boolean setTune(int tune) {
 		return false;
 	}
 
@@ -107,14 +131,14 @@ public abstract class DroidSoundPlugin {
 	// "Channels" - Number of channels
 	// "Copyright" - Same as INFO_COPYRIGHT
 	// "Game" - Same as INFO_GAME
-	public String [] getDetailedInfo(Object song) {
+	public String [] getDetailedInfo() {
 		return null;
 	}
 	
-	public abstract String getStringInfo(Object song, int what);
-	public abstract int getIntInfo(Object song, int what);
+	public abstract String getStringInfo(int what);
+	public abstract int getIntInfo( int what);
 	
-	public boolean isSilent(Object song) {
+	public boolean isSilent() {
 		return false;
 	}
 

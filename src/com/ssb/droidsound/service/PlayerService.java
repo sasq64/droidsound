@@ -32,9 +32,9 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
 
-import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player.SongInfo;
 
 public class PlayerService extends Service {
@@ -100,7 +100,7 @@ public class PlayerService extends Service {
 	
 	private PhoneStateListener phoneStateListener;
 	private BroadcastReceiver mediaReceiver;
-	private int oldPlaylistHash;
+
 	private int defaultRepeatMode = RM_CONTINUE;
 
 	protected String saySomething;
@@ -515,7 +515,10 @@ public class PlayerService extends Service {
     
 	@Override
 	public void onCreate() {
-		super.onCreate();		
+		super.onCreate();
+		
+		DroidSoundPlugin.setContext(getApplicationContext());
+		
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 		player = new Player(audioManager, mHandler, getApplicationContext());
 		callbacks = new ArrayList<IPlayerServiceCallback>();

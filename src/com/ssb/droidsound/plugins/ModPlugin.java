@@ -3,14 +3,9 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import com.ssb.droidsound.SongDatabase;
-
-import android.content.Context;
 import android.util.Log;
 
 
@@ -21,16 +16,17 @@ public class ModPlugin extends DroidSoundPlugin {
 		System.loadLibrary("modplug");
 	}
 	private Set<String> extensions;
-	private Map<Object, String> authors = new HashMap<Object, String>();
+	private String author;
 
-	public ModPlugin(Context ctx) {
-		super(ctx);
+	public ModPlugin() {
 		extensions = new HashSet<String>();
 		extensions.add("MOD");
 		extensions.add("XM");
 		extensions.add("S3M");
 		extensions.add("IT");
 	}
+	
+	long currentSong = 0;
 
 	@Override
 	public boolean canHandle(String name) {
@@ -41,13 +37,12 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public Object load(byte [] module, int size) {
-		long rc = N_load(module, size);
-		if(rc != 0) {
-			String a = guessAuthor(N_getStringInfo(rc, 100));
-			authors.put((Long)rc, a);
+	public boolean load(String name, byte [] module, int size) {
+		currentSong = N_load(module, size);
+		if(currentSong != 0) {
+			author = guessAuthor(N_getStringInfo(currentSong, 100));
 		}
-		return rc != 0 ? rc : null; 
+		return (currentSong != 0); 
 	}
 	
 	static String t [] = new String [256];
@@ -213,35 +208,32 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void unload(Object song) {
-		
-			authors.remove(song);	
-			N_unload((Long)song);
+	public void unload() {		
+		author = null;
+		N_unload(currentSong);
+		currentSong = 0;
 	}
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(Object song, short [] dest, int size) { return N_getSoundData((Long)song, dest, size); }	
+	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }	
 	@Override
-	public boolean seekTo(Object song, int seconds) { return N_seekTo((Long)song, seconds); }
+	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
-	public boolean setTune(Object song, int tune) { return false; }
+	public boolean setTune(int tune) { return false; }
 	@Override
-	public String getStringInfo(Object song, int what) {
+	public String getStringInfo(int what) {
 		
 		if(what == INFO_AUTHOR) {
-			String a = authors.get(song);
-			//if(a != null) {
-				return a;
-			//}
+			return author;
 		}		
-		return N_getStringInfo((Long)song, what);
+		return N_getStringInfo(currentSong, what);
 	}
 	@Override
-	public int getIntInfo(Object song, int what) { return N_getIntInfo((Long)song, what); }
+	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
 
 	@Override
-	public Object loadInfo(File file) throws IOException {
+	public boolean loadInfo(File file) throws IOException {
 		int l = (int)file.length();
 		byte [] songBuffer = null;
 		try {
@@ -254,21 +246,20 @@ public class ModPlugin extends DroidSoundPlugin {
 
 		long song = N_load(songBuffer, l);
 		if(song == 0)
-			return null;
+			return false;
 		else {
-			String a = guessAuthor(N_getStringInfo(song, 100));
-			authors.put((Long)song, a);
-			return song;
+			author = guessAuthor(N_getStringInfo(song, 100));
+			return true;
 		}
 	}
 	
 	@Override
-	public String[] getDetailedInfo(Object song) {
+	public String[] getDetailedInfo() {
 		
-		String instruments = N_getStringInfo((Long)song, 100);
-		String fmt = getStringInfo(song, INFO_TYPE);
+		String instruments = N_getStringInfo(currentSong, 100);
+		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
 		//Log.v(TAG, "INSTRUMENTS: " + instruments);
-		int channels = N_getIntInfo((Long)song, 101);
+		int channels = N_getIntInfo(currentSong, 101);
 
 		String[] info;
 		if(instruments != null && instruments.length() > 0) {
