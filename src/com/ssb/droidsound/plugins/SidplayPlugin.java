@@ -12,13 +12,7 @@ import android.content.Context;
 import android.util.Log;
 
 public class SidplayPlugin extends DroidSoundPlugin {
-
-	public SidplayPlugin(Context ctx) {
-		super(ctx);
-	}
-
 	private static final String TAG = SidplayPlugin.class.getSimpleName();
-
 
 	static {
 		System.loadLibrary("sidplay2");
@@ -40,6 +34,31 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	private int songLengths[] = new int [256];
 	private int currentSong;
 
+	public SidplayPlugin(Context ctx) {
+		super(ctx);
+	}
+
+	static class Option {
+		String name;
+		String description;
+		Object defaultValue;
+	}
+	
+	String [] opts = { 
+			"Hz", "50", "60", "The TV system to use",
+			"Filter", "SID Filtering",
+			
+	};	
+	
+	public Option [] getOptions() {
+		return null;
+	}
+	
+	
+	void setOption(int opt, Object value) {
+	}
+	
+	
 	@Override
 	public boolean canHandle(String name) { 
 		//return N_canHandle(name);
@@ -90,7 +109,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	native public String N_getStringInfo(long song, int what);
 	native public int N_getIntInfo(long song, int what);
 
-	
+	native public void N_setOption(int option, int value);
 	
 	@Override
 	public Object load(byte [] module, int size) {
@@ -218,24 +237,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		}
 		return info;
 	}
-	
-	/* 					if(currentSongInfo.md5 != null) {					
-						final String HEX = "0123456789abcdef";
-						
-						StringBuilder sb = new StringBuilder(16);
-						for(int i=0; i<16; i++) {
-							byte x = currentSongInfo.md5[i];
-							sb.append(HEX.charAt((x>>4)&0xf)).append(HEX.charAt(x&0xf));
-						}
-						
-						info[SONG_MD5] = sb.toString();
-						Log.v(TAG, "MD5: " + info[SONG_MD5]);
 
-					} else {
-						Log.v(TAG, "No MD5!");
-					}
-
-	 */
 	private byte [] findMD5(byte[] module, int size) {
 
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
