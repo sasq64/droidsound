@@ -103,6 +103,10 @@ public class Player implements Runnable {
 	private int silentPosition;
 	
 	int FREQ = 44100;
+	private long audioTime;
+	private int aCount;
+	private long lastTime = -1;
+	private long frameTime;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -447,6 +451,7 @@ public class Player implements Runnable {
 									//lastPos = -1000;
 								}
 							case SET_TUNE:
+								Log.v(TAG, "Setting tune");
 								if(currentPlugin.setTune((Integer)argument)) {
 									//currentPosition = 0;
 									lastPos = -1000;
@@ -501,14 +506,17 @@ public class Player implements Runnable {
 				if(currentState == State.PLAYING) {
 					//Log.v(TAG, "Get sound data");
 					int len = currentPlugin.getSoundData(samples, bufSize/16);
+
 					int pos = audioTrack.getPlaybackHeadPosition();
 					//currentPosition += ((len * 1000) / (FREQ*2));						
 					//Log.v(TAG, "pos " + currentPosition);
-					if(pos >= lastPos + 1000) {
+					if(pos >= lastPos + FREQ/2) {
 						//Log.v(TAG, String.format("PLAY %d sec %d pos = %d msec ", currentPosition, pos, pos * 1000 / 44100));
 
-						
-						Message msg = mHandler.obtainMessage(MSG_PROGRESS, pos * 10 / 441, 0);
+						if(aCount == 0) aCount = 1;
+						Message msg = mHandler.obtainMessage(MSG_PROGRESS, pos * 10 / 441, 100 - (int) (audioTime / aCount));
+						aCount = 0;
+						audioTime = 0;
 						mHandler.sendMessage(msg);
 						lastPos = pos;
 												
@@ -529,9 +537,22 @@ public class Player implements Runnable {
 						
 					}
 					//Log.v(TAG, "write " + len);
-					if(len > 0) {
-						audioTrack.write(samples, 0, len);						
+					if(len > 0) {						
+						long t = System.currentTimeMillis();
+						audioTrack.write(samples, 0, len);
+						long tt = System.currentTimeMillis();
+						if(lastTime > 0) {							
+							frameTime = (tt - lastTime);
+							long d = tt - t;
+							//Log.v(TAG, String.format("Frame %d, write %d", frameTime, d));
+							if(frameTime > 0) {
+								audioTime += ((d * 100) / frameTime);
+								aCount++;
+							}
+						}
+						lastTime = tt;
 					} else {
+						lastTime = -1;
 						currentState = State.SWITCHING;
 						Message msg = mHandler.obtainMessage(MSG_DONE);
 						mHandler.sendMessage(msg);
@@ -553,6 +574,11 @@ public class Player implements Runnable {
 		
 		audioTrack.release();
 		audioTrack = null;
+		
+		for(DroidSoundPlugin plugin : plugins) {
+			plugin.exit();
+		}
+		
 		Log.v(TAG, "Player Thread exiting due to inactivity");
 		
 	}
@@ -560,7 +586,7 @@ public class Player implements Runnable {
 	synchronized int getPosition() {
 		return audioTrack.getPlaybackHeadPosition();
 	}
-	
+
 	synchronized public boolean getSongInfo(SongInfo target) {		
 		target.title = new String(currentSong.title);
 		target.author = new String(currentSong.author);
@@ -621,6 +647,10 @@ public class Player implements Runnable {
 	
 	public boolean isPlaying() {
 		return (currentState == State.PLAYING);
+	}
+	
+	public boolean isSwitching() {
+		return (currentState == State.SWITCHING);
 	}
 
 }

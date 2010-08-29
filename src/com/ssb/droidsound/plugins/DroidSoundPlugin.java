@@ -35,6 +35,12 @@ public abstract class DroidSoundPlugin {
 	public static Context getContext() { return context; }
 
 	
+	
+	// Called when player thread exits due to inactivty
+	public void exit() {		
+	};
+
+	
 	public static List<DroidSoundPlugin> createPluginList() {
 		
 		List<DroidSoundPlugin> pluginList;

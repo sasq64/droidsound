@@ -22,6 +22,39 @@
             android:summaryOn="Use text to speech to speak titles of songs"
             />
 
+	<PreferenceScreen
+            android:key="audio_prefs"
+            android:title="Audio"
+            android:summary="Audio options"
+	>
+	
+		<PreferenceCategory
+			android:title="UADEPlugin"
+		>
+		
+		<CheckBoxPreference
+	            android:key="filter"
+	            android:title="Amiga Filter"
+	            android:defaultValue="true"
+	            android:summaryOff="Filter not emulated"
+	            android:summaryOn="Filter emulated"
+	            />
+		<CheckBoxPreference
+	            android:key="speed_hack"
+	            android:title="Speed Hack"
+	            android:defaultValue="true"
+	            android:summaryOff="Speed Hack Off"
+	            android:summaryOn="Speed Hack On"
+	            />
+		<CheckBoxPreference
+	            android:key="ntsc"
+	            android:title="NTSC Mode"
+	            android:defaultValue="false"
+	            android:summaryOff="Emulating PAL mode"
+	            android:summaryOn="Emulating NTSC mode"
+	            />
+		</PreferenceCategory>
+	</PreferenceScreen>
             
     <PreferenceScreen
             android:key="database_prefs"

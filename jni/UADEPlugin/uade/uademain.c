@@ -283,7 +283,7 @@ void write_log_standard (const char *fmt, ...)
 
 int uade_main (int argc, char **argv)
 {
-
+	quit_program = 0;
 
     default_prefs (&currprefs);
 

@@ -11,7 +11,13 @@ CC = $(NDK)/build/prebuilt/linux-x86/arm-eabi-4.4.0/bin/arm-eabi-gcc
 
 
 ARCHFLAGS = 
-ARCHFLAGS += -fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__  -Wno-psabi -march=armv5te -mtune=xscale -msoft-float -mthumb -Os -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64  
+ARCHFLAGS += -fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__  -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64  
+
+ARCHFLAGS += -Wno-psabi -march=armv5te -mtune=xscale -msoft-float -mthumb -Os
+# ARCHFLAGS += -Wno-psabi -march=armv7-a -mfloat-abi=softfp -mfpu=vfp -mthumb -Os -mfpu=neon
+
+ 
+
 ARCHFLAGS += -DANDROID  -Wa,--noexecstack  -O2 -DNDEBUG -g   
 
 ARCHLIBS = 

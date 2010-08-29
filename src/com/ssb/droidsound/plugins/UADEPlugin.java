@@ -26,6 +26,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	private static Set<String> extensions = new HashSet<String>();
 
 	private static boolean inited;
+	private static boolean libLoaded;
 
 	private long currentSong = 0;
 	
@@ -258,8 +259,11 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 		if(!inited) {
 			
-			Log.v(TAG, "Loading library");
-			System.loadLibrary("uade");
+			if(!libLoaded) {
+				Log.v(TAG, "Loading library");
+				System.loadLibrary("uade");
+				libLoaded = true;
+			}
 			
 			N_init(droidDir.getPath());
 			/*try {
@@ -320,7 +324,38 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return N_seekTo(currentSong, msec);
 	}
 	
+	@Override
+	public void exit() {
+		if(inited) {
+			N_exit();
+		}
+		inited = false;		
+	}
+	
+	private static final int OPT_FILTER = 1;
+	private static final int OPT_RESAMPLING = 2;
+	private static final int OPT_NTSC = 3;
+	private static final int OPT_SPEED_HACK = 4;
+	
+	public static void setFilter(boolean on) {
+		Log.v(TAG, "Setting filter to " + (on ? "ON" : "OFF"));
+		N_setOption(OPT_FILTER, on ? 1 : 0);
+	}
+
+	public static void setSpeedHack(boolean on) {
+		Log.v(TAG, "Setting speed hack to " + (on ? "ON" : "OFF"));
+		N_setOption(OPT_SPEED_HACK, on ? 1 : 0);
+	}
+	public static void setNtsc(boolean on) {
+	Log.v(TAG, "Setting ntsc to " + (on ? "ON" : "OFF"));
+		N_setOption(OPT_NTSC, on ? 1 : 0);
+	}
+	
 	native public void N_init(String baseDir);
+	
+	native public void N_exit();
+	
+	native public static void N_setOption(int what, int val);
 	
 	native public boolean N_canHandle(String name);
 	native public long N_load(byte [] module, int size);

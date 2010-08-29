@@ -13,7 +13,7 @@
 		android:layout_width="fill_parent" android:layout_height="fill_parent"
 		android:layout_weight="1.0"
 	/>
-	<TextView style="@style/InfoTitle"/>
+	<TextView style="@style/InfoTitle" android:id="@+id/low_text"/>
 	<FrameLayout
 	    android:layout_width="fill_parent" android:layout_height="wrap_content" 
 	    android:id="@+id/controls">

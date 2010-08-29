@@ -51,7 +51,7 @@ public class PlayerService extends Service {
 	public static final int SONG_TITLE = 1;
 	public static final int SONG_AUTHOR = 2;
 	public static final int SONG_COPYRIGHT = 3;
-	//public static final int SONG_GAMENAME = 4;	
+	public static final int SONG_CPULOAD = 4;	
 	public static final int SONG_FORMAT = 5;
 	
 	public static final int SONG_POS = 6;
@@ -265,12 +265,13 @@ public class PlayerService extends Service {
             		Log.v(TAG, String.format("SUBTUNE %d, Length %d", msg.arg1, msg.arg2));
             		info[SONG_SUBSONG] = msg.arg1;
             		info[SONG_LENGTH] = msg.arg2;
+            		info[SONG_STATE] = 1;
             		if(msg.obj != null) {
             			info[SONG_SUBTUNE_TITLE] = msg.obj;
-                		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE);
+                		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE, SONG_STATE);
                 		break;                		
             		}
-            		performCallback(SONG_SUBSONG, SONG_LENGTH);
+            		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_STATE);
             		break;
                 case Player.MSG_NEWSONG:
                 	
@@ -310,6 +311,9 @@ public class PlayerService extends Service {
                 	Log.v(TAG, "Music done");
                 	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
                 		playNextSong();
+                	} else {
+                		info[SONG_STATE] = 0;
+                		performCallback(SONG_STATE);
                 	}
                     break;
                 case Player.MSG_PROGRESS:
@@ -318,7 +322,8 @@ public class PlayerService extends Service {
                 		playNextSong();
                 	} else {                	
                     	info[SONG_POS] = (Integer)msg.arg1;
-                		performCallback(SONG_POS);
+                    	info[SONG_CPULOAD] = (Integer)msg.arg2;
+                		performCallback(SONG_CPULOAD, SONG_POS);
                 	}
     				break;
                 case Player.MSG_STATE:
@@ -845,7 +850,7 @@ public class PlayerService extends Service {
 		
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
-			if(!player.isActive() && play && playQueue != null) {
+			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
 				String s = playQueue.currentWithStartSong();
 				if(s != null) {
 	           		info[SONG_FILENAME] = s; 		           		

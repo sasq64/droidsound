@@ -1,6 +1,10 @@
 LOCAL_PATH := $(call my-dir)
 
+# ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
+
 include $(CLEAR_VARS)
+
+# LOCAL_ARM_NEON := true
 
 LOCAL_MODULE    := uade
 
@@ -22,3 +26,5 @@ LOCAL_LDLIBS := -llog -L$(LOCAL_PATH)/uade -luade
 include $(BUILD_SHARED_LIBRARY)
 
 # gcc -I. -I./include -c  -fomit-frame-pointer -Wall -Wno-unused -Wno-format -Wmissing-prototypes -Wstrict-prototypes -DGCCCONSTFUNC="__attribute__((const))" -D_REENTRANT -fno-exceptions -fno-strength-reduce -DREGPARAM= -D__inline__=inline -O2  -g   main.c -o main.o
+
+# endif

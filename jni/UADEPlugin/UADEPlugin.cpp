@@ -19,7 +19,7 @@ extern "C" {
 // int uade_init();
 // void uade_go();
 int uade_main (int argc, char **argv);
-
+void uae_quit(void);
 }
 
 #define INFO_TITLE 0
@@ -60,6 +60,7 @@ static pthread_t thread = 0;
 
 char baseDir[256] = "";
 struct uade_state state;
+
 int uadeconf_loaded;
 char uadeconfname[256];
 
@@ -152,6 +153,17 @@ static int run_client()
 			//uade_change_subsong(new_subsong, &uadeipc);
 			new_subsong = -1;
 		}
+
+		if(state.config.no_filter_set) {
+			uade_send_filter_command(&state);
+			state.config.no_filter_set = 0;
+		}
+
+		//if(state.config.use_ntsc_set) {
+		//	uade_set_effects(&state);
+		//	state.config.use_ntsc_set = 0;
+		//}
+
 
 		left = uade_read_request(&uadeipc); /* Request another batch of sample data from uadecore */
 
@@ -308,6 +320,31 @@ static void *threadProc(void *arg) {
 	return NULL;
 }
 
+void exit() {
+
+	uae_quit();
+
+	if(ctrlstate == UADE_R_STATE) {
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "We are in R STATE ?!");
+		if (uade_receive_message(um, sizeof(space), &uadeipc) <= 0)
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive events from uade");
+		else
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Got msg %d", um->msgtype);
+	}
+
+	 if (uade_send_short_message(UADE_COMMAND_REBOOT, &state.ipc)) {
+		 __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Send reboot failed");
+	 }
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Waiting for UAE to exit");
+	int rc = pthread_join(thread, NULL);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Exit with %d", rc);
+	thread = 0;
+}
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit(JNIEnv *env, jobject obj)
+{
+	exit();
+}
 
 int init()
 {
@@ -337,7 +374,6 @@ int init()
 		state.ipc = uadeipc;
 		eaglestore = 1;
 	}
-
 
 	if(thread == 0) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating thread");
@@ -449,6 +485,10 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Player candidate: %s\n", state.ep->playername);
 
+	//if(strcmp(state.ep->playername, "TFMX") == 0) {
+	//	state.ep->playername = "TFMX-Pro";
+	//}
+
 	struct eagleplayer *player = state.ep;
 
 	if(!player) {
@@ -472,9 +512,9 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "!! Could not open '%s'", filename);
 	}
 
-	if(strcmp(state.ep->playername, "custom") == 0) {
-		strcpy(plname, filename);
-	}
+	//if(strcmp(state.ep->playername, "custom") == 0) {
+	//	strcpy(plname, filename);
+	//}
 
 
 	if (!uade_alloc_song(&state, filename)) {
@@ -493,6 +533,12 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING '%s' with %s\n", filename, plname);
+
+	char *slash = strrchr(plname, '/');
+	if(slash)
+		strcpy(current_format, slash+1);
+	else
+		strcpy(current_format, plname);
 
 	if(strcmp("custom", player->playername) == 0) {
 		rc = uade_song_initialization(score, filename, "", &state);
@@ -601,13 +647,14 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1seekTo(JNIEnv *, jobject, jlong, jint)
 {
+	uade_song_end_trigger = 0;
 	return false;
 }
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setTune(JNIEnv *env, jobject obj, jlong song, jint tune)
 {
 	Player *player = (Player*)song;
-
+	uade_song_end_trigger = 0;
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "setTune %d", tune);
 
 	new_subsong = tune;
@@ -632,6 +679,42 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getStrin
 	return NewString(env, "");
 }
 
+#define OPT_FILTER 1
+#define OPT_RESAMPLING 2
+#define OPT_NTSC 3
+#define OPT_SPEEDHACK 4
+
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(JNIEnv *env, jclass cl, jint what, jint val)
+{
+	switch(what) {
+	case OPT_FILTER:
+		state.config.no_filter = (val ? 0 : 1);
+		state.config.no_filter_set = 1;
+		break;
+	case OPT_NTSC:
+		state.config.use_ntsc = (val ? 1 : 0);
+		state.config.use_ntsc_set = true;
+		break;
+	case OPT_RESAMPLING:
+		state.config.resampler = "none";
+		if(val == 1)
+			state.config.resampler = "default";
+		else if(val == 2)
+			state.config.resampler = "sinc";
+		state.config.resampler_set = true;
+		break;
+	case OPT_SPEEDHACK:
+		state.config.speed_hack = (val ? 1 : 0);
+		state.config.speed_hack_set = 1;
+		break;
+	}
+}
+
+
+
+
+
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
 	Player *player = (Player*)song;
@@ -646,3 +729,4 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getIntInfo(
 	}
 	return -1;
 }
+

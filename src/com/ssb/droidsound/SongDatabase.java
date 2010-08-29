@@ -33,6 +33,7 @@ import android.os.Message;
 import android.provider.BaseColumns;
 import android.util.Log;
 
+import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
@@ -84,7 +85,7 @@ public class SongDatabase implements Runnable {
 
 	private Context context;
 
-	private Handler mHandler;
+	private volatile Handler mHandler;
 
 	private volatile boolean scanning;
 
@@ -110,7 +111,9 @@ public class SongDatabase implements Runnable {
 	public static final int INDEX_FULL = 2;
 
 	
-
+	boolean isReady() {
+		return  (mHandler != null);
+	}
 	
 	public SongDatabase(Context ctx) {		
 		context = ctx;		
@@ -285,6 +288,8 @@ public class SongDatabase implements Runnable {
 			}
 		};
 		
+		
+		
 		setScanCallback(new ScanCallback() {
 			String oldPath;
 			@Override
@@ -311,8 +316,13 @@ public class SongDatabase implements Runnable {
 		});
 
 		open(false);
+
 		Intent intent = new Intent("com.sddb.droidsound.OPEN_DONE");
 		context.sendBroadcast(intent);
+		
+		 UADEPlugin u = new UADEPlugin();
+		 u = null;
+		
 		Looper.loop();
 	}
 

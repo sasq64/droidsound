@@ -1,34 +1,23 @@
 package com.ssb.droidsound;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.ssb.droidsound.plugins.UADEPlugin;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.FileObserver;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.preference.PreferenceScreen;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.util.Log;
-import android.view.KeyEvent;
-import android.widget.EditText;
 
 public class SettingsActivity extends PreferenceActivity {
 
@@ -166,6 +155,34 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});	
+		
+		CheckBoxPreference cpref = (CheckBoxPreference) findPreference("filter");
+		cpref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+			@Override
+			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				boolean filter = (Boolean)newValue;
+				UADEPlugin.setFilter(filter);
+				return true;
+			}
+		});
+		cpref = (CheckBoxPreference) findPreference("speed_hack");
+		cpref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+			@Override
+			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				boolean on = (Boolean)newValue;
+				UADEPlugin.setSpeedHack(on);
+				return true;
+			}
+		});
+		cpref = (CheckBoxPreference) findPreference("ntsc");
+		cpref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+			@Override
+			public boolean onPreferenceChange(Preference preference, Object newValue) {
+				boolean on = (Boolean)newValue;
+				UADEPlugin.setNtsc(on);
+				return true;
+			}
+		});
 		
 /*
 		dlPrefs = new HashMap<String, CheckBoxPreference>();

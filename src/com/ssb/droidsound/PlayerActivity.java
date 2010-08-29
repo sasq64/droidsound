@@ -56,6 +56,7 @@ import android.widget.AdapterView.OnItemClickListener;
 
 import com.ssb.droidsound.PlayListView.FileInfo;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.service.Player;
 import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
@@ -195,6 +196,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int foundVersion;
 
 	protected boolean dialogShowing;
+
+	private TextView lowText;
+
+	private float aTime  = 0;
 
 	
 	protected void finalize() throws Throwable {
@@ -480,17 +485,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		repeatText = (TextView) findViewById(R.id.repeat_text);
 		plusText = (TextView) findViewById(R.id.plus_text);
 		
+		lowText = (TextView) findViewById(R.id.low_text);
+		
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 			
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		String md = prefs.getString("modsDir", null);
 		
 		boolean indexUnknown = prefs.getBoolean("extensions", false);
 		FileIdentifier.setIndexUnknown(indexUnknown);
 		
 		currentPlaylistView = playListView;
-		
-		//modsDir = "/sdcard/MODS";
+
+		String md = prefs.getString("modsDir", null);
+		modsDir = new File("/XXX");
 		if(md == null) {
 			File extFile = Environment.getExternalStorageDirectory();		
 			if(extFile != null) {
@@ -535,8 +542,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(moveFileHere != null) {			
 			moveFileHere(moveFileHere);			
 		}
-		
-		
+
 		foundVersion = prefs.getInt("version", -1);
 		if(foundVersion == -1) {
 			File tempFile = new File(modsDir, "Examples.zip");
@@ -591,6 +597,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
 					Log.v(TAG, "Open done!");
 					
+					String s = prefs.getString("indexing", "Basic");
+					int imode = SongDatabase.INDEX_BASIC;
+					if(s.equals("Full")) {
+						imode = SongDatabase.INDEX_FULL;
+					} else if(s.equals("None")) {
+						imode = SongDatabase.INDEX_NONE;
+					}					
+					songDatabase.setIndexMode(imode);
+
 					//playListView.rescan();
 					setDirectory(null, playListView);
 					
@@ -600,6 +615,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						Log.v(TAG, "SCANNING");
 						songDatabase.scan(false, modsDir.getPath());
 					}
+					
+					
 					//songDatabase.scan(false, modsDir);
 				} else
 				if(intent.getAction().equals("com.sddb.droidsound.SCAN_DONE")) {
@@ -683,6 +700,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			
 			dbThread = new Thread(songDatabase);
 			dbThread.start();
+			
+			while(!songDatabase.isReady()) {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+			}
+			
 			created = true;
 		}
 
@@ -1174,6 +1200,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case PlayerService.SONG_POS :
 			songPos = value/1000;
 			songSecondsText.setText(String.format("%02d:%02d", songPos/60, songPos%60));
+			break;
+		case PlayerService.SONG_CPULOAD :
+			aTime = aTime * 0.7F + value * 0.3F;
+			lowText.setText(String.format("CPU %d%%", (int)aTime));			
 			break;
 		case PlayerService.SONG_SUBSONG :
 			subTune = value;
