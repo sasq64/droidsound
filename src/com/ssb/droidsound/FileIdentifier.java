@@ -229,10 +229,6 @@ public class FileIdentifier {
 		Integer i = extensions.get(ext);
 		if(i == null) {
 
-			if(is != null && !is.markSupported()) {
-				is = new BufferedInputStream(is);
-			}
-
 			
 			List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 			for(DroidSoundPlugin plugin : plugins) {
@@ -241,7 +237,20 @@ public class FileIdentifier {
 					Log.v(TAG, String.format("%s handled by %s", name, plugin.getClass().getSimpleName()));
 				}
 			}
-			
+
+			int available = 0;
+
+			if(is != null) {				
+				try {
+					available = is.available();
+				} catch (IOException e1) {
+					return null;
+				}
+				
+				if(!is.markSupported() && (indexUnknown || list.size() > 1)) {
+					is = new BufferedInputStream(is, available);
+				}
+			}
 			
 			//Log.v(TAG, "MarkSupported " + is.markSupported());
 			

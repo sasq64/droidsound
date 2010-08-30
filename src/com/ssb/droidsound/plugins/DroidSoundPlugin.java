@@ -24,6 +24,16 @@ public abstract class DroidSoundPlugin {
 	
 	public static final int SIZEOF_INFO = 9;
 
+	
+	
+	public static final int OPT_FILTER = 1;
+	public static final int OPT_RESAMPLING = 2;
+	public static final int OPT_NTSC = 3;
+	public static final int OPT_SPEED_HACK = 4;
+	
+
+	
+	
 	private static Context context;
 	
 	static Object lock = new Object();
@@ -158,5 +168,9 @@ public abstract class DroidSoundPlugin {
 			fname = fname.substring(0, dot);
 		}
 		return fname;
+	}
+
+	public int[] getOptions() {
+		return null;
 	}
 }

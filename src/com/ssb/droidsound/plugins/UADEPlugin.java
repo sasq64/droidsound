@@ -52,6 +52,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 			}
 			
 			if(extract) {
+				
+				droidDir.mkdir();
+				
 				try {			
 					File tempFile = new File(droidDir, "ep.zip");
 					
@@ -114,6 +117,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 				extensions.add("CUS");
 				extensions.add("CUSTOM");
 				extensions.add("DM");
+				extensions.add("TFX");
 				
 				BufferedReader reader;
 				try {
@@ -331,12 +335,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 		}
 		inited = false;		
 	}
-	
-	private static final int OPT_FILTER = 1;
-	private static final int OPT_RESAMPLING = 2;
-	private static final int OPT_NTSC = 3;
-	private static final int OPT_SPEED_HACK = 4;
-	
+		
 	public static void setFilter(boolean on) {
 		Log.v(TAG, "Setting filter to " + (on ? "ON" : "OFF"));
 		N_setOption(OPT_FILTER, on ? 1 : 0);

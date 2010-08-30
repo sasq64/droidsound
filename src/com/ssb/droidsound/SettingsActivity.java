@@ -1,5 +1,8 @@
 package com.ssb.droidsound;
 
+import java.util.List;
+
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.UADEPlugin;
 
 import android.app.AlertDialog;
@@ -15,7 +18,9 @@ import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceCategory;
 import android.preference.PreferenceManager;
+import android.preference.PreferenceScreen;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.util.Log;
 
@@ -155,6 +160,39 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});	
+		
+		/*
+		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");
+
+		List<DroidSoundPlugin> plugins = DroidSoundPlugin.createPluginList();
+		
+		for(DroidSoundPlugin plugin : plugins) {
+			
+			int [] options = plugin.getOptions();
+
+			if(options != null) {
+				PreferenceCategory pcat = new PreferenceCategory(this);
+				pcat.setTitle(plugin.getClass().getSimpleName());
+				aScreen.addPreference(pcat);
+				
+				for(int opt : options) {
+					pref = new Preference(this);
+					switch(opt) {
+					case DroidSoundPlugin.OPT_FILTER:
+						pref.setTitle("Filter");
+						pref.setSummary("Emulate filter");
+						break;
+					}
+					aScreen.addPreference(pref);
+				}
+			}
+		}
+		
+		pref = new Preference(this);
+
+		//pref.setTitle(title)
+		*/
+		
 		
 		CheckBoxPreference cpref = (CheckBoxPreference) findPreference("filter");
 		cpref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {

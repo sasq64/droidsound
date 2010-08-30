@@ -185,8 +185,15 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 		if(ext) {
 			strcpy(ext, ".smpl");
 			ptr += 5;
+		} else {
+			ext = strcasestr(ptr, ".tfx");
+			if(ext) {
+				strcpy(ext, ".sam");
+				ptr += 5;
+			}
 		}
-	} else if(strncasecmp(ptr, "ins.", 4) == 0)
+	}
+	else if(strncasecmp(ptr, "ins.", 4) == 0)
 	{
 		char *ext = strcasestr(ptr, ".sng");
 
@@ -198,6 +205,8 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 			ptr += 4;
 		}
 	}
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Final name '%s'", ptr);
 
 	if (uade_amiga_scandir(real, dirname, ptr, sizeof(real))) {
 		/* found matching entry */

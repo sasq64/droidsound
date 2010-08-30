@@ -49,11 +49,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	};
 	private Info songInfo;	
 	
-	public Option [] getOptions() {
-		return null;
-	}
-	
-	
+
 	void setOption(int opt, Object value) {
 	}
 	

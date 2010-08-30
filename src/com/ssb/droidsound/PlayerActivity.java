@@ -62,7 +62,7 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
 	private static final String TAG = "PlayerActivity";
 	
-	public static final String DROIDSOUND_VERSION = "1.0";
+	public static final String DROIDSOUND_VERSION = "1.1beta1";
 	public static final int VERSION = 16;
 	
 	private static class Config {
@@ -689,7 +689,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		new File(modsDir, "Favorites.lnk").delete();
 		
 		boolean created = false;
-
+		
 		if(songDatabase == null) {
 			Log.v(TAG, "############ CREATING static SongDatabase object ##############");
 						
@@ -739,6 +739,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
  		//repeatText.setText("CONT");
 		
 		if(!created && lastConfig == null) {
+			songDatabase.open();
 			songDatabase.scan(false, modsDir.getPath());
 		}
 
@@ -1202,8 +1203,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songSecondsText.setText(String.format("%02d:%02d", songPos/60, songPos%60));
 			break;
 		case PlayerService.SONG_CPULOAD :
-			aTime = aTime * 0.7F + value * 0.3F;
-			lowText.setText(String.format("CPU %d%%", (int)aTime));			
+			if(lowText != null) {
+				aTime = aTime * 0.7F + value * 0.3F;
+				lowText.setText(String.format("CPU %d%%", (int)aTime));
+			}
 			break;
 		case PlayerService.SONG_SUBSONG :
 			subTune = value;

@@ -588,7 +588,7 @@ public class PlayerService extends Service {
 							if(evt.getAction() == KeyEvent.ACTION_DOWN) {
 								
 								downTime = evt.getDownTime();
-								//Log.v(TAG, String.format("TIME %d %d", downTime, evt.getEventTime()));
+								Log.v(TAG, String.format("TIME %d %d", downTime, evt.getEventTime()));
 								
 								/*if(!actionHandled) {
 									if(evt.getRepeatCount() > 2) {
@@ -599,7 +599,11 @@ public class PlayerService extends Service {
 							} else if(evt.getAction() == KeyEvent.ACTION_UP) {
 								
 								int keycode = evt.getKeyCode();
-								long t = evt.getEventTime() - downTime;
+								long t = 0;
+								if(downTime > 0) {
+									t = evt.getEventTime() - downTime;
+								}
+								downTime = -1;
 								Log.v(TAG, String.format("DOWN TIME %d", t));							
 
 								switch (keycode) {							 

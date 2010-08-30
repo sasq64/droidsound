@@ -100,10 +100,10 @@ public class SongDatabase implements Runnable {
 	
 
 	protected static final int MSG_SCAN = 0;
-	protected static final int MSG_BACKUP = 1;
-	protected static final int MSG_RESTORE = 2;
+	protected static final int MSG_OPEN = 1;
+	//protected static final int MSG_RESTORE = 2;
 	protected static final int MSG_DOWNLOAD = 3;
-	protected static final int MSG_CANCEL_DL = 4;
+	//protected static final int MSG_CANCEL_DL = 4;
 	protected static final int MSG_INDEXMODE = 5;
 	
 	public static final int INDEX_NONE = 0;
@@ -128,6 +128,7 @@ public class SongDatabase implements Runnable {
 		try {
 			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
 		} catch (SQLException e) {
+			e.printStackTrace();
 		}
 		return dbrc;
 	}
@@ -272,7 +273,7 @@ public class SongDatabase implements Runnable {
 	            switch (msg.what) {
 	            case MSG_SCAN:
 	            	if(msg.arg1 == 2) {
-	            		open(true);
+	            		doOpen(true);
 	            		doScan((String)msg.obj, false);
 	            	} else {
 	            		doScan((String)msg.obj, msg.arg1 != 0);
@@ -315,18 +316,18 @@ public class SongDatabase implements Runnable {
 			}
 		});
 
-		open(false);
+		doOpen(false);
 
 		Intent intent = new Intent("com.sddb.droidsound.OPEN_DONE");
 		context.sendBroadcast(intent);
 		
-		 UADEPlugin u = new UADEPlugin();
-		 u = null;
-		
+		UADEPlugin u = new UADEPlugin();
+		u = null;
+
 		Looper.loop();
 	}
 
-	private void open(boolean drop) {	
+	private void doOpen(boolean drop) {	
 		File myDir = context.getFilesDir();
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 		
@@ -341,6 +342,7 @@ public class SongDatabase implements Runnable {
 		
 		File oldDb = new File(myDir, "songs.db");
 		if(oldDb.exists()) {
+			scanning = true;
 			if(scanCallback != null) {
 				scanCallback.notifyScan("Moving database", 0);
 			}
@@ -348,6 +350,7 @@ public class SongDatabase implements Runnable {
 			if(!PlayerActivity.moveFile(oldDb, new File(droidDir, "songs.db"))) {
 				dbFile = oldDb;
 			}
+			scanning = false;
 		}
 		
 
@@ -958,6 +961,11 @@ public class SongDatabase implements Runnable {
 		mHandler.sendMessage(msg);
 	}
 	
+	public void open() {
+		Message msg = mHandler.obtainMessage(MSG_OPEN);
+		mHandler.sendMessage(msg);
+	}
+
 	public void setIndexMode(int mode) {
 		
 		 Log.v(TAG, "INDEX MODE " + mode);
@@ -1291,11 +1299,6 @@ public class SongDatabase implements Runnable {
 		return c;
 	}
 	
-	public void backup() {
-		Message msg = mHandler.obtainMessage(MSG_BACKUP);
-		mHandler.sendMessage(msg);
-	}
-	
 	public void setScanCallback(ScanCallback cb) {
 		scanCallback = cb;
 	}
@@ -1474,5 +1477,6 @@ public class SongDatabase implements Runnable {
 		return null;
 	}
 	*/
+
 
 }

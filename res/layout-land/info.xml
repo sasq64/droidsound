@@ -5,7 +5,7 @@
 			android:layout_weight="0.6"
 		android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
 		<TextView android:text="@string/info" style="@style/InfoTitle" android:layout_marginRight="4dp" />
-		<TextView android:id="@+id/info_text"
+		<TextView android:id="@+id/info_text" 
 			android:layout_width="fill_parent" android:layout_height="fill_parent"
 			android:layout_weight="1.0"
 		/>
