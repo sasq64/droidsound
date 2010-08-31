@@ -110,9 +110,7 @@ public class PlayQueue {
 				musicList.add(musicNames[i]);
 			}
 			if(shuffleOn) {
-				String current = musicNames[index].filename;
 				shuffle();
-				setCurrent(current);
 			}
 		}
 	}
@@ -151,7 +149,19 @@ public class PlayQueue {
 		}
 		Song t;
 		int sz = musicList.size();
+
+		String current = current();
 		
+		for (int i=0; i<sz; i++) {					
+		    int randomPosition = rgen.nextInt(sz);
+		    t = musicList.get(i);
+		    musicList.set(i, musicList.get(randomPosition));
+		    musicList.set(randomPosition, t);
+		}
+
+		setCurrent(current);
+
+		/*
 		// Shuffle files before current playing
 		for (int i=0; i<musicListPos; i++) {					
 		    int randomPosition = rgen.nextInt(musicListPos);
@@ -167,7 +177,7 @@ public class PlayQueue {
 		    t = musicList.get(i);
 		    musicList.set(i, musicList.get(randomPosition));
 		    musicList.set(randomPosition, t);
-		}
+		} */
 		
 		// Log.v(TAG, "###### SHUFFLE ORDER #####");
 		// for(Song s : musicList) {

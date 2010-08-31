@@ -107,6 +107,8 @@ public class Player implements Runnable {
 	private int aCount;
 	private long lastTime = -1;
 	private long frameTime;
+	//private int switchPos = -1;
+	private boolean songEnded = false;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -120,12 +122,17 @@ public class Player implements Runnable {
 		samples = new short [bufSize/2];
 	}
 
-    private void startSong(String songName, int startTune) {
+	private void startSong(String songName, int startTune) {
     	    	
     	if(currentPlugin != null) {
     		currentPlugin.unload();
     	}
     	currentPlugin = null;
+    	
+    	songEnded = false;
+    	
+    	boolean flush = true; //(currentState != State.SWITCHING);
+    	
     	currentState = State.SWITCHING;
     	
     	List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
@@ -363,18 +370,20 @@ public class Player implements Runnable {
 			Message msg = mHandler.obtainMessage(MSG_NEWSONG);
 			mHandler.sendMessage(msg);
 
-			audioTrack.stop();
-			audioTrack.flush();			
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if(flush) {
+				audioTrack.stop();
+				audioTrack.flush();			
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				//audioTrack.stop();
+				//audioTrack.flush();
+	
+				Log.v(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
 			}
-			//audioTrack.stop();
-			//audioTrack.flush();
-
-			Log.v(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
 			audioTrack.play();				
 			currentState = State.PLAYING;
 			//currentPosition = 0;
@@ -400,7 +409,7 @@ public class Player implements Runnable {
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
-
+		int pos = 0;
 		while(noPlayWait < 50) {
 			try {				
 				if(command != Command.NO_COMMAND) {
@@ -505,16 +514,33 @@ public class Player implements Runnable {
 				
 				if(currentState == State.PLAYING) {
 					//Log.v(TAG, "Get sound data");
-					int len = currentPlugin.getSoundData(samples, bufSize/16);
+					int len = 0;
+					if(!songEnded) {
+						len = currentPlugin.getSoundData(samples, bufSize/16);
+					} else {
+						Thread.sleep(100);
+					}
 
-					int pos = audioTrack.getPlaybackHeadPosition();
+					int p = audioTrack.getPlaybackHeadPosition();
+					
 					//currentPosition += ((len * 1000) / (FREQ*2));						
 					//Log.v(TAG, "pos " + currentPosition);
+					
+					//Log.v(TAG, String.format("%d vs %d", pos, p));
+					if(songEnded && p == pos) {
+						lastTime = -1;
+						currentState = State.SWITCHING;
+						Message msg = mHandler.obtainMessage(MSG_DONE);
+						mHandler.sendMessage(msg);						
+					}
+
+					pos = p;
+					
 					if(pos >= lastPos + FREQ/2) {
 						//Log.v(TAG, String.format("PLAY %d sec %d pos = %d msec ", currentPosition, pos, pos * 1000 / 44100));
 
 						if(aCount == 0) aCount = 1;
-						Message msg = mHandler.obtainMessage(MSG_PROGRESS, pos * 10 / 441, 100 - (int) (audioTime / aCount));
+						Message msg = mHandler.obtainMessage(MSG_PROGRESS, pos * 10 / (FREQ/100), 100 - (int) (audioTime / aCount));
 						aCount = 0;
 						audioTime = 0;
 						mHandler.sendMessage(msg);
@@ -552,11 +578,9 @@ public class Player implements Runnable {
 						}
 						lastTime = tt;
 					} else {
-						lastTime = -1;
-						currentState = State.SWITCHING;
-						Message msg = mHandler.obtainMessage(MSG_DONE);
-						mHandler.sendMessage(msg);
+						songEnded = true;						
 					}
+					
 					//Log.v(TAG, "loop");
 					noPlayWait = 0;
 				}

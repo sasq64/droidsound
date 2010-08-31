@@ -7,13 +7,13 @@
             android:summaryOff="Files with unknown extensions will not be indexed"
             android:summaryOn="Files with unknown extensions will be indexed"
             />
-    <CheckBoxPreference
+    <!--  CheckBoxPreference
             android:key="silence"
             android:title="Silence detection"
             android:defaultValue="true"
             android:summaryOff="Silence will not trigger a song change"
             android:summaryOn="Silence will trigger a song change"
-            />
+            / -->
     <CheckBoxPreference
             android:key="speech"
             android:title="Speech"
@@ -24,8 +24,8 @@
 
 	<PreferenceScreen
             android:key="audio_prefs"
-            android:title="Audio"
-            android:summary="Audio options"
+            android:title="Plugins"
+            android:summary="Plugin Audio Settings"
 	>
 	
 		<PreferenceCategory
@@ -62,7 +62,7 @@
 		<ListPreference
 	            android:key="UADEPlugin.panning"
 	            android:title="Panning"
-	            android:defaultValue="Some"
+	            android:defaultValue="Full Stereo"
                 android:entries="@array/panning_opts"
                 android:entryValues="@array/panning_opts"
 	            />

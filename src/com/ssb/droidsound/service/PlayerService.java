@@ -318,6 +318,7 @@ public class PlayerService extends Service {
                     break;
                 case Player.MSG_PROGRESS:
                 	int l = (Integer)info[SONG_LENGTH];
+                	//Log.v(TAG, String.format("%d vs %d", msg.arg1, l));
                 	if(l > 0 && (msg.arg1 >= l) && respectLength && (Integer)info[SONG_REPEAT] == RM_CONTINUE) {
                 		playNextSong();
                 	} else {                	
@@ -337,7 +338,7 @@ public class PlayerService extends Service {
                 		performCallback(SONG_STATE);
                 	}
                 	break;
-                case Player.MSG_SILENT:
+                /*case Player.MSG_SILENT:
                 	if(silenceDetect) {
 	                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
 	                		playNextSong();
@@ -345,7 +346,7 @@ public class PlayerService extends Service {
 	                		Log.v(TAG, "User has interferred, not switching");
 	                	}
                 	}
-                	break;
+                	break;*/
                 default:
                     super.handleMessage(msg);
             }
@@ -946,10 +947,10 @@ public class PlayerService extends Service {
 				info[SONG_REPEAT] = Integer.parseInt(arg);
 				performCallback(SONG_REPEAT);
 				break;
-			case OPTION_SILENCE_DETECT:
-				Log.v(TAG, "Silence detection " + arg);
-				silenceDetect = on;
-				break;
+			//case OPTION_SILENCE_DETECT:
+			//	Log.v(TAG, "Silence detection " + arg);
+			//	silenceDetect = on;
+			//	break;
 			case OPTION_PLAYBACK_ORDER:
 				if(arg.charAt(0) == 'R') {
 					shuffleSongs = true;

@@ -101,7 +101,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		//synth_init(44100);
 
 		Player *player = new Player();
-		player->silent = false;
+		//player->silent = false;
 
 		player->sidtune = new SidTune((uint_least8_t*)ptr, size);
 
@@ -201,13 +201,13 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getSound
 
 	size = player->sidemu->play(ptr, size*2);
 
-	int i = 0;
-	while(i<size && orgptr[i] < 140 && orgptr[i] > -140)
-		i++;
+	//int i = 0;
+	//while(i<size && orgptr[i] < 140 && orgptr[i] > -140)
+	//	i++;
 
 	//__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "%d %d", i, orgptr[i]);
 
-	player->silent = (i == size);
+	//player->silent = (i == size);
 
     env->ReleaseShortArrayElements(sArray, ptr, 0);
 	return orgsize;
@@ -260,7 +260,8 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getIntIn
 
 	case INFO_SILENCE :
 		//__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "SILENT %d", player->silent ? 1 : 0);
-		return player->silent ? 1 : 0;
+		//return player->silent ? 1 : 0;
+		return 0;
 	}
 	return -1;
 }
