@@ -16,9 +16,11 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
+import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
+import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.preference.Preference.OnPreferenceChangeListener;
@@ -31,6 +33,37 @@ public class SettingsActivity extends PreferenceActivity {
 	private boolean doFullScan;
 	private SharedPreferences prefs;
 	private String modsDir;
+	
+	class AudiopPrefsListener implements OnPreferenceChangeListener {
+		
+		private DroidSoundPlugin plugin;
+
+		AudiopPrefsListener(DroidSoundPlugin pi) {
+			plugin = pi;
+		}
+		
+		@Override
+		public boolean onPreferenceChange(Preference preference, Object newValue) {
+			
+			String k = preference.getKey();
+			String k2 = k.substring(k.indexOf('.')+1);
+			if(newValue instanceof String) {
+				int i = 0;
+				CharSequence[] entries = ((ListPreference)preference).getEntries();
+				for(CharSequence e : entries) {
+					if((e.equals(newValue))) {
+						newValue = (Integer)i;
+					}
+					i++;
+				}
+			}
+			plugin.setOption(k2, newValue);
+		// TODO Auto-generated method stub
+			//plugin.setOption(option, newValue);
+			return true;
+		}
+	};
+	
 /*
 	private List<String> downloadList = new ArrayList<String>();
 	private FileObserver fo;
@@ -114,7 +147,8 @@ public class SettingsActivity extends PreferenceActivity {
 
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
-/*
+		
+		/*
 		fo = new FileObserver(modsDir) {			
 			@Override
 			public void onEvent(int event, String path) {
@@ -161,9 +195,41 @@ public class SettingsActivity extends PreferenceActivity {
 			}
 		});	
 		
-		/*
 		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");
+		
+		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
 
+		for(int i=0; i<aScreen.getPreferenceCount(); i++) {
+			Preference p = aScreen.getPreference(i);
+			Log.v(TAG, String.format("Pref '%s'", p.getKey()));
+			if(p instanceof PreferenceGroup) {
+				PreferenceGroup pg = (PreferenceGroup) p;
+				
+				DroidSoundPlugin plugin = null;
+				for(DroidSoundPlugin pl : list) {
+					if(pl.getClass().getSimpleName().equals(pg.getKey())) {
+						plugin = pl;
+						break;
+					}
+				}
+				if(plugin != null) {
+					
+					String plname = plugin.getClass().getSimpleName();
+					
+					for(int j=0; j<pg.getPreferenceCount(); j++) {
+						p = pg.getPreference(j);
+						
+						//p.setKey(plname + "." + p.getKey());
+						
+						Log.v(TAG, String.format("Pref %s for %s", p.getKey(), plugin.getClass().getName()));
+						
+						p.setOnPreferenceChangeListener(new AudiopPrefsListener(plugin));
+					}
+				}
+			}
+		}
+		
+/*
 		List<DroidSoundPlugin> plugins = DroidSoundPlugin.createPluginList();
 		
 		for(DroidSoundPlugin plugin : plugins) {
@@ -172,27 +238,42 @@ public class SettingsActivity extends PreferenceActivity {
 
 			if(options != null) {
 				PreferenceCategory pcat = new PreferenceCategory(this);
-				pcat.setTitle(plugin.getClass().getSimpleName());
+				String plname = plugin.getClass().getSimpleName();
+				pcat.setTitle(plname);
 				aScreen.addPreference(pcat);
 				
 				for(int opt : options) {
-					pref = new Preference(this);
+					pref = null;
 					switch(opt) {
 					case DroidSoundPlugin.OPT_FILTER:
+						pref = new CheckBoxPreference(this);
+						pref.setKey(plname + "_filter");
 						pref.setTitle("Filter");
 						pref.setSummary("Emulate filter");
 						break;
+					case DroidSoundPlugin.OPT_NTSC:
+						pref = new CheckBoxPreference(this);
+						pref.setKey(plname + "_ntsc");
+						pref.setTitle("NTSC");
+						pref.setSummary("Play in NTSC speed");
+						break;
 					}
-					aScreen.addPreference(pref);
+					if(pref != null) {
+						pref.setOnPreferenceChangeListener(new AudiopPrefsListener(plugin, opt));
+						aScreen.addPreference(pref);
+					}
 				}
 			}
 		}
 		
+		
+		PreferenceGroup audio;
+		audio. */
+		
+		/*
 		pref = new Preference(this);
 
-		//pref.setTitle(title)
-		*/
-		
+		//pref.setTitle(title
 		
 		CheckBoxPreference cpref = (CheckBoxPreference) findPreference("filter");
 		cpref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
@@ -220,7 +301,7 @@ public class SettingsActivity extends PreferenceActivity {
 				UADEPlugin.setNtsc(on);
 				return true;
 			}
-		});
+		}); */
 		
 /*
 		dlPrefs = new HashMap<String, CheckBoxPreference>();

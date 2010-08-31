@@ -159,6 +159,13 @@ static int run_client()
 			state.config.no_filter_set = 0;
 		}
 
+		if(state.config.panning_enable_set || state.config.panning_set) {
+			uade_set_effects(&state);
+			state.config.no_filter_set = 0;
+			state.config.panning_set = 0;
+			state.config.panning_enable_set = 0;
+		}
+
 		//if(state.config.use_ntsc_set) {
 		//	uade_set_effects(&state);
 		//	state.config.use_ntsc_set = 0;
@@ -406,7 +413,8 @@ extern "C" {
 void client_sleep(void)
 {
 	//pthread_yield();
-	usleep(10000);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Sleeping in %d", pthread_self());
+	usleep(100);
 }
 
 
@@ -625,8 +633,22 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 	//if(run_client() < 0)
 	//	return 0;
 
+	soundPtr = dest;
+	int rc = 0;
+	while(rc <= 0) {
+		rc = run_client();
+		if(rc < 0)
+			return -1;
+	}
+
+	uade_effect_run(&state.effects, dest, (soundPtr - dest)/2);
 
 
+    env->ReleaseShortArrayElements(sArray, dest, 0);
+	return soundPtr - dest;
+
+
+/*
 	int filled = (soundPtr - soundBuffer);
 	int len = size;
 
@@ -640,9 +662,9 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 	memcpy(dest, soundBuffer, len*2);
 	memmove(soundBuffer, soundBuffer+len, (filled-len)*2);
 	soundPtr -= len;
-
     env->ReleaseShortArrayElements(sArray, dest, 0);
 	return len;
+*/
 }
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1seekTo(JNIEnv *, jobject, jlong, jint)
@@ -683,6 +705,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getStrin
 #define OPT_RESAMPLING 2
 #define OPT_NTSC 3
 #define OPT_SPEEDHACK 4
+#define OPT_PANNING 5
 
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(JNIEnv *env, jclass cl, jint what, jint val)
@@ -704,9 +727,20 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(J
 			state.config.resampler = "sinc";
 		state.config.resampler_set = true;
 		break;
-	case OPT_SPEEDHACK:
-		state.config.speed_hack = (val ? 1 : 0);
-		state.config.speed_hack_set = 1;
+	//case OPT_SPEEDHACK:
+	//	state.config.speed_hack = (val ? 1 : 0);
+	//	state.config.speed_hack_set = 1;
+	//	break;
+	case OPT_PANNING:
+		if(val == 4) {
+			state.config.panning_enable = 0;
+		} else {
+			state.config.panning = 0.25 * (4-val);
+			state.config.panning_enable = 1;
+		}
+		state.config.panning_enable_set = 1;
+		state.config.panning_set = 1;
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Panning now %1.2f", state.config.panning);
 		break;
 	}
 }

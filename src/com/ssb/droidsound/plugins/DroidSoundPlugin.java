@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 public abstract class DroidSoundPlugin {
 
@@ -30,6 +33,7 @@ public abstract class DroidSoundPlugin {
 	public static final int OPT_RESAMPLING = 2;
 	public static final int OPT_NTSC = 3;
 	public static final int OPT_SPEED_HACK = 4;
+	public static final int OPT_PANNING = 5;
 	
 
 	
@@ -171,7 +175,33 @@ public abstract class DroidSoundPlugin {
 		return fname;
 	}
 
-	public int[] getOptions() {
-		return null;
+	//public String[] getOptions() {
+	//	return null;
+	//}
+
+	public void setOption(String string, Object val) {
+	}
+	
+	
+
+	public static void setOptions(SharedPreferences prefs) {
+		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList(); 
+		Map<String, ?> prefsMap = prefs.getAll();
+		
+		for(DroidSoundPlugin plugin : list) {
+
+			String plname = plugin.getClass().getSimpleName();
+
+			for(Entry<String, ?> entry  : prefsMap.entrySet()) {
+				String k = entry.getKey();
+				int dot = k.indexOf('.');
+				if(dot >= 0) {
+					if(k.substring(0, dot).equals(plname)) {
+						plugin.setOption(k.substring(dot+1), entry.getValue());
+					}
+				}
+			}
+		}
+		
 	}
 }

@@ -200,8 +200,8 @@ int uade_effect_is_enabled(struct uade_effect *ue, uade_effect_t effect)
 void uade_effect_run(struct uade_effect *ue, int16_t * samples, int frames)
 {
 	if (ue->enabled & (1 << UADE_EFFECT_ALLOW)) {
-		normalise(ue->enabled & (1 << UADE_EFFECT_NORMALISE), samples,
-			  frames);
+		if( ue->enabled & (1 << UADE_EFFECT_NORMALISE))
+			normalise(1, samples, frames);
 		if (ue->enabled & (1 << UADE_EFFECT_PAN))
 			pan(ue->pan, samples, frames);
 		if (ue->enabled & (1 << UADE_EFFECT_HEADPHONES))

@@ -7,6 +7,36 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_TITLE
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_TITLE 0L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_AUTHOR
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_AUTHOR 1L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_LENGTH
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_LENGTH 2L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_TYPE
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_TYPE 3L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_COPYRIGHT
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_COPYRIGHT 4L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_GAME
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_GAME 5L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_SUBTUNES
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_SUBTUNES 6L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_STARTTUNE
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_STARTTUNE 7L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_INFO_SUBTUNE_TITLE
+#define com_ssb_droidsound_plugins_SidplayPlugin_INFO_SUBTUNE_TITLE 8L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_SIZEOF_INFO
+#define com_ssb_droidsound_plugins_SidplayPlugin_SIZEOF_INFO 9L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_OPT_FILTER
+#define com_ssb_droidsound_plugins_SidplayPlugin_OPT_FILTER 1L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_OPT_RESAMPLING
+#define com_ssb_droidsound_plugins_SidplayPlugin_OPT_RESAMPLING 2L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_OPT_NTSC
+#define com_ssb_droidsound_plugins_SidplayPlugin_OPT_NTSC 3L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_OPT_SPEED_HACK
+#define com_ssb_droidsound_plugins_SidplayPlugin_OPT_SPEED_HACK 4L
+#undef com_ssb_droidsound_plugins_SidplayPlugin_OPT_PANNING
+#define com_ssb_droidsound_plugins_SidplayPlugin_OPT_PANNING 5L
 /*
  * Class:     com_ssb_droidsound_plugins_SidplayPlugin
  * Method:    N_load
@@ -62,6 +92,14 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getSt
  */
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getIntInfo
   (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     com_ssb_droidsound_plugins_SidplayPlugin
+ * Method:    N_setOption
+ * Signature: (II)V
+ */
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1setOption
+  (JNIEnv *, jclass, jint, jint);
 
 #ifdef __cplusplus
 }

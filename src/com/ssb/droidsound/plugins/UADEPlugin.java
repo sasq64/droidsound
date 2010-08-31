@@ -30,6 +30,11 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	private long currentSong = 0;
 	
+	static String [] options = new String [] { "filter", "speedhack", "ntsc", "panning" };
+	static int [] optvals = new int [] { OPT_FILTER, OPT_SPEED_HACK, OPT_NTSC, OPT_PANNING };
+
+	
+	
 	public UADEPlugin() {
 
 		Context ctx = getContext();
@@ -256,13 +261,17 @@ public class UADEPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean load(File file) throws IOException {
 		
-		Context context = getContext();
+		init();
+		
+		currentSong = N_loadFile(file.getPath());
+		return (currentSong != 0);
+	}
+	
+	private void init() {
+		if(!inited) {			
+			Context context = getContext();
+			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 
-		//File filesDir = context.getFilesDir();
-		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-
-		if(!inited) {
-			
 			if(!libLoaded) {
 				Log.v(TAG, "Loading library");
 				System.loadLibrary("uade");
@@ -270,20 +279,10 @@ public class UADEPlugin extends DroidSoundPlugin {
 			}
 			
 			N_init(droidDir.getPath());
-			/*try {
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} */
 			inited = true;
 		}
-
-		
-		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
 	}
-	
+
 	@Override
 	public boolean loadInfo(File file) throws IOException {
 		currentSong = 0;
@@ -335,7 +334,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 		}
 		inited = false;		
 	}
-		
+/*
 	public static void setFilter(boolean on) {
 		Log.v(TAG, "Setting filter to " + (on ? "ON" : "OFF"));
 		N_setOption(OPT_FILTER, on ? 1 : 0);
@@ -349,6 +348,31 @@ public class UADEPlugin extends DroidSoundPlugin {
 	Log.v(TAG, "Setting ntsc to " + (on ? "ON" : "OFF"));
 		N_setOption(OPT_NTSC, on ? 1 : 0);
 	}
+*/
+	
+	
+	
+	
+	@Override
+	public void setOption(String o, Object val) {
+		Log.v(TAG, String.format("UADE opt %s argtype %s", o, val.getClass().getSimpleName()));
+		int v  = -1;
+		if(val instanceof Boolean) {
+			v = (Boolean)val ? 1 : 0;
+		} else
+		if(val instanceof Integer) {
+			v = (Integer)val;
+		}
+		
+		for(int i=0; i<options.length; i++) {
+			if(options[i].equals(o)) {
+				init();
+				N_setOption(optvals[i], v);
+				break;
+			}
+		}
+	}
+	
 	
 	native public void N_init(String baseDir);
 	

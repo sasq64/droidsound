@@ -42,15 +42,28 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		Object defaultValue;
 	}
 	
-	String [] opts = { 
-			"Hz", "50", "60", "The TV system to use",
-			"Filter", "SID Filtering",
-			
-	};
 	private Info songInfo;	
 	
+	static String [] options = new String [] { "filter", "ntsc", "panning" };
+	static int [] optvals = new int [] { OPT_FILTER, OPT_NTSC, OPT_PANNING };
 
-	void setOption(int opt, Object value) {
+	@Override
+	public void setOption(String opt, Object val) {
+		int v  = -1;
+		if(val instanceof Boolean) {
+			v = (Boolean)val ? 1 : 0;
+		} else
+		if(val instanceof Integer) {
+			v = (Integer)val;
+		}
+		
+		for(int i=0; i<options.length; i++) {
+			if(options[i].equals(opt)) {
+				N_setOption(optvals[i], v);
+				break;
+			}
+		}
+		
 	}
 	
 	
@@ -106,7 +119,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	native public String N_getStringInfo(long song, int what);
 	native public int N_getIntInfo(long song, int what);
 
-	native public void N_setOption(int option, int value);
+	native public static void N_setOption(int what, int val);
 	
 	@Override
 	public boolean load(String name, byte [] module, int size) {

@@ -79,5 +79,12 @@ to download more music from the web.</string>
 	<item>Full</item>
 </string-array>
 
+<string-array name="panning_opts">
+	<item>Mono</item>
+	<item>Some</item>
+	<item>50/50</item>
+	<item>Lots</item>
+	<item>Full Stereo</item>
+</string-array>
 
 </resources>

@@ -38,15 +38,10 @@ static jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
-
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
-{
-	return true;
-}
-
-//static char song_name[33], song_author[33], song_copyright[33];
-//static unsigned short load_addr, init_addr, play_addr;
-//static unsigned char subsongs, startsong, play_speed;
+#define OPT_FILTER 1
+#define OPT_RESAMPLING 2
+#define OPT_NTSC 3
+#define OPT_SPEEDHACK 4
 
 struct Player
 {
@@ -56,6 +51,41 @@ struct Player
 	SidTuneInfo sidInfo;
 	bool silent;
 };
+
+static bool filter_cfg = true;
+static bool filter_set = false;
+static bool ntsc_cfg = false;
+static bool ntsc_set = false;
+
+
+
+//JNICALL
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1setOption(JNIEnv *env, jclass cl, jint what, jint val)
+{
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "Setting %d to %d", what, val);
+	switch(what) {
+	case OPT_FILTER:
+		filter_cfg = val ? true : false;
+		filter_set = true;
+		break;
+	case OPT_NTSC:
+		ntsc_cfg = val ? true : false;
+		ntsc_set = true;
+		break;
+	}
+}
+
+
+
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
+{
+	return true;
+}
+
+//static char song_name[33], song_author[33], song_copyright[33];
+//static unsigned short load_addr, init_addr, play_addr;
+//static unsigned char subsongs, startsong, play_speed;
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
@@ -97,8 +127,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		sid2_config_t cfg = player->sidemu->config();
 		cfg.clockForced  = false;
-		cfg.clockSpeed   = SID2_CLOCK_CORRECT;
-		cfg.clockDefault = SID2_CLOCK_PAL;
+		cfg.clockSpeed   = ntsc_cfg ? SID2_CLOCK_NTSC : SID2_CLOCK_CORRECT;
+		cfg.clockDefault = ntsc_cfg ? SID2_CLOCK_NTSC : SID2_CLOCK_PAL;
 		cfg.frequency    = 44100;
 		cfg.playback     = sid2_stereo;
 		cfg.precision    = 16;
@@ -114,7 +144,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		cfg.sidEmulation  = player->sidbuilder;
 
 		player->sidbuilder->create(1);
-		player->sidbuilder->filter(true);
+		player->sidbuilder->filter(filter_cfg);
 		//player->sidbuilder->filter((void*)0);
 
 		int rc = player->sidemu->load(player->sidtune);
@@ -163,6 +193,11 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1getSound
 	jshort *ptr = env->GetShortArrayElements(sArray, NULL);
 	int orgsize = size;
 	jshort *orgptr = ptr;
+
+	if(filter_set) {
+		player->sidbuilder->filter(filter_cfg);
+		filter_set = false;
+	}
 
 	size = player->sidemu->play(ptr, size*2);
 

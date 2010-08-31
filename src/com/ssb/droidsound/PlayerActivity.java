@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -490,6 +492,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 			
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
 		
 		boolean indexUnknown = prefs.getBoolean("extensions", false);
 		FileIdentifier.setIndexUnknown(indexUnknown);
@@ -734,6 +737,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		} else {
 			CSDBParser.init();
 			songDatabase.setActivePlaylist(mf);
+			
+			DroidSoundPlugin.setOptions(prefs);
+						
+			shuffleSongs = prefs.getBoolean("shuffle", false);
+			
 		}
  		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
  		//repeatText.setText("CONT");
@@ -1119,6 +1127,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		Editor editor = prefs.edit();
 		editor.putString("currentPath", currentPath.getPath());
+		editor.putBoolean("shuffle", shuffleSongs);
 		editor.commit();		
 		
 		Playlist.flushAll();

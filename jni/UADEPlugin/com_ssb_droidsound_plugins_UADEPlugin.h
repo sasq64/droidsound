@@ -29,6 +29,14 @@ extern "C" {
 #define com_ssb_droidsound_plugins_UADEPlugin_SIZEOF_INFO 9L
 #undef com_ssb_droidsound_plugins_UADEPlugin_OPT_FILTER
 #define com_ssb_droidsound_plugins_UADEPlugin_OPT_FILTER 1L
+#undef com_ssb_droidsound_plugins_UADEPlugin_OPT_RESAMPLING
+#define com_ssb_droidsound_plugins_UADEPlugin_OPT_RESAMPLING 2L
+#undef com_ssb_droidsound_plugins_UADEPlugin_OPT_NTSC
+#define com_ssb_droidsound_plugins_UADEPlugin_OPT_NTSC 3L
+#undef com_ssb_droidsound_plugins_UADEPlugin_OPT_SPEED_HACK
+#define com_ssb_droidsound_plugins_UADEPlugin_OPT_SPEED_HACK 4L
+#undef com_ssb_droidsound_plugins_UADEPlugin_OPT_PANNING
+#define com_ssb_droidsound_plugins_UADEPlugin_OPT_PANNING 5L
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin
  * Method:    N_init
