@@ -354,12 +354,11 @@ public class FileIdentifier {
 			case TYPE_MOD:
 				data = new byte [0x480];
 				is.read(data);
-				magic = new String(data, 0x438,4);
-				Log.v(TAG, String.format("MOD MAGIC %s", magic));
-
-				if(!modMagic.contains(magic)) {
-					return null;
-				}
+				//magic = new String(data, 0x438,4);
+				//Log.v(TAG, String.format("MOD MAGIC %s", magic));
+				//if(!modMagic.contains(magic)) {
+				//	return null;
+				//}
 				info.title = fromData(data, 0, 20); //new String(data, 0, 22, "ISO-8859-1");
 				info.format = "MOD";
 				break;
