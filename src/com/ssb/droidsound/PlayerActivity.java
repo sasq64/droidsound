@@ -745,6 +745,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
  		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
  		//repeatText.setText("CONT");
+ 		
+ 		String b = prefs.getString("buffer", "Long"); 		
+		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
+
+ 		
 		
 		if(!created && lastConfig == null) {
 			songDatabase.open();
@@ -1104,6 +1109,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		player.setOption(PlayerService.OPTION_SPEECH, prefs.getBoolean("speech", false) ? "on" : "off");
 		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
+		
+ 		String b = prefs.getString("buffer", "Long"); 		
+		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
 		
 		String s = prefs.getString("indexing", "Basic");
 		int imode = SongDatabase.INDEX_BASIC;

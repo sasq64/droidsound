@@ -75,6 +75,7 @@ public class PlayerService extends Service {
 	public static final int OPTION_RESPECT_LENGTH = 2;
 	public static final int OPTION_PLAYBACK_ORDER = 3;
 	public static final int OPTION_REPEATMODE = 4;
+	public static final int OPTION_BUFFERSIZE = 5;
 
 
 	public static final int RM_CONTINUE = 0;
@@ -365,9 +366,10 @@ public class PlayerService extends Service {
     	
     	if(playerThread == null) {
 			Log.v(TAG, "Creating thread");
+			player.setBufSize(bufSize);
 		    playerThread = new Thread(player);
 		    playerThread.setPriority(Thread.MAX_PRIORITY);
-		    playerThread.start();
+		    playerThread.start();		    
     	}
     }
     
@@ -465,6 +467,8 @@ public class PlayerService extends Service {
 	private Notification notification;
 
 	private PendingIntent contentIntent;
+
+	protected int bufSize = 0x40000;
 
     /**
      * This is a wrapper around the new startForeground method, using the older
@@ -967,6 +971,19 @@ public class PlayerService extends Service {
 				break;
 			case OPTION_SPEECH:
 				activateSpeech(on);
+				break;
+			case OPTION_BUFFERSIZE:
+		 		bufSize = 176384; // 2s
+		 		if(arg.equals("Short")) {
+		 			bufSize = 66144; // 0.75s
+		 		} else
+		 		if(arg.equals("Medium")) {
+		 			bufSize = 132288; // 1.5s
+		 		} else
+		 		if(arg.equals("Very Long")) {
+		 			bufSize = 352768; // 4s
+		 		}
+				player.setBufSize(bufSize);
 				break;
 			}
 		}

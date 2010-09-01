@@ -204,4 +204,14 @@ public abstract class DroidSoundPlugin {
 		}
 		
 	}
+
+	public static String getSecondaryFile(String path) {
+		int dot = path.lastIndexOf('.');
+		
+		if(path.substring(dot).toUpperCase().equals(".TFX")) {
+			return path.substring(0, dot) + ".SAM";
+		}		
+		
+		return null;
+	}
 }

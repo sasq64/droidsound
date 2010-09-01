@@ -22,6 +22,15 @@
             android:summaryOn="Use text to speech to speak titles of songs"
             />
 
+    <ListPreference
+            android:key="buffer"
+            android:title="Buffer Size"
+            android:defaultValue="Long"
+            android:entries="@array/buffer_opts"
+			android:entryValues="@array/buffer_opts"
+            android:summaryOn="Audio buffer size"
+            />
+
 	<PreferenceScreen
             android:key="audio_prefs"
             android:title="Plugins"

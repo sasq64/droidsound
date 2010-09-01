@@ -87,4 +87,12 @@ to download more music from the web.</string>
 	<item>Full Stereo</item>
 </string-array>
 
+
+<string-array name="buffer_opts">
+	<item>Short</item>
+	<item>Medium</item>
+	<item>Long</item>
+	<item>Very long</item>
+</string-array>
+
 </resources>
