@@ -123,18 +123,21 @@ public class Player implements Runnable {
 		samples = new short [bufSize/2];
 	}
 
-	private File writeFile(String name, InputStream fs) throws IOException {
+	private File writeFile(String name, InputStream fs, boolean temp) throws IOException {
 		File file;
-		int dot = name.indexOf('.');
-		int lastDot = name.lastIndexOf('.');
-		if(dot == -1) {
-			file = File.createTempFile(name, "");
+		if(temp) {
+			int dot = name.indexOf('.');
+			int lastDot = name.lastIndexOf('.');
+			if(dot == -1) {
+				file = File.createTempFile(name, "");
+			}
+			else {
+				file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
+			}
+		} else {
+			file = new File(name);
 		}
-		else {
-			file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
-		}
-		
-		
+				
 		FileOutputStream fo = new FileOutputStream(file);
 		
 		byte [] buffer = new byte [16384];
@@ -197,8 +200,6 @@ public class Player implements Runnable {
 					currentZipFile = null;
 				}
 			}
-			
-
 
 			if(zipExt > 0) {
 				
@@ -220,18 +221,30 @@ public class Player implements Runnable {
 					
 					if(name2 != null) {
 						
-						Log.v(TAG, String.format("TGot seconday file '%s'\n", name2)); 
+						Log.v(TAG, String.format("Got seconday file '%s'\n", name2)); 
 						
 						ZipEntry entry = currentZip.getEntry(name);
-						InputStream fs = currentZip.getInputStream(entry);						
-						songFile = writeFile(name, fs);
-						fileSize = songFile.length();
-						fs.close();
-
-						entry = currentZip.getEntry(name2);
-						fs = currentZip.getInputStream(entry);						
-						songFile2 = writeFile(name, fs);
-						fs.close();
+						if(entry != null) {
+							InputStream fs = currentZip.getInputStream(entry);						
+							songFile = writeFile(name, fs, true);
+	
+							Log.v(TAG, String.format("Wrote '%s'\n", songFile.getPath())); 
+							
+							fileSize = songFile.length();
+							fs.close();
+	
+							String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
+	
+							Log.v(TAG, String.format("Writing '%s'\n", fname2)); 
+	
+							entry = currentZip.getEntry(name2);
+							
+							if(entry != null && fname2 != null) {						
+								fs = currentZip.getInputStream(entry);						
+								songFile2 = writeFile(fname2, fs, false);
+								fs.close();
+							}
+						}
 						
 					} else {
 						
