@@ -204,16 +204,30 @@ public abstract class DroidSoundPlugin {
 		}
 		
 	}
+	
+	static String [] pref0 = new String [] { "MDAT", "TFX", "SNG" };
+	static String [] pref1 = new String [] { "SMPL", "SAM", "INS" };
 
 	public static String getSecondaryFile(String path) {
 		int dot = path.lastIndexOf('.');
 		int slash = path.lastIndexOf('/');
 		
-		if(path.substring(dot).toUpperCase().equals(".TFX")) {
-			return path.substring(0, dot) + ".SAM";
+		if(dot <= slash) {
+			return null;
 		}
-		
-		
+
+		int firstDot = path.indexOf('.', slash+1);				
+		String ext = path.substring(dot+1).toUpperCase();		
+		String pref = path.substring(slash+1, firstDot).toUpperCase();
+
+		for(int i=0; i<3; i++) {
+			if(pref.equals(pref0[i])) {
+				return path.substring(0, slash+1) + pref1[i] + path.substring(firstDot); 
+			} else
+			if(ext.equals(pref0[i])) {
+				return path.substring(0, dot+1) + pref1[i];
+			}
+		}
 		
 		return null;
 	}
