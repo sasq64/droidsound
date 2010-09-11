@@ -103,7 +103,7 @@ public class SongDatabase implements Runnable {
 	protected static final int MSG_OPEN = 1;
 	//protected static final int MSG_RESTORE = 2;
 	protected static final int MSG_DOWNLOAD = 3;
-	//protected static final int MSG_CANCEL_DL = 4;
+	protected static final int MSG_QUIT = 4;
 	protected static final int MSG_INDEXMODE = 5;
 	
 	public static final int INDEX_NONE = 0;
@@ -120,11 +120,22 @@ public class SongDatabase implements Runnable {
 	}
 	
 	private SQLiteDatabase getReadableDatabase() {
-		return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+		if(dbName == null) {
+			return null;
+		}
+		try {
+			return SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	private SQLiteDatabase getWritableDatabase() {
 		SQLiteDatabase dbrc = null;
+		if(dbName == null) {
+			return null;
+		}
 		try {
 			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
 		} catch (SQLException e) {
@@ -282,6 +293,10 @@ public class SongDatabase implements Runnable {
 	            case MSG_INDEXMODE:
 	            	createIndex(msg.arg1);
 	            	break;
+	            case MSG_QUIT:
+	            	Log.v(TAG, "Telling looper to quit");
+	            	Looper.myLooper().quit();
+	            	break;
 	          /*  case MSG_DOWNLOAD:
 	            	doDownload();
 	            	break; */
@@ -325,11 +340,20 @@ public class SongDatabase implements Runnable {
 		u = null;
 
 		Looper.loop();
+		
+		Log.v(TAG, "Exiting songdatabase");
 	}
 
 	private void doOpen(boolean drop) {	
 		File myDir = context.getFilesDir();
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+
+		droidDir.mkdir();
+		
+		if(!droidDir.exists()) {
+			return;
+		}
+		
 		
 		isReady = false;
 		
@@ -346,7 +370,7 @@ public class SongDatabase implements Runnable {
 			if(scanCallback != null) {
 				scanCallback.notifyScan("Moving database", 0);
 			}
-			droidDir.mkdir();
+
 			if(!PlayerActivity.moveFile(oldDb, new File(droidDir, "songs.db"))) {
 				dbFile = oldDb;
 			}
@@ -358,6 +382,12 @@ public class SongDatabase implements Runnable {
 		Log.v(TAG, String.format("Database path %s", dbName));		
 
 		SQLiteDatabase db = getWritableDatabase();
+		
+		if(db == null) {
+			scanning = false;
+			return;
+		}
+		
 
 		if(db.needUpgrade(DB_VERSION)) {
 			drop = true;
@@ -431,9 +461,15 @@ public class SongDatabase implements Runnable {
 		
 		if(mode != indexMode) {
 			
+			SQLiteDatabase db = getWritableDatabase();
+			
+			if(db == null) {
+				return;
+			}
+			
+
 			scanning = true;
 	
-			SQLiteDatabase db = getWritableDatabase();
 			
 			if(scanCallback != null) {
 				scanCallback.notifyScan("Updating indexes", 0);
@@ -1006,6 +1042,12 @@ public class SongDatabase implements Runnable {
 	
 	private void doScan(String modsDir, boolean full) {
 
+		scanDb = getWritableDatabase();
+		
+		if(scanDb == null) {
+			return;
+		}
+
 		stopScanning = false;
 		scanning = true;
 
@@ -1014,7 +1056,6 @@ public class SongDatabase implements Runnable {
 
 
 		//rdb = getReadableDatabase();
-		scanDb = getWritableDatabase();
 		
 
 		long startTime = System.currentTimeMillis();
@@ -1188,6 +1229,8 @@ public class SongDatabase implements Runnable {
 	private Playlist activePlaylist;
 
 	private String pathTitle;
+
+	private boolean doQuit;
 
 	public Playlist getCurrentPlaylist() {
 		return currentPlaylist;
@@ -1477,6 +1520,12 @@ public class SongDatabase implements Runnable {
 		return null;
 	}
 	*/
+
+	public void quit() {
+		stopScanning = true;
+		Message msg = mHandler.obtainMessage(MSG_QUIT);
+		mHandler.sendMessage(msg);	
+	}
 
 
 }

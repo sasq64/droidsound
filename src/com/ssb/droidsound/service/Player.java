@@ -126,8 +126,13 @@ public class Player implements Runnable {
 	private File writeFile(String name, InputStream fs, boolean temp) throws IOException {
 		File file;
 		if(temp) {
+			
+			name = name.substring(name.lastIndexOf('/')+1);
+			
 			int dot = name.indexOf('.');
 			int lastDot = name.lastIndexOf('.');
+			
+			
 			if(dot == -1) {
 				file = File.createTempFile(name, "");
 			}
@@ -221,7 +226,7 @@ public class Player implements Runnable {
 					
 					if(name2 != null) {
 						
-						Log.v(TAG, String.format("Got seconday file '%s'\n", name2)); 
+						Log.v(TAG, String.format("Got secondary file '%s'\n", name2)); 
 						
 						ZipEntry entry = currentZip.getEntry(name);
 						if(entry != null) {

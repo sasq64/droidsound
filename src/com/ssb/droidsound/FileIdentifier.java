@@ -359,7 +359,7 @@ public class FileIdentifier {
 				//if(!modMagic.contains(magic)) {
 				//	return null;
 				//}
-				info.title = fromData(data, 0, 20); //new String(data, 0, 22, "ISO-8859-1");
+				info.title = null; //fromData(data, 0, 20); //new String(data, 0, 22, "ISO-8859-1");
 				info.format = "MOD";
 				break;
 			case TYPE_S3M:

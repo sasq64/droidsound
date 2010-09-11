@@ -18,7 +18,7 @@ jstring NewString(JNIEnv *env, const char *str)
 	char *ptr = temp;
 	while(*str) {
 		char c = *str++;
-		*ptr++ = (c < 0x7f) && (c >= 0x20) ? c : '?';
+		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 ? c : '?';
 	}
 	*ptr++ = 0;
 	jstring j = env->NewStringUTF(temp);
@@ -80,7 +80,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_findEntry(JNI
 
 	jboolean iscopy;
 	const char *fname = env->GetStringUTFChars(name, &iscopy);
-	int e = zip_name_locate(zipFile, fname, 0);
+	int e = zip_name_locate(zipFile, fname, ZIP_FL_NOCASE);
 	env->ReleaseStringUTFChars(name, fname);
 	return e;
 }

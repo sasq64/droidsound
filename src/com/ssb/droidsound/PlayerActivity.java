@@ -1347,7 +1347,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			startActivity(new Intent(this, SettingsActivity.class));
 			break;
 		case R.id.quit:
-			player.stop();
+			player.stop();			
+			songDatabase.quit();
+			songDatabase = null;
+			
 			finish();
 			break;
 		case R.id.new_:
