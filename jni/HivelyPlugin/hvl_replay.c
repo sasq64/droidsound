@@ -634,7 +634,7 @@ struct hvl_tune *hvl_LoadTuneMemory( uint8 *buf, int buflen, uint32 freq, uint32
       ( buf[2] != 'L' ) ||
       ( buf[3] > 1 ) )
   {
-    free( buf );
+    //free( buf );
     printf( "Invalid file.\n" );
     return NULL;
   }
@@ -681,7 +681,7 @@ struct hvl_tune *hvl_LoadTuneMemory( uint8 *buf, int buflen, uint32 freq, uint32
   ht = malloc( hs );    
   if( !ht )
   {
-    free( buf );
+    //free( buf );
     printf( "Out of memory!\n" );
     return NULL;
   }
@@ -724,7 +724,7 @@ struct hvl_tune *hvl_LoadTuneMemory( uint8 *buf, int buflen, uint32 freq, uint32
                           ht->ht_TrackLength,
                           ht->ht_InstrumentNr );
     free( ht );
-    free( buf );
+    //free( buf );
     printf( "Invalid file.\n" );
     return NULL;
   }

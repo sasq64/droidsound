@@ -158,6 +158,20 @@ public class Player implements Runnable {
 		return file;
 	}
 	
+	private static String makeSize(long fileSize) {
+		String s;
+		if(fileSize < 10*1024) {
+			s = String.format("%1.1fKB", (float)fileSize/1024F);
+		} else if(fileSize < 1024*1024) {
+			s = String.format("%dKB", fileSize/1024);
+		} else if(fileSize < 10*1024*1024) {
+			s = String.format("%1.1fMB", (float)fileSize/(1024F * 1024F));
+		} else {
+			s = String.format("%dMB", fileSize/(1024*1024));
+		}
+		return s;
+	}
+	
 	
 	private void startSong(String songName, int startTune) {
     	    	
@@ -183,6 +197,7 @@ public class Player implements Runnable {
                 
 		byte [] songBuffer = null;
 		long fileSize = 0;
+		long fileSize2 = 0;
 		
 		File songFile = null;
 		File songFile2 = null;
@@ -248,6 +263,7 @@ public class Player implements Runnable {
 								fs = currentZip.getInputStream(entry);						
 								songFile2 = writeFile(fname2, fs, false);
 								fs.close();
+								fileSize2 = songFile2.length();
 							}
 						}
 						
@@ -318,7 +334,17 @@ public class Player implements Runnable {
 				System.gc();
 				
 				if(!songFile.exists())
-					songFile = null;				
+					songFile = null;
+				else {
+					
+					String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
+					if(fname2 != null) {
+						File f2 = new File(fname2);
+						if(f2.exists()) {
+							fileSize2 = f2.length();
+						}
+					}
+				}
 				
 				//songBuffer = new byte [(int) fileSize];
 				//FileInputStream fs = new FileInputStream(f);
@@ -391,16 +417,13 @@ public class Player implements Runnable {
 					currentSong.details[i] = info[i];
 				}
 				currentSong.details[info.length] = "Size";
+
 				
-				if(fileSize < 10*1024) {
-					currentSong.details[info.length+1] = String.format("%1.1fKB", (float)fileSize/1024F);
-				} else if(fileSize < 1024*1024) {
-					currentSong.details[info.length+1] = String.format("%dKB", fileSize/1024);
-				} else if(fileSize < 10*1024*1024) {
-					currentSong.details[info.length+1] = String.format("%1.1fMB", (float)fileSize/(1024F * 1024F));
-				} else {
-					currentSong.details[info.length+1] = String.format("%dMB", fileSize/(1024*1024));
-				}
+				String size = makeSize(fileSize);
+				if(fileSize2 > 0) {
+					size = size + " + " + makeSize(fileSize2);
+				}				
+				currentSong.details[info.length+1] = size;
 				info = null;
 						
 				

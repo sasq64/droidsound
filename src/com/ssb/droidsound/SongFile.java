@@ -7,8 +7,8 @@ public class SongFile {
 	private File file;
 	private int subtune;
 	private String tuneString;
-	private String title;
-	private String composer;
+	//private String title;
+	//private String composer;
 	
 	SongFile(File f) {
 		file = f;
@@ -29,6 +29,10 @@ public class SongFile {
 			tuneString = "";
 		}
 	}
+	
+	SongFile(String fname) {
+	}
+
 	
 	File getFile() {
 		return file;
@@ -64,7 +68,7 @@ public class SongFile {
 		} else {
 			tuneString = "";
 		}
-		this.title = title;
+		//this.title = title;
 	}
 
 	public String getPath() {
