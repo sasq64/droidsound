@@ -127,7 +127,7 @@ enum uade_control_state ctrlstate = UADE_S_STATE;
 static int run_client()
 {
 
-	//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
+	// __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE STATE %d", ctrlstate);
 
 	if(ctrlstate == UADE_S_STATE)
 	{
@@ -200,6 +200,7 @@ static int run_client()
 		{
 		case UADE_COMMAND_TOKEN:
 			ctrlstate = UADE_S_STATE;
+			//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Got token");
 			break;
 
 		case UADE_REPLY_DATA:
@@ -347,6 +348,11 @@ void exit() {
 	int rc = pthread_join(thread, NULL);
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Exit with %d", rc);
 	thread = 0;
+
+	if(soundBuffer)
+		free(soundBuffer);
+	soundBuffer = 0;
+
 }
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit(JNIEnv *env, jobject obj)
@@ -384,6 +390,7 @@ int init()
 		uade_set_peer(&uadeipc, 1, "client", "server");
 		state.ipc = uadeipc;
 		eaglestore = 1;
+
 	}
 
 	if(thread == 0) {
@@ -395,6 +402,10 @@ int init()
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send config name\n");
 		}
 	}
+
+	if(!soundBuffer)
+		soundBuffer = (short*)malloc(44100 * 8);
+
 
 	return 0;
 }
@@ -566,7 +577,6 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "RES %d", rc);
 
 
-	soundBuffer = (short*)malloc(44100 * 8);
 	soundPtr = soundBuffer;
 
 	rc = 0;
@@ -686,8 +696,15 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setTune
 	Player *player = (Player*)song;
 	uade_song_end_trigger = 0;
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "setTune %d", tune);
-
 	new_subsong = tune;
+/*
+	soundPtr = soundBuffer;
+	int rc = 0;
+	while(rc <= 0) {
+		rc = run_client();
+	}
+*/
+
 	return true;
 }
 

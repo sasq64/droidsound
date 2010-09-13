@@ -2,81 +2,156 @@ package com.ssb.droidsound;
 
 import java.io.File;
 
+import android.util.Log;
+
 public class SongFile {
 
-	private File file;
+	private static final String TAG = SongFile.class.getSimpleName();
 	private int subtune;
-	private String tuneString;
+	private int length;
+	String fileName;
+	
+	private File file;
+	private String path;
+	private String prefix;
+	private String suffix;
+	private String midfix;
+	private String zipPath;
+	private String zipName;
+	
+	//private String tuneString;
 	//private String title;
 	//private String composer;
 	
-	SongFile(File f) {
-		file = f;
+	public SongFile(File f) {
+		init(f.getPath());
+	}
+	
+	public SongFile(String fname) {
+		init(fname);
+	}
+	
+	private void init(String fname) {
 		subtune = -1;
-		String n = f.getPath();
-		int sc = n.lastIndexOf(';');
-		if(sc >= 0) {
+		length = -1;
+		
+		if(fname.startsWith("file://")) {
+			fname = fname.substring(7);
+		}
+		
+		String s[] = fname.split(";");
+		
+		fileName = s[0];
+		
+		//int sc = fileName.lastIndexOf(';');
+		if(s.length > 1) {
+			if(s.length > 2) {
+				try {
+					length = Integer.parseInt(s[2]);
+				} catch (NumberFormatException e) {}					
+			}
 			try {
-				subtune = Integer.parseInt(n.substring(sc+1));
-				file = new File(n.substring(0, sc));
-			} catch (NumberFormatException e) {
-			}					
+				subtune = Integer.parseInt(s[1]);
+			} catch (NumberFormatException e) {}					
+			fileName = s[0];
 		}
 
-		if(subtune >= 0) {
-			tuneString = ";" + subtune;
+		
+		int slash = fileName.lastIndexOf('/');
+		if(slash > 0) {
+			path = fileName.substring(0, slash);
+			fileName = fileName.substring(slash+1);
 		} else {
-			tuneString = "";
+			path = "";
 		}
-	}
-	
-	SongFile(String fname) {
+
+		midfix = fileName;
+		prefix = suffix = "";
+		int firstDot = fileName.indexOf('.');
+		int lastDot = fileName.lastIndexOf('.');
+		if(firstDot > 0) {
+			prefix = fileName.substring(0, firstDot);
+			suffix = fileName.substring(lastDot+1);
+			midfix = fileName.substring(firstDot, lastDot+1);
+		}
+
+		int zip = s[0].toUpperCase().indexOf(".ZIP/");
+		if(zip > 0) {
+			zipPath = s[0].substring(0, zip+4);
+			zipName = s[0].substring(zip+5);
+		}
+		
+		file = new File(path, fileName);
+		
+		Log.v(TAG, String.format("SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, length));
 	}
 
+	public String getPrefix() {
+		return prefix;
+	}
 	
-	File getFile() {
+	public String getSuffix() {
+		return suffix;
+	}
+	
+	public File getFile() {
 		return file;
 	}
 	
-	int getSubtune() {
+	public int getSubtune() {
 		return subtune;
+	}
+	
+	public int getLength() {
+		return length;
+	}
+	
+	public void changePrefix(String p) {
+		prefix = p;
+		fileName = prefix + midfix + "suffix"; 
+	}
+	
+	public void changeSuffix(String s) {
+		suffix = s;
+		fileName = prefix + midfix + "suffix"; 
 	}
 
 	public SongFile(File f, int t, String title) {
-		file = f ;
-		subtune = t;
-		
-		String name = f.getName();
-		int sc = name.indexOf(';');
-		
-		if(sc > 0) {
-			try {
-				t = Integer.parseInt(name.substring(sc+1));
-			} catch (NumberFormatException e) {
-			}
-			
-			file = new File(f.getParent(), name.substring(0, sc));
-			
-			if(subtune == -1) {
-				subtune = t;
-			}
+		init(f.getPath());
+		if(subtune < 0) {
+			subtune = t;
 		}
-		
-		
-		if(subtune >= 0) {
-			tuneString = ";" + subtune;
-		} else {
-			tuneString = "";
+	}
+	
+	public SongFile(String song, int t) {
+		init(song);
+		if(t < 0) {
+			subtune = t;
 		}
-		//this.title = title;
+	}
+
+	public String getZipPath() {
+		return zipPath;
+	}
+
+	public String getZipName() {
+		return zipName;
 	}
 
 	public String getPath() {
-		return file.getPath() + tuneString;
+		if(subtune >= 0) {
+			if(length >= 0) {
+				return path + "/" + fileName + ";" + subtune + ";" + length;
+			}
+			return path + "/" + fileName + ";" + subtune;
+		} else {
+			return path + "/" + fileName;
+		}
 	}
 
 	public String getName() {
-		return file.getName();
+		//return file.getName();
+		return fileName;
 	}
 
 	public boolean exists() {

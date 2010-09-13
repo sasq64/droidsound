@@ -189,7 +189,17 @@ public class SettingsActivity extends PreferenceActivity {
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
+				
+				PackageInfo pinfo = null;
+				try {
+					pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+				} catch (NameNotFoundException e) {}
+				Intent intent;
+				if(pinfo != null && pinfo.versionName.contains("beta")) {
+					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/beta.html"));
+				} else {
+					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
+				}
 				startActivity(intent);
 				return true;
 			}

@@ -21,6 +21,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
@@ -173,7 +174,7 @@ public class Player implements Runnable {
 	}
 	
 	
-	private void startSong(String songName, int startTune) {
+	private void startSong(SongFile song) {
     	    	
     	if(currentPlugin != null) {
     		currentPlugin.unload();
@@ -186,12 +187,14 @@ public class Player implements Runnable {
     	
     	currentState = State.SWITCHING;
     	
+    	//SongFile sf = new SongFile(songName);
+    	
     	List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
     	
     	for(DroidSoundPlugin plugin : plugins) {
-    		if(plugin.canHandle(songName)) {    			
+    		if(plugin.canHandle(song.getName())) {    			
     			list.add(plugin);
-    			Log.v(TAG, String.format("%s handled by %s", songName, plugin.getClass().getSimpleName()));
+    			Log.v(TAG, String.format("%s handled by %s", song.getName(), plugin.getClass().getSimpleName()));
     		}
     	}
                 
@@ -202,36 +205,33 @@ public class Player implements Runnable {
 		File songFile = null;
 		File songFile2 = null;
 
-		String baseName = songName.substring(songName.lastIndexOf('/') + 1);
+		String baseName = song.getName(); //songName.substring(songName.lastIndexOf('/') + 1);
 		
 		try {
 			//File f = new File(Environment.getExternalStorageDirectory()+"/" + modName);
 			
-			if(songName.startsWith("file://")) {
-				songName = songName.substring(7);
-			}
+			// if(songName.startsWith("file://")) {
+			//	songName = songName.substring(7);
+			// }
 
-			int zipExt = songName.toUpperCase().indexOf(".ZIP/");
+			//int zipExt = songName.toUpperCase().indexOf(".ZIP/");
 			
-			if(zipExt < 0) {
-				if(currentZipFile != null) {
-					currentZip.close();
-					currentZip = null;
-					currentZipFile = null;
-				}
-			}
-
-			if(zipExt > 0) {
+			if(song.getZipPath() != null) {
 				
-				File f = new File(songName.substring(0, zipExt + 5));
+				Log.v(TAG, "ZIP FILE");
+				
+				File f = new File(song.getZipPath()); //songName.substring(0, zipExt + 5));
 				
 				if(currentZipFile != null && f.equals(currentZipFile)) {
 				} else {
+					if(currentZip != null) {
+						currentZip.close();
+					}
 					currentZipFile = f;
 					currentZip = new NativeZipFile(f);
 				}
 
-				String name = songName.substring(zipExt+5);
+				String name = song.getZipName(); //songName.substring(zipExt+5);
 				
 				Log.v(TAG, String.format("Trying to open '%s' in zipfile '%s'\n", name, f.getPath())); 
 				
@@ -283,8 +283,9 @@ public class Player implements Runnable {
 				}
 			}
 			else
-			if(songName.startsWith("http://")) {
+			if(song.getPath().startsWith("http://")) {
 				
+				String songName = song.getPath();
 				URL url = new URL(songName);
 				
 				Log.v(TAG, "Opening URL " + songName);
@@ -329,7 +330,10 @@ public class Player implements Runnable {
 					f.delete();
 				}
 			} else {
-				songFile = new File(songName);
+				songFile = song.getFile(); //new File(songName);
+				
+				Log.v(TAG, "Trying to read normal file " + songFile.getPath());
+				
 				fileSize = songFile.length();
 				System.gc();
 				
@@ -377,7 +381,7 @@ public class Player implements Runnable {
 			
 			if(currentPlugin == null) {
 				for(DroidSoundPlugin plugin : plugins) {
-		    		if(!plugin.canHandle(songName)) {    			
+		    		if(!plugin.canHandle(song.getName())) {    			
 						if(songFile != null) {
 							try {
 								songLoaded = plugin.load(songFile);
@@ -400,7 +404,7 @@ public class Player implements Runnable {
 			Log.w(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
 
 			synchronized (this) {
-				currentSong.fileName = songName;
+				currentSong.fileName = song.getPath(); //songName;
 				currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
 				currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
 				currentSong.copyright = getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT);
@@ -431,7 +435,7 @@ public class Player implements Runnable {
 				
 				if(currentSong.title == null || currentSong.title.equals("")) {
 					
-					currentSong.title = currentPlugin.getBaseName(songName);
+					currentSong.title = currentPlugin.getBaseName(song.getName());
 					/*
 					int slash = songName.lastIndexOf('/') + 1;
 					int dot = songName.lastIndexOf('.');
@@ -451,9 +455,10 @@ public class Player implements Runnable {
 					currentSong.subTunes = 0;			
 			}
 			
-			if(startTune >= 0) {
-				currentSong.startTune = startTune;
-				currentPlugin.setTune(startTune);
+			if(song.getSubtune() >= 0) {
+				currentSong.startTune = song.getSubtune();
+				currentSong.subTunes = 0;
+				currentPlugin.setTune(song.getSubtune());
 				currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 				currentSong.subtuneTitle =  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
 			}
@@ -528,18 +533,18 @@ public class Player implements Runnable {
 						switch(command) {
 						case PLAY:
 							
-							int subtune = -1;
+							//int subtune = -1;
 							String song = (String)argument;
 							Log.v(TAG, "Playmod " + song);
-							int sc = song.indexOf(';');
+							/*int sc = song.indexOf(';');
 							if(sc > 0) {								
 								try {
 									subtune = Integer.parseInt(song.substring(sc+1));
 								} catch (NumberFormatException e) {
 								}
 								song = song.substring(0, sc);
-							}
-							startSong(song, subtune);
+							}*/
+							startSong(new SongFile(song));
 							break;
 						case STOP:
 							if(currentState != State.STOPPED) {

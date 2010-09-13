@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -58,13 +56,12 @@ import android.widget.AdapterView.OnItemClickListener;
 
 import com.ssb.droidsound.PlayListView.FileInfo;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.service.Player;
 import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback  {
 	private static final String TAG = "PlayerActivity";
 	
-	public static final String DROIDSOUND_VERSION = "1.1beta1";
+	public static final String DROIDSOUND_VERSION = "1.1beta3";
 	public static final int VERSION = 16;
 	
 	private static class Config {
@@ -137,7 +134,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int subTune;
 	private int subTuneCount;
 	private int songLength;
-	private String songName;
+	//private String songName;
+	private SongFile songFile;
 
 	private File modsDir;
 	private File currentPath;
@@ -431,7 +429,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		DroidSoundPlugin.setContext(getApplicationContext());
 	
-
+		SongFile sf = new SongFile("/test/MDAT.MonkeyIsland");
+		sf = new SongFile("MonkeyIsland");
+		sf = new SongFile("/path/to/myfile.mod;2");
+		sf = new SongFile("/path/to/myfile.mod;-1;800");
+		
+		
 		Intent intent = getIntent();
 		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
 		if(Intent.ACTION_VIEW.equals(intent.getAction())) {			
@@ -930,8 +933,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 				
-				if(songName != null) {
-					operationFile = new File(songName);
+				if(songFile != null) {
+					operationFile = songFile.getFile();
 					operationTune = subTune;
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
@@ -1074,8 +1077,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				if(currentPlaylistView != playListView) {
 					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 						flipTo(FILE_VIEW);
-						if(songName != null) {
-							playListView.setScrollPosition(new File(songName));
+						if(songFile != null) {
+							playListView.setScrollPosition(songFile.getFile());
 						}
 						return true;
 					}
@@ -1109,6 +1112,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		player.setOption(PlayerService.OPTION_SPEECH, prefs.getBoolean("speech", false) ? "on" : "off");
 		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
+		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));	
 		
  		String b = prefs.getString("buffer", "Long"); 		
 		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
@@ -1265,8 +1269,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					n = n.substring(0, dot);
 				}
 				plinfoText.setText(n);
-			} else if(songName != null) {
-				String n = new File(songName).getParent();
+			} else if(songFile != null) {
+				String n = songFile.getFile().getParent();
 				if(n != null) {
 					n = n.replace(modsDir.getPath(), "");
 				} else {
@@ -1280,7 +1284,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case PlayerService.SONG_FILENAME :
 			playListView.setHilighted(value);
 			searchListView.setHilighted(value);
-			songName = value;
+			//songName = value;
+			songFile = new SongFile(value);
 			break;
 		case PlayerService.SONG_SUBTUNE_TITLE:
 			subtuneTitle = value;

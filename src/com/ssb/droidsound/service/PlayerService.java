@@ -76,6 +76,7 @@ public class PlayerService extends Service {
 	public static final int OPTION_PLAYBACK_ORDER = 3;
 	public static final int OPTION_REPEATMODE = 4;
 	public static final int OPTION_BUFFERSIZE = 5;
+	public static final int OPTION_DEFAULT_LENGTH = 6;
 
 
 	public static final int RM_CONTINUE = 0;
@@ -319,8 +320,11 @@ public class PlayerService extends Service {
                     break;
                 case Player.MSG_PROGRESS:
                 	int l = (Integer)info[SONG_LENGTH];
+                	if(l <= 0) {
+                		l = defaultLength;
+                	}
                 	//Log.v(TAG, String.format("%d vs %d", msg.arg1, l));
-                	if(l > 0 && (msg.arg1 >= l) && respectLength && (Integer)info[SONG_REPEAT] == RM_CONTINUE) {
+                	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE || defaultLength > 0)) {
                 		playNextSong();
                 	} else {                	
                     	info[SONG_POS] = (Integer)msg.arg1;
@@ -469,6 +473,8 @@ public class PlayerService extends Service {
 	private PendingIntent contentIntent;
 
 	protected int bufSize = 0x40000;
+
+	protected int defaultLength = 0;
 
     /**
      * This is a wrapper around the new startForeground method, using the older
@@ -947,6 +953,10 @@ public class PlayerService extends Service {
 			boolean on = arg.equals("on");
 			
 			switch(opt) {
+			case OPTION_DEFAULT_LENGTH:
+				defaultLength  = Integer.parseInt(arg) * 1000;
+				Log.v(TAG, "Default length set to " + defaultLength);
+				break;
 			case OPTION_REPEATMODE:
 				info[SONG_REPEAT] = Integer.parseInt(arg);
 				performCallback(SONG_REPEAT);

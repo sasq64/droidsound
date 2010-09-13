@@ -209,6 +209,7 @@ public abstract class DroidSoundPlugin {
 	static String [] pref1 = new String [] { "SMPL", "SAM", "INS" };
 
 	public static String getSecondaryFile(String path) {
+				
 		int dot = path.lastIndexOf('.');
 		int slash = path.lastIndexOf('/');
 		
