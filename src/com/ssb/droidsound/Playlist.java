@@ -19,32 +19,14 @@ import android.util.Log;
 
 public class Playlist {
 
-	public class Song {
+	/* public class Song {
 
 		public File file;
 		public String title;
 		public String subtitle;
 		public int startsong;
 		
-	/*	
-		@Override
-		public int hashCode() {
-			return file.getPath().hashCode();
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			if(o instanceof String) {
-				return file.getPath().equals(o);
-			} else
-			if(o instanceof Song) {
-				return file.getPath().equals(((Song)o).file.getPath());
-			}
-			return super.equals(o);
-		}
-*/
-		
-	}
+	} */
 
 	private static final String TAG = Playlist.class.getSimpleName();
 	
@@ -406,14 +388,19 @@ public class Playlist {
 		return hash;
 	}
 
-	public List<Song> getSongs() {
-		List<Song> songs = new ArrayList<Song>();
+	public List<SongFile> getSongs() {
+		List<SongFile> songs = new ArrayList<SongFile>();
+		
+		for(String line : lines) {
+			songs.add(new SongFile(line));
+		}
+		/*
 		
 		Cursor c = getCursor();
 		
 		while(c.moveToNext()) {
 			
-			Song song = new Song();
+			//Song song = new Song();
 			
 			String p = cursor.getString(cursor.getColumnIndex("PATH"));
 			String n = cursor.getString(cursor.getColumnIndex("FILENAME"));
@@ -436,7 +423,7 @@ public class Playlist {
 			//Log.v(TAG, String.format("Songlist sentry %s %d",song.file.getPath(), song.startsong));
 			songs.add(song);
 			
-		}
+		} */
 		return songs;
 	}
 

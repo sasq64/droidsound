@@ -866,7 +866,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		backButton.setOnClickListener(new OnClickListener() {			
 			@Override
 			public void onClick(View v) {
-				if(subTune == 0) {
+				if(subTune == 0 || subTuneCount == 0) {
 					player.playPrev();
 				} else {
 					subTune -= 1;

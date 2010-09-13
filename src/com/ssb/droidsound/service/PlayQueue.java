@@ -8,10 +8,11 @@ import java.util.Random;
 import android.util.Log;
 
 import com.ssb.droidsound.Playlist;
+import com.ssb.droidsound.SongFile;
 
 public class PlayQueue {
 	private static final String TAG = PlayQueue.class.getSimpleName();
-
+/*
 	public static class Song {
 		String filename;
 		String title;
@@ -19,18 +20,19 @@ public class PlayQueue {
 		int startSong;
 		int playTime;
 		
-		//Song() {}
-		Song(String fname) {
+		//SongFile() {}
+		SongFile(String fname) {
 			filename = fname;
 			startSong = -1;
 		}
-		public Song(Playlist.Song ps) {
-			filename = ps.file.getPath();
-			title = ps.title;
-			startSong = ps.startsong;
-			composer = ps.subtitle;
+		public SongFile(SongFile ps) {
+			filename = ps.getFile().getPath();
+			title = ps.getTitle();
+			startSong = ps.getSubtune();
+			composer = ps.getComposer();
 		}
-		
+	}
+*/		
 		/* @Override
 		public int hashCode() {
 			return filename.hashCode();
@@ -41,19 +43,18 @@ public class PlayQueue {
 			if(o instanceof String) {
 				return filename.equals(o);
 			} else
-			if(o instanceof Song) {
-				return filename.equals(((Song)o).filename);
+			if(o instanceof SongFile) {
+				return filename.equals(((SongFile)o).filename);
 			}
 			return super.equals(o);
 		} */
-	}
 
 	
 	private static Random rgen = new Random(System.currentTimeMillis());
 
-	private List<Song> musicList;
+	private List<SongFile> musicList;
 	private int musicListPos;
-	private Song[] musicNames;
+	private SongFile[] musicNames;
 
 	private boolean shuffleOn;
 
@@ -63,12 +64,12 @@ public class PlayQueue {
 
 	
 	PlayQueue(String [] names) {
-		musicList = new ArrayList<Song>();
+		musicList = new ArrayList<SongFile>();
 		init(createSongs(names), 0);
 	}
 
 	PlayQueue(String [] names, int index, boolean shuffleSongs) {
-		musicList = new ArrayList<Song>();
+		musicList = new ArrayList<SongFile>();
 		shuffleOn = shuffleSongs;
 		init(createSongs(names), index);		
 	}
@@ -79,13 +80,13 @@ public class PlayQueue {
 		currentPlaylist = pl;
 		oldPlaylistHash = pl.hashCode();
 
-		List<Playlist.Song> songs = currentPlaylist.getSongs();
+		List<SongFile> songs = currentPlaylist.getSongs();
 		int i = 0;
-		Song names [] = new Song [songs.size()];
-		musicList = new ArrayList<Song>();
+		SongFile names [] = new SongFile [songs.size()];
+		musicList = new ArrayList<SongFile>();
 		Log.v(TAG, String.format("POS %d in playlist with %d files", index, songs.size()));
-		for(Playlist.Song ps : songs) {
-			Song song = new Song(ps);
+		for(SongFile ps : songs) {
+			SongFile song = new SongFile(ps);
 			
 			// Log.v(TAG, String.format("%s (%d)", song.filename, song.startSong));
 			
@@ -94,15 +95,15 @@ public class PlayQueue {
 		init(names, index);
 	}
 
-	private Song [] createSongs(String [] names) {
-		Song [] songs = new Song [names.length];
+	private SongFile [] createSongs(String [] names) {
+		SongFile [] songs = new SongFile [names.length];
 		for(int i=0; i<names.length; i++) {
-			songs[i] = new Song(names[i]);
+			songs[i] = new SongFile(names[i]);
 		}
 		return songs;
 	}
 
-	private void init(Song [] songs, int index) {
+	private void init(SongFile [] songs, int index) {
 		musicNames = songs;
 		musicListPos = index;
 		if(musicNames != null) {
@@ -118,7 +119,8 @@ public class PlayQueue {
 	
 	public int setCurrent(String name) {
 		for(int i=0; i<musicList.size(); i++) {
-			if(musicList.get(i).filename.equals(name)) {
+			Log.v(TAG, String.format("CMP %s to %s", musicList.get(i).getPath(), name));
+			if(musicList.get(i).getPath().equals(name)) {
 				musicListPos = i;
 				return i;
 			}
@@ -129,7 +131,7 @@ public class PlayQueue {
 	
 	void setShuffle(boolean on) {
 		
-		String current = current();
+		String current = currentWithStartSong();
 		if(on && !shuffleOn) {
 			// Turned on
 			shuffle();
@@ -147,10 +149,10 @@ public class PlayQueue {
 		if(musicNames == null) {
 			return;
 		}
-		Song t;
+		SongFile t;
 		int sz = musicList.size();
 
-		String current = current();
+		String current = currentWithStartSong();
 		
 		for (int i=0; i<sz; i++) {					
 		    int randomPosition = rgen.nextInt(sz);
@@ -180,7 +182,7 @@ public class PlayQueue {
 		} */
 		
 		// Log.v(TAG, "###### SHUFFLE ORDER #####");
-		// for(Song s : musicList) {
+		// for(SongFile s : musicList) {
 		// 	Log.v(TAG, s.filename);
 		// }
 	}
@@ -196,20 +198,10 @@ public class PlayQueue {
 		}
 	}
 	
-	boolean songContains(List<Playlist.Song> psongs, Song s) {
-		for(Playlist.Song ps : psongs) {
+	boolean songContains(List<SongFile> psongs, SongFile s) {
+		for(SongFile ps : psongs) {
 			//Log.v(TAG, String.format("%s(%d) vs %s(%d)", s.filename, s.startSong, ps.file.getPath(), ps.startsong));
-			if(s.startSong == ps.startsong && s.filename.equals(ps.file.getPath())) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	boolean songContains(List<Song> songs, Playlist.Song ps) {		
-		for(Song s : songs) {
-			//Log.v(TAG, String.format("%s(%d) vs %s(%d)", s.filename, s.startSong, ps.file.getPath(), ps.startsong));
-			if(s.startSong == ps.startsong && s.filename.equals(ps.file.getPath())) {
+			if(s.getPath().equals(ps.getPath())) {
 				return true;
 			}
 		}
@@ -221,37 +213,37 @@ public class PlayQueue {
     		int hash = currentPlaylist.hashCode();
     		if(hash != oldPlaylistHash) {
     			Log.v(TAG, "Current playlist has changed!");    			
-    			List<Playlist.Song> psongs = currentPlaylist.getSongs();
+    			List<SongFile> psongs = currentPlaylist.getSongs();
     			
     			
     			
-    			String current = current();
+    			String current = currentWithStartSong();
     			boolean setNext = false;
-				List<Song> removes = new ArrayList<Song>();
-    			for(Song s : musicList) {
+				List<SongFile> removes = new ArrayList<SongFile>();
+    			for(SongFile s : musicList) {
     				if(setNext) {
     					Log.v(TAG, "Removed current song, changing to " + s);
-    					current = s.filename;
+    					current = s.getPath();
     					setNext = false;
     				}
     				if(!songContains(psongs, s)) {
-    					Log.v(TAG, "Removing " + s.filename);    					
+    					Log.v(TAG, "Removing " + s.getPath());    					
     					//musicList.remove(s);
     					removes.add(s);
-    					if(s.equals(current)) {
+    					if(s.getPath().equals(current)) {
     						setNext = true;
     					}
     				}
     			}
     			
-    			for(Song s : removes) {
+    			for(SongFile s : removes) {
     				musicList.remove(s);
     			}
     			
-    			for(Playlist.Song ps : psongs) {
+    			for(SongFile ps : psongs) {
     				if(!songContains(musicList, ps)) {
-    					Log.v(TAG, "Adding " + ps.file.getPath());
-    					musicList.add(new Song(ps));
+    					Log.v(TAG, "Adding " + ps.getFile().getPath());
+    					musicList.add(new SongFile(ps));
     				}
     			}
     			
@@ -259,13 +251,13 @@ public class PlayQueue {
     				musicListPos = 0;
     			}
     			
-    			Song[] newNames = new Song [musicList.size()];
+    			SongFile[] newNames = new SongFile [musicList.size()];
     			int j = 0;
     			for(int i=0; i< musicNames.length; i++) {
-    				Song ns = musicNames[i];
-    				for(Song s : musicList) {
-    					Log.v(TAG, String.format("%s(%d) vs %s(%d)", s.filename, s.startSong, ns.filename, ns.startSong));
-    					if(s.startSong == ns.startSong && s.filename.equals(ns.filename)) {
+    				SongFile ns = musicNames[i];
+    				for(SongFile s : musicList) {
+    					Log.v(TAG, String.format("%s(%d) vs %s(%d)", s.getName(), s.getSubtune(), ns.getName(), ns.getSubtune()));
+    					if(s.getPath().equals(ns.getPath())) {
     						newNames[j++] = ns;
     						break;
     					}
@@ -295,7 +287,7 @@ public class PlayQueue {
 		if(musicListPos < 0) {
 			musicListPos += musicList.size();
 		}    		
-		return musicList.get(musicListPos).filename;
+		return musicList.get(musicListPos).getFile().getPath();
 	}
 	
 	public String next() {
@@ -307,21 +299,21 @@ public class PlayQueue {
 		if(musicListPos >= musicList.size()) {
 			musicListPos -= musicList.size();
 		}    	
-		return musicList.get(musicListPos).filename;
+		return musicList.get(musicListPos).getFile().getPath();
 	}
 	
 	public String current() { 
 		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return null;
 		}
-		return musicList.get(musicListPos).filename;
+		return musicList.get(musicListPos).getFile().getPath();
 	}
 	
 	public int startSong() { 
 		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return -1;
 		}
-		return musicList.get(musicListPos).startSong;
+		return musicList.get(musicListPos).getSubtune();
 	}
 
 	
@@ -333,15 +325,10 @@ public class PlayQueue {
 		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return null;
 		}
-		String n =  musicList.get(musicListPos).filename;
-		int s = musicList.get(musicListPos).startSong;
-		if(s >= 0) {
-			n = n + ";" + s;
-		}
-		return n;
+		return musicList.get(musicListPos).getPath();
 	}
 
-	public Song getNextSong() {
+	public SongFile getNextSong() {
 		updatePlaylist();
 		if(musicNames == null || musicNames.length < 2) {
 			return null;
@@ -353,7 +340,7 @@ public class PlayQueue {
 		return musicList.get(i);
 	}	
 
-	public Song getPrevSong() {
+	public SongFile getPrevSong() {
 		updatePlaylist();
 		if(musicNames == null || musicNames.length < 2) {
 			return null;

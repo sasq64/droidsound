@@ -8,8 +8,8 @@ public class SongFile {
 
 	private static final String TAG = SongFile.class.getSimpleName();
 	private int subtune;
-	private int length;
-	String fileName;
+	private int playtime;
+	private String fileName;
 	
 	private File file;
 	private String path;
@@ -20,8 +20,23 @@ public class SongFile {
 	private String zipName;
 	
 	//private String tuneString;
-	//private String title;
-	//private String composer;
+	private String title;
+	private String composer;
+	
+	public SongFile(SongFile s) {
+		subtune = s.subtune;
+		playtime = s.playtime;
+		fileName = s.fileName;
+		file = s.file;
+		path = s.path;
+		prefix = s.prefix;
+		suffix = s.suffix;
+		midfix = s.midfix;
+		zipPath = s.zipPath;
+		zipName = s.zipName;
+		title = s.title;
+		composer = s.composer;
+	}
 	
 	public SongFile(File f) {
 		init(f.getPath());
@@ -33,10 +48,21 @@ public class SongFile {
 	
 	private void init(String fname) {
 		subtune = -1;
-		length = -1;
+		playtime = -1;
 		
 		if(fname.startsWith("file://")) {
 			fname = fname.substring(7);
+		}
+		
+		title = composer = null;
+		
+		if(fname.indexOf('\t') >= 0) {
+			String t[] = fname.split("\t");
+			fname = t[0];
+			title = t[1];
+			if(t.length > 2) {
+				composer = t[2];
+			}
 		}
 		
 		String s[] = fname.split(";");
@@ -47,7 +73,7 @@ public class SongFile {
 		if(s.length > 1) {
 			if(s.length > 2) {
 				try {
-					length = Integer.parseInt(s[2]);
+					playtime = Integer.parseInt(s[2]);
 				} catch (NumberFormatException e) {}					
 			}
 			try {
@@ -83,7 +109,15 @@ public class SongFile {
 		
 		file = new File(path, fileName);
 		
-		Log.v(TAG, String.format("SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, length));
+		Log.v(TAG, String.format("SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, playtime));
+	}
+	
+	public String getTitle() {
+		return title;
+	}
+	
+	public String getComposer() {
+		return composer;
 	}
 
 	public String getPrefix() {
@@ -102,8 +136,8 @@ public class SongFile {
 		return subtune;
 	}
 	
-	public int getLength() {
-		return length;
+	public int getPlaytime() {
+		return playtime;
 	}
 	
 	public void changePrefix(String p) {
@@ -140,8 +174,8 @@ public class SongFile {
 
 	public String getPath() {
 		if(subtune >= 0) {
-			if(length >= 0) {
-				return path + "/" + fileName + ";" + subtune + ";" + length;
+			if(playtime >= 0) {
+				return path + "/" + fileName + ";" + subtune + ";" + playtime;
 			}
 			return path + "/" + fileName + ";" + subtune;
 		} else {

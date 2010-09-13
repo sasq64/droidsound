@@ -34,6 +34,7 @@ import android.view.KeyEvent;
 
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player.SongInfo;
 
@@ -909,11 +910,11 @@ public class PlayerService extends Service {
 	    	}
 			
 			// TODO : Check if next song is the same file and the same sub song
-			boolean ok = false;
+			/* boolean ok = false;
 			Log.v(TAG, "Current song is " + currentSongInfo.fileName);
-			PlayQueue.Song nextSong = playQueue.getNextSong();			
+			SongFile nextSong = playQueue.getNextSong();			
 			if(nextSong != null) {
-				Log.v(TAG, "Next song is " + nextSong.filename);
+				Log.v(TAG, "Next song is " + nextSong.getName());
 				if(song == nextSong.startSong && currentSongInfo.fileName.equals(nextSong.filename)) {
 					playQueue.next();
 					ok = true;
@@ -928,7 +929,7 @@ public class PlayerService extends Service {
 						ok = true;						
 					}
 				}
-			}
+			} */
 			
 			
  			player.setSubSong(song);
@@ -938,10 +939,10 @@ public class PlayerService extends Service {
 				performCallback(SONG_REPEAT);
 			}
 			
-			if(ok) {
-				info[SONG_FILENAME] = nextSong.filename + ";" + song;
-				performCallback(SONG_FILENAME);
-			}
+			//if(ok) {
+			//	info[SONG_FILENAME] = nextSong.filename + ";" + song;
+			//	performCallback(SONG_FILENAME);
+			//}
 			
 			return true;
 			

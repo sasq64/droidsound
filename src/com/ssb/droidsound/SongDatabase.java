@@ -1373,10 +1373,10 @@ public class SongDatabase implements Runnable {
 		if(songFile.exists()) {
 			if(songFile.getName().toUpperCase().endsWith(".PLIST")) {
 				Playlist newpl = Playlist.getPlaylist(songFile.getFile());
-				List<Playlist.Song> files = newpl.getSongs();
+				List<SongFile> files = newpl.getSongs();
 				Log.v(TAG, String.format("Adding %d files from playlist", files.size()));
-				for(Playlist.Song f2 : files) {
-					addToPlaylist(pl, new SongFile(f2.file, f2.startsong, f2.title));
+				for(SongFile f2 : files) {
+					addToPlaylist(pl, f2);
 				}
 				
 			} else {

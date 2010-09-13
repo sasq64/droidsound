@@ -106,7 +106,7 @@ struct uade_config {
 	UADE_CHAR_CONFIG(headphones2);
 	UADE_CHAR_CONFIG(ignore_player_check);
 
-	char *resampler;
+	const char *resampler;
 	char resampler_set;
 
 	UADE_CHAR_CONFIG(no_ep_end);
