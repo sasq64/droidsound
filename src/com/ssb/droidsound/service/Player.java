@@ -534,8 +534,8 @@ public class Player implements Runnable {
 						case PLAY:
 							
 							//int subtune = -1;
-							String song = (String)argument;
-							Log.v(TAG, "Playmod " + song);
+							SongFile song = (SongFile)argument;
+							Log.v(TAG, "Playmod " + song.getName());
 							/*int sc = song.indexOf(';');
 							if(sc > 0) {								
 								try {
@@ -544,7 +544,7 @@ public class Player implements Runnable {
 								}
 								song = song.substring(0, sc);
 							}*/
-							startSong(new SongFile(song));
+							startSong(song);
 							break;
 						case STOP:
 							if(currentState != State.STOPPED) {
@@ -775,7 +775,7 @@ public class Player implements Runnable {
 		}
 	}
 
-	public void playMod(String mod) {
+	public void playMod(SongFile mod) {
 		synchronized (cmdLock) {
 			command = Command.PLAY;
 			argument = mod;

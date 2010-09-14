@@ -411,7 +411,7 @@ public class PlayerService extends Service {
     	if(playQueue == null) {
     		return false;
     	}
-    	String song = playQueue.next();
+    	SongFile song = playQueue.next();
     	/*
     	int sc = song.indexOf(';');
 		if(sc > 0) {
@@ -430,8 +430,8 @@ public class PlayerService extends Service {
         	
     	
 		if(song != null) {    			
-       		song = playQueue.currentWithStartSong();       		
-       		info[SONG_FILENAME] = song;       		
+       		song = playQueue.current();       		
+       		info[SONG_FILENAME] = song.getPath();
        		createThread();
        		player.playMod(song);
        		return true;
@@ -443,10 +443,10 @@ public class PlayerService extends Service {
     	if(playQueue == null) {
     		return false;
     	}
-    	String song = playQueue.prev();    	
+    	SongFile song = playQueue.prev();    	
 		if(song != null) {    			
-       		song = playQueue.currentWithStartSong();
-       		info[SONG_FILENAME] = song;
+       		song = playQueue.current();
+       		info[SONG_FILENAME] = song.getPath();
        		createThread();
        		player.playMod(song);
        		return true;
@@ -758,35 +758,39 @@ public class PlayerService extends Service {
         if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
 			Uri uri = intent.getData();
 			if(uri == null) {
-				Bundle b = intent.getExtras();							
-				String f =  b.getString("musicFile");
+				Bundle b = intent.getExtras();		
+				SongFile song = null;
+				String ff =  b.getString("musicFile");
+				if(ff != null) {
+					song = new SongFile(ff);
+				}
 				int index = b.getInt("musicPos");
 				String [] names = (String []) b.getSerializable("musicList");
 				
 				playQueue = new PlayQueue(names, index, shuffleSongs);
 				
-				if(f == null) {
-					f = playQueue.current();
+				if(song == null) {
+					song = playQueue.current();
 				}
 
 				createThread();
-				if(f == null) {
+				if(song == null) {
 					String modname = (String) info[SONG_FILENAME];
 					if(names != null && modname != null) {
 						Log.v(TAG, "Got playlist without song");
 					}
 				} else {
-					Log.v(TAG, "Want to play list with " + f);
-					info[SONG_FILENAME] = f;
+					Log.v(TAG, "Want to play list with " + song.getPath());
+					info[SONG_FILENAME] = song.getPath();
 					info[SONG_PLAYLIST] = "";
-					player.playMod(f);
+					player.playMod(song);
 				}
 			} else {
 				Log.v(TAG, "Want to play " + intent.getDataString());
 				createThread();
 				info[SONG_PLAYLIST] = "";
 				info[SONG_FILENAME] = uri.getLastPathSegment();
-				player.playMod(intent.getDataString());
+				player.playMod(new SongFile(intent.getDataString()));
 			}
 		}
         
@@ -827,7 +831,7 @@ public class PlayerService extends Service {
 			
 			createThread();
 			info[SONG_FILENAME] = name;
-			player.playMod(name);
+			player.playMod(new SongFile(name));
 			
 			return true;
 		}
@@ -867,11 +871,11 @@ public class PlayerService extends Service {
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
 			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
-				String s = playQueue.currentWithStartSong();
+				SongFile s = playQueue.current();
 				if(s != null) {
-	           		info[SONG_FILENAME] = s; 		           		
+	           		info[SONG_FILENAME] = s.getPath(); 		           		
 	           		createThread();
-	           		player.playMod((String)info[SONG_FILENAME]);
+	           		player.playMod(s);
 	           		return true;
 	    		}
 			}
@@ -1026,10 +1030,10 @@ public class PlayerService extends Service {
 			Playlist pl = Playlist.getPlaylist(pf);
 			playQueue = new PlayQueue(pl, startIndex, shuffleSongs);
 
-			String mod = playQueue.currentWithStartSong();       		
+			SongFile mod = playQueue.current();       		
 
 			createThread();
-			info[SONG_FILENAME] = mod;
+			info[SONG_FILENAME] = mod.getPath();
 			info[SONG_PLAYLIST] = name;
 
 			player.playMod(mod);
@@ -1070,12 +1074,12 @@ public class PlayerService extends Service {
 			if(shuffleSongs) {
 				shuffle();								
 			} */
-			String name = playQueue.currentWithStartSong();       		
-			Log.v(TAG, "PlayList called " + name);
+			SongFile song = playQueue.current();       		
+			Log.v(TAG, "PlayList called " + song.getPath());
 			createThread();
-			info[SONG_FILENAME] = name;
+			info[SONG_FILENAME] = song.getPath();
 			info[SONG_PLAYLIST] = "";
-			player.playMod(name);
+			player.playMod(song);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 

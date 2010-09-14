@@ -115,23 +115,10 @@ public class PlayQueue {
 			}
 		}
 	}
-	
-	
-	public int setCurrent(String name) {
-		for(int i=0; i<musicList.size(); i++) {
-			Log.v(TAG, String.format("CMP %s to %s", musicList.get(i).getPath(), name));
-			if(musicList.get(i).getPath().equals(name)) {
-				musicListPos = i;
-				return i;
-			}
-		}
-		return -1;
-	}
-	
-	
+
 	void setShuffle(boolean on) {
 		
-		String current = currentWithStartSong();
+		SongFile current = current();
 		if(on && !shuffleOn) {
 			// Turned on
 			shuffle();
@@ -152,7 +139,7 @@ public class PlayQueue {
 		SongFile t;
 		int sz = musicList.size();
 
-		String current = currentWithStartSong();
+		SongFile current = current();
 		
 		for (int i=0; i<sz; i++) {					
 		    int randomPosition = rgen.nextInt(sz);
@@ -217,13 +204,13 @@ public class PlayQueue {
     			
     			
     			
-    			String current = currentWithStartSong();
+    			SongFile current = current();
     			boolean setNext = false;
 				List<SongFile> removes = new ArrayList<SongFile>();
     			for(SongFile s : musicList) {
     				if(setNext) {
     					Log.v(TAG, "Removed current song, changing to " + s);
-    					current = s.getPath();
+    					current = s;
     					setNext = false;
     				}
     				if(!songContains(psongs, s)) {
@@ -277,8 +264,8 @@ public class PlayQueue {
        	}
     }
 
-	
-	public String prev() {
+
+	public SongFile prev() {
 		updatePlaylist();
 		if(musicNames == null) {
 			return null;
@@ -287,10 +274,10 @@ public class PlayQueue {
 		if(musicListPos < 0) {
 			musicListPos += musicList.size();
 		}    		
-		return musicList.get(musicListPos).getFile().getPath();
+		return musicList.get(musicListPos);
 	}
 	
-	public String next() {
+	public SongFile next() {
 		updatePlaylist();
 		if(musicNames == null || musicNames.length < 2) {
 			return null;
@@ -299,14 +286,14 @@ public class PlayQueue {
 		if(musicListPos >= musicList.size()) {
 			musicListPos -= musicList.size();
 		}    	
-		return musicList.get(musicListPos).getFile().getPath();
+		return musicList.get(musicListPos);
 	}
 	
-	public String current() { 
+	public SongFile current() { 
 		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return null;
 		}
-		return musicList.get(musicListPos).getFile().getPath();
+		return musicList.get(musicListPos);
 	}
 	
 	public int startSong() { 
@@ -320,13 +307,37 @@ public class PlayQueue {
 	public void setCurrent(int i) {		
 		musicListPos = i;
 	}
+	
+	
+	public int setCurrent(String name) {
+		for(int i=0; i<musicList.size(); i++) {
+			Log.v(TAG, String.format("CMP %s to %s", musicList.get(i).getPath(), name));
+			if(musicList.get(i).getPath().equals(name)) {
+				musicListPos = i;
+				return i;
+			}
+		}
+		return -1;
+	}
 
+	public int setCurrent(SongFile song) {
+		for(int i=0; i<musicList.size(); i++) {
+			Log.v(TAG, String.format("CMP %s to %s", musicList.get(i).getPath(), song.getPath()));
+			if(musicList.get(i).getPath().equals(song.getPath())) {
+				musicListPos = i;
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+/*
 	public String currentWithStartSong() {
 		if(musicNames == null || musicListPos < 0 || musicListPos >= musicList.size()) {
 			return null;
 		}
 		return musicList.get(musicListPos).getPath();
-	}
+	} */
 
 	public SongFile getNextSong() {
 		updatePlaylist();
