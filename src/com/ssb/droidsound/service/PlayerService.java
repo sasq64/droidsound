@@ -95,9 +95,7 @@ public class PlayerService extends Service {
 
 	private SongInfo currentSongInfo = new SongInfo();
 	
-	//private boolean userInterferred;
-	//int info[SONG_REPEAT] = RM_CONTINUE;
-	private boolean silenceDetect;
+	//private boolean silenceDetect;
 	private boolean respectLength = true;
 	private boolean shuffleSongs;
 	
@@ -585,8 +583,6 @@ public class PlayerService extends Service {
         	
 			@Override
 			public void onReceive(Context context, Intent intent) {
-				// TODO Auto-generated method stub
-				
 				Log.v(TAG, String.format("##### GOT INTENT %s", intent.getAction()));
 				
 				if(intent.getAction().equals(Intent.ACTION_MEDIA_BUTTON)) {
@@ -823,11 +819,6 @@ public class PlayerService extends Service {
 		@Override
 		public boolean playMod(String name) throws RemoteException {
 			Log.v(TAG, "Playmod called " + name);
-			
-			// TODO: Fix this, maybe?
-			//if(musicList != null && musicListPos >= 0) {
-				//musicList.get(musicListPos) = name;
-			//}
 			
 			createThread();
 			info[SONG_FILENAME] = name;
@@ -1103,7 +1094,7 @@ public class PlayerService extends Service {
 
 		@Override
 		public String[] getSongInfo() throws RemoteException {
-			// TODO Auto-generated method stub
+
 			return currentSongInfo.details;
 		}
 

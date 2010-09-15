@@ -158,7 +158,7 @@ public class PlayQueue {
     				}
     				if(!songContains(psongs, s)) {
     					Log.v(TAG, "Removing " + s.getPath());    					
-    					//musicList.remove(s);
+
     					removes.add(s);
     					if(s.getPath().equals(current)) {
     						setNext = true;

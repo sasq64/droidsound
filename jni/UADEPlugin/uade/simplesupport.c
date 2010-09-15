@@ -205,7 +205,17 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
 			ptr += 4;
 		}
 	}
+	else if(strncasecmp(ptr, "smp.", 4) == 0)
+		{
+			char *ext = strcasestr(ptr, ".rjp");
+			if(!ext)
+				ext = strcasestr(ptr, ".jpn");
 
+			if(ext) {
+				strcpy(ext, ".smp");
+				ptr += 4;
+			}
+		}
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Final name '%s'", ptr);
 
 	if (uade_amiga_scandir(real, dirname, ptr, sizeof(real))) {

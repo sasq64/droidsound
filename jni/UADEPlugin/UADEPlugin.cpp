@@ -519,6 +519,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	struct eagleplayer *player = state.ep;
 
 	if(!player) {
+		env->ReleaseStringUTFChars(fname, filename);
 		return 0;
 	}
 
@@ -655,14 +656,17 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 	int rc = 0;
 	while(rc <= 0) {
 		rc = run_client();
-		if(rc < 0)
+		if(rc < 0) {
+			env->ReleaseShortArrayElements(sArray, dest, 0);
 			return -1;
+		}
 	}
 
 	uade_effect_run(&state.effects, dest, (soundPtr - dest)/2);
 
 
-    env->ReleaseShortArrayElements(sArray, dest, 0);
+	env->ReleaseShortArrayElements(sArray, dest, 0);
+
 	return soundPtr - dest;
 
 

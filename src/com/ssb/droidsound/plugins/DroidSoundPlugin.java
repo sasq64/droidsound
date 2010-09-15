@@ -205,8 +205,8 @@ public abstract class DroidSoundPlugin {
 		
 	}
 	
-	static String [] pref0 = new String [] { "MDAT", "TFX", "SNG" };
-	static String [] pref1 = new String [] { "SMPL", "SAM", "INS" };
+	static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
+	static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
 
 	public static String getSecondaryFile(String path) {
 				
@@ -221,7 +221,7 @@ public abstract class DroidSoundPlugin {
 		String ext = path.substring(dot+1).toUpperCase();		
 		String pref = path.substring(slash+1, firstDot).toUpperCase();
 
-		for(int i=0; i<3; i++) {
+		for(int i=0; i<pref0.length; i++) {
 			if(pref.equals(pref0[i])) {
 				return path.substring(0, slash+1) + pref1[i] + path.substring(firstDot); 
 			} else

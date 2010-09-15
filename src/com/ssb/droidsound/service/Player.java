@@ -10,6 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipEntry;
 
@@ -401,12 +402,25 @@ public class Player implements Runnable {
 		}
 
 		if(currentPlugin != null) {
-			Log.w(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
+			Log.v(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
 
+			Log.v(TAG, String.format("'%s' by '%s'", song.getTitle(), song.getComposer()));
+			
 			synchronized (this) {
 				currentSong.fileName = song.getPath(); //songName;
-				currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
-				currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
+				
+				if(song.getTitle() != null) {
+					currentSong.title = song.getTitle();
+				} else {
+					currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
+				}
+
+				if(song.getComposer() != null) {
+					currentSong.author = song.getComposer();
+				} else {
+					currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
+				}
+
 				currentSong.copyright = getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT);
 				currentSong.type = getPluginInfo(DroidSoundPlugin.INFO_TYPE);
 				//currentSong.game = getPluginInfo(DroidSoundPlugin.INFO_GAME);
@@ -659,12 +673,13 @@ public class Player implements Runnable {
 					}
 
 					pos = p;
+					int playPos = pos * 10 / (FREQ/100);
 					
 					if(pos >= lastPos + FREQ/2) {
 						//Log.v(TAG, String.format("PLAY %d sec %d pos = %d msec ", currentPosition, pos, pos * 1000 / 44100));
 
 						if(aCount == 0) aCount = 1;
-						Message msg = mHandler.obtainMessage(MSG_PROGRESS, pos * 10 / (FREQ/100), 100 - (int) (audioTime / aCount));
+						Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos, 100 - (int) (audioTime / aCount));
 						aCount = 0;
 						audioTime = 0;
 						mHandler.sendMessage(msg);
@@ -687,23 +702,28 @@ public class Player implements Runnable {
 						
 					}
 					//Log.v(TAG, "write " + len);
-					if(len > 0) {						
-						long t = System.currentTimeMillis();
-						audioTrack.write(samples, 0, len);
-						long tt = System.currentTimeMillis();
-						if(lastTime > 0) {							
-							frameTime = (tt - lastTime);
-							long d = tt - t;
-							//Log.v(TAG, String.format("Frame %d, write %d", frameTime, d));
-							if(frameTime > 0) {
-								audioTime += ((d * 100) / frameTime);
-								aCount++;
-							}
+					
+					if(len < 0) {
+						if(playPos > 5000) {
+							songEnded = true;
 						}
-						lastTime = tt;
-					} else {
-						songEnded = true;						
+						len = bufSize/16;						
+						Arrays.fill(samples, 0, len, (short) 0);
 					}
+											
+					long t = System.currentTimeMillis();
+					audioTrack.write(samples, 0, len);
+					long tt = System.currentTimeMillis();
+					if(lastTime > 0) {							
+						frameTime = (tt - lastTime);
+						long d = tt - t;
+						//Log.v(TAG, String.format("Frame %d, write %d", frameTime, d));
+						if(frameTime > 0) {
+							audioTime += ((d * 100) / frameTime);
+							aCount++;
+						}
+					}
+					lastTime = tt;
 					
 					//Log.v(TAG, "loop");
 					noPlayWait = 0;

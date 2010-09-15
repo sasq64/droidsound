@@ -389,7 +389,7 @@ public class PlayListView extends ListView {
 			}
 			FileInfo [] names = new FileInfo [ files.size() ];
 			int i = 0;
-			for(FileInfo f : files) {				
+			for(FileInfo f : files) {
 				names[i++] = f;
 			}
 			return names;
