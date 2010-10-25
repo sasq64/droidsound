@@ -3,6 +3,6 @@
      <item android:state_pressed="true"
            android:drawable="@drawable/mg_pause_h" /> <!-- pressed -->
      <item android:state_focused="true"
-           android:drawable="@drawable/mg_pause" /> <!-- focused -->
+           android:drawable="@drawable/mg_pause_h" /> <!-- focused -->
      <item android:drawable="@drawable/mg_pause" /> <!-- default -->
  </selector>

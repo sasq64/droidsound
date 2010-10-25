@@ -3,6 +3,6 @@
      <item android:state_pressed="true"
            android:drawable="@drawable/mg_forward_h" /> <!-- pressed -->
      <item android:state_focused="true"
-           android:drawable="@drawable/mg_forward" /> <!-- focused -->
+           android:drawable="@drawable/mg_forward_h" /> <!-- focused -->
      <item android:drawable="@drawable/mg_forward" /> <!-- default -->
  </selector>

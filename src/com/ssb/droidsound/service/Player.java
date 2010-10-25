@@ -112,6 +112,7 @@ public class Player implements Runnable {
 	//private int switchPos = -1;
 	private boolean songEnded = false;
 	private boolean reinitAudio;
+	private int queuedFrames;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -650,9 +651,16 @@ public class Player implements Runnable {
 					}					
 				}
 				
+				/*
+				 * Always feed track - play zeroes after song ends
+				 * Report song end at correct time
+				 * 
+				 */
+				
 				if(currentState == State.PLAYING) {
 					//Log.v(TAG, "Get sound data");
 					int len = 0;
+					
 					if(!songEnded) {
 						len = currentPlugin.getSoundData(samples, bufSize/16);
 					} else {
@@ -710,20 +718,22 @@ public class Player implements Runnable {
 						len = bufSize/16;						
 						Arrays.fill(samples, 0, len, (short) 0);
 					}
-											
-					long t = System.currentTimeMillis();
-					audioTrack.write(samples, 0, len);
-					long tt = System.currentTimeMillis();
-					if(lastTime > 0) {							
-						frameTime = (tt - lastTime);
-						long d = tt - t;
-						//Log.v(TAG, String.format("Frame %d, write %d", frameTime, d));
-						if(frameTime > 0) {
-							audioTime += ((d * 100) / frameTime);
-							aCount++;
+					if(len > 0) {			
+						long t = System.currentTimeMillis();
+						audioTrack.write(samples, 0, len);
+
+						long tt = System.currentTimeMillis();
+						if(lastTime > 0) {							
+							frameTime = (tt - lastTime);
+							long d = tt - t;
+							//Log.v(TAG, String.format("Frame %d, write %d", frameTime, d));
+							if(frameTime > 0) {
+								audioTime += ((d * 100) / frameTime);
+								aCount++;
+							}
 						}
+						lastTime = tt;
 					}
-					lastTime = tt;
 					
 					//Log.v(TAG, "loop");
 					noPlayWait = 0;

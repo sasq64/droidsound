@@ -286,6 +286,8 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getSoundData
 
 	env->ReleaseShortArrayElements(bArray, (jshort*)ptr, 0);
 
+	if(rc == 0) return -1;
+
 	return rc / 2;
 }
 

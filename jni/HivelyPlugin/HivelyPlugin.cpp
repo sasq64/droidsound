@@ -49,6 +49,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_HivelyPlugin_N_1load(JNI
 
 	struct hvl_tune *tune = hvl_LoadTuneMemory((uint8*)ptr, size, 44100, 0);
 
+	if(tune) {
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "HivelyPlugin", "CHAN %d NAME '%s' TIME %d", tune->ht_Channels, tune->ht_Name, tune->ht_PlayingTime);
+	}
+
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
 	return (jlong)tune;

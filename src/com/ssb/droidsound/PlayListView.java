@@ -178,13 +178,12 @@ public class PlayListView extends ListView {
 				return 0;
 			}
 		}
-    	
 		
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 
 			LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
-
+			
 			if(convertView == null) {
 				convertView = inflater.inflate(R.layout.songlist_item, parent, false);
 				ViewGroup vg = (ViewGroup)convertView;

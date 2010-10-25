@@ -32,6 +32,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.KeyEvent;
 
+import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.SongFile;
@@ -372,7 +373,7 @@ public class PlayerService extends Service {
 			player.setBufSize(bufSize);
 		    playerThread = new Thread(player);
 		    playerThread.setPriority(Thread.MAX_PRIORITY);
-		    playerThread.start();		    
+		    playerThread.start();
     	}
     }
     
@@ -431,6 +432,8 @@ public class PlayerService extends Service {
        		song = playQueue.current();       		
        		info[SONG_FILENAME] = song.getPath();
        		createThread();
+
+       		beforePlay(song.getName());
        		player.playMod(song);
        		return true;
     	}
@@ -446,18 +449,15 @@ public class PlayerService extends Service {
        		song = playQueue.current();
        		info[SONG_FILENAME] = song.getPath();
        		createThread();
+       		beforePlay(song.getName());
        		player.playMod(song);
        		return true;
     	}
 		return false;
     }
     
-
-    
-    private static final Class[] mStartForegroundSignature = new Class[] {
-        int.class, Notification.class};
-    private static final Class[] mStopForegroundSignature = new Class[] {
-        boolean.class};
+    private static final Class[] mStartForegroundSignature = new Class[] { int.class, Notification.class};
+    private static final Class[] mStopForegroundSignature = new Class[] { boolean.class};
 
     private NotificationManager mNM;
     private Method mStartForeground;
@@ -465,7 +465,7 @@ public class PlayerService extends Service {
     private Object[] mStartForegroundArgs = new Object[2];
     private Object[] mStopForegroundArgs = new Object[1];
 
-	private PowerManager.WakeLock wakeLock;
+	//private PowerManager.WakeLock wakeLock;
 
 	private Notification notification;
 
@@ -474,6 +474,8 @@ public class PlayerService extends Service {
 	protected int bufSize = 0x40000;
 
 	protected int defaultLength = 0;
+
+	//private boolean foreground;
 
     /**
      * This is a wrapper around the new startForeground method, using the older
@@ -488,17 +490,19 @@ public class PlayerService extends Service {
                 mStartForeground.invoke(this, mStartForegroundArgs);
             } catch (InvocationTargetException e) {
                 // Should not happen.
-                Log.w("ApiDemos", "Unable to invoke startForeground", e);
+                Log.w(TAG, "Unable to invoke startForeground", e);
             } catch (IllegalAccessException e) {
                 // Should not happen.
-                Log.w("ApiDemos", "Unable to invoke startForeground", e);
+                Log.w(TAG, "Unable to invoke startForeground", e);
             }
+            //foreground = true;
             return;
         }
 
         // Fall back on the old API.
         setForeground(true);
         mNM.notify(id, notification);
+        //foreground = true;
     }
 
     /**
@@ -513,11 +517,12 @@ public class PlayerService extends Service {
                 mStopForeground.invoke(this, mStopForegroundArgs);
             } catch (InvocationTargetException e) {
                 // Should not happen.
-                Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+                Log.w(TAG, "Unable to invoke stopForeground", e);
             } catch (IllegalAccessException e) {
                 // Should not happen.
-                Log.w("ApiDemos", "Unable to invoke stopForeground", e);
+                Log.w(TAG, "Unable to invoke stopForeground", e);
             }
+            //foreground = false;
             return;
         }
 
@@ -525,6 +530,7 @@ public class PlayerService extends Service {
         // foreground state, since we could be killed at that point.
         mNM.cancel(id);
         setForeground(false);
+        //foreground = false;
     }
 
     
@@ -617,6 +623,7 @@ public class PlayerService extends Service {
 								switch (keycode) {							 
 				                case KeyEvent.KEYCODE_MEDIA_STOP:
 				                	player.stop();
+				                	whenStopped();
 				        			info[SONG_REPEAT] = defaultRepeatMode;
 				        			performCallback(SONG_REPEAT);
 				                    break;
@@ -711,39 +718,34 @@ public class PlayerService extends Service {
 		
 		Log.v(TAG, "PlayerService created");
 		
-		 mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-	    try {
-	        mStartForeground = getClass().getMethod("startForeground", mStartForegroundSignature);
-	        mStopForeground = getClass().getMethod("stopForeground", mStopForegroundSignature);
-	    } catch (NoSuchMethodException e) {
-	        // Running on an older platform.
-	        mStartForeground = mStopForeground = null;
-	    }
+		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+		try {
+			mStartForeground = getClass().getMethod("startForeground", mStartForegroundSignature);
+			mStopForeground = getClass().getMethod("stopForeground", mStopForegroundSignature);
+		} catch (NoSuchMethodException e) {
+			// Running on an older platform.
+			mStartForeground = mStopForeground = null;
+		}
 	    
-	    // notification = new Notification(R.drawable.note, "Droidsound", System.currentTimeMillis());				
-		// Intent notificationIntent = new Intent(this, PlayerActivity.class);
-		// contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
-	    // notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
-	    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		notification = new Notification(R.drawable.note, "Droidsound", System.currentTimeMillis());				
+		Intent notificationIntent = new Intent(this, PlayerActivity.class);
+		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
+	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
+	    //PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
 	    //wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Droidsound");
 	    //wakeLock.acquire();
 	}
 	
 	void beforePlay(String name) {
 		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
-		
-		if(!wakeLock.isHeld()) {
-			wakeLock.acquire();
-		}
-	    startForegroundCompat(R.string.notification, notification);
+		//if(!foreground)
+			startForegroundCompat(R.string.notification, notification);
 	    
 	}
 	
 	void whenStopped() {
-		stopForegroundCompat(R.string.notification);
-		if(wakeLock.isHeld()) {
-			wakeLock.release();
-		}
+		//if(foreground)
+			stopForegroundCompat(R.string.notification);
 	}
 	
 	@Override
@@ -779,6 +781,7 @@ public class PlayerService extends Service {
 					Log.v(TAG, "Want to play list with " + song.getPath());
 					info[SONG_FILENAME] = song.getPath();
 					info[SONG_PLAYLIST] = "";
+					beforePlay(song.getName());
 					player.playMod(song);
 				}
 			} else {
@@ -786,7 +789,9 @@ public class PlayerService extends Service {
 				createThread();
 				info[SONG_PLAYLIST] = "";
 				info[SONG_FILENAME] = uri.getLastPathSegment();
-				player.playMod(new SongFile(intent.getDataString()));
+				SongFile song = new SongFile(intent.getDataString());
+				beforePlay(song.getName());
+				player.playMod(song);
 			}
 		}
         
@@ -807,6 +812,7 @@ public class PlayerService extends Service {
 		unregisterReceiver(mediaReceiver);
 		
 		player.stop();
+		whenStopped();
 		player = null;
 		playerThread = null;
 	}
@@ -822,8 +828,9 @@ public class PlayerService extends Service {
 			
 			createThread();
 			info[SONG_FILENAME] = name;
-			player.playMod(new SongFile(name));
-			
+			SongFile song = new SongFile(name);
+			beforePlay(song.getName());			
+			player.playMod(song);
 			return true;
 		}
 
@@ -866,6 +873,7 @@ public class PlayerService extends Service {
 				if(s != null) {
 	           		info[SONG_FILENAME] = s.getPath(); 		           		
 	           		createThread();
+	    			beforePlay(s.getName());			
 	           		player.playMod(s);
 	           		return true;
 	    		}
@@ -878,7 +886,8 @@ public class PlayerService extends Service {
 
 		@Override
 		public void stop() throws RemoteException {
-			player.stop();			
+			player.stop();
+			whenStopped();
 	    	//userInterferred = false;
 			info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
@@ -1027,6 +1036,7 @@ public class PlayerService extends Service {
 			info[SONG_FILENAME] = mod.getPath();
 			info[SONG_PLAYLIST] = name;
 
+			beforePlay(mod.getName());
 			player.playMod(mod);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
@@ -1070,6 +1080,7 @@ public class PlayerService extends Service {
 			createThread();
 			info[SONG_FILENAME] = song.getPath();
 			info[SONG_PLAYLIST] = "";
+			beforePlay(song.getName());
 			player.playMod(song);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);

@@ -3,8 +3,8 @@
 	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
 	 android:layout_gravity="center_horizontal" > 
 		<com.ssb.droidsound.FontTextView android:id="@+id/seconds_text" style="@style/LEDText" font="led" android:text="00:00"
-		android:layout_width="96dp" />
-		<com.ssb.droidsound.FontTextView android:text="/ " style="@style/LEDText" font="led" />
+		android:layout_width="86dp" />
+		<com.ssb.droidsound.FontTextView android:text="/" style="@style/LEDText" font="led" />
 		<com.ssb.droidsound.FontTextView android:id="@+id/total_text" style="@style/LEDText" font="led" android:text="00:00" 
 		android:layout_width="96dp"/>		
 		<com.ssb.droidsound.FontTextView android:id="@+id/plus_text" style="@style/LEDText" font="led"
@@ -13,6 +13,12 @@
 			android:textSize="40dp"
 			android:textColor="#ff6060" android:gravity="center"
 			android:text="+" android:layout_gravity="center_vertical" />
+		<com.ssb.droidsound.FontTextView android:id="@+id/wake_text" style="@style/LEDText" font="led"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:paddingLeft="10dp" android:paddingRight="10dp"
+			android:textSize="24dp"
+			android:textColor="#606060" android:gravity="center"
+			android:text="w" android:layout_gravity="center_vertical" />
 	</LinearLayout>	
 
 	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"

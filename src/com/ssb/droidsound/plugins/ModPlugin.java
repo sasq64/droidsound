@@ -24,6 +24,10 @@ public class ModPlugin extends DroidSoundPlugin {
 		extensions.add("XM");
 		extensions.add("S3M");
 		extensions.add("IT");
+		extensions.add("UMX");
+		extensions.add("ULT");
+		extensions.add("669");
+		extensions.add("STM");		
 	}
 	
 	long currentSong = 0;
