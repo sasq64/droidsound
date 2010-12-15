@@ -1415,10 +1415,10 @@ public class PlayerActivity extends Activity implements
 					songPos % 60));
 			break;
 		case PlayerService.SONG_CPULOAD:
-			if (lowText != null) {
-				aTime = aTime * 0.7F + value * 0.3F;
-				lowText.setText(String.format("CPU %d%%", (int) aTime));
-			}
+			//if (lowText != null) {
+			//	aTime = aTime * 0.7F + value * 0.3F;
+			//	lowText.setText(String.format("CPU %d%%", (int) aTime));
+			//}
 			break;
 		case PlayerService.SONG_SUBSONG:
 			subTune = value;
