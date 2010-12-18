@@ -279,6 +279,11 @@ public class UADEPlugin extends DroidSoundPlugin {
 			}
 			
 			N_init(droidDir.getPath());
+			try {
+				Thread.sleep(800);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			inited = true;
 		}
 	}

@@ -59,8 +59,7 @@ import com.ssb.droidsound.PlayListView.FileInfo;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 
-public class PlayerActivity extends Activity implements
-		PlayerServiceConnection.Callback {
+public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
 
 	public static final String DROIDSOUND_VERSION = "1.1beta3";

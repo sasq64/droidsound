@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 
 public abstract class DroidSoundPlugin {
 
@@ -64,6 +65,9 @@ public abstract class DroidSoundPlugin {
 			pluginList.add(new ModPlugin());
 			pluginList.add(new GMEPlugin());
 			pluginList.add(new HivelyPlugin());
+			pluginList.add(new MP3Plugin());
+
+			// Keep last
 			pluginList.add(new UADEPlugin());
 		}
 		return pluginList;				
@@ -232,4 +236,6 @@ public abstract class DroidSoundPlugin {
 		
 		return null;
 	}
+	
+	public MediaPlayer getMediaPlayer() { return null; }
 }

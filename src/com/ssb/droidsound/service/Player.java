@@ -18,6 +18,7 @@ import android.content.Context;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -482,6 +483,14 @@ public class Player implements Runnable {
 
 			Message msg = mHandler.obtainMessage(MSG_NEWSONG);
 			mHandler.sendMessage(msg);
+			
+			MediaPlayer mp = currentPlugin.getMediaPlayer();
+			if(mp != null) {
+				currentState = State.PLAYING;
+				lastPos = -1000;
+				mp.start();
+				return;
+			}
 
 			if(flush) {
 				audioTrack.stop();
@@ -543,11 +552,11 @@ public class Player implements Runnable {
 				if(command != Command.NO_COMMAND) {
 					
 					Log.v(TAG, String.format("Command %s while in state %s", command.toString(), currentState.toString()));
+					
 
 					synchronized (cmdLock) {
 						switch(command) {
 						case PLAY:
-							
 							//int subtune = -1;
 							SongFile song = (SongFile)argument;
 							Log.v(TAG, "Playmod " + song.getName());
@@ -565,14 +574,20 @@ public class Player implements Runnable {
 							if(currentState != State.STOPPED) {
 								//audioTrack.pause();
 								Log.v(TAG, "STOP");
-								audioTrack.stop();
-								audioTrack.flush();
-								
-								if(reinitAudio) {
-									audioTrack.release();
-									audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
-									samples = new short [bufSize/2];
-									reinitAudio = false;
+								MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+								if(mp != null) {
+									mp.stop();
+								} else {
+									
+									audioTrack.stop();
+									audioTrack.flush();
+									
+									if(reinitAudio) {
+										audioTrack.release();
+										audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
+										samples = new short [bufSize/2];
+										reinitAudio = false;
+									}
 								}
 								
 								currentPlugin.unload();
@@ -632,7 +647,11 @@ public class Player implements Runnable {
 									currentState = State.PAUSED;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 2, 0);
 									mHandler.sendMessage(msg);
-									audioTrack.pause();
+									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+									if(mp != null)
+										mp.pause();
+									else
+										audioTrack.pause();
 								}
 								
 								break;
@@ -641,7 +660,11 @@ public class Player implements Runnable {
 									currentState = State.PLAYING;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 1, 0);
 									mHandler.sendMessage(msg);
-									audioTrack.play();
+									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+									if(mp != null)
+										mp.start();
+									else
+										audioTrack.play();
 								}
 								
 								break;
@@ -660,6 +683,19 @@ public class Player implements Runnable {
 				if(currentState == State.PLAYING) {
 					//Log.v(TAG, "Get sound data");
 					int len = 0;
+					MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+					if(mp != null) {
+						
+						if(!mp.isPlaying()) {
+							songEnded = true;
+						}
+						
+						int playPos = mp.getCurrentPosition();						
+						Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos, 0);
+						mHandler.sendMessage(msg);
+						Thread.sleep(100);
+						continue;
+					}
 					
 					if(!songEnded) {
 						len = currentPlugin.getSoundData(samples, bufSize/16);
@@ -677,7 +713,7 @@ public class Player implements Runnable {
 						lastTime = -1;
 						currentState = State.SWITCHING;
 						Message msg = mHandler.obtainMessage(MSG_DONE);
-						mHandler.sendMessage(msg);						
+						mHandler.sendMessage(msg);			
 					}
 
 					pos = p;
