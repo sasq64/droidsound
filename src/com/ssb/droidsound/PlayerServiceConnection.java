@@ -202,6 +202,12 @@ public class PlayerServiceConnection implements ServiceConnection {
 		return false;
 	}
 	public boolean seekTo(int msec) {
+		try {
+			return mService.seekTo(msec);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return false;
 	}
 	public void stop() {

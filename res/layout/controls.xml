@@ -1,12 +1,26 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
-    android:layout_width="fill_parent" android:layout_height="fill_parent" >
-	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
-	 android:layout_gravity="center_horizontal" > 
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" >
+	<LinearLayout android:layout_marginTop="5dp" android:layout_width="fill_parent" android:layout_height="wrap_content" android:orientation="horizontal"
+	  >
 		<com.ssb.droidsound.FontTextView android:id="@+id/seconds_text" style="@style/LEDText" font="led" android:text="00:00"
-		android:layout_width="86dp" />
-		<com.ssb.droidsound.FontTextView android:text="/" style="@style/LEDText" font="led" />
+		 android:textSize="26dp" android:layout_width="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginRight="8dp"  android:layout_marginLeft="5dp" />
+ 		<SeekBar android:progressDrawable="@drawable/seekbar" android:id="@+id/song_seek" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1.0" />
 		<com.ssb.droidsound.FontTextView android:id="@+id/total_text" style="@style/LEDText" font="led" android:text="00:00" 
-		android:layout_width="96dp"/>		
+		 android:textSize="26dp"  android:layout_width="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginLeft="8dp" android:layout_marginRight="5dp" />
+	</LinearLayout>	
+
+	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
+		android:layout_gravity="center_horizontal" >	
+		<com.ssb.droidsound.FontTextView android:id="@+id/songs_text"  style="@style/LEDText" font="led"
+		  android:textColor="#6060ff" 
+		  android:text="01/01" android:layout_gravity="center_vertical" android:textSize="25dp" />
+		<com.ssb.droidsound.FontTextView android:id="@+id/shuffle_text" style="@style/LEDText" font="led"
+			android:layout_width="64dp" android:layout_height="wrap_content"
+			android:textColor="#80ffc0" android:gravity="center" android:layout_marginLeft="16dp"
+			android:text="SEQ" android:textSize="25dp" android:layout_gravity="center_vertical" />
+		<com.ssb.droidsound.FontTextView android:id="@+id/repeat_text" style="@style/LEDText" font="led"
+			android:layout_width="64dp" android:layout_height="wrap_content"
+			android:textColor="#80ffc0" android:gravity="center"
+			android:text="CONT" android:textSize="25dp" android:layout_gravity="center_vertical" />
 		<com.ssb.droidsound.FontTextView android:id="@+id/plus_text" style="@style/LEDText" font="led"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:paddingLeft="10dp" android:paddingRight="10dp"
@@ -19,20 +33,6 @@
 			android:textSize="24dp"
 			android:textColor="#606060" android:gravity="center"
 			android:text="w" android:layout_gravity="center_vertical" />
-	</LinearLayout>	
-
-	<LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
-		android:layout_gravity="center_horizontal" >	
-		<com.ssb.droidsound.FontTextView android:id="@+id/songs_text"  style="@style/LEDText" font="led"
-			 android:text="[01/01]" android:layout_gravity="center_vertical" />
-		<com.ssb.droidsound.FontTextView android:id="@+id/shuffle_text" style="@style/LEDText" font="led"
-			android:layout_width="64dp" android:layout_height="wrap_content"
-			android:textColor="#80ffc0" android:gravity="center" android:layout_marginLeft="16dp"
-			android:text="SEQ" android:textSize="25dp" android:layout_gravity="center_vertical" />
-		<com.ssb.droidsound.FontTextView android:id="@+id/repeat_text" style="@style/LEDText" font="led"
-			android:layout_width="64dp" android:layout_height="wrap_content"
-			android:textColor="#80ffc0" android:gravity="center"
-			android:text="CONT" android:textSize="25dp" android:layout_gravity="center_vertical" />
 	</LinearLayout>
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="horizontal"
 	    android:layout_width="wrap_content" android:layout_height="fill_parent"

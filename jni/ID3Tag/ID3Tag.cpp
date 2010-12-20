@@ -66,11 +66,16 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_ID3Tag_closeID3Tag(JNIEnv *
 #define INFO_SUBTUNES 6
 #define INFO_STARTTUNE 7
 
+#define ID3INFO_GENRE 100
+#define ID3INFO_COMMENT 101
+#define ID3INFO_ALBUM 102
+#define ID3INFO_TRACK 103
+
 JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo(JNIEnv *env, jobject obj, jint what)
 {
 	struct id3_file *id3file = (struct id3_file*)env->GetLongField(obj, refField);
 	struct id3_tag *tag = id3_file_tag(id3file);
-
+	const id3_ucs4_t *title = NULL;
 	struct id3_frame *frame = NULL;
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "id3tag %p", tag);
@@ -84,17 +89,42 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo(JNI
 		break;
 	case INFO_COPYRIGHT:
 		frame = id3_tag_findframe(tag, ID3_FRAME_YEAR, 0);
+		break;
+	case ID3INFO_GENRE:
+		frame = id3_tag_findframe(tag, ID3_FRAME_GENRE, 0);
+		if(frame) {
+			title = id3_field_getstrings(&frame->fields[1], 0);
+			title = id3_genre_name(title);
+		}
+		break;
+	case ID3INFO_ALBUM:
+		frame = id3_tag_findframe(tag, ID3_FRAME_ALBUM, 0);
+		break;
+	case ID3INFO_TRACK:
+		frame = id3_tag_findframe(tag, ID3_FRAME_TRACK, 0);
+		break;
+	case ID3INFO_COMMENT:
+		frame = id3_tag_findframe(tag, ID3_FRAME_COMMENT, 0);
+		if(frame) {
+			__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "COMMENT %d fields", frame->nfields);
+			if(frame->nfields >= 4)
+				title = id3_field_getfullstring(&frame->fields[3]);
+		}
+		break;
 	}
 
 	if(frame) {
 
-		__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "frame %p", frame);
+		__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "frame %p %d", frame, what);
 
-
-		const id3_ucs4_t *title = id3_field_getstrings(&frame->fields[1], 0);
-		id3_utf8_t *titleu8 = id3_ucs4_utf8duplicate(title);
-		jstring j = env->NewStringUTF((const char *)titleu8);
-		return j;
+		if(title == NULL)
+			title = id3_field_getstrings(&frame->fields[1], 0);
+		if(title) {
+			__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "title %p", title);
+			id3_utf8_t *titleu8 = id3_ucs4_utf8duplicate(title);
+			jstring j = env->NewStringUTF((const char *)titleu8);
+			return j;
+		}
 	}
 
 	return NULL;

@@ -79,6 +79,14 @@ public class CueFile {
 	public Track getTrack(int i) {
 		return tracks.get(i);
 	}
+	
+	public int trackFromPos(int pos) {
+		for(int i=1; i<tracks.size(); i++) {
+			if(pos < tracks.get(i).offset) 
+				return i-1;
+		}
+		return tracks.size()-1;
+	}
 
 	private String getQuotedString(String line) {
 		

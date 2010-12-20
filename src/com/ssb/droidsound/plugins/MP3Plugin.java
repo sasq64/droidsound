@@ -3,6 +3,8 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.ssb.droidsound.utils.CueFile;
 import com.ssb.droidsound.utils.ID3Tag;
@@ -29,6 +31,42 @@ public class MP3Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
+	public String[] getDetailedInfo() {
+
+		Log.v(TAG, "GetInfo");
+		if(id3Tag != null) {
+			Log.v(TAG, "ID3 here");
+			List<String> info = new ArrayList<String>();
+			String album = id3Tag.getStringInfo(ID3Tag.ID3INFO_ALBUM);
+			if(album != null && album.length() > 0) {
+				info.add("Album");
+				info.add(album);				
+			}
+			String track = id3Tag.getStringInfo(ID3Tag.ID3INFO_TRACK);
+			if(track != null && track.length() > 0) {
+				info.add("Track");
+				info.add(track);
+			}
+			String genre = id3Tag.getStringInfo(ID3Tag.ID3INFO_GENRE);
+			if(genre != null && genre.length() > 0) {
+				info.add("Genre");
+				info.add(genre);
+			}
+			String comment = id3Tag.getStringInfo(ID3Tag.ID3INFO_COMMENT);
+			if(comment != null && comment.length() > 0) {
+				info.add("Comment");
+				info.add(comment);
+			}
+			String [] strArray = new String[info.size()];
+			info.toArray(strArray);
+			return strArray;
+		}
+		
+		return null;
+		
+	}
+	
+	@Override
 	public int getIntInfo(int what) {
 		// TODO Auto-generated method stub
 		if(what == 1000) return 1;
@@ -37,11 +75,18 @@ public class MP3Plugin extends DroidSoundPlugin {
 		case INFO_LENGTH:
 			if(mediaPlayer != null)
 				return mediaPlayer.getDuration();
-		case INFO_SUBTUNES:
+		case INFO_SUBTUNE_COUNT:
 			if(cueFile != null) {
 				return cueFile.getTrackCount();
 			}
 			break;
+		case INFO_SUBTUNE_NO:
+			int pos = mediaPlayer.getCurrentPosition();
+			if(cueFile != null) {
+				currentSong = cueFile.trackFromPos(pos);
+				//Log.v(TAG, String.format("TRACK FROM POS %d => %d", pos, currentSong));
+			}
+			return currentSong;
 		}
 		
 		if(id3Tag != null) {
@@ -68,6 +113,11 @@ public class MP3Plugin extends DroidSoundPlugin {
 				return cueFile.getTrack(currentSong).title;
 			}
 			break;
+		case INFO_SUBTUNE_AUTHOR:
+			if(cueFile != null && currentSong >= 0) {
+				return cueFile.getTrack(currentSong).performer;
+			}
+			break;
 		}
 		if(id3Tag != null) {
 			return id3Tag.getStringInfo(what);
@@ -84,8 +134,13 @@ public class MP3Plugin extends DroidSoundPlugin {
 			mediaPlayer.start();
 			started = true;
 		}
-		
 		return mediaPlayer.getCurrentPosition();
+	}
+	
+	@Override
+	public boolean seekTo(int msec) {
+		mediaPlayer.seekTo(msec);
+		return true;
 	}
 
 
@@ -110,7 +165,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			String cueName = file.getPath().substring(0, x) + ".cue";
 			
 			Log.v(TAG, String.format("CUENAME %s", cueName));
-			
+			currentSong = 0;
 			cueFile = new CueFile(new File(cueName));
 			if(cueFile.getTrackCount() <= 0) {
 				cueFile = null;

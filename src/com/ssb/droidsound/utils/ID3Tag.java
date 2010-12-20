@@ -6,11 +6,19 @@ import java.io.File;
 import android.util.Log;
 
 public class ID3Tag {
+	
 	private static final String TAG = ID3Tag.class.getSimpleName();
 	
 	static {
 		System.loadLibrary("id3tag");
 	}
+	
+	
+	public static final int ID3INFO_GENRE = 100;
+	public static final int ID3INFO_COMMENT = 101;
+	public static final int ID3INFO_ALBUM = 102;
+	public static final int ID3INFO_TRACK = 103;
+
 	
 	private long id3Ref;
 

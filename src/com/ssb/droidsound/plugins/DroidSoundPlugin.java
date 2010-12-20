@@ -22,11 +22,13 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_TYPE = 3;
 	public static final int INFO_COPYRIGHT = 4;
 	public static final int INFO_GAME = 5;
-	public static final int INFO_SUBTUNES = 6;
+	public static final int INFO_SUBTUNE_COUNT = 6;
 	public static final int INFO_STARTTUNE = 7;
 	public static final int INFO_SUBTUNE_TITLE = 8;
+	public static final int INFO_SUBTUNE_AUTHOR = 9;
+	public static final int INFO_SUBTUNE_NO = 10;
 	
-	public static final int SIZEOF_INFO = 9;
+	public static final int SIZEOF_INFO = 11;
 
 	
 	

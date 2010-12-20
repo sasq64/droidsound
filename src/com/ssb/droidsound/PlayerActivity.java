@@ -50,6 +50,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;
@@ -115,6 +116,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private TextView titleText;
 	private TextView subtitleText;
 	private TextView infoText;
+	
+	private int seekingSong;
+	
+	//private ViewFlipper seekFlipper;
+	private SeekBar songSeeker;
 
 	private OnItemClickListener listClickListener;
 
@@ -189,6 +195,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	// protected int favSelection;
 
 	private String subtuneTitle;
+	private String subtuneAuthor;
 
 	private File moveFileHere;
 
@@ -358,11 +365,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			searchButton.setVisibility(View.GONE);
 			// shuffleButton.setVisibility(View.VISIBLE);
 			if (subtuneTitle != null && subtuneTitle.length() > 0) {
-				titleText.setText(songTitle + " - " + subtuneTitle);
+				titleText.setText(subtuneTitle + " (" + songTitle + ")");
 			} else {
 				titleText.setText(songTitle);
 			}
-			subtitleText.setText(songComposer);
+			if(subtuneAuthor != null && subtuneAuthor.length() > 0) {
+				subtitleText.setText(subtuneAuthor);
+			} else
+				subtitleText.setText(songComposer);
 			titleBar.setBackgroundColor(0xff000080);
 
 			break;
@@ -486,6 +496,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		subtitleText = (TextView) findViewById(R.id.list_subtitle);
 		goinfoButton = (ImageButton) findViewById(R.id.go_info_button);
 		flipper = (ViewFlipper) findViewById(R.id.flipper);
+		//seekFlipper = (ViewFlipper) findViewById(R.id.seek_flipper);
+		songSeeker = (SeekBar) findViewById(R.id.song_seek);
 
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 		titleBar = (LinearLayout) findViewById(R.id.title_bar);
@@ -503,6 +515,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		boolean indexUnknown = prefs.getBoolean("extensions", false);
 		FileIdentifier.setIndexUnknown(indexUnknown);
 
+		seekingSong = 0;
+		
 		currentPlaylistView = playListView;
 
 		String md = prefs.getString("modsDir", null);
@@ -955,12 +969,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
 					if (songTitle != null && subtuneTitle != null) {
-						operationTitle = songTitle + " - " + subtuneTitle;
+						//operationTitle = songTitle + " - " + subtuneTitle;
+						operationTitle = subtuneTitle + " (" + songTitle + ")";
 					}
 					showDialog(R.string.add_to_plist);
 				}
 			}
 		});
+		
+
 
 		wakeText.setOnClickListener(new OnClickListener() {
 			@Override
@@ -971,6 +988,48 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				} else {
 					wakeLock.acquire();
 					wakeText.setTextColor(0xffb0b0ff);
+				}
+			}
+		});
+
+		/*
+		songSecondsText.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				seekFlipper.showNext();
+			}
+		});
+
+		seekFlipper.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				seekFlipper.showNext();
+			}
+		}); */
+		
+		songSeeker.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {			
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+				// TODO Auto-generated method stub
+				Log.v(TAG, "Stop tracking");
+				player.seekTo(songLength * seekBar.getProgress() * 10);
+				seekingSong = 5;
+			}
+			
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+				// TODO Auto-generated method stub
+				Log.v(TAG, "Start tracking");
+				seekingSong = 5;
+			}
+			
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+				if(fromUser) {
+					Log.v(TAG, String.format("Changed %d", progress));
+					int pos = songLength * seekBar.getProgress() / 100;
+					songSecondsText.setText(String.format("%02d:%02d", pos / 60, pos % 60));
+					seekingSong = 5;
 				}
 			}
 		});
@@ -1198,7 +1257,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				operationTitle = null;
 				operationTuneCount = subTuneCount;
 				if (songTitle != null && subtuneTitle != null) {
-					operationTitle = songTitle + " - " + subtuneTitle;
+					//operationTitle = songTitle + " - " + subtuneTitle;
+					operationTitle = subtuneTitle + " (" + songTitle + ")";
 				}
 				showDialog(R.string.add_to_plist);
 			}
@@ -1407,11 +1467,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					songLength % 60));
 			songTotalText.setText(String.format("%02d:%02d", songLength / 60,
 					songLength % 60));
+			songSeeker.setProgress(0);	
 			break;
-		case PlayerService.SONG_POS:
-			songPos = value / 1000;
-			songSecondsText.setText(String.format("%02d:%02d", songPos / 60,
-					songPos % 60));
+		case PlayerService.SONG_POS:			
+			if(seekingSong == 0) {
+				songPos = value / 1000;
+				songSecondsText.setText(String.format("%02d:%02d", songPos / 60,
+						songPos % 60));
+				if(songLength > 0)
+					songSeeker.setProgress(100 * songPos / songLength);		
+			} else seekingSong--;
+			
 			break;
 		case PlayerService.SONG_CPULOAD:
 			//if (lowText != null) {
@@ -1481,6 +1547,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case PlayerService.SONG_SUBTUNE_TITLE:
 			subtuneTitle = value;
+			flipTo(SAME_VIEW);
+			break;
+		case PlayerService.SONG_SUBTUNE_AUTHOR:
+			subtuneAuthor = value;
 			flipTo(SAME_VIEW);
 			break;
 		case PlayerService.SONG_TITLE:
