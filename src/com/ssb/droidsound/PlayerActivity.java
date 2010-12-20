@@ -116,10 +116,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private TextView titleText;
 	private TextView subtitleText;
 	private TextView infoText;
-	
+
 	private int seekingSong;
-	
-	//private ViewFlipper seekFlipper;
+
+	// private ViewFlipper seekFlipper;
 	private SeekBar songSeeker;
 
 	private OnItemClickListener listClickListener;
@@ -161,7 +161,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private String dirSubTitle;
 	private String[] songDetails;
 	private String indexSetting;
-	
+
 	private static final int TTS_UNCHECKED = -1000;
 	private static final int TTS_OK = 2;
 	private static final int TTS_UNINSTALLED = 0;
@@ -221,15 +221,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private void setDirectory(File f, PlayListView plv) {
 
-		if (plv == null) {
+		if(plv == null) {
 			plv = currentPlaylistView;
 		}
 
-		if (f == null) {
+		if(f == null) {
 			String p = plv.getPath();
-			if (p != null) {
+			if(p != null) {
 				f = new File(p);
-			} else if (currentPlaylistView == searchListView) {
+			} else if(currentPlaylistView == searchListView) {
 				searchCursor.requery();
 				searchListView.setCursor(searchCursor, null);
 				flipTo(SEARCH_VIEW);
@@ -242,20 +242,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Cursor cursor = songDatabase.getFilesInPath(f.getPath());
 		plv.setCursor(cursor, f.getPath());
 
-		if (f.equals(modsDir)) {
+		if(f.equals(modsDir)) {
 			atTop = true;
 		} else {
 			atTop = false;
 		}
-		if (plv == playListView) {
+		if(plv == playListView) {
 			dirTitle = songDatabase.getPathTitle();
-			if (dirTitle == null) {
+			if(dirTitle == null) {
 				dirTitle = f.getName();
 			}
 			dirSubTitle = f.getParent().replaceFirst(modsDir.getParent(), "");
 			flipTo(FILE_VIEW);
 			currentPath = f;
-		} else if (plv == searchListView) {
+		} else if(plv == searchListView) {
 			flipTo(SEARCH_VIEW);
 		}
 
@@ -263,27 +263,27 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private void gotoParent(PlayListView plv) {
 
-		if (plv == null) {
+		if(plv == null) {
 			plv = currentPlaylistView;
 		}
 
-		if (plv == searchListView && searchDirDepth <= 1) {
+		if(plv == searchListView && searchDirDepth <= 1) {
 			searchListView.setCursor(searchCursor, null);
 			searchDirDepth = 0;
 			flipTo(SEARCH_VIEW);
 			return;
 		}
 
-		if (atTop) {
+		if(atTop) {
 			return;
 		}
 
 		String p = plv.getPath();
-		if (p != null) {
+		if(p != null) {
 			File f = new File(plv.getPath());
 			setDirectory(f.getParentFile(), plv);
 			currentPlaylistView.setScrollPosition(f);
-			if (plv == searchListView) {
+			if(plv == searchListView) {
 				searchDirDepth--;
 			}
 
@@ -296,26 +296,25 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		setIntent(intent);
 		Log.v(TAG, "INTENT " + intent.getAction());
 
-		if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+		if(Intent.ACTION_VIEW.equals(intent.getAction())) {
 			String music = intent.getDataString();
-			if (music.toUpperCase().endsWith(".ZIP")) {
-				if (music.startsWith("file:/")) {
+			if(music.toUpperCase().endsWith(".ZIP")) {
+				if(music.startsWith("file:/")) {
 					music = music.substring(6);
 				}
 				File f = new File(music);
 				moveFileHere(f);
 			}
-		} else if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
+		} else if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
 			Log.v(TAG, "QUERY " + query);
-			if (searchCursor != null) {
+			if(searchCursor != null) {
 				searchCursor.realClose();
 			}
-			searchCursor = new SearchCursor(songDatabase.search(query,
-					currentPath.getPath()));
+			searchCursor = new SearchCursor(songDatabase.search(query, currentPath.getPath()));
 			searchQuery = query;
 			searchDirDepth = 0;
-			if (searchCursor != null) {
+			if(searchCursor != null) {
 				searchListView.setCursor(searchCursor, null);
 				currentPlaylistView = searchListView;
 				flipTo(SEARCH_VIEW);
@@ -330,17 +329,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private void flipTo(int what, boolean animate) {
 		Animation ia = null;
 		Animation oa = null;
-		if (!animate) {
+		if(!animate) {
 			ia = flipper.getInAnimation();
 			oa = flipper.getOutAnimation();
 			flipper.setInAnimation(null);
 			flipper.setOutAnimation(null);
 		}
 
-		if (what < 3) {
-			if (flipper.getDisplayedChild() != what) {
+		if(what < 3) {
+			if(flipper.getDisplayedChild() != what) {
 
-				if (what == FILE_VIEW) {
+				if(what == FILE_VIEW) {
 					String p = playListView.getPath();
 					Cursor cursor = songDatabase.getFilesInPath(p);
 					playListView.setCursor(cursor, p);
@@ -348,23 +347,23 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 				flipper.setDisplayedChild(what);
 			}
-		} else if (what == NEXT_VIEW) {
+		} else if(what == NEXT_VIEW) {
 			flipper.showNext();
-		} else if (what == PREV_VIEW) {
+		} else if(what == PREV_VIEW) {
 			flipper.showPrevious();
 		}
 
-		if (ia != null) {
+		if(ia != null) {
 			flipper.setInAnimation(ia);
 			flipper.setOutAnimation(oa);
 		}
 
-		switch (flipper.getDisplayedChild()) {
+		switch(flipper.getDisplayedChild()) {
 		case INFO_VIEW:
 			currentPlaylistView = null;
 			searchButton.setVisibility(View.GONE);
 			// shuffleButton.setVisibility(View.VISIBLE);
-			if (subtuneTitle != null && subtuneTitle.length() > 0) {
+			if(subtuneTitle != null && subtuneTitle.length() > 0) {
 				titleText.setText(subtuneTitle + " (" + songTitle + ")");
 			} else {
 				titleText.setText(songTitle);
@@ -382,13 +381,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			// shuffleButton.setVisibility(View.GONE);
 			titleBar.setBackgroundColor(0xff800000);
 
-			if (searchQuery != null) {
+			if(searchQuery != null) {
 				titleText.setText("SEARCH: " + searchQuery);
 			} else {
 				titleText.setText("SEARCH");
 			}
 			String p = searchListView.getPath();
-			if (p != null) {
+			if(p != null) {
 				String st = p.replaceFirst(modsDir.getParent(), "");
 				subtitleText.setText(st);
 			} else {
@@ -419,9 +418,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			return false;
 		} finally {
 			try {
-				if (inChannel != null)
+				if(inChannel != null)
 					inChannel.close();
-				if (outChannel != null)
+				if(outChannel != null)
 					outChannel.close();
 			} catch (IOException e) {
 				return false;
@@ -448,20 +447,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// sf = new SongFile("/path/to/myfile.mod;-1;800");
 
 		Intent intent = getIntent();
-		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent
-				.getDataString()));
-		if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
+		if(Intent.ACTION_VIEW.equals(intent.getAction())) {
 			String music = intent.getDataString();
 
-			if (music.toUpperCase().endsWith(".ZIP")) {
+			if(music.toUpperCase().endsWith(".ZIP")) {
 
-				if (music.startsWith("file:/")) {
+				if(music.startsWith("file:/")) {
 					music = music.substring(6);
 				}
 
 				File f = new File(music);
 
-				if (f.exists()) {
+				if(f.exists()) {
 					moveFileHere = f;
 				}
 			} else {
@@ -496,7 +494,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		subtitleText = (TextView) findViewById(R.id.list_subtitle);
 		goinfoButton = (ImageButton) findViewById(R.id.go_info_button);
 		flipper = (ViewFlipper) findViewById(R.id.flipper);
-		//seekFlipper = (ViewFlipper) findViewById(R.id.seek_flipper);
+		// seekFlipper = (ViewFlipper) findViewById(R.id.seek_flipper);
 		songSeeker = (SeekBar) findViewById(R.id.song_seek);
 
 		searchButton = (ImageButton) findViewById(R.id.search_button);
@@ -516,20 +514,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		FileIdentifier.setIndexUnknown(indexUnknown);
 
 		seekingSong = 0;
-		
+
 		currentPlaylistView = playListView;
 
 		String md = prefs.getString("modsDir", null);
 		modsDir = new File("/XXX");
-		if (md == null) {
+		if(md == null) {
 			File extFile = Environment.getExternalStorageDirectory();
-			if (extFile != null) {
+			if(extFile != null) {
 				File mf = new File(extFile, "MODS");
-				if (!mf.exists()) {
+				if(!mf.exists()) {
 					mf.mkdir();
 				}
 
-				if (!mf.exists()) {
+				if(!mf.exists()) {
 					showDialog(R.string.create_moddir_failed);
 					dialogShowing = true;
 				} else {
@@ -548,40 +546,40 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			modsDir = new File(md);
 		}
 
-		if (!modsDir.exists()) {
+		if(!modsDir.exists()) {
 			showDialog(R.string.sdcard_not_found);
 			dialogShowing = true;
 		}
 
 		File[] files = modsDir.listFiles();
-		if (files != null) {
-			for (File f : files) {
-				if (f.getName().endsWith(".temp")) {
+		if(files != null) {
+			for(File f : files) {
+				if(f.getName().endsWith(".temp")) {
 					f.delete();
 				}
 			}
 		}
 
-		if (moveFileHere != null) {
+		if(moveFileHere != null) {
 			moveFileHere(moveFileHere);
 		}
 
 		foundVersion = prefs.getInt("version", -1);
-		if (foundVersion == -1) {
+		if(foundVersion == -1) {
 			File tempFile = new File(modsDir, "Examples.zip");
-			if (!tempFile.exists()) {
+			if(!tempFile.exists()) {
 				try {
 					InputStream is = getAssets().open("Examples.zip");
-					if (is != null) {
+					if(is != null) {
 
 						FileOutputStream os = new FileOutputStream(tempFile);
 
 						byte[] buffer = new byte[1024 * 64];
 
 						int rc = 0;
-						while (rc >= 0) {
+						while(rc >= 0) {
 							rc = is.read(buffer);
-							if (rc > 0) {
+							if(rc > 0) {
 								os.write(buffer, 0, rc);
 							}
 						}
@@ -602,7 +600,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		e.commit();
 
 		String cp = prefs.getString("currentPath", null);
-		if (cp == null) {
+		if(cp == null) {
 			currentPath = modsDir;
 		} else {
 			currentPath = new File(cp);
@@ -615,14 +613,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			public void onReceive(Context context, Intent intent) {
 				// TODO Auto-generated method stub
 
-				if (intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
+				if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
 					Log.v(TAG, "Open done!");
 
 					String s = prefs.getString("indexing", "Basic");
 					int imode = SongDatabase.INDEX_BASIC;
-					if (s.equals("Full")) {
+					if(s.equals("Full")) {
 						imode = SongDatabase.INDEX_FULL;
-					} else if (s.equals("None")) {
+					} else if(s.equals("None")) {
 						imode = SongDatabase.INDEX_NONE;
 					}
 					songDatabase.setIndexMode(imode);
@@ -630,7 +628,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					// playListView.rescan();
 					setDirectory(null, playListView);
 
-					if (lastConfig != null) {
+					if(lastConfig != null) {
 						Log.v(TAG, "CONFIG CHANGE");
 					} else {
 						Log.v(TAG, "SCANNING");
@@ -638,10 +636,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					}
 
 					// songDatabase.scan(false, modsDir);
-				} else if (intent.getAction().equals(
-						"com.sddb.droidsound.SCAN_DONE")) {
+				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_DONE")) {
 
-					if (progressDialog != null) {
+					if(progressDialog != null) {
 						progressDialog.cancel();
 						progressDialog = null;
 					}
@@ -649,20 +646,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					Log.v(TAG, "Scan done!");
 					setDirectory(null, playListView);
 					// playListView.rescan();
-				} else if (intent.getAction().equals(
-						"com.sddb.droidsound.SCAN_UPDATE")) {
+				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_UPDATE")) {
 					Log.v(TAG, "Scan update!");
 					checkProgressDialog();
-					if (progressDialog != null) {
+					if(progressDialog != null) {
 						int percent = intent.getIntExtra("PERCENT", 0);
 						String path = intent.getStringExtra("PATH");
-						if (percent > 0) {
-							progressDialog.setMessage(String.format(
-									"Updating database...\n%s %02d%%", path,
-									percent));
+						if(percent > 0) {
+							progressDialog.setMessage(String.format("Updating database...\n%s %02d%%", path, percent));
 						} else {
-							progressDialog.setMessage(String.format(
-									"Updating database...\n%s", path));
+							progressDialog.setMessage(String.format("Updating database...\n%s", path));
 						}
 					}
 
@@ -687,7 +680,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Log.v(TAG, String.format("MODS at %s", modsDir));
 
 		File ns = new File(modsDir, ".nomedia");
-		if (!ns.exists()) {
+		if(!ns.exists()) {
 			FileWriter fw;
 			try {
 				fw = new FileWriter(ns);
@@ -697,7 +690,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		File mf = new File(modsDir, "Favorites.plist");
-		if (!mf.exists()) {
+		if(!mf.exists()) {
 			try {
 				Log.v(TAG, "Trying to write Favorites");
 				FileWriter fw = new FileWriter(mf);
@@ -713,20 +706,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		boolean created = false;
 
-		if (songDatabase == null) {
-			Log
-					.v(TAG,
-							"############ CREATING static SongDatabase object ##############");
+		if(songDatabase == null) {
+			Log.v(TAG, "############ CREATING static SongDatabase object ##############");
 
 			songDatabase = new SongDatabase(getApplicationContext());
 
 			CSDBParser csdb = new CSDBParser();
 			songDatabase.registerDataSource(CSDBParser.DUMP_NAME, csdb);
+			songDatabase.registerDataSource(CSDBParser.DUMP_NAME + ".ZIP", csdb);
+
+			MediaSource ms = new MediaSource(this);
+			songDatabase.registerDataSource(MediaSource.NAME, ms);
 
 			dbThread = new Thread(songDatabase);
 			dbThread.start();
 
-			while (!songDatabase.isReady()) {
+			while(!songDatabase.isReady()) {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e1) {
@@ -739,7 +734,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		setDirectory(currentPath, null);
 
-		if (foundVersion == -1) {
+		if(foundVersion == -1) {
 			dialogShowing = true;
 			showDialog(R.string.unpack_examples);
 		}
@@ -747,7 +742,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		checkProgressDialog();
 
 		lastConfig = (Config) getLastNonConfigurationInstance();
-		if (lastConfig != null) {
+		if(lastConfig != null) {
 			// textToSpeech = lastConfig.textToSpeech;
 			ttsStatus = lastConfig.ttsStatus;
 			searchCursor = lastConfig.searchCursor;
@@ -771,12 +766,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		String b = prefs.getString("buffer", "Long");
 		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
 
-		if (!created && lastConfig == null) {
+		if(!created && lastConfig == null) {
 			songDatabase.open();
 			songDatabase.scan(false, modsDir.getPath());
 		}
 
-		if (ttsStatus == TTS_UNCHECKED) {
+		if(ttsStatus == TTS_UNCHECKED) {
 			Intent checkIntent = new Intent();
 			checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
 			startActivityForResult(checkIntent, 1234);
@@ -789,24 +784,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		listClickListener = new OnItemClickListener() {
 
 			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id) {
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
 				PlayListView plv = (PlayListView) parent;
 
 				FileInfo fi = (FileInfo) plv.getItemAtPosition(position);
 
-				Log.v(TAG, String.format("Clicked %s got file %s", plv, fi
-						.getPath()));
+				Log.v(TAG, String.format("Clicked %s got file %s", plv, fi.getPath()));
 
-				if (fi != null) {
+				if(fi != null) {
 
-					if (fi.type == SongDatabase.TYPE_DIR
-							|| fi.type == SongDatabase.TYPE_ARCHIVE
-							|| fi.type == SongDatabase.TYPE_PLIST) {
+					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
 						setDirectory(fi.getFile(), plv);
 						plv.setScrollPosition(null);
-						if (plv == searchListView) {
+						if(plv == searchListView) {
 							searchDirDepth++;
 						}
 
@@ -816,27 +807,23 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 						FileInfo[] files = plv.getFiles(true);
 
-						if (currentPlaylistView == playListView) {
+						if(currentPlaylistView == playListView) {
 							Playlist plist = songDatabase.getCurrentPlaylist();
-							if (plist != null) {
-								for (int i = 0; i < files.length; i++) {
-									if (files[i].equals(fi)) {
+							if(plist != null) {
+								for(int i = 0; i < files.length; i++) {
+									if(files[i].equals(fi)) {
 										index = i;
 									}
 								}
-								Log.v(TAG, String.format(
-										"Playing Playlist %s %s", plist
-												.getFile().getPath(), plist
-												.toString()));
-								player.playPlaylist(plist.getFile().getPath(),
-										index);
+								Log.v(TAG, String.format("Playing Playlist %s %s", plist.getFile().getPath(), plist.toString()));
+								player.playPlaylist(plist.getFile().getPath(), index);
 								return;
 							}
 						}
 
 						String[] names = new String[files.length];
-						for (int i = 0; i < files.length; i++) {
-							if (files[i].equals(fi)) {
+						for(int i = 0; i < files.length; i++) {
+							if(files[i].equals(fi)) {
 								index = i;
 							}
 							names[i] = files[i].getPath();
@@ -848,7 +835,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			}
 		};
-		
+
 		PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
 		wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "Droidsound");
 
@@ -876,7 +863,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 
-				if (songState == 1) {
+				if(songState == 1) {
 					player.playPause(false);
 				} else {
 					player.playPause(true);
@@ -894,7 +881,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		backButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (subTune == 0 || subTuneCount == 0) {
+				if(subTune == 0 || subTuneCount == 0) {
 					player.playPrev();
 				} else {
 					subTune -= 1;
@@ -915,7 +902,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 				Log.v(TAG, String.format("NEXT %d %d", subTune, subTuneCount));
-				if ((subTune + 1) < subTuneCount) {
+				if((subTune + 1) < subTuneCount) {
 					subTune += 1;
 					player.setSubSong(subTune);
 				} else {
@@ -932,15 +919,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 
-		player.setOption(PlayerService.OPTION_PLAYBACK_ORDER,
-				shuffleSongs ? "R" : "S");
+		player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, shuffleSongs ? "R" : "S");
 
 		shuffleText.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				shuffleSongs = !shuffleSongs;
-				player.setOption(PlayerService.OPTION_PLAYBACK_ORDER,
-						shuffleSongs ? "R" : "S");
+				player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, shuffleSongs ? "R" : "S");
 				shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
 			}
 		});
@@ -949,13 +934,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 				// shuffleSongs = !shuffleSongs;
-				if (songRepeat == 0) {
+				if(songRepeat == 0) {
 					songRepeat = 1;
 				} else {
 					songRepeat = 0;
 				}
-				player.setOption(PlayerService.OPTION_REPEATMODE, Integer
-						.toString(songRepeat));
+				player.setOption(PlayerService.OPTION_REPEATMODE, Integer.toString(songRepeat));
 			}
 		});
 
@@ -963,21 +947,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onClick(View v) {
 
-				if (songFile != null) {
+				if(songFile != null) {
 					operationFile = songFile.getFile();
 					operationTune = subTune;
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
-					if (songTitle != null && subtuneTitle != null) {
-						//operationTitle = songTitle + " - " + subtuneTitle;
+					if(songTitle != null && subtuneTitle != null) {
+						// operationTitle = songTitle + " - " + subtuneTitle;
 						operationTitle = subtuneTitle + " (" + songTitle + ")";
 					}
 					showDialog(R.string.add_to_plist);
 				}
 			}
 		});
-		
-
 
 		wakeText.setOnClickListener(new OnClickListener() {
 			@Override
@@ -993,21 +975,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		});
 
 		/*
-		songSecondsText.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				seekFlipper.showNext();
-			}
-		});
+		 * songSecondsText.setOnClickListener(new OnClickListener() {
+		 * 
+		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
+		 * 
+		 * seekFlipper.setOnClickListener(new OnClickListener() {
+		 * 
+		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
+		 */
 
-		seekFlipper.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				seekFlipper.showNext();
-			}
-		}); */
-		
-		songSeeker.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {			
+		songSeeker.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
 				// TODO Auto-generated method stub
@@ -1015,18 +992,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				player.seekTo(songLength * seekBar.getProgress() * 10);
 				seekingSong = 5;
 			}
-			
+
 			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
 				// TODO Auto-generated method stub
 				Log.v(TAG, "Start tracking");
 				seekingSong = 5;
 			}
-			
+
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 				if(fromUser) {
-					//Log.v(TAG, String.format("Changed %d", progress));
+					// Log.v(TAG, String.format("Changed %d", progress));
 					int pos = songLength * seekBar.getProgress() / 100;
 					songSecondsText.setText(String.format("%02d:%02d", pos / 60, pos % 60));
 					seekingSong = 5;
@@ -1047,8 +1024,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	private void checkProgressDialog() {
-		if (!dialogShowing && songDatabase.isScanning()
-				&& progressDialog == null) {
+		if(!dialogShowing && songDatabase.isScanning() && progressDialog == null) {
 			progressDialog = new ProgressDialog(PlayerActivity.this);
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
 			progressDialog.setMessage("Updating database...");
@@ -1058,10 +1034,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	public static boolean moveFile(File src, File dest) {
-		if (src.renameTo(dest)) {
+		if(src.renameTo(dest)) {
 			Log.v(TAG, "Successful");
 			return true;
-		} else if (copyFile(src, dest)) {
+		} else if(copyFile(src, dest)) {
 			Log.v(TAG, "COPY Successful");
 			src.delete();
 			return true;
@@ -1078,8 +1054,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		n = n.replace('_', ' ');
 
 		int ext = n.indexOf('.');
-		if (ext > 2 && Character.isDigit(n.charAt(ext - 1))
-				&& n.charAt(ext - 2) == '-') {
+		if(ext > 2 && Character.isDigit(n.charAt(ext - 1)) && n.charAt(ext - 2) == '-') {
 			t = new File(modsDir, n.substring(0, ext - 2) + n.substring(ext));
 		} else {
 			t = new File(modsDir, n);
@@ -1087,20 +1062,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		Log.v(TAG, "MOVE FILE " + f.getPath() + " TO " + t.getPath());
 
-		if (t.exists()) {
+		if(t.exists()) {
 			showDialog(R.string.zip_import_replace);
 			moveFileHere = null;
 			return;
 		}
 
-		if (f.renameTo(t)) {
+		if(f.renameTo(t)) {
 			Log.v(TAG, "Successful");
-			if (songDatabase != null) {
+			if(songDatabase != null) {
 				songDatabase.scan(false, modsDir.getPath());
 			}
-		} else if (copyFile(f, t)) {
+		} else if(copyFile(f, t)) {
 			Log.v(TAG, "COPY Successful");
-			if (songDatabase != null) {
+			if(songDatabase != null) {
 				songDatabase.scan(false, modsDir.getPath());
 			}
 		} else {
@@ -1112,13 +1087,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		Log.v(TAG, String.format("Got speech result %d", resultCode));
-		if (requestCode == 1234) {
+		if(requestCode == 1234) {
 			Log.v(TAG, String.format("Got speech result %d", 12345));
-			if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+			if(resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
 				ttsStatus = TTS_OK;
 				boolean useSpeech = prefs.getBoolean("speech", false);
-				player.setOption(PlayerService.OPTION_SPEECH, useSpeech ? "on"
-						: "off");
+				player.setOption(PlayerService.OPTION_SPEECH, useSpeech ? "on" : "off");
 			} else {
 				ttsStatus = TTS_UNINSTALLED;
 				player.setOption(PlayerService.OPTION_SPEECH, "none");
@@ -1145,12 +1119,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// return true;
 		// }
 
-		if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
+		if(keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
 
 			int t = (keyCode - KeyEvent.KEYCODE_0) - 1;
-			if (t == -1)
+			if(t == -1)
 				t = 10;
-			if (t < subTuneCount) {
+			if(t < subTuneCount) {
 				subTune = t;
 				player.setSubSong(subTune);
 			}
@@ -1158,7 +1132,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		AudioManager amg = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-		switch (keyCode) {
+		switch(keyCode) {
 		case KeyEvent.KEYCODE_F:
 			onSearchRequested();
 			break;
@@ -1169,13 +1143,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			player.playNext();
 			break;
 		case KeyEvent.KEYCODE_N:
-			if (subTune != 0 && subTuneCount != 0) {
+			if(subTune != 0 && subTuneCount != 0) {
 				subTune -= 1;
 				player.setSubSong(subTune);
 			}
 			break;
 		case KeyEvent.KEYCODE_M:
-			if ((subTune + 1) < subTuneCount) {
+			if((subTune + 1) < subTuneCount) {
 				subTune += 1;
 				player.setSubSong(subTune);
 			}
@@ -1188,7 +1162,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			player.playPause(true);
 			break;
 		case KeyEvent.KEYCODE_C:
-			if (songState == 1) {
+			if(songState == 1) {
 				player.playPause(false);
 			} else {
 				player.playPause(true);
@@ -1196,31 +1170,27 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case KeyEvent.KEYCODE_PLUS:
 		case KeyEvent.KEYCODE_PERIOD:
-			amg.adjustStreamVolume(AudioManager.STREAM_MUSIC,
-					AudioManager.ADJUST_RAISE, 0);
+			amg.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0);
 			break;
 		case KeyEvent.KEYCODE_MINUS:
 		case KeyEvent.KEYCODE_COMMA:
-			amg.adjustStreamVolume(AudioManager.STREAM_MUSIC,
-					AudioManager.ADJUST_LOWER, 0);
+			amg.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0);
 			break;
 		case KeyEvent.KEYCODE_TAB:
 			flipTo(NEXT_VIEW);
 			break;
 		case KeyEvent.KEYCODE_S:
 			shuffleSongs = !shuffleSongs;
-			player.setOption(PlayerService.OPTION_PLAYBACK_ORDER,
-					shuffleSongs ? "R" : "S");
+			player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, shuffleSongs ? "R" : "S");
 			shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
 			break;
 		case KeyEvent.KEYCODE_R:
-			if (songRepeat == 0) {
+			if(songRepeat == 0) {
 				songRepeat = 1;
 			} else {
 				songRepeat = 0;
 			}
-			player.setOption(PlayerService.OPTION_REPEATMODE, Integer
-					.toString(songRepeat));
+			player.setOption(PlayerService.OPTION_REPEATMODE, Integer.toString(songRepeat));
 			break;
 		// case KeyEvent.M:
 		// player.setOption(PlayerService.OPTION_SPEECH, useSpeech ? "on" :
@@ -1233,11 +1203,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			finish();
 			break;
 		case KeyEvent.KEYCODE_A:
-			
+
 			break;
 		case KeyEvent.KEYCODE_D:
 			break;
-			
+
 		case KeyEvent.KEYCODE_P:
 			startActivity(new Intent(this, SettingsActivity.class));
 			break;
@@ -1251,13 +1221,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 
 		case KeyEvent.KEYCODE_U:
-			if (songFile != null) {
+			if(songFile != null) {
 				operationFile = songFile.getFile();
 				operationTune = subTune;
 				operationTitle = null;
 				operationTuneCount = subTuneCount;
-				if (songTitle != null && subtuneTitle != null) {
-					//operationTitle = songTitle + " - " + subtuneTitle;
+				if(songTitle != null && subtuneTitle != null) {
+					// operationTitle = songTitle + " - " + subtuneTitle;
 					operationTitle = subtuneTitle + " (" + songTitle + ")";
 				}
 				showDialog(R.string.add_to_plist);
@@ -1267,15 +1237,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case KeyEvent.KEYCODE_BACK:
 		case KeyEvent.KEYCODE_DEL:
 			backDown++;
-			if (backDown == 3) {
-				if (currentPlaylistView == searchListView) {
+			if(backDown == 3) {
+				if(currentPlaylistView == searchListView) {
 					searchDirDepth = 0;
 					searchListView.setCursor(searchCursor, null);
 					flipTo(SEARCH_VIEW);
 				} else {
 					setDirectory(modsDir, playListView);
 					currentPlaylistView.setScrollPosition(null); // new
-																	// File(songName));
+					// File(songName));
 				}
 			}
 			return true;
@@ -1292,21 +1262,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// event.getRepeatCount()));
 		// return true;
 		// }
-		if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_DEL) {
-			if (backDown > 0 && backDown < 3) {
+		if(keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_DEL) {
+			if(backDown > 0 && backDown < 3) {
 				backDown = 0;
-				if (currentPlaylistView != playListView) {
-					if (currentPlaylistView != searchListView
-							|| searchDirDepth == 0) {
+				if(currentPlaylistView != playListView) {
+					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 						flipTo(FILE_VIEW);
-						if (songFile != null) {
+						if(songFile != null) {
 							playListView.setScrollPosition(songFile.getFile());
 						}
 						return true;
 					}
 				}
 
-				if (atTop) {
+				if(atTop) {
 					finish();
 				} else {
 					gotoParent(null);
@@ -1325,20 +1294,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		player.bindService(this, this);
 
-		if (!songDatabase.isScanning() && progressDialog != null) {
+		if(!songDatabase.isScanning() && progressDialog != null) {
 			progressDialog.cancel();
 			progressDialog = null;
 			// playListView.rescan();
 			setDirectory(null, playListView);
 		}
-		
-		
+
 		boolean speech = prefs.getBoolean("speech", false);
-		
+
 		if(speech && ttsStatus == TTS_UNINSTALLED) {
 			// missing data, install it
 			ttsStatus = TTS_UNINSTALLED_ASK;
-			
+
 			runConfirmable(R.string.ask_speech, new Runnable() {
 				@Override
 				public void run() {
@@ -1347,23 +1315,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					startActivity(installIntent);
 				}
 			});
-			
+
 		} else {
 			player.setOption(PlayerService.OPTION_SPEECH, speech ? "on" : "off");
 		}
-		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean(
-				"silence", false) ? "on" : "off");
-		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString(
-				"default_length", "0"));
+		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
+		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));
 
 		String b = prefs.getString("buffer", "Long");
 		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
 
 		String s = prefs.getString("indexing", "Basic");
 		int imode = SongDatabase.INDEX_BASIC;
-		if (s.equals("Full")) {
+		if(s.equals("Full")) {
 			imode = SongDatabase.INDEX_FULL;
-		} else if (s.equals("None")) {
+		} else if(s.equals("None")) {
 			imode = SongDatabase.INDEX_NONE;
 		}
 
@@ -1385,14 +1351,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		editor.commit();
 
 		Playlist.flushAll();
-		
+
 		if(wakeLock.isHeld()) {
 			wakeLock.release();
 		}
 
 		player.unbindService(this);
 
-		if (db != null) {
+		if(db != null) {
 			db.close();
 			db = null;
 		}
@@ -1403,21 +1369,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		super.onDestroy();
 		Log.v(TAG, "#### onDestroy()");
 
-		if (receiver != null) {
+		if(receiver != null) {
 			unregisterReceiver(receiver);
 		}
 
-		if (playListView != null) {
+		if(playListView != null) {
 			playListView.close();
 			// SharedPreferences prefs = getSharedPreferences("songdb",
 			// Context.MODE_PRIVATE);
 		}
 
-		if (searchCursor != null) {
+		if(searchCursor != null) {
 			searchCursor.realClose();
 		}
 
-		if (progressDialog != null) {
+		if(progressDialog != null) {
 			progressDialog.dismiss();
 		}
 
@@ -1434,7 +1400,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		c.query = searchQuery;
 		c.shuffleSongs = shuffleSongs;
 		Playlist al = songDatabase.getActivePlaylist();
-		if (al != null) {
+		if(al != null) {
 			c.activePlaylist = al.getFile().getPath();
 		}
 		searchCursor = null;
@@ -1446,11 +1412,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	@Override
 	public void intChanged(int what, int value) {
-		switch (what) {
+		switch(what) {
 		case PlayerService.SONG_REPEAT:
 			songRepeat = value;
 			repeatText.setText(repnames[value]);
-			if (value == 1) {
+			if(value == 1) {
 				repeatText.setTextColor(0xff308050);
 			} else {
 				repeatText.setTextColor(0xff80ffc0);
@@ -1458,51 +1424,47 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 			break;
 		case PlayerService.SONG_LENGTH:
-			if (value < 0) {
+			if(value < 0) {
 				// TODO: Hide length
 				value = 0;
 			}
 			songLength = value / 1000;
-			Log.v(TAG, String.format("Songlength %02d:%02d", songLength / 60,
-					songLength % 60));
-			songTotalText.setText(String.format("%02d:%02d", songLength / 60,
-					songLength % 60));
-			songSeeker.setProgress(0);	
+			Log.v(TAG, String.format("Songlength %02d:%02d", songLength / 60, songLength % 60));
+			songTotalText.setText(String.format("%02d:%02d", songLength / 60, songLength % 60));
+			songSeeker.setProgress(0);
 			break;
-		case PlayerService.SONG_POS:			
+		case PlayerService.SONG_POS:
 			if(seekingSong == 0) {
 				songPos = value / 1000;
-				songSecondsText.setText(String.format("%02d:%02d", songPos / 60,
-						songPos % 60));
+				songSecondsText.setText(String.format("%02d:%02d", songPos / 60, songPos % 60));
 				if(songLength > 0)
-					songSeeker.setProgress(100 * songPos / songLength);		
-			} else seekingSong--;
-			
+					songSeeker.setProgress(100 * songPos / songLength);
+			} else
+				seekingSong--;
+
 			break;
 		case PlayerService.SONG_CPULOAD:
-			//if (lowText != null) {
-			//	aTime = aTime * 0.7F + value * 0.3F;
-			//	lowText.setText(String.format("CPU %d%%", (int) aTime));
-			//}
+			// if (lowText != null) {
+			// aTime = aTime * 0.7F + value * 0.3F;
+			// lowText.setText(String.format("CPU %d%%", (int) aTime));
+			// }
 			break;
 		case PlayerService.SONG_SUBSONG:
 			subTune = value;
-			songSubtunesText.setText(String.format("[%02d/%02d]", subTune + 1,
-					subTuneCount));
+			songSubtunesText.setText(String.format("[%02d/%02d]", subTune + 1, subTuneCount));
 			break;
 		case PlayerService.SONG_TOTALSONGS:
 			subTuneCount = value;
-			songSubtunesText.setText(String.format("[%02d/%02d]", subTune + 1,
-					subTuneCount));
+			songSubtunesText.setText(String.format("[%02d/%02d]", subTune + 1, subTuneCount));
 			break;
 		case PlayerService.SONG_STATE:
 			Log.v(TAG, String.format("State now %d", value));
 			songState = value;
-			if (value == 1) {
+			if(value == 1) {
 				playButton.setBackgroundResource(R.drawable.pause_button);
 			} else {
 				playButton.setBackgroundResource(R.drawable.play_button);
-				if (value == 0) {
+				if(value == 0) {
 					// songTitleText.setText("");
 					// songComposerText.setText("");
 					// songCopyrightText.setText("");
@@ -1518,18 +1480,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public void stringChanged(int what, String value) {
 
-		switch (what) {
+		switch(what) {
 		case PlayerService.SONG_PLAYLIST:
-			if (value != null && value.length() > 0) {
+			if(value != null && value.length() > 0) {
 				String n = new File(value).getName();
 				int dot = n.lastIndexOf('.');
-				if (dot > 0) {
+				if(dot > 0) {
 					n = n.substring(0, dot);
 				}
 				plinfoText.setText(n);
-			} else if (songFile != null) {
+			} else if(songFile != null) {
 				String n = songFile.getFile().getParent();
-				if (n != null) {
+				if(n != null) {
 					n = n.replace(modsDir.getPath(), "");
 				} else {
 					n = "";
@@ -1557,22 +1519,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songTitle = value;
 			flipTo(SAME_VIEW);
 			songDetails = player.getSongInfo();
-			if (songDetails != null) {
+			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
-				for (int i = 0; i < songDetails.length; i += 2) {
+				for(int i = 0; i < songDetails.length; i += 2) {
 					// Log.v(TAG, songDetails[i]);
 					// Log.v(TAG, songDetails[i+1]);
-					sb.append("<font color='yellow'><b>")
-							.append(songDetails[i]).append("</font></b><br/>");
-					if (songDetails[i].equals("Instruments")) {
+					sb.append("<font color='yellow'><b>").append(songDetails[i]).append("</font></b><br/>");
+					if(songDetails[i].equals("Instruments")) {
 						// sb.append(songDetails[i+1].replace("\n",
 						// "<br/><font color='white'>"));
 						String[] instr = songDetails[i + 1].split("\n");
-						for (int j = 0; j < instr.length; j++) {
-							sb.append(String.format(
-									"<font color='white'>%02d</font>: %s<br/>",
-									j + 1, instr[j].replace(">", "&gt;")
-											.replace("<", "&lt;")));
+						for(int j = 0; j < instr.length; j++) {
+							sb.append(String.format("<font color='white'>%02d</font>: %s<br/>", j + 1, instr[j].replace(">", "&gt;")
+									.replace("<", "&lt;")));
 						}
 
 					} else {
@@ -1614,7 +1573,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int choice = item.getItemId();
-		switch (choice) {
+		switch(choice) {
 		case R.id.settings:
 			startActivity(new Intent(this, SettingsActivity.class));
 			break;
@@ -1640,19 +1599,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		super.onPrepareDialog(id, dialog);
 		AlertDialog ad = ((AlertDialog) dialog);
 
-		switch (id) {
+		switch(id) {
 		case R.string.do_del_dir:
 		case R.string.do_del_file:
 		case R.string.do_del_plist:
 		case R.string.do_remove_all:
-			if (operationFile == null) {
+			if(operationFile == null) {
 				ad.cancel();
 				return;
 			}
 			break;
 		case R.string.add_to_plist:
 
-			if (songTitle == null || operationFile == null) {
+			if(songTitle == null || operationFile == null) {
 				ad.cancel();
 				return;
 			}
@@ -1661,14 +1620,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			ListView lv = ad.getListView();
 			int i = lv.getCheckedItemPosition();
 
-			if (i == ListView.INVALID_POSITION) {
+			if(i == ListView.INVALID_POSITION) {
 				b.setEnabled(false);
-			} else if (operationTuneCount < 2 && i > 0) {
+			} else if(operationTuneCount < 2 && i > 0) {
 				b.setEnabled(false);
 			}
 
 			Playlist pl = songDatabase.getActivePlaylist();
-			if (pl != null) {
+			if(pl != null) {
 				String s = getString(R.string.add_to_plist);
 				ad.setTitle(s.replace("[playlist]", pl.getTitle()));
 			} else {
@@ -1677,216 +1636,198 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		}
 	}
-/*
- 
-I/EventHub( 2621): New keyboard: device->id=0x10004 devname='Broadcom Bluetooth HID' propName='hw.keyboards.65540.devname' keylayout='/system/usr/keylayout/qwerty.kl'
-I/EventHub( 2621): New device: path=/dev/input/event4 name=Broadcom Bluetooth HID id=0x10004 (of 0x5) index=5 fd=134 classes=0x3
-I/KeyInputQueue( 2621): Device added: id=0x10004, name=Broadcom Bluetooth HID, classes=3
-I/ActivityManager( 2621): Config changed: { scale=1.0 imsi=240/1 loc=en_GB touch=3 keys=2/1/2 nav=1/1 orien=1 layout=34 uiMode=17 seq=30 FlipFont=0}
 
- 
-W/KeyCharacterMap( 4666): Can't open keycharmap file
-W/KeyCharacterMap( 4666): Error loading keycharmap file '/system/usr/keychars/Broadcom_Bluetooth_HID.kcm.bin'. hw.keyboards.65540.devname='Broadcom Bluetooth HID'
-W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.bin
-
- */
+	/*
+	 * 
+	 * I/EventHub( 2621): New keyboard: device->id=0x10004 devname='Broadcom
+	 * Bluetooth HID' propName='hw.keyboards.65540.devname'
+	 * keylayout='/system/usr/keylayout/qwerty.kl' I/EventHub( 2621): New
+	 * device: path=/dev/input/event4 name=Broadcom Bluetooth HID id=0x10004 (of
+	 * 0x5) index=5 fd=134 classes=0x3 I/KeyInputQueue( 2621): Device added:
+	 * id=0x10004, name=Broadcom Bluetooth HID, classes=3 I/ActivityManager(
+	 * 2621): Config changed: { scale=1.0 imsi=240/1 loc=en_GB touch=3
+	 * keys=2/1/2 nav=1/1 orien=1 layout=34 uiMode=17 seq=30 FlipFont=0}
+	 * 
+	 * 
+	 * W/KeyCharacterMap( 4666): Can't open keycharmap file W/KeyCharacterMap(
+	 * 4666): Error loading keycharmap file
+	 * '/system/usr/keychars/Broadcom_Bluetooth_HID.kcm.bin'.
+	 * hw.keyboards.65540.devname='Broadcom Bluetooth HID' W/KeyCharacterMap(
+	 * 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.bin
+	 */
 	@Override
 	protected Dialog onCreateDialog(int id) {
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-		if (confirmables.containsKey(id)) {
+		if(confirmables.containsKey(id)) {
 			final Runnable runnable = confirmables.get(id);
 			builder.setMessage(id);
-			builder.setPositiveButton(android.R.string.ok,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							runnable.run();
-						}
-					});
-			builder.setNegativeButton(android.R.string.cancel,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							dialog.cancel();
-						}
-					});
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					runnable.run();
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}
+			});
 			confirmables.remove(id);
 			return builder.create();
 		}
 
-		switch (id) {
+		switch(id) {
 		case R.string.new_:
 			builder.setTitle(id);
-			builder.setSingleChoiceItems(R.array.new_opts, -1,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							Log.v(TAG, "Clicked " + which);
-							dialog.dismiss();
-							switch (which) {
-							case 0:
-								showDialog(R.string.name_folder);
-								break;
-							case 1:
-								showDialog(R.string.name_playlist);
-								break;
-							}
-						}
-					});
-			builder.setNegativeButton(android.R.string.cancel,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							dialog.cancel();
-						}
-					});
+			builder.setSingleChoiceItems(R.array.new_opts, -1, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					Log.v(TAG, "Clicked " + which);
+					dialog.dismiss();
+					switch(which) {
+					case 0:
+						showDialog(R.string.name_folder);
+						break;
+					case 1:
+						showDialog(R.string.name_playlist);
+						break;
+					}
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}
+			});
 			break;
 		case R.string.name_playlist:
 			final EditText input = new EditText(this);
 			// builder.setTitle(id);
 			builder.setView(input);
 			builder.setMessage(id);
-			builder.setPositiveButton(android.R.string.ok,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							String s = input.getText().toString();
-							File file = new File(currentPath, s + ".plist");
-							if (!file.exists()
-									&& !file.getName()
-											.equals("Favorites.plist")) {
-								songDatabase.createPlaylist(file);
-								songDatabase.setActivePlaylist(file);
-								playListView.rescan();
-							}
-						}
-					});
-			builder.setNegativeButton(android.R.string.cancel,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							dialog.cancel();
-						}
-					});
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					String s = input.getText().toString();
+					File file = new File(currentPath, s + ".plist");
+					if(!file.exists() && !file.getName().equals("Favorites.plist")) {
+						songDatabase.createPlaylist(file);
+						songDatabase.setActivePlaylist(file);
+						playListView.rescan();
+					}
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}
+			});
 			break;
 		case R.string.name_folder:
 			final EditText input2 = new EditText(this);
 			builder.setView(input2);
 			builder.setMessage(id);
-			builder.setPositiveButton(android.R.string.ok,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							String s = input2.getText().toString();
-							File f = new File(currentPath, s);
-							if (!f.exists()) {
-								songDatabase.createFolder(f);
-								playListView.rescan();
-							}
-						}
-					});
-			builder.setNegativeButton(android.R.string.cancel,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							dialog.cancel();
-						}
-					});
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					String s = input2.getText().toString();
+					File f = new File(currentPath, s);
+					if(!f.exists()) {
+						songDatabase.createFolder(f);
+						playListView.rescan();
+					}
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}
+			});
 			break;
 		case R.string.add_to_plist:
 
 			builder.setTitle(id);
 
-			builder.setSingleChoiceItems(R.array.fav_opts, -1,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							// favSelection = which;
-							Button b = ((AlertDialog) dialog)
-									.getButton(DialogInterface.BUTTON_POSITIVE);
+			builder.setSingleChoiceItems(R.array.fav_opts, -1, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					// favSelection = which;
+					Button b = ((AlertDialog) dialog).getButton(DialogInterface.BUTTON_POSITIVE);
 
-							if (operationTuneCount < 2) {
-								if (which == 0) {
-									b.setEnabled(true);
-								} else {
-									b.setEnabled(false);
-								}
-							} else {
-								b.setEnabled(true);
-							}
+					if(operationTuneCount < 2) {
+						if(which == 0) {
+							b.setEnabled(true);
+						} else {
+							b.setEnabled(false);
 						}
-					});
-			builder.setPositiveButton(android.R.string.ok,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
+					} else {
+						b.setEnabled(true);
+					}
+				}
+			});
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
 
-							int favSelection = ((AlertDialog) dialog)
-									.getListView().getCheckedItemPosition();
+					int favSelection = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
 
-							Log.v(TAG, "Clicked " + favSelection);
-							Playlist al = songDatabase.getActivePlaylist();
-							// File file = new File(songName);
-							dialog.dismiss();
-							if (al == null || operationFile == null) {
-								return;
-							}
-							// if(currentPath.equals(al.getFile().getPath())) {
-							// return;
-							// }
+					Log.v(TAG, "Clicked " + favSelection);
+					Playlist al = songDatabase.getActivePlaylist();
+					// File file = new File(songName);
+					dialog.dismiss();
+					if(al == null || operationFile == null) {
+						return;
+					}
+					// if(currentPath.equals(al.getFile().getPath())) {
+					// return;
+					// }
 
-							Log.v(TAG, String.format(
-									"Adding '%s' to playlist '%s'",
-									operationFile.getPath(), al.getFile()
-											.getPath()));
+					Log.v(TAG, String.format("Adding '%s' to playlist '%s'", operationFile.getPath(), al.getFile().getPath()));
 
-							switch (favSelection) {
-							case 0:
-								songDatabase.addToPlaylist(al, new SongFile(
-										operationFile));
-								break;
-							case 1:
-								songDatabase.addToPlaylist(al, new SongFile(
-										operationFile, operationTune,
-										operationTitle));
-								break;
-							case 2:
-								for (int i = 0; i < operationTuneCount; i++) {
-									songDatabase
-											.addToPlaylist(al, new SongFile(
-													operationFile, i, null));
-								}
-								break;
-							}
-
-							// Playlist cpl = songDatabase.getCurrentPlaylist();
-							// if(cpl != null && cpl.equals(al)) {
-							// setDirectory(null, null);
-							// }
-
+					switch(favSelection) {
+					case 0:
+						songDatabase.addToPlaylist(al, new SongFile(operationFile));
+						break;
+					case 1:
+						songDatabase.addToPlaylist(al, new SongFile(operationFile, operationTune, operationTitle));
+						break;
+					case 2:
+						for(int i = 0; i < operationTuneCount; i++) {
+							songDatabase.addToPlaylist(al, new SongFile(operationFile, i, null));
 						}
-					});
+						break;
+					}
 
-			builder.setNegativeButton(android.R.string.cancel,
-					new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							dialog.cancel();
-							dialogShowing = false;
-							checkProgressDialog();
-						}
-					});
+					// Playlist cpl = songDatabase.getCurrentPlaylist();
+					// if(cpl != null && cpl.equals(al)) {
+					// setDirectory(null, null);
+					// }
+
+				}
+			});
+
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+					dialogShowing = false;
+					checkProgressDialog();
+				}
+			});
 			break;
 		default:
 			builder.setMessage(id);
-			builder.setPositiveButton(android.R.string.ok,
-					new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int id) {
-							dialog.cancel();
-						}
-					});
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					dialog.cancel();
+				}
+			});
 			break;
 		}
 
@@ -1906,7 +1847,7 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 		Cursor cursor = currentPlaylistView.getCursor(info.position);
 		int type = SongDatabase.TYPE_FILE;
 		int t = cursor.getColumnIndex("TYPE");
-		if (t >= 0) {
+		if(t >= 0) {
 			type = cursor.getInt(t);
 		}
 
@@ -1917,12 +1858,12 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 
 		MenuItem aitem = menu.findItem(R.id.add_to_plist);
 		Playlist pl = songDatabase.getActivePlaylist();
-		if (pl != null) {
+		if(pl != null) {
 			String s = aitem.getTitle().toString();
 			aitem.setTitle(s.replace("[playlist]", pl.getTitle()));
 		}
 
-		if (songDatabase.getCurrentPlaylist() != null) {
+		if(songDatabase.getCurrentPlaylist() != null) {
 			menu.setGroupVisible(R.id.in_playlist, true);
 			menu.setGroupVisible(R.id.on_file, false);
 			menu.setGroupVisible(R.id.on_dir, false);
@@ -1932,7 +1873,7 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 			menu.setGroupVisible(R.id.in_playlist, false);
 		}
 
-		switch (type) {
+		switch(type) {
 		case SongDatabase.TYPE_FILE:
 			menu.setGroupVisible(R.id.on_file, true);
 			menu.setGroupVisible(R.id.on_dir, false);
@@ -1962,8 +1903,7 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 		// playListView.getItemAtPosition(info.position);
 		// Cursor cursor = playListView.getCursor(info.position);
 		File file = currentPlaylistView.getFile(info.position);
-		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item
-				.getTitle(), info.position, info.id));
+		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id));
 		// int pi = cursor.getColumnIndex("PATH");
 		// String path = playListView.getDirectory();
 		// if(pi >= 0) {
@@ -1972,7 +1912,7 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 		Playlist pl = songDatabase.getCurrentPlaylist();
 		Playlist al = songDatabase.getActivePlaylist();
 
-		switch (item.getItemId()) {
+		switch(item.getItemId()) {
 		case R.id.go_dir:
 			setDirectory(file.getParentFile(), playListView);
 			currentPlaylistView.setScrollPosition(file);
@@ -1983,8 +1923,8 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 			songDatabase.setActivePlaylist(file);
 			break;
 		case R.id.add_to_plist:
-			if (al != null) {
-				if (!currentPath.equals(al.getFile().getPath())) {
+			if(al != null) {
+				if(!currentPath.equals(al.getFile().getPath())) {
 					// al.add(file);
 					songDatabase.addToPlaylist(al, new SongFile(file));
 				}
@@ -1994,7 +1934,7 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 		// songDatabase.addFavorite(file);
 		// break;
 		case R.id.remove:
-			if (pl != null) {
+			if(pl != null) {
 				pl.remove(file);
 				setDirectory(null, null);
 			}
@@ -2005,7 +1945,7 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 			runConfirmable(R.string.do_del_dir, new Runnable() {
 				@Override
 				public void run() {
-					if (songDatabase.deleteDir(operationFile)) {
+					if(songDatabase.deleteDir(operationFile)) {
 						delDir(operationFile);
 						setDirectory(null, null);
 					}
@@ -2018,7 +1958,7 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 			runConfirmable(R.string.do_del_file, new Runnable() {
 				@Override
 				public void run() {
-					if (songDatabase.deleteFile(operationFile)) {
+					if(songDatabase.deleteFile(operationFile)) {
 						operationFile.delete();
 						setDirectory(null, null);
 					}
@@ -2028,17 +1968,17 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 
 		case R.id.del_plist:
 			operationFile = file;
-			if (operationFile.getName().equals("Favorites.plist")) {
+			if(operationFile.getName().equals("Favorites.plist")) {
 				break;
 			}
 			runConfirmable(R.string.do_del_plist, new Runnable() {
 				@Override
 				public void run() {
-					if (songDatabase.deleteFile(operationFile)) {
+					if(songDatabase.deleteFile(operationFile)) {
 						operationFile.delete();
 						setDirectory(null, null);
 						Playlist apl = songDatabase.getActivePlaylist();
-						if (apl.getFile().equals(operationFile)) {
+						if(apl.getFile().equals(operationFile)) {
 							File mf = new File(modsDir, "Favorites.plist");
 							songDatabase.setActivePlaylist(mf);
 						}
@@ -2048,10 +1988,9 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 			break;
 
 		case R.id.remove_all:
-			if (pl != null) {
+			if(pl != null) {
 				operationFile = pl.getFile();
-				Log.v(TAG, String.format("Clearing playlist %s", pl.getFile()
-						.getPath()));
+				Log.v(TAG, String.format("Clearing playlist %s", pl.getFile().getPath()));
 				runConfirmable(R.string.do_remove_all, new Runnable() {
 					@Override
 					public void run() {
@@ -2075,9 +2014,9 @@ W/KeyCharacterMap( 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.
 
 	private void delDir(File dd) {
 
-		if (dd.isDirectory()) {
+		if(dd.isDirectory()) {
 			File[] files = dd.listFiles();
-			for (File f : files) {
+			for(File f : files) {
 				delDir(f);
 			}
 		}

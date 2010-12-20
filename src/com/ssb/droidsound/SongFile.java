@@ -109,7 +109,7 @@ public class SongFile {
 		
 		file = new File(path, fileName);
 		
-		Log.v(TAG, String.format("SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, playtime));
+		//Log.v(TAG, String.format("SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, playtime));
 	}
 	
 	public String getTitle() {

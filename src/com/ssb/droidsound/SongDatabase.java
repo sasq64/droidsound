@@ -147,7 +147,6 @@ public class SongDatabase implements Runnable {
 	public void registerDataSource(String dumpname, DataSource ds) {
 		String s = dumpname.toUpperCase();
 		dbsources.put(s, ds);
-		dbsources.put(s + ".ZIP", ds);
 	}
 /*
 	private volatile String cancelUrl;
