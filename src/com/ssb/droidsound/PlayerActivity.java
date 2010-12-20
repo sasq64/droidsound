@@ -1026,7 +1026,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 				if(fromUser) {
-					Log.v(TAG, String.format("Changed %d", progress));
+					//Log.v(TAG, String.format("Changed %d", progress));
 					int pos = songLength * seekBar.getProgress() / 100;
 					songSecondsText.setText(String.format("%02d:%02d", pos / 60, pos % 60));
 					seekingSong = 5;
