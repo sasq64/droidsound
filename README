@@ -1,36 +1,14 @@
 
-==== Droudsound Beta 3 ====
+HOW TO BUILD
 
-
-= QUICKSTART =
-
-Put your music in a directory called "MODS" on your sdcard.
-
-Zip-files and directories will be scanned and indexed.
-
-
-
-
-= NOTES = 
-
-You can search for songs by title.
-
-Long press Back/Forward to skip subsongs and jump directly to next file.
-
-Long press Back to go to top directory
-
-Name songs "<author> - <title>.ext" and it that metadata will be used
-if none is found in the file.
-
-
-
-
-= FORMATS =
-
-All formats handled by libsidplay2, modlug and GME, the most popular;
-
-SID, MOD, XM, IT, S3M, NFS, GBS, SPC, AY
-
-
-
--- Sasq
+Prerequirements:
+ Android SDK, NDK & 2.2+ platform
+ Native Gcc & Make
+ 
+ 
+ * Build libuade.a - make libuade.a from jni/UADEPlugin/uade
+ 
+ * Build jni libraries - run ndk-build from project directory
+ 
+ * Build the project from Eclipse or using build.xml
+  

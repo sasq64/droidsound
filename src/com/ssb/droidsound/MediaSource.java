@@ -12,7 +12,24 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 import com.ssb.droidsound.SongDatabase.ScanCallback;
+/*
+CursorConverter:
+Convert column-names
+Convert column-values
 
+Path2Cursor
+Virtual Part
+
+VFSys
+  addDir(name)
+  addCursorDir()
+  
+  v = new vfsys
+  a = v.add("ALBUMS")
+  
+
+
+ */
 
 public class MediaSource implements SongDatabase.DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();
@@ -78,6 +95,7 @@ public class MediaSource implements SongDatabase.DataSource  {
 
 	@Override
 	public Cursor getCursorFromPath(File file, SQLiteDatabase db) {
+		// '/mnt/sdcard/MODS/mediastore.source'
 		Log.v(TAG, String.format("FILE '%s'", file.getPath()));
 		
 		ContentResolver cr = context.getContentResolver();
@@ -88,9 +106,11 @@ public class MediaSource implements SongDatabase.DataSource  {
 				  MediaStore.Audio.Media.TITLE,
 				  MediaStore.Audio.Media.ARTIST,
 				  MediaStore.Audio.Media.DATA,
-				  MediaStore.Audio.Media.SIZE };
+				  MediaStore.Audio.Media.SIZE,
+				  MediaStore.Audio.Media.ALBUM,
+				  };
 		
-		Cursor cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields, null, null, null);
+		Cursor cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields, "album = 'Santogold'", null, null);
 		
 		cursor.moveToFirst();
 		String fileName = cursor.getString(2);
