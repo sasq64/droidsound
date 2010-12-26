@@ -723,8 +723,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songDatabase.registerDataSource(CSDBParser.DUMP_NAME, csdb);
 			songDatabase.registerDataSource(CSDBParser.DUMP_NAME + ".ZIP", csdb);
 
-			//MediaSource ms = new MediaSource(this);
-			//songDatabase.registerDataSource(MediaSource.NAME, ms);
+			MediaSource ms = new MediaSource(this);
+			songDatabase.registerDataSource(MediaSource.NAME, ms);
 
 			dbThread = new Thread(songDatabase);
 			dbThread.start();

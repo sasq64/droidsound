@@ -1,5 +1,6 @@
 package com.ssb.droidsound;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import android.database.Cursor;
@@ -14,8 +15,7 @@ public class DBFileSystem {
 	
 	public static class Directory {
 		public String name;
-		public List<Directory> children;
-		public CursorDir dirCursor;
+		public List<Directory> children = new ArrayList<Directory>();
 
 		public Directory getChild(String name) {
 			for(Directory d : children) {
@@ -29,9 +29,11 @@ public class DBFileSystem {
 	
 	private String baseName;
 	private Directory rootDir;
+	private CursorDir cursorDir;
 	
-	public DBFileSystem(String baseName) {
+	public DBFileSystem(String baseName, CursorDir cdir) {
 		this.baseName = baseName;
+		cursorDir = cdir;
 		rootDir = new Directory();
 	}
 	
@@ -78,7 +80,7 @@ public class DBFileSystem {
 			dir = dir.getChild(parts[i]);
 		}
 				
-		return dir.dirCursor.getCursorFromPath(parts);
+		return cursorDir.getCursorFromPath(parts);
 
 	}
 	

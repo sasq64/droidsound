@@ -2,6 +2,7 @@ package com.ssb.droidsound;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 
 import android.content.ContentResolver;
@@ -35,98 +36,85 @@ VFSys
 public class MediaSource implements SongDatabase.DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();
 	
-	private static class MSWrapper extends CursorWrapper {
+	private static class MSWrapper {
 
-		public static interface ColumnHook {
-		};
+		private Map<String, Integer> colMap;
+		private Integer colCounter;
+
+		public MSWrapper() {
+			colCounter = 100;
+			colMap = new HashMap<String, Integer>();
+			registerColumn("PATH", 97);
+			registerColumn("TYPE", 98);
+			registerColumn("FILENAME", 99);
+			registerColumn("TITLE", 3);
+			registerColumn("COMPOSER", 4);
+		}
+				
+		public int registerColumn(String col, int colno) {
+			colMap.put(col, colno);
+			return colno;
+		}
 		
-		public static interface ColumnStringHook extends ColumnHook {
-			String getString(Cursor cr);
-		};
-
-		public static interface ColumnIntHook extends ColumnHook{
-			int getInt(Cursor cr);
+		public Cursor createWrapper(Cursor cr) {
+			return new Wrapper(cr, colMap);
 		}
 
-		private Cursor cursor;;
+		public static class Wrapper extends CursorWrapper {
 
-		public MSWrapper(Cursor cursor) {
-			super(cursor);
-			this.cursor = cursor;
+			private Map<String, Integer> colMap;
+					
+			public Wrapper(Cursor cursor, Map<String, Integer> cm) {
+				super(cursor);
+				colMap = cm;
+			}
+
+			public int getColumnIndex(String columnName) {
+				
+				if(colMap.containsKey(columnName)) {
+					return colMap.get(columnName);
+				}			
+				return super.getColumnIndex(columnName);
+			}
+					
+			@Override
+			public String getString(int columnIndex) {
+				
+				File f;
+				switch(columnIndex) {
+				case 97:
+					f = new File(super.getString(5));
+					return f.getParent();
+				case 99:
+					f = new File(super.getString(5));
+					return f.getName();
+				}
+				return super.getString(columnIndex);
+			}
+			
+			@Override
+			public int getInt(int columnIndex) {
+				switch(columnIndex) {
+				case 98:
+					return SongDatabase.TYPE_FILE;
+				}
+				return super.getInt(columnIndex);
+			}
 		}
+		
+	}
+	
+	private class ColumnMapping {
 		
 		private Map<String, Integer> colMap;
-		private Map<Integer, ColumnHook> hookMap;
-		private Map<Integer, String> toMap;
-		private Integer colCounter;
+		private Map<String, String> fmtMap;
 		
-		public int getColumnIndex(String columnName) {
+		public String formatString(Cursor cr, String s) {
 			
-			if(colMap.containsKey(columnName)) {
-				return colMap.get(columnName);
-			}
 			
-			return super.getColumnIndex(columnName);
-			/*
-			if(columnName == "PATH") {
-				return 97;
-			} else if(columnName == "FILENAME") {
-				return 99;
-			} else if(columnName == "TITLE") {
-				return 3;
-			} else if(columnName == "TYPE") {
-				return 98;
-			} else if(columnName == "COMPOSER") {
-				return 4;
-			}
-			return -1;*/
-		}
-		
-		public void mapColumn(String col, String toCol) {
-			colMap.put(col, colCounter);
-			//toMap.put(toCol, colCounter);
-			colCounter++;
-		}
-		
-		public void mapColumn(String col, ColumnHook hook) {
-			colMap.put(col, colCounter);
-			hookMap.put(colCounter, hook);
-			colCounter++;
-		}
-
-		@Override
-		public String getString(int columnIndex) {
 			
-			if(columnIndex > 99) {
-				//indexMap.get(columnIndex);
-				ColumnStringHook hook = (ColumnStringHook) hookMap.get(columnIndex);
-				return hook.getString(cursor);
-			}
-			/*
-			File f;
-			switch(columnIndex) {
-			case 97:
-				f = new File(super.getString(5));
-				return f.getParent();
-			case 99:
-				f = new File(super.getString(5));
-				return f.getName();
-			} */
-			return super.getString(columnIndex);
-		}
-		
-		@Override
-		public int getInt(int columnIndex) {
-			if(columnIndex > 99) {
-				//indexMap.get(columnIndex);
-				ColumnIntHook hook = (ColumnIntHook) hookMap.get(columnIndex);
-				return hook.getInt(cursor);
-			} /*
-			switch(columnIndex) {
-			case 98:
-				return SongDatabase.TYPE_FILE;
-			}*/
-			return super.getInt(columnIndex);
+			
+			return null;
 		}
 		
 	}
@@ -137,11 +125,14 @@ public class MediaSource implements SongDatabase.DataSource  {
 	private Context context;
 
 	private DBFileSystem dbfs;
+
+	private MSWrapper wrapper;
 	
 	public MediaSource(Context ctx) {
 		context = ctx;
-		dbfs = new DBFileSystem(NAME);
-		DBFileSystem.Directory a = dbfs.addDirectory(null, "ALBUMS");
+		//dbfs = new DBFileSystem(NAME);
+		//DBFileSystem.Directory a = dbfs.addDirectory(null, "ALBUMS");
+		wrapper = new MSWrapper();
 		
 		
 	}
@@ -150,14 +141,54 @@ public class MediaSource implements SongDatabase.DataSource  {
 	public void createIndex(int mode, SQLiteDatabase db) {
 	}
 
+	String [] getParts(String path) {		
+		String [] parts = path.split("/");
+		int n = parts.length;
+		boolean found = false;
+		//pathTitle = null;
+
+		for(int i=0; i<n; i++) {
+			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
+		}
+
+		for(int i=0; i<n; i++) {
+			if(parts[i].startsWith(NAME)) {
+				for(int j=0; j<(n-i); j++) {
+					parts[j] = parts[i+j];
+				}
+				found = true;
+				n -= i;
+				break;
+			}
+		}
+
+		if(!found) {
+			Log.v(TAG, "Not found");
+			return null;
+		}
+		return parts;
+	}
+	
 	@Override
 	public Cursor getCursorFromPath(File file, SQLiteDatabase db) {
 		// '/mnt/sdcard/MODS/mediastore.source'
 		Log.v(TAG, String.format("FILE '%s'", file.getPath()));
 		
-		ContentResolver cr = context.getContentResolver();
 		
-		  String[] fields = { MediaStore.Audio.Media._ID,
+		String [] parts = getParts(file.getPath());
+
+		String last = null;
+		if(parts != null)
+			last = parts[parts.length-1].toLowerCase();
+
+		String[] albumsFields = { MediaStore.Audio.Media._ID,
+				  MediaStore.Audio.Albums.ALBUM,
+				  MediaStore.Audio.Albums.ARTIST,
+				  MediaStore.Audio.Albums.FIRST_YEAR,
+				  MediaStore.Audio.Albums.LAST_YEAR,
+				  MediaStore.Audio.Albums.NUMBER_OF_SONGS
+				  };
+		String[] fields = { MediaStore.Audio.Media._ID,
 				  MediaStore.Audio.Media.DISPLAY_NAME,
 				  MediaStore.Audio.Media.YEAR,
 				  MediaStore.Audio.Media.TITLE,
@@ -166,15 +197,22 @@ public class MediaSource implements SongDatabase.DataSource  {
 				  MediaStore.Audio.Media.SIZE,
 				  MediaStore.Audio.Media.ALBUM,
 				  };
+
+		ContentResolver cr = context.getContentResolver();
+		Cursor cursor = null;
+		  
+		if(last != null && last.equals("albums")) {
+			cursor = cr.query(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, albumsFields, null, null, null);
+		}
+		cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields, "album = 'Santogold'", null, null);
+		//cursor = cr.query(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, albumsFields, null, null, null);
 		
-		Cursor cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields, "album = 'Santogold'", null, null);
+		//cursor.moveToFirst();
+		//String fileName = cursor.getString(2);
+		//Log.v(TAG, String.format("%*s'%s', '%s'", "DUMMY", cursor.getString(1), cursor.getString(5)));
+		//cursor.moveToPosition(-1);
 		
-		cursor.moveToFirst();
-		String fileName = cursor.getString(2);
-		Log.v(TAG, String.format("'%s', '%s'", cursor.getString(1), cursor.getString(5)));
-		cursor.moveToPosition(-1);
-		
-		return new MSWrapper(cursor);
+		return wrapper.createWrapper(cursor);
 	}
 
 	@Override
