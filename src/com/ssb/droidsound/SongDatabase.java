@@ -1246,8 +1246,10 @@ public class SongDatabase implements Runnable {
 	public String getPathTitle() {
 		return pathTitle;
 	}
+	
+	private static String sortOrder [] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
 
-	public Cursor getFilesInPath(String pathName) {
+	public Cursor getFilesInPath(String pathName, int sorting) {
 		
 		if(pathName == null || !isReady) {
 			return null;
@@ -1329,14 +1331,14 @@ public class SongDatabase implements Runnable {
 		}
 	
 		Log.v(TAG, "BEGIN");
-		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { path, fname }, null, null, "TYPE, FILENAME", "1000");
+		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { path, fname }, null, null, sortOrder[sorting], "1000");
 		if(c != null) {
 			if(c.moveToFirst()) {
 				pathTitle = c.getString(0);
 			}
 			c.close();
 		}
-		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, "TYPE, FILENAME", "1000");	
+		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, sortOrder[sorting], "1000");	
 		Log.v(TAG, "END");
 		return c;
 	}

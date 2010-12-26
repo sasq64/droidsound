@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.ssb.droidsound" android:versionCode="7"
-	android:versionName="1.1" >
+	package="com.ssb.droidsound" android:versionCode="8"
+	android:versionName="1.2beta" >
 
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -9,7 +9,7 @@
 	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
 	<application android:icon="@drawable/icon" android:label="@string/app_name"
-	android:theme="@android:style/Theme.NoTitleBar" android:debuggable="true">
+	android:theme="@android:style/Theme.NoTitleBar" android:debuggable="false">
 		<activity android:name=".PlayerActivity" android:launchMode="singleTop" android:label="@string/app_name">
 			<intent-filter>
 				<action android:name="android.intent.action.SEARCH" />				
@@ -44,6 +44,8 @@
 				<data android:mimeType="audio/x-ay" />
 				<data android:mimeType="audio/x-vgm" />
 				<data android:mimeType="audio/x-vgz" />
+				<data android:mimeType="application/x-prg" />
+				<data android:mimeType="application/octet-stream" />
 			</intent-filter>		
 
 			<intent-filter>				

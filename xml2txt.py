@@ -49,25 +49,30 @@ def main(argv) :
 		releases = doc.getElementsByTagName('Release')
 		#print "Found %d releases" % (len(releases))
  		outf.write("[Releases]\n")
+		#try :
+
 
 		for r in releases :
 			rel = {}
-			
-			name = getText(r, 'Name')
+		
+			name = getText(r, 'Name').strip()
 			id = getText(r, 'ID')
 			rating = getText(r, 'CSDbRating')
 			rt = 0
 			if rating :
 				rt = int(float(rating) * 100)
 				rating = str(rt)
-			
+		
 			#if rt < 900 :
 			#	continue
-			
+		
 			gid = getText(r, 'ReleasedBy/Group/ID')
 			if gid :
-				group = getText(r, 'ReleasedBy/Group/Group')
+				group = getText(r, 'ReleasedBy/Group/Group').strip()
 				groupList[int(gid)] = group
+			else :
+				print "*** ", name, "has no group"
+				gid = "-1";
 
 			y = getText(r, 'ReleaseDate/Year')
 			m = getText(r, 'ReleaseDate/Month')
@@ -81,26 +86,28 @@ def main(argv) :
 			eid = getText(r, 'Achievement/Event/ID')
 			if eid :
 				event = getText(r, 'Achievement/Event/Name')
-				
+			
 				#if int(eid) == 7 :
 				if event == "X'2008" :
 					print "%s %d" % (name, date)
-				
+			
 				if eventList.has_key(eid) :
 					x = eventList[int(eid)]
 					if date > x[1] :
 						eventList[int(eid)] = (event, date)
 				else :
 					eventList[int(eid)] = (event, date)
-			
-			compo = getText(r, 'Achievement/Compo')
-			place = getText(r, 'Achievement/Place')
-						
+		
+			compo = getText(r, 'Achievement/Compo').strip()
+			place = getText(r, 'Achievement/Place').strip()
+					
 			type = getText(r, 'ReleaseType')
-			
-			if type.endswith('Demo') :
+		
+			if type.endswith('Fake Demo') :
+				type = type;
+			elif type.endswith('Demo') :
 				type = 'C64 Demo'
-			
+		
 			#if compo :
 			#	type = compo
 
@@ -111,10 +118,13 @@ def main(argv) :
 			fnames = []
 			for s in sids :			
 				fnames.append(s.firstChild.data)
-				
+			
 			rel = (id, name, gid, type, str(date), eid, place, rating, ','.join(fnames))
 			outf.write((u'\t'.join(rel) + "\n").encode(code))
- 		
+	 	#except:
+		#	print "Got exception in release", r
+
+	
  		outf.write("[Groups]\n")
  		
 		for g in groupList :

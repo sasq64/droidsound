@@ -35,6 +35,7 @@ public class FileIdentifier {
 	public static final int TYPE_IT = 5;
 	public static final int TYPE_NSF = 6;
 	public static final int TYPE_SPC = 7;
+	public static final int TYPE_PRG = 8;
 	//public static final int TYPE_VGM = 8;
 	
 	public static class MusicInfo {
@@ -59,6 +60,7 @@ public class FileIdentifier {
 		extensions.put("IT", TYPE_IT);
 		extensions.put("NSF", TYPE_NSF);
 		extensions.put("SPC", TYPE_SPC);
+		extensions.put("PRG", TYPE_PRG);
 		//extensions.put("VGM", TYPE_VGM);
 			
 		
@@ -212,6 +214,18 @@ public class FileIdentifier {
 		}
 	}
 
+	private static String getBaseName(String fname) {
+		int slash = fname.lastIndexOf('/');
+		if(slash >= 0) {
+			fname = fname.substring(slash+1);
+		}
+		int dot = fname.lastIndexOf('.');
+		if(dot > 0) {
+			fname = fname.substring(0, dot);
+		}
+		return fname;
+	}
+
 	
 	public static MusicInfo identify(String name, InputStream is, File file) {
 
@@ -326,6 +340,10 @@ public class FileIdentifier {
 
 		try {
 			switch(extno) {
+			case TYPE_PRG:
+				name = getBaseName(name);
+				fixName(name, info);
+				return info;
 			case TYPE_SID:
 				data = new byte [0x80];
 				is.read(data);

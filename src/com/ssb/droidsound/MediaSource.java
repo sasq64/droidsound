@@ -2,6 +2,7 @@ package com.ssb.droidsound;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Map;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -36,11 +37,37 @@ public class MediaSource implements SongDatabase.DataSource  {
 	
 	private static class MSWrapper extends CursorWrapper {
 
+		public static interface ColumnHook {
+		};
+		
+		public static interface ColumnStringHook extends ColumnHook {
+			String getString(Cursor cr);
+		};
+
+		public static interface ColumnIntHook extends ColumnHook{
+			int getInt(Cursor cr);
+		}
+
+		private Cursor cursor;;
+
 		public MSWrapper(Cursor cursor) {
 			super(cursor);
+			this.cursor = cursor;
 		}
 		
+		private Map<String, Integer> colMap;
+		private Map<Integer, ColumnHook> hookMap;
+		private Map<Integer, String> toMap;
+		private Integer colCounter;
+		
 		public int getColumnIndex(String columnName) {
+			
+			if(colMap.containsKey(columnName)) {
+				return colMap.get(columnName);
+			}
+			
+			return super.getColumnIndex(columnName);
+			/*
 			if(columnName == "PATH") {
 				return 97;
 			} else if(columnName == "FILENAME") {
@@ -52,11 +79,30 @@ public class MediaSource implements SongDatabase.DataSource  {
 			} else if(columnName == "COMPOSER") {
 				return 4;
 			}
-			return -1;
+			return -1;*/
 		}
 		
+		public void mapColumn(String col, String toCol) {
+			colMap.put(col, colCounter);
+			//toMap.put(toCol, colCounter);
+			colCounter++;
+		}
+		
+		public void mapColumn(String col, ColumnHook hook) {
+			colMap.put(col, colCounter);
+			hookMap.put(colCounter, hook);
+			colCounter++;
+		}
+
 		@Override
 		public String getString(int columnIndex) {
+			
+			if(columnIndex > 99) {
+				//indexMap.get(columnIndex);
+				ColumnStringHook hook = (ColumnStringHook) hookMap.get(columnIndex);
+				return hook.getString(cursor);
+			}
+			/*
 			File f;
 			switch(columnIndex) {
 			case 97:
@@ -65,16 +111,21 @@ public class MediaSource implements SongDatabase.DataSource  {
 			case 99:
 				f = new File(super.getString(5));
 				return f.getName();
-			}
+			} */
 			return super.getString(columnIndex);
 		}
 		
 		@Override
 		public int getInt(int columnIndex) {
+			if(columnIndex > 99) {
+				//indexMap.get(columnIndex);
+				ColumnIntHook hook = (ColumnIntHook) hookMap.get(columnIndex);
+				return hook.getInt(cursor);
+			} /*
 			switch(columnIndex) {
 			case 98:
 				return SongDatabase.TYPE_FILE;
-			}
+			}*/
 			return super.getInt(columnIndex);
 		}
 		
@@ -84,9 +135,15 @@ public class MediaSource implements SongDatabase.DataSource  {
 	public static final String NAME = "mediastore.source";
 
 	private Context context;
+
+	private DBFileSystem dbfs;
 	
 	public MediaSource(Context ctx) {
 		context = ctx;
+		dbfs = new DBFileSystem(NAME);
+		DBFileSystem.Directory a = dbfs.addDirectory(null, "ALBUMS");
+		
+		
 	}
 
 	@Override

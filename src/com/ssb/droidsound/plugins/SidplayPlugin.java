@@ -8,6 +8,8 @@ import java.nio.ByteOrder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import com.ssb.droidsound.FileIdentifier;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -70,7 +72,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandle(String name) { 
 		//return N_canHandle(name);
-		return name.toLowerCase().endsWith(".sid");
+		return name.toLowerCase().endsWith(".sid") || name.toLowerCase().endsWith(".prg");
 	}
 
 	@Override
@@ -121,10 +123,70 @@ public class SidplayPlugin extends DroidSoundPlugin {
 
 	native public static void N_setOption(int what, int val);
 	
+	
+	/*
+
+00000000  52 53 49 44 00 02 00 7c  00 00 76 00 00 00 00 01  |RSID...|..v.....|
+00000010  00 01 00 00 00 00 
+
+
+53 61  76 61 67 65 00 00 00 00  |......Savage....|
+00000020  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+00000030  00 00 00 00 00 00 4a 65  72 6f 65 6e 20 54 65 6c  |......Jeroen Tel|
+00000040  20 2f 20 4d 61 6e 69 61  63 73 20 6f 66 20 4e 6f  | / Maniacs of No|
+00000050  69 73 65 00 00 00 31 39  38 38 20 46 69 72 65 62  |ise...1988 Fireb|
+00000060  69 72 64 00 00 00 00 00  00 00 00 00 00 00 00 00  |ird.............|
+00000070  00 00 00 00 00 00 
+00000076  00 01 <- Unknown, Basic
+00000078  8e 12 00 00 
+9c 0f 78 a9  |..............x.|
+
+	 */
+	
+	byte rsid[] = new byte [] {
+	0x52, 0x53, 0x49, 0x44, 0x00, 0x02, 0x00, 0x7c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	0x00, 0x01, 0x00, 0x00, 0x00, 0x00 }; 
+
+	private void hexdump(byte [] data) {
+		StringBuilder sb = new StringBuilder();
+		for(int i=0; i<data.length; i++) {
+			if(i % 8 == 0) {
+				sb.append(String.format("\n%04x:  ", i));
+			}
+			sb.append(String.format("%02x ", data[i]));
+		}
+		Log.v(TAG, sb.toString());
+	}
+	
 	@Override
 	public boolean load(String name, byte [] module, int size) {
 		
 		currentTune = 0;
+		songInfo = null;
+		
+		if(name.toLowerCase().endsWith(".prg")) {
+			byte [] oldm = module;
+			module = new byte [oldm.length + 0x7c];
+			System.arraycopy(rsid, 0, module, 0, rsid.length);
+			
+			//module[0x16] = 'A';
+			//module[0x36] = 'B';
+			//module[0x56] = 'C';
+
+			//module[0x76] = 0;
+			module[0x77] = 2;
+			//module[0x78] = 0;
+			//module[0x79] = 0;
+			//module[0x7a] = 0;
+			//module[0x7b] = 0;
+			System.arraycopy(oldm, 0, module, 0x7c, oldm.length);
+			size += 0x7c;
+			
+			songInfo = new Info();
+			songInfo.name = getBaseName(name);
+			
+			//hexdump(module);
+		}
 		
 		currentSong = N_load(module, size);
 		
@@ -216,7 +278,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String getStringInfo(int what) {
-		if(currentSong <= 0 && songInfo != null) {
+		if(songInfo != null) {
 			switch(what) {
 			case INFO_AUTHOR:
 				return songInfo.composer;
@@ -322,6 +384,13 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		
 		songInfo = new Info();
 		Info info = songInfo;
+		
+		if(name.toLowerCase().endsWith(".prg")) {
+			info.name = name;
+			info.composer = "Unknown";
+			Log.v(TAG, "######################## PRG LOAD OK");
+			return true;
+		}
 		
 		
 		is.read(header);

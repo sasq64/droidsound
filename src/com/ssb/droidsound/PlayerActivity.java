@@ -124,6 +124,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private OnItemClickListener listClickListener;
 
+	private int sortOrder;
+	
 	private PlayListView playListView;
 	private PlayListView searchListView;
 
@@ -239,8 +241,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		}
 
-		Cursor cursor = songDatabase.getFilesInPath(f.getPath());
+		Cursor cursor = songDatabase.getFilesInPath(f.getPath(), sortOrder);
 		plv.setCursor(cursor, f.getPath());
+
 
 		if(f.equals(modsDir)) {
 			atTop = true;
@@ -304,6 +307,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 				File f = new File(music);
 				moveFileHere(f);
+			} else {
+				Intent newIntent = new Intent(intent);
+				newIntent.setClass(this, PlayerService.class);
+				startService(newIntent);
 			}
 		} else if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
@@ -341,7 +348,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 				if(what == FILE_VIEW) {
 					String p = playListView.getPath();
-					Cursor cursor = songDatabase.getFilesInPath(p);
+					Cursor cursor = songDatabase.getFilesInPath(p, sortOrder);
 					playListView.setCursor(cursor, p);
 				}
 
@@ -491,6 +498,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		playListView = (PlayListView) findViewById(R.id.play_list);
 		searchListView = (PlayListView) findViewById(R.id.search_list);
 		titleText = (TextView) findViewById(R.id.list_title);
+		
 		subtitleText = (TextView) findViewById(R.id.list_subtitle);
 		goinfoButton = (ImageButton) findViewById(R.id.go_info_button);
 		flipper = (ViewFlipper) findViewById(R.id.flipper);
@@ -715,8 +723,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songDatabase.registerDataSource(CSDBParser.DUMP_NAME, csdb);
 			songDatabase.registerDataSource(CSDBParser.DUMP_NAME + ".ZIP", csdb);
 
-			MediaSource ms = new MediaSource(this);
-			songDatabase.registerDataSource(MediaSource.NAME, ms);
+			//MediaSource ms = new MediaSource(this);
+			//songDatabase.registerDataSource(MediaSource.NAME, ms);
 
 			dbThread = new Thread(songDatabase);
 			dbThread.start();
@@ -972,6 +980,35 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					wakeText.setTextColor(0xffb0b0ff);
 				}
 			}
+		});
+		
+	/*	
+		titleText.setOnClickListener(new OnClickListener() {
+			
+
+			@Override
+			public void onClick(View v) {
+				sortOrder = (sortOrder + 1) % 3;
+				Log.v(TAG, String.format("Sortorder now %d", sortOrder));
+				flipTo(SAME_VIEW);
+			}
+		});
+*/
+		
+		titleBar.setOnClickListener(new OnClickListener() {
+			
+
+			@Override
+			public void onClick(View v) {
+				sortOrder = (sortOrder + 1) % 3;
+				Log.v(TAG, String.format("TB Sortorder now %d", sortOrder));
+				//flipTo(SAME_VIEW);
+				if(currentPlaylistView == playListView) {
+					String p = currentPlaylistView.getPath();
+					Cursor cursor = songDatabase.getFilesInPath(p, sortOrder);
+					currentPlaylistView.setCursor(cursor, p);
+				}
+				}
 		});
 
 		/*
