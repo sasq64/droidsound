@@ -163,8 +163,22 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		
 		currentTune = 0;
 		songInfo = null;
+		int type = -1;
 		
+		String s = new String(module, 0, 4);
+		if((s.equals("PSID") || s.equals("RSID"))) {
+			type = 0;
+		} else
 		if(name.toLowerCase().endsWith(".prg")) {
+			type = 1;
+		} else if(module[0] == 0x01 && module[1] == 0x08) {
+			type = 1;
+		}
+		
+		if(type < 0)
+			return false;
+
+		if(type == 1) {
 			byte [] oldm = module;
 			module = new byte [oldm.length + 0x7c];
 			System.arraycopy(rsid, 0, module, 0, rsid.length);

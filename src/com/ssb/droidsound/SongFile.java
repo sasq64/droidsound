@@ -155,6 +155,7 @@ public class SongFile {
 		if(subtune < 0) {
 			subtune = t;
 		}
+		this.title = title;
 	}
 	
 	public SongFile(String song, int t) {
@@ -181,6 +182,18 @@ public class SongFile {
 		} else {
 			return path + "/" + fileName;
 		}
+	}
+	
+	public void setSubTune(int t) {
+		subtune = t;
+	}
+
+	public void setPlayTime(int t) {
+		playtime = t;
+	}
+
+	public void setTitle(String t) {
+		title = t;
 	}
 
 	public String getName() {

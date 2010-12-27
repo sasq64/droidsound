@@ -65,7 +65,7 @@ import com.ssb.droidsound.service.PlayerService;
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
 
-	public static final String DROIDSOUND_VERSION = "1.1beta3";
+	//public static final String DROIDSOUND_VERSION = "1.1beta3";
 	public static final int VERSION = 16;
 
 	private static class Config {
@@ -735,6 +735,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				e2.printStackTrace();
 			}
 		}
+		mf = new File(modsDir, MediaSource.NAME);
+		if(!mf.exists()) {
+			try {
+				FileWriter fw = new FileWriter(mf);
+				fw.close();
+				Log.v(TAG, "Done");
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+		}
 
 		new File(modsDir, "Favorites.lnk").delete();
 
@@ -986,6 +997,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					operationTune = subTune;
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
+					Log.v(TAG, String.format("%s - %s ADD", songTitle != null ? songTitle : "null", subtuneTitle != null ? subtuneTitle : "null"));
 					if(songTitle != null && subtuneTitle != null) {
 						// operationTitle = songTitle + " - " + subtuneTitle;
 						operationTitle = subtuneTitle + " (" + songTitle + ")";
@@ -1572,6 +1584,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case PlayerService.SONG_SUBTUNE_TITLE:
 			subtuneTitle = value;
+			if(subtuneTitle != null && subtuneTitle.length() == 0) subtuneTitle = null;
 			flipTo(SAME_VIEW);
 			break;
 		case PlayerService.SONG_SUBTUNE_AUTHOR:
@@ -1582,6 +1595,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songTitle = value;
 			flipTo(SAME_VIEW);
 			songDetails = player.getSongInfo();
+			subtuneTitle = null;
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i = 0; i < songDetails.length; i += 2) {

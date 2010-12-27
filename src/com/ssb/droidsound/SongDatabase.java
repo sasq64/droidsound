@@ -1398,11 +1398,11 @@ public class SongDatabase implements Runnable {
 					cursor.close();
 					cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=?", new String[] { songFile.getPath() }, null, null, "TITLE");
 					if(cursor.moveToFirst()) {
-						pl.add(cursor, -1);
+						pl.add(cursor, -1, null);
 					}
 					
 				} else if(type == SongDatabase.TYPE_FILE) {
-					pl.add(cursor, songFile.getSubtune());
+					pl.add(cursor, songFile.getSubtune(), songFile.getTitle());
 				}
 			}
 			cursor.close();

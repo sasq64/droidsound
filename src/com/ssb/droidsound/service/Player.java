@@ -110,6 +110,7 @@ public class Player implements Runnable {
 	private boolean songEnded = false;
 	private boolean reinitAudio;
 	private int queuedFrames;
+	private boolean startedFromSub;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -335,6 +336,8 @@ public class Player implements Runnable {
 					fs.read(songBuffer);
 					fs.close();
 					f.delete();
+				} else {
+					Log.v(TAG, String.format("Connection failed: %d", response));
 				}
 			} else {
 				songFile = song.getFile(); // new File(songName);
@@ -481,6 +484,8 @@ public class Player implements Runnable {
 				if (currentSong.subTunes == -1)
 					currentSong.subTunes = 0;
 			}
+			
+			startedFromSub = false;
 
 			if (song.getSubtune() >= 0) {
 				currentSong.startTune = song.getSubtune();
@@ -490,6 +495,7 @@ public class Player implements Runnable {
 				currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 				currentSong.subtuneTitle = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
 				currentSong.subtuneAuthor = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
+				startedFromSub = true;
 			}
 
 			Log.v(TAG, String
@@ -718,13 +724,24 @@ public class Player implements Runnable {
 					if(mp != null) {
 						
 						if(!mp.isPlaying()) {
-							songEnded = true;
+							//songEnded = true;
+							currentState = State.SWITCHING;
+							Message msg = mHandler.obtainMessage(MSG_DONE);
+							mHandler.sendMessage(msg);
 						}
 						
 						int playPos = mp.getCurrentPosition();
 						
 						int song = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
 						if(song >= 0 && song != currentTune) {
+							
+							if(startedFromSub) {
+								currentState = State.SWITCHING;
+								Message msg = mHandler.obtainMessage(MSG_DONE);
+								mHandler.sendMessage(msg);								
+								startedFromSub = false;
+							}
+							
 							currentTune = song;
 							//currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);									
 							currentSong.subtuneTitle = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);

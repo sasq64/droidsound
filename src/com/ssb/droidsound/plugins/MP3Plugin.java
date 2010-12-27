@@ -134,6 +134,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 			mediaPlayer.start();
 			started = true;
 		}
+		
+		if(!mediaPlayer.isPlaying())
+			return -1;
+		
 		return mediaPlayer.getCurrentPosition();
 	}
 	

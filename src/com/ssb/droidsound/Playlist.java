@@ -185,7 +185,14 @@ public class Playlist {
 		
 		String s = songFile.getPath();
 		if(minfo != null) {
-
+			
+			String title = songFile.getTitle();
+			if(title != null) {
+				s = s + "\t" + title;
+				if(minfo.composer != null) {
+					s = s + "\t" + minfo.composer;
+				}			
+			} else				
 			if(minfo.title != null) {
 				s = s + "\t" + minfo.title;
 				
@@ -216,7 +223,7 @@ public class Playlist {
 		changed = true;
 	}
 	
-	synchronized public void add(Cursor c, int subtune) {
+	synchronized public void add(Cursor c, int subtune, String tuneTitle) {
 		
 		while(true) {		
 			String title = c.getString(c.getColumnIndex("TITLE"));
@@ -228,6 +235,9 @@ public class Playlist {
 			String line = f.getPath();
 			if(subtune >= 0) {
 				
+				if(tuneTitle != null) {
+					title = tuneTitle;
+				} else				
 				if(title != null) {
 					title = String.format("%s #%02d", title, subtune+1);
 				}
