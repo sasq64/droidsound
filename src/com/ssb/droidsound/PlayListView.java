@@ -141,6 +141,7 @@ public class PlayListView extends ListView {
     		mSideTitleIndex = mCursor.getColumnIndex("SIDETITLE");
     		mDateIndex = mCursor.getColumnIndex("DATE");
     		
+    		//Log.v(TAG, String.format("%% SIDETITLE %d", mSideTitleIndex));
     		
     		mTitleIndex = mCursor.getColumnIndex("TITLE");
     		mTypeIndex = mCursor.getColumnIndex("TYPE");
@@ -217,7 +218,7 @@ public class PlayListView extends ListView {
 			//Log.v(TAG, "DATEINDEX " + mDateIndex);
 			
 			if(mSideTitleIndex >= 0) {
-				side = mCursor.getString(mTitleIndex);
+				side = mCursor.getString(mSideTitleIndex);
 			} else if(mDateIndex >= 0) {
 				int date = mCursor.getInt(mDateIndex);
 				if(date > 0) {

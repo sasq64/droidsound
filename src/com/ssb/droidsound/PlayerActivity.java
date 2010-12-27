@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,6 +27,7 @@ import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
@@ -312,6 +314,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				newIntent.setClass(this, PlayerService.class);
 				startService(newIntent);
 			}
+		} else if(Intent.ACTION_SEND.equals(intent.getAction())) {
+			Log.v(TAG, String.format("<<NEW INTENT>> Want to share '%s'", intent.getDataString()));			
+			Intent newIntent = new Intent(intent);
+			intent.setAction(Intent.ACTION_VIEW);
+			newIntent.setClass(this, PlayerService.class);
+			startService(newIntent);
+			
 		} else if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
 			Log.v(TAG, "QUERY " + query);
@@ -468,7 +477,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 				if(f.exists()) {
 					moveFileHere = f;
-				}
+				}			
 			} else {
 				Intent newIntent = new Intent(intent);
 				newIntent.setClass(this, PlayerService.class);
@@ -476,6 +485,23 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				finish();
 				return;
 			}
+		} else if(Intent.ACTION_SEND.equals(intent.getAction())) {
+			Log.v(TAG, String.format(">> Want to share '%s'", intent.getStringExtra(Intent.EXTRA_TEXT)));
+			
+			Bundle bundle = intent.getExtras();
+			for(String s : bundle.keySet()) {
+				Log.v(TAG, s);
+			}
+			
+			Intent newIntent = new Intent(intent);
+			newIntent.setAction(Intent.ACTION_VIEW);
+			
+			Uri uri = Uri.parse(intent.getStringExtra(Intent.EXTRA_TEXT));			
+			newIntent.setData(uri);
+			newIntent.setClass(this, PlayerService.class);
+			startService(newIntent);
+			finish();
+			return;
 		}
 
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
