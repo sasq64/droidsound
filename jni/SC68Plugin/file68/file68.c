@@ -448,83 +448,90 @@ static int sndh_info(disk68_t * mb, int len)
      Anyway the current parser allows a given number of successive
      unknown tags. May be this number should be increase in order to prevent
      some "large" unknown tag to break the parser.
-  */
+*/
 
-  while (i < len) {
-    char * s;
-    int unknown;
+	while (i < len) {
+		char * s;
+		int unknown;
 
-    s = 0;
-    unknown = 0;
-    if (!memcmp(b+i,"COMM",4)) {
-      /* Composer */
-      s = mb->mus[0].author = b+i+4;
-      debugmsg68("FOUND COMM [%s]\n",s);
-    } else if (!memcmp(b+i,"TITL",4)) { /* title    */
-      /* Title */
-      s = mb->name = b+i+4;
-      debugmsg68("FOUND TITL [%s]\n",s);
-    } else if (!memcmp(b+i,"RIPP",4) || !memcmp(b+i,"CONV",4)) {
-      /* Ripper    */
-      /* Converter */
-      s = b+i+4;
-      debugmsg68("FOUND RIPP or CONV [%s]\n",s);
-    } else if (!memcmp(b+i,"MuMo",4)) {
-      /* Music Mon ???  */
-      debugmsg68("FOUND MuMo (don't know what to do ith that)\n");
-      musicmon = 1;
-      i += 4;
-    } else if (!memcmp(b+i,"TIME",4)) {
-      /* Time in second */
-      i = myatoi(b, i+2, len, &time);
-      debugmsg68("FOUND TIME [%d]\n", mb->nb_six);
-    } else if (!memcmp(b+i,"##",2)) {
-      /* +'xx' number of track  */
-      i = myatoi(b, i+2, len, &mb->nb_six);
-      debugmsg68("FOUND ## [%d]\n", mb->nb_six);
-    } else if (!memcmp(b+i,"TC",2)) {
-      /* +string frq hz' Timer C frq */
-      i = myatoi(b, i+2, len, &frq);
-      debugmsg68("FOUND Timer-C [%d]\n", frq);
-    } else if (!memcmp(b+i,"!V",2)) {
-      /* +string VBL frq */
-      if (!frq) {
-	i = myatoi(b, i+2, len, &frq);
-	debugmsg68("FOUND VBL [%d]\n", frq);
-      }
-    } else if (!memcmp(b+i,"**",2)) {
-      /* FX +string 2 char ??? */
-      i += 4;
-    } else { 
-      unknown = 1;
-    }
+		s = 0;
+		unknown = 0;
+		int taglen = 4;
+		if (!memcmp(b + i, "COMM", 4)) {
+			/* Composer */
+			s = mb->mus[0].author = b + i + 4;
+			debugmsg68("FOUND COMM [%s]\n", s);
+		} else if (!memcmp(b + i, "TITL", 4)) { /* title    */
+			/* Title */
+			s = mb->name = b + i + 4;
+			debugmsg68("FOUND TITL [%s]\n", s);
+		} else if (!memcmp(b + i, "RIPP", 4) || !memcmp(b + i, "CONV", 4)) {
+			/* Ripper    */
+			/* Converter */
+			s = b + i + 4;
+			debugmsg68("FOUND RIPP or CONV [%s]\n", s);
+		} else if (!memcmp(b + i, "MuMo", 4)) {
+			/* Music Mon ???  */
+			debugmsg68("FOUND MuMo (don't know what to do ith that)\n");
+			musicmon = 1;
+			i += 4;
+		} else if (!memcmp(b + i, "YEAR", 4)) {
+			debugmsg68("FOUND YEAR\n");
+		} else if (!memcmp(b + i, "TIME", 4)) {
+			/* Time in second */
+			i = myatoi(b, i + 2, len, &time);
+			debugmsg68("FOUND TIME [%d]\n", mb->nb_six);
+		} else if (!memcmp(b + i, "##", 2)) {
+			/* +'xx' number of track  */
+			i = myatoi(b, i + 2, len, &mb->nb_six);
+			taglen = 2;
+			debugmsg68("FOUND ## [%d]\n", mb->nb_six);
+		} else if (!memcmp(b + i, "TC", 2)) {
+			/* +string frq hz' Timer C frq */
+			i = myatoi(b, i + 2, len, &frq);
+			taglen = 2;
+			debugmsg68("FOUND Timer-C [%d]\n", frq);
+		} else if (!memcmp(b + i, "!V", 2)) {
+			/* +string VBL frq */
+			if (!frq) {
+				i = myatoi(b, i + 2, len, &frq);
+				debugmsg68("FOUND VBL [%d]\n", frq);
+				taglen = 2;
+			}
+		} else if (!memcmp(b + i, "**", 2)) {
+			/* FX +string 2 char ??? */
+			i += 4;
+		} else {
+			unknown = 1;
+		}
 
-    if (unknown) {
-      ++unknowns;
-         /* Unkwown tag, finish here. */
-      debugmsg68("UNKNOWN TAG #%02d [%c%c%c%c] at %d\n",unknowns,
-		 b[i],b[i+1],b[i+2],b[i+3], i);
-      ++i;
-      if (unknowns >= unknowns_max) {
-	i = len;
-      }
-    } else {
-      unknowns = 0; /* Reset successive unkwown. */
-      if (s) {
-	i += strlen(s) + 5;
-      }
-    }
+		if (unknown) {
+			++unknowns;
+			/* Unkwown tag, finish here. */
+			debugmsg68("UNKNOWN TAG #%02d [%c%c%c%c] at %d\n", unknowns, b[i],
+					b[i + 1], b[i + 2], b[i + 3], i);
+			++i;
+			if (unknowns >= unknowns_max) {
+				i = len;
+			}
+		} else {
+			unknowns = 0; /* Reset successive unkwown. */
+			if (s) {
+				i += strlen(s) + 5;
+			}
+			while(b[i] == 0) i++;
+		}
 
-  }
-  if (mb->nb_six > SC68_MAX_TRACK) {
-    mb->nb_six = SC68_MAX_TRACK;
-  }
-  time *= 1000;
-  for (i=0; i<mb->nb_six; ++i) {
-    mb->mus[i].frq = frq;
-    mb->mus[i].time_ms = time;
-  }
-  return 0;
+	}
+	if (mb->nb_six > SC68_MAX_TRACK) {
+		mb->nb_six = SC68_MAX_TRACK;
+	}
+	time *= 1000;
+	for (i = 0; i < mb->nb_six; ++i) {
+		mb->mus[i].frq = frq;
+		mb->mus[i].time_ms = time;
+	}
+	return 0;
 }
 
 /* Load , allocate memory and valid struct for SC68 music

@@ -48,6 +48,11 @@ public class SC68Plugin extends DroidSoundPlugin {
 		
 		return N_setTune(currentSong, tune);
 	}
+	
+	@Override
+	public boolean seekTo(int msec) {
+		return N_seekTo(currentSong, msec);
+	}
 
 	native public long N_load(byte [] module, int size);
 	native public long N_loadInfo(byte [] module, int size);
