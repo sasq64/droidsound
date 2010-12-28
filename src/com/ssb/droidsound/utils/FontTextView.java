@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import android.content.Context;
 import android.graphics.Typeface;

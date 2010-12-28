@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import android.database.Cursor;
 import android.database.CursorWrapper;

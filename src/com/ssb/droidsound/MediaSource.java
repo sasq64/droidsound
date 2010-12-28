@@ -14,6 +14,8 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 import com.ssb.droidsound.SongDatabase.ScanCallback;
+import com.ssb.droidsound.utils.CursorTransform;
+import com.ssb.droidsound.utils.DBFileSystem;
 
 public class MediaSource implements SongDatabase.DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();

@@ -1,7 +1,9 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.ssb.droidsound.SongDatabase;
 
 import android.database.Cursor;
 import android.database.MatrixCursor;

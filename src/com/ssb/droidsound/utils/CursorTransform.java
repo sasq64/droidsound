@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -149,7 +149,7 @@ public class CursorTransform {
 	}
 	
 	
-	Cursor transformCursor(Cursor cr) {
+	public Cursor transformCursor(Cursor cr) {
 		return new TransformWrapper(cr, transformMap);
 	}
 

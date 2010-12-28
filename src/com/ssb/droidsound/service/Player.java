@@ -295,6 +295,8 @@ public class Player implements Runnable {
 
 				String songName = song.getPath();
 				URL url = new URL(songName);
+				//if(songName.toUpperCase().endsWith(".MP3"))
+				//	break;
 
 				Log.v(TAG, "Opening URL " + songName);
 
