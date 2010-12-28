@@ -76,6 +76,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 	if(sc68 == NULL)
 		return 0;
 
+	api68_set_user(sc68, "/sdcard/droidsound/sc68data");
+
 	jboolean iscopy;
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
 
@@ -152,7 +154,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getSoundDat
 
 	 env->ReleaseShortArrayElements(bArray, (jshort*)ptr, 0);
 
-	 if(!pd->trackChanged && code & API68_CHANGE) {
+	 if(!pd->trackChanged && (code & API68_CHANGE)) {
 		 __android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "Ending track");
 		 return -1;
 	 }

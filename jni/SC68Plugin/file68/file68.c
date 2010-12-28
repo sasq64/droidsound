@@ -416,7 +416,7 @@ static int myatoi(const char *s, int i, int max, int * pv)
 static int sndh_info(disk68_t * mb, int len)
 {
   int frq = 0, time = 0 , musicmon = 0;
-  int i;
+  int i,j;
   int unknowns = 0;
   const int unknowns_max = 8;
   char * b = mb->data;
@@ -476,31 +476,47 @@ static int sndh_info(disk68_t * mb, int len)
 			musicmon = 1;
 			i += 4;
 		} else if (!memcmp(b + i, "YEAR", 4)) {
+			s = b + i + 4;
 			debugmsg68("FOUND YEAR\n");
+
 		} else if (!memcmp(b + i, "TIME", 4)) {
 			/* Time in second */
-			i = myatoi(b, i + 2, len, &time);
-			debugmsg68("FOUND TIME [%d]\n", mb->nb_six);
+			//i = myatoi(b, i + 4, len, &time);
+
+			i += 4;
+			for(j=0; j<mb->nb_six; j++) {
+				time = (b[i]<<8) | b[i+1];
+				i += 2;
+			}
+
+			if(time == 0) time = 10*60;
+
+			debugmsg68("FOUND TIME [%d]\n", time);
+
 		} else if (!memcmp(b + i, "##", 2)) {
 			/* +'xx' number of track  */
 			i = myatoi(b, i + 2, len, &mb->nb_six);
-			taglen = 2;
+			//taglen = 2;
+			//i += 4;
 			debugmsg68("FOUND ## [%d]\n", mb->nb_six);
 		} else if (!memcmp(b + i, "TC", 2)) {
 			/* +string frq hz' Timer C frq */
 			i = myatoi(b, i + 2, len, &frq);
-			taglen = 2;
+			//taglen = 2;
 			debugmsg68("FOUND Timer-C [%d]\n", frq);
 		} else if (!memcmp(b + i, "!V", 2)) {
 			/* +string VBL frq */
 			if (!frq) {
 				i = myatoi(b, i + 2, len, &frq);
 				debugmsg68("FOUND VBL [%d]\n", frq);
-				taglen = 2;
+				//taglen = 2;
 			}
 		} else if (!memcmp(b + i, "**", 2)) {
 			/* FX +string 2 char ??? */
 			i += 4;
+		} else if (!memcmp(b + i, "HDNS", 2)) {
+			debugmsg68("FOUND END OF HEADER\n");
+			break;
 		} else {
 			unknown = 1;
 		}
@@ -517,7 +533,7 @@ static int sndh_info(disk68_t * mb, int len)
 		} else {
 			unknowns = 0; /* Reset successive unkwown. */
 			if (s) {
-				i += strlen(s) + 5;
+				i += strlen(s) + taglen + 1;
 			}
 			while(b[i] == 0) i++;
 		}

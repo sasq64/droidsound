@@ -44,10 +44,11 @@ void * debugmsg68_set_cookie(void * cookie)
 
 #include <android/log.h>
 
+static char temp[1024];
 /** Print debug message. */
 void debugmsg68(const char * fmt, ...)
 {
-	static char temp[1024];
+
     va_list list;
     va_start(list,fmt);
 	vsprintf(temp, fmt, list);
@@ -65,9 +66,11 @@ void debugmsg68(const char * fmt, ...)
 /** Print debug message (variable argument). */
 void vdebugmsg68(const char * fmt, va_list list)
 {
-  if (debug) {
-    debug(debug_cookie, fmt, list);
-  }
+	vsprintf(temp, fmt, list);
+	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Debug", temp);
+  //if (debug) {
+  //  debug(debug_cookie, fmt, list);
+  //}
 }
 
 /** Wrapper for debugmsg68(). */
