@@ -67,6 +67,7 @@ public abstract class DroidSoundPlugin {
 			pluginList.add(new ModPlugin());
 			pluginList.add(new GMEPlugin());
 			pluginList.add(new HivelyPlugin());
+			pluginList.add(new SC68Plugin());
 			pluginList.add(new MP3Plugin());
 
 			// Keep last

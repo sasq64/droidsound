@@ -1,4 +1,4 @@
-package com.ssb.droidsound.utils;
+package com.ssb.droidsound;
 
 import android.content.Context;
 import android.os.Build;
