@@ -146,11 +146,6 @@ public class FileIdentifier {
 				break;
 			}
 		}
-		
-		//int o = start + len - 1;
-		//while(o >= start && data[o] == 0) {
-		//	o -= 1;
-		//}
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
 	
@@ -281,7 +276,7 @@ public class FileIdentifier {
 							is.reset();
 					}
 				} catch (IOException e) {
-					e.printStackTrace();
+					//e.printStackTrace();
 				} catch (Exception e2) {
 					e2.printStackTrace();
 				}

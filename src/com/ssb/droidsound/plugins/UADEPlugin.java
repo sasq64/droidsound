@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.ssb.droidsound.utils.Unzipper;
+
 import android.content.Context;
 import android.os.Environment;
 import android.util.Log;
@@ -37,7 +39,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	
 	public UADEPlugin() {
 
-		Context ctx = getContext();
+		//Context ctx = getContext();
 
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 		//File filesDir = ctx.getFilesDir();
@@ -60,6 +62,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 				
 				droidDir.mkdir();
 				
+				Unzipper.unzipAsset(getContext(), "eagleplayers.zip", droidDir);
+				/*
 				try {			
 					File tempFile = new File(droidDir, "ep.zip");
 					
@@ -112,8 +116,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
-				}
-				
+				} */
 			}		
 
 			if(extensions.size() == 0) {

@@ -381,13 +381,19 @@ void api68_shutdown(api68_t * api)
   u8 * mem = reg68.mem;
   api68_debug("api68_shutdown(): enter\n");
 
-  api68_config_save(api);
+  //api68_config_save(api);
+
+  api68_debug("X\n");
 
   SC68rsc_set_user(0);
+  api68_debug("X\n");
   SC68rsc_set_share(0);
 
+  api68_debug("X\n");
   EMU68_kill();
+  api68_debug("X\n");
   SC68free(mem);
+  api68_debug("X\n");
   SC68free(api);
 
   api68_debug("api68_shutdown(): leave\n");

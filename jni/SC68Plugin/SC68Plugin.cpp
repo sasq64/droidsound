@@ -28,6 +28,8 @@
 #define INFO_CHANNELS 101
 #define INFO_PATTERNS 102
 
+//static jfieldID refField;
+static char data_dir[1024];
 
 static jstring NewString(JNIEnv *env, const char *str)
 {
@@ -68,15 +70,17 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 	init68.debug_cookie = stderr;
 #endif
 
-
 	debugmsg68_set_handler(write_debug);
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "STEP");
-	api68_t *sc68 = api68_init(&init68);
-	if(sc68 == NULL)
-		return 0;
+	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "INIT");
 
-	api68_set_user(sc68, "/sdcard/droidsound/sc68data");
+	api68_t *sc68 = api68_init(&init68);
+	if(sc68 == NULL) {
+		__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "!!!!!!!!! INIT FAILED");
+		return 0;
+	}
+
+	api68_set_user(sc68, data_dir);
 
 	jboolean iscopy;
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
@@ -84,6 +88,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 	int alen = env->GetArrayLength(bArray);
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "SIZE %d ARRAYLEN %d", size, alen);
+
+	//api68_t *sc68 = (api68_t*)env->GetLongField(obj, refField);
 
 	if (api68_verify_mem(ptr, size) < 0) {
 		env->ReleaseByteArrayElements(bArray, ptr, 0);
@@ -236,3 +242,56 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getIntInfo(
 	}
 	return -1;
 }
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1setDataDir(JNIEnv *env, jobject obj, jstring dataDir)
+{
+
+	//jclass cl = env->GetObjectClass(obj);
+	//refField = env->GetFieldID(cl, "pluginRef", "J");
+	//env->SetLongField(obj, refField, (jlong)sc68);
+
+	jboolean iscopy;
+	const char *filename = env->GetStringUTFChars(dataDir, &iscopy);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "DataDir:%s", filename);
+	strcpy(data_dir, filename);
+
+	env->ReleaseStringUTFChars(dataDir, filename);
+}
+
+extern "C" {
+int unice68_depacker(void * dest, const void * src);
+int unice68_get_depacked_size(const void * buffer, int * p_csize);
+}
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1unice(JNIEnv *env, jobject obj, jbyteArray src, jbyteArray dest)
+{
+	jbyte *sptr = env->GetByteArrayElements(src, NULL);
+	jbyte *dptr = env->GetByteArrayElements(dest, NULL);
+	int rc = 0;
+	int ssize = env->GetArrayLength(src);
+	int dsize = env->GetArrayLength(dest);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "Unpacking %d bytes (%s)", ssize, sptr);
+
+	int size = unice68_get_depacked_size(sptr, NULL);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "Dest size %d, Packed size %d", dsize, size);
+
+	if(dsize < size)
+		rc = -2;
+
+	if(size < 0)
+		rc = -1;
+
+	if(rc == 0) {
+		int res = unice68_depacker(dptr, sptr);
+		if(res != 0)
+			rc = -3;
+	}
+
+	env->ReleaseByteArrayElements(src, sptr, 0);
+	env->ReleaseByteArrayElements(dest, dptr, 0);
+
+	return rc;
+}
+
