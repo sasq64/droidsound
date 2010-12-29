@@ -580,7 +580,21 @@ static int apply_change_track(api68_t * api)
   api->reg.sr = 0x2300;
   EMU68_set_registers(&api->reg);
   reg68.cycle = 0;
-  EMU68_level_and_interrupt(0);
+  if(EMU68_level_and_interrupt(0) < 0) {
+	  api68_debug(" -> Took to long!\n");
+	  /* Set 68K PC register to music play address */
+	  EMU68_get_registers(&api->reg);
+	  api->reg.pc = api->playaddr+8;
+	  api->reg.sr = 0x2300;
+	  EMU68_set_registers(&api->reg);
+
+	  reg68.cycle = 0;
+
+	  api->mus = m;
+	  api->track = track;
+	  return -1;
+  }
+
   api68_debug(" -> OK\n");
 
   /* Set 68K PC register to music play address */
@@ -611,6 +625,7 @@ int api68_process(api68_t * api, void * buf16st, int n)
 
   if (!api->mus) {
     ret = apply_change_track(api);
+    if(ret < 0) return -1;
   }
 
   if (!api->mus) {
@@ -651,7 +666,8 @@ int api68_process(api68_t * api, void * buf16st, int n)
       ret &= ~API68_IDLE;
 
       /* Run the emulator. */
-      EMU68_level_and_interrupt(api->mix.cycleperpass);
+      if(EMU68_level_and_interrupt(api->mix.cycleperpass) < 0)
+    	  return -1;
 
       /* Always used YM buffer, even if no YM required. */
       buffer = YM_get_buffer();

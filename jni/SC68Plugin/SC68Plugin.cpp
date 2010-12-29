@@ -110,7 +110,13 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 	pd->trackChanged = false;
 
 	api68_play(pd->sc68, 0);
-	api68_process(pd->sc68, NULL, 0);
+	if(api68_process(pd->sc68, NULL, 0) < 0) {
+		env->ReleaseByteArrayElements(bArray, ptr, 0);
+		free(pd);
+		api68_shutdown(sc68);
+		return 0;
+	}
+
 	pd->defaultTrack = api68_play(pd->sc68, -1);
 
 	if(pd->defaultTrack == 0)

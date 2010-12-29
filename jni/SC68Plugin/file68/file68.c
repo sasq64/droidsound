@@ -499,6 +499,12 @@ static int sndh_info(disk68_t * mb, int len)
 			//taglen = 2;
 			//i += 4;
 			debugmsg68("FOUND ## [%d]\n", mb->nb_six);
+		} else if (!memcmp(b + i, "!#", 2)) {
+			/* +'xx' number of track  */
+			i = myatoi(b, i + 2, len, &mb->default_six);
+			//taglen = 2;
+			//i += 4;
+			debugmsg68("FOUND !# [%d]\n", mb->default_six);
 		} else if (!memcmp(b + i, "TC", 2)) {
 			/* +string frq hz' Timer C frq */
 			i = myatoi(b, i + 2, len, &frq);

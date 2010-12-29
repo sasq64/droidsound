@@ -237,12 +237,14 @@ static void poll_rte(u32 stack)
  * and play Interruption for 1 pass.
  * ( Specific SC68 !!! )
 */
-void EMU68_level_and_interrupt(cycle68_t cycleperpass)
+int EMU68_level_and_interrupt(cycle68_t cycleperpass)
 {
   const u32 stack = reg68.a[7];
   u32 pc=reg68.pc, cycle, fd;
   io68_t *io;
   int68_t *t;
+  int ccount;
+  int rc = 0;
 
   reg68.a[7] = stack - 4;
 #if _DEBUG
@@ -290,9 +292,13 @@ void EMU68_level_and_interrupt(cycle68_t cycleperpass)
   reg68.cycle = 0;
 
   /* Do until RTS */
+  ccount = 65536*16;
   do {
     EMU68_step();
-  } while (stack > (u32)reg68.a[7]);
+  } while (ccount-- && stack > (u32)reg68.a[7]);
+
+  //api68_debug("Cycles: %d", 65536*2-ccount);
+  if(ccount <= 0) rc = -1;
 
   cycle=0;
 
@@ -374,6 +380,8 @@ void EMU68_level_and_interrupt(cycle68_t cycleperpass)
   reg68.a[7] = stack;
   reg68.pc = pc;
   reg68.cycle = cycleperpass;
+
+  return rc;
 }
 
 /* Run emulation for given number of cycle

@@ -159,7 +159,7 @@ void EMU68_step(void);
  *   whatever the time passed in the execution loop. This function is very
  *   specific to SC68 implementation.
  */
-void EMU68_level_and_interrupt(u32 cycleperpass);
+int EMU68_level_and_interrupt(u32 cycleperpass);
 
 /** Execute for given number of cycle
  */

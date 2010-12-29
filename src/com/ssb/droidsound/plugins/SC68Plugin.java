@@ -1,15 +1,12 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
-import java.util.UnknownFormatConversionException;
-
-import com.ssb.droidsound.utils.Unzipper;
 
 import android.os.Environment;
 import android.util.Log;
+
+import com.ssb.droidsound.utils.Unzipper;
 
 public class SC68Plugin extends DroidSoundPlugin {
 	private static final String TAG = SC68Plugin.class.getSimpleName();
@@ -42,7 +39,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandle(String name) {
 		String ext = name.substring(name.indexOf('.')+1).toLowerCase();
-		return(ext.equals("sndh") || ext.equals("sc68"));
+		return(ext.equals("sndh") || ext.equals("sc68") || ext.equals("snd"));
 	}
 	
 	@Override

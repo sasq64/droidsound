@@ -582,6 +582,10 @@ public class SongDatabase implements Runnable {
 				is.close();
 	
 				if(info != null) {
+					
+					// NOTE: Fix for strange zip archives that does not contain directories
+					if(!pathSet.contains(path))
+						pathSet.add(path);
 
 					values.put("TITLE", info.title);
 					values.put("COMPOSER", info.composer);
@@ -591,6 +595,8 @@ public class SongDatabase implements Runnable {
 					values.put("PATH", path);
 					values.put("FILENAME", fileName);
 					scanDb.insert("FILES", "PATH", values);
+				} else {
+					Log.v(TAG, String.format("Could not identify '%s'", n));
 				}
 
 				count++;

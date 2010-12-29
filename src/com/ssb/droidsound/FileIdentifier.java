@@ -205,6 +205,7 @@ public class FileIdentifier {
 		try {
 			return identify(name, is, null);
 		} catch (Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -281,7 +282,7 @@ public class FileIdentifier {
 					e2.printStackTrace();
 				}
 				if(info != null) {
-					
+					Log.v(TAG, "Got info");
 					name = plugin.getBaseName(name);
 					fixName(name, info);
 					return info;

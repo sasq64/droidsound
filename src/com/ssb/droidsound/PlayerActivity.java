@@ -723,10 +723,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		}
 
-		File mf = new File(modsDir, "Favorites.plist");
+		File mf = new File(modsDir, MediaSource.NAME);
 		if(!mf.exists()) {
 			try {
-				Log.v(TAG, "Trying to write Favorites");
 				FileWriter fw = new FileWriter(mf);
 				fw.close();
 				Log.v(TAG, "Done");
@@ -735,9 +734,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				e2.printStackTrace();
 			}
 		}
-		mf = new File(modsDir, MediaSource.NAME);
+
+		mf = new File(modsDir, "Favorites.plist");
 		if(!mf.exists()) {
 			try {
+				Log.v(TAG, "Trying to write Favorites");
 				FileWriter fw = new FileWriter(mf);
 				fw.close();
 				Log.v(TAG, "Done");
