@@ -65,12 +65,12 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 	memset(&init68, 0, sizeof(init68));
 //	init68.alloc = malloc;
 //	init68.free = free;
+	init68.msg_handler = (sc68_msg_t)write_debug;
 #ifdef _DEBUG
 	init68.debug = vfprintf;
 	init68.debug_cookie = stderr;
 #endif
 
-	msg68_set_handler(write_debug);
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "INIT");
 
@@ -78,7 +78,9 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 		__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "!!!!!!!!! INIT FAILED");
 		return 0;
 	}
-	
+
+	//msg68_set_handler(write_debug);
+
 	sc68_t *sc68 = sc68_create(NULL);
 
 	sc68_set_user(sc68, data_dir);
