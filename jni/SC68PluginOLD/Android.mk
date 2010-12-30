@@ -21,20 +21,11 @@ LOCAL_MODULE    := sc68
 
 LOCAL_SRC_FILES := SC68Plugin.cpp
 
-MY_SOURCES := \
-	$(wildcard $(LOCAL_PATH)/libsc68/*.c) \
-	$(wildcard $(LOCAL_PATH)/libsc68/**/*.c) \
-	$(wildcard $(LOCAL_PATH)/file68/**/*.c) \
-	$(wildcard $(LOCAL_PATH)/unice68/*.c)
+MY_SOURCES := $(wildcard $(LOCAL_PATH)/api68/*.c) $(wildcard $(LOCAL_PATH)/emu68/*.c) $(wildcard $(LOCAL_PATH)/file68/*.c) $(wildcard $(LOCAL_PATH)/io68/*.c) $(wildcard $(LOCAL_PATH)/unice68/*.c)
 
 LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
 
-LOCAL_CFLAGS := -DHAVE_CONFIG_H \
-	-I$(LOCAL_PATH)/libsc68 \
-	-I$(LOCAL_PATH)/libsc68/sc68 \
-	-I$(LOCAL_PATH)/file68 \
-	-I$(LOCAL_PATH)/file68/sc68 \
-	-I$(LOCAL_PATH)/unice68
+LOCAL_CFLAGS := -DSC68_SHARED_DATA_PATH='""' -I$(LOCAL_PATH)/api68 -I$(LOCAL_PATH)/emu68 -I$(LOCAL_PATH)/file68 -I$(LOCAL_PATH)/io68 -I$(LOCAL_PATH)/unice68
 LOCAL_LDLIBS := -llog -lz
 
 include $(BUILD_SHARED_LIBRARY)

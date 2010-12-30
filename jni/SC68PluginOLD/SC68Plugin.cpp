@@ -8,9 +8,9 @@
 #include <android/log.h> 
 #include <jni.h>
 
+#include <config68.h>
 /* sc68 includes */
-#include <sc68/sc68.h>
-#include <sc68/msg68.h>
+#include "api68/api68.h"
 
 #include "com_ssb_droidsound_plugins_SC68Plugin.h"
 
@@ -45,14 +45,14 @@ static jstring NewString(JNIEnv *env, const char *str)
 }
 
 struct PlayData {
-	sc68_t *sc68;
-	sc68_music_info_t info;
+	api68_t *sc68;
+	api68_music_info_t info;
 	int currentTrack;
 	int defaultTrack;
 	bool trackChanged;
 };
 
-static void write_debug(int level, void * cookie, const char * fmt, va_list list) {
+static void write_debug(void * cookie, const char * fmt, va_list list) {
 
 	static char temp[1024];
 	vsprintf(temp, fmt, list);
@@ -61,27 +61,26 @@ static void write_debug(int level, void * cookie, const char * fmt, va_list list
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
-	sc68_init_t init68;
+	api68_init_t init68;
 	memset(&init68, 0, sizeof(init68));
-//	init68.alloc = malloc;
-//	init68.free = free;
+	init68.alloc = malloc;
+	init68.free = free;
 #ifdef _DEBUG
 	init68.debug = vfprintf;
 	init68.debug_cookie = stderr;
 #endif
 
-	msg68_set_handler(write_debug);
+	debugmsg68_set_handler(write_debug);
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "INIT");
 
-	if (sc68_init(&init68) != 0) {
+	api68_t *sc68 = api68_init(&init68);
+	if(sc68 == NULL) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "!!!!!!!!! INIT FAILED");
 		return 0;
 	}
-	
-	sc68_t *sc68 = sc68_create(NULL);
 
-	sc68_set_user(sc68, data_dir);
+	api68_set_user(sc68, data_dir);
 
 	jboolean iscopy;
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
@@ -90,20 +89,18 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "SIZE %d ARRAYLEN %d", size, alen);
 
-	//sc68_t *sc68 = (sc68_t*)env->GetLongField(obj, refField);
+	//api68_t *sc68 = (api68_t*)env->GetLongField(obj, refField);
 
-	if (sc68_verify_mem(ptr, size) < 0) {
+	if (api68_verify_mem(ptr, size) < 0) {
 		env->ReleaseByteArrayElements(bArray, ptr, 0);
-		sc68_destroy(sc68);
-		sc68_shutdown();
+		api68_shutdown(sc68);
 		return 0;
 	}
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "STEP");
-	if (sc68_load_mem(sc68, ptr, size)) {
+	if (api68_load_mem(sc68, ptr, size)) {
 		env->ReleaseByteArrayElements(bArray, ptr, 0);
-		sc68_destroy(sc68);
-		sc68_shutdown();
+		api68_shutdown(sc68);
 		return 0;
 	}
 	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "STEP");
@@ -112,16 +109,15 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 	pd->sc68 = sc68;
 	pd->trackChanged = false;
 
-	sc68_play(pd->sc68, 0, 0);
-	if(sc68_process(pd->sc68, NULL, 0) < 0) {
+	api68_play(pd->sc68, 0);
+	if(api68_process(pd->sc68, NULL, 0) < 0) {
 		env->ReleaseByteArrayElements(bArray, ptr, 0);
 		free(pd);
-		sc68_destroy(sc68);
-		sc68_shutdown();
+		api68_shutdown(sc68);
 		return 0;
 	}
 
-	pd->defaultTrack = sc68_play(pd->sc68, -1, 0);
+	pd->defaultTrack = api68_play(pd->sc68, -1);
 
 	if(pd->defaultTrack == 0)
 		pd->defaultTrack = 1;
@@ -139,21 +135,23 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getSoundDat
 	PlayData *pd = (PlayData*)song;
 
 	const char *err = "";
-	while (NULL != (err = sc68_error_get(pd->sc68))) {
+	err = api68_error();
+	while(err) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "ERROR:%s", err);
+		err = api68_error();
 	}
 
 	/* Set track number : command line is prior to config force-track */
 	if(pd->currentTrack < 0) {
 		pd->currentTrack = 0;
-		if(sc68_play(pd->sc68, pd->currentTrack, 0)) {
+		if(api68_play(pd->sc68, pd->currentTrack)) {
 			return -1;
 		}
 	}
 
 	jshort *ptr = (jshort*)env->GetShortArrayElements(bArray, NULL);
 
-	 int code = sc68_process(pd->sc68, ptr, size/2);
+	 int code = api68_process(pd->sc68, ptr, size/2);
 
 	 if(code) {
 		 __android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "CODE: 0x%x", code);
@@ -168,14 +166,14 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getSoundDat
 
 	 env->ReleaseShortArrayElements(bArray, (jshort*)ptr, 0);
 
-	 if(!pd->trackChanged && (code & SC68_CHANGE)) {
+	 if(!pd->trackChanged && (code & API68_CHANGE)) {
 		 __android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "Ending track");
 		 return -1;
 	 }
 
 	 pd->trackChanged = false;
 
-	 if (code == SC68_MIX_ERROR) {
+	 if (code == API68_MIX_ERROR) {
 		 return -1;
 	 }
 	 return size;
@@ -188,8 +186,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1loadInfo(J
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
 {
 	PlayData *pd = (PlayData*)song;
-	sc68_destroy(pd->sc68);
-	sc68_shutdown();
+	api68_shutdown(pd->sc68);
 	free(pd);
 }
 
@@ -197,8 +194,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1unload(JNIE
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1seekTo(JNIEnv *env, jobject obj, jlong song, jint msec)
 {
 	PlayData *pd = (PlayData*)song;
-	int status;
-	sc68_seek(pd->sc68, msec, &status);
+	api68_seek(pd->sc68, msec);
 	return true;
 }
 
@@ -206,7 +202,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1setTune
 {
 	PlayData *pd = (PlayData*)song;
 	pd->currentTrack = tune+1;
-	if(sc68_play(pd->sc68, pd->currentTrack, 0)) {
+	if(api68_play(pd->sc68, pd->currentTrack)) {
 		pd->currentTrack = -1;
 		return false;
 	}
@@ -219,9 +215,9 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getStrin
 	PlayData *pd = (PlayData*)song;
 	int track = pd->currentTrack;
 	if(track < 0) track = 1;
-	if (!sc68_music_info(pd->sc68, &pd->info, track, 0)) {
+	if (!api68_music_info(pd->sc68, &pd->info, track, 0)) {
 	}
-	sc68_music_info_t &info = pd->info;
+	api68_music_info_t &info = pd->info;
 
 	switch(what) {
 	case INFO_AUTHOR:
@@ -237,9 +233,9 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getIntInfo(
 	PlayData *pd = (PlayData*)song;
 	int track = pd->currentTrack;
 	if(track < 0) track = 1;
-	if (!sc68_music_info(pd->sc68, &pd->info, track, 0)) {
+	if (!api68_music_info(pd->sc68, &pd->info, track, 0)) {
 	}
-	sc68_music_info_t &info = pd->info;
+	api68_music_info_t &info = pd->info;
 
 
 	switch(what) {
