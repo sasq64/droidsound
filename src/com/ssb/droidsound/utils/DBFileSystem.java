@@ -13,7 +13,7 @@ public class DBFileSystem {
 	private static final String TAG = DBFileSystem.class.getSimpleName();
 	
 	public static interface CursorFactory {
-		Cursor getCursor(String parts[]);
+		Cursor getCursor(String parts[], int sorting);
 	}
 	
 	private static class Path {
@@ -79,7 +79,7 @@ public class DBFileSystem {
 	}
 	
 	
-	public Cursor getFileInPath(String path) {
+	public Cursor getFileInPath(String path, int sorting) {
 		
 		Log.v(TAG, String.format("PATH %s", path));
 		String [] parts = path.split("/");
@@ -119,7 +119,7 @@ public class DBFileSystem {
 					}
 					return mc;
 				} else
-					return p.factory.getCursor(newParts);
+					return p.factory.getCursor(newParts, sorting);
 			}
 		}
 

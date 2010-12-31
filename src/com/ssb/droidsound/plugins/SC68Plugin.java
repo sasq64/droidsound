@@ -113,11 +113,11 @@ public class SC68Plugin extends DroidSoundPlugin {
 				//Log.v(TAG, String.format("TAG: %s", tag));
 				try {
 					if(tag.equals("TITL")) {
-						title = fromData(data, offset+4, 32);
+						title = fromData(data, offset+4, 64);
 						Log.v(TAG, String.format("TITLE: %s", title));
 						offset += (4+title.length());
 					} else if(tag.equals("COMM")) {
-						composer = fromData(data, offset+4, 32);
+						composer = fromData(data, offset+4, 64);
 						offset += (4+composer.length());
 					} else if(tag.equals("YEAR")) {
 						year = fromData(data, offset+4, 32);

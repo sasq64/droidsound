@@ -4,7 +4,7 @@
 </head>
 <body bgcolor="#000000" text="#ffffff" link="#a0a0ff", vlink="#a0a0ff">
 <h1>Droidsound Help</h1>
-<i>v1.1</i>
+<i>v1.2</i>
 <h2>The User Interface</h2>
 
 Droidsound lets you switch between 3 main screens using the button in the top-right corner;
@@ -18,11 +18,14 @@ Tapping a song will play it.<br/>
 Press <tt>BACK</tt> to go back up one level.<br/>
 Long press <tt>BACK</tt> to go up to the top level.<br/>
 Long press a song for more options.<br/>
+Tap the titlebar to change sort order<br/>
 </p>
 <h3>The Info Screen</h3>
 
 <p>This screen shows information about the current song, and lets you control playback.</p>
-<p>Tapping the <tt>Forward</tt> / <tt>Back</tt> buttons will switch sub tunes. If there are no subtunes, it will switch song.<br/>
+
+<p>For songs that support it, use the progressbar to seek to a desired position in the song<br/>
+Tapping the <tt>Forward</tt> / <tt>Back</tt> buttons will switch sub tunes. If there are no subtunes, it will switch song.<br/>
 Long pressing <tt>Forward</tt> / <tt>Back</tt> will always go to the next / previous song.<br>Pause and stop should be self-explanatory<br/>
 Tap the <tt>PLUS</tt>-sign to add the current song to the active playlist.<br/>
 Tap <tt>SEQ</tt> / <tt>RND</tt> to switch between sequential and random order playback.<br/>
@@ -44,6 +47,15 @@ You can add songs, directories and even other playlists to the active playlist.
 To add specific (or even all) sub tunes of a song, you need to start playing that song, and then tap the <tt>Plus</tt> sign on the Info screen.
 </p>
 
+<h3>Music Playback</h3>
+<p>
+Droidsound uses a set of plugins to support various music formats - they are listed below.
+Music is played by a service, and keeps playing in the background while you do other things.
+</p>
+<p>
+Droidsound is also associated with its supported music files, so you should be able to click links to music from the Web brower, and they should start playing in the background.<br/>
+All Android browsers are not working correctly in this regard (for instance Galaxy S always downloads all files) and for that reason you can also select to <i>Share</i> a link with Droidsound to get the same result.
+</p>
 <h3>Keyboard shortcuts</h3>
 If you have a hardware keyboard, you can use these shortcuts:
 <ul>
@@ -92,6 +104,9 @@ Hold for more than 2s to turn speech on/off.
 
 <h2>File Formats</h2>
 
+In addition to playing MP3, these plugins are currently included:
+
+
 <h4>libsidplay2</h4>
 <a href="http://sourceforge.net/projects/sidplay2/">http://sourceforge.net/projects/sidplay2/</a>
 
@@ -99,8 +114,8 @@ Hold for more than 2s to turn speech on/off.
 <li>Plays SID files, music from the Commodore 64.</li>
 </ul>
 <h4>modplug</h4>
-
 <a href="http://sourceforge.net/projects/modplug/">http://sourceforge.net/projects/modplug/</a>
+<p>Plays classical Amiga & PC mods. Not all formats are supported.</p>
 
 <ul>
 <li>Composer 669 / UNIS 669 (669)</li>
@@ -155,8 +170,17 @@ Hold for more than 2s to turn speech on/off.
 <li>AHX</li>
 </ul>
 
+<h4>SC68</h4>
+<a href="http://sc68.atari.org/">http://sc68.atari.org/</a>
+<p>Plays YM (Atari music).</p>
+<ul>
+<li>SNDH</li>
+<li>SC68</li>
+</ul>
+
 <h4>UADE</h4>
 <a href="http://zakalwe.fi/uade/">http://zakalwe.fi/uade/</a>
+<p>Plays Amiga custom format music. Not all formats below work 100%25</p>
 <ul>
 <li>A.M. Composer 1.2</li>
 <li>AC1D</li>

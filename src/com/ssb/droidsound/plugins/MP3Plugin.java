@@ -203,6 +203,11 @@ public class MP3Plugin extends DroidSoundPlugin {
 	}
 	
 	@Override
+	public boolean canSeek() {
+		return true;
+	}
+	
+	@Override
 	public MediaPlayer getMediaPlayer() {
 		return mediaPlayer;
 	}

@@ -68,7 +68,7 @@ public class SongDatabase implements Runnable {
 
 		boolean parseDump(InputStream is, int size, SQLiteDatabase scanDb, ScanCallback scanCallback);
 		String getTitle();
-		Cursor getCursorFromPath(File file, SQLiteDatabase db);
+		Cursor getCursorFromPath(File file, SQLiteDatabase db, int sorting);
 		String getPathTitle(File file);
 		void createIndex(int mode, SQLiteDatabase db);
 		Cursor search(String query, String fromPath, SQLiteDatabase db);
@@ -97,6 +97,10 @@ public class SongDatabase implements Runnable {
 	public static final int TYPE_DIR = 0x200;
 	public static final int TYPE_PLIST = 0x300;
 	public static final int TYPE_FILE = 0x400;
+	
+	public static final int SORT_TITLE = 0;
+	public static final int SORT_AUHTOR = 1;
+	public static final int SORT_DATE = 2;
 	
 
 	protected static final int MSG_SCAN = 0;
@@ -1174,7 +1178,9 @@ public class SongDatabase implements Runnable {
 		//rdb.close();
 	}
 
-	public Cursor search(String query, String fromPath) {
+	private static String searchOrder [] = new String[] { "TITLE", "COMPOSER", "DATE" };
+
+	public Cursor search(String query, String fromPath, int sorting) {
 		
 		if(!isReady) {
 			return null;
@@ -1215,7 +1221,7 @@ public class SongDatabase implements Runnable {
 		}
 		else {
 			String q = "%" + query + "%" ;		
-			c = rdb.query("FILES", columns, "TITLE LIKE ? OR COMPOSER LIKE ?", new String[] { q, q }, null, null, "TITLE", "500");
+			c = rdb.query("FILES", columns, "TITLE LIKE ? OR COMPOSER LIKE ?", new String[] { q, q }, null, null, searchOrder[sorting], "500");
 		}
 		if(c != null) {
 			Log.v(TAG, String.format("Got %d hits", c.getCount()));
@@ -1319,7 +1325,7 @@ public class SongDatabase implements Runnable {
 		
 		for(Entry<String, DataSource> db : dbsources.entrySet()) {
 			if(upath.contains("/" + db.getKey())) {
-				Cursor cursor = db.getValue().getCursorFromPath(file, rdb);
+				Cursor cursor = db.getValue().getCursorFromPath(file, rdb, sorting);
 				if(cursor != null) {
 					 pathTitle = db.getValue().getPathTitle(file);
 					return cursor;
@@ -1337,14 +1343,14 @@ public class SongDatabase implements Runnable {
 		}
 	
 		Log.v(TAG, "BEGIN");
-		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { path, fname }, null, null, sortOrder[sorting], "1000");
+		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { path, fname }, null, null, sortOrder[sorting], "5000");
 		if(c != null) {
 			if(c.moveToFirst()) {
 				pathTitle = c.getString(0);
 			}
 			c.close();
 		}
-		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, sortOrder[sorting], "1000");	
+		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, sortOrder[sorting], "5000");	
 		Log.v(TAG, "END");
 		return c;
 	}

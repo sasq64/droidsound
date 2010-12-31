@@ -797,7 +797,7 @@ emu68_t * emu68_create(emu68_parms_t * const parms)
   if (!emu68) {
     goto error;
   }
-  memset(emu68,0,sizeof(membyte));
+  memset(emu68,0,membyte);
   strncpy(emu68->name,p->name?p->name:"emu68",sizeof(emu68->name)-1);
   emu68->clock = p->clock;
 

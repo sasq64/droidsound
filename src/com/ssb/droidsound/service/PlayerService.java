@@ -70,8 +70,8 @@ public class PlayerService extends Service {
 	public static final int SONG_SUBTUNE_TITLE = 14;
 	public static final int SONG_SUBTUNE_AUTHOR = 15;
 	public static final int SONG_PLAYLIST = 16;
-
-	public static final int SONG_SIZEOF = 17;
+	public static final int SONG_FLAGS = 17;
+	public static final int SONG_SIZEOF = 18;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
@@ -302,7 +302,7 @@ public class PlayerService extends Service {
 					info[SONG_REPEAT] = defaultRepeatMode;
 					info[SONG_SUBTUNE_TITLE] = currentSongInfo.subtuneTitle;
 					info[SONG_SUBTUNE_AUTHOR] = currentSongInfo.subtuneAuthor;
-					
+					info[SONG_FLAGS] = currentSongInfo.canSeek ? 1 : 0;
 					info[SONG_STATE] = 1;
 
 					if(lastFileName == null || !lastFileName.equals(currentSongInfo.fileName)) {
@@ -311,7 +311,7 @@ public class PlayerService extends Service {
 						}
 					}
 
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");

@@ -80,7 +80,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEn
 	}
 
 	//msg68_set_handler(write_debug);
-
+	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "Create");
 	sc68_t *sc68 = sc68_create(NULL);
 
 	sc68_set_user(sc68, data_dir);

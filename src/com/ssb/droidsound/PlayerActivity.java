@@ -327,7 +327,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(searchCursor != null) {
 				searchCursor.realClose();
 			}
-			searchCursor = new SearchCursor(songDatabase.search(query, currentPath.getPath()));
+			searchCursor = new SearchCursor(songDatabase.search(query, currentPath.getPath(), sortOrder));
 			searchQuery = query;
 			searchDirDepth = 0;
 			if(searchCursor != null) {
@@ -530,6 +530,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		flipper = (ViewFlipper) findViewById(R.id.flipper);
 		// seekFlipper = (ViewFlipper) findViewById(R.id.seek_flipper);
 		songSeeker = (SeekBar) findViewById(R.id.song_seek);
+		
 
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 		titleBar = (LinearLayout) findViewById(R.id.title_bar);
@@ -1039,15 +1040,27 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 			@Override
 			public void onClick(View v) {
-				sortOrder = (sortOrder + 1) % 3;
-				Log.v(TAG, String.format("TB Sortorder now %d", sortOrder));
 				//flipTo(SAME_VIEW);
 				if(currentPlaylistView == playListView) {
+					sortOrder = (sortOrder + 1) % 3;
 					String p = currentPlaylistView.getPath();
 					Cursor cursor = songDatabase.getFilesInPath(p, sortOrder);
 					currentPlaylistView.setCursor(cursor, p);
+				} else if(currentPlaylistView == searchListView) {
+					sortOrder = (sortOrder + 1) % 3;
+					if(searchCursor != null) {
+						searchCursor.realClose();
+					}
+					searchCursor = new SearchCursor(songDatabase.search(searchQuery, currentPath.getPath(), sortOrder));
+					//searchDirDepth = 0;
+					if(searchCursor != null) {
+						searchListView.setCursor(searchCursor, null);
+						//currentPlaylistView = searchListView;
+						flipTo(SAME_VIEW);
+					}
 				}
-				}
+				Log.v(TAG, String.format("TB Sortorder now %d", sortOrder));
+			}
 		});
 
 		/*
@@ -1489,6 +1502,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public void intChanged(int what, int value) {
 		switch(what) {
+		case PlayerService.SONG_FLAGS:
+			songSeeker.setEnabled((value & 1) != 0);
+			break;
 		case PlayerService.SONG_REPEAT:
 			songRepeat = value;
 			repeatText.setText(repnames[value]);

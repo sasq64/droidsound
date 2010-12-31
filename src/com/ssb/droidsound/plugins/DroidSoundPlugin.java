@@ -241,4 +241,8 @@ public abstract class DroidSoundPlugin {
 	}
 	
 	public MediaPlayer getMediaPlayer() { return null; }
+
+	public boolean canSeek() {
+		return false;
+	}
 }

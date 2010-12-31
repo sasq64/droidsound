@@ -58,6 +58,7 @@ public class Player implements Runnable {
 		String author;
 		String copyright;
 		String type;
+		boolean canSeek;
 		// String game;
 		int length;
 		int subTunes;
@@ -450,6 +451,9 @@ public class Player implements Runnable {
 				if (info == null) {
 					info = new String[0];
 				}
+				
+				currentSong.canSeek = currentPlugin.canSeek();
+				
 				currentSong.details = new String[info.length + 2];
 				for (int i = 0; i < info.length; i++) {
 					currentSong.details[i] = info[i];
@@ -875,6 +879,7 @@ public class Player implements Runnable {
 		target.subtuneTitle = currentSong.subtuneTitle;
 		target.subtuneAuthor = currentSong.subtuneAuthor;
 		target.fileName = currentSong.fileName;
+		target.canSeek = currentSong.canSeek;
 		return true;
 	}
 

@@ -334,7 +334,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 
 	private String pathTitle;
 
-	public Cursor getPath(String path, SQLiteDatabase rdb) {
+	public Cursor getPath(String path, SQLiteDatabase rdb, int sorting) {
 		
 		String [] parts = path.split("/");
 		int n = parts.length;
@@ -502,8 +502,8 @@ public class CSDBParser implements SongDatabase.DataSource {
 
 
 	@Override
-	public Cursor getCursorFromPath(File file, SQLiteDatabase rdb) {
-		return getPath(file.getPath(), rdb);
+	public Cursor getCursorFromPath(File file, SQLiteDatabase rdb, int sorting) {
+		return getPath(file.getPath(), rdb, sorting);
 	}
 
 

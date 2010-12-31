@@ -258,6 +258,11 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
+	public boolean canSeek() {
+		return true;
+	}
+
+	@Override
 	public String[] getDetailedInfo() {
 		
 		String instruments = N_getStringInfo(currentSong, 100);

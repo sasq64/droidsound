@@ -12,5 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-include $(call all-subdir-makefiles) 
+#include $(call all-subdir-makefiles) 
 
+X := $(call my-dir)
+
+include $(X)/ModPlugin/Android.mk
+
+include $(X)/GMEPlugin/Android.mk
+include $(X)/SC68Plugin/Android.mk
+include $(X)/SidplayPlugin/Android.mk
+include $(X)/UADEPlugin/Android.mk
+include $(X)/HivelyPlugin/Android.mk
+include $(X)/NativeZipFile/Android.mk
+include $(X)/ID3Tag/Android.mk
