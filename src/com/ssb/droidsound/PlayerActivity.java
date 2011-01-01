@@ -1539,15 +1539,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			songLength = value / 1000;
 			Log.v(TAG, String.format("Songlength %02d:%02d", songLength / 60, songLength % 60));
-			songTotalText.setText(String.format("%02d:%02d", songLength / 60, songLength % 60));
-			songSeeker.setProgress(0);
+			songTotalText.setText(String.format("%02d:%02d", songLength / 60, songLength % 60));			
+			//songSeeker.setProgress(0);
 			break;
 		case PlayerService.SONG_POS:
 			if(seekingSong == 0) {
 				songPos = value / 1000;
 				songSecondsText.setText(String.format("%02d:%02d", songPos / 60, songPos % 60));
-				if(songLength > 0)
-					songSeeker.setProgress(100 * songPos / songLength);
+				if(songLength > 0) {
+					int percent = 100 * songPos / songLength;
+					if(percent > 100) percent = 100;
+					songSeeker.setProgress(percent);
+				}
 			} else
 				seekingSong--;
 

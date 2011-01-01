@@ -361,9 +361,19 @@ public class PlayerService extends Service {
                 	//if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE || defaultLength > 0)) {
                 	//	playNextSong();
                 	//} else {                	
-                    	info[SONG_POS] = (Integer)msg.arg1;
-                    	info[SONG_CPULOAD] = (Integer)msg.arg2;
-                		performCallback(SONG_CPULOAD, SONG_POS);
+                    	int pos = (Integer)msg.arg1;
+                    	int len = (Integer)msg.arg2;
+                    	if(pos >= 0 && len >= 0) {
+	                    	info[SONG_LENGTH] = len;
+	                    	info[SONG_POS] = pos;
+	                		performCallback(SONG_LENGTH, SONG_POS);
+                    	} else if(pos >= 0) {
+	                    	info[SONG_POS] = pos;
+	                		performCallback(SONG_POS);
+                    	} else {
+	                    	info[SONG_LENGTH] = len;
+	                		performCallback(SONG_LENGTH);
+                    	}
                 	//}
     				break;
                 case Player.MSG_STATE:

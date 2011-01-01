@@ -86,8 +86,12 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		switch(what) {
 		case INFO_LENGTH:
+			if(streamer != null) {
+				return streamer.getLatency();
+			}
 			if(mediaPlayer != null)
 				return mediaPlayer.getDuration();
+			break;
 		case INFO_SUBTUNE_COUNT:
 			if(cueFile != null) {
 				return cueFile.getTrackCount();
@@ -289,10 +293,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 		}
 
 		if(streamer != null) {
-			streamer.doQuit = true;
+			streamer.quit();
 			httpThread = null;
 			int counter = 10;
-			while(streamer.doQuit && counter > 0) {
+			while((!streamer.hasQuit()) && counter > 0) {
 
 				try {
 					Thread.sleep(100);
