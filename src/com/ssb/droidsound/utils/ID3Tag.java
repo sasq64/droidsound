@@ -21,12 +21,16 @@ public class ID3Tag {
 
 	
 	private long id3Ref;
+	private long tagRef;
 
 	public ID3Tag(File path) {
 		Log.v(TAG, String.format("ID3Tag on %s", path.getPath()));
 		openID3Tag(path.getPath());		
 	}
 	
+	public ID3Tag() {
+	}
+
 	@Override
 	protected void finalize() throws Throwable {
 		closeID3Tag();
@@ -39,6 +43,9 @@ public class ID3Tag {
 	//public int getIntInfo(int what) {		
 	//	return getI
 	//}
+
+	public native int checkForTag(byte [] data, int offset, int len);	
+	public native boolean parseTag(byte [] data, int offset, int len);
 	
 	
 	native boolean openID3Tag(String fileName);

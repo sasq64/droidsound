@@ -40,7 +40,7 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player.SongInfo;
 
 public class PlayerService extends Service {
-	private static final String TAG = "PlayerService";
+	private static final String TAG = PlayerService.class.getSimpleName();
 	
 	// Flags
 	
@@ -328,13 +328,13 @@ public class PlayerService extends Service {
                 		l = defaultLength;
                 	}
                 	//Log.v(TAG, String.format("%d vs %d", msg.arg1, l));
-                	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE || defaultLength > 0)) {
-                		playNextSong();
-                	} else {                	
+                	//if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE || defaultLength > 0)) {
+                	//	playNextSong();
+                	//} else {                	
                     	info[SONG_POS] = (Integer)msg.arg1;
                     	info[SONG_CPULOAD] = (Integer)msg.arg2;
                 		performCallback(SONG_CPULOAD, SONG_POS);
-                	}
+                	//}
     				break;
                 case Player.MSG_STATE:
                 	info[SONG_STATE] = (Integer)msg.arg1;

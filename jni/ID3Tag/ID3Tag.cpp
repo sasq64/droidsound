@@ -27,6 +27,7 @@ jstring NewString(JNIEnv *env, const char *str)
 }
 
 static jfieldID refField;
+static jfieldID tagRefField;
 
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_utils_ID3Tag_openID3Tag(JNIEnv *env, jobject obj, jstring fileName)
@@ -44,16 +45,25 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_utils_ID3Tag_openID3Tag(JNIEn
 	refField = env->GetFieldID(cl, "id3Ref", "J");
 	env->SetLongField(obj, refField, (jlong)id3file);
 
+	cl = env->GetObjectClass(obj);
+	tagRefField = env->GetFieldID(cl, "tagRef", "J");
+
+
+
 	__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "id3 %p", id3file);
 
 	env->ReleaseStringUTFChars(fileName, fname);
+
+	return true;
 
 }
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_ID3Tag_closeID3Tag(JNIEnv *env, jobject obj)
 {
 	struct id3_file *id3file = (struct id3_file*)env->GetLongField(obj, refField);
-	id3_file_close(id3file);
+	struct id3_tag *tag = (struct id3_tag*)env->GetLongField(obj, tagRefField);
+	if(id3file)
+		id3_file_close(id3file);
 
 }
 
@@ -74,7 +84,16 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_ID3Tag_closeID3Tag(JNIEnv *
 JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo(JNIEnv *env, jobject obj, jint what)
 {
 	struct id3_file *id3file = (struct id3_file*)env->GetLongField(obj, refField);
-	struct id3_tag *tag = id3_file_tag(id3file);
+	struct id3_tag *tag = (struct id3_tag*)env->GetLongField(obj, tagRefField);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "Get String Info %p %p", id3file, tag);
+
+
+	if(!tag && id3file)
+		tag = id3_file_tag(id3file);
+
+	if(!tag) return 0;
+
 	const id3_ucs4_t *title = NULL;
 	struct id3_frame *frame = NULL;
 
@@ -134,5 +153,35 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo(JNI
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getIntInfo(JNIEnv *env, jobject obj, jint what)
 {
 	struct id3_file *id3file = (struct id3_file*)env->GetLongField(obj, refField);
+	struct id3_tag *tag = (struct id3_tag*)env->GetLongField(obj, tagRefField);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "Get String Int %p %p", id3file, tag);
+
 	return 0;
 }
+
+
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_ID3Tag_checkForTag(JNIEnv *env, jobject obj, jbyteArray bArray, jint offset, jint size)
+{
+	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
+	int len = id3_tag_query((const id3_byte_t*)(ptr + offset), size);
+	env->ReleaseByteArrayElements(bArray, ptr, 0);
+	return len;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_utils_ID3Tag_parseTag(JNIEnv *env, jobject obj, jbyteArray bArray, jint offset, jint size)
+{
+	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
+	struct id3_tag *tag = id3_tag_parse((const id3_byte_t*)(ptr + offset), size);
+
+	jclass cl = env->GetObjectClass(obj);
+	tagRefField = env->GetFieldID(cl, "tagRef", "J");
+	env->SetLongField(obj, refField, (jlong)tag);
+	cl = env->GetObjectClass(obj);
+	refField = env->GetFieldID(cl, "id3Ref", "J");
+
+	env->ReleaseByteArrayElements(bArray, ptr, 0);
+
+	return tag != NULL;
+}
+

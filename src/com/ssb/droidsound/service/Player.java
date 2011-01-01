@@ -729,14 +729,16 @@ public class Player implements Runnable {
 					MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
 					if(mp != null) {
 						
-						if(!mp.isPlaying()) {
+						int playPos = currentPlugin.getSoundData(null, 0);
+						
+						if(playPos < -0) { //!mp.isPlaying()) {
 							//songEnded = true;
 							currentState = State.SWITCHING;
 							Message msg = mHandler.obtainMessage(MSG_DONE);
 							mHandler.sendMessage(msg);
 						}
 						
-						int playPos = mp.getCurrentPosition();
+						//int playPos = mp.getCurrentPosition();
 						
 						int song = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
 						if(song >= 0 && song != currentTune) {
