@@ -48,6 +48,18 @@
 	>
 	
 		<PreferenceCategory
+			android:title="MP3"
+			android:key="MP3Plugin"
+		>
+		<CheckBoxPreference
+	            android:key="MP3Plugin.simplestream"
+	            android:title="Simple MP3 streaming"
+	            android:defaultValue="false"
+	            android:summaryOff="Normal streaming"
+	            android:summaryOn="Simple streaming"
+	            />
+		</PreferenceCategory>
+		<PreferenceCategory
 			android:title="Sidplay"
 			android:key="SidplayPlugin"
 		>

@@ -67,6 +67,7 @@ public class Player implements Runnable {
 		public String subtuneTitle;
 		public String subtuneAuthor;
 		public String fileName;
+		public String source;
 	};
 
 	private Handler mHandler;
@@ -320,7 +321,12 @@ public class Player implements Runnable {
 					byte[] buffer = new byte[16384];
 					Log.v(TAG, "HTTP connected");
 					InputStream in = httpConn.getInputStream();
-					File f = File.createTempFile("music", null);
+					
+					int dot = songName.lastIndexOf('.');
+					String ext = null;
+					if(dot > 0)
+						ext = songName.substring(dot);					
+					File f = File.createTempFile("music", ext);
 					FileOutputStream fos = new FileOutputStream(f);
 					BufferedOutputStream bos = new BufferedOutputStream(fos,
 							buffer.length);
@@ -338,7 +344,9 @@ public class Player implements Runnable {
 					FileInputStream fs = new FileInputStream(f);
 					fs.read(songBuffer);
 					fs.close();
-					f.delete();
+					//f.delete();
+					songFile = f;
+					songFile2 = f;
 				} else {
 					Log.v(TAG, String.format("Connection failed: %d", response));
 				}
@@ -480,8 +488,7 @@ public class Player implements Runnable {
 					 * currentSong.title = songName.substring(slash); } else {
 					 * currentSong.title = songName.substring(slash, dot); }
 					 */
-					Log.v(TAG,
-							String.format("FN Title '%s'", currentSong.title));
+					Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
 				}
 
 				currentSong.subtuneTitle = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
@@ -504,21 +511,26 @@ public class Player implements Runnable {
 				startedFromSub = true;
 			}
 
-			Log.v(TAG, String
-					.format(":%s:%s:%s:%s:", currentSong.title,
-							currentSong.author, currentSong.copyright,
-							currentSong.type));
+			currentSong.source = "";
+			
+			Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title,currentSong.author, currentSong.copyright,currentSong.type));
 
 			Message msg = mHandler.obtainMessage(MSG_NEWSONG);
-			mHandler.sendMessage(msg);
 
 			MediaPlayer mp = currentPlugin.getMediaPlayer();
 			if (mp != null) {
 				currentState = State.PLAYING;
-				lastPos = -1000;
+				lastPos = -1000;				
+				currentSong.source = currentPlugin.getStringInfo(102);
+				Log.v(TAG, "MP3 SOURCE IS " + currentSong.source);
+
+				mHandler.sendMessage(msg);
+				
 				mp.start();
 				return;
 			}
+
+			mHandler.sendMessage(msg);
 
 			if (flush) {
 				audioTrack.stop();
@@ -552,7 +564,9 @@ public class Player implements Runnable {
 			if (songFile2 != null) {
 				Log.v(TAG, String.format("Deleting temporary files %s and %s",
 						songFile.getPath(), songFile2.getPath()));
-				songFile2.delete();
+
+				if(songFile2 != songFile)
+					songFile2.delete();	
 				songFile.delete();
 				songFile2 = null;
 			}
@@ -730,7 +744,7 @@ public class Player implements Runnable {
 					if(mp != null) {
 						
 						int playPos = currentPlugin.getSoundData(null, 0);
-						
+												
 						if(playPos < -0) { //!mp.isPlaying()) {
 							//songEnded = true;
 							currentState = State.SWITCHING;
@@ -739,6 +753,23 @@ public class Player implements Runnable {
 						}
 						
 						//int playPos = mp.getCurrentPosition();
+						
+						String title = currentPlugin.getStringInfo(101);
+						if(title != null) {
+							
+							Log.v(TAG, "########################################### GOT NEW META INFO");
+							
+							String author = null;
+							int split = title.indexOf(" - ");
+							if(split > 0) {
+								author = title.substring(0, split);
+								title = title.substring(split+3);
+							}
+							
+							Message msg = mHandler.obtainMessage(MSG_SUBTUNE, -1, 0, new String[] {title, author});
+							mHandler.sendMessage(msg);
+						}
+						
 						
 						int song = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
 						if(song >= 0 && song != currentTune) {
@@ -882,6 +913,7 @@ public class Player implements Runnable {
 		target.subtuneAuthor = currentSong.subtuneAuthor;
 		target.fileName = currentSong.fileName;
 		target.canSeek = currentSong.canSeek;
+		target.source = currentSong.source;
 		return true;
 	}
 

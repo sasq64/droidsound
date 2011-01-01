@@ -71,7 +71,8 @@ public class PlayerService extends Service {
 	public static final int SONG_SUBTUNE_AUTHOR = 15;
 	public static final int SONG_PLAYLIST = 16;
 	public static final int SONG_FLAGS = 17;
-	public static final int SONG_SIZEOF = 18;
+	public static final int SONG_SOURCE = 18;
+	public static final int SONG_SIZEOF = 19;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
@@ -225,6 +226,12 @@ public class PlayerService extends Service {
 			
 		String songComposer = (String) info[SONG_AUTHOR];
 		
+		String s = (String) info[SONG_SUBTUNE_AUTHOR];
+		if(s != null && s.length()> 0) {
+			songComposer = s;
+		}
+		
+		
 		if(songComposer.endsWith(")")) {
 			int lpara = songComposer.lastIndexOf("(");
 			int rpara = songComposer.lastIndexOf(")");
@@ -233,7 +240,15 @@ public class PlayerService extends Service {
 			}
 		}
 		
-		String songTitle = fixSpeech((String) info[SONG_TITLE], false);            			
+		String songTitle = (String) info[SONG_TITLE];		
+		s = (String) info[SONG_SUBTUNE_TITLE];
+		if(s != null && s.length()> 0) {
+			songTitle = s;
+		}
+		
+		songTitle = fixSpeech(songTitle, false);
+		
+		
 		songComposer = fixSpeech(songComposer, true);
 		/*
 		String subtuneTitle = (String) info[SONG_SUBTUNE_TITLE];
@@ -273,6 +288,11 @@ public class PlayerService extends Service {
             			String [] s = (String [])msg.obj;
             			info[SONG_SUBTUNE_TITLE] = s[0];
             			info[SONG_SUBTUNE_AUTHOR] = s[1];
+            			
+            			if(msg.arg1 < 0) {
+            				speakTitle();
+            			}
+            			
                 		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_STATE);
                 		break;                		
             		}
@@ -304,6 +324,16 @@ public class PlayerService extends Service {
 					info[SONG_SUBTUNE_AUTHOR] = currentSongInfo.subtuneAuthor;
 					info[SONG_FLAGS] = currentSongInfo.canSeek ? 1 : 0;
 					info[SONG_STATE] = 1;
+					
+					info[SONG_SOURCE] = "";
+					
+					if(currentSongInfo.source != null && currentSongInfo.source.length() > 0)					
+						info[SONG_SOURCE] = currentSongInfo.source;
+					else if(playListName != null) {
+						info[SONG_SOURCE] = playListName;
+					}
+					
+					Log.v(TAG, "SOURCE IS " + currentSongInfo.source);
 
 					if(lastFileName == null || !lastFileName.equals(currentSongInfo.fileName)) {
 						if(ttsStatus >= 0) {
@@ -311,7 +341,7 @@ public class PlayerService extends Service {
 						}
 					}
 
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_PLAYLIST, SONG_REPEAT, SONG_STATE);
+					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.v(TAG, "Music done");
@@ -478,6 +508,8 @@ public class PlayerService extends Service {
 	protected int bufSize = 0x40000;
 
 	protected int defaultLength = 0;
+
+	protected String playListName;
 
 	//private boolean foreground;
 
@@ -784,14 +816,14 @@ public class PlayerService extends Service {
 				} else {
 					Log.v(TAG, "Want to play list with " + song.getPath());
 					info[SONG_FILENAME] = song.getPath();
-					info[SONG_PLAYLIST] = "";
+					playListName = "";
 					beforePlay(song.getName());
 					player.playMod(song);
 				}
 			} else {
 				Log.v(TAG, "Want to play " + intent.getDataString());
 				createThread();
-				info[SONG_PLAYLIST] = "";
+				playListName = "";
 				info[SONG_FILENAME] = uri.getLastPathSegment();
 				SongFile song = new SongFile(intent.getDataString());
 				beforePlay(song.getName());
@@ -1039,13 +1071,19 @@ public class PlayerService extends Service {
 
 			createThread();
 			info[SONG_FILENAME] = mod.getPath();
-			info[SONG_PLAYLIST] = name;
+			
+			int dot = name.lastIndexOf('.');
+			if(dot > 0) {
+				name = name.substring(0, dot);
+			}
+			playListName = name;
+						
 
 			beforePlay(mod.getName());
 			player.playMod(mod);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
-			performCallback(SONG_REPEAT);
-	    	
+			//performCallback(SONG_SOURCE, SONG_REPEAT);
+
 	    	return true;
 	    	
 			/*
@@ -1084,7 +1122,7 @@ public class PlayerService extends Service {
 			Log.v(TAG, "PlayList called " + song.getPath());
 			createThread();
 			info[SONG_FILENAME] = song.getPath();
-			info[SONG_PLAYLIST] = "";
+			playListName = "";
 			beforePlay(song.getName());
 			player.playMod(song);
 	    	info[SONG_REPEAT] = defaultRepeatMode;

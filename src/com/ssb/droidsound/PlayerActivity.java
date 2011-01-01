@@ -10,6 +10,7 @@ import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipFile;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -61,6 +62,7 @@ import android.widget.AdapterView.OnItemClickListener;
 import com.ssb.droidsound.PlayListView.FileInfo;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.utils.Unzipper;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
@@ -734,6 +736,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
 			}
+		}
+		
+		mf = new File(modsDir, "Streaming");
+		File dummy = new File(mf, "SLAY Radio.m3u");
+		if(!mf.exists() || !dummy.exists()) {			
+			File [] files2 = mf.listFiles();
+			if(files2 != null) {
+				for(File f: files2) {
+					Log.v(TAG, f.getPath());
+					f.delete();
+				}
+			}
+			
+			
+			Unzipper.unzipAsset(this, "Streaming.zip", modsDir);
 		}
 
 		mf = new File(modsDir, "Favorites.plist");
@@ -1542,8 +1559,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			// }
 			break;
 		case PlayerService.SONG_SUBSONG:
-			subTune = value;
-			songSubtunesText.setText(String.format("[%02d/%02d]", subTune + 1, subTuneCount));
+			if(value >= 0) {
+				subTune = value;
+				songSubtunesText.setText(String.format("[%02d/%02d]", subTune + 1, subTuneCount));
+			}
 			break;
 		case PlayerService.SONG_TOTALSONGS:
 			subTuneCount = value;
@@ -1573,7 +1592,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public void stringChanged(int what, String value) {
 
 		switch(what) {
-		case PlayerService.SONG_PLAYLIST:
+		case PlayerService.SONG_SOURCE:
+			Log.v(TAG, "SOURCE IS " + value);
+			if(value != null && value.length() > 0) {
+				plinfoText.setText(value);
+			} else 
+				plinfoText.setText("");
+			break;
+/*		case PlayerService.SONG_PLAYLIST:
 			if(value != null && value.length() > 0) {
 				String n = new File(value).getName();
 				int dot = n.lastIndexOf('.');
@@ -1592,7 +1618,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			} else {
 				plinfoText.setText("");
 			}
-			break;
+			break; */
 		case PlayerService.SONG_FILENAME:
 			playListView.setHilighted(value);
 			searchListView.setHilighted(value);
