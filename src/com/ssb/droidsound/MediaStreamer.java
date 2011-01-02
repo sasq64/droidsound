@@ -11,6 +11,8 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ssb.droidsound.utils.StreamingHttpConnection;
+
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 import android.util.Log;
@@ -57,6 +59,15 @@ public class MediaStreamer implements Runnable {
 	private volatile boolean hasQuit;
 	private volatile boolean doQuit;
 
+	private long last_usec;
+
+	private int lastPos = 0;
+
+	private String icyDesc;
+	private String icyGenre;
+	private String icyName;
+	private String icyUrl;
+	private String icyBitrate;
 	
 	private static final int bitRateTab[] = new int [] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 	
@@ -129,16 +140,17 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		for(String httpName : httpNames) {
 			
 			URL url = new URL(httpName);
-			//if(songName.toUpperCase().endsWith(".MP3"))
-			//	break;
 	
 			Log.v(TAG, "Opening URL " + httpName);
 	
-			URLConnection conn = url.openConnection();
+			
+			StreamingHttpConnection httpConn = new StreamingHttpConnection(url);
+			/*URLConnection conn = url.openConnection();
 			if (!(conn instanceof HttpURLConnection))
 				throw new IOException("Not a HTTP connection");
-	
-			HttpURLConnection httpConn = (HttpURLConnection) conn;
+			HttpURLConnection httpConn = (HttpURLConnection) conn; */
+			
+			
 			httpConn.setAllowUserInteraction(false);
 			httpConn.setInstanceFollowRedirects(true);
 			httpConn.setRequestMethod("GET");
@@ -155,14 +167,21 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			if (response == HttpURLConnection.HTTP_OK) {
 				
 				int metaInterval = -1;
+				
+				
+				icyDesc = httpConn.getHeaderField("icy-description");
+				icyGenre = httpConn.getHeaderField("icy-genre");
+				icyName = httpConn.getHeaderField("icy-name");
+				icyUrl = httpConn.getHeaderField("icy-url");
+				icyBitrate = httpConn.getHeaderField("icy-br");
 
-				for(int i=1; i<100; i++) {
+				/* for(int i=1; i<100; i++) {
 					String key = httpConn.getHeaderFieldKey(i);
 					if(key != null) {
 						Log.v(TAG, String.format("%s: %s", key, httpConn.getHeaderField(key)));
 					} else
 						break;
-				}
+				} */
 				
 				String icy = httpConn.getHeaderField("icy-metaint");
 				if(icy != null) {
@@ -217,11 +236,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				int metaCounter = 0;
 				long total = 0;
 				metaSize = -1;
-				usec = 0L;
+				last_usec = usec = 0L;
 				nextFramePos = -1;
 				int hf = 0;
 				
 				hasQuit = false;
+				boolean firstRead = true;
 				
 				while (!doQuit) {
 						
@@ -240,16 +260,21 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 						
 						if(metaPos == metaSize) {
-							String data =  new String(metaArray, 1, metaSize-1);
-							Log.v(TAG, "META DONE: " + data);
-							int startPos = data.indexOf("StreamTitle='");
-							if(startPos >= 0) {
-								startPos += 13;
-								int endPos = data.lastIndexOf('\'');
-								if(endPos > startPos) {
-									//streamTitle = data.substring(startPos, endPos);
-									metaStrings.add(new MetaString((int) (usec/1000), data.substring(startPos, endPos)));
-									//newMeta = true;
+							String meta =  new String(metaArray, 1, metaSize-1);
+							Log.v(TAG, "META DONE: " + meta);
+							
+							String split [] = meta.split(";");
+							
+							for(String data : split) {							
+								int startPos = data.indexOf("StreamTitle='");
+								if(startPos >= 0) {
+									startPos += 13;
+									int endPos = data.lastIndexOf('\'');
+									if(endPos > startPos) {
+										//streamTitle = data.substring(startPos, endPos);
+										metaStrings.add(new MetaString((int) (usec/1000), data.substring(startPos, endPos)));
+										//newMeta = true;
+									}
 								}
 							}
 							
@@ -280,6 +305,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						
 						size = in.read(buffer, 0, rem);
 						
+						if(firstRead) {
+							Log.v(TAG, String.format("### READ: %02x %02x %02x %02x", buffer[0], buffer[1], buffer[2], buffer[3]));
+							firstRead = false;
+						}
+						
+						
 						if(size == -1) {
 							Log.v(TAG, "####### End of buffer");
 							break;
@@ -300,7 +331,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 									
 									Log.v(TAG, String.format("Synced at %d", i));
 									
-									nextFramePos = i;
+									nextFramePos = i+total;
 									/*hf = 0xf;
 									head[0] = buffer[i];
 									head[1] = buffer[i+1];
@@ -382,15 +413,19 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						
 						metaCounter += size;						
 						total += size;
+
+						os.write(buffer, 0, size);
 						
 						if(metaCounter == metaInterval)
 							Log.v(TAG, "META TIME");
 						
 					}
 					
-					os.write(buffer, 0, size);	
 					
-					Log.v(TAG, String.format("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Queue pos %d msec", (int)(usec / 1000)));
+					if(usec - last_usec > 1000000) {
+						Log.v(TAG, String.format("%%%%%%%%%% QUEUE POS %d msec", (int)(usec / 1000)));
+						last_usec = usec;
+					}
 					
 				}
 				
@@ -458,7 +493,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		}
 		
 		int rc = mediaPlayer.getCurrentPosition();
-		Log.v(TAG, ">>>>>>>>>> POS " + rc);
+		if(rc - lastPos > 1000) {
+			Log.v(TAG, String.format("########## READ POS %d msec",rc));
+			lastPos  = rc;
+		}
 		return rc;
 	}	
 
@@ -496,6 +534,34 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 	public String getStreamTitle() {
 		return streamTitle;
+	}
+
+	public String[] getDetailedInfo() {
+		
+		List<String> info = new ArrayList<String>();
+		if(icyName != null) {
+			info.add("Name");
+			info.add(icyName);
+		}
+		if(icyDesc != null) {
+			info.add("Description");
+			info.add(icyDesc);
+		}
+		if(icyUrl != null) {
+			info.add("URL");
+			info.add(icyUrl);
+		}
+		if(icyGenre != null) {
+			info.add("Genre");
+			info.add(icyGenre);
+		}
+		if(icyBitrate != null) {
+			info.add("Bitrate");
+			info.add(icyBitrate);
+		}
+		String[] strArray = new String[info.size()];
+		info.toArray(strArray);
+		return strArray;
 	}
 }
 

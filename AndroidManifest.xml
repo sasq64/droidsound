@@ -42,7 +42,7 @@
 				<data android:mimeType="audio/x-xm" />
 				<data android:mimeType="audio/x-it" />
 				<data android:mimeType="audio/x-mpegurl" />
-
+				<data android:mimeType="audio/x-scpls" />
 				<data android:mimeType="audio/x-gbs" />
 				<data android:mimeType="audio/x-nsf" />
 				<data android:mimeType="audio/x-nsfe" />

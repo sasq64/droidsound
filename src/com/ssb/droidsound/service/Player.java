@@ -52,6 +52,7 @@ public class Player implements Runnable {
 	public static final int MSG_PROGRESS = 3;
 	protected static final int MSG_SILENT = 4;
 	public static final int MSG_SUBTUNE = 5;
+	public static final int MSG_DETAILS = 6;
 	//public static final int MSG_SUBTUNE = 5;
 
 	public static class SongInfo {
@@ -114,7 +115,9 @@ public class Player implements Runnable {
 	private boolean reinitAudio;
 	private int queuedFrames;
 	private boolean startedFromSub;
-	private int lastLength;
+	private int lastLatency;
+	private boolean firstData;
+	private String lastTitle;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -325,9 +328,7 @@ public class Player implements Runnable {
 					InputStream in = httpConn.getInputStream();
 					
 					int dot = songName.lastIndexOf('.');
-					String ext = null;
-					if(dot > 0)
-						ext = songName.substring(dot);					
+					String ext = DroidSoundPlugin.getExt(songName);
 					File f = File.createTempFile("music", ext);
 					FileOutputStream fos = new FileOutputStream(f);
 					BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
@@ -511,9 +512,11 @@ public class Player implements Runnable {
 				startedFromSub = true;
 			}
 			
-			lastLength = currentSong.length;
+			lastLatency = 0;//currentSong.length;
+			lastTitle = null;
 
 			currentSong.source = "";
+			firstData = true;
 			
 			Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title,currentSong.author, currentSong.copyright,currentSong.type));
 
@@ -754,13 +757,34 @@ public class Player implements Runnable {
 							mHandler.sendMessage(msg);
 						}
 						
+						if(playPos > 0 && firstData) {
+							String[] info = currentPlugin.getDetailedInfo();
+							if(info != null) {
+								Log.v(TAG, "########################################### GOT DETAILS");
+								currentSong.details = info;
+								Message msg = mHandler.obtainMessage(MSG_DETAILS, info);
+								mHandler.sendMessage(msg);
+							}
+							firstData = false;
+						}
+						
 						//int playPos = mp.getCurrentPosition();
 						
+						int latency = currentPlugin.getIntInfo(203);
+						int diff = latency - lastLatency;
+						if(diff < 0) diff = -diff;
+						if(diff > 1000) {
+							Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, latency);
+							mHandler.sendMessage(msg);
+							lastLatency = latency;							
+						}
+
 						int length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 						String title = currentPlugin.getStringInfo(101);
-						if(title != null) {
+						if(title != null && (!title.equals(lastTitle))) {
 							
-							Log.v(TAG, "########################################### GOT NEW META INFO");
+							lastTitle = title;
+							Log.v(TAG, "######## GOT NEW META INFO");
 							
 							String author = null;
 							int split = title.indexOf(" - ");
@@ -771,10 +795,6 @@ public class Player implements Runnable {
 
 							Message msg = mHandler.obtainMessage(MSG_SUBTUNE, -1, length, new String[] {title, author});
 							mHandler.sendMessage(msg);
-						} else if(length != lastLength) {
-							Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, length);
-							mHandler.sendMessage(msg);
-							lastLength = length;							
 						}
 						
 						
@@ -882,11 +902,11 @@ public class Player implements Runnable {
 				}
 				else {					
 					if(currentState == State.PAUSED && currentPlugin.getMediaPlayer() != null) {						
-						int length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-						if(length != lastLength) {
-							Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, length);
+						int latency = currentPlugin.getIntInfo(203);
+						if(latency/1000 != lastLatency/1000) {
+							Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, latency);
 							mHandler.sendMessage(msg);
-							lastLength = length;							
+							lastLatency = latency;							
 						}						
 					}
 						

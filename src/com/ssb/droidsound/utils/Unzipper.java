@@ -76,6 +76,18 @@ public class Unzipper {
 		return false;		
 	}
 
+	public void unzipAssetAsync(Context context, String asset, File targetDir) {
+/*		
+		thread = new Runnable() {
+			@Override
+			public void run() {
+				unzipAsset(context, asset, targetDir);
+			}
+		}; */
+		
+		
+	}
+
 	
 	
 }

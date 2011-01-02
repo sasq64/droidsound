@@ -12,8 +12,10 @@ import java.util.Map.Entry;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
+import android.util.Log;
 
 public abstract class DroidSoundPlugin {
+	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
 
 	
 	public static final int INFO_TITLE = 0;
@@ -134,7 +136,34 @@ public abstract class DroidSoundPlugin {
 
 	public abstract void unload();
 	
-	public boolean canHandle(String name) { return false; }
+	
+	public static String getExt(String name) {
+		String ext = null;
+		int dot = name.lastIndexOf('.');
+		if(dot > 0) {
+			ext = name.substring(dot);
+			Log.v(TAG, "EXT: " + ext);
+			char c = 'X';
+			int e = 0;
+			while(e < ext.length() && Character.isLetterOrDigit(c)) {
+				e++;
+				if(e == ext.length())
+						break;
+				c = ext.charAt(e);
+			}
+			ext = ext.substring(0,e);
+			Log.v(TAG, "EXT NOW: " + ext);
+		}
+		return ext;
+	}
+	
+	
+	public boolean canHandle(String name) { 
+		return canHandleExt(getExt(name));
+	}
+	
+	public boolean canHandleExt(String ext) { return false; }
+	
 	
 	public abstract boolean load(String name, byte [] module, int size);
 

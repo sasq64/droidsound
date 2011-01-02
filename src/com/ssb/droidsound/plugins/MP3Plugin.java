@@ -13,6 +13,8 @@ import com.ssb.droidsound.MediaStreamer;
 import com.ssb.droidsound.utils.CueFile;
 import com.ssb.droidsound.utils.ID3Tag;
 import com.ssb.droidsound.utils.M3UParser;
+import com.ssb.droidsound.utils.PLSParser;
+import com.ssb.droidsound.utils.PlaylistParser;
 
 public class MP3Plugin extends DroidSoundPlugin {
 	private static final String TAG = MP3Plugin.class.getSimpleName();
@@ -35,17 +37,16 @@ public class MP3Plugin extends DroidSoundPlugin {
 	public static boolean simpleStream = false;
 
 	@Override
-	public boolean canHandle(String name) {
-		int x = name.lastIndexOf('.');
-		String ext = name.substring(x + 1).toUpperCase();
+	public boolean canHandleExt(String ext) {		
+		ext = ext.toUpperCase();
 		Log.v(TAG, String.format("Checking ext '%s'", ext));
-		return ext.equals("MP3") || ext.equals("M3U");
+		return ext.equals(".MP3") || ext.equals(".M3U") || ext.equals(".PLS");
 	}
 
 	@Override
 	public String[] getDetailedInfo() {
 
-		Log.v(TAG, "GetInfo");
+		Log.v(TAG, "getDetailedInfo");
 		if(id3Tag != null) {
 			Log.v(TAG, "ID3 here");
 			List<String> info = new ArrayList<String>();
@@ -72,6 +73,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 			String[] strArray = new String[info.size()];
 			info.toArray(strArray);
 			return strArray;
+		} else if(streamer != null) {
+			return streamer.getDetailedInfo();
 		}
 
 		return null;
@@ -85,11 +88,13 @@ public class MP3Plugin extends DroidSoundPlugin {
 			return 1;
 
 		switch(what) {
-		case INFO_LENGTH:
+		case 203:
 			if(streamer != null) {
 				return streamer.getLatency();
 			}
-			if(mediaPlayer != null)
+			return -1;
+		case INFO_LENGTH:
+			if(mediaPlayer != null && streamer == null)
 				return mediaPlayer.getDuration();
 			break;
 		case INFO_SUBTUNE_COUNT:
@@ -197,15 +202,23 @@ public class MP3Plugin extends DroidSoundPlugin {
 		started = false;
 		loaded = false;
 
+		
+		PlaylistParser pls = null;
+		
 		if(file.getName().toUpperCase().endsWith(".M3U")) {
-			M3UParser m3u = new M3UParser(file);
-			if(m3u.getMediaCount() > 0) {
+			pls = new M3UParser(file);
+		} else if(file.getName().toUpperCase().endsWith(".PLS")) {
+			pls = new PLSParser(file);			
+		}
+		
+		if(pls != null) {
+			if(pls.getMediaCount() > 0) {
 
 				if(simpleStream) {
-					Log.v(TAG, String.format("LOAD %s", m3u.getMedia(0)));
-					description = m3u.getDescription(0);
+					Log.v(TAG, String.format("LOAD %s", pls.getMedia(0)));
+					description = pls.getDescription(0);
 					mediaPlayer = new MediaPlayer();
-					mediaPlayer.setDataSource(m3u.getMedia(0));
+					mediaPlayer.setDataSource(pls.getMedia(0));
 					loaded = true;
 					mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
 						@Override
@@ -220,14 +233,14 @@ public class MP3Plugin extends DroidSoundPlugin {
 						if(httpThread == null) {
 							mediaPlayer = new MediaPlayer();
 							Log.v(TAG, "Creating thread");
-							streamer = new MediaStreamer(m3u.getMediaList(), mediaPlayer);
-							description = m3u.getDescription(0);
+							streamer = new MediaStreamer(pls.getMediaList(), mediaPlayer);
+							description = pls.getDescription(0);
 							httpThread = new Thread(streamer);
 							// httpThread.setPriority(Thread.MAX_PRIORITY);
 							httpThread.start();
 						}
 
-						Log.v(TAG, String.format("LOAD %s", m3u.getMedia(0)));
+						Log.v(TAG, String.format("LOAD %s", pls.getMedia(0)));
 						// mediaPlayer.setLooping(true);
 						id3Tag = null;
 						cueFile = null;
@@ -239,7 +252,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 				}
 				return true;
 			}
-		}
+		}	
 
 		try {
 			Log.v(TAG, String.format("LOAD %s", file.getPath()));

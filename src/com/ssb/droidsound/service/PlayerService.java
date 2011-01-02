@@ -72,7 +72,8 @@ public class PlayerService extends Service {
 	public static final int SONG_PLAYLIST = 16;
 	public static final int SONG_FLAGS = 17;
 	public static final int SONG_SOURCE = 18;
-	public static final int SONG_SIZEOF = 19;
+	public static final int SONG_BUFFERING = 19;
+	public static final int SONG_SIZEOF = 20;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
@@ -278,16 +279,24 @@ public class PlayerService extends Service {
 		@Override
         public void handleMessage(Message msg) {
         	//Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
+			String [] sa;
             switch (msg.what) {
+            	case Player.MSG_DETAILS:
+            		sa = (String [])msg.obj;
+            		info[SONG_DETAILS] = "DETAILS";
+            		currentSongInfo.details = sa;
+            		performCallback(SONG_DETAILS);
+            		Log.v(TAG, String.format("%%%%%%%% Sending %d details", sa.length));
+            		break;
             	case Player.MSG_SUBTUNE:
             		Log.v(TAG, String.format("SUBTUNE %d, Length %d", msg.arg1, msg.arg2));
             		info[SONG_SUBSONG] = msg.arg1;
             		info[SONG_LENGTH] = msg.arg2;
             		info[SONG_STATE] = 1;
             		if(msg.obj != null) {
-            			String [] s = (String [])msg.obj;
-            			info[SONG_SUBTUNE_TITLE] = s[0];
-            			info[SONG_SUBTUNE_AUTHOR] = s[1];
+            			sa = (String [])msg.obj;
+            			info[SONG_SUBTUNE_TITLE] = sa[0];
+            			info[SONG_SUBTUNE_AUTHOR] = sa[1];
             			
             			if(msg.arg1 < 0) {
             				speakTitle();
@@ -358,23 +367,23 @@ public class PlayerService extends Service {
                 		l = defaultLength;
                 	}
                 	//Log.v(TAG, String.format("%d vs %d", msg.arg1, l));
-                	//if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE || defaultLength > 0)) {
-                	//	playNextSong();
-                	//} else {                	
+                	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE || defaultLength > 0)) {
+                		playNextSong();
+                	} else {                	
                     	int pos = (Integer)msg.arg1;
-                    	int len = (Integer)msg.arg2;
-                    	if(pos >= 0 && len >= 0) {
-	                    	info[SONG_LENGTH] = len;
+                    	int buffering = (Integer)msg.arg2;
+                    	if(pos >= 0 && buffering >= 0) {
+	                    	info[SONG_BUFFERING] = buffering;
 	                    	info[SONG_POS] = pos;
-	                		performCallback(SONG_LENGTH, SONG_POS);
+	                		performCallback(SONG_BUFFERING, SONG_POS);
                     	} else if(pos >= 0) {
 	                    	info[SONG_POS] = pos;
 	                		performCallback(SONG_POS);
                     	} else {
-	                    	info[SONG_LENGTH] = len;
-	                		performCallback(SONG_LENGTH);
+	                    	info[SONG_BUFFERING] = buffering;
+	                		performCallback(SONG_BUFFERING);
                     	}
-                	//}
+                	}
     				break;
                 case Player.MSG_STATE:
                 	info[SONG_STATE] = (Integer)msg.arg1;

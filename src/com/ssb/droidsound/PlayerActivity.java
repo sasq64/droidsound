@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
@@ -15,6 +17,7 @@ import java.util.zip.ZipFile;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.Notification;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.BroadcastReceiver;
@@ -156,7 +159,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private SQLiteDatabase db;
 
-	private int backDown;
+	//private int backDown;
 	private boolean atTop;
 
 	private String songTitle;
@@ -220,6 +223,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private TextView lowText;
 
 	private float aTime = 0;
+
+	private Method startTrackingMethod;
+	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
 		Log.v(TAG, "########## Activity finalize");
@@ -463,6 +469,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// sf = new SongFile("MonkeyIsland");
 		// sf = new SongFile("/path/to/myfile.mod;2");
 		// sf = new SongFile("/path/to/myfile.mod;-1;800");
+		
 
 		Intent intent = getIntent();
 		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
@@ -505,6 +512,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			finish();
 			return;
 		}
+		
+		
+		try {
+			startTrackingMethod = KeyEvent.class.getMethod("startTracking", startTrackingSignature);
+		} catch (NoSuchMethodException e) {
+			startTrackingMethod = null;
+		}
+		
 
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
@@ -1216,6 +1231,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		return super.dispatchKeyEvent(event);
 	}
 
+	private static final Class[] mStartTracking = new Class[] {};
+    
+	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		Log.v(TAG, String.format("%%%% DOWN %d", keyCode));
@@ -1339,8 +1357,38 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				showDialog(R.string.add_to_plist);
 			}
 			break;
-
 		case KeyEvent.KEYCODE_BACK:
+		case KeyEvent.KEYCODE_DEL:
+			Log.v(TAG, ">>>>>>>>>>>>> BACK PRESSED");
+			/*if(currentPlaylistView != playListView) {
+				if(currentPlaylistView != searchListView || searchDirDepth == 0) {
+					flipTo(FILE_VIEW);
+					if(songFile != null) {
+						playListView.setScrollPosition(songFile.getFile());
+					}
+					return true;
+				}
+			}
+
+			if(atTop) {
+				finish();
+			} else {
+				gotoParent(null);
+			} */
+			if(startTrackingMethod != null) {
+				try {
+					Log.v(TAG, "############### START TRACKING");
+					startTrackingMethod.invoke(event);
+				} catch (IllegalArgumentException e) {
+				} catch (IllegalAccessException e) {
+				} catch (InvocationTargetException e) {
+				}
+			}
+			 // event.startTracking();
+			 return true;
+			//return false;
+			//break;
+		/*case KeyEvent.KEYCODE_BACK:
 		case KeyEvent.KEYCODE_DEL:
 			backDown++;
 			if(backDown == 3) {
@@ -1354,21 +1402,64 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					// File(songName));
 				}
 			}
-			return true;
+			return true; */
 		}
 
-		backDown = 0;
+		//backDown = 0;
 		return super.onKeyDown(keyCode, event);
 	}
 
+	
+	//@Override
+	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+	
+		if(keyCode == KeyEvent.KEYCODE_BACK) {
+			Log.v(TAG, ">>>>>>>>>>>>> BACK LONG PRESSED");
+			if(currentPlaylistView == searchListView) {
+				searchDirDepth = 0;
+				searchListView.setCursor(searchCursor, null);
+				flipTo(SEARCH_VIEW);
+			} else {
+				setDirectory(modsDir, playListView);
+				currentPlaylistView.setScrollPosition(null); // new
+				// File(songName));
+			}
+			return true;
+		}
+		return false;
+		////  return super.onKeyLongPress(keyCode, event);
+	} 
+	
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		
+		if(keyCode == KeyEvent.KEYCODE_BACK ) {
+			Log.v(TAG, ">>>>>>>>>>>>> BACK RELEASED");
+			if(currentPlaylistView != playListView) {
+				if(currentPlaylistView != searchListView || searchDirDepth == 0) {
+					flipTo(FILE_VIEW);
+					if(songFile != null) {
+						playListView.setScrollPosition(songFile.getFile());
+					}
+					return true;
+				}
+			}
+	
+			if(atTop) {
+				finish();
+			} else {
+				gotoParent(null);
+			}
+			return true;
+		}
+		
+		
 		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
 		// Log.v(TAG, String.format("MEDIA BUTTON UP %d",
 		// event.getRepeatCount()));
 		// return true;
 		// }
-		if(keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_DEL) {
+		/* if(keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_DEL) {
 			if(backDown > 0 && backDown < 3) {
 				backDown = 0;
 				if(currentPlaylistView != playListView) {
@@ -1389,7 +1480,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			backDown = 0;
 			return true;
-		}
+		} */
 		return super.onKeyUp(keyCode, event);
 	}
 
@@ -1532,6 +1623,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 
 			break;
+		case PlayerService.SONG_BUFFERING:
+			songSubtunesText.setText(String.format("%02d:%02d", value / 1000 / 60, (value/1000) % 60));
+			break;
 		case PlayerService.SONG_LENGTH:
 			if(value < 0) {
 				// TODO: Hide length
@@ -1640,8 +1734,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case PlayerService.SONG_TITLE:
 			songTitle = value;
 			flipTo(SAME_VIEW);
-			songDetails = player.getSongInfo();
 			subtuneTitle = null;
+			// NOTE: Intentonal fall-through
+		case PlayerService.SONG_DETAILS:
+			songDetails = player.getSongInfo();
+			Log.v(TAG, String.format("#### Got %d details", songDetails != null ? songDetails.length : -1));
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i = 0; i < songDetails.length; i += 2) {

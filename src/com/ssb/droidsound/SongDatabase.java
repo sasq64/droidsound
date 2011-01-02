@@ -588,8 +588,8 @@ public class SongDatabase implements Runnable {
 				if(info != null) {
 					
 					// NOTE: Fix for strange zip archives that does not contain directories
-					if(!pathSet.contains(path))
-						pathSet.add(path);
+					//if(!pathSet.contains(path))
+					//	pathSet.add(path);
 
 					values.put("TITLE", info.title);
 					values.put("COMPOSER", info.composer);

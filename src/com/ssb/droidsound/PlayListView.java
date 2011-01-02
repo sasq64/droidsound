@@ -3,6 +3,8 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.util.ArrayList;
 
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
+
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
@@ -283,12 +285,22 @@ public class PlayListView extends ListView {
 			}
 
 			if(type == SongDatabase.TYPE_FILE) {
-				tv0.setTextColor(itemColor);
+				tv0.setTextColor(itemColor);				
+				String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
+				if(ext.equals("M3U") || ext.equals("PLS"))
+					tv0.setTextColor(0xffffc0c0);
+					//iv.setImageResource(R.drawable.gflat_headphones);
 				iv.setVisibility(View.GONE);
 			} else if(type == SongDatabase.TYPE_ARCHIVE) {
 				tv0.setTextColor(archiveColor);
 				//iv.setImageResource(R.drawable.play_list);
-				iv.setImageResource(R.drawable.gflat_folder);
+				if(title.equals("Local Mediastore")) {
+					iv.setImageResource(R.drawable.gflat_mus_folder);
+				} else if(title.equals("CSDb")) {
+					iv.setImageResource(R.drawable.gflat_bag);
+				} else {
+					iv.setImageResource(R.drawable.gflat_package);
+				}
 				iv.setVisibility(View.VISIBLE);
 			} else if(type == SongDatabase.TYPE_PLIST) {
 				tv0.setTextColor(archiveColor);
@@ -302,7 +314,11 @@ public class PlayListView extends ListView {
 				iv.setVisibility(View.VISIBLE);
 			} else {
 				tv0.setTextColor(dirColor);
-				iv.setImageResource(R.drawable.gflat_folder);
+				if(title.equals("Streaming")) {
+					iv.setImageResource(R.drawable.gflat_net_folder);
+				} else {
+					iv.setImageResource(R.drawable.gflat_folder);
+				}
 				iv.setVisibility(View.VISIBLE);
 			}
 			

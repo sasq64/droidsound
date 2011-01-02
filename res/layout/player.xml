@@ -31,7 +31,7 @@
 		<ImageButton android:id="@+id/search_button" android:src="@android:drawable/ic_menu_search"
 			 android:scaleType="fitCenter" style="@style/Button" android:visibility="gone" />
 
-		<ImageButton android:id="@+id/go_info_button" android:src="@android:drawable/ic_menu_more"
+		<ImageButton android:id="@+id/go_info_button" android:src="@drawable/arrow"
 			 android:scaleType="fitCenter" style="@style/Button" />
 		
 	</LinearLayout>
