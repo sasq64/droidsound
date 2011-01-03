@@ -782,7 +782,7 @@ public class PlayerService extends Service {
 			mStartForeground = mStopForeground = null;
 		}
 	    
-		notification = new Notification(R.drawable.note, "Droidsound", System.currentTimeMillis());				
+		notification = new Notification(R.drawable.droidsound64x64, "Droidsound", System.currentTimeMillis());				
 		Intent notificationIntent = new Intent(this, PlayerActivity.class);
 		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
 	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
@@ -873,9 +873,6 @@ public class PlayerService extends Service {
 	}
 	
 	private final IPlayerService.Stub mBinder = new IPlayerService.Stub() {
-
-
-
 
 		@Override
 		public boolean playMod(String name) throws RemoteException {
@@ -1171,6 +1168,11 @@ public class PlayerService extends Service {
 			return currentSongInfo.details;
 		}
 
+		@Override
+		public byte[] getSongMD5() throws RemoteException {
+
+			return currentSongInfo.md5;
+		}
 
 		};
 

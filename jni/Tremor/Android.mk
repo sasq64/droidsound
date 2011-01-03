@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#include $(call all-subdir-makefiles) 
+ 
+LOCAL_PATH := $(call my-dir)
 
-X := $(call my-dir)
+include $(CLEAR_VARS)
 
-# include $(X)/Tremor/Android.mk
+LOCAL_MODULE    := tremor
 
-include $(X)/ModPlugin/Android.mk
-include $(X)/GMEPlugin/Android.mk
-include $(X)/SC68Plugin/Android.mk
-include $(X)/SidplayPlugin/Android.mk
-include $(X)/UADEPlugin/Android.mk
-include $(X)/HivelyPlugin/Android.mk
-include $(X)/NativeZipFile/Android.mk
-include $(X)/ID3Tag/Android.mk
+LOCAL_SRC_FILES := Tremor.cpp
+
+MY_SOURCES := $(wildcard $(LOCAL_PATH)/tremor/*.c)
+LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
+
+LOCAL_CFLAGS := -I$(LOCAL_PATH)/tremor
+LOCAL_LDLIBS := -llog -lz
+
+include $(BUILD_SHARED_LIBRARY)

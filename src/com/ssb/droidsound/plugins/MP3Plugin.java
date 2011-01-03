@@ -34,6 +34,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 	private String description;
 
+	private String type;
+
 	public static boolean simpleStream = false;
 
 	@Override
@@ -138,6 +140,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 				}
 			}
 			return null;
+		case INFO_TYPE:
+			return type;
 		case 102:
 			return description;
 		case INFO_SUBTUNE_TITLE:
@@ -204,11 +208,13 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		
 		PlaylistParser pls = null;
-		
+		type = "MP3";
 		if(file.getName().toUpperCase().endsWith(".M3U")) {
 			pls = new M3UParser(file);
+			type = "M3U";
 		} else if(file.getName().toUpperCase().endsWith(".PLS")) {
-			pls = new PLSParser(file);			
+			pls = new PLSParser(file);
+			type = "PLS";
 		}
 		
 		if(pls != null) {
@@ -283,10 +289,16 @@ public class MP3Plugin extends DroidSoundPlugin {
 	public boolean loadInfo(File file) throws IOException {
 
 		Log.v(TAG, String.format("LoadInfo %s", file.getPath()));
+		type = "MP3";
 		if(file.getName().toUpperCase().endsWith(".M3U")) {
 			id3Tag = null;
-			M3UParser m3u = new M3UParser(file);
-
+			//M3UParser m3u = new M3UParser(file);
+			type = "M3U";
+			return true;
+		} else if(file.getName().toUpperCase().endsWith(".PLS")) {
+			id3Tag = null;
+			//PLSParser pls = new PLSParser(file);
+			type = "PLS";
 			return true;
 		}
 

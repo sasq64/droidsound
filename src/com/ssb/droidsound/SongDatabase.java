@@ -447,6 +447,16 @@ public class SongDatabase implements Runnable {
 					"FORMAT" + " TEXT" + ");");
 					// "LENGTH" + " INTEGER" + 
 
+			db.execSQL("CREATE TABLE IF NOT EXISTS " + "METADATA" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
+					"CHECKSUM" + " INTEGER," +
+					"LAST_PLAYED" + " INTEGER," +
+					"POSITION" + " INTEGER," +
+					"TYPE" + " INTEGER," +
+					"RATING" + " INTEGER," +
+					"TAGS" + " STRING," +
+					"COMMENT" + " STRING," +
+					"PLAYCOUNT" + " INTEGER" + ");");
+
 			//db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
 			//db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
 			//db.execSQL("CREATE INDEX IF NOT EXISTS composerindex ON FILES (TITLE) ;");

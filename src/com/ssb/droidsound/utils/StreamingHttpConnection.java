@@ -136,7 +136,7 @@ public class StreamingHttpConnection {
 					String var = line.substring(0,pos++);					
 					if(line.charAt(pos) == ' ') pos++;					
 					String val = line.substring(pos);
-					headers.put(var, val);
+					headers.put(var.toLowerCase(), val);
 				} else {
 					Log.v(TAG, "!! DONE");
 					break;

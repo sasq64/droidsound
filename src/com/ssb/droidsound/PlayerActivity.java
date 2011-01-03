@@ -225,6 +225,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private float aTime = 0;
 
 	private Method startTrackingMethod;
+
+	private byte[] md5;
 	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
@@ -1607,6 +1609,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private static String[] repnames = { "CONT", "----", "REPT", "CS", "RS" };
 
+	private void hexdump(byte [] data) {
+		StringBuilder sb = new StringBuilder();
+		if(md5 == null) sb.append("NULL HEX");
+		else
+		for(int i=0; i<data.length; i++) {
+			if(i % 8 == 0) {
+				sb.append(String.format("\n%04x:  ", i));
+			}
+			sb.append(String.format("%02x ", data[i]));
+		}
+		Log.v(TAG, sb.toString());
+	}
 	@Override
 	public void intChanged(int what, int value) {
 		switch(what) {
@@ -1721,6 +1735,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			searchListView.setHilighted(value);
 			// songName = value;
 			songFile = new SongFile(value);
+			
+			Log.v(TAG, String.format("############################## Song file is %s", value));
+			
 			break;
 		case PlayerService.SONG_SUBTUNE_TITLE:
 			subtuneTitle = value;
@@ -1738,6 +1755,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			// NOTE: Intentonal fall-through
 		case PlayerService.SONG_DETAILS:
 			songDetails = player.getSongInfo();
+			md5 = player.getSongMD5();
+			hexdump(md5);
 			Log.v(TAG, String.format("#### Got %d details", songDetails != null ? songDetails.length : -1));
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");

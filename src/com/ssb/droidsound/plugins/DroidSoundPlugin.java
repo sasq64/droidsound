@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +55,8 @@ public abstract class DroidSoundPlugin {
 	
 	public static Context getContext() { return context; }
 
+	private byte[] md5;
+
 	
 	
 	// Called when player thread exits due to inactivty
@@ -85,10 +89,13 @@ public abstract class DroidSoundPlugin {
 	}
 	
 	public boolean load(String name, InputStream is, int size) throws IOException {
+		Log.v(TAG, "PLUGIN LOAD STREAM");
 		boolean rc = false;
 		try {
 			byte [] songBuffer = new byte [size];
-			is.read(songBuffer);
+			is.read(songBuffer);			
+			calcMD5(songBuffer);
+			
 			rc = load(name, songBuffer, songBuffer.length);
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
@@ -96,6 +103,25 @@ public abstract class DroidSoundPlugin {
 		return rc;
 	}
 	
+	public void calcMD5(byte[] songBuffer, int size) {
+		
+		MessageDigest md = null;
+		Log.v(TAG, "MD5 CALCING TIME");
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return;
+		}		
+		
+		md.update(songBuffer, 0, size);
+		md5 = md.digest();
+	}
+	public void calcMD5(byte[] songBuffer) {
+		calcMD5(songBuffer, songBuffer.length);
+	}
+
 	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
 		boolean rc = false;
 		try {
@@ -108,16 +134,18 @@ public abstract class DroidSoundPlugin {
 		return rc;
 	}
 	
-	public boolean load(File file) throws IOException {		
+	public boolean load(File file) throws IOException {
+		Log.v(TAG, "PLUGIN LOAD FILE");
 		int l = (int)file.length();
 		byte [] songBuffer = null;
 		try {
-			songBuffer = new byte [l];
+			songBuffer = new byte [l];			
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}		
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
+		calcMD5(songBuffer);
 		return load(file.getName(), songBuffer, songBuffer.length);
 	}
 
@@ -273,5 +301,10 @@ public abstract class DroidSoundPlugin {
 
 	public boolean canSeek() {
 		return false;
+	}
+
+	public byte[] getMD5() {
+		
+		return md5;
 	}
 }

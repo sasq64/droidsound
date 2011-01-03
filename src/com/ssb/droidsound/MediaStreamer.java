@@ -35,6 +35,8 @@ public class MediaStreamer implements Runnable {
 	private volatile boolean started;
 	private volatile boolean prepared;
 	private volatile boolean loaded;
+	private volatile boolean parseMp3;
+
 	
 	//private String httpName;
 	private List<MetaString> metaStrings = new ArrayList<MetaString>();
@@ -162,6 +164,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 	
 			int response = httpConn.getResponseCode();
 			
+			parseMp3 = false;
+			
 			//Log.v(TAG, String.format("RESPONSE %d %s", response, httpConn.getResponseMessage()));
 			
 			if (response == HttpURLConnection.HTTP_OK) {
@@ -174,6 +178,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				icyName = httpConn.getHeaderField("icy-name");
 				icyUrl = httpConn.getHeaderField("icy-url");
 				icyBitrate = httpConn.getHeaderField("icy-br");
+				
+				String contentType = httpConn.getHeaderField("content-type");
+				
+				if(contentType.trim().startsWith("audio/mp"))
+					parseMp3 = true;
+				
 
 				/* for(int i=1; i<100; i++) {
 					String key = httpConn.getHeaderFieldKey(i);
@@ -211,7 +221,9 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				String res = new String(temp, 0, bsize);
 				Log.v(TAG, String.format("Got '%s'", res));
 				
-				String s = "HTTP/1.0 200 OK\r\n\r\n";
+				Log.v(TAG, String.format("CONTENT TYPE '%s'", contentType));
+				
+				String s = "HTTP/1.1 200 OK\r\ncontent-type: %s\r\n\r\n";
 				os.write(s.getBytes());	
 				
 				int size;
@@ -239,6 +251,11 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				last_usec = usec = 0L;
 				nextFramePos = -1;
 				int hf = 0;
+
+				if(!parseMp3)
+					usec = -1;
+
+				
 				
 				hasQuit = false;
 				boolean firstRead = true;
@@ -324,91 +341,93 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						// nextFramePos = 1007
 						// total = 1000
 						// size = 8
-						
-						if(nextFramePos < 0) {
-							for(int i=0; i<size-3; i++) {
-								if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {
-									
-									Log.v(TAG, String.format("Synced at %d", i));
-									
-									nextFramePos = i+total;
-									/*hf = 0xf;
-									head[0] = buffer[i];
-									head[1] = buffer[i+1];
-									head[2] = buffer[i+2];
-									head[3] = buffer[i+3]; */
-									break;									
+					
+						if(parseMp3) {
+							if(nextFramePos < 0) {
+								for(int i=0; i<size-3; i++) {
+									if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {
+										
+										Log.v(TAG, String.format("Synced at %d", i));
+										
+										nextFramePos = i+total;
+										/*hf = 0xf;
+										head[0] = buffer[i];
+										head[1] = buffer[i+1];
+										head[2] = buffer[i+2];
+										head[3] = buffer[i+3]; */
+										break;									
+									}
 								}
 							}
-						}
-						
-						while(nextFramePos >= 0) {
-							int o = (int) (nextFramePos - total);
-							// o = 7
-							//Log.v(TAG, String.format("NFP %d, TOTAL %d, HF %x", nextFramePos, total, hf));
 							
-							
-							//if(o >=0 && o < size-3) {
-							//	Log.v(TAG, String.format("%d: Expect frame: %02x %02x %02x %02x", nextFramePos, buffer[o], buffer[o+1], buffer[o+2], buffer[o+3]));
-							//}
+							while(nextFramePos >= 0) {
+								int o = (int) (nextFramePos - total);
+								// o = 7
+								//Log.v(TAG, String.format("NFP %d, TOTAL %d, HF %x", nextFramePos, total, hf));
+								
+								
+								//if(o >=0 && o < size-3) {
+								//	Log.v(TAG, String.format("%d: Expect frame: %02x %02x %02x %02x", nextFramePos, buffer[o], buffer[o+1], buffer[o+2], buffer[o+3]));
+								//}
+		
+								if(o >=0 && o < size) {
+									head[0] = buffer[o];
+									hf |= 1;
+								}
+								o++;
+								if(o >=0 && o < size) {
+									head[1] = buffer[o];
+									hf |= 2;
+								}
+								o++;
+								if(o >=0 && o < size) {
+									head[2] = buffer[o];
+									hf |= 4;
+								}
+								o++;
+								if(o >=0 && o < size) {
+									head[3] = buffer[o];
+									hf |= 8;
+								}
+								
+								if(hf == 0xf) {
+									//Log.v(TAG, String.format("Got frame: %02x %02x %02x %02x", head[0], head[1], head[2], head[3]));
+									
+									bitRate = bitRateTab[(head[2]>>4) & 0xf] * 1000;
+									
+									if(bitRate != 0) { 							
+										freq = 44100;
+										int ff = head[2] & 0xc;
+										
+										if(ff != 0xc) {
+											
+											if(ff == 4) freq = 48000;
+											else if(ff == 8) freq = 32000;
+											
+											int frameSize = 144 * bitRate / freq;
 	
-							if(o >=0 && o < size) {
-								head[0] = buffer[o];
-								hf |= 1;
-							}
-							o++;
-							if(o >=0 && o < size) {
-								head[1] = buffer[o];
-								hf |= 2;
-							}
-							o++;
-							if(o >=0 && o < size) {
-								head[2] = buffer[o];
-								hf |= 4;
-							}
-							o++;
-							if(o >=0 && o < size) {
-								head[3] = buffer[o];
-								hf |= 8;
-							}
-							
-							if(hf == 0xf) {
-								//Log.v(TAG, String.format("Got frame: %02x %02x %02x %02x", head[0], head[1], head[2], head[3]));
-								
-								bitRate = bitRateTab[(head[2]>>4) & 0xf] * 1000;
-								
-								if(bitRate != 0) { 							
-									freq = 44100;
-									int ff = head[2] & 0xc;
-									
-									if(ff != 0xc) {
-										
-										if(ff == 4) freq = 48000;
-										else if(ff == 8) freq = 32000;
-										
-										int frameSize = 144 * bitRate / freq;
-
-										if((head[2] & 0x02) == 2)
-											frameSize++;
-
-										usec += frameSize * 1000 / (bitRate/8000);
-
-										nextFramePos += frameSize;
-										
-										
-										
-										//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
+											if((head[2] & 0x02) == 2)
+												frameSize++;
+	
+											usec += frameSize * 1000 / (bitRate/8000);
+	
+											nextFramePos += frameSize;
+											
+											
+											
+											//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
+										} else nextFramePos = -1;
 									} else nextFramePos = -1;
-								} else nextFramePos = -1;
-								hf = 0;
-								if(nextFramePos == -1) {
-									//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-									//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-									Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-									//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								}
-							} else
-								break;
+									hf = 0;
+									if(nextFramePos == -1) {
+										//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+										//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+										Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+										//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+									}
+								} else
+									break;
+							}
 						}
 						
 						metaCounter += size;						
@@ -421,10 +440,11 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						
 					}
 					
-					
-					if(usec - last_usec > 1000000) {
-						Log.v(TAG, String.format("%%%%%%%%%% QUEUE POS %d msec", (int)(usec / 1000)));
-						last_usec = usec;
+					if(parseMp3) {
+						if(usec - last_usec > 1000000) {
+							Log.v(TAG, String.format("%%%%%%%%%% QUEUE POS %d msec", (int)(usec / 1000)));
+							last_usec = usec;
+						}
 					}
 					
 				}
@@ -445,7 +465,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 	}
 	
 	public int getLatency() {
-				
+		if(usec < 0) return -1;
 		return (int) (usec/1000 - (mediaPlayer == null ? 0 : mediaPlayer.getCurrentPosition()));
 	}
 	
@@ -522,7 +542,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		
 		if(metaStrings.size() > 0 && mediaPlayer != null) {
 			MetaString ms = metaStrings.get(0);
-			if(ms.msec <= mediaPlayer.getCurrentPosition()) {
+			if(!parseMp3 || ms.msec <= mediaPlayer.getCurrentPosition()) {
 				streamTitle = ms.text;
 				metaStrings.remove(0);
 				return true;

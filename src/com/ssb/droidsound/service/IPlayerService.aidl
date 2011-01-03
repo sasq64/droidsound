@@ -17,6 +17,7 @@ interface IPlayerService {
 	void stop();
 	
 	String [] getSongInfo();
+	byte [] getSongMD5();
 	
 	void registerCallback(IPlayerServiceCallback cb, int flags);
 	void unRegisterCallback(IPlayerServiceCallback cb);

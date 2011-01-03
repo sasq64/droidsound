@@ -338,6 +338,7 @@ public class FileIdentifier {
 			switch(extno) {
 			case TYPE_PRG:
 				name = getBaseName(name);
+				info.format = "SID";
 				fixName(name, info);
 				return info;
 			case TYPE_SID:
@@ -348,7 +349,7 @@ public class FileIdentifier {
 					info.title = fromData(data, 0x16, 32); //new String(data, 0x16, o-0x15, "ISO-8859-1");
 					info.composer = fromData(data, 0x36, 32); //new String(data, 0x36, o-0x35, "ISO-8859-1");
 					info.copyright = fromData(data, 0x56, 32); //new String(data, 0x56, o-0x55, "ISO-8859-1");
-					
+					info.format = "SID";
 					int year = -1;
 					if(info.copyright.length() >= 4) {
 						try {
@@ -422,6 +423,7 @@ public class FileIdentifier {
 			case TYPE_SPC:				
 				data = new byte [0xd8];
 				is.read(data);
+				info.format = "SNES";
 				magic = new String(data, 0, 27);
 				if(!magic.equals("SNES-SPC700 Sound File Data")) {
 					return null;

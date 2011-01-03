@@ -229,6 +229,15 @@ public class PlayerServiceConnection implements ServiceConnection {
 		return null;
 	}
 
+	public byte [] getSongMD5() {
+		try {
+			return mService.getSongMD5();
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
 	
 	
 

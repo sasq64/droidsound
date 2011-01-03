@@ -19,7 +19,12 @@ public class SC68Plugin extends DroidSoundPlugin {
 	
 	private File sc68Dir;
 	private long pluginRef;
-	
+
+	private String title = null;
+	private String composer = null;
+	private String year = null;
+	private String type = null;
+
 	public SC68Plugin() {
 
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
@@ -72,10 +77,6 @@ public class SC68Plugin extends DroidSoundPlugin {
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
 
-	String title = null;
-	String composer = null;
-	String year = null;
-
 	@Override
 	public boolean loadInfo(String name, byte[] module, int size) {
 
@@ -83,6 +84,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		title = null;
 		composer = null;
 		year = null;
+		type = null;
 
 		byte data [] = module;
 		String head = new String(module, 0, 4);
@@ -104,7 +106,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		String header2 = new String(data, 0, 16);
 		if(header.equals("SNDH")) {
 			Log.v(TAG, "Found SNDH");
-			
+			type = "SNDH";
 			int offset = 16;
 			boolean done = false;
 			
@@ -137,7 +139,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 			
 			return true;
 		} else if(header2.equals("SC68 Music-file ")) {
-			int offset = 56;		
+			int offset = 56;
+			type = "SC68";
 			while(offset < 1024) {
 				String tag = new String(data, offset, 4);
 				int tsize = data[offset+4] | (data[offset+5]<<8) | (data[offset+6]<<16) | (data[offset+7]<<24);
@@ -195,6 +198,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 				return composer;
 			case INFO_COPYRIGHT:
 				return year;
+			case INFO_TYPE:
+				return type;
 			}			
 			return null;
 		}

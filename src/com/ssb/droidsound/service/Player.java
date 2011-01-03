@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +27,7 @@ import android.util.Log;
 
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.utils.CueFile;
 import com.ssb.droidsound.utils.NativeZipFile;
 
@@ -70,6 +73,7 @@ public class Player implements Runnable {
 		public String subtuneAuthor;
 		public String fileName;
 		public String source;
+		public byte [] md5;
 	};
 
 	private Handler mHandler;
@@ -178,7 +182,7 @@ public class Player implements Runnable {
 		}
 		return s;
 	}
-
+	
 	private void startSong(SongFile song) {
 
 		if (currentPlugin != null) {
@@ -364,8 +368,7 @@ public class Player implements Runnable {
 					songFile = null;
 				else {
 
-					String fname2 = DroidSoundPlugin.getSecondaryFile(songFile
-							.getPath());
+					String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
 					if (fname2 != null) {
 						File f2 = new File(fname2);
 						if (f2.exists()) {
@@ -397,6 +400,7 @@ public class Player implements Runnable {
 				} else {
 					songLoaded = plugin.load(baseName, songBuffer,
 							(int) fileSize);
+					if(songLoaded) plugin.calcMD5(songBuffer, (int) fileSize);
 				}
 				if (songLoaded) {
 					currentPlugin = plugin;
@@ -415,6 +419,8 @@ public class Player implements Runnable {
 						} else {
 							songLoaded = plugin.load(baseName, songBuffer,
 									(int) fileSize);
+							if(songLoaded) plugin.calcMD5(songBuffer, (int) fileSize);
+
 						}
 						Log.v(TAG, String.format("%s gave Songref %s", plugin
 								.getClass().getName(), songLoaded ? "TRUE"
@@ -434,6 +440,10 @@ public class Player implements Runnable {
 			Log.v(TAG,
 					String.format("'%s' by '%s'", song.getTitle(),
 							song.getComposer()));
+			
+			
+			currentSong.md5 = currentPlugin.getMD5();
+			//SidplayPlugin.hexdump(currentSong.md5);
 
 			synchronized (this) {
 				currentSong.fileName = song.getPath(); // songName;
@@ -771,12 +781,14 @@ public class Player implements Runnable {
 						//int playPos = mp.getCurrentPosition();
 						
 						int latency = currentPlugin.getIntInfo(203);
-						int diff = latency - lastLatency;
-						if(diff < 0) diff = -diff;
-						if(diff > 1000) {
-							Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, latency);
-							mHandler.sendMessage(msg);
-							lastLatency = latency;							
+						if(latency >= 0) {
+							int diff = latency - lastLatency;
+							if(diff < 0) diff = -diff;
+							if(diff > 1000) {
+								Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, latency);
+								mHandler.sendMessage(msg);
+								lastLatency = latency;							
+							}
 						}
 
 						int length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
@@ -903,11 +915,13 @@ public class Player implements Runnable {
 				else {					
 					if(currentState == State.PAUSED && currentPlugin.getMediaPlayer() != null) {						
 						int latency = currentPlugin.getIntInfo(203);
-						if(latency/1000 != lastLatency/1000) {
-							Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, latency);
-							mHandler.sendMessage(msg);
-							lastLatency = latency;							
-						}						
+						if(latency >= 0) {
+							if(latency/1000 != lastLatency/1000) {
+								Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, latency);
+								mHandler.sendMessage(msg);
+								lastLatency = latency;							
+							}
+						}
 					}
 						
 					
@@ -952,6 +966,7 @@ public class Player implements Runnable {
 		target.fileName = currentSong.fileName;
 		target.canSeek = currentSong.canSeek;
 		target.source = currentSong.source;
+		target.md5 = currentSong.md5;
 		return true;
 	}
 
