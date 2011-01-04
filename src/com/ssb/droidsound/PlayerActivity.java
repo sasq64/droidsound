@@ -71,7 +71,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private static final String TAG = "PlayerActivity";
 
 	//public static final String DROIDSOUND_VERSION = "1.1beta3";
-	public static final int VERSION = 16;
+	public static final int VERSION = 17;
 
 	private static class Config {
 		int ttsStatus;

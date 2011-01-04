@@ -30,12 +30,11 @@ public class MediaStreamer implements Runnable {
 	};
 	
 	
-	public volatile int socketPort;
+	//public volatile int socketPort;
 	
 	private volatile boolean started;
 	private volatile boolean prepared;
 	private volatile boolean loaded;
-	private volatile boolean parseMp3;
 
 	
 	//private String httpName;
@@ -70,6 +69,11 @@ public class MediaStreamer implements Runnable {
 	private String icyName;
 	private String icyUrl;
 	private String icyBitrate;
+
+	//private ServerSocket serverSocket;
+	//private Socket socket;
+
+	private LocalMPConnection localMPConnection;
 	
 	private static final int bitRateTab[] = new int [] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 	
@@ -77,7 +81,7 @@ public class MediaStreamer implements Runnable {
 		//httpName = http;
 		mediaPlayer = mp;
 		httpNames.add(http);			
-		socketPort = -1;
+		//socketPort = -1;
 	}
 	
 	public MediaStreamer(List<String> https, MediaPlayer mp) {
@@ -85,7 +89,7 @@ public class MediaStreamer implements Runnable {
 		mediaPlayer = mp;
 		for(String s : https)
 			httpNames.add(s);			
-		socketPort = -1;
+		//socketPort = -1;
 	}
 	/*
 	private boolean findFrame(byte [] bufArray, int pos, int size) {
@@ -138,41 +142,40 @@ V/MediaStreamer(12369): icy-metaint: 16000
 */
 	void httpStream() throws IOException {
 
+		localMPConnection = null;
 		
-		for(String httpName : httpNames) {
-			
+		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
+
+			boolean parseMp3 = false;
+			boolean doRetry = false;
+
+			String httpName = httpNames.get(httpNo);
 			URL url = new URL(httpName);
 	
 			Log.v(TAG, "Opening URL " + httpName);
-	
-			
+				
 			StreamingHttpConnection httpConn = new StreamingHttpConnection(url);
 			/*URLConnection conn = url.openConnection();
 			if (!(conn instanceof HttpURLConnection))
 				throw new IOException("Not a HTTP connection");
 			HttpURLConnection httpConn = (HttpURLConnection) conn; */
 			
-			
 			httpConn.setAllowUserInteraction(false);
 			httpConn.setInstanceFollowRedirects(true);
 			httpConn.setRequestMethod("GET");
 			httpConn.addRequestProperty("Icy-MetaData", "1");
 	
-			Log.v(TAG, "Connecting");
-	
+			Log.v(TAG, "Connecting");	
 			httpConn.connect();
 	
-			int response = httpConn.getResponseCode();
-			
-			parseMp3 = false;
-			
+			int response = httpConn.getResponseCode();			
 			//Log.v(TAG, String.format("RESPONSE %d %s", response, httpConn.getResponseMessage()));
 			
 			if (response == HttpURLConnection.HTTP_OK) {
+				Log.v(TAG, "HTTP connected");
 				
 				int metaInterval = -1;
-				
-				
+								
 				icyDesc = httpConn.getHeaderField("icy-description");
 				icyGenre = httpConn.getHeaderField("icy-genre");
 				icyName = httpConn.getHeaderField("icy-name");
@@ -184,15 +187,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				if(contentType.trim().startsWith("audio/mp"))
 					parseMp3 = true;
 				
-
-				/* for(int i=1; i<100; i++) {
-					String key = httpConn.getHeaderFieldKey(i);
-					if(key != null) {
-						Log.v(TAG, String.format("%s: %s", key, httpConn.getHeaderField(key)));
-					} else
-						break;
-				} */
-				
 				String icy = httpConn.getHeaderField("icy-metaint");
 				if(icy != null) {
 					metaInterval = Integer.parseInt(icy);
@@ -200,70 +194,35 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 				Log.v(TAG, String.format("META INTERVAL %d", metaInterval));
 				
-				ServerSocket serverSocket = new ServerSocket(0);
-				socketPort = serverSocket.getLocalPort();
-				Log.v(TAG, String.format("Accepting on port %d", socketPort));
-				Socket socket = serverSocket.accept();
-			
-				Log.v(TAG, String.format("Got connection from %s", socket.getInetAddress().getHostName()));
-				
-				//SocketChannel channel = socket.getChannel();
-				OutputStream os = socket.getOutputStream();
-				InputStream is = socket.getInputStream();
-			
-				byte [] temp = new byte [2048];
-				
-				int bsize = -1;
-				while(bsize <= 0) {
-					bsize = is.read(temp);
-					//Log.v(TAG, String.format("Got %d bytes", bsize));
+				if(localMPConnection == null) {
+					localMPConnection = new LocalMPConnection();
+					localMPConnection.setContentType(contentType);
+					localMPConnection.accept();
 				}
-				String res = new String(temp, 0, bsize);
-				Log.v(TAG, String.format("Got '%s'", res));
-				
-				Log.v(TAG, String.format("CONTENT TYPE '%s'", contentType));
-				
-				String s = "HTTP/1.1 200 OK\r\ncontent-type: %s\r\n\r\n";
-				os.write(s.getBytes());	
-				
+
 				int size;
 				byte[] head = new byte[4];
 				byte[] buffer = new byte[128*1024];
-				
 				byte [] metaArray = new byte[4092];
 				int metaPos = 0;
-				int metaSize = 0;
-				                             
-				
-				//ByteBuffer zeroes = ByteBuffer.allocateDirect(2048);
-				//for(int i=0; i<2048; i++)
-				//	zeroes.put(i, (byte) -1);
-				
-				//ByteBuffer buffer = ByteBuffer.wrap(bufArray);
-				
-				Log.v(TAG, "HTTP connected");
-				
-				InputStream in = httpConn.getInputStream();
-				
+				int metaSize = -1;				
 				int metaCounter = 0;
 				long total = 0;
-				metaSize = -1;
+				int hf = 0;
+				boolean firstRead = true;
+
 				last_usec = usec = 0L;
 				nextFramePos = -1;
-				int hf = 0;
+				hasQuit = false;
+				
+				InputStream in = httpConn.getInputStream();
 
 				if(!parseMp3)
-					usec = -1;
+					usec = -1000;
 
-				
-				
-				hasQuit = false;
-				boolean firstRead = true;
-				
 				while (!doQuit) {
 						
 					if(metaCounter == metaInterval) {
-						
 						
 						int rem;
 						if(metaSize == -1)
@@ -319,42 +278,34 @@ V/MediaStreamer(12369): icy-metaint: 16000
 							if(toNextMeta < rem) rem = toNextMeta;
 						}						
 						//Log.v(TAG, String.format("TO NEXT META %d", toNextMeta)); 
+			
+						try {
+							size = in.read(buffer, 0, rem);
+						} catch (IOException e) {
+							Log.v(TAG, "LOST CONNECTION WITH ICECAST-SERVER");	
+							httpNo--;
+							doRetry = true;
+							break;
+						}	
 						
-						size = in.read(buffer, 0, rem);
+						if(size == -1) {
+							Log.v(TAG, "####### End of buffer");
+							httpNo--;
+							doRetry = true;
+							break;
+						}
 						
 						if(firstRead) {
 							Log.v(TAG, String.format("### READ: %02x %02x %02x %02x", buffer[0], buffer[1], buffer[2], buffer[3]));
 							firstRead = false;
 						}
 						
-						
-						if(size == -1) {
-							Log.v(TAG, "####### End of buffer");
-							break;
-						}
-						
-						//buffer.position(buffer.position() + size);
-						
-						// 0 ---------------- size
-						
-
-						// nextFramePos = 1007
-						// total = 1000
-						// size = 8
-					
 						if(parseMp3) {
 							if(nextFramePos < 0) {
 								for(int i=0; i<size-3; i++) {
-									if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {
-										
-										Log.v(TAG, String.format("Synced at %d", i));
-										
+									if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {							
+										Log.v(TAG, String.format("Synced at %d", i));							
 										nextFramePos = i+total;
-										/*hf = 0xf;
-										head[0] = buffer[i];
-										head[1] = buffer[i+1];
-										head[2] = buffer[i+2];
-										head[3] = buffer[i+3]; */
 										break;									
 									}
 								}
@@ -362,10 +313,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 							
 							while(nextFramePos >= 0) {
 								int o = (int) (nextFramePos - total);
-								// o = 7
-								//Log.v(TAG, String.format("NFP %d, TOTAL %d, HF %x", nextFramePos, total, hf));
-								
-								
+								//Log.v(TAG, String.format("NFP %d, TOTAL %d, HF %x", nextFramePos, total, hf));								
 								//if(o >=0 && o < size-3) {
 								//	Log.v(TAG, String.format("%d: Expect frame: %02x %02x %02x %02x", nextFramePos, buffer[o], buffer[o+1], buffer[o+2], buffer[o+3]));
 								//}
@@ -413,8 +361,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 	
 											nextFramePos += frameSize;
 											
-											
-											
 											//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
 										} else nextFramePos = -1;
 									} else nextFramePos = -1;
@@ -433,7 +379,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						metaCounter += size;						
 						total += size;
 
-						os.write(buffer, 0, size);
+						localMPConnection.write(buffer, 0, size);
 						
 						if(metaCounter == metaInterval)
 							Log.v(TAG, "META TIME");
@@ -449,14 +395,20 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					
 				}
 				
-				socket.close();
-				serverSocket.close();
+				if(!doRetry) {
+					localMPConnection.close();
+					localMPConnection = null;
+				}
 				httpConn.disconnect();
 	
 			} else {
 				Log.v(TAG, String.format("Connection failed: %d", response));
 				continue;
 			}
+			
+			if(doRetry)
+				continue;
+			
 			break;
 		}
 		hasQuit = true;		
@@ -474,12 +426,13 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		if(hasQuit)
 			return -1;
 		
-		if(socketPort < 0)
+		if(localMPConnection == null || !localMPConnection.isListening())
 			return 0;
 		
 		if(!loaded) {
 			try {
-				mediaPlayer.setDataSource(String.format("http://127.0.0.1:%d/", socketPort));
+				localMPConnection.connect(mediaPlayer);
+				//mediaPlayer.setDataSource(String.format("http://127.0.0.1:%d/", socketPort));
 				loaded = true;
 				Log.v(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> PREPARING ");
 				mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
@@ -542,7 +495,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		
 		if(metaStrings.size() > 0 && mediaPlayer != null) {
 			MetaString ms = metaStrings.get(0);
-			if(!parseMp3 || ms.msec <= mediaPlayer.getCurrentPosition()) {
+			if(ms.msec <= mediaPlayer.getCurrentPosition()) {
 				streamTitle = ms.text;
 				metaStrings.remove(0);
 				return true;
