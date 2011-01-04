@@ -24,6 +24,7 @@ import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.webkit.URLUtil;
 
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
@@ -330,6 +331,8 @@ public class Player implements Runnable {
 					byte[] buffer = new byte[16384];
 					Log.v(TAG, "HTTP connected");
 					InputStream in = httpConn.getInputStream();
+					
+					//URLUtil.guessFileName(songName, ); 
 					
 					int dot = songName.lastIndexOf('.');
 					String ext = DroidSoundPlugin.getExt(songName);

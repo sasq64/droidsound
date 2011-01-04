@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
@@ -254,6 +256,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		Cursor cursor = songDatabase.getFilesInPath(f.getPath(), sortOrder);
+		// Cursor cursor = songDatabase.getFilesInPath("http://swimmer.se/mp3/", sortOrder);
 		plv.setCursor(cursor, f.getPath());
 
 
@@ -295,13 +298,41 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		String p = plv.getPath();
 		if(p != null) {
-			File f = new File(plv.getPath());
-			setDirectory(f.getParentFile(), plv);
-			currentPlaylistView.setScrollPosition(f);
-			if(plv == searchListView) {
-				searchDirDepth--;
-			}
+			
+			if(p.startsWith("http://")) {
+				URL url;
+				try {
+					url = new URL(p);
+				} catch (MalformedURLException e) {
+					return;
+				}
+				
+				Log.v(TAG, String.format("Parent from URL %s", p));
+				
+				File f = new File(url.getPath());
+				String newPath = f.getParent();
 
+				Log.v(TAG, String.format("Parent path %s", newPath == null ? "null" : newPath));
+
+				
+				if(newPath == null) {
+					newPath = modsDir.getPath();
+				} else
+					newPath = "http://" + url.getHost() + newPath;
+
+				Log.v(TAG, String.format("NewPath %s", newPath));
+				
+				setDirectory(new File(newPath), plv);
+				currentPlaylistView.setScrollPosition(f);				
+				
+			} else {
+				File f = new File(plv.getPath());
+				setDirectory(f.getParentFile(), plv);
+				currentPlaylistView.setScrollPosition(f);
+				if(plv == searchListView) {
+					searchDirDepth--;
+				}
+			}
 		} else {
 		}
 	}

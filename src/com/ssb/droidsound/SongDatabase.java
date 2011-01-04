@@ -816,7 +816,7 @@ public class SongDatabase implements Runnable {
 							else 
 							if(fn.toUpperCase().endsWith(".LNK")) {
 								Log.v(TAG, String.format("Found link (%s)", fn));
-								values.put("TYPE", TYPE_ARCHIVE);
+								values.put("TYPE", TYPE_DIR);
 								values.put("TITLE", fn.substring(0, end - 4));								
 							} else {
 								values.put("TYPE", TYPE_FILE);
@@ -1303,6 +1303,10 @@ public class SongDatabase implements Runnable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		}
+
+		if(pathName.startsWith("http://")) {
+			return HttpSongSource.getFilesInPath(pathName, sorting);
 		}
 		
 		File file = new File(pathName);
