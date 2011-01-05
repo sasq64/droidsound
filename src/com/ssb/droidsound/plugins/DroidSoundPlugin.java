@@ -307,4 +307,8 @@ public abstract class DroidSoundPlugin {
 		
 		return md5;
 	}
+
+	public String getVersion() {
+		return "Unknown";
+	}
 }

@@ -6,6 +6,10 @@ public class HivelyPlugin extends DroidSoundPlugin {
 		System.loadLibrary("hively");
 	}
 
+	@Override
+	public String getVersion() {
+		return "HVL Replay v1.6";
+	}
 	
 	private long songRef;
 	@Override

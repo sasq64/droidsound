@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.utils.TouchListView;
 
 import android.app.Activity;
 import android.content.Context;
@@ -30,7 +31,7 @@ import android.widget.TextView;
  * 
  *
  */
-public class PlayListView extends ListView {
+public class PlayListView extends TouchListView {
 	private static final String TAG = "PlayListView";
 	
 	public static class FileInfo {
@@ -471,6 +472,20 @@ public class PlayListView extends ListView {
 		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
 
+		setDropListener(new DropListener() {
+			@Override
+			public void drop(int from, int to) {
+				Log.v(TAG, "X");
+			}
+		});
+		
+		setRemoveListener(new RemoveListener() {
+			@Override
+			public void remove(int which) {
+				Log.v(TAG, "Y");
+			}
+		});
+		
 	}
 
 	public void rescan() {

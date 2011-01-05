@@ -441,6 +441,11 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		return (N_getIntInfo(currentSong, 100) != 0);
 	}
 	
+	@Override
+	public String getVersion() {
+		return "libsidplay 2.1.1+20060528.ccr";
+	}
+	
 /*
 	@Override
 	public Object load(File file) throws IOException {

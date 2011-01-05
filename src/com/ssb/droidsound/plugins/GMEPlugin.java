@@ -90,6 +90,11 @@ public class GMEPlugin extends DroidSoundPlugin {
 		currentSong = 0;
 	}
 	
+	@Override
+	public String getVersion() {
+		return "Game Music Emu v0.5.2\nCopyright (C) 2003-2006 Shay Green";
+	}
+	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
 	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }	

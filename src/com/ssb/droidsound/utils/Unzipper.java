@@ -23,7 +23,7 @@ public class Unzipper {
 			
 			FileOutputStream os;
 			os = new FileOutputStream(tempFile);
-			
+
 			InputStream is = context.getAssets().open(asset);
 			
 			byte [] buffer = new byte [128*1024];

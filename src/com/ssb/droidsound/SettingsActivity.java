@@ -166,7 +166,8 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});
-		
+
+		/*
 		pref = findPreference("about_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
@@ -174,7 +175,7 @@ public class SettingsActivity extends PreferenceActivity {
 				showDialog(R.string.about_droidsound);
 				return true;
 			}
-		});
+		}); */
 		
 		pref = findPreference("help_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -204,11 +205,53 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});	
+
 		
+		PackageInfo pinfo = null;
+		try {
+			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+		} catch (NameNotFoundException e) {}
+
+		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
+		String appName = getString(pinfo.applicationInfo.labelRes);
+
+		
+		PreferenceScreen abScreen = (PreferenceScreen) findPreference("about_prefs");
+
+		if(abScreen != null) {
+			PreferenceCategory pc = new PreferenceCategory(this);
+			pc.setTitle("Droidsound");
+			abScreen.addPreference(pc);
+	
+			Preference p = new Preference(this);
+			p.setTitle("Application");
+			p.setSummary(String.format("%s v%s", appName, pinfo.versionName));		
+			abScreen.addPreference(p);
+	
+			pc = new PreferenceCategory(this);
+			pc.setTitle("Plugins");
+			abScreen.addPreference(pc);
+	
+			for(DroidSoundPlugin pl : list) {
+				
+				p = new Preference(this);
+				p.setTitle(pl.getClass().getSimpleName());
+				p.setSummary(pl.getVersion());		
+				abScreen.addPreference(p);
+			}
+			
+			pc = new PreferenceCategory(this);
+			pc.setTitle("Other");
+			abScreen.addPreference(pc);
+
+			p = new Preference(this);
+			p.setTitle("Icons");
+			p.setSummary("G-Flat SVG by poptones");		
+			abScreen.addPreference(p);
+		}
+			
 		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");
 		
-		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
-
 		for(int i=0; i<aScreen.getPreferenceCount(); i++) {
 			Preference p = aScreen.getPreference(i);
 			Log.v(TAG, String.format("Pref '%s'", p.getKey()));
@@ -224,7 +267,7 @@ public class SettingsActivity extends PreferenceActivity {
 				}
 				if(plugin != null) {
 					
-					String plname = plugin.getClass().getSimpleName();
+					//String plname = plugin.getClass().getSimpleName();
 					
 					for(int j=0; j<pg.getPreferenceCount(); j++) {
 						p = pg.getPreference(j);

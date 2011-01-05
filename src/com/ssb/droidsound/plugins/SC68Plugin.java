@@ -226,6 +226,11 @@ public class SC68Plugin extends DroidSoundPlugin {
 	public boolean seekTo(int msec) {
 		return N_seekTo(currentSong, msec);
 	}
+	
+	@Override
+	public String getVersion() {
+		return "Version 3.0.0\nCopyright (C) 2009 Benjamin Gerard";
+	}
 
 	native public long N_load(byte [] module, int size);
 	native public long N_loadInfo(byte [] module, int size);

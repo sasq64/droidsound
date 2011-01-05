@@ -1,4 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:tlv="http://schemas.android.com/apk/res/com.ssb.droidsound"
 	android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
 
 	<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
@@ -48,6 +49,9 @@
 			android:layout_width="fill_parent"
 			android:layout_height="fill_parent" >
 			<com.ssb.droidsound.PlayListView android:id="@+id/play_list" android:background="#ff000000"
+				tlv:grabber="@+id/icon"
+				tlv:remove_mode="slideRight"
+				tlv:normal_height="64dip"		
 				android:cacheColorHint="#ff000000"  android:fastScrollEnabled="true"
 				itemColor="#ffffffff" subitemColor="#ffa0a0ff" dirColor="#ffffffa0" archiveColor="#ffffffa0"
 				android:layout_width="fill_parent" android:layout_height="fill_parent" />

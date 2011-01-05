@@ -285,6 +285,11 @@ public class ModPlugin extends DroidSoundPlugin {
 		return info;
 	}
 	
+	@Override
+	public String getVersion() {
+		return "libmodplug v0.8.?";
+	}
+	
 	// --- Native functions
 	
 	native public boolean N_canHandle(String name);
