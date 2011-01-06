@@ -14,8 +14,11 @@ import android.util.Log;
 public class Unzipper {
 
 	private static final String TAG = Unzipper.class.getSimpleName();
+	
+	//private static Object lock = new Object();
 
-	public static boolean unzipAsset(Context context, String asset, File targetDir) {
+	//
+	synchronized public static boolean unzipAsset(Context context, String asset, File targetDir) {
 		
 		File tempFile = null;
 		try {			

@@ -194,8 +194,15 @@ public class Playlist {
 			position = newPosition;
 			currentSong = songs.get(position);
 			
-			currentRow[COL_FILENAME] = currentSong.getFile().getName();
-			currentRow[COL_PATH] = currentSong.getFile().getParent();
+			String path = currentSong.getPath();
+			int slash = path.lastIndexOf('/');
+			String fname = path.substring(slash+1);
+			if(slash < 0) path = "";
+			else
+			path = path.substring(0, slash);
+			
+			currentRow[COL_FILENAME] = fname;
+			currentRow[COL_PATH] = path;
 			currentRow[COL_TITLE] = currentSong.getTitle();
 			currentRow[COL_SUBTITLE] = currentSong.getComposer();			
 			return true;

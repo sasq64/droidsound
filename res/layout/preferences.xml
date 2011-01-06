@@ -60,6 +60,40 @@
 	            />
 		</PreferenceCategory>
 		<PreferenceCategory
+			android:title="SID"
+			android:key="SidPlugin"
+		>
+		<ListPreference
+	            android:key="SidPlugin.engine"
+	            android:title="SID Engine"
+	            android:defaultValue="Sidplay2"
+				android:entries="@array/engine_opts"
+				android:entryValues="@array/engine_opts"
+	            />
+		<CheckBoxPreference
+	            android:key="SidPlugin.filter"
+	            android:title="SID Filter"
+	            android:defaultValue="true"
+	            android:summaryOff="Filter not emulated"
+	            android:summaryOn="Filter emulated"
+	            />
+		<ListPreference
+	            android:key="SidPlugin.ntsc"
+	            android:title="Video Mode"
+	            android:defaultValue="0"
+                android:entries="@array/videomode_opts"
+                android:entryValues="@array/videomode_vals"
+	            />
+		<ListPreference
+	            android:key="SidPlugin.resampling"
+	            android:title="Resampling Mode"
+	            android:defaultValue="0"
+                    android:entries="@array/resampling_opts"
+                    android:entryValues="@array/resampling_vals"
+	            />
+	    </PreferenceCategory>
+		<!-- 
+		<PreferenceCategory
 			android:title="VICE"
 			android:key="VICEPlugin"
 		>
@@ -118,7 +152,7 @@
 	            android:summaryOff="Emulating PAL mode"
 	            android:summaryOn="Emulating NTSC mode"
 	            />
-		</PreferenceCategory>
+		</PreferenceCategory>  -->
 		<PreferenceCategory
 			android:title="UADE"
 			android:key="UADEPlugin"

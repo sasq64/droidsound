@@ -18,7 +18,6 @@ import android.util.Log;
 
 public abstract class DroidSoundPlugin {
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
-
 	
 	public static final int INFO_TITLE = 0;
 	public static final int INFO_AUTHOR = 1;
@@ -48,7 +47,7 @@ public abstract class DroidSoundPlugin {
 	private static Context context;
 	
 	static Object lock = new Object();
-
+	
 	public static void setContext(Context ctx) {
 		context = ctx;
 	}
@@ -69,8 +68,9 @@ public abstract class DroidSoundPlugin {
 		List<DroidSoundPlugin> pluginList;
 		synchronized (lock) {				
 			pluginList = new ArrayList<DroidSoundPlugin>();
-			pluginList.add(new VICEPlugin());
-			pluginList.add(new SidplayPlugin());
+			//pluginList.add(new VICEPlugin());
+			//pluginList.add(new SidplayPlugin());
+			pluginList.add(new SidPlugin());
 			pluginList.add(new ModPlugin());
 			pluginList.add(new GMEPlugin());
 			pluginList.add(new HivelyPlugin());

@@ -97,22 +97,35 @@ to download more music from the web.</string>
 	<item>Very long</item>
 </string-array>
 
-<string-array name="videomode_opts"><item>PAL</item>
+<string-array name="engine_opts">
+<item>Sidplay2</item>
+<item>VICE</item>
+</string-array>
+
+
+<string-array name="videomode_opts">
+<item>PAL</item>
 <item>NTSC</item>
 <item>PAL (forced)</item>
 <item>NTSC (forced)</item>
 </string-array>
-<string-array name="resampling_opts"><item>Fastest (cycle skipping)</item>
+
+<string-array name="resampling_opts">
+<item>Fastest (cycle skipping)</item>
 <item>Fast (no cycle skipping)</item>
 <item>Slow (SINC)</item>
 <item>Slowest (SINC)</item>
 </string-array>
-<string-array name="videomode_vals"><item>0</item>
+
+<string-array name="videomode_vals">
+<item>0</item>
 <item>1</item>
 <item>2</item>
 <item>3</item>
 </string-array>
-<string-array name="resampling_vals"><item>0</item>
+
+<string-array name="resampling_vals">
+<item>0</item>
 <item>1</item>
 <item>3</item>
 <item>2</item>
