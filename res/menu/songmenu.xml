@@ -17,7 +17,8 @@
 
 	<group android:id="@+id/in_playlist">
 		<item android:id="@+id/go_dir" android:title="@string/go_to_dir" />
-		<item android:id="@+id/remove" android:title="@string/remove" />
+		<item android:id="@+id/cut" android:title="@string/cut" />
+		<item android:id="@+id/paste" android:title="@string/paste" />
 		<item android:id="@+id/remove_all" android:title="@string/remove_all" />
 	</group>
 </menu>

@@ -229,6 +229,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private Method startTrackingMethod;
 
 	private byte[] md5;
+
+	private SongFile clipBoardFile;
 	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
@@ -922,11 +924,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						if(currentPlaylistView == playListView) {
 							Playlist plist = songDatabase.getCurrentPlaylist();
 							if(plist != null) {
-								for(int i = 0; i < files.length; i++) {
+								
+								// TODO: Check if this shorcut works;
+								index = position;
+								
+								/*for(int i = 0; i < files.length; i++) {
 									if(files[i].equals(fi)) {
 										index = i;
 									}
-								}
+								} */
 								Log.v(TAG, String.format("Playing Playlist %s %s", plist.getFile().getPath(), plist.toString()));
 								player.playPlaylist(plist.getFile().getPath(), index);
 								return;
@@ -1468,6 +1474,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		if(keyCode == KeyEvent.KEYCODE_BACK ) {
 			Log.v(TAG, ">>>>>>>>>>>>> BACK RELEASED");
+			
+			//if(currentPlaylistView != null && currentPlaylistView.editMode()) {
+			//	currentPlaylistView.setEditMode(false);
+			//	return true;
+			//} else			
 			if(currentPlaylistView != playListView) {
 				if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 					flipTo(FILE_VIEW);
@@ -1762,24 +1773,28 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			break; */
 		case PlayerService.SONG_FILENAME:
+			songFile = new SongFile(value);
+			String path = songFile.getFile().getPath();
 			playListView.setHilighted(value);
 			searchListView.setHilighted(value);
 			// songName = value;
-			songFile = new SongFile(value);
 			
-			Log.v(TAG, String.format("############################## Song file is %s", value));
+			Log.v(TAG, String.format("############################## Song file is %s (%s)", value, path));
 			
 			break;
 		case PlayerService.SONG_SUBTUNE_TITLE:
+			Log.v(TAG, String.format("############################## Subtunetitle is %s", value));
 			subtuneTitle = value;
 			if(subtuneTitle != null && subtuneTitle.length() == 0) subtuneTitle = null;
 			flipTo(SAME_VIEW);
 			break;
 		case PlayerService.SONG_SUBTUNE_AUTHOR:
+			Log.v(TAG, String.format("############################## Author is %s", value));
 			subtuneAuthor = value;
 			flipTo(SAME_VIEW);
 			break;
 		case PlayerService.SONG_TITLE:
+			Log.v(TAG, String.format("############################## Title is %s", value));
 			songTitle = value;
 			flipTo(SAME_VIEW);
 			subtuneTitle = null;
@@ -1839,6 +1854,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		inflater.inflate(R.menu.optionsmenu, menu);
 		return true;
 	}
+	
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		
+		MenuItem m = menu.getItem(0);
+		//if(songDatabase.getCurrentPlaylist() != null) {
+		//	m.setTitle("Edit");
+		//} else {
+		//	m.setTitle("New");
+		//}
+		
+		return super.onPrepareOptionsMenu(menu);
+	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -1855,7 +1883,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			finish();
 			break;
 		case R.id.new_:
-			showDialog(R.string.new_);
+			//if(songDatabase.getCurrentPlaylist() != null) {
+			//	currentPlaylistView.setEditMode(true);
+			//} else {
+				showDialog(R.string.new_);
+			//}
 			break;
 		case R.id.search:
 			onSearchRequested();
@@ -2132,6 +2164,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			String s = aitem.getTitle().toString();
 			aitem.setTitle(s.replace("[playlist]", pl.getTitle()));
 		}
+		
+		//menu.getItem(R.id.paste).setVisible(clipBoardFile != null);
+
 
 		if(songDatabase.getCurrentPlaylist() != null) {
 			menu.setGroupVisible(R.id.in_playlist, true);
@@ -2181,6 +2216,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// }
 		Playlist pl = songDatabase.getCurrentPlaylist();
 		Playlist al = songDatabase.getActivePlaylist();
+		
+		SongFile song = pl != null ? pl.getSong(info.position) : null;
+		
+		if(song != null) {
+			Log.v(TAG, String.format("Operating on %s by %s", song.getTitle(), song.getComposer()));
+		}
+
 
 		switch(item.getItemId()) {
 		case R.id.go_dir:
@@ -2203,12 +2245,23 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// case R.id.favorite:
 		// songDatabase.addFavorite(file);
 		// break;
-		case R.id.remove:
+		case R.id.cut:
 			if(pl != null) {
-				pl.remove(file);
+				//pl.remove(file);
+				pl.remove(info.position);
+				clipBoardFile = song;
 				setDirectory(null, null);
 			}
 			break;
+		case R.id.paste:
+			if(pl != null && clipBoardFile != null) {
+				//pl.remove(file);
+				pl.insert(info.position, clipBoardFile);
+				clipBoardFile = null;
+				setDirectory(null, null);
+			}
+			break;
+			
 
 		case R.id.del_dir:
 			operationFile = file;

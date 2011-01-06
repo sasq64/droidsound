@@ -88,16 +88,7 @@ public class FileIdentifier {
 	 * 
 	 */
 	private static void fixName(String basename, MusicInfo info) {
-		//String ext = "";
-		/* int slash = fname.lastIndexOf('/');
-		if(slash >= 0) {
-			fname = fname.substring(slash+1);
-		}
-		int dot = fname.lastIndexOf('.');
-		if(dot > 0) {
-			//ext = fname.substring(dot+1).toUpperCase();
-			fname = fname.substring(0, dot);
-		} */
+
 		
 		if(info.composer == null || info.composer.length() == 0) {
 			int sep = basename.indexOf(" - ");
@@ -111,16 +102,7 @@ public class FileIdentifier {
 			info.composer = null;
 		}
 
-		/*
-		if(info.title == null || info.title.length() == 0) {
-			// SPC with no title and all uppercase game name is probably dumped from emu 
-			if(info.type == TYPE_SPC && info.game != null && info.game.toUpperCase().equals(info.game)) {
-				info.title = null;
-			} else {
-				info.title = info.game;
-			}
-		}
-		*/
+
 
 		if(info.title == null || info.title.length() == 0) {
 			info.title = basename;

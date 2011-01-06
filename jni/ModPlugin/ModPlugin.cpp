@@ -105,90 +105,10 @@ struct ModInfo {
 	int mod_length;
 };
 
-//ModPlugFile *mod = 0;
-//const char *modType = "MOD";
-//char author[128] = "";
-//char mod_name[128] = "";
-//int mod_length = 0;
-
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
 }
 
-
-/*
-void guessAuthor(ModInfo *info)
-{
-	char temp[256];
-	int c = ModPlug_NumSamples(info->mod);
-	bool getNext = false;
-	*info->author = 0;
-	int noOf = -1;
-	int noSlash = -1;
-	int noCopy = -1;
-
-	for(int i=0; i<c; i++)
-	{
-		ModPlug_SampleName(info->mod, i, temp);
-
-		if(noSlash<0 && strchr(temp, '/') != NULL)
-		{
-			noSlash = i;
-		}
-
-		char *w = strtok(temp, " :");
-		while(w) {
-
-			if(getNext)
-			{
-				ModPlug_SampleName(info->mod, i, temp);
-				strcpy(info->author, w);
-				getNext = false;
-				break;
-			}
-
-			if(noCopy<0 && strcasecmp(w, "(C)") == 0)
-			{
-				noCopy = i;
-			}
-
-			if(noOf<0 && strcasecmp(w, "OF") == 0)
-			{
-				noOf = i;
-			}
-
-
-			if(strcasecmp(w, "BY") == 0)
-				getNext = true;
-			w = strtok(NULL, " :");
-		}
-		if(*info->author != 0)
-			break;
-	}
-
-	if(*info->author == 0)
-	{
-		if(noSlash >= 0)
-		{
-			ModPlug_SampleName(info->mod, noSlash, temp);
-			strcpy(info->author, temp);
-		}
-		else
-		if(noCopy >= 0)
-		{
-			ModPlug_SampleName(info->mod, noCopy, temp);
-			strcpy(info->author, temp);
-		}
-		else
-		if(noOf >= 0)
-		{
-			ModPlug_SampleName(info->mod, noOf, temp);
-			strcpy(info->author, temp);
-		}
-	}
-
-}
-*/
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
@@ -275,13 +195,6 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getSoundData
 
 	//fprintf(stderr, "ptr %p, size %d\n", ptr, size);
 	int rc = ModPlug_Read(info->mod, (void*)ptr, size*2);
-	/*for(int i=0; i<size; i++)
-	{
-		unsigned char x = ptr[i*2];
-		ptr[i*2] = ptr[i*2+1];
-		ptr[i*2+1] = x;
-	}*/
-
 	//fprintf(stderr, "(%d) %d %d %d %d\n", rc, ptr[size/2], ptr[size/2+1], ptr[size-10], ptr[size-9]);
 
 	env->ReleaseShortArrayElements(bArray, (jshort*)ptr, 0);

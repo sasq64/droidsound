@@ -31,7 +31,7 @@ import android.widget.TextView;
  * 
  *
  */
-public class PlayListView extends TouchListView {
+public class PlayListView extends ListView { //extends TouchListView {
 	private static final String TAG = "PlayListView";
 	
 	public static class FileInfo {
@@ -82,6 +82,7 @@ public class PlayListView extends TouchListView {
 	public static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };
 	
 	private PlayListAdapter adapter;
+
 	
 	static class PlayListAdapter extends BaseAdapter {
     	
@@ -106,6 +107,9 @@ public class PlayListView extends TouchListView {
 		private int mSideTitleIndex;
 		private int mDateIndex;
 
+		private boolean editMode;
+
+		
 		PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
     		mContext = context;
 
@@ -176,7 +180,7 @@ public class PlayListView extends TouchListView {
 		
 		@Override
 		public int getItemViewType(int position) {
-			if(position == hilightedPosition) {
+			if(editMode) {
 				return 1;
 			} else {
 				return 0;
@@ -189,7 +193,11 @@ public class PlayListView extends TouchListView {
 			LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
 			
 			if(convertView == null) {
-				convertView = inflater.inflate(R.layout.songlist_item, parent, false);
+				if(editMode) {
+					convertView = inflater.inflate(R.layout.editsong_item, parent, false);
+				} else {
+					convertView = inflater.inflate(R.layout.songlist_item, parent, false);
+				}
 				ViewGroup vg = (ViewGroup)convertView;
 				TextView tv0 = (TextView)vg.getChildAt(1);
 				TextView tv1 = (TextView)vg.getChildAt(2);
@@ -268,7 +276,8 @@ public class PlayListView extends TouchListView {
 				}
 			}
 
-			tv2.setText(side != null ? side : "");
+			if(!editMode)
+				tv2.setText(side != null ? side : "");
 			
 			if(sub == null && type == SongDatabase.TYPE_FILE) {
 				sub = "Unknown";
@@ -325,6 +334,11 @@ public class PlayListView extends TouchListView {
 			
 			if(position == hilightedPosition) {
 				tv0.setTextColor(0xffffa000);
+			}
+			
+			if(editMode) {
+				//iv.setImageResource(R.drawable.gflat_hand);
+				iv.setVisibility(View.VISIBLE);
 			}
 			
 			return convertView;
@@ -425,7 +439,7 @@ public class PlayListView extends TouchListView {
 			
 			FileInfo [] files = getFiles(false);
 			for(int i=0; i<files.length; i++) {
-				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
+				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), hfile.getPath()));
 				if(hilightedFile.equals(files[i].getFile())) {
 					hilightedPosition = i;
 					break;
@@ -471,22 +485,42 @@ public class PlayListView extends TouchListView {
 				
 		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
-
-		setDropListener(new DropListener() {
-			@Override
-			public void drop(int from, int to) {
-				Log.v(TAG, "X");
-			}
-		});
-		
-		setRemoveListener(new RemoveListener() {
-			@Override
-			public void remove(int which) {
-				Log.v(TAG, "Y");
-			}
-		});
 		
 	}
+    
+    public boolean editMode() { return adapter.editMode; }
+    
+    public void setEditMode(boolean on) {
+    	/*
+    	adapter.editMode = on;
+    	if(on) {
+    		setDropListener(new DropListener() {
+    			@Override
+    			public void drop(int from, int to) {
+    				Log.v(TAG, "X");
+    				EditableCursor ec = (EditableCursor) adapter.mCursor;
+    				ec.moveRow(from, to);
+    				adapter.notifyDataSetChanged();
+    			}
+    		});
+    		
+    		setRemoveListener(new RemoveListener() {
+    			@Override
+    			public void remove(int which) {
+    				Log.v(TAG, "Y");
+    				EditableCursor ec = (EditableCursor) adapter.mCursor;
+    				ec.removeRow(which);
+    				adapter.notifyDataSetChanged();
+    			}
+    		});
+    	} else {
+    		setDropListener(null);
+    		setRemoveListener(null);
+    	}
+    	//redraw();
+    	adapter.notifyDataSetChanged(); */
+    	
+    }
 
 	public void rescan() {
 		//adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);

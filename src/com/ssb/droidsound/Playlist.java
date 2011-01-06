@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import android.database.AbstractCursor;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.util.Log;
@@ -61,7 +62,7 @@ public class Playlist {
 	}
 
 	
-	private MatrixCursor cursor;
+	private MyCursor cursor;
 	private File plistFile;
 	private List<String> lines;
 
@@ -116,15 +117,28 @@ public class Playlist {
 		}				
 	 }
 	 
-	 
-	
-	 synchronized public Cursor getCursor() {
-				
-		if(cursor == null) {
-			
-			Log.v(TAG, "Creating cursor for " + plistFile.getPath());
-			
-			cursor  = new MatrixCursor(new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" });
+	 private class MyCursor extends AbstractCursor implements EditableCursor {
+
+		private List<SongFile> songs;
+		private int position;
+		private String[] columnNames;
+		private String[] currentRow;
+		private SongFile currentSong;
+		private Playlist playlist;
+		
+		private static final int COL_PATH = 0;
+		private static final int COL_FILENAME = 1;
+		private static final int COL_TITLE = 2;
+		private static final int COL_SUBTITLE = 3;
+
+		public MyCursor(Playlist pl) {
+			playlist = pl;
+			songs = pl.getSongs();
+			columnNames = new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" };
+			currentRow = new String [4];
+		}
+		/*
+		private void build() {
 			Object cols[] = new Object [4];
 
 			for(String line : lines) {
@@ -172,7 +186,125 @@ public class Playlist {
 					cursor.addRow(cols);
 				}
 			}
-		}		
+		} */
+		
+		@Override
+		public boolean onMove(int oldPosition, int newPosition) {
+			
+			position = newPosition;
+			currentSong = songs.get(position);
+			
+			currentRow[COL_FILENAME] = currentSong.getFile().getName();
+			currentRow[COL_PATH] = currentSong.getFile().getParent();
+			currentRow[COL_TITLE] = currentSong.getTitle();
+			currentRow[COL_SUBTITLE] = currentSong.getComposer();			
+			return true;
+			//super.onMove(oldPosition, newPosition);
+		}
+
+		@Override
+		public boolean moveRow(int from, int to) {
+			// TODO Auto-generated method stub
+			int i = 0;
+			for(SongFile s : songs) {
+				Log.v(TAG, String.format("%02d  %s", i++, s.getTitle()));
+			}
+
+			Log.v(TAG, String.format("Move %02d -> %02d", from, to));
+			
+			playlist.move(from, to);
+			
+			SongFile fromSong = songs.get(from);
+			songs.add(to, fromSong);
+			if(to < from) from++;
+			songs.remove(from);	
+			
+			i = 0;
+			for(SongFile s : songs) {
+				Log.v(TAG, String.format("%02d  %s", i++, s.getTitle()));
+			}
+			
+			
+			
+			
+			return true;
+		}
+
+		@Override
+		public boolean removeRow(int row) {
+			// TODO Auto-generated method stub
+			songs.remove(row);
+			playlist.remove(row);
+			return true;
+		}
+
+		@Override
+		public String[] getColumnNames() {
+			// TODO Auto-generated method stub
+			return columnNames;
+		}
+
+		@Override
+		public int getCount() {
+			// TODO Auto-generated method stub
+			return songs.size();
+		}
+
+		@Override
+		public double getDouble(int column) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public float getFloat(int column) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public int getInt(int column) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public long getLong(int column) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public short getShort(int column) {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public String getString(int column) {
+
+			return currentRow[column];
+			
+		}
+
+		@Override
+		public boolean isNull(int column) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+	 };
+	 
+	 
+	
+	 synchronized public Cursor getCursor() {
+				
+		if(cursor == null) {
+			
+			Log.v(TAG, "Creating cursor for " + plistFile.getPath());
+			
+			cursor  = new MyCursor(this); //new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" });
+			
+		}
 		cursor.moveToPosition(-1);
 		return cursor;
 	}
@@ -181,30 +313,29 @@ public class Playlist {
 	
 	private String fileToLine(SongFile songFile) {
 
-		FileIdentifier.MusicInfo minfo = FileIdentifier.identify(songFile.getFile());
-		
+		FileIdentifier.MusicInfo minfo = FileIdentifier.identify(songFile.getFile());		
 		String s = songFile.getPath();
-		if(minfo != null) {
-			
-			String title = songFile.getTitle();
-			if(title != null) {
-				s = s + "\t" + title;
-				if(minfo.composer != null) {
-					s = s + "\t" + minfo.composer;
-				}			
-			} else				
-			if(minfo.title != null) {
-				s = s + "\t" + minfo.title;
-				
-				if(songFile.getSubtune() >= 0) {
-					s += String.format(" #%02d", songFile.getSubtune()+1);
-				}
-				
-				if(minfo.composer != null) {
-					s = s + "\t" + minfo.composer;
-				}
-			}
+		
+		String title = songFile.getTitle();
+		if(title == null && minfo != null)
+			title = minfo.title;
+		
+		//if(songFile.getSubtune() >= 0) {
+		//	s += String.format(" #%02d", songFile.getSubtune()+1);
+		//}
+
+		
+		String composer = songFile.getComposer();
+		if(composer == null && minfo != null)
+			composer = minfo.composer;
+
+		if(title != null) {
+			s = s + "\t" + title;
+			if(composer != null) {
+				s = s + "\t" + composer;
+			}			
 		}
+
 		return s;
 	}
 	
@@ -222,6 +353,13 @@ public class Playlist {
 		cursor = null;
 		changed = true;
 	}
+
+	public void insert(int position, SongFile songFile) {
+		lines.add(position, fileToLine(songFile));
+		changed = true;
+		cursor = null;
+	}
+
 	
 	synchronized public void add(Cursor c, int subtune, String tuneTitle) {
 		
@@ -397,6 +535,25 @@ public class Playlist {
 		}		
 		return hash;
 	}
+	
+	public void move(int from, int to) {
+		
+		String fromLine = lines.get(from);
+		lines.add(to, fromLine);
+		if(to < from) from++;
+		lines.remove(from);	
+		changed = true;
+	}
+	
+	public void remove(int location) {
+		lines.remove(location);
+		changed = true;
+	}
+	
+	public SongFile getSong(int position) {
+		return new SongFile(lines.get(position));
+	}
+
 
 	public List<SongFile> getSongs() {
 		List<SongFile> songs = new ArrayList<SongFile>();
@@ -414,7 +571,7 @@ public class Playlist {
 			
 			String p = cursor.getString(cursor.getColumnIndex("PATH"));
 			String n = cursor.getString(cursor.getColumnIndex("FILENAME"));
-			song.startsong = -1;
+			song.startsong = -1;f
 			int sc = n.lastIndexOf(';');
 			if(sc >= 0) {
 				try {
@@ -436,5 +593,7 @@ public class Playlist {
 		} */
 		return songs;
 	}
+
+
 
 }
