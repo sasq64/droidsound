@@ -203,6 +203,19 @@ public class FileIdentifier {
 		}
 		return fname;
 	}
+	
+	public static String canHandle(String name) {
+		if(plugins == null) {
+			plugins = DroidSoundPlugin.createPluginList();
+		}
+		List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
+		for(DroidSoundPlugin plugin : plugins) {
+			if(plugin.canHandle(name)) {
+				return plugin.getClass().getSimpleName();
+			}
+		}
+		return null;
+	}
 
 	
 	public static MusicInfo identify(String name, InputStream is, File file) {

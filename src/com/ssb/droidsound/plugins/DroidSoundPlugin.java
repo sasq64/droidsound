@@ -167,7 +167,7 @@ public abstract class DroidSoundPlugin {
 	
 	
 	public static String getExt(String name) {
-		String ext = null;
+		String ext = "";
 		int dot = name.lastIndexOf('.');
 		if(dot > 0) {
 			ext = name.substring(dot);

@@ -1,14 +1,8 @@
 package com.ssb.droidsound;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
@@ -18,18 +12,11 @@ import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 import org.htmlcleaner.XPatherException;
-import org.xml.sax.XMLReader;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 
 import android.database.Cursor;
-import android.database.CursorWrapper;
 import android.database.MatrixCursor;
-import android.text.Editable;
-import android.text.Html;
-import android.text.Html.TagHandler;
-import android.text.Spannable;
-import android.text.Spanned;
 import android.util.Log;
 
 public class HttpSongSource {
@@ -38,6 +25,10 @@ public class HttpSongSource {
 	private static Map<String, MatrixCursor> dirMap = new HashMap<String, MatrixCursor>();
 
 	public static Cursor getFilesInPath(String pathName, int sorting) {
+		
+		
+		if(!pathName.endsWith("/"))
+			pathName = pathName + "/";
 		
 		MatrixCursor cursor = dirMap.get(pathName);
 		if(cursor != null) return cursor;
@@ -74,20 +65,24 @@ public class HttpSongSource {
 					 for(int i=0; i<links.length; i++) {
 						 TagNode atag = (TagNode) links[i];
 						 String href = atag.getAttributeByName("href");
-						 StringBuffer text = atag.getText();
-						 Log.v(TAG, String.format("Found link to '%s' named '%s'", href, text.toString()));
+						 String text = atag.getText().toString();
+						 Log.v(TAG, String.format("Found link to '%s' named '%s'", href, text));
 						 
 						 String path = pathName;
 						 String fileName = href;
-						 String title = href;
+						 String title = text;
 						 
 						 int type = SongDatabase.TYPE_FILE;
-						 if(href.endsWith("/")) {
-							 type = SongDatabase.TYPE_DIR;
-							 href = href.substring(0, href.length()-1);
-						 }						 
-						 cursor.addRow(new Object [] { title, type, path, fileName } );
-						 
+						 if(!href.startsWith("/") && !href.startsWith("?")) {
+							 if(href.endsWith("/")) {
+								 type = SongDatabase.TYPE_DIR;
+								 href = href.substring(0, href.length()-1);
+								 cursor.addRow(new Object [] { title, type, path, fileName } );
+							 } else {
+								 if(FileIdentifier.canHandle(href) != null)
+									 cursor.addRow(new Object [] { title, type, path, fileName } );
+							 }
+						 }
 					 }
 					 
 					 dirMap.put(pathName, cursor);

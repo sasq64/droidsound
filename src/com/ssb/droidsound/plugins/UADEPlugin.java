@@ -166,6 +166,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 		if(!extensions.contains(ext)) {
 			int slash = name.lastIndexOf('/');
 			x = name.indexOf('.', slash+1);
+			if(x < 0) return false;
 			ext = name.substring(slash+1, x).toUpperCase();
 			Log.v(TAG, "Checking prefix " + ext);
 			return extensions.contains(ext);
