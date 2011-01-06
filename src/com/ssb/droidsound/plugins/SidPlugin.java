@@ -389,5 +389,9 @@ public class SidPlugin extends DroidSoundPlugin {
 		sidplayPlugin.setOption(opt, val);
 	}
 
+	@Override
+	public String getVersion() {		
+		return "SidplayPlugin\n" + sidplayPlugin.getVersion() + "\nVICEPlugin\n" + vicePlugin.getVersion();
+	}
 
 }

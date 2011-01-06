@@ -231,6 +231,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private byte[] md5;
 
 	private SongFile clipBoardFile;
+
+	private boolean backPressed;
 	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
@@ -1414,6 +1416,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			} else {
 				gotoParent(null);
 			} */
+			backPressed = true;
 			if(startTrackingMethod != null) {
 				try {
 					Log.v(TAG, "############### START TRACKING");
@@ -1453,6 +1456,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
 	
 		if(keyCode == KeyEvent.KEYCODE_BACK) {
+			backPressed = false;
 			Log.v(TAG, ">>>>>>>>>>>>> BACK LONG PRESSED");
 			if(currentPlaylistView == searchListView) {
 				searchDirDepth = 0;
@@ -1474,25 +1478,27 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		if(keyCode == KeyEvent.KEYCODE_BACK ) {
 			Log.v(TAG, ">>>>>>>>>>>>> BACK RELEASED");
-			
-			//if(currentPlaylistView != null && currentPlaylistView.editMode()) {
-			//	currentPlaylistView.setEditMode(false);
-			//	return true;
-			//} else			
-			if(currentPlaylistView != playListView) {
-				if(currentPlaylistView != searchListView || searchDirDepth == 0) {
-					flipTo(FILE_VIEW);
-					if(songFile != null) {
-						playListView.setScrollPosition(songFile.getFile());
+			if(backPressed) {
+				backPressed = false;
+				//if(currentPlaylistView != null && currentPlaylistView.editMode()) {
+				//	currentPlaylistView.setEditMode(false);
+				//	return true;
+				//} else			
+				if(currentPlaylistView != playListView) {
+					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
+						flipTo(FILE_VIEW);
+						if(songFile != null) {
+							playListView.setScrollPosition(songFile.getFile());
+						}
+						return true;
 					}
-					return true;
 				}
-			}
-	
-			if(atTop) {
-				finish();
-			} else {
-				gotoParent(null);
+		
+				if(atTop) {
+					finish();
+				} else {
+					gotoParent(null);
+				}
 			}
 			return true;
 		}

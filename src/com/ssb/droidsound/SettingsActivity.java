@@ -43,6 +43,15 @@ public class SettingsActivity extends PreferenceActivity {
 		public boolean onPreferenceChange(Preference preference, Object newValue) {
 			String k = preference.getKey();
 			String k2 = k.substring(k.indexOf('.')+1);
+			
+			if(newValue instanceof String) {
+				try {
+					int i = Integer.parseInt((String) newValue);
+					newValue = new Integer(i);
+				} catch (NumberFormatException e) {
+				}
+			}
+			
 			plugin.setOption(k2, newValue);
 			return true;
 		}

@@ -91,10 +91,10 @@ public class VICEPlugin extends DroidSoundPlugin {
 			v = (Boolean) val ? 1 : 0;
 		} else if (opt.equals("ntsc")) {
 			k = OPT_NTSC;
-			v = Integer.valueOf((String) val);
+			v = (Integer) val;
 		} else if (opt.equals("resampling")) {
 			k = OPT_RESAMPLING;
-			v = Integer.valueOf((String) val);
+			v = (Integer) val;
 		} else {
 			return;
 		}

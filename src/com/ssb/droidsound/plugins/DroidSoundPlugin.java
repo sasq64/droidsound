@@ -261,8 +261,16 @@ public abstract class DroidSoundPlugin {
 				String k = entry.getKey();
 				int dot = k.indexOf('.');
 				if(dot >= 0) {
-					if(k.substring(0, dot).equals(plname)) {
-						plugin.setOption(k.substring(dot+1), entry.getValue());
+					if(k.substring(0, dot).equals(plname)) {						
+						Object val = entry.getValue();						
+						if(val instanceof String) {
+							try {
+								int i = Integer.parseInt((String) val);
+								val = new Integer(i);
+							} catch (NumberFormatException e) {
+							}
+						}
+						plugin.setOption(k.substring(dot+1), val);
 					}
 				}
 			}

@@ -54,7 +54,7 @@ struct Player
 
 static bool filter_cfg = true;
 static bool filter_set = false;
-static bool ntsc_cfg = false;
+static int ntsc_cfg = false;
 static bool ntsc_set = false;
 
 
@@ -70,7 +70,8 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1setOptio
 		filter_set = true;
 		break;
 	case OPT_NTSC:
-		ntsc_cfg = val ? true : false;
+		ntsc_cfg = val;
+		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "NTSC %d", ntsc_cfg);
 		ntsc_set = true;
 		break;
 	}
@@ -127,8 +128,12 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		sid2_config_t cfg = player->sidemu->config();
 		cfg.clockForced  = false;
-		cfg.clockSpeed   = ntsc_cfg ? SID2_CLOCK_NTSC : SID2_CLOCK_CORRECT;
-		cfg.clockDefault = ntsc_cfg ? SID2_CLOCK_NTSC : SID2_CLOCK_PAL;
+
+		//videomode_is_ntsc = (val & 1) != 0;
+		//videomode_is_forced = (val & 2) != 0;
+
+		cfg.clockSpeed   = (ntsc_cfg & 2) ? SID2_CLOCK_NTSC : SID2_CLOCK_CORRECT;
+		cfg.clockDefault = (ntsc_cfg  & 1) ? SID2_CLOCK_NTSC : SID2_CLOCK_PAL;
 		cfg.frequency    = 44100;
 		cfg.playback     = sid2_stereo;
 		cfg.precision    = 16;
