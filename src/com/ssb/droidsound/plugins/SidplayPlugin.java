@@ -8,8 +8,6 @@ import java.nio.ByteOrder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import com.ssb.droidsound.FileIdentifier;
-
 import android.content.Context;
 import android.util.Log;
 
@@ -44,7 +42,8 @@ public class SidplayPlugin extends DroidSoundPlugin {
 		Object defaultValue;
 	}
 	
-	private Info songInfo;	
+	private Info songInfo;
+	private static boolean isActive = true;	
 	
 	static String [] options = new String [] { "filter", "ntsc", "panning" };
 	static int [] optvals = new int [] { OPT_FILTER, OPT_NTSC, OPT_PANNING };
@@ -52,6 +51,11 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	@Override
 	public void setOption(String opt, Object val) {
 		int v  = -1;
+		if (opt.equals("active")) {
+			Log.v(TAG, ">>>>>>>>>> SIDPLAYPLUGIN IS " + (isActive ? "ACTIVE" : "NOT ACTIVE"));
+			isActive = (Boolean)val;
+			return;
+		} else
 		if(val instanceof Boolean) {
 			v = (Boolean)val ? 1 : 0;
 		} else
@@ -72,6 +76,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandle(String name) { 
 		//return N_canHandle(name);
+		if(!isActive) return false;
 		return name.toLowerCase().endsWith(".sid") || name.toLowerCase().endsWith(".prg");
 	}
 
@@ -160,7 +165,8 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public boolean load(String name, byte [] module, int size) {
-		
+		if(!isActive) return false;
+	
 		currentTune = 0;
 		songInfo = null;
 		int type = -1;

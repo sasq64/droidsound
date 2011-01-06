@@ -2,29 +2,26 @@ package com.ssb.droidsound;
 
 import java.util.List;
 
-import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.plugins.UADEPlugin;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
-import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
-import android.preference.Preference.OnPreferenceChangeListener;
 import android.util.Log;
+
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 
 public class SettingsActivity extends PreferenceActivity {
 
@@ -44,22 +41,9 @@ public class SettingsActivity extends PreferenceActivity {
 		
 		@Override
 		public boolean onPreferenceChange(Preference preference, Object newValue) {
-			
 			String k = preference.getKey();
 			String k2 = k.substring(k.indexOf('.')+1);
-			if(newValue instanceof String) {
-				int i = 0;
-				CharSequence[] entries = ((ListPreference)preference).getEntries();
-				for(CharSequence e : entries) {
-					if((e.equals(newValue))) {
-						newValue = (Integer)i;
-					}
-					i++;
-				}
-			}
 			plugin.setOption(k2, newValue);
-		// TODO Auto-generated method stub
-			//plugin.setOption(option, newValue);
 			return true;
 		}
 	};

@@ -1,0 +1,1029 @@
+// VIC20 specific resources.
+//
+
+#include "debug.h"
+#include "config.h"
+#include "res.h"
+#include "videoarch.h"
+#include "rescommon.h"
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+#define FILE_DESCRIPTION  "Vice VIC20 Emulator"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+// template of menu for all langauges
+
+IDR_MENUVIC MENU DISCARDABLE
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "", IDM_AUTOSTART
+        MENUITEM SEPARATOR
+        POPUP "Attach &disk image"
+        BEGIN
+            MENUITEM "", IDM_ATTACH_8
+            MENUITEM "", IDM_ATTACH_9
+            MENUITEM "", IDM_ATTACH_10
+            MENUITEM "", IDM_ATTACH_11
+        END
+        POPUP "D&etach disk image"
+        BEGIN
+            MENUITEM "", IDM_DETACH_8
+            MENUITEM "", IDM_DETACH_9
+            MENUITEM "", IDM_DETACH_10
+            MENUITEM "", IDM_DETACH_11
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_DETACH_ALL
+        END
+        POPUP "&Flip list"
+        BEGIN
+            MENUITEM "", IDM_FLIP_ADD
+            MENUITEM "", IDM_FLIP_REMOVE
+            MENUITEM "", IDM_FLIP_NEXT
+            MENUITEM "", IDM_FLIP_PREVIOUS
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_FLIP_LOAD
+            MENUITEM "", IDM_FLIP_SAVE
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_ATTACH_TAPE
+        MENUITEM "", IDM_DETACH_TAPE
+        POPUP "Datassette contro&l"
+        BEGIN
+            MENUITEM "", IDM_DATASETTE_CONTROL_STOP
+            MENUITEM "", IDM_DATASETTE_CONTROL_START
+            MENUITEM "", IDM_DATASETTE_CONTROL_FORWARD
+            MENUITEM "", IDM_DATASETTE_CONTROL_REWIND
+            MENUITEM "", IDM_DATASETTE_CONTROL_RECORD
+            MENUITEM "", IDM_DATASETTE_CONTROL_RESET
+            MENUITEM "", IDM_DATASETTE_RESET_COUNTER
+        END
+        MENUITEM SEPARATOR
+        POPUP "Attach &cartridge image..."
+        BEGIN
+            MENUITEM "", IDM_CART_VIC20_GENERIC
+            MENUITEM "", IDM_CART_VIC20_MEGACART
+            MENUITEM "", IDM_CART_VIC20_FINAL_EXPANSION
+            MENUITEM "", IDM_CART_VIC20_FP
+            MENUITEM SEPARATOR
+            POPUP "Add to generic..."
+            BEGIN
+                MENUITEM "", IDM_CART_VIC20_SMART_ATTACH
+                MENUITEM "", IDM_CART_VIC20_8KB_2000
+                MENUITEM "", IDM_CART_VIC20_16KB_4000
+                MENUITEM "", IDM_CART_VIC20_8KB_6000
+                MENUITEM "", IDM_CART_VIC20_8KB_A000
+                MENUITEM "", IDM_CART_VIC20_4KB_B000
+            END
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_CART_SET_DEFAULT
+            MENUITEM "", IDM_TOGGLE_CART_RESET
+        END
+        MENUITEM "", IDM_CART_DETACH
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_PAUSE, CHECKED
+        MENUITEM "", IDM_MONITOR
+        POPUP "&Reset"
+        BEGIN
+            MENUITEM "", IDM_RESET_HARD
+            MENUITEM "", IDM_RESET_SOFT
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_RESET_DRIVE8
+            MENUITEM "", IDM_RESET_DRIVE9
+            MENUITEM "", IDM_RESET_DRIVE10
+            MENUITEM "", IDM_RESET_DRIVE11
+        END
+#ifdef DEBUG
+                POPUP "&Debug"
+        BEGIN
+            POPUP "M&ode"
+            BEGIN
+                MENUITEM "", IDM_DEBUG_MODE_NORMAL
+                MENUITEM "", IDM_DEBUG_MODE_SMALL
+                MENUITEM "", IDM_DEBUG_MODE_HISTORY
+                MENUITEM "", IDM_DEBUG_MODE_AUTOPLAY
+            END
+            MENUITEM "", IDM_TOGGLE_MAINCPU_TRACE, CHECKED
+            MENUITEM "", IDM_TOGGLE_DRIVE0CPU_TRACE, CHECKED
+            MENUITEM "", IDM_TOGGLE_DRIVE1CPU_TRACE, CHECKED
+        END
+#endif
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_EXIT
+    END
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "", IDM_EDIT_COPY
+        MENUITEM "", IDM_EDIT_PASTE
+    END
+    POPUP "Sna&pshot"
+    BEGIN
+        MENUITEM "", IDM_SNAPSHOT_LOAD
+        MENUITEM "", IDM_SNAPSHOT_SAVE
+        MENUITEM "", IDM_LOADQUICK
+        MENUITEM "", IDM_SAVEQUICK
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_EVENT_TOGGLE_RECORD
+        MENUITEM "", IDM_EVENT_TOGGLE_PLAYBACK
+        MENUITEM "", IDM_EVENT_SETMILESTONE
+        MENUITEM "", IDM_EVENT_RESETMILESTONE
+        POPUP "Recording start mode"
+        BEGIN
+            MENUITEM "", IDM_EVENT_START_MODE_SAVE
+            MENUITEM "", IDM_EVENT_START_MODE_LOAD
+            MENUITEM "", IDM_EVENT_START_MODE_RESET
+            MENUITEM "", IDM_EVENT_START_MODE_PLAYBACK
+        END
+        MENUITEM "", IDM_EVENT_DIRECTORY
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_MEDIAFILE
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_SOUND_RECORD_START
+        MENUITEM "", IDM_SOUND_RECORD_STOP
+    END
+    POPUP "&Options"
+    BEGIN
+        POPUP "&Refresh rate"
+        BEGIN
+            MENUITEM "",      IDM_REFRESH_RATE_AUTO
+            MENUITEM "1/&1",  IDM_REFRESH_RATE_1
+            MENUITEM "1/&2",  IDM_REFRESH_RATE_2
+            MENUITEM "1/&3",  IDM_REFRESH_RATE_3
+            MENUITEM "1/&4",  IDM_REFRESH_RATE_4
+            MENUITEM "1/&5",  IDM_REFRESH_RATE_5
+            MENUITEM "1/&6",  IDM_REFRESH_RATE_6
+            MENUITEM "1/&7",  IDM_REFRESH_RATE_7
+            MENUITEM "1/&8",  IDM_REFRESH_RATE_8
+            MENUITEM "1/&9",  IDM_REFRESH_RATE_9
+            MENUITEM "1/1&0", IDM_REFRESH_RATE_10
+        END
+        POPUP "&Maximum Speed"
+        BEGIN
+            MENUITEM "&200%", IDM_MAXIMUM_SPEED_200
+            MENUITEM "&100%", IDM_MAXIMUM_SPEED_100
+            MENUITEM "&50%",  IDM_MAXIMUM_SPEED_50
+            MENUITEM "&20%",  IDM_MAXIMUM_SPEED_20
+            MENUITEM "1&0%",  IDM_MAXIMUM_SPEED_10
+            MENUITEM "",      IDM_MAXIMUM_SPEED_NO_LIMIT
+            MENUITEM SEPARATOR
+            MENUITEM "",      IDM_MAXIMUM_SPEED_CUSTOM
+        END
+        MENUITEM "", IDM_TOGGLE_WARP_MODE, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_FULLSCREEN
+        MENUITEM "", IDM_TOGGLE_ALWAYSONTOP
+#ifdef HAVE_D3D9_H
+        MENUITEM "", IDM_TOGGLE_DX9DISABLE
+#endif
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_VIDEOCACHE, CHECKED
+        MENUITEM "", IDM_TOGGLE_DOUBLESIZE, CHECKED
+        MENUITEM "", IDM_TOGGLE_DOUBLESCAN, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_SWAP_EXTRA_JOYSTICK
+        MENUITEM "", IDM_ALLOW_JOY_OPPOSITE_TOGGLE
+        MENUITEM "", IDM_JOYKEYS_TOGGLE
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_SOUND, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_DRIVE_TRUE_EMULATION, CHECKED
+        MENUITEM "", IDM_TOGGLE_AUTOSTART_HANDLE_TDE
+        MENUITEM "", IDM_TOGGLE_VIRTUAL_DEVICES
+        MENUITEM SEPARATOR
+        POPUP "Vide&o standard"
+        BEGIN
+            MENUITEM "&PAL-G",  IDM_SYNC_FACTOR_PAL
+            MENUITEM "&NTSC-M", IDM_SYNC_FACTOR_NTSC
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_IEEE488
+      MENUITEM "", IDM_PADDLES
+    END
+    POPUP "S&ettings"
+    BEGIN
+        MENUITEM "", IDM_AUTOSTART_SETTINGS
+        MENUITEM "", IDM_VIDEO_SETTINGS
+        MENUITEM "", IDM_VIC_SETTINGS
+        MENUITEM "", IDM_DEVICEMANAGER
+        MENUITEM "", IDM_DRIVE_SETTINGS
+        MENUITEM "", IDM_DATASETTE_SETTINGS
+        MENUITEM "", IDM_JOY_SETTINGS
+        MENUITEM "", IDM_EXTRA_JOY_SETTINGS
+        MENUITEM "", IDM_KEYBOARD_SETTINGS
+        MENUITEM "", IDM_LIGHTPEN_SETTINGS
+        MENUITEM "", IDM_SOUND_SETTINGS
+        MENUITEM "", IDM_ROM_SETTINGS
+        MENUITEM "", IDM_RAM_SETTINGS
+        MENUITEM "", IDM_RS232_SETTINGS
+        POPUP "&Cartridge/IO settings"
+        BEGIN
+            MENUITEM "", IDM_RS232USER_SETTINGS
+            MENUITEM "", IDM_SIDCART_SETTINGS
+            MENUITEM "", IDM_MIDI_SETTINGS
+            MENUITEM "", IDM_FINAL_EXPANSION_WRITEBACK
+            MENUITEM "", IDM_VIC_FLASH_PLUGIN_WRITEBACK
+            MENUITEM "", IDM_MEGACART_WRITEBACK
+            MENUITEM "", IDM_MEGACART_WRITEBACK_FILE
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_SETTINGS_SAVE_FILE
+        MENUITEM "", IDM_SETTINGS_LOAD_FILE
+        MENUITEM "", IDM_SETTINGS_SAVE
+        MENUITEM "", IDM_SETTINGS_LOAD
+        MENUITEM "", IDM_SETTINGS_DEFAULT
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_SAVE_SETTINGS_ON_EXIT
+        MENUITEM "", IDM_TOGGLE_CONFIRM_ON_EXIT
+    END
+    POPUP "&Language"
+    BEGIN
+        MENUITEM "", IDM_LANG_EN
+        MENUITEM "", IDM_LANG_DA
+        MENUITEM "", IDM_LANG_DE
+        MENUITEM "", IDM_LANG_FR
+        MENUITEM "", IDM_LANG_HU
+        MENUITEM "", IDM_LANG_IT
+        MENUITEM "", IDM_LANG_NL
+        MENUITEM "", IDM_LANG_PL
+        MENUITEM "", IDM_LANG_SV
+        MENUITEM "", IDM_LANG_TR
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "", IDM_HELP
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_ABOUT
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_CMDLINE
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_CONTRIBUTORS
+        MENUITEM "", IDM_LICENSE
+        MENUITEM "", IDM_WARRANTY
+    END
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_VIC20ROM_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 240, 70
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT      "", IDC_KERNAL,
+               9, 8, 40, 8
+    EDITTEXT   IDC_VIC20ROM_KERNAL_FILE,
+               55, 7, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_VIC20ROM_KERNAL_BROWSE,
+               185, 7, 50, 14, 0
+
+    LTEXT      "",  IDC_BASIC,
+               9, 28, 40, 8
+    EDITTEXT   IDC_VIC20ROM_BASIC_FILE,
+               55, 27, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_VIC20ROM_BASIC_BROWSE,
+               185, 27, 50, 14, 0
+
+    LTEXT      "", IDC_CHARACTER,
+               9, 48, 40, 8
+    EDITTEXT   IDC_VIC20ROM_CHARGEN_FILE,
+               55, 47, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_VIC20ROM_CHARGEN_BROWSE,
+               185, 47, 50, 14, 0
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_VIC20DRIVEROM_SETTINGS_DIALOG DIALOG DISCARDABLE  0, 0, 240, 210
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT      "1541", IDC_1541,
+               9, 8, 40, 8
+    EDITTEXT   IDC_DRIVEROM_1541_FILE,
+               55, 7, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_1541_BROWSE,
+               185, 7, 50, 14, 0
+
+    LTEXT      "1541-II", IDC_1541_II,
+               9, 28, 40, 8
+    EDITTEXT   IDC_DRIVEROM_1541II_FILE,
+               55, 27, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_1541II_BROWSE,
+               185, 27, 50, 14, 0
+
+    LTEXT      "1570", IDC_1570,
+               9, 48, 40, 8
+    EDITTEXT   IDC_DRIVEROM_1570_FILE,
+               55, 47, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_1570_BROWSE,
+               185, 47, 50, 14, 0
+
+    LTEXT      "1571", IDC_1571,
+               9, 68, 40, 8
+    EDITTEXT   IDC_DRIVEROM_1571_FILE,
+               55, 67, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_1571_BROWSE,
+               185, 67, 50, 14, 0
+
+    LTEXT      "1581", IDC_1581,
+               9, 88, 40, 8
+    EDITTEXT   IDC_DRIVEROM_1581_FILE,
+               55, 87, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_1581_BROWSE,
+               185, 87, 50, 14, 0
+
+    LTEXT      "2031", IDC_2031,
+               9, 108, 40, 8
+    EDITTEXT   IDC_DRIVEROM_2031_FILE,
+               55, 107, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_2031_BROWSE,
+               185, 107, 50, 14, 0
+
+    LTEXT      "2040", IDC_2040,
+               9, 128, 40, 8
+    EDITTEXT   IDC_DRIVEROM_2040_FILE,
+               55, 127, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_2040_BROWSE,
+               185, 127, 50, 14, 0
+
+    LTEXT      "3040", IDC_3040,
+               9, 148, 40, 8
+    EDITTEXT   IDC_DRIVEROM_3040_FILE,
+               55, 147, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_3040_BROWSE,
+               185, 147, 50, 14, 0
+
+    LTEXT      "4040", IDC_4040,
+               9, 168, 40, 8
+    EDITTEXT   IDC_DRIVEROM_4040_FILE,
+               55, 167, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_4040_BROWSE,
+               185, 167, 50, 14, 0
+
+    LTEXT      "1001", IDC_1001,
+               9, 188, 40, 8
+    EDITTEXT   IDC_DRIVEROM_1001_FILE,
+               55, 187, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON "", IDC_DRIVEROM_1001_BROWSE,
+               185, 187, 50, 14, 0
+END
+
+
+// -----------------------------------------------------------------------------
+
+// template of dialog for all languages
+
+IDD_VIC_SETTINGS_DIALOG DIALOG DISCARDABLE  0, 0, 215, 130
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "", IDOK,
+                    30, 110, 50, 14
+    PUSHBUTTON      "", IDCANCEL,
+                    90, 110, 50, 14
+    GROUPBOX        "", IDC_VIC_MEMORY,
+                    7, 7, 200, 95
+    AUTORADIOBUTTON "", IDC_VIC_NOEXPANSION,
+                    12, 23, 90, 10, BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "", IDC_VIC_3KEXPANSION,
+                    12, 36, 90, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_VIC_8KEXPANSION,
+                    12, 49, 90, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_VIC_16KEXPANSION,
+                    12, 62, 90, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_VIC_24KEXPANSION,
+                    12, 75, 90, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_VIC_FULLEXPANSION,
+                    12, 88, 90, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_VIC_CUSTOMEXPANSION,
+                    120, 23, 50, 10, BS_AUTORADIOBUTTON
+    AUTOCHECKBOX    "", IDC_VIC_MEMORY_BLOCK0,
+                    132, 35, 50, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_VIC_MEMORY_BLOCK1,
+                    132, 47, 50, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_VIC_MEMORY_BLOCK2,
+                    132, 59, 50, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_VIC_MEMORY_BLOCK3,
+                    132, 71, 50, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_VIC_MEMORY_BLOCK5,
+                    132, 83, 50, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_VIC20ROM_RESOURCE_DIALOG DIALOG DISCARDABLE  0, 0, 160, 85
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX      "", IDC_COMPUTER_RESOURCES,
+                  4, 3, 151, 55
+    AUTOCHECKBOX  "", IDC_VIC20ROM_KERNAL_RESOURCE,
+                  11, 13, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "", IDC_VIC20ROM_BASIC_RESOURCE,
+                  11, 28, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "", IDC_VIC20ROM_CHARGEN_RESOURCE,
+                  11, 43, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+
+    DEFPUSHBUTTON "", IDOK,
+                  20, 65, 50, 14, WS_TABSTOP
+    PUSHBUTTON    "", IDCANCEL,
+                  80, 65, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_VIC20ROMDRIVE_RESOURCE_DIALOG DIALOG DISCARDABLE 0, 0, 160, 190
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX      "", IDC_DRIVE_RESOURCES,
+                  4, 3, 151, 160
+    AUTOCHECKBOX  "1541", IDC_DRIVEROM_1541_RESOURCE,
+                  11, 13, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "1541-II", IDC_DRIVEROM_1541II_RESOURCE,
+                  11, 28, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "1570", IDC_DRIVEROM_1570_RESOURCE,
+                  11, 43, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "1571", IDC_DRIVEROM_1571_RESOURCE,
+                  11, 58, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "1581", IDC_DRIVEROM_1581_RESOURCE,
+                  11, 73, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "2031", IDC_DRIVEROM_2031_RESOURCE,
+                  11, 88, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "2040", IDC_DRIVEROM_2040_RESOURCE,
+                  11, 103, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "3040", IDC_DRIVEROM_3040_RESOURCE,
+                  11, 118, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "4040", IDC_DRIVEROM_4040_RESOURCE,
+                  11, 133, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX  "1001", IDC_DRIVEROM_1001_RESOURCE,
+                  11, 148, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+
+    DEFPUSHBUTTON "", IDOK,
+                  20, 170, 50, 14, WS_TABSTOP
+    PUSHBUTTON    "", IDCANCEL,
+                  80, 170, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_VIC20KBD_MAPPING_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 240, 120
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    AUTORADIOBUTTON "", IDC_VIC20KBD_MAPPING_SELECT_SYM,
+                    10, 10, 54, 10, BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "", IDC_VIC20KBD_MAPPING_SELECT_POS,
+                    10, 30, 54, 10, BS_AUTORADIOBUTTON
+
+    EDITTEXT        IDC_VIC20KBD_MAPPING_SYM,
+                    65, 9, 110, 12, WS_TABSTOP
+    PUSHBUTTON      "", IDC_VIC20KBD_MAPPING_SYM_BROWSE,
+                    185, 9, 50, 14, 0
+    EDITTEXT        IDC_VIC20KBD_MAPPING_POS,
+                    65, 29, 110, 12, WS_TABSTOP
+    PUSHBUTTON      "", IDC_VIC20KBD_MAPPING_POS_BROWSE,
+                    185, 29, 50, 14, 0
+
+    PUSHBUTTON      "", IDC_VIC20KBD_MAPPING_DUMP,
+                    10, 54, 60, 14, 0
+    PUSHBUTTON      "", IDC_KBD_SHORTCUT_DUMP,
+                    80, 54, 60, 14, 0
+
+    DEFPUSHBUTTON   "", IDOK,
+                    20, 100, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDCANCEL,
+                    80, 100, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// original and default ENGLISH text
+
+STRINGTABLE
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "VIC settings"
+    IDS_VIC_NOEXPANSION               "&no expansion memory"
+    IDS_VIC_3KEXPANSION               "3&K (block 0)"
+    IDS_VIC_8KEXPANSION               "&8K (block 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (blocks 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (blocks 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Full (blocks 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&custom"
+    IDS_VIC_BLOCK0                    "Block &0"
+    IDS_VIC_BLOCK1                    "Block &1"
+    IDS_VIC_BLOCK2                    "Block &2"
+    IDS_VIC_BLOCK3                    "Block &3"
+    IDS_VIC_BLOCK5                    "Block &5"
+    IDS_SELECT_GENERIC                "Select Generic image"
+    IDS_SELECT_MEGACART               "Select Mega-Cart image"
+    IDS_SELECT_FINAL_EXPANSION        "Select Final Expansion image"
+    IDS_SELECT_FP                     "Select Vic Flash Plugin image"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Select cartridge image"
+    IDS_ATTACH_4_8_16_CART_2000       "Attach 4/8/16KB cartridge image at $2000"
+    IDS_ATTACH_4_8_16_CART_4000       "Attach 4/8/16KB cartridge image at $4000"
+    IDS_ATTACH_4_8_16_CART_6000       "Attach 4/8/16KB cartridge image at $6000"
+    IDS_ATTACH_4_8_CART_A000          "Attach 4/8KB cartridge image at $A000"
+    IDS_ATTACH_4_CART_B000            "Attach 4KB cartridge image at $B000"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488 module"
+    IDS_MI_PADDLES                    "Enable paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Generic image..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart image..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion image..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin image..."
+    IDS_MP_ADD_TO_GENERIC             "Add to generic..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Smart-attach image..."
+    IDS_MI_CART_VIC20_8KB_2000        "4/8/16KB image at $&2000..."
+    IDS_MI_CART_VIC20_16KB_4000       "4/8/16KB image at $&4000..."
+    IDS_MI_CART_VIC20_8KB_6000        "4/8/16KB image at $&6000..."
+    IDS_MI_CART_VIC20_8KB_A000        "4/8KB image at $&A000..."
+    IDS_MI_CART_VIC20_4KB_B000        "4KB image at $&B000..."
+    IDS_MI_VIC_SETTINGS               "V&IC settings..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Enable Final Expansion write-back"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Enable Vic Flash Plugin write-back"
+    IDS_MI_MEGACART_WRITEBACK         "Enable Mega-Cart NvRAM writeback"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Select Mega-Cart non-volatile RAM file"
+END
+
+
+// DANISH text
+
+STRINGTABLE
+LANGUAGE LANG_DANISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "VIC-indstillinger"
+    IDS_VIC_NOEXPANSION               "&ingen hukommelsesudviddelse"
+    IDS_VIC_3KEXPANSION               "3&K (block 0)"
+    IDS_VIC_8KEXPANSION               "&8K (block 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (block 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (block 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Alla (block 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&egen"
+    IDS_VIC_BLOCK0                    "Block &0"
+    IDS_VIC_BLOCK1                    "Block &1"
+    IDS_VIC_BLOCK2                    "Block &2"
+    IDS_VIC_BLOCK3                    "Block &3"
+    IDS_VIC_BLOCK5                    "Block &5"
+    IDS_SELECT_GENERIC                "Vælg standard-imagefil"
+    IDS_SELECT_MEGACART               "Vælg MegaCart-imagefil"
+    IDS_SELECT_FINAL_EXPANSION        "Vælg Final Expansion-imagefil"
+    IDS_SELECT_FP                     "Select Vic Flash Plugin image"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Vælg cartridge-image"
+    IDS_ATTACH_4_8_16_CART_2000       "Tilslut 4/8/16KB-cartridge image på $2000"
+    IDS_ATTACH_4_8_16_CART_4000       "Tilslut 4/8/16KB-cartridge image på $4000"
+    IDS_ATTACH_4_8_16_CART_6000       "Tilslut 4/8/16KB-cartridge image på $6000"
+    IDS_ATTACH_4_8_CART_A000          "Tilslut 4/8KB-cartridge image på $A000"
+    IDS_ATTACH_4_CART_B000            "Tilslut 4KB-cartridge image på $B000"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488-modul"
+    IDS_MI_PADDLES                    "Enable paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Standard-image..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart image..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion-image..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin image..."
+    IDS_MP_ADD_TO_GENERIC             "Tilføj til standard..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Smart-tilslut image..."
+    IDS_MI_CART_VIC20_8KB_2000        "4/8/16KB-image på $&2000..."
+    IDS_MI_CART_VIC20_16KB_4000       "4/8/16KB-image på $&4000..."
+    IDS_MI_CART_VIC20_8KB_6000        "4/8/16KB-image på $&6000..."
+    IDS_MI_CART_VIC20_8KB_A000        "4/8KB-image på $&A000..."
+    IDS_MI_CART_VIC20_4KB_B000        "4KB-image på $&B000..."
+    IDS_MI_VIC_SETTINGS               "V&IC-indstillinger..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Aktivér Final Expansion tilbageskrivning"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Enable Vic Flash Plugin write-back"
+    IDS_MI_MEGACART_WRITEBACK         "Enable Mega-Cart NvRAM writeback"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Vælg Mega-Cart NVRAM-fil"
+END
+
+
+// GERMAN text
+
+STRINGTABLE
+LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "VIC Einstellungen"
+    IDS_VIC_NOEXPANSION               "Kei&ne Speichererweiterung"
+    IDS_VIC_3KEXPANSION               "3&K (block 0)"
+    IDS_VIC_8KEXPANSION               "&8K (block 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (Blöcke 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (Blöcke 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Alle (Blöcke 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "Benutzerdefiniert..."
+    IDS_VIC_BLOCK0                    "Block &0"
+    IDS_VIC_BLOCK1                    "Block &1"
+    IDS_VIC_BLOCK2                    "Block &2"
+    IDS_VIC_BLOCK3                    "Block &3"
+    IDS_VIC_BLOCK5                    "Block &5"
+    IDS_SELECT_GENERIC                "Universelle Image Datei wählen"
+    IDS_SELECT_MEGACART               "Mega-Cart Image Date wählen"
+    IDS_SELECT_FINAL_EXPANSION        "Final Expansion Image Datei auswählen"
+    IDS_SELECT_FP                     "Vic Flash Plugin Image auswählen"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Erweiterungsmodul Image Datei wählen"
+    IDS_ATTACH_4_8_16_CART_2000       "4/8/16KB Modul Image bei $2000 einlegen"
+    IDS_ATTACH_4_8_16_CART_4000       "4/8/16KB Modul Image bei $4000 einlegen"
+    IDS_ATTACH_4_8_16_CART_6000       "4/8/16KB Modul Image bei $6000 einlegen"
+    IDS_ATTACH_4_8_CART_A000          "4/8KB Modul Image bei $A000 einlegen"
+    IDS_ATTACH_4_CART_B000            "4KB Modul Image bei $B000 einlegen"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488 Modul"
+    IDS_MI_PADDLES                    "Paddles aktivieren"
+    IDS_MI_CART_VIC20_GENERIC         "Generisches Image..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart Image..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion Image..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin Image..."
+    IDS_MP_ADD_TO_GENERIC             "Zu Universal Image hinzufügen..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Smart-Einlegen Image Date..."
+    IDS_MI_CART_VIC20_8KB_2000        "4/8/16KB Modul Image bei $2000..."
+    IDS_MI_CART_VIC20_16KB_4000       "4/8/16KB Modul Image bei $4000..."
+    IDS_MI_CART_VIC20_8KB_6000        "4/8/16KB Modul Image bei $6000..."
+    IDS_MI_CART_VIC20_8KB_A000        "4/8KB Modul Image bei $A000..."
+    IDS_MI_CART_VIC20_4KB_B000        "4KB Modul Image bei $B000..."
+    IDS_MI_VIC_SETTINGS               "V&IC Einstellungen"
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Final Expansion rückschreiben aktivieren"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Vic Flash Plugin Rückschreiben aktivieren"
+    IDS_MI_MEGACART_WRITEBACK         "Mega-Cart NvRAM Rückschreiben aktivieren"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Mega-Cart nicht-flüchtiges RAM Datei wählen"
+END
+
+
+// FRENCH text
+
+STRINGTABLE
+LANGUAGE LANG_FRENCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "Paramètres VIC"
+    IDS_VIC_NOEXPANSION               "&Aucune expansion de mémoire"
+    IDS_VIC_3KEXPANSION               "&3Ko (block 0)"
+    IDS_VIC_8KEXPANSION               "&8Ko (block 1)"
+    IDS_VIC_16KEXPANSION              "1&6Ko (blocks 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4Ko (blocks 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Tous (blocks 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&Personnalisé"
+    IDS_VIC_BLOCK0                    "Block &0"
+    IDS_VIC_BLOCK1                    "Block &1"
+    IDS_VIC_BLOCK2                    "Block &2"
+    IDS_VIC_BLOCK3                    "Block &3"
+    IDS_VIC_BLOCK5                    "Block &5"
+    IDS_SELECT_GENERIC                "Select Generic image"
+    IDS_SELECT_MEGACART               "Select Mega-Cart image"
+    IDS_SELECT_FINAL_EXPANSION        "Select Final Expansion image"
+    IDS_SELECT_FP                     "Select Vic Flash Plugin image"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Select cartridge image"
+    IDS_ATTACH_4_8_16_CART_2000       "Insertion d'une image 4/8/16Ko à $2000"
+    IDS_ATTACH_4_8_16_CART_4000       "Insertion d'une image 4/8/16Ko à $4000"
+    IDS_ATTACH_4_8_16_CART_6000       "Insertion d'une image 4/8/16Ko à $6000"
+    IDS_ATTACH_4_8_CART_A000          "Insertion d'une image 4/8Ko à $A000"
+    IDS_ATTACH_4_CART_B000            "Insertion d'une image 4Ko à $B000"
+    IDS_MI_IEEE488                    "Module VIC-1112 IEEE &488"
+    IDS_MI_PADDLES                    "Enable paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Generic image..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart image..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion image..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin image..."
+    IDS_MP_ADD_TO_GENERIC             "Add to generic..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Smart-attach image..."
+    IDS_MI_CART_VIC20_8KB_2000        "Insertion d'une image 4/8/16Ko à $2000..."
+    IDS_MI_CART_VIC20_16KB_4000       "Insertion d'une image 4/8/16Ko à $4000..."
+    IDS_MI_CART_VIC20_8KB_6000        "Insertion d'une image 4/8/16Ko à $6000..."
+    IDS_MI_CART_VIC20_8KB_A000        "Insertion d'une image 4/8Ko à $A000..."
+    IDS_MI_CART_VIC20_4KB_B000        "Insertion d'une image 4Ko à $B000..."
+    IDS_MI_VIC_SETTINGS               "Paramètres V&IC..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Enable Final Expansion write-back"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Enable Vic Flash Plugin write-back"
+    IDS_MI_MEGACART_WRITEBACK         "Enable Mega-Cart NvRAM writeback"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Select Mega-Cart non-volatile RAM file"
+END
+
+
+// HUNGARIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_HUNGARIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "VIC beállításai"
+    IDS_VIC_NOEXPANSION               "&nincs memória bõvítés"
+    IDS_VIC_3KEXPANSION               "&3K (blokk 0)"
+    IDS_VIC_8KEXPANSION               "&8K (blokk 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (blokk 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (blokk 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Mindegyik (blokk 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&egyéni"
+    IDS_VIC_BLOCK0                    "Blokk &0"
+    IDS_VIC_BLOCK1                    "Blokk &1"
+    IDS_VIC_BLOCK2                    "Blokk &2"
+    IDS_VIC_BLOCK3                    "Blokk &3"
+    IDS_VIC_BLOCK5                    "Blokk &5"
+    IDS_SELECT_GENERIC                "Válassza ki az általános képmást"
+    IDS_SELECT_MEGACART               "Válassza ki a Mega-Cart képmást"
+    IDS_SELECT_FINAL_EXPANSION        "Válassza ki a Final Expansion képmást"
+    IDS_SELECT_FP                     "Select Vic Flash Plugin image"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Válassza ki a cartridge képmást"
+    IDS_ATTACH_4_8_16_CART_2000       "4/8/16KB képmás csatolása $2000 címre"
+    IDS_ATTACH_4_8_16_CART_4000       "4/8/16KB képmás csatolása $4000 címre"
+    IDS_ATTACH_4_8_16_CART_6000       "4/8/16KB képmás csatolása $6000 címre"
+    IDS_ATTACH_4_8_CART_A000          "4/8KB képmás csatolása $A000 címre"
+    IDS_ATTACH_4_CART_B000            "4KB képmás csatolása $B000 címre"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488 modul"
+    IDS_MI_PADDLES                    "Enable paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Általános képmás..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart képmás..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion képmás..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin image..."
+    IDS_MP_ADD_TO_GENERIC             "Általánoshoz hozzáadás..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Képmás okos csatolása..."
+    IDS_MI_CART_VIC20_8KB_2000        "4/8/16KB képmás $&2000 címen..."
+    IDS_MI_CART_VIC20_16KB_4000       "4/8/16KB képmás $&4000 címen..."
+    IDS_MI_CART_VIC20_8KB_6000        "4/8/16KB képmás $&6000 címen..."
+    IDS_MI_CART_VIC20_8KB_A000        "4/8KB képmás $&A000 címen..."
+    IDS_MI_CART_VIC20_4KB_B000        "4KB képmás $&B000 címen..."
+    IDS_MI_VIC_SETTINGS               "V&IC beállításai..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Final Expansion visszaírás engedélyezése"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Enable Vic Flash Plugin write-back"
+    IDS_MI_MEGACART_WRITEBACK         "Enable Mega-Cart NvRAM writeback"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Válassza ki az NvRAM képfájlt"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// ITALIAN text
+
+STRINGTABLE
+LANGUAGE LANG_ITALIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "Impostazioni VIC"
+    IDS_VIC_NOEXPANSION               "&nessuna espansione di memoria"
+    IDS_VIC_3KEXPANSION               "3&K (blocco 0)"
+    IDS_VIC_8KEXPANSION               "&8K (blocco 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (blocchi 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (blocchi 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Tutti (Blocchi 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&personalizzata"
+    IDS_VIC_BLOCK0                    "Blocco &0"
+    IDS_VIC_BLOCK1                    "Blocco &1"
+    IDS_VIC_BLOCK2                    "Blocco &2"
+    IDS_VIC_BLOCK3                    "Blocco &3"
+    IDS_VIC_BLOCK5                    "Blocco &5"
+    IDS_SELECT_GENERIC                "Seleziona immagine generica"
+    IDS_SELECT_MEGACART               "Seleziona immagine Mega-Cart"
+    IDS_SELECT_FINAL_EXPANSION        "Seleziona immagine Final Expansion"
+    IDS_SELECT_FP                     "Select Vic Flash Plugin image"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Seleziona immagine cartuccia"
+    IDS_ATTACH_4_8_16_CART_2000       "Seleziona l'immagine di una cartuccia di 4/8/16KB a $2000"
+    IDS_ATTACH_4_8_16_CART_4000       "Seleziona l'immagine di una cartuccia di 4/8/16KB a $4000"
+    IDS_ATTACH_4_8_16_CART_6000       "Seleziona l'immagine di una cartuccia di 4/8/16KB a $6000"
+    IDS_ATTACH_4_8_CART_A000          "Seleziona l'immagine di una cartuccia di 4/8KB a $A000"
+    IDS_ATTACH_4_CART_B000            "Seleziona l'immagine di una cartuccia di 4KB a $B000"
+    IDS_MI_IEEE488                    "Modulo VIC-1112 IEEE &488"
+    IDS_MI_PADDLES                    "Enable paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Immagine generica..."
+    IDS_MI_CART_VIC20_MEGACART        "Immagine Mega-Cart..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Immagine Final Expansion..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin image..."
+    IDS_MP_ADD_TO_GENERIC             "Aggiungi a generica..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Immagine Smart-attach..."
+    IDS_MI_CART_VIC20_8KB_2000        "Immagine di 4/8/16KB a $&2000..."
+    IDS_MI_CART_VIC20_16KB_4000       "Immagine di 4/8/16KB a $&4000..."
+    IDS_MI_CART_VIC20_8KB_6000        "Immagine di 4/8/16KB a $&6000..."
+    IDS_MI_CART_VIC20_8KB_A000        "Immagine di 4/8KB a $&A000..."
+    IDS_MI_CART_VIC20_4KB_B000        "Immagine di 4KB a $&B000..."
+    IDS_MI_VIC_SETTINGS               "Impostazioni V&IC..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Enable Final Expansion write-back"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Enable Vic Flash Plugin write-back"
+    IDS_MI_MEGACART_WRITEBACK         "Enable Mega-Cart NvRAM writeback"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Select Mega-Cart non-volatile RAM file"
+END
+
+
+// DUTCH text
+
+STRINGTABLE
+LANGUAGE LANG_DUTCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "VIC instellingen"
+    IDS_VIC_NOEXPANSION               "&geen geheugenuitbreiding"
+    IDS_VIC_3KEXPANSION               "3&K (blok 0)"
+    IDS_VIC_8KEXPANSION               "&8K (blok 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (blokken 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (blokken 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Alles (blokken 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&aangepast"
+    IDS_VIC_BLOCK0                    "Blok &0"
+    IDS_VIC_BLOCK1                    "Blok &1"
+    IDS_VIC_BLOCK2                    "Blok &2"
+    IDS_VIC_BLOCK3                    "Blok &3"
+    IDS_VIC_BLOCK5                    "Bblok &5"
+    IDS_SELECT_GENERIC                "Selecteer Algemeen bestand"
+    IDS_SELECT_MEGACART               "Selecteer Mega-Cart bestand"
+    IDS_SELECT_FINAL_EXPANSION        "Selecteer Final Expansion bestand"
+    IDS_SELECT_FP                     "Selecteer Vic Flash Plugin bestand"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Selecteer cartridge bestand"
+    IDS_ATTACH_4_8_16_CART_2000       "Koppel 4/8/16KB bestand op $2000"
+    IDS_ATTACH_4_8_16_CART_4000       "Koppel 4/8/16KB bestand op $4000"
+    IDS_ATTACH_4_8_16_CART_6000       "Koppel 4/8/16KB bestand op $6000"
+    IDS_ATTACH_4_8_CART_A000          "Koppel 4/8KB bestand op $A000"
+    IDS_ATTACH_4_CART_B000            "Koppel 4KB bestand op $B000"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488 module"
+    IDS_MI_PADDLES                    "Activeer paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Algemeen bestand..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart bestand..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion bestand..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin bestand..."
+    IDS_MP_ADD_TO_GENERIC             "Voeg toe aan algemeen..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Slimme bestandskoppeling..."
+    IDS_MI_CART_VIC20_8KB_2000        "Koppel 4/8/16KB cartridgebestand op $&2000"
+    IDS_MI_CART_VIC20_16KB_4000       "Koppel 4/8/16KB cartridgebestand op $&4000"
+    IDS_MI_CART_VIC20_8KB_6000        "Koppel 4/8/16KB cartridgebestand op $&6000"
+    IDS_MI_CART_VIC20_8KB_A000        "Koppel 4/8KB cartridgebestand op $&A000"
+    IDS_MI_CART_VIC20_4KB_B000        "Koppel 4KB cartridgebestand op $&B000"
+    IDS_MI_VIC_SETTINGS               "V&IC instellingen..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Activeer terug schrijven van Final Expansion"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Activeer Vic Flash Plugin terug schrijven"
+    IDS_MI_MEGACART_WRITEBACK         "Activeer Mega-Cart NvRAM terug schrijven"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Selecteer Mega-Cart non-volatile RAM bestand"
+END
+
+
+// POLISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_POLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "Ustawienia VIC"
+    IDS_VIC_NOEXPANSION               "&no expansion memory"
+    IDS_VIC_3KEXPANSION               "3&K (block 0)"
+    IDS_VIC_8KEXPANSION               "&8K (block 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (blocks 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (blocks 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Full (blocks 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&custom"
+    IDS_VIC_BLOCK0                    "Block &0"
+    IDS_VIC_BLOCK1                    "Block &1"
+    IDS_VIC_BLOCK2                    "Block &2"
+    IDS_VIC_BLOCK3                    "Block &3"
+    IDS_VIC_BLOCK5                    "Block &5"
+    IDS_SELECT_GENERIC                "Select Generic image"
+    IDS_SELECT_MEGACART               "Select Mega-Cart image"
+    IDS_SELECT_FINAL_EXPANSION        "Select Final Expansion image"
+    IDS_SELECT_FP                     "Select Vic Flash Plugin image"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Select cartridge image"
+    IDS_ATTACH_4_8_16_CART_2000       "Attach 4/8/16KB cartridge image at $2000"
+    IDS_ATTACH_4_8_16_CART_4000       "Attach 4/8/16KB cartridge image at $4000"
+    IDS_ATTACH_4_8_16_CART_6000       "Attach 4/8/16KB cartridge image at $6000"
+    IDS_ATTACH_4_8_CART_A000          "Attach 4/8KB cartridge image at $A000"
+    IDS_ATTACH_4_CART_B000            "Attach 4KB cartridge image at $B000"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488 module"
+    IDS_MI_PADDLES                    "Enable paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Generic image..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart image..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion image..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin image..."
+    IDS_MP_ADD_TO_GENERIC             "Add to generic..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Smart-attach image..."
+    IDS_MI_CART_VIC20_8KB_2000        "4/8/16KB image at $&2000..."
+    IDS_MI_CART_VIC20_16KB_4000       "4/8/16KB image at $&4000..."
+    IDS_MI_CART_VIC20_8KB_6000        "4/8/16KB image at $&6000..."
+    IDS_MI_CART_VIC20_8KB_A000        "4/8KB image at $&A000..."
+    IDS_MI_CART_VIC20_4KB_B000        "4KB image at $&B000..."
+    IDS_MI_VIC_SETTINGS               "V&IC settings..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Enable Final Expansion write-back"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Enable Vic Flash Plugin write-back"
+    IDS_MI_MEGACART_WRITEBACK         "Enable Mega-Cart NvRAM writeback"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Select Mega-Cart non-volatile RAM file"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// SWEDISH text
+
+STRINGTABLE
+LANGUAGE LANG_SWEDISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "VIC-inställningar"
+    IDS_VIC_NOEXPANSION               "&ingen minnesutökning"
+    IDS_VIC_3KEXPANSION               "3&K (block 0)"
+    IDS_VIC_8KEXPANSION               "&8K (block 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (block 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (block 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Alla (block 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "&egen"
+    IDS_VIC_BLOCK0                    "Block &0"
+    IDS_VIC_BLOCK1                    "Block &1"
+    IDS_VIC_BLOCK2                    "Block &2"
+    IDS_VIC_BLOCK3                    "Block &3"
+    IDS_VIC_BLOCK5                    "Block &5"
+    IDS_SELECT_GENERIC                "Välj generisk avbild"
+    IDS_SELECT_MEGACART               "Välj Mega-Cart-modulfil"
+    IDS_SELECT_FINAL_EXPANSION        "Välj avbildning för Final Expansion"
+    IDS_SELECT_FP                     "Välj avbildning för Vic Flash-insticksmodul"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Välj insticksmodulfil"
+    IDS_ATTACH_4_8_16_CART_2000       "Anslut 4/8/16KB-modulfil vid $2000"
+    IDS_ATTACH_4_8_16_CART_4000       "Anslut 4/8/16KB-modulfil vid $4000"
+    IDS_ATTACH_4_8_16_CART_6000       "Anslut 4/8/16KB-modulfil vid $6000"
+    IDS_ATTACH_4_8_CART_A000          "Anslut 4/8KB-modulfil vid $A000"
+    IDS_ATTACH_4_CART_B000            "Anslut 4KB-modulfil vid $B000"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488-modul"
+    IDS_MI_PADDLES                    "Aktivera paddlar"
+    IDS_MI_CART_VIC20_GENERIC         "Generisk avbild..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart-avbildning..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion-fil..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash insticksmodul-fil..."
+    IDS_MP_ADD_TO_GENERIC             "Lägg till generisk.."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Smartanslut avbildning..."
+    IDS_MI_CART_VIC20_8KB_2000        "4/8/16KB-fil vid $&2000..."
+    IDS_MI_CART_VIC20_16KB_4000       "4/8/16KB-fil vid $&4000..."
+    IDS_MI_CART_VIC20_8KB_6000        "4/8/16KB-fil vid $&6000..."
+    IDS_MI_CART_VIC20_8KB_A000        "4/8KB-fil vid $&A000..."
+    IDS_MI_CART_VIC20_4KB_B000        "4KB-fil vid $&B000..."
+    IDS_MI_VIC_SETTINGS               "V&IC-inställningar..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Aktivera Final Expansion-återskrivning"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Aktivera Vic Flash-insticksmodul-återskrivning"
+    IDS_MI_MEGACART_WRITEBACK         "Aktivera Mega-Cart NvRAM-återskrivning"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Välj NvRAM-fil för Mega-Cart"
+END
+
+
+// TURKISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28599)
+#endif
+STRINGTABLE
+LANGUAGE LANG_TURKISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VIC_CAPTION                   "VIC ayarlarý"
+    IDS_VIC_NOEXPANSION               "geniþletilmiþ bellek &yok"
+    IDS_VIC_3KEXPANSION               "3&K (blok 0)"
+    IDS_VIC_8KEXPANSION               "&8K (blok 1)"
+    IDS_VIC_16KEXPANSION              "1&6K (bloklar 1/2)"
+    IDS_VIC_24KEXPANSION              "2&4K (bloklar 1/2/3)"
+    IDS_VIC_FULLEXPANSION             "&Tam (bloklar 0/1/2/3/5)"
+    IDS_VIC_CUSTOMEXPANSION           "ö&zel"
+    IDS_VIC_BLOCK0                    "Blok &0"
+    IDS_VIC_BLOCK1                    "Blok &1"
+    IDS_VIC_BLOCK2                    "Blok &2"
+    IDS_VIC_BLOCK3                    "Blok &3"
+    IDS_VIC_BLOCK5                    "Blok &5"
+    IDS_SELECT_GENERIC                "Jenerik imajý seç"
+    IDS_SELECT_MEGACART               "Mega-Cart imajý seç"
+    IDS_SELECT_FINAL_EXPANSION        "Final Expansion imajý seç"
+    IDS_SELECT_FP                     "Select Vic Flash Plugin image"
+    IDS_SELECT_CARTRIDGE_IMAGE        "Kartuþ imajý seç"
+    IDS_ATTACH_4_8_16_CART_2000       "$2000 adresine 4/8/16KB kartuþ imajý yerleþtir"
+    IDS_ATTACH_4_8_16_CART_4000       "$4000 adresine 4/8/16KB kartuþ imajý yerleþtir"
+    IDS_ATTACH_4_8_16_CART_6000       "$6000 adresine 4/8/16KB kartuþ imajý yerleþtir"
+    IDS_ATTACH_4_8_CART_A000          "$A000 adresine 4/8KB kartuþ imajý yerleþtir"
+    IDS_ATTACH_4_CART_B000            "$B000 adresine 4KB kartuþ imajý yerleþtir"
+    IDS_MI_IEEE488                    "VIC-1112 IEEE &488 modülü"
+    IDS_MI_PADDLES                    "Enable paddles"
+    IDS_MI_CART_VIC20_GENERIC         "Jenerik imaj..."
+    IDS_MI_CART_VIC20_MEGACART        "Mega-Cart imajý..."
+    IDS_MI_CART_VIC20_FINAL_EXPANSION "Final Expansion imajý..."
+    IDS_MI_CART_VIC20_FP              "Vic Flash Plugin image..."
+    IDS_MP_ADD_TO_GENERIC             "Jeneriðe ekle..."
+    IDS_MI_CART_VIC20_SMART_ATTACH    "Smart-attach imajý..."
+    IDS_MI_CART_VIC20_8KB_2000        "4/8/16KB imajý $&2000 adresinde..."
+    IDS_MI_CART_VIC20_16KB_4000       "4/8/16KB imajý $&4000 adresinde..."
+    IDS_MI_CART_VIC20_8KB_6000        "4/8/16KB imajý $&6000 adresinde..."
+    IDS_MI_CART_VIC20_8KB_A000        "4/8KB imajý $&A000 adresinde..."
+    IDS_MI_CART_VIC20_4KB_B000        "4KB imajý $&B000 adresinde..."
+    IDS_MI_VIC_SETTINGS               "V&IC ayarlarý..."
+    IDS_MI_FINAL_EXPANSION_WRITEBACK  "Enable Final Expansion write-back"
+    IDS_MI_VIC_FLASH_PLUGIN_WRITEBACK "Enable Vic Flash Plugin write-back"
+    IDS_MI_MEGACART_WRITEBACK         "Enable Mega-Cart NvRAM writeback"
+    IDS_MI_MEGACART_WRITEBACK_FILE    "Select Mega-Cart non-volatile RAM file"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+

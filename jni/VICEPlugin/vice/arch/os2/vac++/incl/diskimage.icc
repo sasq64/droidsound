@@ -1,0 +1,9 @@
+source type(c)
+    "diskimage.c",
+    "fsimage-check.c",
+    "fsimage-create.c",
+    "fsimage-gcr.c",
+    "fsimage-probe.c",
+    "fsimage.c",
+//    "rawimage.c",
+    "realimage.c"

@@ -1,0 +1,10 @@
+The vice directory contains the untouched VICE source file. Current revision of
+the copy is 23387.
+
+The android directory contains the android platform support.
+
+The overrides directory contains stubbed implementations for various pieces
+of VICE in order to avoid compiling the support for all the extensions and
+peripherals.
+
+The various .h files are generated.

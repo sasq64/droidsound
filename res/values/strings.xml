@@ -14,6 +14,8 @@
 <string name="favorite">Favorite</string>
 <string name="go_to_dir">Go to directory</string>
 <string name="remove">Remove</string>
+<string name="cut">Cut</string>
+<string name="paste">Paste</string>
 <string name="remove_all">Remove all</string>
 <string name="do_remove_all">Really clear playlist?</string>
 <string name="del_dir">Delete</string>
@@ -95,4 +97,24 @@ to download more music from the web.</string>
 	<item>Very long</item>
 </string-array>
 
+<string-array name="videomode_opts"><item>PAL</item>
+<item>NTSC</item>
+<item>PAL (forced)</item>
+<item>NTSC (forced)</item>
+</string-array>
+<string-array name="resampling_opts"><item>Fastest (cycle skipping)</item>
+<item>Fast (no cycle skipping)</item>
+<item>Slow (SINC)</item>
+<item>Slowest (SINC)</item>
+</string-array>
+<string-array name="videomode_vals"><item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
+</string-array>
+<string-array name="resampling_vals"><item>0</item>
+<item>1</item>
+<item>3</item>
+<item>2</item>
+</string-array>
 </resources>

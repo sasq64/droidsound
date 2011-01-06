@@ -1,0 +1,7 @@
+source type(c)
+	"finalexpansion.c",
+	"generic.c",
+	"megacart.c",
+	"vic20cart.c",
+	"vic20cartmem.c",
+	"vic-fp"

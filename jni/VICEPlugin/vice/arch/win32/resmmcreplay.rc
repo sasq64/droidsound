@@ -1,0 +1,216 @@
+// MMC Replay specific resources.
+//
+
+#include "config.h"
+#include "res.h"
+#include "rescommon.h"
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+// template of dialog for all languages
+IDD_MMCREPLAY_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 180, 140
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "", IDC_MMCREPLAY_CARDIMAGE_LABEL,
+                    9, 9, 50, 8
+    PUSHBUTTON      "", IDC_MMCREPLAY_CARDIMAGE_BROWSE,
+                    66, 7, 50, 14, 0
+    AUTOCHECKBOX    "", IDC_MMCREPLAY_CARDRW,
+                    120, 9, 60, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    EDITTEXT        IDC_MMCREPLAY_CARDIMAGE,
+                    9, 23, 160, 12, WS_TABSTOP
+    LTEXT           "", IDC_MMCREPLAY_EEPROMIMAGE_LABEL,
+                    9, 41, 50, 8
+    PUSHBUTTON      "", IDC_MMCREPLAY_EEPROMIMAGE_BROWSE,
+                    66, 39, 50, 14, 0
+    AUTOCHECKBOX    "", IDC_MMCREPLAY_EEPROMRW,
+                    120, 41, 60, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    EDITTEXT        IDC_MMCREPLAY_EEPROMIMAGE,
+                    9, 55, 160, 12, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_MMCREPLAY_WRITE_ENABLE,
+                    9, 75, 160, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_MMCREPLAY_RESCUEMODE,
+                    9, 95, 60, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    LTEXT           "", IDC_MMCREPLAY_SDTYPE_LABEL,
+                    80, 95, 30, 8
+    COMBOBOX        IDC_MMCREPLAY_SDTYPE,
+                    115, 93, 50, 80, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "", IDOK,
+                    30, 108, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDCANCEL,
+                    90, 108, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// original and default ENGLISH text
+
+STRINGTABLE
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay settings"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue mode"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card type"
+  IDS_MMCREPLAY_READ_WRITE          "read/write"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+
+
+// DANISH text
+
+STRINGTABLE
+LANGUAGE LANG_DANISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay settings"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue mode"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card type"
+  IDS_MMCREPLAY_READ_WRITE          "skrivbar"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+
+
+// GERMAN text
+
+STRINGTABLE
+LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay Einstellungen"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue Modus"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card Typ"
+  IDS_MMCREPLAY_READ_WRITE          "lese/schreibe"
+  IDS_MMCREPLAY_WRITE_ENABLE        "MMC Replay EEPROM bei Änderung speichern"
+END
+
+
+// FRENCH text
+
+STRINGTABLE
+LANGUAGE LANG_FRENCH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay settings"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue mode"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card type"
+  IDS_MMCREPLAY_READ_WRITE          "lecture/écriture"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+
+
+// HUNGARIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_HUNGARIAN, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay settings"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue mode"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card type"
+  IDS_MMCREPLAY_READ_WRITE          "írható/olvasható"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// ITALIAN text
+
+STRINGTABLE
+LANGUAGE LANG_ITALIAN, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay settings"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue mode"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card type"
+  IDS_MMCREPLAY_READ_WRITE          "lettura/scrittura"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+
+
+// DUTCH text
+
+STRINGTABLE
+LANGUAGE LANG_DUTCH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay instellingen"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Bestand"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM bestand"
+  IDS_MMCREPLAY_RESCUEMODE          "Reddingsmodus"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card soort"
+  IDS_MMCREPLAY_READ_WRITE          "lees/schrijf"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+
+
+// POLISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_POLISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay settings"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue mode"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card type"
+  IDS_MMCREPLAY_READ_WRITE          "read/write"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// SWEDISH text
+
+STRINGTABLE
+LANGUAGE LANG_SWEDISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay-inställningar"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Kortavbildning"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM-avbildning"
+  IDS_MMCREPLAY_RESCUEMODE          "Räddningsläge"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Korttyp"
+  IDS_MMCREPLAY_READ_WRITE          "skrivbar"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+
+
+// TURKISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28599)
+#endif
+STRINGTABLE
+LANGUAGE LANG_TURKISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_MMCREPLAY_CAPTION             "MMC Replay settings"
+  IDS_MMCREPLAY_CARDIMAGE_LABEL     "Card Image"
+  IDS_MMCREPLAY_EEPROMIMAGE_LABEL   "EEPROM Image"
+  IDS_MMCREPLAY_RESCUEMODE          "Rescue mode"
+  IDS_MMCREPLAY_SDTYPE_LABEL        "Card type"
+  IDS_MMCREPLAY_READ_WRITE          "oku/yaz"
+  IDS_MMCREPLAY_WRITE_ENABLE        "Save MMC Replay EEPROM when changed"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+

@@ -1,0 +1,240 @@
+// AUTOSTART settings.
+//
+
+#include "config.h"
+#include "res.h"
+#include "rescommon.h"
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+// template of dialog for all languages
+
+IDD_AUTOSTART_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 180, 125
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    AUTOCHECKBOX  "", IDC_AUTOSTART_WARP,
+                  7, 7, 75, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    AUTOCHECKBOX  "", IDC_AUTOSTART_USE_COLON_WITH_RUN,
+                  87, 7, 50, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    AUTOCHECKBOX  "", IDC_AUTOSTART_LOAD_TO_BASIC,
+                  7, 17, 75, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    LTEXT         "", IDC_AUTOSTART_PRG_MODE_LABEL,
+                  9, 34, 53, 8
+    COMBOBOX      IDC_AUTOSTART_PRG_MODE,
+                  66, 32, 50, 80, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT         "", IDC_AUTOSTART_DISK_IMAGE_FILE_LABEL,
+                  9, 54, 50, 8
+    PUSHBUTTON    "", IDC_AUTOSTART_DISK_IMAGE_BROWSE,
+                  66, 52, 50, 14, 0
+    EDITTEXT      IDC_AUTOSTART_DISK_IMAGE_FILE,
+                  9, 68, 160, 12, WS_TABSTOP
+
+    DEFPUSHBUTTON "", IDOK,
+                  30, 100, 50, 14, WS_TABSTOP
+    PUSHBUTTON    "", IDCANCEL,
+                  90, 100, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// original and default ENGLISH text
+
+STRINGTABLE
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostart settings"
+    IDS_AUTOSTART_WARP                       "Autostart warp"
+    IDS_AUTOSTART_COLON_RUN                  "Use ':' with RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Load to BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG autostart mode"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG autostart disk image"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Select file for PRG autostart disk"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtual FS"
+    IDS_AUTOSTART_INJECT                     "Inject to RAM"
+    IDS_AUTOSTART_DISK                       "Disk image"
+END
+
+
+// DANISH text
+
+STRINGTABLE
+LANGUAGE LANG_DANISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostart-indstillinger"
+    IDS_AUTOSTART_WARP                       "Autostart i warp-tilstand"
+    IDS_AUTOSTART_COLON_RUN                  "Use ':' with RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Load to BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG-autostarttilstand"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG Autostart disk-image"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Vælg fil for PRG autostartdiskette"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtuelt FS"
+    IDS_AUTOSTART_INJECT                     "Inject to RAM"
+    IDS_AUTOSTART_DISK                       "Diskimage"
+END
+
+
+// GERMAN text
+
+STRINGTABLE
+LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostart Einstellungen"
+    IDS_AUTOSTART_WARP                       "Autostart Warp"
+    IDS_AUTOSTART_COLON_RUN                  "Verwende ':' mit RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Lade an Basic Start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG Autostartmodus"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG Autostart Disk Image"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Datei für PRG Autostart auswählen"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtual FS"
+    IDS_AUTOSTART_INJECT                     "Inject ins RAM"
+    IDS_AUTOSTART_DISK                       "Disk Image"
+END
+
+
+// FRENCH text
+
+STRINGTABLE
+LANGUAGE LANG_FRENCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostart settings"
+    IDS_AUTOSTART_WARP                       "Autostart warp"
+    IDS_AUTOSTART_COLON_RUN                  "Use ':' with RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Load to BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG autostart mode"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG autostart disk image"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Select file for PRG autostart disk"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtual FS"
+    IDS_AUTOSTART_INJECT                     "Inject to RAM"
+    IDS_AUTOSTART_DISK                       "Disk image"
+END
+
+
+// HUNGARIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_HUNGARIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostart beállításai"
+    IDS_AUTOSTART_WARP                       "Automatikus indítás hipergyors"
+    IDS_AUTOSTART_COLON_RUN                  "Use ':' with RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Load to BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG automatikus indítás mód"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG automatikus indítás képmás"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Válasszon lemezfájlt a PRG automatikus indításhoz"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtuális fájlrendszer"
+    IDS_AUTOSTART_INJECT                     "Inject to RAM"
+    IDS_AUTOSTART_DISK                       "Lemez képmás"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// ITALIAN text
+
+STRINGTABLE
+LANGUAGE LANG_ITALIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Impostazioni avvio automatico"
+    IDS_AUTOSTART_WARP                       "Avvio automatico in turbo"
+    IDS_AUTOSTART_COLON_RUN                  "Use ':' with RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Load to BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "Avvio automatico PRG"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "Immagine disco avvio automatico PRG"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Seleziona file per avvio automatico PRG"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtual FS"
+    IDS_AUTOSTART_INJECT                     "Inject to RAM"
+    IDS_AUTOSTART_DISK                       "Immagine disco"
+END
+
+
+// DUTCH text
+
+STRINGTABLE
+LANGUAGE LANG_DUTCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostart instellingen"
+    IDS_AUTOSTART_WARP                       "Autostart warp"
+    IDS_AUTOSTART_COLON_RUN                  "Gebruik ':' met RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Laad naar BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG autostart modus"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG autostart disk bestand"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Selecteer bestand voor PRG autostart disk"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtueel Bestandssysteem"
+    IDS_AUTOSTART_INJECT                     "injecteer in RAM"
+    IDS_AUTOSTART_DISK                       "Disk bestand"
+END
+
+
+// POLISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_POLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostart settings"
+    IDS_AUTOSTART_WARP                       "Autostart warp"
+    IDS_AUTOSTART_COLON_RUN                  "Use ':' with RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Load to BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG autostart mode"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG autostart disk image"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Select file for PRG autostart disk"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtual FS"
+    IDS_AUTOSTART_INJECT                     "Inject to RAM"
+    IDS_AUTOSTART_DISK                       "Disk image"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// SWEDISH text
+
+STRINGTABLE
+LANGUAGE LANG_SWEDISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Autostartinställningar"
+    IDS_AUTOSTART_WARP                       "Starta warp automatiskt"
+    IDS_AUTOSTART_COLON_RUN                  "Använd \042:\042 med RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Läs till BASIC-start"
+    IDS_AUTOSTART_PRG_MODE                   "Autostartläge för PRG"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "Autostartdiskavbildning för PRG"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "Välj fil för PRG-autostartdisk"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Virtuellt FS"
+    IDS_AUTOSTART_INJECT                     "Lägg in i RAM"
+    IDS_AUTOSTART_DISK                       "Diskavbildning"
+END
+
+
+// TURKISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28599)
+#endif
+STRINGTABLE
+LANGUAGE LANG_TURKISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_AUTOSTART_CAPTION                    "Otomatik baþlatma ayarlarý"
+    IDS_AUTOSTART_WARP                       "Warp modunda otomatik baþlat"
+    IDS_AUTOSTART_COLON_RUN                  "Use ':' with RUN"
+    IDS_AUTOSTART_LOAD_TO_BASIC              "Load to BASIC start"
+    IDS_AUTOSTART_PRG_MODE                   "PRG otomatik baþlatma modu"
+    IDS_AUTOSTART_PRG_DISK_IMAGE             "PRG otomatik baþlatma disk imajý"
+    IDS_AUTOSTART_PRG_DISK_IMAGE_SELECT_FILE "PRG otomatik baþlatma için dosya seçin"
+    IDS_AUTOSTART_VIRTUAL_FS                 "Sanal FS"
+    IDS_AUTOSTART_INJECT                     "Inject to RAM"
+    IDS_AUTOSTART_DISK                       "Disk imajý"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+

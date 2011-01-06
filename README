@@ -3,7 +3,7 @@ HOW TO BUILD
 
 Prerequirements:
  Android SDK, CrystaX R4 NDK & 2.2+ platform
- Native Gcc & Make
+ Native GCC & Make
  
  * Edit jni/UADEPlugin/uade/Makefile to point to your NDK
  

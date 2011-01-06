@@ -1,0 +1,800 @@
+// Plus4 specific resources.
+//
+
+#include "debug.h"
+#include "config.h"
+#include "res.h"
+#include "videoarch.h"
+#include "rescommon.h"
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+#define FILE_DESCRIPTION  "Vice 264 Series Emulator (C16/Plus4)"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+// template of menu for all languages
+
+IDR_MENUPLUS4 MENU DISCARDABLE
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "", IDM_AUTOSTART
+        MENUITEM SEPARATOR
+        POPUP "Attach &disk image"
+        BEGIN
+            MENUITEM "", IDM_ATTACH_8
+            MENUITEM "", IDM_ATTACH_9
+            MENUITEM "", IDM_ATTACH_10
+            MENUITEM "", IDM_ATTACH_11
+        END
+        POPUP "D&etach disk image"
+        BEGIN
+            MENUITEM "", IDM_DETACH_8
+            MENUITEM "", IDM_DETACH_9
+            MENUITEM "", IDM_DETACH_10
+            MENUITEM "", IDM_DETACH_11
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_DETACH_ALL
+        END
+        POPUP "&Flip list"
+        BEGIN
+            MENUITEM "", IDM_FLIP_ADD
+            MENUITEM "", IDM_FLIP_REMOVE
+            MENUITEM "", IDM_FLIP_NEXT
+            MENUITEM "", IDM_FLIP_PREVIOUS
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_FLIP_LOAD
+            MENUITEM "", IDM_FLIP_SAVE
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_ATTACH_TAPE
+        MENUITEM "", IDM_DETACH_TAPE
+        POPUP "Datassette contro&l"
+        BEGIN
+            MENUITEM "", IDM_DATASETTE_CONTROL_STOP
+            MENUITEM "", IDM_DATASETTE_CONTROL_START
+            MENUITEM "", IDM_DATASETTE_CONTROL_FORWARD
+            MENUITEM "", IDM_DATASETTE_CONTROL_REWIND
+            MENUITEM "", IDM_DATASETTE_CONTROL_RECORD
+            MENUITEM "", IDM_DATASETTE_CONTROL_RESET
+            MENUITEM "", IDM_DATASETTE_RESET_COUNTER
+        END
+        MENUITEM SEPARATOR
+        POPUP "Attach &cartridge image..."
+        BEGIN
+            MENUITEM "", IDM_CART_ATTACH_C1LO
+            MENUITEM "", IDM_CART_ATTACH_C1HI
+            MENUITEM "", IDM_CART_ATTACH_C2LO
+            MENUITEM "", IDM_CART_ATTACH_C2HI
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_CART_ATTACH_FUNCLO
+            MENUITEM "", IDM_CART_ATTACH_FUNCHI
+        END
+        MENUITEM "", IDM_CART_DETACH
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_PAUSE, CHECKED
+        MENUITEM "", IDM_MONITOR
+        POPUP "&Reset"
+        BEGIN
+            MENUITEM "", IDM_RESET_HARD
+            MENUITEM "", IDM_RESET_SOFT
+            MENUITEM SEPARATOR
+            MENUITEM "", IDM_RESET_DRIVE8
+            MENUITEM "", IDM_RESET_DRIVE9
+            MENUITEM "", IDM_RESET_DRIVE10
+            MENUITEM "", IDM_RESET_DRIVE11
+        END
+#ifdef DEBUG
+                POPUP "&Debug"
+        BEGIN
+            POPUP "M&ode"
+            BEGIN
+                MENUITEM "", IDM_DEBUG_MODE_NORMAL
+                MENUITEM "", IDM_DEBUG_MODE_SMALL
+                MENUITEM "", IDM_DEBUG_MODE_HISTORY
+                MENUITEM "", IDM_DEBUG_MODE_AUTOPLAY
+            END
+            MENUITEM "", IDM_TOGGLE_MAINCPU_TRACE, CHECKED
+            MENUITEM "", IDM_TOGGLE_DRIVE0CPU_TRACE, CHECKED
+            MENUITEM "", IDM_TOGGLE_DRIVE1CPU_TRACE, CHECKED
+        END
+#endif
+       MENUITEM SEPARATOR
+       MENUITEM "", IDM_EXIT
+    END
+    POPUP "Edit"
+    BEGIN
+        MENUITEM "", IDM_EDIT_COPY
+        MENUITEM "", IDM_EDIT_PASTE
+    END
+    POPUP "Sna&pshot"
+    BEGIN
+        MENUITEM "", IDM_SNAPSHOT_LOAD
+        MENUITEM "", IDM_SNAPSHOT_SAVE
+        MENUITEM "", IDM_LOADQUICK
+        MENUITEM "", IDM_SAVEQUICK
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_EVENT_TOGGLE_RECORD
+        MENUITEM "", IDM_EVENT_TOGGLE_PLAYBACK
+        MENUITEM "", IDM_EVENT_SETMILESTONE
+        MENUITEM "", IDM_EVENT_RESETMILESTONE
+        POPUP "Recording start mode"
+        BEGIN
+            MENUITEM "", IDM_EVENT_START_MODE_SAVE
+            MENUITEM "", IDM_EVENT_START_MODE_LOAD
+            MENUITEM "", IDM_EVENT_START_MODE_RESET
+            MENUITEM "", IDM_EVENT_START_MODE_PLAYBACK
+        END
+        MENUITEM "", IDM_EVENT_DIRECTORY
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_MEDIAFILE
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_SOUND_RECORD_START
+        MENUITEM "", IDM_SOUND_RECORD_STOP
+    END
+    POPUP "&Options"
+    BEGIN
+        POPUP "&Refresh rate"
+        BEGIN
+            MENUITEM "",      IDM_REFRESH_RATE_AUTO
+            MENUITEM "1/&1",  IDM_REFRESH_RATE_1
+            MENUITEM "1/&2",  IDM_REFRESH_RATE_2
+            MENUITEM "1/&3",  IDM_REFRESH_RATE_3
+            MENUITEM "1/&4",  IDM_REFRESH_RATE_4
+            MENUITEM "1/&5",  IDM_REFRESH_RATE_5
+            MENUITEM "1/&6",  IDM_REFRESH_RATE_6
+            MENUITEM "1/&7",  IDM_REFRESH_RATE_7
+            MENUITEM "1/&8",  IDM_REFRESH_RATE_8
+            MENUITEM "1/&9",  IDM_REFRESH_RATE_9
+            MENUITEM "1/1&0", IDM_REFRESH_RATE_10
+        END
+        POPUP "&Maximum Speed"
+        BEGIN
+            MENUITEM "&200%", IDM_MAXIMUM_SPEED_200
+            MENUITEM "&100%", IDM_MAXIMUM_SPEED_100
+            MENUITEM "&50%",  IDM_MAXIMUM_SPEED_50
+            MENUITEM "&20%",  IDM_MAXIMUM_SPEED_20
+            MENUITEM "1&0%",  IDM_MAXIMUM_SPEED_10
+            MENUITEM "",      IDM_MAXIMUM_SPEED_NO_LIMIT
+            MENUITEM SEPARATOR
+            MENUITEM "",      IDM_MAXIMUM_SPEED_CUSTOM
+        END
+        MENUITEM "", IDM_TOGGLE_WARP_MODE, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_FULLSCREEN
+        MENUITEM "", IDM_TOGGLE_ALWAYSONTOP
+#ifdef HAVE_D3D9_H
+        MENUITEM "", IDM_TOGGLE_DX9DISABLE
+#endif
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_VIDEOCACHE, CHECKED
+        MENUITEM "", IDM_TOGGLE_DOUBLESIZE, CHECKED
+        MENUITEM "", IDM_TOGGLE_DOUBLESCAN, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_SWAP_JOYSTICK
+        MENUITEM "", IDM_ALLOW_JOY_OPPOSITE_TOGGLE
+        MENUITEM "", IDM_JOYKEYS_TOGGLE
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_SOUND, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_DRIVE_TRUE_EMULATION, CHECKED
+        MENUITEM "", IDM_TOGGLE_AUTOSTART_HANDLE_TDE
+        MENUITEM "", IDM_TOGGLE_VIRTUAL_DEVICES
+        MENUITEM SEPARATOR
+        POPUP "Vide&o standard"
+        BEGIN
+            MENUITEM "&PAL-G",  IDM_SYNC_FACTOR_PAL
+            MENUITEM "&NTSC-M", IDM_SYNC_FACTOR_NTSC
+        END
+        MENUITEM SEPARATOR
+    END
+    POPUP "S&ettings"
+    BEGIN
+        MENUITEM "", IDM_AUTOSTART_SETTINGS
+        MENUITEM "", IDM_VIDEO_SETTINGS
+        MENUITEM "", IDM_DEVICEMANAGER
+        MENUITEM "", IDM_DRIVE_SETTINGS
+        MENUITEM "", IDM_DATASETTE_SETTINGS
+        MENUITEM "", IDM_PLUS4_SETTINGS
+        MENUITEM "", IDM_JOY_SETTINGS
+        MENUITEM "", IDM_EXTRA_JOY_SETTINGS
+        MENUITEM "", IDM_KEYBOARD_SETTINGS
+        MENUITEM "", IDM_SOUND_SETTINGS
+        MENUITEM "", IDM_ROM_SETTINGS
+        MENUITEM "", IDM_RAM_SETTINGS
+        MENUITEM "", IDM_RS232_SETTINGS
+        POPUP "&Cartridge/IO Settings"
+        BEGIN
+            MENUITEM "", IDM_ACIA_SETTINGS
+            MENUITEM "", IDM_SIDCART_SETTINGS
+            MENUITEM "", IDM_V364SPEECH_SETTINGS
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_SETTINGS_SAVE_FILE
+        MENUITEM "", IDM_SETTINGS_LOAD_FILE
+        MENUITEM "", IDM_SETTINGS_SAVE
+        MENUITEM "", IDM_SETTINGS_LOAD
+        MENUITEM "", IDM_SETTINGS_DEFAULT
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_TOGGLE_SAVE_SETTINGS_ON_EXIT
+        MENUITEM "", IDM_TOGGLE_CONFIRM_ON_EXIT
+    END
+    POPUP "&Language"
+    BEGIN
+        MENUITEM "", IDM_LANG_EN
+        MENUITEM "", IDM_LANG_DA
+        MENUITEM "", IDM_LANG_DE
+        MENUITEM "", IDM_LANG_FR
+        MENUITEM "", IDM_LANG_HU
+        MENUITEM "", IDM_LANG_IT
+        MENUITEM "", IDM_LANG_NL
+        MENUITEM "", IDM_LANG_PL
+        MENUITEM "", IDM_LANG_SV
+        MENUITEM "", IDM_LANG_TR
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "", IDM_HELP
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_ABOUT
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_CMDLINE
+        MENUITEM SEPARATOR
+        MENUITEM "", IDM_CONTRIBUTORS
+        MENUITEM "", IDM_LICENSE
+        MENUITEM "", IDM_WARRANTY
+    END
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_PLUS4ROM_SETTINGS_DIALOG DIALOG DISCARDABLE  0, 0, 240, 90
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT       "", IDC_KERNAL,
+                9, 8, 40, 8
+    EDITTEXT    IDC_PLUS4ROM_KERNAL_FILE,
+                55, 7, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_PLUS4ROM_KERNAL_BROWSE,
+                185, 7, 50, 14, 0
+
+    LTEXT       "", IDC_BASIC,
+                9, 28, 40, 8
+    EDITTEXT    IDC_PLUS4ROM_BASIC_FILE,
+                55, 27, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_PLUS4ROM_BASIC_BROWSE,
+                185, 27, 50, 14, 0
+
+    LTEXT       "", IDC_3_PLUS_1_LO,
+                9, 48, 40, 8
+    EDITTEXT    IDC_PLUS4ROM_3P1LO_FILE,
+                55, 47, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_PLUS4ROM_3P1LO_BROWSE,
+                185, 47, 50, 14, 0
+
+    LTEXT       "", IDC_3_PLUS_1_HI,
+                9, 68, 40, 8
+    EDITTEXT    IDC_PLUS4ROM_3P1HI_FILE,
+                55, 67, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_PLUS4ROM_3P1HI_BROWSE,
+                185, 67, 50, 14, 0
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_PLUS4DRIVEROM_SETTINGS_DIALOG DIALOG DISCARDABLE  0, 0, 240, 130
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT       "1541", IDC_1541,
+                9, 8, 40, 8
+    EDITTEXT    IDC_DRIVEROM_1541_FILE,
+                55, 7, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_DRIVEROM_1541_BROWSE,
+                185, 7, 50, 14, 0
+
+    LTEXT       "1541-II", IDC_1541_II,
+                9, 28, 40, 8
+    EDITTEXT    IDC_DRIVEROM_1541II_FILE,
+                55, 27, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_DRIVEROM_1541II_BROWSE,
+                185, 27, 50, 14, 0
+
+    LTEXT       "1551", IDC_1551,
+                9, 48, 40, 8
+    EDITTEXT    IDC_DRIVEROM_1551_FILE,
+                55, 47, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_DRIVEROM_1551_BROWSE,
+                185, 47, 50, 14, 0
+
+    LTEXT       "1570", IDC_1570,
+                9, 68, 40, 8
+    EDITTEXT    IDC_DRIVEROM_1570_FILE,
+                55, 67, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_DRIVEROM_1570_BROWSE,
+                185, 67, 50, 14, 0
+
+    LTEXT       "", IDC_1571,
+                9, 88, 40, 8
+    EDITTEXT    IDC_DRIVEROM_1571_FILE,
+                55, 87, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_DRIVEROM_1571_BROWSE,
+                185, 87, 50, 14, 0
+
+    LTEXT       "1581", IDC_1581,
+                9, 108, 40, 8
+    EDITTEXT    IDC_DRIVEROM_1581_FILE,
+                55, 107, 125, 12, WS_TABSTOP | ES_AUTOHSCROLL
+    PUSHBUTTON  "", IDC_DRIVEROM_1581_BROWSE,
+                185, 107, 50, 14, 0
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_PLUS4ROM_RESOURCE_DIALOG DIALOG DISCARDABLE  0, 0, 160, 100
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "", IDC_COMPUTER_RESOURCES,
+                    4, 3, 151, 70
+    AUTOCHECKBOX    "", IDC_PLUS4ROM_KERNAL_RESOURCE,
+                    11, 13, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_PLUS4ROM_BASIC_RESOURCE,
+                    11, 28, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_PLUS4ROM_3P1LO_RESOURCE,
+                    11, 43, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_PLUS4ROM_3P1HI_RESOURCE,
+                    11, 58, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+
+    DEFPUSHBUTTON   "", IDOK,
+                    20, 80, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDCANCEL,
+                    80, 80, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_PLUS4ROMDRIVE_RESOURCE_DIALOG DIALOG DISCARDABLE  0, 0, 160, 130
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "", IDC_DRIVE_RESOURCES,
+                    4, 3, 151, 100
+    AUTOCHECKBOX    "1541", IDC_DRIVEROM_1541_RESOURCE,
+                    11, 13, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "1541-II", IDC_DRIVEROM_1541II_RESOURCE,
+                    11, 28, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "1551", IDC_DRIVEROM_1551_RESOURCE,
+                    11, 43, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "1570", IDC_DRIVEROM_1570_RESOURCE,
+                    11, 58, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "1571", IDC_DRIVEROM_1571_RESOURCE,
+                    11, 73, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "1581", IDC_DRIVEROM_1581_RESOURCE,
+                    11, 88, 95, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+
+    DEFPUSHBUTTON   "", IDOK,
+                    20, 110, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDCANCEL,
+                    80, 110, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_PLUS4_MEMORY_DIALOG DIALOG DISCARDABLE 0, 0, 130, 175
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Plus4 settings"
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "", IDC_PLUS4_VIC20_MEMORY,
+                    5, 15, 100, 135
+    AUTORADIOBUTTON "", IDC_SELECT_PLUS4_MEM_16,
+                    15, 30, 85, 10, BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "", IDC_SELECT_PLUS4_MEM_32,
+                    15, 45, 85, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_SELECT_PLUS4_MEM_64,
+                    15, 60, 85, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_SELECT_PLUS4_MEM_256_CSORY,
+                    15, 75, 85, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_SELECT_PLUS4_MEM_256_HANNES,
+                    15, 90, 85, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_SELECT_PLUS4_MEM_1024_HANNES,
+                    15, 105, 85, 10, BS_AUTORADIOBUTTON
+    AUTORADIOBUTTON "", IDC_SELECT_PLUS4_MEM_4096_HANNES,
+                    15, 120, 85, 10, BS_AUTORADIOBUTTON
+    DEFPUSHBUTTON   "", IDOK,
+                    5, 154, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDCANCEL,
+                    75, 154, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// dialog template for all languages
+
+IDD_PLUS4KBD_MAPPING_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 240, 120
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    AUTORADIOBUTTON "", IDC_PLUS4KBD_MAPPING_SELECT_SYM,
+                    10, 10, 54, 10, BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "", IDC_PLUS4KBD_MAPPING_SELECT_POS,
+                    10, 30, 54, 10, BS_AUTORADIOBUTTON
+
+    EDITTEXT        IDC_PLUS4KBD_MAPPING_SYM,
+                    65, 9, 110, 12, WS_TABSTOP
+    PUSHBUTTON      "", IDC_PLUS4KBD_MAPPING_SYM_BROWSE,
+                    185, 9, 50, 14, 0
+    EDITTEXT        IDC_PLUS4KBD_MAPPING_POS,
+                    65, 29, 110, 12, WS_TABSTOP
+    PUSHBUTTON      "", IDC_PLUS4KBD_MAPPING_POS_BROWSE,
+                    185, 29, 50, 14, 0
+
+    PUSHBUTTON      "", IDC_PLUS4KBD_MAPPING_DUMP,
+                    10, 54, 60, 14, 0
+    PUSHBUTTON      "", IDC_KBD_SHORTCUT_DUMP,
+                    80, 54, 60, 14, 0
+
+    DEFPUSHBUTTON   "", IDOK,
+                    20, 100, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDCANCEL,
+                    80, 100, 50, 14, WS_TABSTOP
+END
+
+// -----------------------------------------------------------------------------
+
+// original and default ENGLISH text
+
+STRINGTABLE
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Attach cartridge image for Function Low"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Attach cartridge image for Function High"
+  IDS_ATTACH_CART1_LOW            "Attach cartridge image for Cartridge1 Low"
+  IDS_ATTACH_CART1_HIGH           "Attach cartridge image for Cartridge1 High"
+  IDS_ATTACH_CART2_LOW            "Attach cartridge image for Cartridge2 Low"
+  IDS_ATTACH_CART2_HIGH           "Attach cartridge image for Cartridge2 High"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4 settings"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kByte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kByte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kByte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kByte (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kByte (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 low  image..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 high image..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 low  image..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 high image..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Function low  image (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Function high image (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "P&lus4 settings..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Speech settings..."
+END
+
+
+// DANISH text
+
+STRINGTABLE
+LANGUAGE LANG_DANISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Tilslut cartridge for Function Lav"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Tilslut cartridge for Function Høj"
+  IDS_ATTACH_CART1_LOW            "Tilslut cartridge image for Cartridge1 Lav"
+  IDS_ATTACH_CART1_HIGH           "Tilslut cartridge image for Cartridge1 Høj"
+  IDS_ATTACH_CART2_LOW            "Tilslut cartridge image for Cartridge2 Lav"
+  IDS_ATTACH_CART2_HIGH           "Tilslut cartridge image for Cartridge2 Høj"
+  IDS_3_PLUS_1_LO                 "3+1 Lav"
+  IDS_3_PLUS_1_HI                 "3+1 Høj"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4-indstillinger"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kbyte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kbyte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kbyte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56KB (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256KB (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024KB (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096KB (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 lav-image..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 høj-image..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 lav-image..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 høj-image..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Funktion lav-image (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Funktion høj-image (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "P&lus4-indstillinger..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Speech settings..."
+END
+
+
+// GERMAN text
+
+STRINGTABLE
+LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Funktions ROM (low) Erweiterungsmodul einlegen"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Funktions ROM (high) Erweiterungsmodul einlegen"
+  IDS_ATTACH_CART1_LOW            "Cartridge1 (low) Erweiterungsmodul einlegen"
+  IDS_ATTACH_CART1_HIGH           "Cartridge1 (high) Erweiterungsmodul einlegen"
+  IDS_ATTACH_CART2_LOW            "Cartridge2 (low) Erweiterungsmodul einlegen"
+  IDS_ATTACH_CART2_HIGH           "Cartridge1 (high) Erweiterungsmodul einlegen"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4 Einstellungen"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kByte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kByte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kByte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kByte (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kByte (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 low Image Datei..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 high Image Datei..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 low  Image Datei..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 high Image Datei..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Funktions ROM Image Datei low (3plus1)"
+  IDS_MI_CART_ATTACH_FUNCHI       "Funktions ROM Image Datei high (3plus1)"
+  IDS_MI_PLUS4_SETTINGS           "P&lus4 Einstellungen..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Stimme Einstellungen"
+END
+
+
+// FRENCH text
+
+STRINGTABLE
+LANGUAGE LANG_FRENCH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Insérer une cartouche Fonction basse"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Insérer une cartouche Fonction haute"
+  IDS_ATTACH_CART1_LOW            "Insérer une cartouche pour Cartouche1 basse"
+  IDS_ATTACH_CART1_HIGH           "Insérer une cartouche pour Cartouche1 haute"
+  IDS_ATTACH_CART2_LOW            "Insérer une cartouche pour Cartouche2 basse"
+  IDS_ATTACH_CART2_HIGH           "Insérer une cartouche pour Cartouche2 haute"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Paramètres Plus4"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kOctets"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kOctets"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kOctets"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kByte (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kOctets (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "Image C1 basse..."
+  IDS_MI_CART_ATTACH_C1HI         "Image C1 haute..."
+  IDS_MI_CART_ATTACH_C2LO         "Image C2 basse..."
+  IDS_MI_CART_ATTACH_C2HI         "Image C1 haute..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Image Fonction basse (3+1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Image Fonction haute (3+1)..."
+  IDS_MI_PLUS4_SETTINGS           "Paramètres P&lus4"
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Speech settings..."
+END
+
+
+// HUNGARIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_HUNGARIAN, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Cartridge képmás csatolása Function Low-hoz"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Cartridge képmás csatolása Function High-hez"
+  IDS_ATTACH_CART1_LOW            "Cartridge képmás csatolása alsó Cartridge1-hez"
+  IDS_ATTACH_CART1_HIGH           "Cartridge képmás csatolása felsõ Cartridge1-hez"
+  IDS_ATTACH_CART2_LOW            "Cartridge képmás csatolása alsó Cartridge2-höz"
+  IDS_ATTACH_CART2_HIGH           "Cartridge képmás csatolása felsõ Cartridge2-höz"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4 beállításai"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kBájt"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kBájt"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kBájt"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kBájt (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kBájt (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kBájt (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kBájt (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 alsó képmás..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 felsõ képmás..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 alsó képmás..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 felsõ képmás..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Function alsó képmás (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Function felsõ képmás (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "P&lus4 beállításai..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Speech settings..."
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// ITALIAN text
+
+STRINGTABLE
+LANGUAGE LANG_ITALIAN, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Seleziona l'immagine di una cartuccia per la Function Low"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Seleziona l'immagine di una cartuccia per la Function High"
+  IDS_ATTACH_CART1_LOW            "Seleziona l'immagine di una cartuccia per la Cartridge Low"
+  IDS_ATTACH_CART1_HIGH           "Seleziona l'immagine di una cartuccia per la Cartridge1 High"
+  IDS_ATTACH_CART2_LOW            "Seleziona l'immagine di una cartuccia per la Cartridge2 Low"
+  IDS_ATTACH_CART2_HIGH           "Seleziona l'immagine di una cartuccia per la Cartridge2 High"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Impostazioni Plus4"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kByte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kByte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kByte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kByte (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kByte (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "Immagine C1 bassa..."
+  IDS_MI_CART_ATTACH_C1HI         "Immagine C1 alta..."
+  IDS_MI_CART_ATTACH_C2LO         "Immagine C2 bassa..."
+  IDS_MI_CART_ATTACH_C2HI         "Immagine C2 alta..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Immagine della Function low (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Immagine della Function high (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "Impostazioni P&lus4..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Speech settings..."
+END
+
+
+// DUTCH text
+
+STRINGTABLE
+LANGUAGE LANG_DUTCH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Koppel cartridgebestand voor 'Function Low'"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Koppel cartridgebestand voor 'Function High'"
+  IDS_ATTACH_CART1_LOW            "Koppel cartridgebestand voor 'Cartridge1 Low'"
+  IDS_ATTACH_CART1_HIGH           "Koppel cartridgebestand voor 'Cartridge1 High'"
+  IDS_ATTACH_CART2_LOW            "Koppel cartridgebestand voor 'Cartridge2 Low'"
+  IDS_ATTACH_CART2_HIGH           "Koppel cartridgebestand voor 'Cartridge2 High'"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4 instellingen"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kByte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kByte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kByte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kByte (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kByte (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 low bestand..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 high bestand..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 low bestand..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 high bestand..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Function low bestand (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Function high bestand (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "P&lus4 instellingen..."
+  IDS_MI_V364SPEECH_SETTINGS      "V364 Spraak instellingen..."
+END
+
+
+// POLISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_POLISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Attach cartridge image for Function Low"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Attach cartridge image for Function High"
+  IDS_ATTACH_CART1_LOW            "Attach cartridge image for Cartridge1 Low"
+  IDS_ATTACH_CART1_HIGH           "Attach cartridge image for Cartridge1 High"
+  IDS_ATTACH_CART2_LOW            "Attach cartridge image for Cartridge2 Low"
+  IDS_ATTACH_CART2_HIGH           "Attach cartridge image for Cartridge2 High"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4 settings"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kByte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kByte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kByte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kByte (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kByte (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 low  image..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 high image..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 low  image..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 high image..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Function low  image (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Function high image (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "P&lus4 settings..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Speech settings..."
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// SWEDISH text
+
+STRINGTABLE
+LANGUAGE LANG_SWEDISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Anslut insticksmodulfil för funktion låg"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Anslut insticksmodulfil för funktion hög"
+  IDS_ATTACH_CART1_LOW            "Anslut insticksmodulfil för modul1 låg"
+  IDS_ATTACH_CART1_HIGH           "Anslut insticksmodulfil för modul1 hög"
+  IDS_ATTACH_CART2_LOW            "Anslut insticksmodulfil för modul2 låg"
+  IDS_ATTACH_CART2_HIGH           "Anslut insticksmodulfil för modul2 hög"
+  IDS_3_PLUS_1_LO                 "3+1 Lå"
+  IDS_3_PLUS_1_HI                 "3+1 Hö"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4-inställningar"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kbyte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kbyte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kbyte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56KB (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256KB (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024KB (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096KB (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 låg-avbildning..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 hög-avbildning..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 låg-avbildning..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 hög-avbildning..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Funktion låg-avbildning (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Funktion hög-avbildning (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "P&lus4-inställningar..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364-röstinställningar..."
+END
+
+
+// TURKISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28599)
+#endif
+STRINGTABLE
+LANGUAGE LANG_TURKISH, SUBLANG_NEUTRAL
+BEGIN
+  IDS_ATTACH_FUNCTION_LOW_CART    "Function Low için kartuþ imajý yerleþtirin"
+  IDS_ATTACH_FUNCTION_HIGH_CART   "Function High için kartuþ imajý yerleþtirin"
+  IDS_ATTACH_CART1_LOW            "Kartuþ1 Low için kartuþ imajý yerleþtirin"
+  IDS_ATTACH_CART1_HIGH           "Kartuþ1 High için kartuþ imajý yerleþtirin"
+  IDS_ATTACH_CART2_LOW            "Kartuþ2 Low için kartuþ imajý yerleþtirin"
+  IDS_ATTACH_CART2_HIGH           "Kartuþ2 High için kartuþ imajý yerleþtirin"
+  IDS_3_PLUS_1_LO                 "3+1 Lo"
+  IDS_3_PLUS_1_HI                 "3+1 Hi"
+  IDS_PLUS4_SETTINGS_CAPTION      "Plus4 ayarlarý"
+  IDS_SELECT_PLUS4_MEM_16         "&16 kByte"
+  IDS_SELECT_PLUS4_MEM_32         "&32 kByte"
+  IDS_SELECT_PLUS4_MEM_64         "&64 kByte"
+  IDS_SELECT_PLUS4_MEM_256_CSORY  "2&56 kByte (CSORY)"
+  IDS_SELECT_PLUS4_MEM_256_HANNES "&256 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_1M_HANNES  "1&024 kByte (HANNES)"
+  IDS_SELECT_PLUS4_MEM_4M_HANNES  "&4096 kByte (HANNES)"
+  IDS_MI_CART_ATTACH_C1LO         "C1 low imajý..."
+  IDS_MI_CART_ATTACH_C1HI         "C1 high imajý..."
+  IDS_MI_CART_ATTACH_C2LO         "C2 low imajý..."
+  IDS_MI_CART_ATTACH_C2HI         "C2 high imajý..."
+  IDS_MI_CART_ATTACH_FUNCLO       "Function low  imajý (3plus1)..."
+  IDS_MI_CART_ATTACH_FUNCHI       "Function high imajý (3plus1)..."
+  IDS_MI_PLUS4_SETTINGS           "P&lus4 ayarlarý..."
+  IDS_MI_V364SPEECH_SETTINGS      "&V364 Speech settings..."
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+

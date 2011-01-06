@@ -21,6 +21,7 @@ X := $(call my-dir)
 include $(X)/ModPlugin/Android.mk
 include $(X)/GMEPlugin/Android.mk
 include $(X)/SC68Plugin/Android.mk
+include $(X)/VICEPlugin/Android.mk
 include $(X)/SidplayPlugin/Android.mk
 include $(X)/UADEPlugin/Android.mk
 include $(X)/HivelyPlugin/Android.mk
