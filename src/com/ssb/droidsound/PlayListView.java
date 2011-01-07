@@ -485,7 +485,6 @@ public class PlayListView extends ListView { //extends TouchListView {
 				
 		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
-		
 	}
     
     public boolean editMode() { return adapter.editMode; }

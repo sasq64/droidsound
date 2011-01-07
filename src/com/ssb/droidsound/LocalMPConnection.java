@@ -15,7 +15,7 @@ public class LocalMPConnection {
 	private volatile int socketPort;
 	private Socket socket;
 	private String contentType;
-
+	
 	public LocalMPConnection() throws IOException {
 		serverSocket = new ServerSocket(0);
 		socketPort = serverSocket.getLocalPort();

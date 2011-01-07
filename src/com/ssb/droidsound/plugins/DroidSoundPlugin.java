@@ -1,9 +1,15 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -87,6 +93,67 @@ public abstract class DroidSoundPlugin {
 
 	public boolean loadInfo(String name, byte [] module, int size) {
 		return load(name, module, size);
+	}
+	
+	public boolean loadStream(String songName) throws IOException {
+		
+		try {
+			URL url = new URL(songName);
+	
+			Log.v(TAG, "Opening URL " + songName);
+	
+			URLConnection conn = url.openConnection();
+			if(!(conn instanceof HttpURLConnection))
+				throw new IOException("Not a HTTP connection");
+	
+			HttpURLConnection httpConn = (HttpURLConnection) conn;
+			httpConn.setAllowUserInteraction(false);
+			httpConn.setInstanceFollowRedirects(true);
+			httpConn.setRequestMethod("GET");
+	
+			Log.v(TAG, "Connecting");
+	
+			httpConn.connect();
+	
+			int response = httpConn.getResponseCode();
+			if(response == HttpURLConnection.HTTP_OK) {
+				int size;
+				byte[] buffer = new byte[16384];
+				Log.v(TAG, "HTTP connected");
+				InputStream in = httpConn.getInputStream();
+	
+				// URLUtil.guessFileName(songName, );
+	
+				int dot = songName.lastIndexOf('.');
+				String ext = DroidSoundPlugin.getExt(songName);
+				File f = File.createTempFile("music", ext);
+				FileOutputStream fos = new FileOutputStream(f);
+				BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
+				while((size = in.read(buffer)) != -1) {
+					bos.write(buffer, 0, size);
+				}
+				bos.flush();
+				bos.close();
+	
+				int fileSize = (int) f.length();
+	
+				Log.v(TAG, "Bytes written: " + fileSize);
+	
+				byte [] songBuffer = new byte[(int) fileSize];
+				FileInputStream fs = new FileInputStream(f);
+				fs.read(songBuffer);
+				fs.close();
+				// f.delete();			
+				boolean rc = load(songName, songBuffer, fileSize);			
+				f.delete();
+				return rc;
+			}
+			
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
 	}
 	
 	public boolean load(String name, InputStream is, int size) throws IOException {

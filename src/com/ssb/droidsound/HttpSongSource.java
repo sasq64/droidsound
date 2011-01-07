@@ -44,7 +44,7 @@ public class HttpSongSource {
 			httpConn.setInstanceFollowRedirects(true);
 			httpConn.setRequestMethod("GET");
 	
-			Log.v(TAG, "Connecting");
+			Log.v(TAG, "Connecting to " + pathName);
 	
 			httpConn.connect();
 	

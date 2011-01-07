@@ -96,8 +96,12 @@ public class MP3Plugin extends DroidSoundPlugin {
 			}
 			return -1;
 		case INFO_LENGTH:
-			if(mediaPlayer != null && streamer == null)
-				return mediaPlayer.getDuration();
+			if(mediaPlayer != null && streamer == null) {
+				if(started)
+					return mediaPlayer.getDuration();
+				else
+					return 0;
+			}
 			break;
 		case INFO_SUBTUNE_COUNT:
 			if(cueFile != null) {
@@ -105,7 +109,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 			}
 			break;
 		case INFO_SUBTUNE_NO:
-			int pos = mediaPlayer.getCurrentPosition();
+			
+			int pos = 0;
+			if(started)
+				pos = mediaPlayer.getCurrentPosition();
 			if(cueFile != null) {
 				currentSong = cueFile.trackFromPos(pos);
 				// Log.v(TAG, String.format("TRACK FROM POS %d => %d", pos,
@@ -196,6 +203,44 @@ public class MP3Plugin extends DroidSoundPlugin {
 		currentSong = -1;
 		return false;
 	}
+	
+	@Override
+	public boolean loadStream(String songName) throws IOException {
+
+		currentSong = -1;
+		description = null;
+
+		prepared = false;
+		started = false;
+		loaded = false;
+			
+		if(simpleStream) {
+			Log.v(TAG, String.format("LOAD %s", songName));
+			mediaPlayer = new MediaPlayer();
+			mediaPlayer.setDataSource(songName);
+			loaded = true;
+			mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
+				@Override
+				public void onPrepared(MediaPlayer mp) {
+					prepared = true;
+				}
+			});
+			mediaPlayer.prepareAsync();
+			prepared = false;
+		} else {
+			if(httpThread == null) {
+				mediaPlayer = new MediaPlayer();
+				Log.v(TAG, "Creating thread");
+				streamer = new MediaStreamer(songName , mediaPlayer);
+				httpThread = new Thread(streamer);
+				httpThread.start();
+			}
+			Log.v(TAG, String.format("LOAD %s", songName));
+			id3Tag = null;
+			cueFile = null;
+		}
+		return true;
+	}
 
 	@Override
 	public boolean load(File file) throws IOException {
@@ -206,7 +251,6 @@ public class MP3Plugin extends DroidSoundPlugin {
 		started = false;
 		loaded = false;
 
-		
 		PlaylistParser pls = null;
 		type = "MP3";
 		if(file.getName().toUpperCase().endsWith(".M3U")) {

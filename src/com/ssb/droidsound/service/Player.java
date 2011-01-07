@@ -210,6 +210,7 @@ public class Player implements Runnable {
 
 		File songFile = null;
 		File songFile2 = null;
+		String streamName = null;
 
 		String baseName = song.getName();
 
@@ -281,61 +282,7 @@ public class Player implements Runnable {
 					}
 				}
 			} else if(song.getPath().startsWith("http://")) {
-
-				String songName = song.getPath();
-				URL url = new URL(songName);
-				// if(songName.toUpperCase().endsWith(".MP3"))
-				// break;
-
-				Log.v(TAG, "Opening URL " + songName);
-
-				URLConnection conn = url.openConnection();
-				if(!(conn instanceof HttpURLConnection))
-					throw new IOException("Not a HTTP connection");
-
-				HttpURLConnection httpConn = (HttpURLConnection) conn;
-				httpConn.setAllowUserInteraction(false);
-				httpConn.setInstanceFollowRedirects(true);
-				httpConn.setRequestMethod("GET");
-
-				Log.v(TAG, "Connecting");
-
-				httpConn.connect();
-
-				int response = httpConn.getResponseCode();
-				if(response == HttpURLConnection.HTTP_OK) {
-					int size;
-					byte[] buffer = new byte[16384];
-					Log.v(TAG, "HTTP connected");
-					InputStream in = httpConn.getInputStream();
-
-					// URLUtil.guessFileName(songName, );
-
-					int dot = songName.lastIndexOf('.');
-					String ext = DroidSoundPlugin.getExt(songName);
-					File f = File.createTempFile("music", ext);
-					FileOutputStream fos = new FileOutputStream(f);
-					BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-					while((size = in.read(buffer)) != -1) {
-						bos.write(buffer, 0, size);
-					}
-					bos.flush();
-					bos.close();
-
-					fileSize = f.length();
-
-					Log.v(TAG, "Bytes written: " + fileSize);
-
-					songBuffer = new byte[(int) fileSize];
-					FileInputStream fs = new FileInputStream(f);
-					fs.read(songBuffer);
-					fs.close();
-					// f.delete();
-					songFile = f;
-					songFile2 = f;
-				} else {
-					Log.v(TAG, String.format("Connection failed: %d", response));
-				}
+				streamName = song.getPath();
 			} else {
 				songFile = song.getFile(); // new File(songName);
 
@@ -356,11 +303,6 @@ public class Player implements Runnable {
 						}
 					}
 				}
-
-				// songBuffer = new byte [(int) fileSize];
-				// FileInputStream fs = new FileInputStream(f);
-				// fs.read(songBuffer);
-				// fs.close();
 			}
 
 		} catch (IOException e) {
@@ -368,11 +310,17 @@ public class Player implements Runnable {
 			e.printStackTrace();
 		}
 
-		if(songBuffer != null || songFile != null) {
+		if(songBuffer != null || songFile != null || streamName != null) {
 			boolean songLoaded = false;
 			for(DroidSoundPlugin plugin : list) {
 				Log.v(TAG, "Trying " + plugin.getClass().getName());
-				if(songFile != null) {
+				if(streamName != null) {
+					try {
+						songLoaded = plugin.loadStream(streamName);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				} else if(songFile != null) {
 					try {
 						songLoaded = plugin.load(songFile);
 					} catch (IOException e) {

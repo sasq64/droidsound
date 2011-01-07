@@ -74,6 +74,14 @@ public class MediaStreamer implements Runnable {
 	//private Socket socket;
 
 	private LocalMPConnection localMPConnection;
+	private byte[] metaArray;
+	private int metaPos;
+	private int metaSize;
+	private int metaCounter;
+	private int metaInterval;
+	private byte[] frameHeader;
+	private long totalBytes;
+	private int frameHeaderBits;
 	
 	private static final int bitRateTab[] = new int [] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 	
@@ -174,7 +182,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			if (response == HttpURLConnection.HTTP_OK) {
 				Log.v(TAG, "HTTP connected");
 				
-				int metaInterval = -1;
+				metaInterval = -1;
 								
 				icyDesc = httpConn.getHeaderField("icy-description");
 				icyGenre = httpConn.getHeaderField("icy-genre");
@@ -201,14 +209,16 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				}
 
 				int size;
-				byte[] head = new byte[4];
+				frameHeader = new byte[4];
 				byte[] buffer = new byte[128*1024];
-				byte [] metaArray = new byte[4092];
-				int metaPos = 0;
-				int metaSize = -1;				
-				int metaCounter = 0;
-				long total = 0;
-				int hf = 0;
+
+				metaArray = new byte[4092];
+				metaPos = 0;
+				metaSize = -1;				
+				metaCounter = 0;
+				
+				totalBytes = 0L;
+				frameHeaderBits = 0;
 				boolean firstRead = true;
 
 				last_usec = usec = 0L;
@@ -221,68 +231,13 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					usec = -1000;
 
 				while (!doQuit) {
-						
-					if(metaCounter == metaInterval) {
-						
-						int rem;
-						if(metaSize == -1)
-							rem = 1;
-						else
-							rem = metaSize - metaPos;
-						size = in.read(metaArray, metaPos, rem);
-						metaPos += size;
-
-						Log.v(TAG, String.format("Read %d META bytes", size));
-
-						
-						if(metaPos == metaSize) {
-							String meta =  new String(metaArray, 1, metaSize-1);
-							Log.v(TAG, "META DONE: " + meta);
-							
-							String split [] = meta.split(";");
-							
-							for(String data : split) {							
-								int startPos = data.indexOf("StreamTitle='");
-								if(startPos >= 0) {
-									startPos += 13;
-									int endPos = data.lastIndexOf('\'');
-									if(endPos > startPos) {
-										//streamTitle = data.substring(startPos, endPos);
-										metaStrings.add(new MetaString((int) (usec/1000), data.substring(startPos, endPos)));
-										//newMeta = true;
-									}
-								}
-							}
-							
-							metaCounter = 0;
-							metaPos = 0;
-							metaSize = -1;
-							continue;
-						}
-						
-						if(metaPos > 0) {
-							metaSize = (metaArray[0] * 16) + 1;
-							Log.v(TAG, String.format("META SIZE %d", metaSize-1));
-							if(metaSize == 1) {
-								metaCounter = 0;
-								metaPos = 0;
-								metaSize = -1;
-								continue;
-							}
-						}						
-						
-					} else {
-						int rem = buffer.length;
-						if(metaInterval > 0) {
-							int toNextMeta = metaInterval - metaCounter;
-							if(toNextMeta < rem) rem = toNextMeta;
-						}						
-						//Log.v(TAG, String.format("TO NEXT META %d", toNextMeta)); 
-			
+					int rem = buffer.length;
+					rem = updateMeta(in, rem);
+					if(rem > 0) {
 						try {
 							size = in.read(buffer, 0, rem);
 						} catch (IOException e) {
-							Log.v(TAG, "LOST CONNECTION WITH ICECAST-SERVER");	
+							Log.v(TAG, "####### LOST CONNECTION");	
 							httpNo--;
 							doRetry = true;
 							break;
@@ -301,83 +256,11 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						}
 						
 						if(parseMp3) {
-							if(nextFramePos < 0) {
-								for(int i=0; i<size-3; i++) {
-									if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {							
-										Log.v(TAG, String.format("Synced at %d", i));							
-										nextFramePos = i+total;
-										break;									
-									}
-								}
-							}
-							
-							while(nextFramePos >= 0) {
-								int o = (int) (nextFramePos - total);
-								//Log.v(TAG, String.format("NFP %d, TOTAL %d, HF %x", nextFramePos, total, hf));								
-								//if(o >=0 && o < size-3) {
-								//	Log.v(TAG, String.format("%d: Expect frame: %02x %02x %02x %02x", nextFramePos, buffer[o], buffer[o+1], buffer[o+2], buffer[o+3]));
-								//}
-		
-								if(o >=0 && o < size) {
-									head[0] = buffer[o];
-									hf |= 1;
-								}
-								o++;
-								if(o >=0 && o < size) {
-									head[1] = buffer[o];
-									hf |= 2;
-								}
-								o++;
-								if(o >=0 && o < size) {
-									head[2] = buffer[o];
-									hf |= 4;
-								}
-								o++;
-								if(o >=0 && o < size) {
-									head[3] = buffer[o];
-									hf |= 8;
-								}
-								
-								if(hf == 0xf) {
-									//Log.v(TAG, String.format("Got frame: %02x %02x %02x %02x", head[0], head[1], head[2], head[3]));
-									
-									bitRate = bitRateTab[(head[2]>>4) & 0xf] * 1000;
-									
-									if(bitRate != 0) { 							
-										freq = 44100;
-										int ff = head[2] & 0xc;
-										
-										if(ff != 0xc) {
-											
-											if(ff == 4) freq = 48000;
-											else if(ff == 8) freq = 32000;
-											
-											int frameSize = 144 * bitRate / freq;
-	
-											if((head[2] & 0x02) == 2)
-												frameSize++;
-	
-											usec += frameSize * 1000 / (bitRate/8000);
-	
-											nextFramePos += frameSize;
-											
-											//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
-										} else nextFramePos = -1;
-									} else nextFramePos = -1;
-									hf = 0;
-									if(nextFramePos == -1) {
-										//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-										//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-										Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-										//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-									}
-								} else
-									break;
-							}
+							parseMP3Frames(buffer, size);
 						}
 						
 						metaCounter += size;						
-						total += size;
+						totalBytes += size;
 
 						localMPConnection.write(buffer, 0, size);
 						
@@ -416,6 +299,147 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		doQuit = false;			
 	}
 	
+	private void parseMP3Frames(byte [] buffer, int size) {
+
+		if(nextFramePos < 0) {
+			for(int i=0; i<size-3; i++) {
+				if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {							
+					Log.v(TAG, String.format("Synced at %d", i));							
+					nextFramePos = i+totalBytes;
+					break;									
+				} else {
+					if(buffer[i] == 'I' && buffer[i+1] == 'D'  && buffer[i+2] == '3') {
+						Log.v(TAG, "Found ID3-header");
+					}
+				}
+			}
+		}
+
+		while(nextFramePos >= 0) {
+			int o = (int) (nextFramePos - totalBytes);
+			//Log.v(TAG, String.format("NFP %d, TOTAL %d, HF %x", nextFramePos, total, hf));								
+			//if(o >=0 && o < size-3) {
+			//	Log.v(TAG, String.format("%d: Expect frame: %02x %02x %02x %02x", nextFramePos, buffer[o], buffer[o+1], buffer[o+2], buffer[o+3]));
+			//}
+
+			if(o >=0 && o < size) {
+				frameHeader[0] = buffer[o];
+				frameHeaderBits |= 1;
+			}
+			o++;
+			if(o >=0 && o < size) {
+				frameHeader[1] = buffer[o];
+				frameHeaderBits |= 2;
+			}
+			o++;
+			if(o >=0 && o < size) {
+				frameHeader[2] = buffer[o];
+				frameHeaderBits |= 4;
+			}
+			o++;
+			if(o >=0 && o < size) {
+				frameHeader[3] = buffer[o];
+				frameHeaderBits |= 8;
+			}
+			
+			if(frameHeaderBits == 0xf) {
+				//Log.v(TAG, String.format("Got frame: %02x %02x %02x %02x", head[0], head[1], head[2], head[3]));
+				
+				bitRate = bitRateTab[(frameHeader[2]>>4) & 0xf] * 1000;
+				
+				if(bitRate != 0) { 							
+					freq = 44100;
+					int ff = frameHeader[2] & 0xc;
+					
+					if(ff != 0xc) {
+						
+						if(ff == 4) freq = 48000;
+						else if(ff == 8) freq = 32000;
+						
+						int frameSize = 144 * bitRate / freq;
+
+						if((frameHeader[2] & 0x02) == 2)
+							frameSize++;
+
+						usec += frameSize * 1000 / (bitRate/8000);
+
+						nextFramePos += frameSize;
+						
+						//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
+					} else nextFramePos = -1;
+				} else nextFramePos = -1;
+				frameHeaderBits = 0;
+				if(nextFramePos == -1) {
+					//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+					//Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				}
+			} else
+				break;
+		}
+	}
+
+	private int updateMeta(InputStream in, int remaining) throws IOException {
+		if(metaCounter == metaInterval) {
+			
+			int rem;
+			if(metaSize == -1)
+				rem = 1;
+			else
+				rem = metaSize - metaPos;
+			int size = in.read(metaArray, metaPos, rem);
+			metaPos += size;
+
+			Log.v(TAG, String.format("Read %d META bytes", size));
+
+			
+			if(metaPos == metaSize) {
+				String meta =  new String(metaArray, 1, metaSize-1);
+				Log.v(TAG, "META DONE: " + meta);
+				
+				String split [] = meta.split(";");
+				
+				for(String data : split) {							
+					int startPos = data.indexOf("StreamTitle='");
+					if(startPos >= 0) {
+						startPos += 13;
+						int endPos = data.lastIndexOf('\'');
+						if(endPos > startPos) {
+							//streamTitle = data.substring(startPos, endPos);
+							metaStrings.add(new MetaString((int) (usec/1000), data.substring(startPos, endPos)));
+							//newMeta = true;
+						}
+					}
+				}
+				
+				metaCounter = 0;
+				metaPos = 0;
+				metaSize = -1;
+				return 0;
+			}
+			
+			if(metaPos > 0) {
+				metaSize = (metaArray[0] * 16) + 1;
+				Log.v(TAG, String.format("META SIZE %d", metaSize-1));
+				if(metaSize == 1) {
+					metaCounter = 0;
+					metaPos = 0;
+					metaSize = -1;
+					return 0;
+				}
+			}						
+		} else {
+			if(metaInterval > 0) {
+				int toNextMeta = metaInterval - metaCounter;
+				if(toNextMeta < remaining) remaining = toNextMeta;
+			}						
+			//Log.v(TAG, String.format("TO NEXT META %d", toNextMeta)); 
+		}
+		return remaining;
+			
+	}
+
 	public int getLatency() {
 		if(usec < 0) return -1;
 		return (int) (usec/1000 - (mediaPlayer == null ? 0 : mediaPlayer.getCurrentPosition()));
