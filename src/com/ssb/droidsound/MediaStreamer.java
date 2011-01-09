@@ -11,6 +11,8 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.utils.ID3Tag;
 import com.ssb.droidsound.utils.StreamingHttpConnection;
 
 import android.media.MediaPlayer;
@@ -35,6 +37,8 @@ public class MediaStreamer implements Runnable {
 	private volatile boolean started;
 	private volatile boolean prepared;
 	private volatile boolean loaded;
+	
+	private volatile int mplayerPos;
 
 	
 	//private String httpName;
@@ -55,7 +59,7 @@ public class MediaStreamer implements Runnable {
 	private long usec;
 
 	private long nextFramePos;
-	private String streamTitle;
+	//private String streamTitle;
 
 	private volatile boolean hasQuit;
 	private volatile boolean doQuit;
@@ -83,56 +87,45 @@ public class MediaStreamer implements Runnable {
 	private long totalBytes;
 	private int frameHeaderBits;
 	
+	private byte[] tagBuffer;
+	private int tagFilled;
+	private int tagSize;
+	
+	private ID3Tag id3 = new ID3Tag();
+	private String songComposer;
+	private String songTitle;
+	private boolean gotID3;
+	private int songLength = -1;
+	private long contentLength;
+	private int avgBitrate;
+	private int extraSize;
+	private boolean fileMode;
+	private boolean bufferEnded;
+	private String songAlbum;
+	private String songTrack;
+	private String songGenre;
+	private String songComment;
+	private String songCopyright;
+	private long totalFrameBytes;
+	
 	private static final int bitRateTab[] = new int [] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 	
-	public MediaStreamer(String http, MediaPlayer mp) {
+	public MediaStreamer(String http, MediaPlayer mp, boolean fileMode) {
 		//httpName = http;
+		this.fileMode = fileMode;
 		mediaPlayer = mp;
 		httpNames.add(http);			
 		//socketPort = -1;
 	}
 	
-	public MediaStreamer(List<String> https, MediaPlayer mp) {
+	public MediaStreamer(List<String> https, MediaPlayer mp, boolean fileMode) {
 		
+		this.fileMode = fileMode;
 		mediaPlayer = mp;
 		for(String s : https)
 			httpNames.add(s);			
 		//socketPort = -1;
 	}
-	/*
-	private boolean findFrame(byte [] bufArray, int pos, int size) {
-		for(int i=pos; i<size-3; i++) {
-			if(bufArray[i] == -1 && (bufArray[i+1] & 0xfe) == 0xfa  && (bufArray[i+2] & 0xf0) != 0xf0) {
-				
-				frameStart = i;
-				
-				//Log.v(TAG, String.format("%04x: %02x %02x %02x %02x", i, bufArray[i],bufArray[i+1],bufArray[i+2],bufArray[i+3]));
-				
-				bitRate = bitRateTab[(bufArray[i+2]>>4) & 0xf] * 1000;
-				
-				if(bitRate == 0) break;
-				
-				freq = 44100;
-				int ff = bufArray[i+2] & 0xc;
-				
-				if(ff == 0xc) break;
-				
-				if(ff == 4) freq = 48000;
-				else if(ff == 8) freq = 32000;
-				
-				frameSize = 144000 * bitRate / freq;
-				if((bufArray[i+2] & 0x02) == 2)
-					frameSize++;
-				
-				//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d", bitRate, freq, frameSize));
-				return true;
-				
-				//fileSize = frameSize*1024;
-				//channel.truncate(fileSize);
-			}				
-		}
-		return false;
-	} */
 	
 /*
 V/MediaStreamer(12369): content-type: audio/mpeg
@@ -148,6 +141,11 @@ V/MediaStreamer(12369): server: Icecast 2.3.2
 V/MediaStreamer(12369): cache-control: no-cache
 V/MediaStreamer(12369): icy-metaint: 16000
 */
+	
+	public void addSource(String hname) {
+		httpNames.add(hname);
+	}
+	
 	void httpStream() throws IOException {
 
 		localMPConnection = null;
@@ -191,6 +189,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				icyBitrate = httpConn.getHeaderField("icy-br");
 				
 				String contentType = httpConn.getHeaderField("content-type");
+				String cl = httpConn.getHeaderField("content-length");
+				contentLength = -1;
+				try {
+					contentLength = Integer.parseInt(cl);
+				} catch (NumberFormatException e) {
+				}
 				
 				if(contentType.trim().startsWith("audio/mp"))
 					parseMp3 = true;
@@ -211,6 +215,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				int size;
 				frameHeader = new byte[4];
 				byte[] buffer = new byte[128*1024];
+				
+				//tagBuffer = new byte[32768];
+				tagFilled = 0;
+				tagSize = 0;
 
 				metaArray = new byte[4092];
 				metaPos = 0;
@@ -218,12 +226,17 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				metaCounter = 0;
 				
 				totalBytes = 0L;
+				totalFrameBytes = 0;
 				frameHeaderBits = 0;
 				boolean firstRead = true;
 
 				last_usec = usec = 0L;
 				nextFramePos = -1;
 				hasQuit = false;
+				extraSize = 0;
+				
+				mplayerPos = 0;
+				bufferEnded = false;
 				
 				InputStream in = httpConn.getInputStream();
 
@@ -233,21 +246,37 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				while (!doQuit) {
 					int rem = buffer.length;
 					rem = updateMeta(in, rem);
+
 					if(rem > 0) {
 						try {
 							size = in.read(buffer, 0, rem);
 						} catch (IOException e) {
-							Log.v(TAG, "####### LOST CONNECTION");	
-							httpNo--;
+							Log.v(TAG, "####### LOST CONNECTION");
+							if(!fileMode)
+								httpNo--;
 							doRetry = true;
 							break;
 						}	
 						
 						if(size == -1) {
 							Log.v(TAG, "####### End of buffer");
-							httpNo--;
-							doRetry = true;
-							break;
+							bufferEnded = true;
+							if(!fileMode) {
+								httpNo--;
+								doRetry = true;
+								break;
+							} else {
+								if(httpNo+1 < httpNames.size()) {
+									doRetry = true;
+									break;
+								}
+								try {
+									Thread.sleep(100);
+								} catch (InterruptedException e) {
+									doQuit = true;
+								}
+								continue;
+							}							
 						}
 						
 						if(firstRead) {
@@ -259,21 +288,34 @@ V/MediaStreamer(12369): icy-metaint: 16000
 							parseMP3Frames(buffer, size);
 						}
 						
+						//Log.v(TAG, String.format("####### %d", totalBytes));
+						
 						metaCounter += size;						
 						totalBytes += size;
 
-						localMPConnection.write(buffer, 0, size);
+						if(tagSize == 0 || tagFilled >= tagSize) {						
+							localMPConnection.write(buffer, 0, size);
+						}
 						
 						if(metaCounter == metaInterval)
 							Log.v(TAG, "META TIME");
 						
-					}
+					} else
+						Log.v(TAG, "IN META!");
 					
 					if(parseMp3) {
 						if(usec - last_usec > 1000000) {
 							Log.v(TAG, String.format("%%%%%%%%%% QUEUE POS %d msec", (int)(usec / 1000)));
-							last_usec = usec;
+							last_usec = usec;														
+							int sl = (int) ((usec/1000) * (contentLength-extraSize) /  (totalFrameBytes));
+							Log.v(TAG, String.format("%d seconds in %dKB out of %dKB = %d seconds total", usec/1000000, totalBytes/1024, contentLength/1024, sl/1000));
+							//if(sl/1000 != songLength/1000) {
+								songLength = sl;
+								gotID3 = true;
+							//}
 						}
+						
+
 					}
 					
 				}
@@ -301,16 +343,61 @@ V/MediaStreamer(12369): icy-metaint: 16000
 	
 	private void parseMP3Frames(byte [] buffer, int size) {
 
+		if(tagSize > 0) {
+			int l = size;
+			Log.v(TAG, String.format("%d %d %d", size, tagSize, tagFilled));
+			if(l > (tagSize - tagFilled))
+				l = tagSize - tagFilled;
+			if(l > 0) {
+				System.arraycopy(buffer, 0, tagBuffer, tagFilled, l);
+				tagFilled += l;
+			}
+			if(tagFilled >= tagSize) {
+				extraSize += tagFilled;
+				Log.v(TAG, String.format(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Tag is %d", tagFilled));
+				id3.parseTag(tagBuffer, 0, tagFilled);
+				songComposer = id3.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
+				songTitle = id3.getStringInfo(DroidSoundPlugin.INFO_TITLE);
+
+				songAlbum = id3.getStringInfo(ID3Tag.ID3INFO_ALBUM);
+				songTrack = id3.getStringInfo(ID3Tag.ID3INFO_TRACK);
+				songGenre = id3.getStringInfo(ID3Tag.ID3INFO_GENRE);
+				songComment = id3.getStringInfo(ID3Tag.ID3INFO_COMMENT);
+				songCopyright = id3.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
+
+				
+				
+				//songLength  = id3.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+				Log.v(TAG, String.format(">>>>>>>>>>>>>>>>> ID3:  %s by %s", songComposer, songComposer));
+				tagSize = tagFilled = 0;
+				tagBuffer = null;
+				gotID3 = true;
+			} else
+				return;
+		}
+		
+		
 		if(nextFramePos < 0) {
 			for(int i=0; i<size-3; i++) {
 				if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {							
 					Log.v(TAG, String.format("Synced at %d", i));							
 					nextFramePos = i+totalBytes;
 					break;									
-				} else {
-					if(buffer[i] == 'I' && buffer[i+1] == 'D'  && buffer[i+2] == '3') {
-						Log.v(TAG, "Found ID3-header");
-					}
+				} else if(buffer[i] == 'I' && buffer[i+1] == 'D'  && buffer[i+2] == '3') {
+					Log.v(TAG, "Found ID3-header");
+					int len = id3.checkForTag(buffer, i, size-i);
+					Log.v(TAG, String.format("Check for tag says %d", len));
+					if(len > 0) {
+						tagSize = len;
+						
+						tagBuffer = new byte [tagSize];
+						
+						len = size-i;
+						if(tagSize < len) len = tagSize;
+						System.arraycopy(buffer, i, tagBuffer, 0, len);
+						tagFilled = len;
+						return;
+					}					
 				}
 			}
 		}
@@ -343,7 +430,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			}
 			
 			if(frameHeaderBits == 0xf) {
-				//Log.v(TAG, String.format("Got frame: %02x %02x %02x %02x", head[0], head[1], head[2], head[3]));
+				//Log.v(TAG, String.format("Got frame: %02x %02x %02x %02x", frameHeader[0], frameHeader[1], frameHeader[2], frameHeader[3]));
 				
 				bitRate = bitRateTab[(frameHeader[2]>>4) & 0xf] * 1000;
 				
@@ -362,8 +449,19 @@ V/MediaStreamer(12369): icy-metaint: 16000
 							frameSize++;
 
 						usec += frameSize * 1000 / (bitRate/8000);
+						
+						
+						totalFrameBytes += frameSize;
+						
 
 						nextFramePos += frameSize;
+						
+						if(avgBitrate == 0)
+							avgBitrate = bitRate;
+						else
+							avgBitrate = (avgBitrate * 15 + bitRate) / 16;
+						
+						//extraSize += 4;
 						
 						//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
 					} else nextFramePos = -1;
@@ -378,6 +476,14 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			} else
 				break;
 		}
+		
+		//if(contentLength > 0 && avgBitrate > 0) {
+		//	//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
+		//	songLength = contentLength / (avgBitrate/8000);
+		//	Log.v(TAG, String.format("BITRATE %d SONG LENGTH: %d", avgBitrate, songLength));
+		//	gotID3 = true;
+		//}
+
 	}
 
 	private int updateMeta(InputStream in, int remaining) throws IOException {
@@ -426,8 +532,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					metaCounter = 0;
 					metaPos = 0;
 					metaSize = -1;
-					return 0;
 				}
+				return 0;
 			}						
 		} else {
 			if(metaInterval > 0) {
@@ -452,7 +558,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		
 		if(localMPConnection == null || !localMPConnection.isListening())
 			return 0;
-		
+				
 		if(!loaded) {
 			try {
 				localMPConnection.connect(mediaPlayer);
@@ -490,10 +596,23 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		}
 		
 		int rc = mediaPlayer.getCurrentPosition();
-		if(rc - lastPos > 1000) {
-			Log.v(TAG, String.format("########## READ POS %d msec",rc));
-			lastPos  = rc;
+
+		if(rc > 1000 && rc == lastPos) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+			}
+			rc = mediaPlayer.getCurrentPosition();
+			if(rc == lastPos)
+				return -1;
 		}
+		
+		lastPos = rc;
+		
+		//if(rc - lastPos > 1000) {
+		//	Log.v(TAG, String.format("########## READ POS %d msec",rc));
+		//	lastPos  = rc;
+		//}
 		return rc;
 	}	
 
@@ -520,22 +639,62 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		if(metaStrings.size() > 0 && mediaPlayer != null) {
 			MetaString ms = metaStrings.get(0);
 			if(ms.msec <= mediaPlayer.getCurrentPosition()) {
-				streamTitle = ms.text;
+				
+				songTitle = ms.text;
+				int split = songTitle.indexOf(" - ");
+				if(split > 0) {
+					songComposer = songTitle.substring(0, split);
+					songTitle = songTitle.substring(split + 3);
+				}
 				metaStrings.remove(0);
 				return true;
 			}
+		} else if(gotID3) {
+			gotID3 = false;
+			return true;
 		}
 		return false;
 		
 	}
+	
 
-	public String getStreamTitle() {
-		return streamTitle;
+	public String getStringInfo(int what) {
+		switch(what) {
+		case DroidSoundPlugin.INFO_AUTHOR:
+			return songComposer;
+		case DroidSoundPlugin.INFO_TITLE:
+			return songTitle;
+		}
+		return null;
+	}
+
+	public int getIntInfo(int what) {
+		switch(what) {
+		case DroidSoundPlugin.INFO_LENGTH:
+			return songLength;
+		}
+		return 0;
 	}
 
 	public String[] getDetailedInfo() {
 		
 		List<String> info = new ArrayList<String>();
+		if(songAlbum != null && songAlbum.length() > 0) {
+			info.add("Album");
+			info.add(songAlbum);
+		}
+		if(songTrack != null && songTrack.length() > 0) {
+			info.add("Track");
+			info.add(songTrack);
+		}
+		if(songGenre != null && songGenre.length() > 0) {
+			info.add("Genre");
+			info.add(songGenre);
+		}
+		if(songComment != null && songComment.length() > 0) {
+			info.add("Comment");
+			info.add(songComment);
+		}
 		if(icyName != null) {
 			info.add("Name");
 			info.add(icyName);
@@ -560,6 +719,11 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		info.toArray(strArray);
 		return strArray;
 	}
+	
+	public boolean isBufferDone() {
+		return bufferEnded;
+	}
+
 }
 
 

@@ -21,7 +21,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 /**
  * 
- * A ListView that presents a list of songs, and that maintains a connection to
  * a music player for playing them.
  * 
  * Each song is a name and a reference. The reference can be either to a File or
@@ -41,12 +40,16 @@ public class PlayListView extends ListView { //extends TouchListView {
 		String name;
 		FileInfo(String p, String fn, int fl) {
 			path = p;
+			if(path.endsWith("/"))
+				path = path.substring(0,path.length()-1);
 			name = fn;
 			type = fl;
 		}
 
 		FileInfo(String p, String fn) {
 			path = p;
+			if(path.endsWith("/"))
+				path = path.substring(0,path.length()-1);
 			name = fn;
 			type = SongDatabase.TYPE_FILE;
 		}
@@ -294,9 +297,9 @@ public class PlayListView extends ListView { //extends TouchListView {
 				tv1.setVisibility(View.GONE);
 			}
 
+			String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
 			if(type == SongDatabase.TYPE_FILE) {
-				tv0.setTextColor(itemColor);				
-				String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
+				tv0.setTextColor(itemColor);
 				if(ext.equals("M3U") || ext.equals("PLS"))
 					tv0.setTextColor(0xffffc0c0);
 					//iv.setImageResource(R.drawable.gflat_headphones);
@@ -324,8 +327,9 @@ public class PlayListView extends ListView { //extends TouchListView {
 				iv.setVisibility(View.VISIBLE);
 			} else {
 				tv0.setTextColor(dirColor);
-				if(title.equals("Streaming")) {
+				if(ext.equals("LNK")) {
 					iv.setImageResource(R.drawable.gflat_net_folder);
+					tv0.setTextColor(0xffffc0c0);
 				} else {
 					iv.setImageResource(R.drawable.gflat_folder);
 				}
@@ -540,20 +544,20 @@ public class PlayListView extends ListView { //extends TouchListView {
 		//setSelectionFromTop(position, getHeight()/4);
 	}
 	
-	public void setScrollPosition(File f) {
-		if(f == null) {
+	public void setScrollPosition(String name) {
+		if(name == null) {
 			setSelectionFromTop(0, 0);
 		} else {
 			FileInfo [] files = adapter.getFiles(false);
 			for(int i=0; i<files.length; i++) {
 				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
-				if(f.equals(files[i].getFile())) {
-					Log.v(TAG, String.format("Scrolling to %s", f.getPath()));
+				if(name.equals(files[i].getPath())) {
+					Log.v(TAG, String.format("Scrolling to %s", name));
 					setSelectionFromTop(i, 0);
 					return;
 				}
 			}
-			Log.v(TAG, String.format("Could not scroll to %s", f.getPath()));
+			Log.v(TAG, String.format("Could not scroll to %s", name));
 		}
 	}
 

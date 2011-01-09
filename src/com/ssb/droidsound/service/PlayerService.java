@@ -179,6 +179,9 @@ public class PlayerService extends Service {
 	
 
 	private String fixSpeech(String s, boolean composer) {
+		
+		if(s == null) return s;
+		
 		StringBuilder sb = new StringBuilder();
 		
 		if(s.equals("<?>")) {
@@ -225,6 +228,8 @@ public class PlayerService extends Service {
 	private void speakTitle() {
 		String text = "Unnamed song.";
 			
+		if(info[SONG_TITLE] == null) return;
+		
 		String songComposer = (String) info[SONG_AUTHOR];
 		
 		String s = (String) info[SONG_SUBTUNE_AUTHOR];
@@ -233,7 +238,9 @@ public class PlayerService extends Service {
 		}
 		
 		
-		if(songComposer.endsWith(")")) {
+				
+		
+		if(songComposer != null && songComposer.endsWith(")")) {
 			int lpara = songComposer.lastIndexOf("(");
 			int rpara = songComposer.lastIndexOf(")");
 			if(lpara > 0) {
@@ -288,6 +295,13 @@ public class PlayerService extends Service {
             		performCallback(SONG_DETAILS);
             		Log.v(TAG, String.format("%%%%%%%% Sending %d details", sa.length));
             		break;
+            	case Player.MSG_INFO:
+        			sa = (String [])msg.obj;
+        			info[SONG_TITLE] = sa[0];
+        			info[SONG_AUTHOR] = sa[1];
+        			speakTitle();
+        			performCallback(SONG_TITLE, SONG_AUTHOR);
+        			break;
             	case Player.MSG_SUBTUNE:
             		Log.v(TAG, String.format("SUBTUNE %d, Length %d", msg.arg1, msg.arg2));
             		info[SONG_SUBSONG] = msg.arg1;
@@ -313,27 +327,19 @@ public class PlayerService extends Service {
                 	String lastFileName = currentSongInfo.fileName;
                 	
                 	player.getSongInfo(currentSongInfo);
-                	
-                	// if(currentSongInfo.title.equals(info[TITLE])
-                	
+                	                	
                 	info[SONG_TITLE] = currentSongInfo.title;
-                	if(currentSongInfo.title == null || currentSongInfo.title.length() == 0) {
-                		File f = new File((String)info[SONG_FILENAME]);                	
-                		info[SONG_TITLE] = f.getName();
-                	}
 					info[SONG_AUTHOR] = currentSongInfo.author;
 					info[SONG_COPYRIGHT] = currentSongInfo.copyright;
 					info[SONG_FORMAT] = currentSongInfo.type;
 					info[SONG_LENGTH] = currentSongInfo.length;
 					info[SONG_TOTALSONGS] = currentSongInfo.subTunes;
 					info[SONG_SUBSONG] = currentSongInfo.startTune;
-					//info[SONG_GAMENAME] = currentSongInfo.game;
 					info[SONG_REPEAT] = defaultRepeatMode;
 					info[SONG_SUBTUNE_TITLE] = currentSongInfo.subtuneTitle;
 					info[SONG_SUBTUNE_AUTHOR] = currentSongInfo.subtuneAuthor;
 					info[SONG_FLAGS] = currentSongInfo.canSeek ? 1 : 0;
 					info[SONG_STATE] = 1;
-					
 					info[SONG_SOURCE] = "";
 					
 					if(currentSongInfo.source != null && currentSongInfo.source.length() > 0)					
@@ -1096,7 +1102,7 @@ public class PlayerService extends Service {
 						
 
 			beforePlay(mod.getName());
-			player.playMod(mod);
+			player.playMod(mod, playQueue.getNextSong());
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			//performCallback(SONG_SOURCE, SONG_REPEAT);
 

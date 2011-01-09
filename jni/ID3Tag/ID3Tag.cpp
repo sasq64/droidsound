@@ -172,13 +172,23 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_ID3Tag_checkForTag(JNIEnv *
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_utils_ID3Tag_parseTag(JNIEnv *env, jobject obj, jbyteArray bArray, jint offset, jint size)
 {
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
-	struct id3_tag *tag = id3_tag_parse((const id3_byte_t*)(ptr + offset), size);
+
+	const id3_byte_t*cptr = (const id3_byte_t*)(ptr + offset);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "Checking at %p (%c %c)", cptr, cptr[0], cptr[1]);
+
+	struct id3_tag *tag = id3_tag_parse(cptr, size);
+
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "DONE");
 
 	jclass cl = env->GetObjectClass(obj);
 	tagRefField = env->GetFieldID(cl, "tagRef", "J");
-	env->SetLongField(obj, refField, (jlong)tag);
+	env->SetLongField(obj, tagRefField, (jlong)tag);
+
 	cl = env->GetObjectClass(obj);
 	refField = env->GetFieldID(cl, "id3Ref", "J");
+	env->SetLongField(obj, tagRefField, (jlong)0);
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
 

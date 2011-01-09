@@ -335,12 +335,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				Log.v(TAG, String.format("NewPath %s", newPath));
 				
 				setDirectory(newPath, plv);
-				currentPlaylistView.setScrollPosition(f);				
+				//currentPlaylistView.setScrollPosition( "http://" + url.getHost() + url.getPath());				
+				currentPlaylistView.setScrollPosition(p);
 				
 			} else {
 				File f = new File(plv.getPath());
 				setDirectory(f.getParentFile(), plv);
-				currentPlaylistView.setScrollPosition(f);
+				currentPlaylistView.setScrollPosition(f.getPath());
 				if(plv == searchListView) {
 					searchDirDepth--;
 				}
@@ -789,7 +790,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		
 		mf = new File(modsDir, "Streaming");
-		File dummy = new File(mf, "SLAY Radio.m3u");
+		File dummy = new File(mf, "Kohina.m3u");
 		if(!mf.exists() || !dummy.exists()) {			
 			File [] files2 = mf.listFiles();
 			if(files2 != null) {
@@ -1436,7 +1437,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 						flipTo(FILE_VIEW);
 						if(songFile != null) {
-							playListView.setScrollPosition(songFile.getFile());
+							playListView.setScrollPosition(songFile.getPath());
 						}
 						return true;
 					}
@@ -1638,6 +1639,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(value < 0) {
 				// TODO: Hide length
 				value = 0;
+				songTotalText.setVisibility(View.GONE);
+			} else {
+				songTotalText.setVisibility(View.VISIBLE);
 			}
 			songLength = value / 1000;
 			Log.v(TAG, String.format("Songlength %02d:%02d", songLength / 60, songLength % 60));
@@ -1652,6 +1656,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					int percent = 100 * songPos / songLength;
 					if(percent > 100) percent = 100;
 					songSeeker.setProgress(percent);
+				} else {
+					songSeeker.setProgress(0);
 				}
 			} else
 				seekingSong--;
@@ -1748,8 +1754,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case PlayerService.SONG_TITLE:
 			Log.v(TAG, String.format("############################## Title is %s", value));
 			songTitle = value;
-			flipTo(SAME_VIEW);
 			subtuneTitle = null;
+			flipTo(SAME_VIEW);
 			// NOTE: Intentonal fall-through
 		case PlayerService.SONG_DETAILS:
 			songDetails = player.getSongInfo();
@@ -2179,7 +2185,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		switch(item.getItemId()) {
 		case R.id.go_dir:
 			setDirectory(file.getParentFile(), playListView);
-			currentPlaylistView.setScrollPosition(file);
+			currentPlaylistView.setScrollPosition(file.getPath());
 			// flipper.setDisplayedChild(0);
 			flipTo(FILE_VIEW);
 			break;

@@ -26,6 +26,19 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 	private MediaStreamer streamer;
 
+	// Details
+	
+	private String songTitle;
+	private String songComposer;
+	private int songLength;
+
+	private String songAlbum;
+	private String songTrack;
+	private String songGenre;
+	private String songComment;
+	private String songCopyright;
+	private String songYear;
+	
 	private ID3Tag id3Tag;
 	private CueFile cueFile;
 	private int currentSong;
@@ -44,42 +57,39 @@ public class MP3Plugin extends DroidSoundPlugin {
 		Log.v(TAG, String.format("Checking ext '%s'", ext));
 		return ext.equals(".MP3") || ext.equals(".M3U") || ext.equals(".PLS");
 	}
-
+	
 	@Override
 	public String[] getDetailedInfo() {
-
-		Log.v(TAG, "getDetailedInfo");
-		if(id3Tag != null) {
-			Log.v(TAG, "ID3 here");
-			List<String> info = new ArrayList<String>();
-			String album = id3Tag.getStringInfo(ID3Tag.ID3INFO_ALBUM);
-			if(album != null && album.length() > 0) {
-				info.add("Album");
-				info.add(album);
-			}
-			String track = id3Tag.getStringInfo(ID3Tag.ID3INFO_TRACK);
-			if(track != null && track.length() > 0) {
-				info.add("Track");
-				info.add(track);
-			}
-			String genre = id3Tag.getStringInfo(ID3Tag.ID3INFO_GENRE);
-			if(genre != null && genre.length() > 0) {
-				info.add("Genre");
-				info.add(genre);
-			}
-			String comment = id3Tag.getStringInfo(ID3Tag.ID3INFO_COMMENT);
-			if(comment != null && comment.length() > 0) {
-				info.add("Comment");
-				info.add(comment);
-			}
-			String[] strArray = new String[info.size()];
-			info.toArray(strArray);
-			return strArray;
-		} else if(streamer != null) {
+		
+		if(streamer != null) {
 			return streamer.getDetailedInfo();
 		}
 
-		return null;
+		Log.v(TAG, "getDetailedInfo");
+		List<String> info = new ArrayList<String>();
+		if(songAlbum != null && songAlbum.length() > 0) {
+			info.add("Album");
+			info.add(songAlbum);
+		}
+		if(songTrack != null && songTrack.length() > 0) {
+			info.add("Track");
+			info.add(songTrack);
+		}
+		if(songGenre != null && songGenre.length() > 0) {
+			info.add("Genre");
+			info.add(songGenre);
+		}
+		if(songComment != null && songComment.length() > 0) {
+			info.add("Comment");
+			info.add(songComment);
+		}
+		
+		if(info.size() == 0) return null;
+		
+		String[] strArray = new String[info.size()];
+		info.toArray(strArray);
+		return strArray;
+
 
 	}
 
@@ -90,17 +100,31 @@ public class MP3Plugin extends DroidSoundPlugin {
 			return 1;
 
 		switch(what) {
+		case INFO_DETAILS_CHANGED:
+			if(streamer != null) {
+				if(streamer.checkNewMeta()) {
+					songTitle = streamer.getStringInfo(DroidSoundPlugin.INFO_TITLE);
+					songComposer = streamer.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
+					songLength = streamer.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+					Log.v(TAG, String.format(" NEW META %s %s %d", songTitle, songComposer, songLength));
+					return 1;
+				}
+			}
+			return 0;
 		case 203:
 			if(streamer != null) {
 				return streamer.getLatency();
 			}
 			return -1;
+		case 204:
+			return (streamer != null && streamer.isBufferDone() ? 1 : 0);
 		case INFO_LENGTH:
-			if(mediaPlayer != null && streamer == null) {
+			if(songLength > 0) return songLength;
+			if(mediaPlayer != null) {
 				if(started)
 					return mediaPlayer.getDuration();
 				else
-					return 0;
+					return 0 * 1000;
 			}
 			break;
 		case INFO_SUBTUNE_COUNT:
@@ -108,8 +132,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 				return cueFile.getTrackCount();
 			}
 			break;
-		case INFO_SUBTUNE_NO:
-			
+		case INFO_SUBTUNE_NO:			
 			int pos = 0;
 			if(started)
 				pos = mediaPlayer.getCurrentPosition();
@@ -140,13 +163,12 @@ public class MP3Plugin extends DroidSoundPlugin {
 	@Override
 	public String getStringInfo(int what) {
 		switch(what) {
-		case 101:
-			if(streamer != null) {
-				if(streamer.checkNewMeta()) {
-					return streamer.getStreamTitle();
-				}
-			}
-			return null;
+		case INFO_AUTHOR:
+			return songComposer;
+		case INFO_TITLE:
+			return songTitle;
+		case INFO_COPYRIGHT:
+			return songCopyright;			
 		case INFO_TYPE:
 			return type;
 		case 102:
@@ -162,10 +184,6 @@ public class MP3Plugin extends DroidSoundPlugin {
 			}
 			break;
 		}
-		if(id3Tag != null) {
-			return id3Tag.getStringInfo(what);
-		}
-
 		return null;
 	}
 
@@ -204,11 +222,25 @@ public class MP3Plugin extends DroidSoundPlugin {
 		return false;
 	}
 	
+	
+	void clearInfo() {
+		songAlbum = null;
+		songComment = null;
+		songComposer = null;
+		songCopyright = null;
+		songGenre = null;
+		songLength = -1;
+		songTitle = null;
+		songTrack = null;
+		songYear = null;
+	}
+	
 	@Override
 	public boolean loadStream(String songName) throws IOException {
 
 		currentSong = -1;
 		description = null;
+		clearInfo();
 
 		prepared = false;
 		started = false;
@@ -231,7 +263,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			if(httpThread == null) {
 				mediaPlayer = new MediaPlayer();
 				Log.v(TAG, "Creating thread");
-				streamer = new MediaStreamer(songName , mediaPlayer);
+				streamer = new MediaStreamer(songName , mediaPlayer, true);
 				httpThread = new Thread(streamer);
 				httpThread.start();
 			}
@@ -246,10 +278,12 @@ public class MP3Plugin extends DroidSoundPlugin {
 	public boolean load(File file) throws IOException {
 		currentSong = -1;
 		description = null;
+		clearInfo();
 
 		prepared = false;
 		started = false;
 		loaded = false;
+		songLength = -1;
 
 		PlaylistParser pls = null;
 		type = "MP3";
@@ -283,7 +317,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 						if(httpThread == null) {
 							mediaPlayer = new MediaPlayer();
 							Log.v(TAG, "Creating thread");
-							streamer = new MediaStreamer(pls.getMediaList(), mediaPlayer);
+							streamer = new MediaStreamer(pls.getMediaList(), mediaPlayer, false);
 							description = pls.getDescription(0);
 							httpThread = new Thread(streamer);
 							// httpThread.setPriority(Thread.MAX_PRIORITY);
@@ -310,8 +344,19 @@ public class MP3Plugin extends DroidSoundPlugin {
 			mediaPlayer.setDataSource(file.getPath());
 			loaded = true;
 			mediaPlayer.prepare();
-			prepared = true;
+			prepared = true;			
+			mediaPlayer.start();
+			started = true;
+			
 			id3Tag = new ID3Tag(file);
+			
+			songAlbum = id3Tag.getStringInfo(ID3Tag.ID3INFO_ALBUM);
+			songTrack = id3Tag.getStringInfo(ID3Tag.ID3INFO_TRACK);
+			songGenre = id3Tag.getStringInfo(ID3Tag.ID3INFO_GENRE);
+			songComment = id3Tag.getStringInfo(ID3Tag.ID3INFO_COMMENT);
+			songTitle = id3Tag.getStringInfo(INFO_TITLE);
+			songComposer = id3Tag.getStringInfo(INFO_AUTHOR);
+			songCopyright = id3Tag.getStringInfo(INFO_COPYRIGHT);
 
 			int x = file.getPath().lastIndexOf('.');
 			String cueName = file.getPath().substring(0, x) + ".cue";
@@ -351,8 +396,9 @@ public class MP3Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void unload() {
-		// TODO Auto-generated method stub
+	public void close() {
+		Log.v(TAG, "CLOSE MP3");
+
 		started = false;
 
 		if(mediaPlayer != null) {
@@ -374,7 +420,38 @@ public class MP3Plugin extends DroidSoundPlugin {
 				counter--;
 			}
 			streamer = null;
+		}
 
+		id3Tag = null;
+		cueFile = null;
+	}
+	
+	@Override
+	public void unload() {
+		
+		Log.v(TAG, "UNLOAD MP3");
+
+		started = false;
+
+		if(mediaPlayer != null) {
+			mediaPlayer.stop();
+			mediaPlayer.release();
+			mediaPlayer = null;
+		}
+
+		if(streamer != null) {
+			streamer.quit();
+			httpThread = null;
+			int counter = 10;
+			while((!streamer.hasQuit()) && counter > 0) {
+
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+				counter--;
+			}
+			streamer = null;
 		}
 
 		id3Tag = null;
@@ -389,6 +466,11 @@ public class MP3Plugin extends DroidSoundPlugin {
 	@Override
 	public MediaPlayer getMediaPlayer() {
 		return mediaPlayer;
+	}
+	
+	@Override
+	public boolean delayedInfo() {
+		return (!started);
 	}
 
 	@Override

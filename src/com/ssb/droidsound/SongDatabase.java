@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -446,7 +447,7 @@ public class SongDatabase implements Runnable {
 					"DATE" + " INTEGER," +
 					"FORMAT" + " TEXT" + ");");
 					// "LENGTH" + " INTEGER" + 
-
+/*
 			db.execSQL("CREATE TABLE IF NOT EXISTS " + "METADATA" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"CHECKSUM" + " INTEGER," +
 					"LAST_PLAYED" + " INTEGER," +
@@ -455,7 +456,7 @@ public class SongDatabase implements Runnable {
 					"RATING" + " INTEGER," +
 					"TAGS" + " STRING," +
 					"COMMENT" + " STRING," +
-					"PLAYCOUNT" + " INTEGER" + ");");
+					"PLAYCOUNT" + " INTEGER" + ");"); */
 
 			//db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
 			//db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
@@ -1306,6 +1307,8 @@ public class SongDatabase implements Runnable {
 		}
 
 		if(pathName.startsWith("http://")) {
+			String s = URLDecoder.decode(pathName);
+			pathTitle = new File(s).getName();
 			return HttpSongSource.getFilesInPath(pathName, sorting);
 		}
 		

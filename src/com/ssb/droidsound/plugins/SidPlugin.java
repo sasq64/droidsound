@@ -227,9 +227,10 @@ public class SidPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean canHandle(String name) {
-		return name.toLowerCase().endsWith(".sid") || name.toLowerCase().endsWith(".prg");
+	public boolean canHandleExt(String ext) {
+		return ext.equals(".SID") || ext.equals(".PRG") || ext.equals(".PSID");
 	}
+	
 
 	@Override
 	public String[] getDetailedInfo() {

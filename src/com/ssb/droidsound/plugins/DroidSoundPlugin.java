@@ -10,6 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -37,8 +38,9 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_SUBTUNE_AUTHOR = 9;
 	public static final int INFO_SUBTUNE_NO = 10;
 	
-	public static final int SIZEOF_INFO = 11;
+	//public static final int SIZEOF_INFO = 11;
 
+	public static final int INFO_DETAILS_CHANGED = 15;
 	
 	
 	public static final int OPT_FILTER = 1;
@@ -143,7 +145,10 @@ public abstract class DroidSoundPlugin {
 				FileInputStream fs = new FileInputStream(f);
 				fs.read(songBuffer);
 				fs.close();
-				// f.delete();			
+				// f.delete();
+				
+				songName = new File(songName).getName();
+				
 				boolean rc = load(songName, songBuffer, fileSize);			
 				f.delete();
 				return rc;
@@ -296,6 +301,12 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public String getBaseName(String fname) {
+		
+		if(fname.startsWith("http:/")) {
+			fname = URLDecoder.decode(fname);
+		}
+		
+		
 		int slash = fname.lastIndexOf('/');
 		if(slash >= 0) {
 			fname = fname.substring(slash+1);
@@ -386,5 +397,12 @@ public abstract class DroidSoundPlugin {
 
 	public String getVersion() {
 		return "Unknown";
+	}
+
+	public boolean delayedInfo() {
+		return false;
+	}
+
+	public void close() {
 	}
 }
