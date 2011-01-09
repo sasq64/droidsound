@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.service.Player;
 import com.ssb.droidsound.utils.ID3Tag;
 import com.ssb.droidsound.utils.StreamingHttpConnection;
 
@@ -107,6 +108,8 @@ public class MediaStreamer implements Runnable {
 	private String songComment;
 	private String songCopyright;
 	private long totalFrameBytes;
+	private boolean VBR;
+	private boolean parseMp3;
 	
 	private static final int bitRateTab[] = new int [] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 	
@@ -152,7 +155,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		
 		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
 
-			boolean parseMp3 = false;
+			parseMp3 = false;
 			boolean doRetry = false;
 
 			String httpName = httpNames.get(httpNo);
@@ -461,6 +464,9 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						else
 							avgBitrate = (avgBitrate * 15 + bitRate) / 16;
 						
+						if(avgBitrate != bitRate)
+							VBR = true;
+						
 						//extraSize += 4;
 						
 						//Log.v(TAG, String.format("BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos));
@@ -679,6 +685,15 @@ V/MediaStreamer(12369): icy-metaint: 16000
 	public String[] getDetailedInfo() {
 		
 		List<String> info = new ArrayList<String>();
+		
+		info.add("Format");
+		if(parseMp3)
+			info.add("MP3 Stream");
+		else
+			info.add("Stream");
+
+		
+		
 		if(songAlbum != null && songAlbum.length() > 0) {
 			info.add("Album");
 			info.add(songAlbum);
@@ -691,10 +706,26 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			info.add("Genre");
 			info.add(songGenre);
 		}
+
+		if(bitRate != 0) {
+			info.add("Bitrate");
+			if(VBR) {
+				info.add(String.format("VBR (~%dKbit)", avgBitrate / 1000));
+			} else {
+				info.add(String.format("%dKbit", bitRate / 1000));
+			}
+		}
+
 		if(songComment != null && songComment.length() > 0) {
 			info.add("Comment");
 			info.add(songComment);
 		}
+		
+		if(contentLength > 0) {
+			info.add("Size");
+			info.add(Player.makeSize(contentLength));
+		}
+				
 		if(icyName != null) {
 			info.add("Name");
 			info.add(icyName);

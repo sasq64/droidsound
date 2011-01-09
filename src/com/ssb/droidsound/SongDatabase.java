@@ -1254,6 +1254,8 @@ public class SongDatabase implements Runnable {
 
 	private boolean doQuit;
 
+	private String currentLink;
+
 	public Playlist getCurrentPlaylist() {
 		return currentPlaylist;
 	}
@@ -1272,6 +1274,9 @@ public class SongDatabase implements Runnable {
 	
 	private static String sortOrder [] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
 
+	public String getCurrentLink() { return currentLink; }
+	public void setCurrentLink(String cl) { currentLink = cl; }
+	
 	public Cursor getFilesInPath(String pathName, int sorting) {
 		
 		if(pathName == null || !isReady) {
@@ -1297,6 +1302,7 @@ public class SongDatabase implements Runnable {
 				String p = reader.readLine();
 				reader.close();
 				if(p != null && p.length() > 0) {
+					currentLink = pathName;
 					pathName = p;
 				}
 			} catch (FileNotFoundException e) {
@@ -1309,7 +1315,7 @@ public class SongDatabase implements Runnable {
 		if(pathName.startsWith("http://")) {
 			String s = URLDecoder.decode(pathName);
 			pathTitle = new File(s).getName();
-			return HttpSongSource.getFilesInPath(pathName, sorting);
+			return HttpSongSource.getFilesInPath(context, pathName, sorting);
 		}
 		
 		File file = new File(pathName);
@@ -1480,6 +1486,34 @@ public class SongDatabase implements Runnable {
 			values.put("PATH", file.getParent());
 			values.put("FILENAME", n);
 			values.put("TYPE", TYPE_PLIST);
+			int dot = n.indexOf('.');
+			if(dot > 0) {
+				values.put("TITLE", n.substring(0, dot));
+			} else {
+				values.put("TITLE", n);
+			}
+			
+			SQLiteDatabase db = getWritableDatabase();
+			db.insert("FILES", "PATH", values);
+			db.close();
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}					
+	}
+
+	public void createLink(File file, String contents) {
+		
+		FileWriter writer;
+		String n = file.getName();
+		try {			
+			writer = new FileWriter(file);
+			writer.append(contents);
+			writer.close();
+			ContentValues values = new ContentValues();
+			values.put("PATH", file.getParent());
+			values.put("FILENAME", n);
+			values.put("TYPE", TYPE_DIR);
 			int dot = n.indexOf('.');
 			if(dot > 0) {
 				values.put("TITLE", n.substring(0, dot));

@@ -169,7 +169,7 @@ public class Player implements Runnable {
 		return file;
 	}
 
-	private static String makeSize(long fileSize) {
+	public static String makeSize(long fileSize) {
 		String s;
 		if(fileSize < 10 * 1024) {
 			s = String.format("%1.1fKB", (float) fileSize / 1024F);
@@ -325,6 +325,7 @@ public class Player implements Runnable {
 				if(streamName != null) {
 					try {
 						songLoaded = plugin.loadStream(streamName);
+						fileSize = plugin.getStreamSize();
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -333,7 +334,7 @@ public class Player implements Runnable {
 						songLoaded = plugin.load(songFile);
 					} catch (IOException e) {
 					}
-				} else {
+				} else if(songBuffer != null) {
 					songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
 					if(songLoaded)
 						plugin.calcMD5(songBuffer, (int) fileSize);
@@ -350,18 +351,19 @@ public class Player implements Runnable {
 			if(currentPlugin == null) {
 				for(DroidSoundPlugin plugin : plugins) {
 					if(!plugin.canHandle(song.getName())) {
-						if(streamName != null) {
+						/* if(streamName != null) {
 							try {
 								songLoaded = plugin.loadStream(streamName);
+								fileSize = plugin.getStreamSize();
 							} catch (IOException e) {
 								e.printStackTrace();
 							}
-						} else if(songFile != null) {
+						} else  */ if(songFile != null) {
 							try {
 								songLoaded = plugin.load(songFile);
 							} catch (IOException e) {
 							}
-						} else {
+						} else if(songBuffer != null) {
 							songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
 							if(songLoaded)
 								plugin.calcMD5(songBuffer, (int) fileSize);
@@ -432,7 +434,7 @@ public class Player implements Runnable {
 					if(currentPlugin.delayedInfo()) {
 						currentSong.title = null;
 					} else {					
-						String basename = currentPlugin.getBaseName(song.getName());
+						String basename = currentPlugin.getBaseName(currentSong.fileName);
 						
 						
 						int sep = basename.indexOf(" - ");
@@ -1008,9 +1010,11 @@ public class Player implements Runnable {
 
 	public void setBufSize(int bs) {
 		synchronized (cmdLock) {
-			bufSize = bs;
-			Log.v(TAG, "Buffersize now " + bs);
-			reinitAudio = true;
+			if(bufSize != bs) {
+				bufSize = bs;
+				Log.v(TAG, "Buffersize now " + bs);
+				reinitAudio = true;
+			}
 		}
 	}
 

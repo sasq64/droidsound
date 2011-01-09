@@ -17,6 +17,15 @@ public class HivelyPlugin extends DroidSoundPlugin {
 		return name.toUpperCase().endsWith(".HVL") || name.toUpperCase().endsWith(".AHX");
 	}
 	
+	
+	@Override
+	public String[] getDetailedInfo() {
+		String[] info = new String[2];
+		info[0] = "Format";
+		info[1] = "Hively/AHX";
+		return info;
+	}
+	
 	@Override
 	public int getIntInfo(int what) {
 		return 0;

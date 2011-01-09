@@ -278,10 +278,10 @@ public class ModPlugin extends DroidSoundPlugin {
 		} else {
 			info = new String [4];
 		}
-		info[0] = "Channels";
-		info[1] = Integer.toString(channels);
-		info[2] = "Format";
-		info[3] = fmt;
+		info[0] = "Format";
+		info[1] = "MODPlug: " + fmt;
+		info[2] = "Channels";
+		info[3] = Integer.toString(channels);
 		return info;
 	}
 	

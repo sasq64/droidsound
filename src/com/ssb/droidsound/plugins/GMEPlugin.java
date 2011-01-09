@@ -46,7 +46,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
 		if(s != null & s.length() > 0) {
 			list.add("Format");
-			list.add(s);
+			list.add("GME: " + s);
 		}
 		s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
 		if(s != null & s.length() > 0) {

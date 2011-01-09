@@ -2,6 +2,7 @@ package com.ssb.droidsound;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.text.Html;
+import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -708,7 +710,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			public void onReceive(Context context, Intent intent) {
 				// TODO Auto-generated method stub
 
-				if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
+				if(intent.getAction().equals("com.sddb.droidsound.REQUERY")) {
+					Log.v(TAG, "REQUERY");
+					//playListView.rescan();
+					setDirectory(playListView);
+				}
+				else if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
 					Log.v(TAG, "Open done!");
 
 					String s = prefs.getString("indexing", "Basic");
@@ -759,6 +766,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		};
 
 		IntentFilter filter = new IntentFilter();
+		filter.addAction("com.sddb.droidsound.REQUERY");
 		filter.addAction("com.sddb.droidsound.OPEN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_UPDATE");
@@ -1954,6 +1962,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					case 1:
 						showDialog(R.string.name_playlist);
 						break;
+					case 2:
+						showDialog(R.string.name_link);
+						break;
 					}
 				}
 			});
@@ -1966,6 +1977,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case R.string.name_playlist:
 			final EditText input = new EditText(this);
+			input.setInputType(InputType.TYPE_CLASS_TEXT);
 			// builder.setTitle(id);
 			builder.setView(input);
 			builder.setMessage(id);
@@ -1988,8 +2000,42 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			});
 			break;
+		case R.string.name_link:
+			final EditText input3 = new EditText(this);
+			input3.setHint("http://");
+			input3.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+			// builder.setTitle(id);
+			builder.setView(input3);
+			builder.setMessage(id);
+			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					String s = input3.getText().toString();
+					if(!s.startsWith("http://"))
+						s = "http://" + s;
+					try {
+						URL url = new URL(s);
+						Log.v(TAG, String.format("'%s', '%s', '%s'",url.toString(), url.getProtocol(), url.getFile()));
+						File file = new File(currentPath, url.getHost() + ".lnk");
+						if(!file.exists()) {							
+							songDatabase.createLink(file, url.toString());
+							playListView.rescan();
+						}
+					} catch (MalformedURLException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.cancel();
+				}
+			});
+			break;
 		case R.string.name_folder:
 			final EditText input2 = new EditText(this);
+			input2.setInputType(InputType.TYPE_CLASS_TEXT);
 			builder.setView(input2);
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {

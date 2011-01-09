@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -178,6 +179,10 @@ public class UADEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public String getBaseName(String name) {
+
+		if(name.startsWith("http:/")) {
+			name = URLDecoder.decode(name);
+		}
 				
 		name = name.substring(name.lastIndexOf('/')+1);
 		

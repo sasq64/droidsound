@@ -29,6 +29,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		protected int sidModel = 0;
 		protected int startSong = 1;
 		protected int songs = 1;
+		protected String format;
 	};
 	
 	final byte [] header = new byte [128];
@@ -202,6 +203,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		if(name.toLowerCase().endsWith(".prg")) {
 			songInfo.name = name;
 			Log.v(TAG, "######################## PRG LOAD OK");
+			songInfo.format = "PRG";
 			return true;
 		}
 		
@@ -211,6 +213,8 @@ public class SidPlugin extends DroidSoundPlugin {
 		if (! (s.equals("PSID") || s.equals("RSID"))) {
 			return false;
 		}
+		
+		songInfo.format = s;
 
 		songInfo.name = new String(header, 0x16, 0x20, "ISO-8859-1").replaceAll("\0", "");
 		songInfo.composer = new String(header, 0x36, 0x20, "ISO-8859-1").replaceAll("\0", "");
@@ -237,6 +241,8 @@ public class SidPlugin extends DroidSoundPlugin {
 		final String sids[] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
 		final String videoModes[] = { "UNKNOWN", "PAL", "NTSC", "PAL & NTSC" };
 		return new String[] {
+			"Format",
+			songInfo.format,
 			"Copyright",
 			songInfo.copyright,
 			"SID Model",

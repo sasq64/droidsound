@@ -64,6 +64,8 @@ public abstract class DroidSoundPlugin {
 
 	private byte[] md5;
 
+	private int streamSize;
+
 	
 	
 	// Called when player thread exits due to inactivty
@@ -137,19 +139,20 @@ public abstract class DroidSoundPlugin {
 				bos.flush();
 				bos.close();
 	
-				int fileSize = (int) f.length();
+				streamSize = (int) f.length();
 	
-				Log.v(TAG, "Bytes written: " + fileSize);
+				Log.v(TAG, "Bytes written: " + streamSize);
 	
-				byte [] songBuffer = new byte[(int) fileSize];
+				byte [] songBuffer = new byte[(int) streamSize];
 				FileInputStream fs = new FileInputStream(f);
 				fs.read(songBuffer);
 				fs.close();
 				// f.delete();
 				
-				songName = new File(songName).getName();
+				//songName = new File(songName).getName();
 				
-				boolean rc = load(songName, songBuffer, fileSize);			
+				//boolean rc = load(songName, songBuffer, streamSize);
+				boolean rc = load(f);
 				f.delete();
 				return rc;
 			}
@@ -160,6 +163,8 @@ public abstract class DroidSoundPlugin {
 		}
 		return false;
 	}
+	
+	public int getStreamSize() { return streamSize; }
 	
 	public boolean load(String name, InputStream is, int size) throws IOException {
 		Log.v(TAG, "PLUGIN LOAD STREAM");

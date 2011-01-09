@@ -67,6 +67,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		Log.v(TAG, "getDetailedInfo");
 		List<String> info = new ArrayList<String>();
+		
+		info.add("Format");
+		info.add("MP3");
+		
 		if(songAlbum != null && songAlbum.length() > 0) {
 			info.add("Album");
 			info.add(songAlbum);
