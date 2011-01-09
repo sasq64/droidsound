@@ -26,8 +26,8 @@ jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
-static jfieldID refField;
-static jfieldID tagRefField;
+static jfieldID refField = NULL;
+static jfieldID tagRefField = NULL;
 
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_utils_ID3Tag_openID3Tag(JNIEnv *env, jobject obj, jstring fileName)
@@ -62,6 +62,8 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_ID3Tag_closeID3Tag(JNIEnv *
 {
 	struct id3_file *id3file = (struct id3_file*)env->GetLongField(obj, refField);
 	struct id3_tag *tag = (struct id3_tag*)env->GetLongField(obj, tagRefField);
+	if(tag)
+		id3_tag_delete(tag);
 	if(id3file)
 		id3_file_close(id3file);
 
@@ -171,6 +173,13 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_ID3Tag_checkForTag(JNIEnv *
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_utils_ID3Tag_parseTag(JNIEnv *env, jobject obj, jbyteArray bArray, jint offset, jint size)
 {
+
+	if(tagRefField != NULL) {
+		struct id3_tag *tag = (struct id3_tag*)env->GetLongField(obj, tagRefField);
+		if(tag)
+			id3_tag_delete(tag);
+	}
+
 	jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
 
 	const id3_byte_t*cptr = (const id3_byte_t*)(ptr + offset);
@@ -188,7 +197,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_utils_ID3Tag_parseTag(JNIEnv 
 
 	cl = env->GetObjectClass(obj);
 	refField = env->GetFieldID(cl, "id3Ref", "J");
-	env->SetLongField(obj, tagRefField, (jlong)0);
+	env->SetLongField(obj, refField, (jlong)0);
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
 

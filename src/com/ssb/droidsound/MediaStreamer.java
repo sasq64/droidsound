@@ -361,15 +361,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				id3.parseTag(tagBuffer, 0, tagFilled);
 				songComposer = id3.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
 				songTitle = id3.getStringInfo(DroidSoundPlugin.INFO_TITLE);
-
 				songAlbum = id3.getStringInfo(ID3Tag.ID3INFO_ALBUM);
 				songTrack = id3.getStringInfo(ID3Tag.ID3INFO_TRACK);
 				songGenre = id3.getStringInfo(ID3Tag.ID3INFO_GENRE);
 				songComment = id3.getStringInfo(ID3Tag.ID3INFO_COMMENT);
 				songCopyright = id3.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
 
-				
-				
 				//songLength  = id3.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 				Log.v(TAG, String.format(">>>>>>>>>>>>>>>>> ID3:  %s by %s", songComposer, songComposer));
 				tagSize = tagFilled = 0;

@@ -1,7 +1,0 @@
-source type (c)
-    "ciacore.c",
-    "ciatimer.c",
-    "flash040core.c",
-    "riotcore.c",
-    "tpicore.c",
-    "viacore.c"
