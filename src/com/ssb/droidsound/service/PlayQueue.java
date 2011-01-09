@@ -232,7 +232,7 @@ public class PlayQueue {
 
 	public int setCurrent(SongFile song) {
 		for(int i=0; i<musicList.size(); i++) {
-			Log.v(TAG, String.format("CMP %s to %s", musicList.get(i).getPath(), song.getPath()));
+			//Log.v(TAG, String.format("CMP %s to %s", musicList.get(i).getPath(), song.getPath()));
 			if(musicList.get(i).getPath().equals(song.getPath())) {
 				musicListPos = i;
 				return i;

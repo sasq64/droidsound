@@ -3,6 +3,7 @@ package com.ssb.droidsound;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ public class HttpSongSource {
 	
 	private static String htmlFix(String s) {
 
+		if(s == null) return s;
+		
 		int a = 0;
 		int start = 0;
 		StringBuilder sb = new StringBuilder();
@@ -142,7 +145,7 @@ public class HttpSongSource {
 		private void getDirFromHTTP(String pathName) {
 			
 			MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
-
+			String msg = null;
 			try {
 				URL url = new URL(pathName);		
 				URLConnection conn = url.openConnection();
@@ -199,6 +202,10 @@ public class HttpSongSource {
 							 TagNode atag = (TagNode) links[i];
 							 String href = atag.getAttributeByName("href");
 							 String text = atag.getText().toString();
+							 
+							 if(href == null || text == null)
+								 continue;
+							 
 							 Log.v(TAG, String.format("Found link to '%s' named '%s'", href, text));
 							 
 							 String title = htmlFix(text);
@@ -219,28 +226,40 @@ public class HttpSongSource {
 										 cursor.addRow(new Object [] { title, type, path, fileName } );
 								 }
 							 }
-						 }
-						 
-						 synchronized (dirMap) {
-							 dirMap.put(pathName, cursor);							
-						 }
-						 
-						Intent intent = new Intent("com.sddb.droidsound.REQUERY");
-						context.sendBroadcast(intent);						 
+						 }						
 
 					} catch (XPatherException e) {
 						// TODO Auto-generated catch block
+						msg = "<HTML parsing failed>";
 						e.printStackTrace();
 					}
 
 				} else {
+					msg = "<Connection failed>";
 					Log.v(TAG, String.format("Connection failed: %d", response));
 				}
+			} catch (MalformedURLException me) {
+				msg = "<Illegal URL>";
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				msg = "<IO Error>";
 			}
+			
+			if(msg != null) {
+				cursor.addRow(new Object [] { msg, SongDatabase.TYPE_FILE, "", "" } );
+				msg = null;
+			}
+			
+			 synchronized (dirMap) {
+				 dirMap.put(pathName, cursor);							
+			 }
+			 
+			Intent intent = new Intent("com.sddb.droidsound.REQUERY");
+			context.sendBroadcast(intent);
 		}
+		
+		
 	}
 	
 	

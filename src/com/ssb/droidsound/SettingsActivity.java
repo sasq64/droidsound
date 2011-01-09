@@ -22,6 +22,9 @@ import android.preference.PreferenceScreen;
 import android.util.Log;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.plugins.SidPlugin;
+import com.ssb.droidsound.plugins.SidplayPlugin;
+import com.ssb.droidsound.plugins.VICEPlugin;
 
 public class SettingsActivity extends PreferenceActivity {
 
@@ -134,41 +137,6 @@ public class SettingsActivity extends PreferenceActivity {
 
 		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
 		String appName = getString(pinfo.applicationInfo.labelRes);
-
-		
-		PreferenceScreen abScreen = (PreferenceScreen) findPreference("about_prefs");
-
-		if(abScreen != null) {
-			PreferenceCategory pc = new PreferenceCategory(this);
-			pc.setTitle("Droidsound");
-			abScreen.addPreference(pc);
-	
-			p = new Preference(this);
-			p.setTitle("Application");
-			p.setSummary(String.format("%s v%s", appName, pinfo.versionName));		
-			abScreen.addPreference(p);
-	
-			pc = new PreferenceCategory(this);
-			pc.setTitle("Plugins");
-			abScreen.addPreference(pc);
-	
-			for(DroidSoundPlugin pl : list) {
-				
-				p = new Preference(this);
-				p.setTitle(pl.getClass().getSimpleName());
-				p.setSummary(pl.getVersion());		
-				abScreen.addPreference(p);
-			}
-			
-			pc = new PreferenceCategory(this);
-			pc.setTitle("Other");
-			abScreen.addPreference(pc);
-
-			p = new Preference(this);
-			p.setTitle("Icons");
-			p.setSummary("G-Flat SVG by poptones");		
-			abScreen.addPreference(p);
-		}
 			
 		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");
 		
@@ -201,6 +169,46 @@ public class SettingsActivity extends PreferenceActivity {
 				}
 			}
 		}
+		
+		list.add(new SidplayPlugin());
+		list.add(new VICEPlugin());
+				
+		PreferenceScreen abScreen = (PreferenceScreen) findPreference("about_prefs");
+
+		if(abScreen != null) {
+			PreferenceCategory pc = new PreferenceCategory(this);
+			pc.setTitle("Droidsound");
+			abScreen.addPreference(pc);
+	
+			p = new Preference(this);
+			p.setTitle("Application");
+			p.setSummary(String.format("%s v%s", appName, pinfo.versionName));		
+			abScreen.addPreference(p);
+	
+			pc = new PreferenceCategory(this);
+			pc.setTitle("Plugins");
+			abScreen.addPreference(pc);
+	
+			for(DroidSoundPlugin pl : list) {
+				if(pl instanceof SidPlugin) {					
+				} else {
+					p = new Preference(this);
+					p.setTitle(pl.getClass().getSimpleName());
+					p.setSummary(pl.getVersion());		
+					abScreen.addPreference(p);
+				}
+			}
+			
+			pc = new PreferenceCategory(this);
+			pc.setTitle("Other");
+			abScreen.addPreference(pc);
+
+			p = new Preference(this);
+			p.setTitle("Icons");
+			p.setSummary("G-Flat SVG by poptones");		
+			abScreen.addPreference(p);
+		}
+
 	}
 	
 	@Override

@@ -167,9 +167,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 		return true; 
 	}
 
-
-
-
 	@Override
 	public int getIntInfo(int what) {
 		throw new RuntimeException();
@@ -179,5 +176,9 @@ public class VICEPlugin extends DroidSoundPlugin {
 	public String getStringInfo(int what) {
 		throw new RuntimeException();
 	}
-
+	
+	@Override
+	public String getVersion() {
+		return "VICE 2.2.10-r23402, reSID 1.0-pre1";
+	}
 }

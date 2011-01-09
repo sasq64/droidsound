@@ -40,6 +40,22 @@ static jstring NewString(JNIEnv *env, unsigned char *str)
 static bool videomode_is_ntsc;
 static bool videomode_is_forced;
 
+static void c64_song_init()
+{
+	/* Set default, potentially overridden by reset. */
+	resources_set_int("MachineVideoStandard", videomode_is_ntsc ? MACHINE_SYNC_NTSC : MACHINE_SYNC_PAL);
+	/* Default to 6581 in case tune doesn't specify. */
+	resources_set_int("SidModel", 0);
+
+	/* Reset C64, which also initializes PSID for us. */
+	machine_trigger_reset(MACHINE_RESET_MODE_SOFT);
+
+	/* Now force video mode if we are asked to. */
+	if (videomode_is_forced) {
+		resources_set_int("MachineVideoStandard", videomode_is_ntsc ? MACHINE_SYNC_NTSC : MACHINE_SYNC_PAL);
+	}
+}
+
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1setOption(JNIEnv *env, jclass cl, jint what, jint val)
 {
 	__android_log_print(ANDROID_LOG_VERBOSE, "VICEPlugin", "Setting %d to %d", what, val);
@@ -72,20 +88,9 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1loadFile
 	    return NewString(env, (unsigned char *) "failure code from psid_load_file()");
         }
 
-	/* Set default, potentially overridden by reset. */
-	resources_set_int("MachineVideoStandard", videomode_is_ntsc ? MACHINE_SYNC_NTSC : MACHINE_SYNC_PAL);
-	/* Default to 6581 in case tune doesn't specify. */
-	resources_set_int("SidModel", 0);
+        c64_song_init();
 
-	/* Reset C64, which also initializes PSID for us. */
-	machine_trigger_reset(MACHINE_RESET_MODE_SOFT);
-
-	/* Now force video mode if we are asked to. */
-	if (videomode_is_forced) {
-		resources_set_int("MachineVideoStandard", videomode_is_ntsc ? MACHINE_SYNC_NTSC : MACHINE_SYNC_PAL);
-	}
-
-	return 0;
+        return 0;
 }
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1unload(JNIEnv *env, jclass cl)
@@ -107,7 +112,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1getSoundDat
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1setTune(JNIEnv *env, jclass cl, jint tune)
 {
 	psid_set_tune(tune);
-	machine_trigger_reset(MACHINE_RESET_MODE_SOFT);
+        c64_song_init();
 	return true;
 }
 

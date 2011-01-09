@@ -742,7 +742,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			info.add("Genre");
 			info.add(icyGenre);
 		}
-		if(icyBitrate != null) {
+		if(bitRate == 0 && icyBitrate != null) {
 			info.add("Bitrate");
 			info.add(icyBitrate);
 		}

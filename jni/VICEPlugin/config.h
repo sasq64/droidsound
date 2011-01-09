@@ -683,9 +683,6 @@
 /* The current arch, cpu and compiler used. */
 /* #undef PLATFORM */
 
-/* Where do we want to install the executable? */
-#define PREFIX "/usr/local"
-
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void
 
