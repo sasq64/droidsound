@@ -16,6 +16,8 @@ interface IPlayerService {
 	boolean seekTo(int msec);
 	void stop();
 	
+	boolean dumpWav(String modName, String destFile, int length, int flags);
+	
 	String [] getSongInfo();
 	byte [] getSongMD5();
 	

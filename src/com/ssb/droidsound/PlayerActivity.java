@@ -21,6 +21,7 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.app.SearchManager;
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -31,11 +32,13 @@ import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.media.AudioManager;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.PowerManager;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.speech.tts.TextToSpeech;
 import android.text.Html;
 import android.text.InputType;
@@ -235,6 +238,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private SongFile clipBoardFile;
 
 	private boolean backPressed;
+
+	private int dumpingWav = 0;
 	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
@@ -1739,6 +1744,35 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			break; */
 		case PlayerService.SONG_FILENAME:
+			
+			if(dumpingWav > 0 && value.endsWith("RINGTONE.WAV")) {
+				
+				File f = new File(value);
+				
+				Log.v(TAG, String.format("SETTING RINGTONE %s %d", value, f.length()));
+				
+				ContentValues values = new ContentValues();
+				values.put(MediaStore.MediaColumns.DATA, value);
+				values.put(MediaStore.MediaColumns.TITLE, "Droidsound Ringtone");
+				values.put(MediaStore.MediaColumns.SIZE, f.length());
+				values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/wav");
+				values.put(MediaStore.Audio.Media.ARTIST, "Droidsound");
+				values.put(MediaStore.Audio.Media.DURATION, dumpingWav/1000);
+				values.put(MediaStore.Audio.Media.IS_RINGTONE, true);
+				values.put(MediaStore.Audio.Media.IS_NOTIFICATION, false);
+				values.put(MediaStore.Audio.Media.IS_ALARM, false);
+				values.put(MediaStore.Audio.Media.IS_MUSIC, false);
+
+				//Insert it into the database
+				Uri uri = MediaStore.Audio.Media.getContentUriForPath(value);
+				Uri newUri = getContentResolver().insert(uri, values);
+				getContentResolver().update(uri, values, String.format("%s = 'Droidsound Ringtone'", MediaStore.MediaColumns.TITLE), null);
+
+				RingtoneManager.setActualDefaultRingtoneUri( PlayerActivity.this, RingtoneManager.TYPE_RINGTONE, newUri);
+				
+			}
+			dumpingWav = 0;
+			
 			songFile = new SongFile(value);
 			String path = songFile.getFile().getPath();
 			playListView.setHilighted(value);
@@ -1868,6 +1902,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		AlertDialog ad = ((AlertDialog) dialog);
 
 		switch(id) {
+		case R.string.make_wav:
 		case R.string.do_del_dir:
 		case R.string.do_del_file:
 		case R.string.do_del_plist:
@@ -2289,6 +2324,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						operationFile.delete();
 						setDirectory(null);
 					}
+				}
+			});
+			break;
+
+		case R.id.make_wav:
+			operationFile = file;
+			runConfirmable(R.string.do_make_wav, new Runnable() {
+				@Override
+				public void run() {
+					File file = new File("/sdcard/droidsound/RINGTONE.WAV");
+					dumpingWav = 10000;
+					player.dumpWav(operationFile.getPath(), file.getPath(), dumpingWav, 0);
 				}
 			});
 			break;

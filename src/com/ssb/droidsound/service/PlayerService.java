@@ -288,6 +288,9 @@ public class PlayerService extends Service {
         	//Log.v(TAG, String.format("Got msg %d with arg %s", msg.what, (String)msg.obj));
 			String [] sa;
             switch (msg.what) {
+            	case Player.MSG_WAVDUMPED:
+            		performCallback(SONG_FILENAME);
+            		break;
             	case Player.MSG_DETAILS:
             		sa = (String [])msg.obj;
             		info[SONG_DETAILS] = "DETAILS";
@@ -1178,6 +1181,19 @@ public class PlayerService extends Service {
 		public byte[] getSongMD5() throws RemoteException {
 
 			return currentSongInfo.md5;
+		}
+
+		@Override
+		public boolean dumpWav(String modName, String destFile, int length, int flags) throws RemoteException {
+			// TODO Auto-generated method stub
+			
+			createThread();
+			info[SONG_FILENAME] = modName;
+			SongFile song = new SongFile(modName);
+			//beforePlay(song.getName());			
+			player.dumpWav(song, destFile, length, flags);
+			
+			return false;
 		}
 
 		};

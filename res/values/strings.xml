@@ -21,10 +21,11 @@
 <string name="del_dir">Delete</string>
 <string name="del_file">Delete</string>
 <string name="del_plist">Delete</string>
+<string name="make_wav">Dump WAV file</string>
 <string name="do_del_plist">Really delete playlist?</string>
 <string name="do_del_dir">Really delete directory?</string>
 <string name="do_del_file">Really delete file?</string>
-
+<string name="do_make_wav">Really Dump WAV file?</string>
 <string name="rescan">Rescan</string>
 <string name="abort_scan">Abort scan</string>
 <string name="about">About</string>

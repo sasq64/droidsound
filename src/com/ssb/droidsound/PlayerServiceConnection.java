@@ -238,6 +238,16 @@ public class PlayerServiceConnection implements ServiceConnection {
 		}
 		return null;
 	}
+
+	public boolean dumpWav(String modName, String destFile, int length, int flags) {
+		try {
+			return mService.dumpWav(modName, destFile, length, flags);
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
 	
 	
 

@@ -9,6 +9,9 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -43,6 +46,7 @@ public class Player implements Runnable {
 		STOP, // Unload and stop if playing
 		PLAY, // Play new file or last file
 		PLAY_MULTIPLE,
+		DUMP_WAV,
 		// Only when Playing:
 		PAUSE, UNPAUSE, SET_POS, SET_TUNE,
 	};
@@ -55,6 +59,7 @@ public class Player implements Runnable {
 	public static final int MSG_SUBTUNE = 5;
 	public static final int MSG_DETAILS = 6;
 	public static final int MSG_INFO = 7;
+	protected static final int MSG_WAVDUMPED = 8;
 
 	// public static final int MSG_SUBTUNE = 5;
 
@@ -188,6 +193,98 @@ public class Player implements Runnable {
 		startSong(song);
 	}
 
+	private void dumpWav(SongFile song, File outFile, int length, int flags) throws IOException {
+		
+		Log.v(TAG, "IN DUMP WAV");
+		
+		startSong(song);
+		
+		audioTrack.stop();
+		audioTrack.flush();
+
+		
+		int frames = 0;
+		int msec = 0;
+		
+		byte [] bbuffer = new byte [bufSize];
+		
+		FileOutputStream fos = new FileOutputStream(outFile);
+		BufferedOutputStream bos = new BufferedOutputStream(fos, bufSize);
+
+		int numSamples = (int)(((long)length * FREQ) / 1000);
+		Log.v(TAG, String.format("%d msec => %d samples", length, numSamples));
+
+		int numChannels = 1;
+		
+		// the /2 halves the frequency
+		
+		int freq = FREQ/2;
+		
+		int dataSize = numSamples/2 * numChannels * 16/8;
+		
+		byte [] barray = new byte [128];
+		ByteBuffer bb = ByteBuffer.wrap(barray);
+		bb.order(ByteOrder.LITTLE_ENDIAN);
+		bb.put(new byte[] { 'R', 'I', 'F', 'F' });
+		bb.putInt(36 + dataSize);
+		bb.put(new byte[] { 'W', 'A', 'V', 'E' });
+		bb.put(new byte[] { 'f', 'm', 't', ' ' });
+		bb.putInt(16);
+		bb.putShort((short) 1);
+		bb.putShort((short) numChannels);
+		bb.putInt(freq);
+		bb.putInt(freq * numChannels * 16/8);
+		bb.putShort((short) (numChannels * 16/8));
+		bb.putShort((short) 16);
+
+		bb.put(new byte[] { 'd', 'a', 't', 'a' });
+		bb.putInt(36 + dataSize);
+		
+		bos.write(barray, 0, bb.position());
+		
+		numSamples *= 2;
+
+		while(frames < numSamples) {
+			// In and out are number of shorts, not number of samles (2 bytes vs 4 bytes in 16bit stereo)
+			int len = currentPlugin.getSoundData(samples, bufSize / 16);
+			Log.v(TAG, String.format("READ %d (%d)", len, bufSize));
+			if(len < 0) break;
+						
+			frames += len;
+			
+			Log.v(TAG, String.format("%d vs %d frames", length, frames));
+			
+			if(frames > numSamples)
+				len = frames - numSamples;
+			
+			int j = 0;
+			int i = 0;
+			while(i < len) {
+				short avg = (short) (((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]) / 4);
+				i += 4;
+				bbuffer[j++] = (byte) (avg&0xff);
+				bbuffer[j++] = (byte) ((avg>>8)&0xff);
+			}			
+			bos.write(bbuffer, 0, j);			
+		}
+		bos.flush();
+		bos.close();
+				
+		if(reinitAudio) {
+			audioTrack.release();
+			audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
+					AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize,
+					AudioTrack.MODE_STREAM);
+			samples = new short[bufSize / 2];
+			reinitAudio = false;
+		}
+
+		currentPlugin.unload();		
+		currentPlugin = null;
+		currentState = State.STOPPED;
+	}
+
+	
 	private void startSong(SongFile song) {
 
 		if(currentPlugin != null) {
@@ -570,6 +667,19 @@ public class Player implements Runnable {
 							Log.v(TAG, "Playmod " + song.getName());
 							startSong(song);
 							break;
+						case DUMP_WAV:
+							Object [] args = (Object []) argument;
+							SongFile song2 = (SongFile) args[0];
+							File outFile = (File) args[1];
+							int len = (Integer) args[2];
+							int flags = (Integer) args[3];
+							Log.v(TAG, "DUMP WAV " + song2.getName());
+							try {
+								dumpWav(song2, outFile, len, flags);
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
+							break;
 						case STOP:
 							if(currentState != State.STOPPED) {
 								// audioTrack.pause();
@@ -697,7 +807,7 @@ public class Player implements Runnable {
 				 * Always feed track - play zeroes after song ends Report song
 				 * end at correct time
 				 */
-
+				
 				if(currentState == State.PLAYING) {
 					// Log.v(TAG, "Get sound data");
 					int len = 0;
@@ -1016,6 +1126,14 @@ public class Player implements Runnable {
 				reinitAudio = true;
 			}
 		}
+	}
+
+	public void dumpWav(SongFile song, String destFile, int length, int flags) {
+		synchronized (cmdLock) {
+			command = Command.DUMP_WAV;
+			argument = new Object [] {song, new File(destFile), length, flags};
+		}
+		
 	}
 
 }

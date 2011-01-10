@@ -4,6 +4,7 @@
 	<group android:id="@+id/on_file">
 		<item android:id="@+id/go_dir" android:title="@string/go_to_dir" />
 		<item android:id="@+id/del_file" android:title="@string/del_file" />
+		<item android:id="@+id/make_wav" android:title="@string/make_wav" />
 	</group>
 	<group android:id="@+id/on_dir">
 		<item android:id="@+id/del_dir" android:title="@string/del_dir" />
