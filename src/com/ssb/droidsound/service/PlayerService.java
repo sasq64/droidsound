@@ -289,7 +289,9 @@ public class PlayerService extends Service {
 			String [] sa;
             switch (msg.what) {
             	case Player.MSG_WAVDUMPED:
+            		info[SONG_FILENAME] = msg.obj;
             		performCallback(SONG_FILENAME);
+            		info[SONG_FILENAME] = null;
             		break;
             	case Player.MSG_DETAILS:
             		sa = (String [])msg.obj;

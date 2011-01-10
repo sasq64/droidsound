@@ -360,6 +360,19 @@ public class PlayListView extends ListView { //extends TouchListView {
 			return f;
 		}
 
+		public String getPath(int position) {
+			mCursor.moveToPosition(position);
+			String s;
+			String fileName = mCursor.getString(mFileIndex);			
+			if(mPathIndex >= 0) {
+				s = mCursor.getString(mPathIndex) + "/" + fileName;
+			} else {
+				s = pathName + "/" + fileName;
+			}
+			return s;
+		}
+
+
 		@Override
 		public int getCount() {
 			if(mCursor == null)
@@ -593,6 +606,10 @@ public class PlayListView extends ListView { //extends TouchListView {
 
 	public FileInfo [] getFiles(boolean b) {
 		return adapter.getFiles(b);
+	}
+
+	public String getPath(int position) {
+		return adapter.getPath(position);
 	}
 
 	

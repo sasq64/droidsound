@@ -62,6 +62,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewFlipper;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
@@ -192,6 +193,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int songState;
 
 	private File operationFile;
+	private SongFile operationSong;
 
 	private TextView shuffleText;
 
@@ -1745,7 +1747,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break; */
 		case PlayerService.SONG_FILENAME:
 			
-			if(dumpingWav > 0 && value.endsWith("RINGTONE.WAV")) {
+			Log.v(TAG, String.format("DW %d, value '%s'", dumpingWav, value));
+			if(dumpingWav > 0) { //&& value.endsWith("RINGTONE.WAV")) {
 				
 				File f = new File(value);
 				
@@ -1755,7 +1758,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				values.put(MediaStore.MediaColumns.DATA, value);
 				values.put(MediaStore.MediaColumns.TITLE, "Droidsound Ringtone");
 				values.put(MediaStore.MediaColumns.SIZE, f.length());
-				values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/wav");
+				values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/x-wav");
 				values.put(MediaStore.Audio.Media.ARTIST, "Droidsound");
 				values.put(MediaStore.Audio.Media.DURATION, dumpingWav/1000);
 				values.put(MediaStore.Audio.Media.IS_RINGTONE, true);
@@ -1765,10 +1768,33 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 				//Insert it into the database
 				Uri uri = MediaStore.Audio.Media.getContentUriForPath(value);
-				Uri newUri = getContentResolver().insert(uri, values);
-				getContentResolver().update(uri, values, String.format("%s = 'Droidsound Ringtone'", MediaStore.MediaColumns.TITLE), null);
+				Uri newUri = null;
+				Log.v(TAG, "URI " + uri.toString());
+				try {
+					int rows = getContentResolver().delete(uri, String.format("%s = 'Droidsound Ringtone'", MediaStore.MediaColumns.TITLE), null);
+					Log.v(TAG, "ROWS " + rows);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				try {
+					newUri = getContentResolver().insert(uri, values);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				if(newUri == null) {
+					int rows = getContentResolver().update(uri, values, String.format("%s = 'Droidsound Ringtone'", MediaStore.MediaColumns.TITLE), null);
+					Log.v(TAG, "UPDATE ROWS " + rows);
+					newUri = uri;
+				} else {
+					Log.v(TAG, "NEWURI " + uri.getPath());
+				}
 
-				RingtoneManager.setActualDefaultRingtoneUri( PlayerActivity.this, RingtoneManager.TYPE_RINGTONE, newUri);
+				RingtoneManager.setActualDefaultRingtoneUri(PlayerActivity.this, RingtoneManager.TYPE_RINGTONE, newUri);
+				
+				Toast toast = Toast.makeText(this, R.string.ringtone_set, Toast.LENGTH_LONG);
+				toast.show();
+				dumpingWav = 0;
+				break;
 				
 			}
 			dumpingWav = 0;
@@ -2247,6 +2273,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// playListView.getItemAtPosition(info.position);
 		// Cursor cursor = playListView.getCursor(info.position);
 		File file = currentPlaylistView.getFile(info.position);
+		operationSong = new SongFile(currentPlaylistView.getPath(info.position));
 		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id));
 		// int pi = cursor.getColumnIndex("PATH");
 		// String path = playListView.getDirectory();
@@ -2329,13 +2356,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 
 		case R.id.make_wav:
-			operationFile = file;
+			//operationSong = song;
 			runConfirmable(R.string.do_make_wav, new Runnable() {
 				@Override
 				public void run() {
 					File file = new File("/sdcard/droidsound/RINGTONE.WAV");
-					dumpingWav = 10000;
-					player.dumpWav(operationFile.getPath(), file.getPath(), dumpingWav, 0);
+					dumpingWav = 30000;
+					player.dumpWav(operationSong.getPath(), file.getPath(), dumpingWav, 1);
 				}
 			});
 			break;

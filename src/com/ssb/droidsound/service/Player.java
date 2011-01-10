@@ -2,16 +2,11 @@ package com.ssb.droidsound.service;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +21,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
-import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
@@ -190,14 +184,14 @@ public class Player implements Runnable {
 
 	private void startSong(SongFile song, SongFile song2) {
 		nextSong = song2;
-		startSong(song);
+		startSong(song, false);
 	}
 
 	private void dumpWav(SongFile song, File outFile, int length, int flags) throws IOException {
 		
 		Log.v(TAG, "IN DUMP WAV");
 		
-		startSong(song);
+		startSong(song, true);
 		
 		audioTrack.stop();
 		audioTrack.flush();
@@ -259,11 +253,17 @@ public class Player implements Runnable {
 			
 			int j = 0;
 			int i = 0;
+			
+			int volume = 100;
+			
 			while(i < len) {
-				short avg = (short) (((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]) / 4);
+				int avg = ((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]);
+				
+				short savg = (short) (avg * volume / 400);				
+				
 				i += 4;
-				bbuffer[j++] = (byte) (avg&0xff);
-				bbuffer[j++] = (byte) ((avg>>8)&0xff);
+				bbuffer[j++] = (byte) (savg&0xff);
+				bbuffer[j++] = (byte) ((savg>>8)&0xff);
 			}			
 			bos.write(bbuffer, 0, j);			
 		}
@@ -282,10 +282,13 @@ public class Player implements Runnable {
 		currentPlugin.unload();		
 		currentPlugin = null;
 		currentState = State.STOPPED;
+		
+		Message msg = mHandler.obtainMessage(MSG_WAVDUMPED, 0, 0, outFile.getPath());
+		mHandler.sendMessage(msg);		
 	}
 
 	
-	private void startSong(SongFile song) {
+	private void startSong(SongFile song, boolean skipStart) {
 
 		if(currentPlugin != null) {
 			currentPlugin.unload();
@@ -570,52 +573,56 @@ public class Player implements Runnable {
 
 			currentSong.source = "";
 			firstData = true;
-
-			Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type));
-
-			Message msg = mHandler.obtainMessage(MSG_NEWSONG);
-
-			MediaPlayer mp = currentPlugin.getMediaPlayer();
-			if(mp != null) {
-				currentState = State.PLAYING;
-				lastPos = -1000;
-				currentSong.source = currentPlugin.getStringInfo(102);
-				Log.v(TAG, "MP3 SOURCE IS " + currentSong.source);
-
-				mHandler.sendMessage(msg);
-
-				mp.start();
-				return;
-			}
-
-			mHandler.sendMessage(msg);
-
-			if(flush) {
-				audioTrack.stop();
-				audioTrack.flush();
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			
+			if(!skipStart) {
+	
+				Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type));
+	
+				Message msg = mHandler.obtainMessage(MSG_NEWSONG);
+	
+				MediaPlayer mp = currentPlugin.getMediaPlayer();
+				if(mp != null) {
+					currentState = State.PLAYING;
+					lastPos = -1000;
+					currentSong.source = currentPlugin.getStringInfo(102);
+					Log.v(TAG, "MP3 SOURCE IS " + currentSong.source);
+	
+					mHandler.sendMessage(msg);
+	
+					mp.start();
+					return;
 				}
-				// audioTrack.stop();
-				// audioTrack.flush();
-
-				Log.v(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
+	
+				mHandler.sendMessage(msg);
+	
+				if(flush) {
+					audioTrack.stop();
+					audioTrack.flush();
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					// audioTrack.stop();
+					// audioTrack.flush();
+	
+					Log.v(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
+				}
+	
+				if(reinitAudio) {
+					audioTrack.release();
+					audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO,
+							AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
+					samples = new short[bufSize / 2];
+					reinitAudio = false;
+				}
+	
+				audioTrack.play();
+				currentState = State.PLAYING;
+				// currentPosition = 0;
 			}
 
-			if(reinitAudio) {
-				audioTrack.release();
-				audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO,
-						AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
-				samples = new short[bufSize / 2];
-				reinitAudio = false;
-			}
-
-			audioTrack.play();
-			currentState = State.PLAYING;
-			// currentPosition = 0;
 			lastPos = -1000;
 			if(songFile2 != null) {
 				Log.v(TAG, String.format("Deleting temporary files %s and %s", songFile.getPath(), songFile2.getPath()));
@@ -665,7 +672,7 @@ public class Player implements Runnable {
 						case PLAY:
 							SongFile song = (SongFile) argument;
 							Log.v(TAG, "Playmod " + song.getName());
-							startSong(song);
+							startSong(song, false);
 							break;
 						case DUMP_WAV:
 							Object [] args = (Object []) argument;
