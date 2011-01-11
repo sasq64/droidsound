@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -196,25 +197,35 @@ public class Player implements Runnable {
 		audioTrack.stop();
 		audioTrack.flush();
 
-		
-		int frames = 0;
-		int msec = 0;
-		
 		byte [] bbuffer = new byte [bufSize];
 		
-		FileOutputStream fos = new FileOutputStream(outFile);
-		BufferedOutputStream bos = new BufferedOutputStream(fos, bufSize);
+		//FileOutputStream fos = new FileOutputStream(outFile);
+		//BufferedOutputStream bos = new BufferedOutputStream(fos, bufSize);
+		
 
 		int numSamples = (int)(((long)length * FREQ) / 1000);
-		Log.v(TAG, String.format("%d msec => %d samples", length, numSamples));
 
 		int numChannels = 1;
+		int divider = 2;
+		
+		
+		if((flags & 2) != 0) {
+			Log.v(TAG, "HIGH QUALITY!");
+			numChannels = 2;
+			divider = 1;
+		}
+
+		int wavSamples = numSamples / divider;
 		
 		// the /2 halves the frequency
 		
-		int freq = FREQ/2;
+		int freq = FREQ/divider;
 		
-		int dataSize = numSamples/2 * numChannels * 16/8;
+		// Size in bytes of wavdata
+		int dataSize = wavSamples * numChannels * 16/8;
+		
+		Log.v(TAG, String.format("%dsec => %d samples, %d wavSamples, %d dataSize", length/1000, numSamples, wavSamples, dataSize));
+
 		
 		byte [] barray = new byte [128];
 		ByteBuffer bb = ByteBuffer.wrap(barray);
@@ -232,43 +243,67 @@ public class Player implements Runnable {
 		bb.putShort((short) 16);
 
 		bb.put(new byte[] { 'd', 'a', 't', 'a' });
-		bb.putInt(36 + dataSize);
+		bb.putInt(dataSize);
 		
-		bos.write(barray, 0, bb.position());
+		//bos.write(barray, 0, bb.position());
+			
+		RandomAccessFile raf = new RandomAccessFile(outFile, "rw");
+		raf.write(barray, 0, bb.position());
 		
-		numSamples *= 2;
-
-		while(frames < numSamples) {
-			// In and out are number of shorts, not number of samles (2 bytes vs 4 bytes in 16bit stereo)
+		int sampleCount = 0;
+		int bytesWritten = 0;
+		while(sampleCount < numSamples) {
+			// In and out are number of shorts, not number of samples (2 bytes vs 4 bytes in 16bit stereo)
 			int len = currentPlugin.getSoundData(samples, bufSize / 16);
 			Log.v(TAG, String.format("READ %d (%d)", len, bufSize));
-			if(len < 0) break;
-						
-			frames += len;
+			if(len < 0) {
+				wavSamples = sampleCount / divider;
+				dataSize = wavSamples * numChannels * 16/8;
+				
+				Log.v(TAG, String.format("Early end, new datasize is %d", dataSize));
+				
+				bb.putInt(4, dataSize + 36);
+				bb.putInt(40, dataSize);
+				raf.seek(0);
+				raf.write(barray, 0, bb.position());
+				break;
+			}
 			
-			Log.v(TAG, String.format("%d vs %d frames", length, frames));
+			len /= 2; // len now samples, not shorts
 			
-			if(frames > numSamples)
-				len = frames - numSamples;
+			if(sampleCount + len > numSamples)
+				len = numSamples - sampleCount; 
+			
+			sampleCount += len;
+			
+			Log.v(TAG, String.format("%d vs %d frames", numSamples, sampleCount));
 			
 			int j = 0;
-			int i = 0;
-			
+			int i = 0;			
 			int volume = 100;
-			
-			while(i < len) {
-				int avg = ((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]);
+			// Now we iterate over sample values which are twice as many
+			while(i < len*2) {
 				
-				short savg = (short) (avg * volume / 400);				
-				
-				i += 4;
-				bbuffer[j++] = (byte) (savg&0xff);
-				bbuffer[j++] = (byte) ((savg>>8)&0xff);
+				if((flags & 2) != 0) {
+					bbuffer[j++] = (byte) (samples[i]&0xff);
+					bbuffer[j++] = (byte) ((samples[i]>>8)&0xff);
+					i += 1;
+				} else {
+					int avg = ((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]);
+					short savg = (short) (avg * volume / 400);								
+					i += 4;
+					bbuffer[j++] = (byte) (savg&0xff);
+					bbuffer[j++] = (byte) ((savg>>8)&0xff);
+				}
 			}			
-			bos.write(bbuffer, 0, j);			
+			raf.write(bbuffer, 0, j);	
+			bytesWritten += j;
 		}
-		bos.flush();
-		bos.close();
+		//bos.flush();
+		//bos.close();
+		raf.close();
+		
+		Log.v(TAG, String.format("Wrote %d samples in %d bytes", numSamples, bytesWritten));
 				
 		if(reinitAudio) {
 			audioTrack.release();
