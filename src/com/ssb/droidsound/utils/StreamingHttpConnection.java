@@ -163,5 +163,10 @@ public class StreamingHttpConnection {
 	public void disconnect() throws IOException {
 		httpSocket.close();
 	}
+
+	public void setUrl(URL url) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }

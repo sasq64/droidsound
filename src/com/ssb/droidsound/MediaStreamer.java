@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
@@ -259,7 +260,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 								httpNo--;
 							doRetry = true;
 							break;
-						}	
+						}
+						
+						if(size == 0) {
+							//Arrays.fill(samples, 0, len, (short) 0);
+							Log.v(TAG, "####### Getting nothing");
+						}
 						
 						if(size == -1) {
 							Log.v(TAG, "####### End of buffer");
@@ -606,8 +612,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			} catch (InterruptedException e) {
 			}
 			rc = mediaPlayer.getCurrentPosition();
-			if(rc == lastPos)
+			if(rc == lastPos) {
+				Log.v(TAG, "Mediaplayer standing still, exiting");
 				return -1;
+			}
 		}
 		
 		lastPos = rc;
