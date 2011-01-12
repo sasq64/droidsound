@@ -29,12 +29,14 @@ MY_SOURCES := \
 
 LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
 
-LOCAL_CFLAGS := -DHAVE_CONFIG_H \
-	-I$(LOCAL_PATH)/libsc68 \
-	-I$(LOCAL_PATH)/libsc68/sc68 \
-	-I$(LOCAL_PATH)/file68 \
-	-I$(LOCAL_PATH)/file68/sc68 \
-	-I$(LOCAL_PATH)/unice68
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/libsc68 \
+	$(LOCAL_PATH)/libsc68/sc68 \
+	$(LOCAL_PATH)/file68 \
+	$(LOCAL_PATH)/file68/sc68 \
+	$(LOCAL_PATH)/unice68
+
+LOCAL_CFLAGS := -DHAVE_CONFIG_H
+
 LOCAL_LDLIBS := -llog -lz
 
 include $(BUILD_SHARED_LIBRARY)

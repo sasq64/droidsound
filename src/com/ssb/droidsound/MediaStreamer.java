@@ -606,7 +606,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		
 		int rc = mediaPlayer.getCurrentPosition();
 
-		if(rc > 1000 && rc == lastPos) {
+		if(rc > 1000 && rc == lastPos && fileMode) {
 			try {
 				Thread.sleep(100);
 			} catch (InterruptedException e) {

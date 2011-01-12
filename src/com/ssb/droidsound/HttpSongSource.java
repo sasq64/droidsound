@@ -293,7 +293,7 @@ public class HttpSongSource {
 
 		httpWorker.getDir(pathName);
 		cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
-		cursor.addRow(new Object [] { "<Working>", SongDatabase.TYPE_FILE, "", "" } );
+		cursor.addRow(new Object [] { "<Working>", SongDatabase.TYPE_FILE, pathName, "" } );
 		return cursor;
 	}
 }
