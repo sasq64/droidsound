@@ -126,6 +126,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		player->sidemu = new sidplay2;
 
+		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "INIT 2");
+
 		sid2_config_t cfg = player->sidemu->config();
 		cfg.clockForced  = false;
 
@@ -142,7 +144,29 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		cfg.sidSamples   = true;
 		//cfg.optimisation  = 2;
 
+		 //cfg.clockForced  = true;
+		  cfg.environment  = sid2_envR;
+		  cfg.forceDualSids= false;
+		  cfg.emulateStereo= false;
+
+		//x  cfg.clockSpeed   = SID2_CLOCK_CORRECT;
+		//x  cfg.clockDefault = SID2_CLOCK_PAL;
+		  cfg.frequency    = 44100;
+
+		  //cfg.playback     = sid2_mono;
+
+		  cfg.precision    = 16;
+		  //cfg.sidModel     = SID2_MODEL_CORRECT;
+		  cfg.sidDefault   = SID2_MOS6581;
+		  cfg.sidSamples   = true;
+		  cfg.optimisation  = SID2_MAX_OPTIMISATION;
+
+
+
+
 		//cfg.environment = sid2_envR;
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "INIT 3");
 
 		player->sidbuilder = new ReSIDBuilder("ReSID");
 		//ASSERT(player->sidbuilder != NULL);
@@ -152,7 +176,15 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		player->sidbuilder->filter(filter_cfg);
 		//player->sidbuilder->filter((void*)0);
 
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "INIT 4 %p %p", player->sidemu, player->sidtune);
+
+
+
+
 		int rc = player->sidemu->load(player->sidtune);
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "DONE %d", rc);
 		//ASSERT(rc == 0);
 		if(rc != 0) {
 			delete player->sidemu;
