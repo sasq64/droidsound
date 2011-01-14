@@ -10,7 +10,7 @@
 #include "sysdeps.h"
 #include <android/log.h>
 #include "options.h"
-#include "include/memory.h"
+#include "include/uadememory.h"
 #include "custom.h"
 #include "gensound.h"
 #include "sd-sound.h"

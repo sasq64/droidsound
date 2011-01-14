@@ -4,12 +4,12 @@ PKGCONFIGDIR = /usr/local/lib/pkgconfig
 
 
 
-NDK=/home/sasq/code/android-ndk-r4-crystax
-#NDK=/cygdrive/c/Android/android-ndk-r4-crystax
+#NDK=/home/sasq/code/android-ndk-r4-crystax
+NDK=/cygdrive/c/Android/android-ndk-r4-crystax
 PLATFORM=android-4
 
-CC = $(NDK)/build/prebuilt/linux-x86/arm-eabi-4.4.0/bin/arm-eabi-gcc
-#CC = $(NDK)/build/prebuilt/windows/arm-eabi-4.4.0/bin/arm-eabi-gcc
+#CC = $(NDK)/build/prebuilt/linux-x86/arm-eabi-4.4.0/bin/arm-eabi-gcc
+CC = $(NDK)/build/prebuilt/windows/arm-eabi-4.4.0/bin/arm-eabi-gcc
 
 
 ARCHFLAGS = 
