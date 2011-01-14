@@ -14,7 +14,6 @@ LOCAL_SRC_FILES += uade/main.c uade/newcpu.c uade/memory.c uade/custom.c uade/ci
        uade/uade.c uade/uadeipc.c \
        uade/uademain.c uade/sinctable.c uade/text_scope.c uade/simpleipc.c uade/simplesupport.c
 
-
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/uade $(LOCAL_PATH)/uade/include $(LOCAL_PATH)/$(FE)
 
 LOCAL_LDLIBS := -llog
