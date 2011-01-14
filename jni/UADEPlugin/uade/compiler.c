@@ -11,7 +11,7 @@
 
 #include "options.h"
 #include "events.h"
-#include "include/memory.h"
+#include "include/uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"

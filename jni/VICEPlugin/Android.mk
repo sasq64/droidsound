@@ -176,22 +176,24 @@ LOCAL_SRC_FILES := \
 	overrides/video/video.c \
 #terminator for last backslash
 
-LOCAL_CFLAGS := -DHAVE_NEON -DHAVE_CONFIG_H \
-	-I$(LOCAL_PATH) \
-	-I$(LOCAL_PATH)/android \
-	-I$(LOCAL_PATH)/android/readline \
-	-I$(LOCAL_PATH)/vice \
-	-I$(LOCAL_PATH)/vice/c64 \
-	-I$(LOCAL_PATH)/vice/c64/cart \
-	-I$(LOCAL_PATH)/vice/c64dtv \
-	-I$(LOCAL_PATH)/vice/drive \
-	-I$(LOCAL_PATH)/vice/imagecontents \
-	-I$(LOCAL_PATH)/vice/raster \
-	-I$(LOCAL_PATH)/vice/rs232drv \
-	-I$(LOCAL_PATH)/vice/sid \
-	-I$(LOCAL_PATH)/vice/tape \
-	-I$(LOCAL_PATH)/vice/vdrive \
-	-I$(LOCAL_PATH)/vice/vicii \
+LOCAL_CFLAGS := -DHAVE_NEON -DHAVE_CONFIG_H
+
+
+LOCAL_C_INCLUDES := $(LOCAL_PATH) \
+	$(LOCAL_PATH)/android \
+	$(LOCAL_PATH)/android/readline \
+	$(LOCAL_PATH)/vice \
+	$(LOCAL_PATH)/vice/c64 \
+	$(LOCAL_PATH)/vice/c64/cart \
+	$(LOCAL_PATH)/vice/c64dtv \
+	$(LOCAL_PATH)/vice/drive \
+	$(LOCAL_PATH)/vice/imagecontents \
+	$(LOCAL_PATH)/vice/raster \
+	$(LOCAL_PATH)/vice/rs232drv \
+	$(LOCAL_PATH)/vice/sid \
+	$(LOCAL_PATH)/vice/tape \
+	$(LOCAL_PATH)/vice/vdrive \
+	$(LOCAL_PATH)/vice/vicii \
 #terminator for last backslash
 
 LOCAL_STATIC_LIBRARIES := resid

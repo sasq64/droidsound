@@ -13,7 +13,7 @@
 #include <android/log.h>
 #include "options.h"
 #include "events.h"
-#include "include/memory.h"
+#include "include/uadememory.h"
 #include "custom.h"
 #include "cia.h"
 

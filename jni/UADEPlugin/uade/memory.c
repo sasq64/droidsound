@@ -11,7 +11,7 @@
 #include <android/log.h>
 #include "options.h"
 #include "uae.h"
-#include "include/memory.h"
+#include "include/uadememory.h"
 
 #include "uade.h"
 
