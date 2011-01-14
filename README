@@ -1,15 +1,14 @@
 
-HOW TO BUILD
+WHAT YOU NEED
 
-Prerequirements:
- Android SDK, CrystaX R4 NDK & 2.2+ platform
- Native GCC & Make
+* Eclipse
+* Android SDK, Android NDK r5 (or later), Android Platform 2.2 (or later)
+
+HOW TO BUILD
  
- * Edit jni/UADEPlugin/uade/Makefile to point to your NDK
+ * Make sure your Eclipse/Android environment is set up correctly (all information you need is at http://developer.android.com)
+ * Build the native libraries - run the NDK 'ndk-build' script from the project directory
+ * Build the project normally from inside Eclipse (don't forget F5 = Refresh - or native libs will not be found)
  
- * Build libuade.a - make libuade.a from jni/UADEPlugin/uade
- 
- * Build jni libraries - run the crystax-r4 ndk-build from the project directory
- 
- * Build the project from Eclipse
+
   
