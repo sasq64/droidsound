@@ -35,9 +35,14 @@ static jstring NewString(JNIEnv *env, const char *str)
 {
 	static jchar temp[256];
 	jchar *ptr = temp;
-	while(*str) {
-		unsigned char c = (unsigned char)*str++;
-		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
+
+	if(str == 0) {
+		*ptr++ = 0;
+	} else {
+		while(*str) {
+			unsigned char c = (unsigned char)*str++;
+			*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
+		}
 	}
 	//*ptr++ = 0;
 	jstring j = env->NewString(temp, ptr - temp);
@@ -230,6 +235,10 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getStrin
 		return NewString(env, info.composer);
 	case INFO_TITLE:
 		return NewString(env, info.title);
+	case 51:
+		return  NewString(env, pd->info.hwname);
+	case 52:
+		return  NewString(env, pd->info.replay);
 	}
 	return 0;
 }
@@ -251,6 +260,8 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getIntInfo(
 		return info.tracks;
 	case INFO_STARTTUNE:
 		return pd->defaultTrack-1;
+	case 50:
+		return (pd->info.hw.amiga << 2) | (pd->info.hw.ste << 1) | (pd->info.hw.ym);
 	}
 	return -1;
 }

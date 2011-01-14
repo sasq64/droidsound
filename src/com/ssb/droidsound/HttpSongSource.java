@@ -27,7 +27,16 @@ import android.util.Log;
 public class HttpSongSource {
 	private static final String TAG = HttpSongSource.class.getSimpleName();
 	
-	private static Map<String, MatrixCursor> dirMap = new HashMap<String, MatrixCursor>();
+	private static class CacheEntry {
+		public MatrixCursor cursor;
+		public int status;		
+		public CacheEntry(MatrixCursor cr, int st) {
+			status = st;
+			cursor = cr;
+		}
+	}
+	
+	private static Map<String, CacheEntry> dirMap = new HashMap<String, CacheEntry>();
 
 	private static Map<String, Character> htmlMap = new HashMap<String, Character>();
 
@@ -46,6 +55,8 @@ public class HttpSongSource {
 		s = "&lt;VERY&gt;&lt;MESSY&gt;";
 		Log.v(TAG, String.format("'%s' became '%s'", s, htmlFix(s)));*/
 	}
+	
+	
 	
 	
 	private static String htmlFix(String s) {
@@ -144,8 +155,9 @@ public class HttpSongSource {
 
 		private void getDirFromHTTP(String pathName) {
 			
-			MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
+			MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "FILENAME"} );
 			String msg = null;
+			int status = 0;
 			try {
 				URL url = new URL(pathName);		
 				URLConnection conn = url.openConnection();
@@ -220,10 +232,10 @@ public class HttpSongSource {
 										 title = title.substring(0, title.length()-1);
 									 type = SongDatabase.TYPE_DIR;
 									 fileName = fileName.substring(0, fileName.length()-1);
-									 cursor.addRow(new Object [] { title, type, path, fileName } );
+									 cursor.addRow(new Object [] { title, type, fileName } );
 								 } else {
 									 if(FileIdentifier.canHandle(fileName) != null)
-										 cursor.addRow(new Object [] { title, type, path, fileName } );
+										 cursor.addRow(new Object [] { title, type, fileName } );
 								 }
 							 }
 						 }						
@@ -231,28 +243,32 @@ public class HttpSongSource {
 					} catch (XPatherException e) {
 						// TODO Auto-generated catch block
 						msg = "<HTML parsing failed>";
+						status = -1;
 						e.printStackTrace();
 					}
 
 				} else {
 					msg = "<Connection failed>";
+					status = -2;
 					Log.v(TAG, String.format("Connection failed: %d", response));
 				}
 			} catch (MalformedURLException me) {
 				msg = "<Illegal URL>";
+				status = -3;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				msg = "<IO Error>";
+				status = -4;
 			}
 			
 			if(msg != null) {
-				cursor.addRow(new Object [] { msg, SongDatabase.TYPE_FILE, "", "" } );
+				cursor.addRow(new Object [] { msg, SongDatabase.TYPE_FILE, "" } );
 				msg = null;
 			}
 			
 			 synchronized (dirMap) {
-				 dirMap.put(pathName, cursor);							
+				 dirMap.put(pathName, new CacheEntry(cursor, status));							
 			 }
 			 
 			Intent intent = new Intent("com.sddb.droidsound.REQUERY");
@@ -271,14 +287,17 @@ public class HttpSongSource {
 		if(!pathName.endsWith("/"))
 			pathName = pathName + "/";
 		
-		MatrixCursor cursor = null;
+		CacheEntry ce = null;
 		synchronized (dirMap) {
-			 cursor = dirMap.get(pathName);			
+			 ce = dirMap.get(pathName);
 		}
 
-		if(cursor != null) {
+		if(ce != null) {
 			Log.v(TAG, "IN CACHE!");
-			return cursor;
+			if(ce.status < 0) {
+				dirMap.remove(ce);
+			}
+			return ce.cursor;
 		}
 		
 		if(httpThread == null) {
@@ -292,8 +311,8 @@ public class HttpSongSource {
 		}		
 
 		httpWorker.getDir(pathName);
-		cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
-		cursor.addRow(new Object [] { "<Working>", SongDatabase.TYPE_FILE, pathName, "" } );
+		MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "FILENAME"} );
+		cursor.addRow(new Object [] { "<Working>", SongDatabase.TYPE_FILE, "" } );
 		return cursor;
 	}
 }

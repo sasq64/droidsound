@@ -470,8 +470,9 @@ public class PlayListView extends ListView { //extends TouchListView {
 			
 			FileInfo [] files = getFiles(false);
 			for(int i=0; i<files.length; i++) {
-				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), hfile.getPath()));
-				if(hilightedFile.equals(files[i].getFile())) {
+				Log.v(TAG, String.format("%s (%s) vs %s (%s)", files[i].getPath(), files[i].getFile().getName(), hfile.getPath(), hfile.getName()));
+				//if(hilightedFile.equals(files[i].getFile())) {
+				if(hfile.getName().equals(files[i].getFile().getName())) {
 					hilightedPosition = i;
 					break;
 				}

@@ -76,6 +76,26 @@ public class SC68Plugin extends DroidSoundPlugin {
 		}
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
+	
+	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
+	
+	@Override
+	public String[] getDetailedInfo() {
+		
+		String [] info = new String [4];
+		
+		String replay = getStringInfo(52);
+		String hwname = getStringInfo(51);
+		int hwbits = getIntInfo(50);
+		if(replay == null) replay = "?";
+		if(hwname == null) hwname = "?";
+		
+		info[0] = "Format";
+		info[1] = String.format("SC68: %s", replay);
+		info[2] = "Hardware";
+		info[3] = String.format("%s (%s)", hwname, hws[hwbits]);
+		return info;
+	}
 
 	@Override
 	public boolean loadInfo(String name, byte[] module, int size) {

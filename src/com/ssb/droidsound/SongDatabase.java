@@ -1274,8 +1274,38 @@ public class SongDatabase implements Runnable {
 	
 	private static String sortOrder [] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
 
-	public String getCurrentLink() { return currentLink; }
-	public void setCurrentLink(String cl) { currentLink = cl; }
+	private Map<String, String> linkMap = new HashMap<String, String>();
+	
+	public String translatePath(String path) {
+		String upath = path.toUpperCase();
+		int lIndex = upath.indexOf(".LNK");
+		if(lIndex > 0) {
+			String linkPath = path.substring(0, lIndex+4);
+			Log.v(TAG, String.format("linkPath '%s'", linkPath));
+			String linkTarget = linkMap.get(linkPath);
+			if(linkTarget == null) {
+				try {
+					File f = new File(linkPath);
+					BufferedReader reader = new BufferedReader(new FileReader(f));
+					String p = reader.readLine();
+					reader.close();
+					if(p != null && p.length() > 0) {
+						linkTarget = p;
+						linkMap.put(linkPath, linkTarget);
+					}
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			path = linkTarget + path.substring(lIndex+4);			
+			Log.v(TAG, String.format("Translated to '%s'", path));
+			
+		}
+		return path;
+	}
+
 	
 	public Cursor getFilesInPath(String pathName, int sorting) {
 		
@@ -1295,6 +1325,34 @@ public class SongDatabase implements Runnable {
 		Log.v(TAG, String.format("files in path '%s'", pathName));
 		//String name = new File(pathName).getName().toUpperCase();
 		
+		int lIndex = upath.indexOf(".LNK");
+		if(lIndex > 0) {
+			String linkPath = pathName.substring(0, lIndex+4);
+			Log.v(TAG, String.format("linkPath '%s'", linkPath));
+			String linkTarget = linkMap.get(linkPath);
+			if(linkTarget == null) {
+				try {
+					File f = new File(linkPath);
+					BufferedReader reader = new BufferedReader(new FileReader(f));
+					String p = reader.readLine();
+					reader.close();
+					if(p != null && p.length() > 0) {
+						linkTarget = p;
+						linkMap.put(linkPath, linkTarget);
+					}
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			pathName = linkTarget + pathName.substring(lIndex+4);
+			
+			Log.v(TAG, String.format("Translated to '%s'", pathName));
+		}
+		
+		/*
 		if(ext.equals(".LNK")) {
 			try {
 				File f = new File(pathName);
@@ -1310,7 +1368,7 @@ public class SongDatabase implements Runnable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
+		} */
 
 		if(pathName.startsWith("http://")) {
 			String s = URLDecoder.decode(pathName);
@@ -1393,6 +1451,8 @@ public class SongDatabase implements Runnable {
 	}
 	
 	public void addToPlaylist(Playlist pl, SongFile songFile) {
+		
+		
 		Log.v(TAG, String.format("Adding %s / %s to playlist %s", songFile.getPath(), songFile.getName(), pl.getFile().getName()));
 		
 		if(pl.contains(songFile)) {
@@ -1403,6 +1463,15 @@ public class SongDatabase implements Runnable {
 		if(songFile.getName().toUpperCase().endsWith(".ZIP")) {
 			Log.v(TAG, "WONT add zip files");
 			return;
+		}
+
+		String realPath = translatePath(songFile.getPath());
+		
+		if(realPath.startsWith("http://")) {
+			SongFile newsf = new SongFile(realPath);
+			newsf.setTitle(songFile.getTitle());
+			newsf.setSubTune(songFile.getSubtune());
+			pl.add(newsf);
 		}
 		
 		
@@ -1590,6 +1659,7 @@ public class SongDatabase implements Runnable {
 		Message msg = mHandler.obtainMessage(MSG_QUIT);
 		mHandler.sendMessage(msg);	
 	}
+
 
 
 }

@@ -933,7 +933,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				PlayListView plv = (PlayListView) parent;
 
 				FileInfo fi = (FileInfo) plv.getItemAtPosition(position);
-
+				
 				Log.v(TAG, String.format("Clicked %s got file %s", plv, fi.getPath()));
 
 				if(fi != null) {
@@ -974,7 +974,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 							if(files[i].equals(fi)) {
 								index = i;
 							}
-							names[i] = files[i].getPath();
+							names[i] = songDatabase.translatePath(files[i].getPath());
 						}
 						player.playList(names, index);
 						// adapter.notifyDataSetChanged();
@@ -2332,7 +2332,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			type = cursor.getInt(t);
 		}
 
-		File file = currentPlaylistView.getFile(info.position);
+		//File file = currentPlaylistView.getFile(info.position);
 
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.songmenu, menu);
@@ -2387,7 +2387,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// playListView.getItemAtPosition(info.position);
 		// Cursor cursor = playListView.getCursor(info.position);
 		File file = currentPlaylistView.getFile(info.position);
-		operationSong = new SongFile(currentPlaylistView.getPath(info.position));
+		
+		
+		operationSong = new SongFile(songDatabase.translatePath(currentPlaylistView.getPath(info.position)));
+		
+		
 		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id));
 		// int pi = cursor.getColumnIndex("PATH");
 		// String path = playListView.getDirectory();
