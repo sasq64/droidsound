@@ -870,6 +870,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 
 			created = true;
+			Log.v(TAG, "CREATED");
 		}
 
 		setDirectory(currentPath, null);
@@ -907,8 +908,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
 
 		if(!created && lastConfig == null) {
+			Log.v(TAG, "OPEN DB");
 			songDatabase.open();
 			songDatabase.scan(false, modsDir.getPath());
+			Log.v(TAG, "DONE");
 		}
 
 		if(ttsStatus == TTS_UNCHECKED) {
@@ -1207,7 +1210,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		 * player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, isChecked ? "R"
 		 * : "S" ); } });
 		 */
-
+		
+		Log.v(TAG, "ON CREATE DONE");
 	}
 
 	private void deleteAll(File mf) {

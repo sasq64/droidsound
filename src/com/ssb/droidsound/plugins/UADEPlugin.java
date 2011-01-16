@@ -29,6 +29,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	private static boolean libLoaded;
 
 	private long currentSong = 0;
+
+	private Unzipper unzipper;
 	
 	static String [] options = new String [] { "filter", "speedhack", "ntsc", "panning" };
 	static int [] optvals = new int [] { OPT_FILTER, OPT_SPEED_HACK, OPT_NTSC, OPT_PANNING };
@@ -58,73 +60,43 @@ public class UADEPlugin extends DroidSoundPlugin {
 			
 			if(extract) {
 				
-				droidDir.mkdir();
-				
-				Unzipper.unzipAsset(getContext(), "eagleplayers.zip", droidDir);
-				/*
-				try {			
-					File tempFile = new File(droidDir, "ep.zip");
-					
-					FileOutputStream os;
-					os = new FileOutputStream(tempFile);
-					
-					InputStream is = ctx.getAssets().open("eagleplayers.zip");
-					
-					byte [] buffer = new byte [128*1024];
-					while(true) {
-						int rc = is.read(buffer);
-						if(rc <= 0) {
-							break;
-						}
-						os.write(buffer, 0, rc);
-					}
-					is.close();
-					os.close();
-					
-					ZipFile zf = new ZipFile(tempFile);
-					Enumeration<? extends ZipEntry> entries = zf.entries();
-					while(entries.hasMoreElements()) {
-						ZipEntry entry = entries.nextElement();
-						is = zf.getInputStream(entry);
-						String name = entry.getName();	
-						File efile = new File(droidDir, name);
-						
-						Log.v(TAG, String.format("Extracting %s / %s", name, efile.getPath()));
-						
-						if(name.endsWith("/")) {
-							continue;
-						}
-						
-						efile.getParentFile().mkdirs();
-						
-						os = new FileOutputStream(efile);
-		
-						while(true) {
-							int rc = is.read(buffer);
-							if(rc <= 0) {
-								break;
-							}
-							os.write(buffer, 0, rc);
-						}
-						is.close();
-						os.close();
-					}
-					
-					tempFile.delete();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} */
+				droidDir.mkdir();				
+				unzipper = Unzipper.getInstance();				
+				unzipper.unzipAssetAsync(getContext(), "eagleplayers.zip", droidDir);
+
 			}		
 
-			if(extensions.size() == 0) {
+		}
+		//for(String s : ex) {			
+		//	extensions.add(s);
+		//}
+	}
+	
+	private void indexExtensions() {
 		
+		if(unzipper != null) {
+			while(!unzipper.checkJob("eagleplayers.zip")) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					return;
+				}
+			}
+			unzipper = null;
+		}
+		
+		synchronized (extensions) {
+			if(extensions.size() == 0) {
+				
 				extensions.add("CUST");		
 				extensions.add("CUS");
 				extensions.add("CUSTOM");
 				extensions.add("DM");
 				extensions.add("TFX");
-				
+				File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+				File confFile = new File(droidDir, "eagleplayer.conf");
+
 				BufferedReader reader;
 				try {
 					reader = new BufferedReader(new FileReader(confFile));
@@ -150,11 +122,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}			
+			}
 		}
-		//for(String s : ex) {			
-		//	extensions.add(s);
-		//}
 	}
 	
 	@Override
@@ -283,6 +252,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 				System.loadLibrary("uade");
 				libLoaded = true;
 			}
+			
+			indexExtensions();
 			
 			N_init(droidDir.getPath());
 			try {

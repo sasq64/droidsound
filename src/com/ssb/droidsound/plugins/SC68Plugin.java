@@ -24,6 +24,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private String composer = null;
 	private String year = null;
 	private String type = null;
+	private Unzipper unzipper = null;
 
 	public SC68Plugin() {
 
@@ -32,7 +33,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 		synchronized (lock) {					
 			if(!sc68Dir.exists()) {
 				droidDir.mkdir();
-				Unzipper.unzipAsset(getContext(), "sc68data.zip", droidDir);
+				unzipper = Unzipper.getInstance();
+				unzipper.unzipAssetAsync(getContext(), "sc68data.zip", droidDir);
 			}
 			if(!inited) {
 				N_setDataDir(sc68Dir.getPath());
@@ -56,6 +58,19 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean load(String name, byte[] module, int size) {
+		
+		
+		if(unzipper != null) {
+			while(!unzipper.checkJob("sc68data.zip")) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					return false;
+				}
+			}
+			unzipper = null;
+		}
 		
 		Log.v(TAG, String.format("Trying to load '%s'", name));
 		currentSong = N_load(module, size);

@@ -61,6 +61,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	private HashMap<Integer, Integer> optMap = new HashMap<Integer, Integer>();
 
+	private Unzipper unzipper = null;
+
 	private static File dataDir;
 
 	private static boolean isActive = false;
@@ -71,10 +73,17 @@ public class VICEPlugin extends DroidSoundPlugin {
 		if (! initialized) {
 			/* Store basic, kernal & chargen for C++ code to find. */
 			dataDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-			if (! dataDir.exists()) {
+			if (!dataDir.exists()) {
 				dataDir.mkdir();
 			}
-			Unzipper.unzipAsset(getContext(), "vice.zip", dataDir);
+			
+			File viceDir = new File(dataDir, "VICE");
+			synchronized (lock) {					
+				if(!viceDir.exists()) {
+					unzipper = Unzipper.getInstance();
+					unzipper.unzipAssetAsync(getContext(), "vice.zip", dataDir);
+				}
+			}
 			initialized = true;
 		}
 	}
@@ -137,6 +146,19 @@ public class VICEPlugin extends DroidSoundPlugin {
 		
 		if(!libraryLoaded) {
 			System.loadLibrary("vice");
+			
+			if(unzipper != null) {
+				while(!unzipper.checkJob("vice.zip")) {
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+						return false;
+					}
+				}
+				unzipper = null;
+			}
+			
 			N_setDataDir(new File(dataDir, "VICE").getAbsolutePath());
 			
 			for(Entry<Integer, Integer> e : optMap.entrySet()) {
