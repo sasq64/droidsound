@@ -93,6 +93,7 @@ public class SongDatabase implements Runnable {
 	private volatile boolean isReady;
 
 	private int indexMode = -1;
+	private int lastIndexMode = -1;
 	
 	public static final int TYPE_ARCHIVE = 0x100;
 	public static final int TYPE_DIR = 0x200;
@@ -294,9 +295,9 @@ public class SongDatabase implements Runnable {
 	            		doScan((String)msg.obj, msg.arg1 != 0);
 	            	}
 	            	break;
-	            case MSG_INDEXMODE:
-	            	createIndex(msg.arg1);
-	            	break;
+	            //case MSG_INDEXMODE:
+	            //	createIndex(msg.arg1);
+	            //	break;
 	            case MSG_QUIT:
 	            	Log.v(TAG, "Telling looper to quit");
 	            	Looper.myLooper().quit();
@@ -471,27 +472,16 @@ public class SongDatabase implements Runnable {
 		isReady = true;
 	}
 	
-	private void createIndex(int mode) {
+	private void createIndex(SQLiteDatabase db) {
 		
-		if(mode != indexMode) {
-			
-			SQLiteDatabase db = getWritableDatabase();
-			
-			if(db == null) {
-				return;
-			}
-			
-
-			scanning = true;
-	
 			
 			if(scanCallback != null) {
 				scanCallback.notifyScan("Updating indexes", 0);
 			}
 			
-			Log.v(TAG, "Updating indexes to mode " + mode);
+			Log.v(TAG, "Updating indexes to mode " + indexMode);
 			
-			switch(mode) {
+			switch(indexMode) {
 			case INDEX_NONE:
 				db.execSQL("DROP INDEX IF EXISTS fileindex ;");		
 				db.execSQL("DROP INDEX IF EXISTS titleindex ;");
@@ -513,19 +503,19 @@ public class SongDatabase implements Runnable {
 			}
 			
 			for(Entry<String, DataSource> ds : dbsources.entrySet()) {			
-				ds.getValue().createIndex(mode, db);			
+				ds.getValue().createIndex(indexMode, db);			
 			}
 			
-			if(scanCallback != null) {
-				scanCallback.notifyScan(null, -1);
-			}
+			//if(scanCallback != null) {
+			//	scanCallback.notifyScan(null, -1);
+			//}
 			
-			db.close();
+			//db.close();
 			
-			scanning = false;
+			//scanning = false;
 			
-			indexMode = mode; 
-		}
+			//indexMode = mode; 
+		//}
 	}
 	
 	
@@ -1025,11 +1015,14 @@ public class SongDatabase implements Runnable {
 	public void setIndexMode(int mode) {
 		
 		 Log.v(TAG, "INDEX MODE " + mode);
-		
+		 indexMode = mode;
+		 
+		 
+		/*
 		if(indexMode != mode) {
 			Message msg = mHandler.obtainMessage(MSG_INDEXMODE, mode, 0);
 			mHandler.sendMessage(msg);
-		}
+		} */
 		
 	}
 
@@ -1173,6 +1166,11 @@ public class SongDatabase implements Runnable {
 			values.put("VAR", "lastscan");
 			values.put("VALUE", Long.toString(startTime));
 			scanDb.update("VARIABLES", values, "VAR='lastscan'", null);
+		}
+			
+		if(indexMode != lastIndexMode) {
+			createIndex(scanDb);
+			lastIndexMode = indexMode;
 		}
 		
 		stopScanning = false;

@@ -550,6 +550,8 @@ public class PlayerService extends Service {
 
 	protected String playListName;
 
+	protected int callState = TelephonyManager.CALL_STATE_IDLE;
+
 	//private boolean foreground;
 
     /**
@@ -630,6 +632,7 @@ public class PlayerService extends Service {
 			@Override
 			public void onCallStateChanged(int state, String incomingNumber) {
 				
+				callState  = state;
 				switch(state) {
 				case TelephonyManager.CALL_STATE_RINGING:
 				case TelephonyManager.CALL_STATE_OFFHOOK:
@@ -718,6 +721,11 @@ public class PlayerService extends Service {
 				                	break;
 				                default:
 				                case KeyEvent.KEYCODE_HEADSETHOOK:
+				                	
+				                	// Dont read headset button if call is in progress
+				                	if(callState != TelephonyManager.CALL_STATE_IDLE)
+				                		return;
+				                	
 									if(t > 2000) {
 										if(textToSpeech == null) {
 											speakTitle();

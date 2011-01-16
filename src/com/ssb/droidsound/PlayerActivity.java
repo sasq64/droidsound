@@ -748,8 +748,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					}
 					songDatabase.setIndexMode(imode);
 
-					// playListView.rescan();
-					setDirectory(playListView);
 
 					if(lastConfig != null) {
 						Log.v(TAG, "CONFIG CHANGE");
@@ -757,6 +755,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						Log.v(TAG, "SCANNING");
 						songDatabase.scan(false, modsDir.getPath());
 					}
+
+					// playListView.rescan();
+					setDirectory(playListView);
 
 					// songDatabase.scan(false, modsDir);
 				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_DONE")) {
@@ -906,6 +907,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		String b = prefs.getString("buffer", "Long");
 		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
+
 
 		if(!created && lastConfig == null) {
 			Log.v(TAG, "OPEN DB");

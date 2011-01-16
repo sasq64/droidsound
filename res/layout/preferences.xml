@@ -53,7 +53,7 @@
 	            android:key="MP3Plugin.simplestream"
 	            android:title="Simple MP3 streaming"
 	            android:defaultValue="false"
-	            android:summary="Use simple streaming"
+	            android:summary="Use simple Android streaming. More limited but possibly more stable."
 	            />
 		</PreferenceCategory>
 		<PreferenceCategory
