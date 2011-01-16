@@ -311,6 +311,10 @@ public class PlayerService extends Service {
             		Log.v(TAG, String.format("SUBTUNE %d, Length %d", msg.arg1, msg.arg2));
             		info[SONG_SUBSONG] = msg.arg1;
             		info[SONG_LENGTH] = msg.arg2;
+            		
+            		if(msg.arg2 == -1)
+            			info[SONG_LENGTH] = defaultLength;
+            		
             		info[SONG_STATE] = 1;
             		if(msg.obj != null) {
             			sa = (String [])msg.obj;
@@ -346,6 +350,11 @@ public class PlayerService extends Service {
 					info[SONG_FLAGS] = currentSongInfo.canSeek ? 1 : 0;
 					info[SONG_STATE] = 1;
 					info[SONG_SOURCE] = "";
+					info[SONG_BUFFERING] = -1;
+					
+            		if(currentSongInfo.length == -1)
+            			info[SONG_LENGTH] = defaultLength;
+
 					
 					if(currentSongInfo.source != null && currentSongInfo.source.length() > 0)					
 						info[SONG_SOURCE] = currentSongInfo.source;
@@ -537,7 +546,7 @@ public class PlayerService extends Service {
 
 	protected int bufSize = 0x40000;
 
-	protected int defaultLength = 0;
+	protected int defaultLength = 60*15*1000;
 
 	protected String playListName;
 
@@ -1021,49 +1030,52 @@ public class PlayerService extends Service {
 
 			boolean on = arg.equals("on");
 			
-			switch(opt) {
-			case OPTION_DEFAULT_LENGTH:
-				defaultLength  = Integer.parseInt(arg) * 1000;
-				Log.v(TAG, "Default length set to " + defaultLength);
-				break;
-			case OPTION_REPEATMODE:
-				info[SONG_REPEAT] = Integer.parseInt(arg);
-				performCallback(SONG_REPEAT);
-				break;
-			//case OPTION_SILENCE_DETECT:
-			//	Log.v(TAG, "Silence detection " + arg);
-			//	silenceDetect = on;
-			//	break;
-			case OPTION_PLAYBACK_ORDER:
-				if(arg.charAt(0) == 'R') {
-					shuffleSongs = true;
-				} else if(arg.charAt(0) == 'S') {
-					shuffleSongs = false;
+			try {
+				switch(opt) {
+				case OPTION_DEFAULT_LENGTH:
+					defaultLength  = Integer.parseInt(arg) * 1000;
+					Log.v(TAG, "Default length set to " + defaultLength);
+					break;
+				case OPTION_REPEATMODE:
+					info[SONG_REPEAT] = Integer.parseInt(arg);
+					performCallback(SONG_REPEAT);
+					break;
+				//case OPTION_SILENCE_DETECT:
+				//	Log.v(TAG, "Silence detection " + arg);
+				//	silenceDetect = on;
+				//	break;
+				case OPTION_PLAYBACK_ORDER:
+					if(arg.charAt(0) == 'R') {
+						shuffleSongs = true;
+					} else if(arg.charAt(0) == 'S') {
+						shuffleSongs = false;
+					}
+					if(playQueue != null) {
+						playQueue.setShuffle(shuffleSongs);
+					}
+					break;
+				case OPTION_RESPECT_LENGTH:
+					Log.v(TAG, "Respect length " + arg);
+					respectLength = on;
+					break;
+				case OPTION_SPEECH:
+					activateSpeech(on);
+					break;
+				case OPTION_BUFFERSIZE:
+			 		bufSize = 176384; // 2s
+			 		if(arg.equals("Short")) {
+			 			bufSize = 66144; // 0.75s
+			 		} else
+			 		if(arg.equals("Medium")) {
+			 			bufSize = 132288; // 1.5s
+			 		} else
+			 		if(arg.equals("Very Long")) {
+			 			bufSize = 352768; // 4s
+			 		}
+					player.setBufSize(bufSize);
+					break;
 				}
-				if(playQueue != null) {
-					playQueue.setShuffle(shuffleSongs);
-				}
-				break;
-			case OPTION_RESPECT_LENGTH:
-				Log.v(TAG, "Respect length " + arg);
-				respectLength = on;
-				break;
-			case OPTION_SPEECH:
-				activateSpeech(on);
-				break;
-			case OPTION_BUFFERSIZE:
-		 		bufSize = 176384; // 2s
-		 		if(arg.equals("Short")) {
-		 			bufSize = 66144; // 0.75s
-		 		} else
-		 		if(arg.equals("Medium")) {
-		 			bufSize = 132288; // 1.5s
-		 		} else
-		 		if(arg.equals("Very Long")) {
-		 			bufSize = 352768; // 4s
-		 		}
-				player.setBufSize(bufSize);
-				break;
+			} catch (NumberFormatException e) {
 			}
 		}
 		

@@ -63,6 +63,10 @@ public class ModPlugin extends DroidSoundPlugin {
 			
 			for(int i=0; i<d.length; i++) {
 				//Log.v(TAG, d[i]);
+				
+				if(n >= t.length - 6)
+					break;
+				
 				String x = "";
 				if(d[i].equals("/")) {
 					//Log.v(TAG, "/BY/");
@@ -104,11 +108,16 @@ public class ModPlugin extends DroidSoundPlugin {
 						x = x.substring(slash+1);
 					}
 
-					t[n++] = x;
+					t[n++] = x;					
 				}				
-			}	
+			}
+			
 			
 			t[n++] = "EOL";
+			
+			if(n >= t.length - 5)
+				break;
+
 		}
 				
 		

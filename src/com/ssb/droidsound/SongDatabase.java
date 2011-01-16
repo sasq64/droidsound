@@ -1275,7 +1275,7 @@ public class SongDatabase implements Runnable {
 	private static String sortOrder [] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
 
 	private Map<String, String> linkMap = new HashMap<String, String>();
-	
+	/*
 	public String translatePath(String path) {
 		String upath = path.toUpperCase();
 		int lIndex = upath.indexOf(".LNK");
@@ -1304,7 +1304,7 @@ public class SongDatabase implements Runnable {
 			
 		}
 		return path;
-	}
+	} */
 
 	
 	public Cursor getFilesInPath(String pathName, int sorting) {
@@ -1369,6 +1369,7 @@ public class SongDatabase implements Runnable {
 				e.printStackTrace();
 			}
 		} */
+		currentPlaylist = null;
 
 		if(pathName.startsWith("http://")) {
 			String s = URLDecoder.decode(pathName);
@@ -1378,7 +1379,6 @@ public class SongDatabase implements Runnable {
 		
 		File file = new File(pathName);
 		
-		currentPlaylist = null;
 		if(ext.equals(".PLIST")) {
 			
 			String name = file.getName();
@@ -1465,13 +1465,11 @@ public class SongDatabase implements Runnable {
 			return;
 		}
 
-		String realPath = translatePath(songFile.getPath());
+		//String realPath = translatePath(songFile.getPath());
 		
-		if(realPath.startsWith("http://")) {
-			SongFile newsf = new SongFile(realPath);
-			newsf.setTitle(songFile.getTitle());
-			newsf.setSubTune(songFile.getSubtune());
-			pl.add(newsf);
+		if(songFile.getPath().startsWith("http://")) {
+			pl.add(songFile);
+			return;
 		}
 		
 		
@@ -1513,6 +1511,11 @@ public class SongDatabase implements Runnable {
 		}
 	}
 	
+	
+	public boolean deleteFile(SongFile song) {
+		return deleteFile(song.getFile());
+	}
+
 	public boolean deleteFile(File f) {
 		SQLiteDatabase db = getWritableDatabase();
 		if(db == null) {

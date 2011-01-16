@@ -231,7 +231,11 @@ public class SC68Plugin extends DroidSoundPlugin {
 		if(currentSong == 0) {
 			return -1;
 		}
-		return N_getIntInfo(currentSong, what);
+		
+		int rc = N_getIntInfo(currentSong, what);
+		if(what == INFO_LENGTH && rc == 0)
+			rc = -1;
+		return rc;
 	}
 	
 	@Override

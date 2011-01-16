@@ -155,7 +155,7 @@ public class HttpSongSource {
 
 		private void getDirFromHTTP(String pathName) {
 			
-			MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "FILENAME"} );
+			MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
 			String msg = null;
 			int status = 0;
 			try {
@@ -232,10 +232,10 @@ public class HttpSongSource {
 										 title = title.substring(0, title.length()-1);
 									 type = SongDatabase.TYPE_DIR;
 									 fileName = fileName.substring(0, fileName.length()-1);
-									 cursor.addRow(new Object [] { title, type, fileName } );
+									 cursor.addRow(new Object [] { title, type, null, fileName } );
 								 } else {
 									 if(FileIdentifier.canHandle(fileName) != null)
-										 cursor.addRow(new Object [] { title, type, fileName } );
+										 cursor.addRow(new Object [] { title, type, path, fileName } );
 								 }
 							 }
 						 }						
@@ -263,7 +263,7 @@ public class HttpSongSource {
 			}
 			
 			if(msg != null) {
-				cursor.addRow(new Object [] { msg, SongDatabase.TYPE_FILE, "" } );
+				cursor.addRow(new Object [] { msg, SongDatabase.TYPE_FILE, null, "" } );
 				msg = null;
 			}
 			
@@ -311,8 +311,8 @@ public class HttpSongSource {
 		}		
 
 		httpWorker.getDir(pathName);
-		MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "FILENAME"} );
-		cursor.addRow(new Object [] { "<Working>", SongDatabase.TYPE_FILE, "" } );
+		MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
+		cursor.addRow(new Object [] { "<Working>", SongDatabase.TYPE_FILE, null, "" } );
 		return cursor;
 	}
 }

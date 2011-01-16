@@ -4,7 +4,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
-<ImageView android:src="@drawable/note" 
+<ImageView android:src="@drawable/gflat_note" 
 	android:layout_width="36dp" android:layout_height="36dp"
 	android:id="@+id/icon"
 	android:layout_alignParentLeft="true"

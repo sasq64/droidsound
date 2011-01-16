@@ -182,7 +182,7 @@ public class SettingsActivity extends PreferenceActivity {
 	
 			p = new Preference(this);
 			p.setTitle("Application");
-			p.setSummary(String.format("%s v%s", appName, pinfo.versionName));		
+			p.setSummary(String.format("%s v%s\n(C) 2010,2011 by Jonas Minnberg (Sasq)", appName, pinfo.versionName));		
 			abScreen.addPreference(p);
 	
 			pc = new PreferenceCategory(this);
@@ -271,6 +271,7 @@ public class SettingsActivity extends PreferenceActivity {
 				}
 			});
 			break;
+/*
 		case R.string.about_droidsound:
 			String fullName = "<ERROR>";
 			try {
@@ -288,7 +289,7 @@ public class SettingsActivity extends PreferenceActivity {
 					dialog.cancel();
 				}
 			});
-			break;
+			break; */
 		default:
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {

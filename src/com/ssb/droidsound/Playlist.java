@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -320,8 +321,13 @@ public class Playlist {
 	
 	private String fileToLine(SongFile songFile) {
 
-		FileIdentifier.MusicInfo minfo = FileIdentifier.identify(songFile.getFile());		
 		String s = songFile.getPath();
+		FileIdentifier.MusicInfo minfo = null;
+		if(s.startsWith("http://")) {			
+			songFile.setTitle(URLDecoder.decode(songFile.getName()));
+		} else {
+			minfo = FileIdentifier.identify(songFile.getFile());
+		}
 		
 		String title = songFile.getTitle();
 		if(title == null && minfo != null)
@@ -550,11 +556,13 @@ public class Playlist {
 		if(to < from) from++;
 		lines.remove(from);	
 		changed = true;
+		cursor = null;
 	}
 	
 	public void remove(int location) {
 		lines.remove(location);
 		changed = true;
+		cursor = null;
 	}
 	
 	public SongFile getSong(int position) {

@@ -302,6 +302,8 @@ public class PlayListView extends ListView { //extends TouchListView {
 			if(path == null)
 				path = pathName;
 			
+			String upath = path.toUpperCase();
+			
 			String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
 			
 			boolean net = path != null && path.startsWith("http:/");
@@ -344,6 +346,9 @@ public class PlayListView extends ListView { //extends TouchListView {
 				if(ext.equals("LNK")) {
 					iv.setImageResource(R.drawable.gflat_net_folder);
 					tv0.setTextColor(0xffffc0c0);
+				} else if(upath.contains(".LNK")) {
+					iv.setImageResource(R.drawable.gflat_folder);
+					tv0.setTextColor(0xffffc0c0);
 				} else {
 					iv.setImageResource(R.drawable.gflat_folder);
 				}
@@ -366,7 +371,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 			File f;
 			mCursor.moveToPosition(position);
 			String fileName = mCursor.getString(mFileIndex);			
-			if(mPathIndex >= 0) {
+			if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 				f = new File(mCursor.getString(mPathIndex), fileName);
 			} else {
 				f = new File(pathName, fileName);
@@ -378,7 +383,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 			mCursor.moveToPosition(position);
 			String s;
 			String fileName = mCursor.getString(mFileIndex);			
-			if(mPathIndex >= 0) {
+			if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 				s = mCursor.getString(mPathIndex) + "/" + fileName;
 			} else {
 				s = pathName + "/" + fileName;
@@ -401,9 +406,12 @@ public class PlayListView extends ListView { //extends TouchListView {
 			String path = pathName;
 			Log.v(TAG, "FILENAME " + fileName);
 			File f;
-			if(mPathIndex >= 0) {
-				path = mCursor.getString(mPathIndex);
-				Log.v(TAG, "PATH " + path);
+			if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
+				String p = mCursor.getString(mPathIndex);
+				if(p != null) {
+					path = p;
+					Log.v(TAG, "PATH " + path);
+				}
 			} 
 
 			int type = SongDatabase.TYPE_FILE;
@@ -431,7 +439,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 			while(mCursor.moveToNext()) {
 				String fileName = mCursor.getString(mFileIndex);
 				FileInfo f;
-				if(mPathIndex >= 0) {
+				if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 					f = new FileInfo(mCursor.getString(mPathIndex), fileName);
 				} else {
 					f = new FileInfo(pathName, fileName);
@@ -470,9 +478,8 @@ public class PlayListView extends ListView { //extends TouchListView {
 			
 			FileInfo [] files = getFiles(false);
 			for(int i=0; i<files.length; i++) {
-				Log.v(TAG, String.format("%s (%s) vs %s (%s)", files[i].getPath(), files[i].getFile().getName(), hfile.getPath(), hfile.getName()));
-				//if(hilightedFile.equals(files[i].getFile())) {
-				if(hfile.getName().equals(files[i].getFile().getName())) {
+				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), hfile.getPath()));
+				if(hilightedFile.equals(files[i].getFile())) {
 					hilightedPosition = i;
 					break;
 				}

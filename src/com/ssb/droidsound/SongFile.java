@@ -23,6 +23,8 @@ public class SongFile {
 	private String title;
 	private String composer;
 	
+	private String protocol;
+	
 	public SongFile(SongFile s) {
 		subtune = s.subtune;
 		playtime = s.playtime;
@@ -36,6 +38,7 @@ public class SongFile {
 		zipName = s.zipName;
 		title = s.title;
 		composer = s.composer;
+		protocol = s.protocol;
 	}
 	
 	public SongFile(File f) {
@@ -49,9 +52,12 @@ public class SongFile {
 	private void init(String fname) {
 		subtune = -1;
 		playtime = -1;
-		
+		protocol = "";
 		if(fname.startsWith("file://")) {
 			fname = fname.substring(7);
+		} else if(fname.startsWith("http://")) {
+			fname = fname.substring(7);
+			protocol = "http://";
 		}
 		
 		title = composer = null;
@@ -176,11 +182,11 @@ public class SongFile {
 	public String getPath() {
 		if(subtune >= 0) {
 			if(playtime >= 0) {
-				return path + "/" + fileName + ";" + subtune + ";" + playtime;
+				return protocol + path + "/" + fileName + ";" + subtune + ";" + playtime;
 			}
-			return path + "/" + fileName + ";" + subtune;
+			return protocol + path + "/" + fileName + ";" + subtune;
 		} else {
-			return path + "/" + fileName;
+			return protocol + path + "/" + fileName;
 		}
 	}
 	
@@ -207,7 +213,7 @@ public class SongFile {
 	
 
 	public String getParent() {
-		return file.getParent();
+		return protocol + file.getParent();
 	}
 
 	public boolean isDirectory() {
@@ -226,4 +232,9 @@ public class SongFile {
 		}
 		return sfiles;
 	}
+
+	public boolean delete() {
+		return file.delete();
+	}
+
 }

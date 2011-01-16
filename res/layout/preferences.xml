@@ -4,8 +4,7 @@
             android:key="extensions"
             android:title="Unknown extensions"
             android:defaultValue="false"
-            android:summaryOff="Files with unknown extensions will not be indexed"
-            android:summaryOn="Files with unknown extensions will be indexed"
+            android:summary="Index files with unknown extensions"
             />
     <!--  CheckBoxPreference
             android:key="silence"
@@ -18,8 +17,7 @@
             android:key="speech"
             android:title="Speech"
             android:defaultValue="false"
-            android:summaryOff="Do not speak the title of songs "
-            android:summaryOn="Use text to speech to speak titles of songs"
+            android:summary="Use text to speech to speak titles of songs"
             />
             
 	<EditTextPreference
@@ -27,7 +25,7 @@
             android:key="default_length"
             android:title="Default song length"
             android:dialogTitle="Length (in seconds)"
-            android:defaultValue="0"
+            android:defaultValue="900"
             android:summary="Length to use when real length is unknown."
 	/>
 
@@ -43,7 +41,7 @@
 
 	<PreferenceScreen
             android:key="audio_prefs"
-            android:title="Plugins"
+            android:title="Audio"
             android:summary="Plugin Audio Settings"
 	>
 	
@@ -55,8 +53,7 @@
 	            android:key="MP3Plugin.simplestream"
 	            android:title="Simple MP3 streaming"
 	            android:defaultValue="false"
-	            android:summaryOff="Normal streaming"
-	            android:summaryOn="Simple streaming"
+	            android:summary="Use simple streaming"
 	            />
 		</PreferenceCategory>
 		<PreferenceCategory
@@ -74,8 +71,7 @@
 	            android:key="SidPlugin.filter"
 	            android:title="SID Filter"
 	            android:defaultValue="true"
-	            android:summaryOff="Filter not emulated"
-	            android:summaryOn="Filter emulated"
+	            android:summary="Emulate the SID filter"
 	            />
 		<ListPreference
 	            android:key="SidPlugin.ntsc"
@@ -162,8 +158,7 @@
 	            android:key="UADEPlugin.filter"
 	            android:title="Amiga Filter"
 	            android:defaultValue="true"
-	            android:summaryOff="Filter not emulated"
-	            android:summaryOn="Filter emulated"
+	            android:summary="Emulate the Paula filter"
 	            />
 		<ListPreference
 	            android:key="UADEPlugin.panning"
@@ -183,8 +178,7 @@
 	            android:key="UADEPlugin.ntsc"
 	            android:title="NTSC Mode"
 	            android:defaultValue="false"
-	            android:summaryOff="Emulating PAL mode"
-	            android:summaryOn="Emulating NTSC mode"
+	            android:summary="Emulate NTSC mode"
 	            />
 		</PreferenceCategory>
 	</PreferenceScreen>
