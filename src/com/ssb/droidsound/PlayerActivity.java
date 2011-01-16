@@ -172,7 +172,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private SQLiteDatabase db;
 
 	//private int backDown;
-	private boolean atTop;
+	private boolean atTop = true;
 
 	private String songTitle;
 	private String songComposer;
@@ -635,97 +635,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		currentPlaylistView = playListView;
 
-		String md = prefs.getString("modsDir", null);
-		modsDir = new File("/XXX");
-		if(md == null) {
-			File extFile = Environment.getExternalStorageDirectory();
-			if(extFile != null) {
-				File mf = new File(extFile, "MODS");
-				if(!mf.exists()) {
-					mf.mkdir();
-				}
-
-				if(!mf.exists()) {
-					showDialog(R.string.create_moddir_failed);
-					dialogShowing = true;
-				} else {
-					modsDir = mf;
-					Editor editor = prefs.edit();
-					editor.putString("modsDir", modsDir.getPath());
-					editor.commit();
-					// showDialog(12);
-				}
-
-			} else {
-				showDialog(R.string.sdcard_not_found);
-				dialogShowing = true;
-			}
-		} else {
-			modsDir = new File(md);
-		}
-
-		if(!modsDir.exists()) {
-			showDialog(R.string.sdcard_not_found);
-			dialogShowing = true;
-		}
-
-		File[] files = modsDir.listFiles();
-		if(files != null) {
-			for(File f : files) {
-				if(f.getName().endsWith(".temp")) {
-					f.delete();
-				}
-			}
-		}
-
-		if(moveFileHere != null) {
-			moveFileHere(moveFileHere);
-		}
-
-		foundVersion = prefs.getInt("version", -1);
-		if(foundVersion == -1) {
-			File tempFile = new File(modsDir, "Examples.zip");
-			if(!tempFile.exists()) {
-				try {
-					InputStream is = getAssets().open("Examples.zip");
-					if(is != null) {
-
-						FileOutputStream os = new FileOutputStream(tempFile);
-
-						byte[] buffer = new byte[1024 * 64];
-
-						int rc = 0;
-						while(rc >= 0) {
-							rc = is.read(buffer);
-							if(rc > 0) {
-								os.write(buffer, 0, rc);
-							}
-						}
-						os.close();
-						is.close();
-					}
-
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} else {
-				foundVersion = 0;
-			}
-		}
-
-		Editor e = prefs.edit();
-		e.putInt("version", VERSION);
-		e.commit();
-
+		
+		modsDir = null; //new File("/XXX");
+		
+		setupModsDir();
+		
 		String cp = prefs.getString("currentPath", null);
 		if(cp == null) {
 			currentPath = modsDir.getPath();
 		} else {
 			currentPath = cp;
 		}
-
 		atTop = currentPath.equals(modsDir);
+		
 
+		Log.v(TAG, String.format("MODS at %s", modsDir));		
+		
 		receiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -795,55 +720,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// filter.addAction("com.sddb.droidsound.DOWNLOAD_DONE");
 		registerReceiver(receiver, filter);
 
-		Log.v(TAG, String.format("MODS at %s", modsDir));
-
-		File ns = new File(modsDir, ".nomedia");
-		if(!ns.exists()) {
-			FileWriter fw;
-			try {
-				fw = new FileWriter(ns);
-				fw.close();
-			} catch (IOException e1) {
-			}
-		}
-
-		File mf = new File(modsDir, MediaSource.NAME);
-		if(!mf.exists()) {
-			try {
-				FileWriter fw = new FileWriter(mf);
-				fw.close();
-				Log.v(TAG, "Done");
-			} catch (IOException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			}
-		}
-		
-		mf = new File(modsDir, "Streaming");
-		if(mf.exists()) {
-			deleteAll(mf);
-		}
-		
-		mf = new File(modsDir, "Network");
-		if(!mf.exists()) {			
-			Unzipper.unzipAsset(this, "Network.zip", modsDir);
-		}
-
-		
-		mf = new File(modsDir, "Favorites.plist");
-		if(!mf.exists()) {
-			try {
-				Log.v(TAG, "Trying to write Favorites");
-				FileWriter fw = new FileWriter(mf);
-				fw.close();
-				Log.v(TAG, "Done");
-			} catch (IOException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			}
-		}
-
-		new File(modsDir, "Favorites.lnk").delete();
 
 		boolean created = false;
 
@@ -895,6 +771,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			flipTo(lastConfig.flipper, false);
 		} else {
 			CSDBParser.init();
+			File mf = new File(modsDir, "Favorites.plist");
 			songDatabase.setActivePlaylist(mf);
 
 			DroidSoundPlugin.setOptions(prefs);
@@ -1214,6 +1091,139 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		 */
 		
 		Log.v(TAG, "ON CREATE DONE");
+	}
+
+	private void setupModsDir() {
+		
+		String md = prefs.getString("modsDir", null);
+		
+		if(md == null) {
+			File extFile = Environment.getExternalStorageDirectory();
+			if(extFile != null) {
+				modsDir = new File(extFile, "MODS");
+			} else {
+				showDialog(R.string.sdcard_not_found);
+				dialogShowing = true;
+			}
+		} else {
+			modsDir = new File(md);
+		}
+		
+		if(modsDir == null) {
+			modsDir = new File("/MODS");
+			return;			
+		}
+	
+		if(!modsDir.exists()) {
+			modsDir.mkdirs();
+		}
+
+		if(!modsDir.exists()) {
+			showDialog(R.string.create_moddir_failed);
+			dialogShowing = true;
+		} else {
+			Editor editor = prefs.edit();
+			editor.putString("modsDir", modsDir.getPath());
+			editor.commit();
+			// showDialog(12);
+		}
+
+		File[] files = modsDir.listFiles();
+		if(files != null) {
+			for(File f : files) {
+				if(f.getName().endsWith(".temp")) {
+					f.delete();
+				}
+			}
+		}
+
+		if(moveFileHere != null) {
+			moveFileHere(moveFileHere);
+		}
+
+		foundVersion = prefs.getInt("version", -1);
+		if(foundVersion == -1) {
+			File tempFile = new File(modsDir, "Examples.zip");
+			if(!tempFile.exists()) {
+				try {
+					InputStream is = getAssets().open("Examples.zip");
+					if(is != null) {
+
+						FileOutputStream os = new FileOutputStream(tempFile);
+
+						byte[] buffer = new byte[1024 * 64];
+
+						int rc = 0;
+						while(rc >= 0) {
+							rc = is.read(buffer);
+							if(rc > 0) {
+								os.write(buffer, 0, rc);
+							}
+						}
+						os.close();
+						is.close();
+					}
+
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			} else {
+				foundVersion = 0;
+			}
+		}
+	
+		Editor e = prefs.edit();
+		e.putInt("version", VERSION);
+		e.commit();
+
+		File ns = new File(modsDir, ".nomedia");
+		if(!ns.exists()) {
+			FileWriter fw;
+			try {
+				fw = new FileWriter(ns);
+				fw.close();
+			} catch (IOException e1) {
+			}
+		}
+
+		File mf = new File(modsDir, MediaSource.NAME);
+		if(!mf.exists()) {
+			try {
+				FileWriter fw = new FileWriter(mf);
+				fw.close();
+				Log.v(TAG, "Done");
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+		}
+		
+		mf = new File(modsDir, "Streaming");
+		if(mf.exists()) {
+			deleteAll(mf);
+		}
+		
+		mf = new File(modsDir, "Network");
+		if(!mf.exists()) {			
+			Unzipper.unzipAsset(this, "Network.zip", modsDir);
+		}
+
+		
+		mf = new File(modsDir, "Favorites.plist");
+		if(!mf.exists()) {
+			try {
+				Log.v(TAG, "Trying to write Favorites");
+				FileWriter fw = new FileWriter(mf);
+				fw.close();
+				Log.v(TAG, "Done");
+			} catch (IOException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+		}
+
+		new File(modsDir, "Favorites.lnk").delete();
+		
 	}
 
 	private void deleteAll(File mf) {

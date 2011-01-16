@@ -289,14 +289,14 @@ public class HttpSongSource {
 		
 		CacheEntry ce = null;
 		synchronized (dirMap) {
-			 ce = dirMap.get(pathName);
+			ce = dirMap.get(pathName);
+			if(ce != null && ce.status < 0) {
+				dirMap.remove(ce);
+			}
 		}
 
 		if(ce != null) {
 			Log.v(TAG, "IN CACHE!");
-			if(ce.status < 0) {
-				dirMap.remove(ce);
-			}
 			return ce.cursor;
 		}
 		

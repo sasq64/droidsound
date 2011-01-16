@@ -664,6 +664,10 @@ public class SongDatabase implements Runnable {
 
 		if(hasChanged) {
 			
+			if(scanCallback != null) {
+				scanCallback.notifyScan(parentDir.getPath(), 0);
+			}
+			
 			// All files and directories
 			Set<String> files = new HashSet<String>();
 			
