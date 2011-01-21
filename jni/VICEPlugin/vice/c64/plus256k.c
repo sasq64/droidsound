@@ -50,7 +50,6 @@
 #include "types.h"
 #include "uiapi.h"
 #include "util.h"
-#define UTIL_FILE_LOAD_RAW          0
 #include "vicii.h"
 
 /* PLUS256K registers */

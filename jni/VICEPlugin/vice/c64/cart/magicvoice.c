@@ -802,7 +802,8 @@ static io_source_t magicvoice_io2_device = {
     magicvoice_io2_read,
     magicvoice_io2_peek,
     magicvoice_io2_dump,
-    CARTRIDGE_MAGIC_VOICE
+    CARTRIDGE_MAGIC_VOICE,
+    0
 };
 
 static io_source_list_t *magicvoice_io2_list_item = NULL;
@@ -946,7 +947,7 @@ int magicvoice_peek_mem(WORD addr, BYTE *value)
             }
         }
         /* disabled, read c64 memory */
-    } else if ((addr >= 0xe000) && (addr <= 0xffff)) {
+    } else if (addr >= 0xe000) {
         if (mv_gameE000_enabled) {
             /* "passthrough" */
             return CART_READ_THROUGH;

@@ -153,11 +153,9 @@ static model_filter_init_t model_filter_init[2] = {
   }
 };
 
+int Filter::sqrt_table[1 << 16];
 
 Filter::model_filter_t Filter::model_filter[2];
-
-
-int Filter::sqrt_table[512];
 
 
 // ----------------------------------------------------------------------------
@@ -168,8 +166,8 @@ Filter::Filter()
   static bool class_init;
 
   if (!class_init) {
-    for (int i = 0; i < 512; i ++) {
-        sqrt_table[i] = (int)(sqrtf((float)(i << 22)) + 0.5f);
+    for (int i = 0; i < (1 << 16); i++) {
+      sqrt_table[i] = (int)(sqrtf((float)i*(1 << 22)) + 0.5f);
     }
 
     for (int m = 0; m < 2; m++) {
@@ -355,7 +353,13 @@ void Filter::enable_filter(bool enable)
 void Filter::set_chip_model(chip_model model)
 {
   sid_model = model;
-  Vlp = Vhp = Vbp = 0;
+  /* We initialize the state variables again just to make sure that
+   * the earlier model didn't leave behind some foreign, unrecoverable
+   * state. Hopefully set_chip_model() only occurs simultaneously with
+   * reset(). */
+  Vhp = 0;
+  Vbp = Vbp_x = Vbp_vc = 0;
+  Vlp = Vlp_x = Vlp_vc = 0;
 }
 
 
