@@ -152,33 +152,47 @@ V/MediaStreamer(12369): icy-metaint: 16000
 	
 	void httpStream() throws IOException {
 
-		localMPConnection = null;
+		//localMPConnection = null;
 		
 		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
 
 			parseMp3 = false;
 			boolean doRetry = false;
+			
+			Log.v(TAG, "Looping, doQuit is " + (doQuit ? "SET" : "UNSET"));
 
 			String httpName = httpNames.get(httpNo);
-			URL url = new URL(httpName);
-	
-			Log.v(TAG, "Opening URL " + httpName);
-				
-			StreamingHttpConnection httpConn = new StreamingHttpConnection(url);
-			/*URLConnection conn = url.openConnection();
-			if (!(conn instanceof HttpURLConnection))
-				throw new IOException("Not a HTTP connection");
-			HttpURLConnection httpConn = (HttpURLConnection) conn; */
+			StreamingHttpConnection httpConn = null;
+			int response = -1;
 			
-			httpConn.setAllowUserInteraction(false);
-			httpConn.setInstanceFollowRedirects(true);
-			httpConn.setRequestMethod("GET");
-			httpConn.addRequestProperty("Icy-MetaData", "1");
-	
-			Log.v(TAG, "Connecting");	
-			httpConn.connect();
-	
-			int response = httpConn.getResponseCode();			
+			while(true) {
+					
+				URL url = new URL(httpName);	
+				Log.v(TAG, "Opening URL " + httpName);
+
+				httpConn = new StreamingHttpConnection(url);
+				/*URLConnection conn = url.openConnection();
+				if (!(conn instanceof HttpURLConnection))
+					throw new IOException("Not a HTTP connection");
+				HttpURLConnection httpConn = (HttpURLConnection) conn; */
+				
+				httpConn.setAllowUserInteraction(false);
+				httpConn.setInstanceFollowRedirects(true);
+				httpConn.setRequestMethod("GET");
+				httpConn.addRequestProperty("Icy-MetaData", "1");
+		
+				Log.v(TAG, "Connecting");	
+				httpConn.connect();
+		
+				response = httpConn.getResponseCode();			
+				
+				if(response == HttpURLConnection.HTTP_MOVED_TEMP) {					
+					httpName = httpConn.getHeaderField("location");
+					Log.v(TAG, String.format(">>>>> Redirecting to '%s'", httpName));
+					continue;
+				}
+				break;
+			}
 			//Log.v(TAG, String.format("RESPONSE %d %s", response, httpConn.getResponseMessage()));
 			
 			if (response == HttpURLConnection.HTTP_OK) {
@@ -234,7 +248,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				frameHeaderBits = 0;
 				boolean firstRead = true;
 
-				last_usec = usec = 0L;
+				//last_usec = usec = 0L;
 				nextFramePos = -1;
 				hasQuit = false;
 				extraSize = 0;
@@ -242,6 +256,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				mplayerPos = 0;
 				bufferEnded = false;
 				
+				
+				Log.v(TAG, "Opening connection");
 				InputStream in = httpConn.getInputStream();
 
 				if(!parseMp3)
@@ -282,6 +298,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 								try {
 									Thread.sleep(100);
 								} catch (InterruptedException e) {
+									Log.v(TAG, "####### INTERRUPTED");
 									doQuit = true;
 								}
 								continue;
@@ -342,11 +359,18 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			
 			if(doRetry)
 				continue;
+			Log.v(TAG, "####### BREAKING");
 			
 			break;
 		}
 		hasQuit = true;		
 		Log.v(TAG, "THREAD ENDING");
+		
+		if(localMPConnection != null) {
+			localMPConnection.close();
+			localMPConnection = null;
+		}
+		
 		doQuit = false;			
 	}
 	
@@ -605,6 +629,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		}
 		
 		int rc = mediaPlayer.getCurrentPosition();
+		
+		if(rc < 0) {
+			Log.v(TAG, String.format("########## READ POS %d msec",rc));
+		}
 
 		if(rc > 1000 && rc == lastPos && fileMode) {
 			try {
@@ -629,11 +657,21 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 	@Override
 	public void run() {
-		try {
-			httpStream();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		while(true) {
+			try {
+				httpStream();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (Error e2) {
+				e2.printStackTrace();
+			}
+			if(hasQuit)
+				return;
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
 		}
 	}
 	

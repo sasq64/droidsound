@@ -860,6 +860,7 @@ public class Player implements Runnable {
 						
 						if(playPos < -0) { // !mp.isPlaying()) {
 							// songEnded = true;
+							Log.v(TAG, "SOUNDDATA DONE");
 							currentState = State.SWITCHING;
 							Message msg = mHandler.obtainMessage(MSG_DONE);
 							mHandler.sendMessage(msg);
@@ -943,6 +944,7 @@ public class Player implements Runnable {
 						if(song >= 0 && song != currentTune) {
 
 							if(startedFromSub) {
+								Log.v(TAG, "SUBTUNE ENDED");
 								currentState = State.SWITCHING;
 								Message msg = mHandler.obtainMessage(MSG_DONE);
 								mHandler.sendMessage(msg);

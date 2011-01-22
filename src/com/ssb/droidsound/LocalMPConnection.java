@@ -27,6 +27,8 @@ public class LocalMPConnection {
 		Log.v(TAG, String.format("Accepting on port %d", socketPort));
 		socket = serverSocket.accept();
 		
+		Log.v(TAG, "Accepted");
+		
 		OutputStream os = socket.getOutputStream();
 		InputStream is = socket.getInputStream();
 
