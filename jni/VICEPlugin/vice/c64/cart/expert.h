@@ -43,6 +43,9 @@ extern BYTE REGPARM1 expert_roml_read(WORD addr);
 extern void REGPARM2 expert_roml_store(WORD addr, BYTE value);
 extern void REGPARM2 expert_raml_store(WORD addr, BYTE value);
 extern BYTE REGPARM1 expert_romh_read(WORD addr);
+extern int expert_romh_phi1_read(WORD addr, BYTE *value);
+extern int expert_romh_phi2_read(WORD addr, BYTE *value);
+extern int expert_peek_mem(WORD addr, BYTE *value);
 
 extern void expert_reset(void);
 extern void expert_freeze(void);
@@ -62,7 +65,6 @@ extern int expert_freeze_allowed(void);
 extern int expert_cart_enabled(void);
 
 struct snapshot_s;
-
 extern int expert_snapshot_write_module(struct snapshot_s *s);
 extern int expert_snapshot_read_module(struct snapshot_s *s);
 

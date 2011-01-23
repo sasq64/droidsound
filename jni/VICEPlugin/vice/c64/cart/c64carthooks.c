@@ -1504,6 +1504,8 @@ void cart_detach(int type)
 /* called once by cartridge_init at machine init */
 void cart_init(void)
 {
+    DBG(("CART: cart_init\n"));
+
     /* "Slot 0" */
     mmc64_init();
     magicvoice_init();
@@ -1756,6 +1758,8 @@ void cartridge_init_config(void)
 void cartridge_reset(void)
 {
     cart_unset_alarms();
+
+    cart_reset_memptr();
 
     /* "IO Slot" */
     if (digimax_cart_enabled()) {
@@ -2103,6 +2107,90 @@ int cartridge_crt_save(int type, const char *filename)
 
 /* ------------------------------------------------------------------------- */
 
+int cartridge_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+{
+    digimax_sound_machine_init(psid, speed, cycles_per_sec);
+    sfx_soundexpander_sound_machine_init(psid, speed, cycles_per_sec);
+    sfx_soundsampler_sound_machine_init(psid, speed, cycles_per_sec);
+    magicvoice_sound_machine_init(psid, speed, cycles_per_sec);
+    return 0;
+}
+
+void cartridge_sound_machine_close(sound_t *psid)
+{
+    sfx_soundexpander_sound_machine_close(psid);
+    magicvoice_sound_machine_close(psid);
+}
+
+/* for read/store 0x00 <= addr <= 0x1f is the sid
+ *                0x20 <= addr <= 0x3f is the digimax
+ *                0x40 <= addr <= 0x5f is the SFX sound sampler
+ *                0x60 <= addr <= 0x7f is the SFX sound expander
+ *                0x80 <= addr <= 0x9f is the Magic Voice
+ */
+int cartridge_sound_machine_read(sound_t *psid, WORD addr, BYTE *value)
+{
+    if (addr >= 0x20 && addr <= 0x3f) {
+        *value = digimax_sound_machine_read(psid, (WORD)(addr - 0x20));
+        return 1;
+    }
+
+    if (addr >= 0x40 && addr <= 0x5f) {
+        *value = sfx_soundsampler_sound_machine_read(psid, (WORD)(addr - 0x40));
+        return 1;
+    }
+
+    if (addr >= 0x60 && addr <= 0x7f) {
+        *value = sfx_soundexpander_sound_machine_read(psid, (WORD)(addr - 0x60));
+        return 1;
+    }
+
+    if (addr >= 0x80 && addr <= 0x9f) {
+        *value = magicvoice_sound_machine_read(psid, (WORD)(addr - 0x80));
+        return 1;
+    }
+
+    return 0;
+}
+
+void cartridge_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
+{
+    if (addr >= 0x20 && addr <= 0x3f) {
+        digimax_sound_machine_store(psid, (WORD)(addr - 0x20), byte);
+    }
+
+    if (addr >= 0x40 && addr <= 0x5f) {
+        sfx_soundsampler_sound_machine_store(psid, (WORD)(addr - 0x40), byte);
+    }
+
+    if (addr >= 0x60 && addr <= 0x7f) {
+        sfx_soundexpander_sound_machine_store(psid, (WORD)(addr - 0x60), byte);
+    }
+
+    if (addr >= 0x80 && addr <= 0x9f) {
+        magicvoice_sound_machine_store(psid, (WORD)(addr - 0x80), byte);
+    }
+}
+
+void cartridge_sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
+{
+    digimax_sound_reset();
+    sfx_soundexpander_sound_reset();
+    sfx_soundsampler_sound_reset();
+    magicvoice_sound_machine_reset(psid, cpu_clk);
+}
+
+int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
+{
+    digimax_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
+    sfx_soundexpander_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
+    sfx_soundsampler_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
+    magicvoice_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
+    return nr;
+}
+
+/* ------------------------------------------------------------------------- */
+
 /*
     Snapshot reading and writing
 
@@ -2202,7 +2290,7 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
         switch (cart_ids[i]) {
             /* "Slot 0" */
             /* FIXME case CARTRIDGE_MMC64: */
-            /* FIXME case CARTRIDGE_MAGIC_VOICE: */
+            /* FIXME case CARTRIDGE_MAGIC_VOICE: */ /* emulation not ready yet */
             case CARTRIDGE_IEEE488:
                 if (tpi_snapshot_write_module(s) < 0) {
                     return -1;
@@ -2210,14 +2298,26 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                 break;
 
             /* "Slot 1" */
-            /* FIXME case CARTRIDGE_DQBB: */
+            case CARTRIDGE_DQBB:
+                if (dqbb_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
             case CARTRIDGE_EXPERT:
                 if (expert_snapshot_write_module(s) < 0) {
                     return -1;
                 }
                 break;
-            /* FIXME case CARTRIDGE_ISEPIC: */
-            /* FIXME case CARTRIDGE_RAMCART: */
+            case CARTRIDGE_ISEPIC:
+                if (isepic_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+            case CARTRIDGE_RAMCART:
+                if (ramcart_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
 
             /* "Main Slot" */
             case CARTRIDGE_ACTION_REPLAY:
@@ -2368,7 +2468,7 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                     return -1;
                 }
                 break;
-            /* FIXME case CARTRIDGE_MMC_REPLAY: */
+            /* FIXME case CARTRIDGE_MMC_REPLAY: */ /* emulation not ready yet */
             case CARTRIDGE_OCEAN:
                 if (ocean_snapshot_write_module(s) < 0) {
                     return -1;
@@ -2557,6 +2657,18 @@ int cartridge_snapshot_read_modules(struct snapshot_s *s)
         || SMR_B(m, &export.ultimax_phi2) < 0
         || SMR_DW(m, &cart_freeze_alarm_time) < 0
         || SMR_DW(m, &cart_nmi_alarm_time) < 0
+        || SMR_B(m, &export_slot1.game) < 0
+        || SMR_B(m, &export_slot1.exrom) < 0
+        || SMR_B(m, &export_slot1.ultimax_phi1) < 0
+        || SMR_B(m, &export_slot1.ultimax_phi2) < 0
+        || SMR_B(m, &export_slotmain.game) < 0
+        || SMR_B(m, &export_slotmain.exrom) < 0
+        || SMR_B(m, &export_slotmain.ultimax_phi1) < 0
+        || SMR_B(m, &export_slotmain.ultimax_phi2) < 0
+        || SMR_B(m, &export_passthrough.game) < 0
+        || SMR_B(m, &export_passthrough.exrom) < 0
+        || SMR_B(m, &export_passthrough.ultimax_phi1) < 0
+        || SMR_B(m, &export_passthrough.ultimax_phi2) < 0
         /* some room for future expansion */
         || SMR_DW(m, &dummy) < 0
         || SMR_DW(m, &dummy) < 0
@@ -2581,9 +2693,7 @@ int cartridge_snapshot_read_modules(struct snapshot_s *s)
         switch (cart_ids[i]) {
             /* "Slot 0" */
             /* FIXME case CARTRIDGE_MMC64: */
-            case CARTRIDGE_MAGIC_VOICE:
-                /* no snapshot, emulation not ready yet */
-                break;
+            /* FIXME case CARTRIDGE_MAGIC_VOICE: */ /* emulation not ready yet */
             case CARTRIDGE_IEEE488:
                 if (tpi_snapshot_read_module(s) < 0) {
                     return -1;
@@ -2591,14 +2701,26 @@ int cartridge_snapshot_read_modules(struct snapshot_s *s)
                 break;
 
             /* "Slot 1" */
-            /* FIXME case CARTRIDGE_DQBB: */
+            case CARTRIDGE_DQBB:
+                if (dqbb_snapshot_read_module(s) < 0) {
+                    return -1;
+                }
+                break;
             case CARTRIDGE_EXPERT:
                 if (expert_snapshot_read_module(s) < 0) {
                     return -1;
                 }
                 break;
-            /* FIXME case CARTRIDGE_ISEPIC: */
-            /* FIXME case CARTRIDGE_RAMCART: */
+            case CARTRIDGE_ISEPIC:
+                if (isepic_snapshot_read_module(s) < 0) {
+                    return -1;
+                }
+                break;
+            case CARTRIDGE_RAMCART:
+                if (ramcart_snapshot_read_module(s) < 0) {
+                    return -1;
+                }
+                break;
 
             /* "Main Slot" */
             case CARTRIDGE_ACTION_REPLAY:
@@ -2749,9 +2871,7 @@ int cartridge_snapshot_read_modules(struct snapshot_s *s)
                     return -1;
                 }
                 break;
-            case CARTRIDGE_MMC_REPLAY:
-                /* no snapshot, emulation not ready yet */
-                break;
+            /* FIXME CARTRIDGE_MMC_REPLAY: */ /* emulation not ready yet */
             case CARTRIDGE_OCEAN:
                 if (ocean_snapshot_read_module(s) < 0) {
                     return -1;

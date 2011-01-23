@@ -2,6 +2,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_MODULE := resid
 LOCAL_ARM_MODE := arm
+LOCAL_CFLAGS := -ffast-math -fno-exceptions
 LOCAL_CPP_EXTENSION := cc
 MY_RESID_FILES = $(wildcard $(LOCAL_PATH)/vice/resid/*.cc)
 LOCAL_SRC_FILES := $(MY_RESID_FILES:$(LOCAL_PATH)%=%)

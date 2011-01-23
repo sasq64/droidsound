@@ -99,16 +99,19 @@ static c64export_resource_t export_res_ultimax = {
 
 void generic_8kb_config_init(void)
 {
+    roml_bank = romh_bank = 0;
     cart_config_changed_slotmain(0, 0, CMODE_READ);
 }
 
 void generic_16kb_config_init(void)
 {
+    roml_bank = romh_bank = 0;
     cart_config_changed_slotmain(1, 1, CMODE_READ);
 }
 
 void generic_ultimax_config_init(void)
 {
+    roml_bank = romh_bank = 0;
     cart_config_changed_slotmain(3, 3, CMODE_READ);
 }
 
@@ -318,7 +321,7 @@ BYTE generic_peek_mem(WORD addr)
 
     /* FIXME: export.xxx */
     if (!export.exrom && export.game) {
-        if (addr >= 0xe000 && addr <= 0xffff) {
+        if (addr >= 0xe000) {
             return romh_banks[(addr & 0x1fff) + (romh_bank << 13)];
         }
     } else {

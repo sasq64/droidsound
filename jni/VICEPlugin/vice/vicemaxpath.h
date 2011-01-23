@@ -1,9 +1,8 @@
 /*
- * cbm2cia.h - Definitions for MOS6526 (CIA) chip emulation.
+ * vicemaxpath.h
  *
  * Written by
- *  Jouko Valta <jopi@stekt.oulu.fi>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Marco van den Heuvel <blackystardust68@yahoo.com>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -25,24 +24,19 @@
  *
  */
 
-#ifndef VICE_CBM2CIA_H
-#define VICE_CBM2CIA_H
+#ifndef VICE_MAXPATH_H
+#define VICE_MAXPATH_H
 
-#include "types.h"
-
-struct cia_context_s;
-struct machine_context_s;
-
-extern void cia1_setup_context(struct machine_context_s *machine_context);
-
-extern void cia1_init(struct cia_context_s *cia_context);
-extern void REGPARM2 cia1_store(WORD addr, BYTE value);
-extern BYTE REGPARM1 cia1_read(WORD addr);
-extern BYTE REGPARM1 cia1_peek(WORD addr);
-
-extern void cia1_set_ieee_dir(struct cia_context_s *cia_context, int isout);
-
-extern void cia1_set_timing(struct cia_context_s *cia_context, int todticks);
-
+#ifndef PATH_MAX
+#  ifdef MAX_PATH
+#    define PATH_MAX MAX_PATH
+#  else
+#    define PATH_MAX 1024
+#  endif
 #endif
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN PATH_MAX
+#endif
+
+#endif

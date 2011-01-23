@@ -99,7 +99,7 @@
 static int isepic_enabled;
 
 /* Flag: what direction is the switch at, 0 = away, 1 = towards computer */
-int isepic_switch = 0; /* FIXME: make static */
+static int isepic_switch = 0;
 
 static int isepic_write_image = 0;
 
@@ -197,11 +197,14 @@ static int isepic_activate(void)
     if (!util_check_null_string(isepic_filename)) {
         log_message(LOG_DEFAULT, "Reading ISEPIC image %s.", isepic_filename);
         if (isepic_load_image() < 0) {
-            log_message(LOG_DEFAULT, "Reading ISEPIC image %s failed, creating new.", isepic_filename);
+            log_error(LOG_DEFAULT, "Reading ISEPIC image %s failed.", isepic_filename);
+            /* only create a new file if no file exists, so we dont accidently overwrite any files */
             isepic_filetype = CARTRIDGE_FILETYPE_BIN;
-            if (isepic_flush_image() < 0) {
-                log_message(LOG_DEFAULT, "Creating ISEPIC image %s failed.", isepic_filename);
-                return -1;
+            if (!util_file_exists(isepic_filename)) {
+                if (isepic_flush_image() < 0) {
+                    log_error(LOG_DEFAULT, "Creating ISEPIC image %s failed.", isepic_filename);
+                    return -1;
+                }
             }
         }
     }
@@ -219,7 +222,7 @@ static int isepic_deactivate(void)
         if (isepic_write_image) {
             log_message(LOG_DEFAULT, "Writing ISEPIC Cartridge image %s.", isepic_filename);
             if (isepic_flush_image() < 0) {
-                log_message(LOG_DEFAULT, "Writing ISEPIC Cartridge image %s failed.", isepic_filename);
+                log_error(LOG_DEFAULT, "Writing ISEPIC Cartridge image %s failed.", isepic_filename);
             }
         }
     }
@@ -500,6 +503,41 @@ void REGPARM2 isepic_page_store(WORD addr, BYTE value)
     }
 }
 
+int isepic_romh_phi1_read(WORD addr, BYTE *value)
+{
+    switch (addr) {
+        case 0xfffa:
+        case 0xfffb:
+            *value = isepic_ram[(isepic_page * 256) + (addr & 0xff)];
+            return CART_READ_VALID;
+    }
+    return CART_READ_C64MEM;
+}
+
+int isepic_romh_phi2_read(WORD addr, BYTE *value)
+{
+    return isepic_romh_phi1_read(addr, value);
+}
+
+int isepic_peek_mem(WORD addr, BYTE *value)
+{
+    if (isepic_switch) {
+        if ((addr >= 0x1000) && (addr <= 0xcfff)) {
+            *value = isepic_ram[(isepic_page * 256) + (addr & 0xff)];
+            return CART_READ_VALID;
+        } else if (addr >= 0xe000) {
+            switch (addr) {
+                case 0xfffa:
+                case 0xfffb:
+                    *value = isepic_ram[(isepic_page * 256) + (addr & 0xff)];
+                    return CART_READ_VALID;
+            }
+        }
+        return CART_READ_C64MEM;
+    }
+    return CART_READ_THROUGH;
+}
+
 /* ---------------------------------------------------------------------*/
 
 const char *isepic_get_file_name(void)
@@ -759,3 +797,83 @@ void isepic_detach(void)
     resources_set_int("IsepicCartridgeEnabled", 0);
 }
 
+/* ---------------------------------------------------------------------*/
+
+#define CART_DUMP_VER_MAJOR   0
+#define CART_DUMP_VER_MINOR   0
+#define SNAP_MODULE_NAME  "CARTISEPIC"
+
+int isepic_snapshot_write_module(snapshot_t *s)
+{
+    snapshot_module_t *m;
+
+    m = snapshot_module_create(s, SNAP_MODULE_NAME,
+                          CART_DUMP_VER_MAJOR, CART_DUMP_VER_MINOR);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if (0
+        || (SMW_B(m, (BYTE)isepic_enabled) < 0)
+        || (SMW_B(m, (BYTE)isepic_switch) < 0)
+        || (SMW_B(m, (BYTE)isepic_page) < 0)
+        || (SMW_BA(m, isepic_ram, ISEPIC_RAM_SIZE) < 0)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+    return 0;
+}
+
+int isepic_snapshot_read_module(snapshot_t *s)
+{
+    BYTE vmajor, vminor;
+    snapshot_module_t *m;
+
+    m = snapshot_module_open(s, SNAP_MODULE_NAME, &vmajor, &vminor);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if ((vmajor != CART_DUMP_VER_MAJOR) || (vminor != CART_DUMP_VER_MINOR)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    isepic_ram = lib_malloc(ISEPIC_RAM_SIZE);
+
+    if (0
+        || (SMR_B_INT(m, &isepic_enabled) < 0)
+        || (SMR_B_INT(m, &isepic_switch) < 0)
+        || (SMR_B_INT(m, (int*)&isepic_page) < 0)
+        || (SMR_BA(m, isepic_ram, ISEPIC_RAM_SIZE) < 0)) {
+        snapshot_module_close(m);
+        lib_free(isepic_ram);
+        isepic_ram = NULL;
+        return -1;
+    }
+
+    snapshot_module_close(m);
+
+    isepic_filetype = 0;
+    isepic_write_image = 0;
+    isepic_enabled = 1;
+
+    /* FIXME: ugly code duplication to avoid cart_config_changed calls */
+    isepic_io1_list_item = c64io_register(&isepic_io1_device);
+    isepic_io2_list_item = c64io_register(&isepic_io2_device);
+
+    if (c64export_add(&export_res) < 0) {
+        lib_free(isepic_ram);
+        isepic_ram = NULL;
+        c64io_unregister(isepic_io1_list_item);
+        c64io_unregister(isepic_io2_list_item);
+        isepic_io1_list_item = NULL;
+        isepic_io2_list_item = NULL;
+        isepic_enabled = 0;
+        return -1;
+    }
+
+    return 0;
+}

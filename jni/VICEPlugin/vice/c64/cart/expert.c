@@ -295,11 +295,14 @@ static int expert_activate(void)
     if (!util_check_null_string(expert_filename)) {
         log_message(LOG_DEFAULT, "Reading Expert Cartridge image %s.", expert_filename);
         if (expert_load_image() < 0) {
-            log_message(LOG_DEFAULT, "Reading Expert Cartridge image %s failed, creating new.", expert_filename);
+            log_error(LOG_DEFAULT, "Reading Expert Cartridge image %s failed.", expert_filename);
+            /* only create a new file if no file exists, so we dont accidently overwrite any files */
             expert_filetype = CARTRIDGE_FILETYPE_BIN;
-            if (expert_flush_image() < 0) {
-                log_message(LOG_DEFAULT, "Creating Expert Cartridge image %s failed.", expert_filename);
-                return -1;
+            if (!util_file_exists(expert_filename)) {
+                if (expert_flush_image() < 0) {
+                    log_error(LOG_DEFAULT, "Creating Expert Cartridge image %s failed.", expert_filename);
+                    return -1;
+                }
             }
         }
     }
@@ -317,7 +320,7 @@ static int expert_deactivate(void)
         if (expert_write_image) {
             log_message(LOG_DEFAULT, "Writing Expert Cartridge image %s.", expert_filename);
             if (expert_flush_image() < 0) {
-                log_message(LOG_DEFAULT, "Writing Expert Cartridge image %s failed.", expert_filename);
+                log_error(LOG_DEFAULT, "Writing Expert Cartridge image %s failed.", expert_filename);
             }
         }
     }
@@ -456,6 +459,42 @@ BYTE REGPARM1 expert_romh_read(WORD addr)
     } else {
         return mem_read_without_ultimax(addr);
     }
+}
+
+int expert_romh_phi1_read(WORD addr, BYTE *value)
+{
+    if ((cartmode == EXPERT_MODE_ON) && expert_ramh_enabled) {
+        *value = expert_ram[addr & 0x1fff];
+        return CART_READ_VALID;
+    }
+    return CART_READ_C64MEM;
+}
+
+int expert_romh_phi2_read(WORD addr, BYTE *value)
+{
+    return expert_romh_phi1_read(addr, value);
+}
+
+int expert_peek_mem(WORD addr, BYTE *value)
+{
+    if (cartmode == EXPERT_MODE_PRG) {
+        if ((addr >= 0x8000) && (addr <= 0x9fff)) {
+            *value = expert_ram[addr & 0x1fff];
+            return CART_READ_VALID;
+        }
+        /* return CART_READ_C64MEM; */
+    } else if (cartmode == EXPERT_MODE_ON) {
+        if ((addr >= 0x8000) && (addr <= 0x9fff)) {
+            *value = expert_ram[addr & 0x1fff];
+            return CART_READ_VALID;
+        } else if (addr >= 0xe000) {
+            if (expert_ramh_enabled) {
+                *value = expert_ram[addr & 0x1fff];
+                return CART_READ_VALID;
+            }
+        }
+    }
+    return CART_READ_THROUGH;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -861,9 +900,10 @@ int expert_snapshot_read_module(snapshot_t *s)
     snapshot_module_close(m);
 
     expert_filetype = 0;
+    expert_write_image = 0;
     expert_enabled = 1;
 
-    /* FIXME ugly code duplication to avoid cart_config_changed calls */
+    /* FIXME: ugly code duplication to avoid cart_config_changed calls */
     expert_io1_list_item = c64io_register(&expert_io1_device);
 
     if (c64export_add(&export_res) < 0) {
