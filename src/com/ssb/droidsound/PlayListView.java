@@ -10,7 +10,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.util.AttributeSet;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -151,7 +151,7 @@ public class PlayListView extends ListView { //extends TouchListView {
     		mSideTitleIndex = mCursor.getColumnIndex("SIDETITLE");
     		mDateIndex = mCursor.getColumnIndex("DATE");
     		
-    		//Log.v(TAG, String.format("%% SIDETITLE %d", mSideTitleIndex));
+    		//Log.d(TAG, "%% SIDETITLE %d", mSideTitleIndex);
     		
     		mTitleIndex = mCursor.getColumnIndex("TITLE");
     		mTypeIndex = mCursor.getColumnIndex("TYPE");
@@ -165,7 +165,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 		}
 		
 		protected void finalize() throws Throwable {
-			Log.v(TAG, "FINALIIIIIIIIZE!");
+			Log.d(TAG, "FINALIIIIIIIIZE!");
 			if(mCursor != null) {
 				mCursor.close();
 			}
@@ -229,14 +229,14 @@ public class PlayListView extends ListView { //extends TouchListView {
 			String sub = null;
 			String side = null;
 			
-			//Log.v(TAG, "DATEINDEX " + mDateIndex);
+			//Log.d(TAG, "DATEINDEX " + mDateIndex);
 			
 			if(mSideTitleIndex >= 0) {
 				side = mCursor.getString(mSideTitleIndex);
 			} else if(mDateIndex >= 0) {
 				int date = mCursor.getInt(mDateIndex);
 				if(date > 0) {
-					//Log.v(TAG, "DATE " + date);
+					//Log.d(TAG, "DATE " + date);
 					side = String.format("(%04d)", date / 10000);
 				}
 			}
@@ -404,13 +404,13 @@ public class PlayListView extends ListView { //extends TouchListView {
 			mCursor.moveToPosition(position);
 			String fileName = mCursor.getString(mFileIndex);
 			String path = pathName;
-			Log.v(TAG, "FILENAME " + fileName);
+			Log.d(TAG, "FILENAME " + fileName);
 			File f;
 			if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 				String p = mCursor.getString(mPathIndex);
 				if(p != null) {
 					path = p;
-					Log.v(TAG, "PATH " + path);
+					Log.d(TAG, "PATH " + path);
 				}
 			} 
 
@@ -451,7 +451,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 					type = mCursor.getInt(mTypeIndex);
 				}
 				
-				//Log.v(TAG, String.format("File %s type %d", f.getPath(), type));
+				//Log.d(TAG, "File %s type %d", f.getPath(), type);
 				
 				if(!skipDirs || (type == SongDatabase.TYPE_FILE)) {
 					files.add(f);
@@ -478,7 +478,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 			
 			FileInfo [] files = getFiles(false);
 			for(int i=0; i<files.length; i++) {
-				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), hfile.getPath()));
+				//Log.d(TAG, "%s vs %s", files[i].getPath(), hfile.getPath());
 				if(hilightedFile.equals(files[i].getFile())) {
 					hilightedPosition = i;
 					break;
@@ -535,7 +535,7 @@ public class PlayListView extends ListView { //extends TouchListView {
     		setDropListener(new DropListener() {
     			@Override
     			public void drop(int from, int to) {
-    				Log.v(TAG, "X");
+    				Log.d(TAG, "X");
     				EditableCursor ec = (EditableCursor) adapter.mCursor;
     				ec.moveRow(from, to);
     				adapter.notifyDataSetChanged();
@@ -545,7 +545,7 @@ public class PlayListView extends ListView { //extends TouchListView {
     		setRemoveListener(new RemoveListener() {
     			@Override
     			public void remove(int which) {
-    				Log.v(TAG, "Y");
+    				Log.d(TAG, "Y");
     				EditableCursor ec = (EditableCursor) adapter.mCursor;
     				ec.removeRow(which);
     				adapter.notifyDataSetChanged();
@@ -571,7 +571,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 	
 	public void setHilighted(String name) {
 		
-		Log.v(TAG, String.format("SET_HILIGHT %s", name));
+		Log.d(TAG, "SET_HILIGHT %s", name);
 		adapter.setHilightedFile(new File(name));
 		//hilightedName = name;
 		adapter.notifyDataSetChanged();
@@ -585,14 +585,14 @@ public class PlayListView extends ListView { //extends TouchListView {
 		} else {
 			FileInfo [] files = adapter.getFiles(false);
 			for(int i=0; i<files.length; i++) {
-				//Log.v(TAG, String.format("%s vs %s", files[i].getPath(), name));
+				//Log.d(TAG, "%s vs %s", files[i].getPath(), name);
 				if(name.equals(files[i].getPath())) {
-					Log.v(TAG, String.format("Scrolling to %s", name));
+					Log.d(TAG, "Scrolling to %s", name);
 					setSelectionFromTop(i, 0);
 					return;
 				}
 			}
-			Log.v(TAG, String.format("Could not scroll to %s", name));
+			Log.d(TAG, "Could not scroll to %s", name);
 		}
 	}
 

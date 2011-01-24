@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 
 import android.os.Environment;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
 
@@ -51,7 +51,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	
 	@Override
 	public void unload() {
-		Log.v(TAG, "Unloading");
+		Log.d(TAG, "Unloading");
 		if(currentSong != 0)
 			N_unload(currentSong);		
 	}
@@ -72,9 +72,9 @@ public class SC68Plugin extends DroidSoundPlugin {
 			unzipper = null;
 		}
 		
-		Log.v(TAG, String.format("Trying to load '%s'", name));
+		Log.d(TAG, "Trying to load '%s'", name);
 		currentSong = N_load(module, size);
-		Log.v(TAG, String.format("Trying to load '%s' -> %d", name, currentSong));
+		Log.d(TAG, "Trying to load '%s' -> %d", name, currentSong);
 		return (currentSong != 0);
 	}
 	
@@ -125,7 +125,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		String head = new String(module, 0, 4);
 		if(head.equals("ICE!")) {
 			
-			Log.v(TAG, "Unicing");
+			Log.d(TAG, "Unicing");
 			
 			if(targetBuffer == null) {
 				targetBuffer = new byte [1024*1024];
@@ -140,18 +140,18 @@ public class SC68Plugin extends DroidSoundPlugin {
 		String header = new String(data, 12, 4);
 		String header2 = new String(data, 0, 16);
 		if(header.equals("SNDH")) {
-			Log.v(TAG, "Found SNDH");
+			Log.d(TAG, "Found SNDH");
 			type = "SNDH";
 			int offset = 16;
 			boolean done = false;
 			
 			while(offset < 1024) {
 				String tag = new String(data, offset, 4);
-				//Log.v(TAG, String.format("TAG: %s", tag));
+				//Log.d(TAG, "TAG: %s", tag);
 				try {
 					if(tag.equals("TITL")) {
 						title = fromData(data, offset+4, 64);
-						Log.v(TAG, String.format("TITLE: %s", title));
+						Log.d(TAG, "TITLE: %s", title);
 						offset += (4+title.length());
 					} else if(tag.equals("COMM")) {
 						composer = fromData(data, offset+4, 64);
@@ -160,7 +160,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 						year = fromData(data, offset+4, 32);
 						offset += (4+year.length());
 					} else if(tag.equals("HDNS")) {
-						Log.v(TAG, "END");
+						Log.d(TAG, "END");
 						break;
 					} else {
 						while(data[offset] != 0) offset++;
@@ -180,25 +180,25 @@ public class SC68Plugin extends DroidSoundPlugin {
 				String tag = new String(data, offset, 4);
 				int tsize = data[offset+4] | (data[offset+5]<<8) | (data[offset+6]<<16) | (data[offset+7]<<24);
 				offset += 8;
-				Log.v(TAG, String.format("TAG: %s, size %d", tag, tsize));
+				Log.d(TAG, "TAG: %s, size %d", tag, tsize);
 				if(tsize < 0 || tsize > size) {
 					break;
 				}
 				try {
 					if(tag.equals("SCMN")) {
 						title = fromData(data, offset, tsize);
-						Log.v(TAG, String.format("TITLE: %s", title));
+						Log.d(TAG, "TITLE: %s", title);
 					} else if(tag.equals("SCFN")) {
 						if(title != null) {
 							title = fromData(data, offset, tsize);
-							Log.v(TAG, String.format("TITLE: %s", title));
+							Log.d(TAG, "TITLE: %s", title);
 						}
 					} else if(tag.equals("SCAN")) {
 						composer = fromData(data, offset, tsize);
 					} else if(tag.equals("SC68")) {
 						tsize = 0;
 					} else if(tag.equals("SCEF") || tag.equals("SCDA")) {
-						Log.v(TAG, "END");
+						Log.d(TAG, "END");
 						break;
 					} else {			
 					}
@@ -256,7 +256,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	@Override
 	public boolean setTune(int tune) {
 		
-		Log.v(TAG, String.format("Set tune %d", tune));
+		Log.d(TAG, "Set tune %d", tune);
 		
 		return N_setTune(currentSong, tune);
 	}

@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.ssb.droidsound.plugins.SidplayPlugin;
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class CueFile {
 	private static final String TAG = CueFile.class.getSimpleName();
@@ -32,19 +32,19 @@ public class CueFile {
 			reader = new BufferedReader(new FileReader(file));
 			String line = reader.readLine();
 			while(line != null) {				
-				Log.v(TAG, line);
+				Log.d(TAG, line);
 				String[] ll = line.trim().split(" ");
 				if(ll.length > 0) {
 					String arg;
 					String cmd = ll[0].toUpperCase();
 					arg = getQuotedString(line);
 					
-					Log.v(TAG, String.format("%s '%s'", cmd, arg));
+					Log.d(TAG, "%s '%s'", cmd, arg);
 					
 					if(cmd.equals("TRACK")) {
 						currentTrack = new Track();
 						tracks.add(currentTrack);
-						Log.v(TAG, String.format("New track %02d", tracks.size()));
+						Log.d(TAG, "New track %02d", tracks.size());
 					} else if(cmd.equals("TITLE")) {
 						if(currentTrack != null)
 							currentTrack.title = arg;						
@@ -63,7 +63,7 @@ public class CueFile {
 				}
 				line = reader.readLine();
 			}
-			Log.v(TAG, "DONE");
+			Log.d(TAG, "DONE");
 			reader.close();
 			
 		} catch (IOException e) {

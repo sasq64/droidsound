@@ -21,7 +21,7 @@ import java.util.Map.Entry;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public abstract class DroidSoundPlugin {
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
@@ -104,7 +104,7 @@ public abstract class DroidSoundPlugin {
 		try {
 			URL url = new URL(songName);
 	
-			Log.v(TAG, "Opening URL " + songName);
+			Log.d(TAG, "Opening URL " + songName);
 	
 			URLConnection conn = url.openConnection();
 			if(!(conn instanceof HttpURLConnection))
@@ -115,7 +115,7 @@ public abstract class DroidSoundPlugin {
 			httpConn.setInstanceFollowRedirects(true);
 			httpConn.setRequestMethod("GET");
 	
-			Log.v(TAG, "Connecting");
+			Log.d(TAG, "Connecting");
 	
 			httpConn.connect();
 	
@@ -123,7 +123,7 @@ public abstract class DroidSoundPlugin {
 			if(response == HttpURLConnection.HTTP_OK) {
 				int size;
 				byte[] buffer = new byte[16384];
-				Log.v(TAG, "HTTP connected");
+				Log.d(TAG, "HTTP connected");
 				InputStream in = httpConn.getInputStream();
 	
 				// URLUtil.guessFileName(songName, );
@@ -141,7 +141,7 @@ public abstract class DroidSoundPlugin {
 	
 				streamSize = (int) f.length();
 	
-				Log.v(TAG, "Bytes written: " + streamSize);
+				Log.d(TAG, "Bytes written: " + streamSize);
 	
 				byte [] songBuffer = new byte[(int) streamSize];
 				FileInputStream fs = new FileInputStream(f);
@@ -167,7 +167,7 @@ public abstract class DroidSoundPlugin {
 	public int getStreamSize() { return streamSize; }
 	
 	public boolean load(String name, InputStream is, int size) throws IOException {
-		Log.v(TAG, "PLUGIN LOAD STREAM");
+		Log.d(TAG, "PLUGIN LOAD STREAM");
 		boolean rc = false;
 		try {
 			byte [] songBuffer = new byte [size];
@@ -184,7 +184,7 @@ public abstract class DroidSoundPlugin {
 	public void calcMD5(byte[] songBuffer, int size) {
 		
 		MessageDigest md = null;
-		Log.v(TAG, "MD5 CALCING TIME");
+		Log.d(TAG, "MD5 CALCING TIME");
 		try {
 			md = MessageDigest.getInstance("MD5");
 		} catch (NoSuchAlgorithmException e) {
@@ -213,7 +213,7 @@ public abstract class DroidSoundPlugin {
 	}
 	
 	public boolean load(File file) throws IOException {
-		Log.v(TAG, "PLUGIN LOAD FILE");
+		Log.d(TAG, "PLUGIN LOAD FILE");
 		int l = (int)file.length();
 		byte [] songBuffer = null;
 		try {
@@ -248,7 +248,7 @@ public abstract class DroidSoundPlugin {
 		int dot = name.lastIndexOf('.');
 		if(dot > 0) {
 			ext = name.substring(dot);
-			Log.v(TAG, "EXT: " + ext);
+			Log.d(TAG, "EXT: " + ext);
 			char c = 'X';
 			int e = 0;
 			while(e < ext.length() && Character.isLetterOrDigit(c)) {
@@ -258,7 +258,7 @@ public abstract class DroidSoundPlugin {
 				c = ext.charAt(e);
 			}
 			ext = ext.substring(0,e);
-			Log.v(TAG, "EXT NOW: " + ext);
+			Log.d(TAG, "EXT NOW: " + ext);
 		}
 		return ext;
 	}

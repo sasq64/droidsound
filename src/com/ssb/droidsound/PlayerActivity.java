@@ -2,7 +2,6 @@ package com.ssb.droidsound;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -43,20 +42,22 @@ import android.speech.tts.TextToSpeech;
 import android.text.Html;
 import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -68,8 +69,6 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
-import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.AdapterView.OnItemClickListener;
 
 import com.ssb.droidsound.PlayListView.FileInfo;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
@@ -259,7 +258,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
-		Log.v(TAG, "########## Activity finalize");
+		Log.d(TAG, "########## Activity finalize");
 	};
 
 	private void setDirectory(File path, PlayListView plv) {
@@ -342,12 +341,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					return;
 				}
 				
-				Log.v(TAG, String.format("Parent from URL %s", p));
+				Log.d(TAG, "Parent from URL %s", p);
 				
 				File f = new File(url.getPath());
 				String newPath = f.getParent();
 
-				Log.v(TAG, String.format("Parent path %s", newPath == null ? "null" : newPath));
+				Log.d(TAG, "Parent path %s", newPath == null ? "null" : newPath);
 
 				
 				if(newPath == null) {
@@ -355,7 +354,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				} else
 					newPath = "http://" + url.getHost() + newPath;
 
-				Log.v(TAG, String.format("NewPath %s", newPath));
+				Log.d(TAG, "NewPath %s", newPath);
 				
 				setDirectory(newPath, plv);
 				//currentPlaylistView.setScrollPosition( "http://" + url.getHost() + url.getPath());				
@@ -376,7 +375,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onNewIntent(Intent intent) {
 		setIntent(intent);
-		Log.v(TAG, "INTENT " + intent.getAction());
+		Log.d(TAG, "INTENT " + intent.getAction());
 
 		if(Intent.ACTION_VIEW.equals(intent.getAction())) {
 			String music = intent.getDataString();
@@ -392,7 +391,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				startService(newIntent);
 			}
 		} else if(Intent.ACTION_SEND.equals(intent.getAction())) {
-			Log.v(TAG, String.format("<<NEW INTENT>> Want to share '%s'", intent.getDataString()));			
+			Log.d(TAG, "<<NEW INTENT>> Want to share '%s'", intent.getDataString());			
 			Intent newIntent = new Intent(intent);
 			intent.setAction(Intent.ACTION_VIEW);
 			newIntent.setClass(this, PlayerService.class);
@@ -400,7 +399,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			
 		} else if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
-			Log.v(TAG, "QUERY " + query);
+			Log.d(TAG, "QUERY " + query);
 			if(searchCursor != null) {
 				searchCursor.realClose();
 			}
@@ -530,12 +529,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// Thread.setDefaultUncaughtExceptionHandler()
 
 		super.onCreate(savedInstanceState);
-		Log.v(TAG, "#### onCreate()");
+		Log.d(TAG, "#### onCreate()");
 
 		DroidSoundPlugin.setContext(getApplicationContext());
 
 		Intent intent = getIntent();
-		Log.v(TAG, String.format("Intent %s / %s", intent.getAction(), intent.getDataString()));
+		Log.d(TAG, "Intent %s / %s", intent.getAction(), intent.getDataString());
 		if(Intent.ACTION_VIEW.equals(intent.getAction())) {
 			String music = intent.getDataString();
 
@@ -558,11 +557,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				return;
 			}
 		} else if(Intent.ACTION_SEND.equals(intent.getAction())) {
-			Log.v(TAG, String.format(">> Want to share '%s'", intent.getStringExtra(Intent.EXTRA_TEXT)));
+			Log.d(TAG, ">> Want to share '%s'", intent.getStringExtra(Intent.EXTRA_TEXT));
 			
 			Bundle bundle = intent.getExtras();
 			for(String s : bundle.keySet()) {
-				Log.v(TAG, s);
+				Log.d(TAG, s);
 			}
 			
 			Intent newIntent = new Intent(intent);
@@ -649,7 +648,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		atTop = currentPath.equals(modsDir);
 		
 
-		Log.v(TAG, String.format("MODS at %s", modsDir));		
+		Log.d(TAG, "MODS at %s", modsDir);		
 		
 		receiver = new BroadcastReceiver() {
 			@Override
@@ -657,12 +656,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				// TODO Auto-generated method stub
 
 				if(intent.getAction().equals("com.sddb.droidsound.REQUERY")) {
-					Log.v(TAG, "REQUERY");
+					Log.d(TAG, "REQUERY");
 					//playListView.rescan();
 					setDirectory(playListView);
 				}
 				else if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
-					Log.v(TAG, "Open done!");
+					Log.d(TAG, "Open done!");
 
 					String s = prefs.getString("indexing", "Basic");
 					int imode = SongDatabase.INDEX_BASIC;
@@ -675,9 +674,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 
 					if(lastConfig != null) {
-						Log.v(TAG, "CONFIG CHANGE");
+						Log.d(TAG, "CONFIG CHANGE");
 					} else {
-						Log.v(TAG, "SCANNING");
+						Log.d(TAG, "SCANNING");
 						songDatabase.scan(false, modsDir.getPath());
 					}
 
@@ -692,11 +691,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						progressDialog = null;
 					}
 
-					Log.v(TAG, "Scan done!");
+					Log.d(TAG, "Scan done!");
 					setDirectory(playListView);
 					// playListView.rescan();
 				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_UPDATE")) {
-					Log.v(TAG, "Scan update!");
+					Log.d(TAG, "Scan update!");
 					checkProgressDialog();
 					if(progressDialog != null) {
 						int percent = intent.getIntExtra("PERCENT", 0);
@@ -724,7 +723,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		boolean created = false;
 
 		if(songDatabase == null) {
-			Log.v(TAG, "############ CREATING static SongDatabase object ##############");
+			Log.d(TAG, "############ CREATING static SongDatabase object ##############");
 
 			songDatabase = new SongDatabase(getApplicationContext());
 
@@ -747,7 +746,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 
 			created = true;
-			Log.v(TAG, "CREATED");
+			Log.d(TAG, "CREATED");
 		}
 
 		setDirectory(currentPath, null);
@@ -787,10 +786,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 
 		if(!created && lastConfig == null) {
-			Log.v(TAG, "OPEN DB");
+			Log.d(TAG, "OPEN DB");
 			songDatabase.open();
 			songDatabase.scan(false, modsDir.getPath());
-			Log.v(TAG, "DONE");
+			Log.d(TAG, "DONE");
 		}
 
 		if(ttsStatus == TTS_UNCHECKED) {
@@ -817,7 +816,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 				FileInfo fi = (FileInfo) plv.getItemAtPosition(position);
 				
-				Log.v(TAG, String.format("Clicked %s got file %s", plv, fi));
+				Log.d(TAG, "Clicked %s got file %s", plv, fi);
 
 				if(fi != null) {
 
@@ -846,7 +845,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 										index = i;
 									}
 								} */
-								Log.v(TAG, String.format("Playing Playlist %s %s", plist.getFile().getPath(), plist.toString()));
+								Log.d(TAG, "Playing Playlist %s %s", plist.getFile().getPath(), plist.toString());
 								player.playPlaylist(plist.getFile().getPath(), index);
 								return;
 							}
@@ -932,7 +931,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		fwdButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				Log.v(TAG, String.format("NEXT %d %d", subTune, subTuneCount));
+				Log.d(TAG, "NEXT %d %d", subTune, subTuneCount);
 				if((subTune + 1) < subTuneCount) {
 					subTune += 1;
 					player.setSubSong(subTune);
@@ -986,7 +985,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					operationTune = subTune;
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
-					Log.v(TAG, String.format("%s - %s ADD", songTitle != null ? songTitle : "null", subtuneTitle != null ? subtuneTitle : "null"));
+					Log.d(TAG, "%s - %s ADD", songTitle != null ? songTitle : "null", subtuneTitle != null ? subtuneTitle : "null");
 					if(songTitle != null && subtuneTitle != null) {
 						// operationTitle = songTitle + " - " + subtuneTitle;
 						operationTitle = subtuneTitle + " (" + songTitle + ")";
@@ -1039,7 +1038,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						flipTo(SAME_VIEW);
 					}
 				}
-				Log.v(TAG, String.format("TB Sortorder now %d", sortOrder));
+				Log.d(TAG, "TB Sortorder now %d", sortOrder);
 			}
 		});
 
@@ -1057,7 +1056,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
 				// TODO Auto-generated method stub
-				Log.v(TAG, "Stop tracking");
+				Log.d(TAG, "Stop tracking");
 				player.seekTo(songLength * seekBar.getProgress() * 10);
 				seekingSong = 5;
 			}
@@ -1065,14 +1064,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			@Override
 			public void onStartTrackingTouch(SeekBar seekBar) {
 				// TODO Auto-generated method stub
-				Log.v(TAG, "Start tracking");
+				Log.d(TAG, "Start tracking");
 				seekingSong = 5;
 			}
 
 			@Override
 			public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 				if(fromUser) {
-					// Log.v(TAG, String.format("Changed %d", progress));
+					// Log.d(TAG, "Changed %d", progress);
 					int pos = songLength * seekBar.getProgress() / 100;
 					songSecondsText.setText(String.format("%02d:%02d", pos / 60, pos % 60));
 					seekingSong = 5;
@@ -1090,7 +1089,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		 * : "S" ); } });
 		 */
 		
-		Log.v(TAG, "ON CREATE DONE");
+		Log.d(TAG, "ON CREATE DONE");
 	}
 
 	private void setupModsDir() {
@@ -1191,7 +1190,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			try {
 				FileWriter fw = new FileWriter(mf);
 				fw.close();
-				Log.v(TAG, "Done");
+				Log.d(TAG, "Done");
 			} catch (IOException e2) {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
@@ -1212,10 +1211,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		mf = new File(modsDir, "Favorites.plist");
 		if(!mf.exists()) {
 			try {
-				Log.v(TAG, "Trying to write Favorites");
+				Log.d(TAG, "Trying to write Favorites");
 				FileWriter fw = new FileWriter(mf);
 				fw.close();
-				Log.v(TAG, "Done");
+				Log.d(TAG, "Done");
 			} catch (IOException e2) {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
@@ -1230,7 +1229,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		File [] files = mf.listFiles();
 		if(files != null) {
 			for(File f: files) {
-				Log.v(TAG, f.getPath());
+				Log.d(TAG, f.getPath());
 				if(f.isDirectory()) {
 					deleteAll(f);
 				}
@@ -1252,10 +1251,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	public static boolean moveFile(File src, File dest) {
 		if(src.renameTo(dest)) {
-			Log.v(TAG, "Successful");
+			Log.d(TAG, "Successful");
 			return true;
 		} else if(copyFile(src, dest)) {
-			Log.v(TAG, "COPY Successful");
+			Log.d(TAG, "COPY Successful");
 			src.delete();
 			return true;
 		}
@@ -1277,7 +1276,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			t = new File(modsDir, n);
 		}
 
-		Log.v(TAG, "MOVE FILE " + f.getPath() + " TO " + t.getPath());
+		Log.d(TAG, "MOVE FILE " + f.getPath() + " TO " + t.getPath());
 
 		if(t.exists()) {
 			showDialog(R.string.zip_import_replace);
@@ -1286,12 +1285,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		if(f.renameTo(t)) {
-			Log.v(TAG, "Successful");
+			Log.d(TAG, "Successful");
 			if(songDatabase != null) {
 				songDatabase.scan(false, modsDir.getPath());
 			}
 		} else if(copyFile(f, t)) {
-			Log.v(TAG, "COPY Successful");
+			Log.d(TAG, "COPY Successful");
 			if(songDatabase != null) {
 				songDatabase.scan(false, modsDir.getPath());
 			}
@@ -1303,9 +1302,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		Log.v(TAG, String.format("Got speech result %d", resultCode));
+		Log.d(TAG, "Got speech result %d", resultCode);
 		if(requestCode == 1234) {
-			Log.v(TAG, String.format("Got speech result %d", 12345));
+			Log.d(TAG, "Got speech result %d", 12345);
 			if(resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
 				ttsStatus = TTS_OK;
 				boolean useSpeech = prefs.getBoolean("speech", false);
@@ -1323,7 +1322,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	@Override
 	public boolean dispatchKeyEvent(KeyEvent event) {
-		Log.v(TAG, String.format("#### KEY EVENT %s", event.toString()));
+		Log.d(TAG, "#### KEY EVENT %s", event.toString());
 		return super.dispatchKeyEvent(event);
 	}
 
@@ -1332,9 +1331,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		Log.v(TAG, String.format("%%%% DOWN %d", keyCode));
+		Log.d(TAG, "%%%% DOWN %d", keyCode);
 		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
-		// Log.v(TAG, String.format("MEDIA BUTTON DOWN %d",
+		// Log.d(TAG, String.format("MEDIA BUTTON DOWN %d",
 		// event.getRepeatCount()));
 		// return true;
 		// }
@@ -1456,12 +1455,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case KeyEvent.KEYCODE_BACK:
 		case KeyEvent.KEYCODE_DEL:
-			Log.v(TAG, ">>>>>>>>>>>>> BACK PRESSED");
+			Log.d(TAG, ">>>>>>>>>>>>> BACK PRESSED");
 			
 			backPressed = true;
 			if(startTrackingMethod != null) {
 				try {
-					Log.v(TAG, "############### START TRACKING");
+					Log.d(TAG, "############### START TRACKING");
 					startTrackingMethod.invoke(event);
 				} catch (IllegalArgumentException e) {
 				} catch (IllegalAccessException e) {
@@ -1481,7 +1480,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 		if(keyCode == KeyEvent.KEYCODE_BACK) {
 			backPressed = false;
-			Log.v(TAG, ">>>>>>>>>>>>> BACK LONG PRESSED");
+			Log.d(TAG, ">>>>>>>>>>>>> BACK LONG PRESSED");
 			if(currentPlaylistView == searchListView) {
 				searchDirDepth = 0;
 				searchListView.setCursor(searchCursor, null);
@@ -1500,7 +1499,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		
 		if(keyCode == KeyEvent.KEYCODE_BACK ) {
-			Log.v(TAG, ">>>>>>>>>>>>> BACK RELEASED");
+			Log.d(TAG, ">>>>>>>>>>>>> BACK RELEASED");
 			if(backPressed) {
 				backPressed = false;			
 				if(currentPlaylistView != playListView) {
@@ -1524,7 +1523,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		
 		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
-		// Log.v(TAG, String.format("MEDIA BUTTON UP %d",
+		// Log.d(TAG, String.format("MEDIA BUTTON UP %d",
 		// event.getRepeatCount()));
 		// return true;
 		// }
@@ -1556,7 +1555,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onResume() {
 		super.onResume();
-		Log.v(TAG, "#### onResume()");
+		Log.d(TAG, "#### onResume()");
 
 		player.bindService(this, this);
 
@@ -1607,7 +1606,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onPause() {
 		super.onPause();
-		Log.v(TAG, "#### onPause()");
+		Log.d(TAG, "#### onPause()");
 
 		//indexSetting = prefs.getString("indexing", "Basic");
 
@@ -1633,7 +1632,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		Log.v(TAG, "#### onDestroy()");
+		Log.d(TAG, "#### onDestroy()");
 
 		if(receiver != null) {
 			unregisterReceiver(receiver);
@@ -1684,7 +1683,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			sb.append(String.format("%02x ", data[i]));
 		}
-		Log.v(TAG, sb.toString());
+		Log.d(TAG, sb.toString());
 	}
 	@Override
 	public void intChanged(int what, int value) {
@@ -1716,7 +1715,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				songTotalText.setVisibility(View.VISIBLE);
 			}
 			songLength = value / 1000;
-			Log.v(TAG, String.format("Songlength %02d:%02d", songLength / 60, songLength % 60));
+			Log.d(TAG, "Songlength %02d:%02d", songLength / 60, songLength % 60);
 			songTotalText.setText(String.format("%02d:%02d", songLength / 60, songLength % 60));			
 			//songSeeker.setProgress(0);
 			break;
@@ -1752,7 +1751,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songSubtunesText.setText(String.format("[%02d/%02d]", subTune + 1, subTuneCount));
 			break;
 		case PlayerService.SONG_STATE:
-			Log.v(TAG, String.format("State now %d", value));
+			Log.d(TAG, "State now %d", value);
 			songState = value;
 			if(value == 1) {
 				playButton.setBackgroundResource(R.drawable.pause_button);
@@ -1776,7 +1775,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		switch(what) {
 		case PlayerService.SONG_SOURCE:
-			Log.v(TAG, "SOURCE IS " + value);
+			Log.d(TAG, "SOURCE IS " + value);
 			if(value != null && value.length() > 0) {
 				plinfoText.setText(value);
 			} else 
@@ -1804,12 +1803,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break; */
 		case PlayerService.SONG_FILENAME:
 			
-			Log.v(TAG, String.format("DW %d, value '%s'", dumpingWav, value));
+			Log.d(TAG, "DW %d, value '%s'", dumpingWav, value);
 			if(dumpingWav > 0) { //&& value.endsWith("RINGTONE.WAV")) {
 				
 				File f = new File(value);
 				
-				Log.v(TAG, String.format("SETTING RINGTONE %s %d", value, f.length()));
+				Log.d(TAG, "SETTING RINGTONE %s %d", value, f.length());
 				
 				ContentValues values = new ContentValues();
 				values.put(MediaStore.MediaColumns.DATA, value);
@@ -1826,10 +1825,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				//Insert it into the database
 				Uri uri = MediaStore.Audio.Media.getContentUriForPath(value);
 				Uri newUri = null;
-				Log.v(TAG, "URI " + uri.toString());
+				Log.d(TAG, "URI " + uri.toString());
 				try {
 					int rows = getContentResolver().delete(uri, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { toneName });
-					Log.v(TAG, "ROWS " + rows);
+					Log.d(TAG, "ROWS " + rows);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -1840,10 +1839,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 				if(newUri == null) {
 					int rows = getContentResolver().update(uri, values, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { toneName });
-					Log.v(TAG, "UPDATE ROWS " + rows);
+					Log.d(TAG, "UPDATE ROWS " + rows);
 					newUri = uri;
 				} else {
-					Log.v(TAG, "NEWURI " + uri.getPath());
+					Log.d(TAG, "NEWURI " + uri.getPath());
 				}
 				Toast toast;
 				if(toneSet) {
@@ -1865,22 +1864,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			searchListView.setHilighted(value);
 			// songName = value;
 			
-			Log.v(TAG, String.format("############################## Song file is %s (%s)", value, path));
+			Log.d(TAG, "############################## Song file is %s (%s)", value, path);
 			
 			break;
 		case PlayerService.SONG_SUBTUNE_TITLE:
-			Log.v(TAG, String.format("############################## Subtunetitle is %s", value));
+			Log.d(TAG, "############################## Subtunetitle is %s", value);
 			subtuneTitle = value;
 			if(subtuneTitle != null && subtuneTitle.length() == 0) subtuneTitle = null;
 			flipTo(SAME_VIEW);
 			break;
 		case PlayerService.SONG_SUBTUNE_AUTHOR:
-			Log.v(TAG, String.format("############################## Author is %s", value));
+			Log.d(TAG, "############################## Author is %s", value);
 			subtuneAuthor = value;
 			flipTo(SAME_VIEW);
 			break;
 		case PlayerService.SONG_TITLE:
-			Log.v(TAG, String.format("############################## Title is %s", value));
+			Log.d(TAG, "############################## Title is %s", value);
 			songTitle = value;
 			subtuneTitle = null;
 			flipTo(SAME_VIEW);
@@ -1889,12 +1888,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songDetails = player.getSongInfo();
 			md5 = player.getSongMD5();
 			hexdump(md5);
-			Log.v(TAG, String.format("#### Got %d details", songDetails != null ? songDetails.length : -1));
+			Log.d(TAG, "#### Got %d details", songDetails != null ? songDetails.length : -1);
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i = 0; i < songDetails.length; i += 2) {
-					// Log.v(TAG, songDetails[i]);
-					// Log.v(TAG, songDetails[i+1]);
+					// Log.d(TAG, songDetails[i]);
+					// Log.d(TAG, songDetails[i+1]);
 					sb.append("<font color='yellow'><b>").append(songDetails[i]).append("</font></b><br/>");
 					if(songDetails[i].equals("Instruments")) {
 						// sb.append(songDetails[i+1].replace("\n",
@@ -2115,7 +2114,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 				@Override
 				public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-					Log.v(TAG, "SEEK " + progress);
+					Log.d(TAG, "SEEK " + progress);
 					toneLenText.setText(progressNames[progress]);	
 					toneLength = progress;
 				}
@@ -2171,7 +2170,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			builder.setSingleChoiceItems(R.array.new_opts, -1, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					Log.v(TAG, "Clicked " + which);
+					Log.d(TAG, "Clicked " + which);
 					dialog.dismiss();
 					switch(which) {
 					case 0:
@@ -2233,7 +2232,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						s = "http://" + s;
 					try {
 						URL url = new URL(s);
-						Log.v(TAG, String.format("'%s', '%s', '%s'",url.toString(), url.getProtocol(), url.getFile()));
+						Log.d(TAG, "'%s', '%s', '%s'",url.toString(), url.getProtocol(), url.getFile());
 						File file = new File(currentPath, url.getHost() + ".lnk");
 						if(!file.exists()) {							
 							songDatabase.createLink(file, url.toString());
@@ -2301,7 +2300,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 					int favSelection = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
 
-					Log.v(TAG, "Clicked " + favSelection);
+					Log.d(TAG, "Clicked " + favSelection);
 					Playlist al = songDatabase.getActivePlaylist();
 					// File file = new File(songName);
 					dialog.dismiss();
@@ -2312,7 +2311,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					// return;
 					// }
 
-					Log.v(TAG, String.format("Adding '%s' to playlist '%s'", operationSong.getPath(), al.getFile().getPath()));
+					Log.d(TAG, "Adding '%s' to playlist '%s'", operationSong.getPath(), al.getFile().getPath());
 
 					switch(favSelection) {
 					case 0:
@@ -2370,7 +2369,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(info == null) {
 			return;
 		}
-		Log.v(TAG, String.format("POS %d", info.position));
+		Log.d(TAG, "POS %d", info.position);
 		Cursor cursor = currentPlaylistView.getCursor(info.position);
 		int type = SongDatabase.TYPE_FILE;
 		int t = cursor.getColumnIndex("TYPE");
@@ -2434,7 +2433,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// Cursor cursor = playListView.getCursor(info.position);
 		File file = currentPlaylistView.getFile(info.position);
 		operationSong = new SongFile(currentPlaylistView.getPath(info.position));
-		Log.v(TAG, String.format("%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id));
+		Log.d(TAG, "%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id);
 		// int pi = cursor.getColumnIndex("PATH");
 		// String path = playListView.getDirectory();
 		// if(pi >= 0) {
@@ -2448,7 +2447,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(song != null) operationSong = song;
 		
 		if(song != null) {
-			Log.v(TAG, String.format("Operating on %s by %s", song.getTitle(), song.getComposer()));
+			Log.d(TAG, "Operating on %s by %s", song.getTitle(), song.getComposer());
 		}
 
 
@@ -2549,7 +2548,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(pl != null) {
 				//operationFile = pl.getFile();
 				operationSong = new SongFile(pl.getFile());
-				Log.v(TAG, String.format("Clearing playlist %s", pl.getFile().getPath()));
+				Log.d(TAG, "Clearing playlist %s", pl.getFile().getPath());
 				runConfirmable(R.string.do_remove_all, new Runnable() {
 					@Override
 					public void run() {

@@ -22,7 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.MatrixCursor;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class HttpSongSource {
 	private static final String TAG = HttpSongSource.class.getSimpleName();
@@ -49,11 +49,11 @@ public class HttpSongSource {
 		htmlMap.put("gt", '>');
 		htmlMap.put("quot", '"');
 		/*String s = "Nothing to do";
-		Log.v(TAG, String.format("'%s' became '%s'", s, htmlFix(s)));
+		Log.d(TAG, "'%s' became '%s'", s, htmlFix(s));
 		s = "Rythm &amp; Blues";
-		Log.v(TAG, String.format("'%s' became '%s'", s, htmlFix(s)));
+		Log.d(TAG, "'%s' became '%s'", s, htmlFix(s));
 		s = "&lt;VERY&gt;&lt;MESSY&gt;";
-		Log.v(TAG, String.format("'%s' became '%s'", s, htmlFix(s)));*/
+		Log.d(TAG, "'%s' became '%s'", s, htmlFix(s));*/
 	}
 	
 	
@@ -117,15 +117,15 @@ public class HttpSongSource {
 				} catch (InterruptedException e) {
 					return;
 				}
-				Log.v(TAG, "HTTP THREAD WOKE UP");				
+				Log.d(TAG, "HTTP THREAD WOKE UP");				
 				while(true) {
 					String path = null;
 					synchronized (dirList) {
 						if(dirList.size() > 0) {
-							Log.v(TAG, String.format("List has %d entries ", dirList.size()));
+							Log.d(TAG, "List has %d entries ", dirList.size());
 							path = dirList.get(0);
 							dirList.remove(0);
-							Log.v(TAG, "Found " + path);
+							Log.d(TAG, "Found " + path);
 						}
 					}
 					if(path != null)
@@ -142,10 +142,10 @@ public class HttpSongSource {
 			synchronized (dirList) {
 				
 				if(dirList.contains(pathName)) {
-					Log.v(TAG, "Already working on " + pathName);
+					Log.d(TAG, "Already working on " + pathName);
 				} else {				
 					dirList.add(pathName);
-					Log.v(TAG, "Added " + pathName);
+					Log.d(TAG, "Added " + pathName);
 				}
 			}
 			synchronized (this) {
@@ -169,13 +169,13 @@ public class HttpSongSource {
 				httpConn.setInstanceFollowRedirects(true);
 				httpConn.setRequestMethod("GET");
 		
-				Log.v(TAG, "Connecting to " + pathName);
+				Log.d(TAG, "Connecting to " + pathName);
 		
 				httpConn.connect();
 		
 				int response = httpConn.getResponseCode();
 				if (response == HttpURLConnection.HTTP_OK) {
-					Log.v(TAG, "HTTP connected");
+					Log.d(TAG, "HTTP connected");
 
 					HtmlCleaner cleaner = new HtmlCleaner();
 					CleanerProperties props = cleaner.getProperties();
@@ -218,7 +218,7 @@ public class HttpSongSource {
 							 if(href == null || text == null)
 								 continue;
 							 
-							 Log.v(TAG, String.format("Found link to '%s' named '%s'", href, text));
+							 Log.d(TAG, "Found link to '%s' named '%s'", href, text);
 							 
 							 String title = htmlFix(text);
 							 String fileName = htmlFix(href);
@@ -250,7 +250,7 @@ public class HttpSongSource {
 				} else {
 					msg = "<Connection failed>";
 					status = -2;
-					Log.v(TAG, String.format("Connection failed: %d", response));
+					Log.d(TAG, "Connection failed: %d", response);
 				}
 			} catch (MalformedURLException me) {
 				msg = "<Illegal URL>";
@@ -282,7 +282,7 @@ public class HttpSongSource {
 	public static Cursor getFilesInPath(Context ctx, String pathName, int sorting) {
 	
 		
-		Log.v(TAG, String.format("PATH '%s'", pathName));
+		Log.d(TAG, "PATH '%s'", pathName);
 		
 		if(!pathName.endsWith("/"))
 			pathName = pathName + "/";
@@ -296,7 +296,7 @@ public class HttpSongSource {
 		}
 
 		if(ce != null) {
-			Log.v(TAG, "IN CACHE!");
+			Log.d(TAG, "IN CACHE!");
 			return ce.cursor;
 		}
 		

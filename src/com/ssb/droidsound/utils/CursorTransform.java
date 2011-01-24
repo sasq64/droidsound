@@ -8,7 +8,7 @@ import java.util.Set;
 
 import android.database.Cursor;
 import android.database.CursorWrapper;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class CursorTransform {
 	private static final String TAG = CursorTransform.class.getSimpleName();
@@ -44,9 +44,9 @@ public class CursorTransform {
 				
 				if(ct.varnames != null) {
 					for(int i=0; i<ct.varnames.length; i++) {
-						//Log.v(TAG, String.format("Checking %s", ct.varnames[i]));
+						//Log.d(TAG, "Checking %s", ct.varnames[i]);
 						ct.offsets[i] |= (cursor.getColumnIndex(ct.varnames[i]) << 8);
-						//Log.v(TAG, String.format("Offset %d: %x", i, ct.offsets[i]));
+						//Log.d(TAG, "Offset %d: %x", i, ct.offsets[i]);
 					}
 				}
 				
@@ -61,7 +61,7 @@ public class CursorTransform {
 				if(ct.columnIndex >= 0)
 					return ct.columnIndex;
 				ct.columnIndex = colIndex++;
-				//Log.v(TAG, String.format("Assigning %d to column %s", ct.columnIndex, columnName));
+				//Log.d(TAG, "Assigning %d to column %s", ct.columnIndex, columnName);
 				indexMap.put(ct.columnIndex, ct);				
 				return ct.columnIndex;
 			}
@@ -77,7 +77,7 @@ public class CursorTransform {
 				for(int i=0; i<cols.offsets.length; i++) {
 					String txt = cursor.getString(cols.offsets[i]>>8);
 					if(txt == null || txt.equals("null")) txt = "";
-					//Log.v(TAG, String.format("Col %d -> %d -> %s", columnIndex, cols.offsets[i]>>8, txt));
+					//Log.d(TAG, "Col %d -> %d -> %s", columnIndex, cols.offsets[i]>>8, txt);
 					int pos = cols.offsets[i]&0xff;
 					result = result.substring(0,pos) + txt + result.substring(pos);
 				}
@@ -114,7 +114,7 @@ public class CursorTransform {
 		int offsets [] = new int [16];
 		String varnames [] = new String [16]; 
 		
-		Log.v(TAG, String.format("Checking '%s'", pattern));
+		Log.d(TAG, "Checking '%s'", pattern);
 		
 		start = end = 0;
 		int i = 0;
@@ -127,9 +127,9 @@ public class CursorTransform {
 					offsets[i] = start;
 					varnames[i] = s;
 					i++;
-					//Log.v(TAG, String.format("Found '%s' at %d", s, start));
+					//Log.d(TAG, "Found '%s' at %d", s, start);
 					pattern = pattern.substring(0, start) + pattern.substring(end+1);
-					//Log.v(TAG, String.format("Pattern now '%s'", pattern));
+					//Log.d(TAG, "Pattern now '%s'", pattern);
 				}
 			}
 		}

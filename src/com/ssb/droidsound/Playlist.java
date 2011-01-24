@@ -17,7 +17,7 @@ import java.util.Map;
 import android.database.AbstractCursor;
 import android.database.Cursor;
 import android.database.MatrixCursor;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class Playlist {
 
@@ -43,11 +43,11 @@ public class Playlist {
 		synchronized (lock) {			
 			pl = allPlaylists.get(file);
 			if(pl == null) {
-				Log.v(TAG, "Creating new playlist " + file.getPath());
+				Log.d(TAG, "Creating new playlist " + file.getPath());
 				pl = new Playlist(file);
 				allPlaylists.put(file, pl);
 			} else {
-				Log.v(TAG, "Found playlist " + file.getPath());
+				Log.d(TAG, "Found playlist " + file.getPath());
 			}
 		}
 		return pl;
@@ -84,7 +84,7 @@ public class Playlist {
 		plistFile = file;
 		changed = false;
 		written = false;
-		Log.v(TAG, "Opening playlist " + file.getPath());
+		Log.d(TAG, "Opening playlist " + file.getPath());
 		
 		title = file.getName();
 		int dot = title.lastIndexOf('.');
@@ -101,7 +101,7 @@ public class Playlist {
 			reader = new BufferedReader(new FileReader(plistFile));
 			String line = reader.readLine();
 			while(line != null) {
-				//Log.v(TAG, line);
+				//Log.d(TAG, line);
 				lines.add(line);
 				line = reader.readLine();
 			}
@@ -143,7 +143,7 @@ public class Playlist {
 			Object cols[] = new Object [4];
 
 			for(String line : lines) {
-				Log.v(TAG, line);
+				Log.d(TAG, line);
 				
 				if(line.length() > 0) {
 					
@@ -215,10 +215,10 @@ public class Playlist {
 			// TODO Auto-generated method stub
 			int i = 0;
 			for(SongFile s : songs) {
-				Log.v(TAG, String.format("%02d  %s", i++, s.getTitle()));
+				Log.d(TAG, "%02d  %s", i++, s.getTitle());
 			}
 
-			Log.v(TAG, String.format("Move %02d -> %02d", from, to));
+			Log.d(TAG, "Move %02d -> %02d", from, to);
 			
 			playlist.move(from, to);
 			
@@ -229,7 +229,7 @@ public class Playlist {
 			
 			i = 0;
 			for(SongFile s : songs) {
-				Log.v(TAG, String.format("%02d  %s", i++, s.getTitle()));
+				Log.d(TAG, "%02d  %s", i++, s.getTitle());
 			}
 			
 			
@@ -308,7 +308,7 @@ public class Playlist {
 				
 		if(cursor == null) {
 			
-			Log.v(TAG, "Creating cursor for " + plistFile.getPath());
+			Log.d(TAG, "Creating cursor for " + plistFile.getPath());
 			
 			cursor  = new MyCursor(this); //new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" });
 			
@@ -360,7 +360,7 @@ public class Playlist {
 				lines.add(fileToLine(f));
 			}			
 		} else {
-			Log.v(TAG, "Adding " + songFile.getPath());
+			Log.d(TAG, "Adding " + songFile.getPath());
 			lines.add(fileToLine(songFile));
 		}
 		cursor = null;
@@ -404,7 +404,7 @@ public class Playlist {
 				}
 			}
 	
-			Log.v(TAG, "Adding ## " + line);
+			Log.d(TAG, "Adding ## " + line);
 
 			lines.add(line);
 			if(!c.moveToNext())
@@ -427,14 +427,14 @@ public class Playlist {
 			//}
 			if(cols != null && cols[0] != null) {
 				if(file.getPath().equals(cols[0])) {
-					Log.v(TAG, String.format("Removing %s", cols[0]));
+					Log.d(TAG, "Removing %s", cols[0]);
 					removeMe = line;
 				}
 			}
 		}
 		if(removeMe != null) {		
 			lines.remove(removeMe);
-			Log.v(TAG, "Removing " + removeMe);
+			Log.d(TAG, "Removing " + removeMe);
 			cursor = null;
 			changed = true;
 		}
@@ -443,14 +443,14 @@ public class Playlist {
 	synchronized void flush() {
 		
 		if(!changed) {
-			//Log.v(TAG, "Not flushing unchanged " + plistFile.getPath());
+			//Log.d(TAG, "Not flushing unchanged " + plistFile.getPath());
 			return;
 		}
 		
 		changed = false;
 		written = true;
 		
-		Log.v(TAG, "Flushing " + plistFile.getPath());
+		Log.d(TAG, "Flushing " + plistFile.getPath());
 		
 		try {
 			FileWriter writer = new FileWriter(plistFile);
@@ -467,7 +467,7 @@ public class Playlist {
 	}
 
 	synchronized public void clear() {
-		Log.v(TAG, String.format("Clearing playlist %s with %d entries", plistFile.getPath(), lines.size()));
+		Log.d(TAG, "Clearing playlist %s with %d entries", plistFile.getPath(), lines.size());
 		lines = new ArrayList<String>();
 		cursor = null;
 		changed = true;
@@ -538,7 +538,7 @@ public class Playlist {
 		
 		if(!written && plistFile.lastModified() > fileModified) {
 			// Changed in another process
-			Log.v(TAG, "Rereading Playlst");
+			Log.d(TAG, "Rereading Playlst");
 			readLines();
 		}
 		
@@ -602,7 +602,7 @@ public class Playlist {
 			song.file = new File(p, n);
 			song.title = cursor.getString(cursor.getColumnIndex("TITLE"));
 			//song.startsong = cursor.getInt(cursor.getColumnIndex("STARTSONG"));
-			//Log.v(TAG, String.format("Songlist sentry %s %d",song.file.getPath(), song.startsong));
+			//Log.d(TAG, "Songlist sentry %s %d",song.file.getPath(), song.startsong);
 			songs.add(song);
 			
 		} */

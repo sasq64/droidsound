@@ -7,7 +7,7 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class NativeZipFile {
 
@@ -140,14 +140,14 @@ public class NativeZipFile {
 
 		@Override
 		public int available() throws IOException {
-			//Log.v(TAG, String.format("Available: %d bytes", total));
+			//Log.d(TAG, "Available: %d bytes", total);
 			return total;
 		}
 		
 		@Override
 		public int read(byte[] b, int offset, int length) throws IOException {
 						
-			//Log.v(TAG, String.format("Reading %d bytes", length));
+			//Log.d(TAG, "Reading %d bytes", length);
 			int rc = zipFile.read(fd, b, offset, length);
 			if(rc > 0) {
 				total -= rc;

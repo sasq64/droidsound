@@ -12,7 +12,7 @@ import java.util.zip.ZipFile;
 
 
 import android.content.Context;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class Unzipper {
 
@@ -57,17 +57,17 @@ public class Unzipper {
 				} catch (InterruptedException e) {
 					return;
 				}
-				Log.v(TAG, "UNZIP THREAD WOKE UP");				
+				Log.d(TAG, "UNZIP THREAD WOKE UP");				
 				while(true) {
 					UnzipJob job = null;
 					synchronized (unzipList) {
 						if(unzipList.size() > 0) {
-							Log.v(TAG, String.format("List has %d entries ", unzipList.size()));
+							Log.d(TAG, "List has %d entries ", unzipList.size());
 							job = unzipList.get(0);
 							unzipList.remove(0);
-							Log.v(TAG, "Found " + job.asset);
+							Log.d(TAG, "Found " + job.asset);
 						} else {
-							//Log.v(TAG, "Quitting thread"); 
+							//Log.d(TAG, "Quitting thread"); 
 							//return;
 						}
 					}
@@ -87,11 +87,11 @@ public class Unzipper {
 				
 				for(UnzipJob job : unzipList) {
 					if(job.asset.equals(asset)) {
-						Log.v(TAG, "##### SKIPPING " + asset);
+						Log.d(TAG, "##### SKIPPING " + asset);
 						return;
 					}
 				}
-				Log.v(TAG, "##### ADDING " + asset);
+				Log.d(TAG, "##### ADDING " + asset);
 				unzipList.add(new UnzipJob(asset, targetDir));				
 			}
 			synchronized (this) {
@@ -175,7 +175,7 @@ public class Unzipper {
 				String name = entry.getName();	
 				File efile = new File(targetDir, name);
 				
-				Log.v(TAG, String.format("Extracting %s / %s", name, efile.getPath()));
+				Log.d(TAG, "Extracting %s / %s", name, efile.getPath());
 				
 				if(name.endsWith("/")) {
 					continue;

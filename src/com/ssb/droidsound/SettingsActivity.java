@@ -19,7 +19,7 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.SidPlugin;
@@ -47,7 +47,7 @@ public class SettingsActivity extends PreferenceActivity {
 			String k = preference.getKey();
 			String k2 = k.substring(k.indexOf('.')+1);
 			
-			Log.v(TAG, "CHANGED " + k);
+			Log.d(TAG, "CHANGED " + k);
 			
 			if(k.equals("SidPlugin.engine")) {
 				Preference p = findPreference("SidPlugin.resampling");
@@ -94,7 +94,7 @@ public class SettingsActivity extends PreferenceActivity {
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Log.v(TAG, "Rescan database");
+				Log.d(TAG, "Rescan database");
 				showDialog(R.string.scan_db);
 				return true;
 			}
@@ -142,7 +142,7 @@ public class SettingsActivity extends PreferenceActivity {
 		
 		for(int i=0; i<aScreen.getPreferenceCount(); i++) {
 			p = aScreen.getPreference(i);
-			Log.v(TAG, String.format("Pref '%s'", p.getKey()));
+			Log.d(TAG, "Pref '%s'", p.getKey());
 			if(p instanceof PreferenceGroup) {
 				PreferenceGroup pg = (PreferenceGroup) p;
 				
@@ -162,7 +162,7 @@ public class SettingsActivity extends PreferenceActivity {
 						
 						//p.setKey(plname + "." + p.getKey());
 						
-						Log.v(TAG, String.format("Pref %s for %s", p.getKey(), plugin.getClass().getName()));
+						Log.d(TAG, "Pref %s for %s", p.getKey(), plugin.getClass().getName());
 						
 						p.setOnPreferenceChangeListener(new AudiopPrefsListener(plugin));
 					}
@@ -249,7 +249,7 @@ public class SettingsActivity extends PreferenceActivity {
 			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
-					Log.v(TAG, String.format("%d %s", which, String.valueOf(isChecked)));
+					Log.d(TAG, "%d %s", which, String.valueOf(isChecked));
 					doFullScan = isChecked;
 				}
 			});

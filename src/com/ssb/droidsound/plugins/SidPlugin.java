@@ -10,7 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import android.content.Context;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class SidPlugin extends DroidSoundPlugin {
 	private static final String TAG = SidPlugin.class.getSimpleName();
@@ -75,7 +75,7 @@ public class SidPlugin extends DroidSoundPlugin {
 			speed = 60;
 		}
 		
-		Log.v(TAG, String.format("speed %08x, flags %04x left %d songs %d init %x", speed, flags, size - offset, songs, initAdress));
+		Log.d(TAG, "speed %08x, flags %04x left %d songs %d init %x", speed, flags, size - offset, songs, initAdress);
 		
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");
@@ -105,7 +105,7 @@ public class SidPlugin extends DroidSoundPlugin {
 			md.update(d, 0, dest.position());
 			
 			byte[] md5 = md.digest();
-			Log.v(TAG, String.format("%d %02x %02x DIGEST %02x %02x %02x %02x", d.length, d[0], d[1], md5[0], md5[1], md5[2], md5[3]));
+			Log.d(TAG, "%d %02x %02x DIGEST %02x %02x %02x %02x", d.length, d[0], d[1], md5[0], md5[1], md5[2], md5[3]);
 			return md5;
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
@@ -130,7 +130,7 @@ public class SidPlugin extends DroidSoundPlugin {
 						mainHash = new byte [hashLen * 6];
 						dis.read(mainHash);
 						int l = is.available()/2;
-						Log.v(TAG, String.format("We have %d lengths and %d hashes", l, hashLen));
+						Log.d(TAG, "We have %d lengths and %d hashes", l, hashLen);
 						extraLengths = new short [l];
 						for(int i=0; i<l; i++) {
 							extraLengths[i] = dis.readShort();
@@ -155,13 +155,13 @@ public class SidPlugin extends DroidSoundPlugin {
 			
 			//short lens [] = new short [128];
 			
-	    	Log.v(TAG, String.format("MD5 %08x", key));
+	    	Log.d(TAG, "MD5 %08x", key);
 			while (first < upto) {
 		        int mid = (first + upto) / 2;  // Compute mid point.
 	    		long hash = ((mainHash[mid*6]&0xff) << 24) | ((mainHash[mid*6+1]&0xff) << 16) | ((mainHash[mid*6+2]&0xff) << 8) | (mainHash[mid*6+3] & 0xff);
 	    		hash &= 0xffffffffL;
 	
-	        	//Log.v(TAG, String.format("offs %x, hash %08x", mid, hash));
+	        	//Log.d(TAG, "offs %x, hash %08x", mid, hash);
 		        if (key < hash) {
 		            upto = mid;     // repeat search in bottom half.
 		        } else if (key > hash) {
@@ -169,7 +169,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		        } else {
 		        	found = mid;
 		        	int len = ((mainHash[mid*6+4]&0xff)<<8) | (mainHash[mid*6+5]&0xff);
-	    			Log.v(TAG, String.format("LEN: %x", len));
+	    			Log.d(TAG, "LEN: %x", len);
 		        	if((len & 0x8000) != 0) {
 		        		len &= 0x7fff;
 		        		int xl = 0;
@@ -180,17 +180,17 @@ public class SidPlugin extends DroidSoundPlugin {
 		        		}
 		        		
 		        		//for(int i=0; i<n; i++) {
-		        		//	Log.v(TAG, String.format("LEN: %02d:%02d", songLengths[i]/60, songLengths[i]%60));
+		        		//	Log.d(TAG, "LEN: %02d:%02d", songLengths[i]/60, songLengths[i]%60);
 		        		//}
 		        	} else {
-		        		Log.v(TAG, String.format("SINGLE LEN: %02d:%02d", len/60, len%60));
+		        		Log.d(TAG, "SINGLE LEN: %02d:%02d", len/60, len%60);
 		        		songLengths[0] = (len * 1000);
 		        	}
 		        	break;
 		        }
 		    }
 			
-			Log.v(TAG, String.format("Found md5 at offset %d", found));
+			Log.d(TAG, "Found md5 at offset %d", found);
 		}
 	}
 	
@@ -202,7 +202,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		songInfo = new Info();
 		if(name.toLowerCase().endsWith(".prg")) {
 			songInfo.name = name;
-			Log.v(TAG, "######################## PRG LOAD OK");
+			Log.d(TAG, "######################## PRG LOAD OK");
 			songInfo.format = "PRG";
 			return true;
 		}
@@ -305,7 +305,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	public boolean load(String name, byte[] module, int size) {
 		
 		if(nextPlugin != null) {
-			Log.v(TAG, "############ SWITCHING PLUGINS");
+			Log.d(TAG, "############ SWITCHING PLUGINS");
 			currentPlugin = nextPlugin;
 			nextPlugin = null;
 		}		
@@ -383,10 +383,10 @@ public class SidPlugin extends DroidSoundPlugin {
 			String e = (String) val;
 			
 			if(e.equals("VICE")) {
-				Log.v(TAG, "################ USING ENGINE: VICE");
+				Log.d(TAG, "################ USING ENGINE: VICE");
 				nextPlugin = vicePlugin;
 			} else {
-				Log.v(TAG, "################ USING ENGINE: SIDPLAY2");
+				Log.d(TAG, "################ USING ENGINE: SIDPLAY2");
 				nextPlugin = sidplayPlugin;
 			}
 			return;			

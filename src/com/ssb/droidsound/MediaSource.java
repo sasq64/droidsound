@@ -11,7 +11,7 @@ import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.MediaStore;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.SongDatabase.ScanCallback;
 import com.ssb.droidsound.utils.CursorTransform;
@@ -155,7 +155,7 @@ public class MediaSource implements SongDatabase.DataSource  {
 	
 	@Override
 	public Cursor getCursorFromPath(File file, SQLiteDatabase db, int sorting) {
-		Log.v(TAG, String.format("FILE '%s'", file.getPath()));
+		Log.d(TAG, "FILE '%s'", file.getPath());
 		displayTitle = null;
 		return dbfs.getFileInPath(file.getPath(), sorting);
 	}

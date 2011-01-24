@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 
@@ -145,7 +145,7 @@ public class FileIdentifier {
 			info.date = -1;
 			plugin.unload();
 			
-			Log.v(TAG, String.format("TITLE: %s -- COMPOSER: %s", info.title, info.composer));
+			Log.d(TAG, "TITLE: %s -- COMPOSER: %s", info.title, info.composer);
 			
 			return info;
 		}		
@@ -166,7 +166,7 @@ public class FileIdentifier {
 			info.date = -1;
 			plugin.unload();
 			
-			Log.v(TAG, String.format("TITLE: %s -- COMPOSER: %s", info.title, info.composer));
+			Log.d(TAG, "TITLE: %s -- COMPOSER: %s", info.title, info.composer);
 			
 			return info;
 		}		
@@ -230,7 +230,7 @@ public class FileIdentifier {
 		int dot = name.lastIndexOf('.');
 		
 		String ext = name.substring(dot+1).toUpperCase();
-		//Log.v(TAG, String.format("hash %s %d", extensions.toString(), extensions.size()));
+		//Log.d(TAG, "hash %s %d", extensions.toString(), extensions.size());
 		Integer i = extensions.get(ext);
 		if(i == null) {
 
@@ -239,7 +239,7 @@ public class FileIdentifier {
 			for(DroidSoundPlugin plugin : plugins) {
 				if(plugin.canHandle(name)) {
 					list.add(plugin);
-					Log.v(TAG, String.format("%s handled by %s", name, plugin.getClass().getSimpleName()));
+					Log.d(TAG, "%s handled by %s", name, plugin.getClass().getSimpleName());
 				}
 			}
 
@@ -257,10 +257,10 @@ public class FileIdentifier {
 				}
 			}
 			
-			//Log.v(TAG, "MarkSupported " + is.markSupported());
+			//Log.d(TAG, "MarkSupported " + is.markSupported());
 			
 			for(DroidSoundPlugin plugin : list) {
-				Log.v(TAG, "Trying " + plugin.getClass().getName());
+				Log.d(TAG, "Trying " + plugin.getClass().getName());
 				MusicInfo info = null;
 				
 				try {
@@ -277,7 +277,7 @@ public class FileIdentifier {
 					e2.printStackTrace();
 				}
 				if(info != null) {
-					Log.v(TAG, "Got info");
+					Log.d(TAG, "Got info");
 					name = plugin.getBaseName(name);
 					fixName(name, info);
 					return info;
@@ -285,10 +285,10 @@ public class FileIdentifier {
 			}
 			
 			if(indexUnknown) {
-				Log.v(TAG, "Trying non-handling plugins");
+				Log.d(TAG, "Trying non-handling plugins");
 				for(DroidSoundPlugin plugin : plugins) {
 					if(!plugin.canHandle(name)) {
-						Log.v(TAG, "Trying " + plugin.getClass().getSimpleName());
+						Log.d(TAG, "Trying " + plugin.getClass().getSimpleName());
 						MusicInfo info = null;
 						try {
 							if(file != null) {
@@ -315,7 +315,7 @@ public class FileIdentifier {
 			return null;
 		}
 		int extno = i;		
-		//Log.v(TAG, String.format("Ext %s -> Format %02x", ext, extno));
+		//Log.d(TAG, "Ext %s -> Format %02x", ext, extno);
 
 		MusicInfo info = new MusicInfo();
 		info.type = extno;
@@ -365,7 +365,7 @@ public class FileIdentifier {
 				data = new byte [0x480];
 				is.read(data);
 				//magic = new String(data, 0x438,4);
-				//Log.v(TAG, String.format("MOD MAGIC %s", magic));
+				//Log.d(TAG, "MOD MAGIC %s", magic);
 				//if(!modMagic.contains(magic)) {
 				//	return null;
 				//}

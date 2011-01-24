@@ -20,7 +20,7 @@ import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
@@ -190,7 +190,7 @@ public class Player implements Runnable {
 
 	private void dumpWav(SongFile song, File outFile, int length, int flags) throws IOException {
 		
-		Log.v(TAG, "IN DUMP WAV");
+		Log.d(TAG, "IN DUMP WAV");
 		
 		startSong(song, true);
 		
@@ -210,7 +210,7 @@ public class Player implements Runnable {
 		
 		
 		if((flags & 2) != 0) {
-			Log.v(TAG, "HIGH QUALITY!");
+			Log.d(TAG, "HIGH QUALITY!");
 			numChannels = 2;
 			divider = 1;
 		}
@@ -224,7 +224,7 @@ public class Player implements Runnable {
 		// Size in bytes of wavdata
 		int dataSize = wavSamples * numChannels * 16/8;
 		
-		Log.v(TAG, String.format("%dsec => %d samples, %d wavSamples, %d dataSize", length/1000, numSamples, wavSamples, dataSize));
+		Log.d(TAG, "%dsec => %d samples, %d wavSamples, %d dataSize", length/1000, numSamples, wavSamples, dataSize);
 
 		
 		byte [] barray = new byte [128];
@@ -255,12 +255,12 @@ public class Player implements Runnable {
 		while(sampleCount < numSamples) {
 			// In and out are number of shorts, not number of samples (2 bytes vs 4 bytes in 16bit stereo)
 			int len = currentPlugin.getSoundData(samples, bufSize / 16);
-			Log.v(TAG, String.format("READ %d (%d)", len, bufSize));
+			Log.d(TAG, "READ %d (%d)", len, bufSize);
 			if(len < 0) {
 				wavSamples = sampleCount / divider;
 				dataSize = wavSamples * numChannels * 16/8;
 				
-				Log.v(TAG, String.format("Early end, new datasize is %d", dataSize));
+				Log.d(TAG, "Early end, new datasize is %d", dataSize);
 				
 				bb.putInt(4, dataSize + 36);
 				bb.putInt(40, dataSize);
@@ -276,7 +276,7 @@ public class Player implements Runnable {
 			
 			sampleCount += len;
 			
-			Log.v(TAG, String.format("%d vs %d frames", numSamples, sampleCount));
+			Log.d(TAG, "%d vs %d frames", numSamples, sampleCount);
 			
 			int j = 0;
 			int i = 0;			
@@ -303,7 +303,7 @@ public class Player implements Runnable {
 		//bos.close();
 		raf.close();
 		
-		Log.v(TAG, String.format("Wrote %d samples in %d bytes", numSamples, bytesWritten));
+		Log.d(TAG, "Wrote %d samples in %d bytes", numSamples, bytesWritten);
 				
 		if(reinitAudio) {
 			audioTrack.release();
@@ -343,7 +343,7 @@ public class Player implements Runnable {
 		for(DroidSoundPlugin plugin : plugins) {
 			if(plugin.canHandle(song.getName())) {
 				list.add(plugin);
-				Log.v(TAG, String.format("%s handled by %s", song.getName(), plugin.getClass().getSimpleName()));
+				Log.d(TAG, "%s handled by %s", song.getName(), plugin.getClass().getSimpleName());
 			}
 		}
 
@@ -361,7 +361,7 @@ public class Player implements Runnable {
 
 			if(song.getZipPath() != null) {
 
-				Log.v(TAG, "ZIP FILE");
+				Log.d(TAG, "ZIP FILE");
 
 				File f = new File(song.getZipPath());
 	
@@ -376,7 +376,7 @@ public class Player implements Runnable {
 
 				String name = song.getZipName(); // songName.substring(zipExt+5);
 
-				Log.v(TAG, String.format("Trying to open '%s' in zipfile '%s'\n", name, f.getPath()));
+				Log.d(TAG, "Trying to open '%s' in zipfile '%s'\n", name, f.getPath());
 
 				if(currentZip != null) {
 
@@ -384,21 +384,21 @@ public class Player implements Runnable {
 
 					if(name2 != null) {
 
-						Log.v(TAG, String.format("Got secondary file '%s'\n", name2));
+						Log.d(TAG, "Got secondary file '%s'\n", name2);
 
 						ZipEntry entry = currentZip.getEntry(name);
 						if(entry != null) {
 							InputStream fs = currentZip.getInputStream(entry);
 							songFile = writeFile(name, fs, true);
 
-							Log.v(TAG, String.format("Wrote '%s'\n", songFile.getPath()));
+							Log.d(TAG, "Wrote '%s'\n", songFile.getPath());
 
 							fileSize = songFile.length();
 							fs.close();
 
 							String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
 
-							Log.v(TAG, String.format("Writing '%s'\n", fname2));
+							Log.d(TAG, "Writing '%s'\n", fname2);
 
 							entry = currentZip.getEntry(name2);
 
@@ -412,10 +412,10 @@ public class Player implements Runnable {
 
 					} else {
 
-						Log.v(TAG, "ENTRY");
+						Log.d(TAG, "ENTRY");
 						ZipEntry entry = currentZip.getEntry(name);
 						if(entry != null) {
-							Log.v(TAG, String.format("Entry  '%s' %d\n", entry.getName(), entry.getSize()));
+							Log.d(TAG, "Entry  '%s' %d\n", entry.getName(), entry.getSize());
 							InputStream fs = currentZip.getInputStream(entry);
 							fileSize = entry.getSize();
 							songBuffer = new byte[(int) fileSize];
@@ -429,7 +429,7 @@ public class Player implements Runnable {
 			} else {
 				songFile = song.getFile(); // new File(songName);
 
-				Log.v(TAG, "Trying to read normal file " + songFile.getPath());
+				Log.d(TAG, "Trying to read normal file " + songFile.getPath());
 
 				fileSize = songFile.length();
 				System.gc();
@@ -456,7 +456,7 @@ public class Player implements Runnable {
 		if(songBuffer != null || songFile != null || streamName != null) {
 			boolean songLoaded = false;
 			for(DroidSoundPlugin plugin : list) {
-				Log.v(TAG, "Trying " + plugin.getClass().getName());
+				Log.d(TAG, "Trying " + plugin.getClass().getName());
 				if(streamName != null) {
 					try {
 						songLoaded = plugin.loadStream(streamName);
@@ -504,7 +504,7 @@ public class Player implements Runnable {
 								plugin.calcMD5(songBuffer, (int) fileSize);
 
 						}
-						Log.v(TAG, String.format("%s gave Songref %s", plugin.getClass().getName(), songLoaded ? "TRUE" : "FALSE"));
+						Log.d(TAG, "%s gave Songref %s", plugin.getClass().getName(), songLoaded ? "TRUE" : "FALSE");
 						if(songLoaded) {
 							currentPlugin = plugin;
 							break;
@@ -515,9 +515,9 @@ public class Player implements Runnable {
 		}
 
 		if(currentPlugin != null) {
-			Log.v(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
+			Log.d(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
 
-			Log.v(TAG, String.format("'%s' by '%s'", song.getTitle(), song.getComposer()));
+			Log.d(TAG, "'%s' by '%s'", song.getTitle(), song.getComposer());
 
 
 			synchronized (this) {
@@ -578,7 +578,7 @@ public class Player implements Runnable {
 							currentSong.title = basename.substring(sep+3);
 						} else 
 							currentSong.title = basename;
-						Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
+						Log.d(TAG, "FN Title '%s'", currentSong.title);
 					}
 				}
 
@@ -611,7 +611,7 @@ public class Player implements Runnable {
 			
 			if(!skipStart) {
 	
-				Log.v(TAG, String.format(":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type));
+				Log.d(TAG, ":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type);
 	
 				Message msg = mHandler.obtainMessage(MSG_NEWSONG);
 	
@@ -620,7 +620,7 @@ public class Player implements Runnable {
 					currentState = State.PLAYING;
 					lastPos = -1000;
 					currentSong.source = currentPlugin.getStringInfo(102);
-					Log.v(TAG, "MP3 SOURCE IS " + currentSong.source);
+					Log.d(TAG, "MP3 SOURCE IS " + currentSong.source);
 	
 					mHandler.sendMessage(msg);
 	
@@ -642,7 +642,7 @@ public class Player implements Runnable {
 					// audioTrack.stop();
 					// audioTrack.flush();
 	
-					Log.v(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
+					Log.d(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
 				}
 	
 				if(reinitAudio) {
@@ -660,7 +660,7 @@ public class Player implements Runnable {
 
 			lastPos = -1000;
 			if(songFile2 != null) {
-				Log.v(TAG, String.format("Deleting temporary files %s and %s", songFile.getPath(), songFile2.getPath()));
+				Log.d(TAG, "Deleting temporary files %s and %s", songFile.getPath(), songFile2.getPath());
 
 				if(songFile2 != songFile)
 					songFile2.delete();
@@ -688,25 +688,25 @@ public class Player implements Runnable {
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO,
 				AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 		reinitAudio = false;
-		Log.v(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
+		Log.d(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
 		int pos = 0;
 		while(noPlayWait < 50) {
 			try {
 				if(command != Command.NO_COMMAND) {
 
-					Log.v(TAG, String.format("Command %s while in state %s", command.toString(), currentState.toString()));
+					Log.d(TAG, "Command %s while in state %s", command.toString(), currentState.toString());
 
 					synchronized (cmdLock) {
 						switch(command) {
 						case PLAY_MULTIPLE:
 							SongFile [] songs = (SongFile[]) argument;							
-							Log.v(TAG, "Playmod " + songs[0].getName());
+							Log.d(TAG, "Playmod " + songs[0].getName());
 							startSong(songs[0], songs[1]);
 							break;
 						case PLAY:
 							SongFile song = (SongFile) argument;
-							Log.v(TAG, "Playmod " + song.getName());
+							Log.d(TAG, "Playmod " + song.getName());
 							startSong(song, false);
 							break;
 						case DUMP_WAV:
@@ -715,7 +715,7 @@ public class Player implements Runnable {
 							File outFile = (File) args[1];
 							int len = (Integer) args[2];
 							int flags = (Integer) args[3];
-							Log.v(TAG, "DUMP WAV " + song2.getName());
+							Log.d(TAG, "DUMP WAV " + song2.getName());
 							try {
 								dumpWav(song2, outFile, len, flags);
 							} catch (IOException e1) {
@@ -725,7 +725,7 @@ public class Player implements Runnable {
 						case STOP:
 							if(currentState != State.STOPPED) {
 								// audioTrack.pause();
-								Log.v(TAG, "STOP");
+								Log.d(TAG, "STOP");
 								MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
 								if(mp != null) {
 									mp.stop();
@@ -763,7 +763,7 @@ public class Player implements Runnable {
 
 									//
 									int playPos = audioTrack.getPlaybackHeadPosition() * 10 / (FREQ / 100);
-									Log.v(TAG, String.format("Offset %d/1000 - %d", msec, playPos));
+									Log.d(TAG, "Offset %d/1000 - %d", msec, playPos);
 									playPosOffset = msec - playPos;
 
 									// currentPosition = msec;
@@ -771,13 +771,13 @@ public class Player implements Runnable {
 								}
 								break;
 							case SET_TUNE:
-								Log.v(TAG, "Setting tune");
+								Log.d(TAG, "Setting tune");
 								if(currentPlugin.setTune((Integer) argument)) {
 									playPosOffset = 0;
 									// currentPosition = 0;
 									currentTune = (Integer) argument;
 									lastPos = -1000;
-									// Log.v(TAG, "TUNE, pos " +
+									// Log.d(TAG, "TUNE, pos " +
 									// audioTrack.getPlaybackHeadPosition());
 									audioTrack.pause();
 									audioTrack.flush();
@@ -786,7 +786,7 @@ public class Player implements Runnable {
 									} catch (InterruptedException e) {
 										e.printStackTrace();
 									}
-									// Log.v(TAG, "TUNE, pos " +
+									// Log.d(TAG, "TUNE, pos " +
 									// audioTrack.getPlaybackHeadPosition());
 
 									if(reinitAudio) {
@@ -851,7 +851,7 @@ public class Player implements Runnable {
 				 */
 				
 				if(currentState == State.PLAYING) {
-					// Log.v(TAG, "Get sound data");
+					// Log.d(TAG, "Get sound data");
 					int len = 0;
 					MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
 					if(mp != null) {
@@ -860,7 +860,7 @@ public class Player implements Runnable {
 						
 						if(playPos < -0) { // !mp.isPlaying()) {
 							// songEnded = true;
-							Log.v(TAG, "SOUNDDATA DONE");
+							Log.d(TAG, "SOUNDDATA DONE");
 							currentState = State.SWITCHING;
 							Message msg = mHandler.obtainMessage(MSG_DONE);
 							mHandler.sendMessage(msg);
@@ -882,14 +882,14 @@ public class Player implements Runnable {
 									currentSong.title = basename.substring(sep+3);
 								} else 
 									currentSong.title = basename;
-								Log.v(TAG, String.format("FN Title '%s'", currentSong.title));
+								Log.d(TAG, "FN Title '%s'", currentSong.title);
 								Message msg = mHandler.obtainMessage(MSG_INFO, 0, 0, new String[] { currentSong.title, currentSong.author });
 								mHandler.sendMessage(msg);
 							}
 							
 							String[] info = currentPlugin.getDetailedInfo();
 							if(info != null) {
-								Log.v(TAG, "########################################### GOT DETAILS");
+								Log.d(TAG, "########################################### GOT DETAILS");
 								currentSong.details = info;
 								Message msg = mHandler.obtainMessage(MSG_DETAILS, info);
 								mHandler.sendMessage(msg);
@@ -922,7 +922,7 @@ public class Player implements Runnable {
 							String subTuneAuthor = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
 							int length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 							
-							Log.v(TAG, "######## GOT NEW META INFO");
+							Log.d(TAG, "######## GOT NEW META INFO");
 							Message msg;
 							if(subTuneTitle != null && (!subTuneTitle.equals(currentSong.subtuneTitle))) {
 								msg = mHandler.obtainMessage(MSG_SUBTUNE, -1, length, new String[] { subTuneTitle, subTuneAuthor });
@@ -944,7 +944,7 @@ public class Player implements Runnable {
 						if(song >= 0 && song != currentTune) {
 
 							if(startedFromSub) {
-								Log.v(TAG, "SUBTUNE ENDED");
+								Log.d(TAG, "SUBTUNE ENDED");
 								currentState = State.SWITCHING;
 								Message msg = mHandler.obtainMessage(MSG_DONE);
 								mHandler.sendMessage(msg);
@@ -968,9 +968,9 @@ public class Player implements Runnable {
 					}
 
 					if(!songEnded) {
-						//Log.v(TAG, "Get sound data");
+						//Log.d(TAG, "Get sound data");
 						len = currentPlugin.getSoundData(samples, bufSize / 16);
-						//Log.v(TAG, "DONE");
+						//Log.d(TAG, "DONE");
 					} else {
 						Thread.sleep(100);
 					}
@@ -978,9 +978,9 @@ public class Player implements Runnable {
 					int p = audioTrack.getPlaybackHeadPosition();
 
 					// currentPosition += ((len * 1000) / (FREQ*2));
-					// Log.v(TAG, "pos " + currentPosition);
+					// Log.d(TAG, "pos " + currentPosition);
 
-					// Log.v(TAG, String.format("%d vs %d", pos, p));
+					// Log.d(TAG, "%d vs %d", pos, p);
 					if(songEnded && p == pos) {
 						lastTime = -1;
 						currentState = State.SWITCHING;
@@ -992,7 +992,7 @@ public class Player implements Runnable {
 					int playPos = pos * 10 / (FREQ / 100);
 
 					if(pos >= lastPos + FREQ / 2) {
-						// Log.v(TAG,
+						// Log.d(TAG,
 						// String.format("PLAY %d sec %d pos = %d msec ",
 						// currentPosition, pos, pos * 1000 / 44100));
 
@@ -1011,7 +1011,7 @@ public class Player implements Runnable {
 							} else if(pos > silentPosition + 2500) {
 								msg = mHandler.obtainMessage(MSG_SILENT);
 								mHandler.sendMessage(msg);
-								Log.v(TAG, "Silence");
+								Log.d(TAG, "Silence");
 								silentPosition = -1;
 							}
 						} else {
@@ -1019,7 +1019,7 @@ public class Player implements Runnable {
 						}
 
 					}
-					// Log.v(TAG, "write " + len);
+					// Log.d(TAG, "write " + len);
 
 					if(len < 0) {
 						if(playPos > 5000) {
@@ -1036,7 +1036,7 @@ public class Player implements Runnable {
 						if(lastTime > 0) {
 							frameTime = (tt - lastTime);
 							long d = tt - t;
-							// Log.v(TAG, String.format("Frame %d, write %d",
+							// Log.d(TAG, String.format("Frame %d, write %d",
 							// frameTime, d));
 							if(frameTime > 0) {
 								audioTime += ((d * 100) / frameTime);
@@ -1046,7 +1046,7 @@ public class Player implements Runnable {
 						lastTime = tt;
 					}
 
-					// Log.v(TAG, "loop");
+					// Log.d(TAG, "loop");
 					noPlayWait = 0;
 				} else {
 					if(currentState == State.PAUSED && currentPlugin.getMediaPlayer() != null) {
@@ -1078,7 +1078,7 @@ public class Player implements Runnable {
 			plugin.exit();
 		}
 
-		Log.v(TAG, "Player Thread exiting due to inactivity");
+		Log.d(TAG, "Player Thread exiting due to inactivity");
 
 	}
 
@@ -1114,10 +1114,10 @@ public class Player implements Runnable {
 	public void paused(boolean pause) {
 		synchronized (cmdLock) {
 			if(pause) {
-				Log.v(TAG, "Pausing");
+				Log.d(TAG, "Pausing");
 				command = Command.PAUSE;
 			} else {
-				Log.v(TAG, "Unpausing");
+				Log.d(TAG, "Unpausing");
 				command = Command.UNPAUSE;
 			}
 		}
@@ -1166,7 +1166,7 @@ public class Player implements Runnable {
 		synchronized (cmdLock) {
 			if(bufSize != bs) {
 				bufSize = bs;
-				Log.v(TAG, "Buffersize now " + bs);
+				Log.d(TAG, "Buffersize now " + bs);
 				reinitAudio = true;
 			}
 		}

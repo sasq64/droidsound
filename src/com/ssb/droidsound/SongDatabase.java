@@ -32,7 +32,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.BaseColumns;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
@@ -162,7 +162,7 @@ public class SongDatabase implements Runnable {
 		
 		URL url = new URL(ref);
 		
-		Log.v(TAG, "Opening URL " + ref);
+		Log.d(TAG, "Opening URL " + ref);
 		
 		URLConnection conn = url.openConnection();
 		if (!(conn instanceof HttpURLConnection))
@@ -173,7 +173,7 @@ public class SongDatabase implements Runnable {
 		httpConn.setInstanceFollowRedirects(true);
 		httpConn.setRequestMethod("GET");
 		
-		Log.v(TAG, "Connecting");
+		Log.d(TAG, "Connecting");
 		Intent intent;
 		
 		httpConn.connect();
@@ -183,7 +183,7 @@ public class SongDatabase implements Runnable {
 		{			
 			int size;
 			byte[] buffer = new byte[64*1024];
-			Log.v(TAG, "HTTP connected");
+			Log.d(TAG, "HTTP connected");
 			InputStream in = httpConn.getInputStream();
 			//File f = File.createTempFile("music", null);
 			
@@ -210,7 +210,7 @@ public class SongDatabase implements Runnable {
 					
 					if(cancelUrl != null && cancelUrl.equals(ref)) {
 						cancelUrl = null;
-						Log.v(TAG, "Cancelling download");
+						Log.d(TAG, "Cancelling download");
 						return false;
 					}
 				}
@@ -285,7 +285,7 @@ public class SongDatabase implements Runnable {
 		mHandler = new Handler() {
 			@Override
 	        public void handleMessage(Message msg) {
-	        	Log.v(TAG, String.format("Got msg %d with arg %d", msg.what, msg.arg1));
+	        	Log.d(TAG, "Got msg %d with arg %d", msg.what, msg.arg1);
 	            switch (msg.what) {
 	            case MSG_SCAN:
 	            	if(msg.arg1 == 2) {
@@ -299,7 +299,7 @@ public class SongDatabase implements Runnable {
 	            //	createIndex(msg.arg1);
 	            //	break;
 	            case MSG_QUIT:
-	            	Log.v(TAG, "Telling looper to quit");
+	            	Log.d(TAG, "Telling looper to quit");
 	            	Looper.myLooper().quit();
 	            	break;
 	          /*  case MSG_DOWNLOAD:
@@ -323,7 +323,7 @@ public class SongDatabase implements Runnable {
 					oldPath = path;
 				}
 				
-				Log.v(TAG, String.format("PATH %s %d\n", path, percent));
+				Log.d(TAG, "PATH %s %d\n", path, percent);
 				
 				if(percent >= 0) {
 					intent = new Intent("com.sddb.droidsound.SCAN_UPDATE");
@@ -346,7 +346,7 @@ public class SongDatabase implements Runnable {
 
 		Looper.loop();
 		
-		Log.v(TAG, "Exiting songdatabase");
+		Log.d(TAG, "Exiting songdatabase");
 	}
 
 	private void doOpen(boolean drop) {	
@@ -384,7 +384,7 @@ public class SongDatabase implements Runnable {
 		
 
 		dbName = dbFile.getAbsolutePath();
-		Log.v(TAG, String.format("Database path %s", dbName));		
+		Log.d(TAG, "Database path %s", dbName);		
 
 		SQLiteDatabase db = getWritableDatabase();
 		
@@ -407,13 +407,13 @@ public class SongDatabase implements Runnable {
 					} catch (InterruptedException e) {
 					}
 				}
-				Log.v(TAG, "Deleting file tables!");
+				Log.d(TAG, "Deleting file tables!");
 				
 				// try {
 				// 	db.execSQL("DELETE FROM FILES;");
 				// 	db.execSQL("DELETE FROM VARIABLES;");
 				// } catch (SQLException e) {
-				// 	Log.v(TAG, "No tables do delete from, thats OK");
+				// 	Log.d(TAG, "No tables do delete from, thats OK");
 				// }
 				
 				db.execSQL("DROP TABLE IF EXISTS FILES ;");
@@ -479,7 +479,7 @@ public class SongDatabase implements Runnable {
 				scanCallback.notifyScan("Updating indexes", 0);
 			}
 			
-			Log.v(TAG, "Updating indexes to mode " + indexMode);
+			Log.d(TAG, "Updating indexes to mode " + indexMode);
 			
 			switch(indexMode) {
 			case INDEX_NONE:
@@ -521,16 +521,16 @@ public class SongDatabase implements Runnable {
 	
 	private boolean scanZip(File zipFile) throws ZipException, IOException {
 		
-		Log.v(TAG, String.format("Scanning %s", zipFile.getPath()));
+		Log.d(TAG, "Scanning %s", zipFile.getPath());
 		
 		// Erase any previous entries
 		scanDb.delete("FILES", "PATH=?", new String [] { zipFile.getPath() });		
 		scanDb.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
 		
-		Log.v(TAG, "OPEN");
+		Log.d(TAG, "OPEN");
 		//ZipFile zfile = new ZipFile(zipFile);		
 		NativeZipFile zfile = new NativeZipFile(zipFile);
-		Log.v(TAG, "ENTRY");
+		Log.d(TAG, "ENTRY");
 		
 		String baseNameNoSlash = zipFile.getPath();
 		String baseName = zipFile.getPath() + "/";
@@ -541,12 +541,12 @@ public class SongDatabase implements Runnable {
 		//	HVSCParser.parseSongLengths(zfile.getInputStream(infoe), scanDb);
 		//}		
 		
-		Log.v(TAG, "ENUM");
+		Log.d(TAG, "ENUM");
 		Enumeration<? extends ZipEntry> entries = zfile.entries();
 		
 		Set<String> pathSet = new HashSet<String>();
 		
-		Log.v(TAG, String.format("Scanning %d zip entries", zfile.size()));
+		Log.d(TAG, "Scanning %d zip entries", zfile.size());
 		int count = 0;
 		int total = zfile.size();
 		
@@ -601,7 +601,7 @@ public class SongDatabase implements Runnable {
 					values.put("FILENAME", fileName);
 					scanDb.insert("FILES", "PATH", values);
 				} else {
-					Log.v(TAG, String.format("Could not identify '%s'", n));
+					Log.d(TAG, "Could not identify '%s'", n);
 				}
 
 				count++;
@@ -619,7 +619,7 @@ public class SongDatabase implements Runnable {
 		
 		zfile.close();
 
-		Log.v(TAG, String.format("Adding %d paths", pathSet.size()));
+		Log.d(TAG, "Adding %d paths", pathSet.size());
 		
 		values.clear();
 		values.put("TYPE", TYPE_DIR);
@@ -652,9 +652,9 @@ public class SongDatabase implements Runnable {
 		if(alwaysScan)
 			hasChanged = true;
 		
-		Log.v(TAG, String.format("Entering '%s', lastScan %d", parent, lastScan));
+		Log.d(TAG, "Entering '%s', lastScan %d", parent, lastScan);
 		if(hasChanged) {
-			Log.v(TAG, ">> Doing FULL scan");
+			Log.d(TAG, ">> Doing FULL scan");
 		}
 
 		Cursor fileCursor = scanDb.query("FILES", FILENAME_array, "PATH=?", parentArray, null, null, null);
@@ -686,7 +686,7 @@ public class SongDatabase implements Runnable {
 				}
 			}
 
-			Log.v(TAG, String.format("Datbase has %d entries, found %d files/dirs", fileCursor.getCount(), files.size()));
+			Log.d(TAG, "Datbase has %d entries, found %d files/dirs", fileCursor.getCount(), files.size());
 
 			Set<String> delDirs = new HashSet<String>();
 			Set<Long> delFiles = new HashSet<Long>();
@@ -694,7 +694,7 @@ public class SongDatabase implements Runnable {
 
 			Set<String> removes = new HashSet<String>();
 
-			Log.v(TAG, "Comparing DB to FS");
+			Log.d(TAG, "Comparing DB to FS");
 			
 			// Iterate over database result and compare to hash set
 			while(fileCursor.moveToNext()) {
@@ -704,7 +704,7 @@ public class SongDatabase implements Runnable {
 				
 				if(removes.contains(fileName)) {
 					// Found duplicate in database
-					Log.v(TAG, String.format("!! Found duplicate in database '%s', REMOVING !!", fileName));
+					Log.d(TAG, "!! Found duplicate in database '%s', REMOVING !!", fileName);
 					delFiles.add(id);
 				}
 				
@@ -719,10 +719,10 @@ public class SongDatabase implements Runnable {
 						/// files.remove(fileName);
 						removes.add(fileName);
 					} else {
-						//Log.v(TAG, String.format("!! Lastscan %d, file %s modified %d", lastScan, fileName, f.lastModified()));
+						//Log.d(TAG, "!! Lastscan %d, file %s modified %d", lastScan, fileName, f.lastModified());
 						if(lastScan < f.lastModified()) {
 							// File has been modified - del and readd
-							Log.v(TAG, String.format("!! FILE %s was modified", fileName));
+							Log.d(TAG, "!! FILE %s was modified", fileName);
 							delFiles.add(id);
 						} else {
 							/// files.remove(fileName);
@@ -730,7 +730,7 @@ public class SongDatabase implements Runnable {
 						}
 					}
 				} else {
-					Log.v(TAG, String.format("!! '%s' found in DB but not on disk, DELETING", fileName));
+					Log.d(TAG, "!! '%s' found in DB but not on disk, DELETING", fileName);
 					// File has been removed on disk, schedule for DELETE
 					if(type == TYPE_FILE) {
 						delFiles.add(id);
@@ -743,7 +743,7 @@ public class SongDatabase implements Runnable {
 			files.removeAll(removes);
 			
 			for(String s : files) {
-				Log.v(TAG, String.format("!! '%s' not in database, ADDING", s));
+				Log.d(TAG, "!! '%s' not in database, ADDING", s);
 			}
 				
 			// Close cursor (important since we call ourselves recursively below)
@@ -760,14 +760,14 @@ public class SongDatabase implements Runnable {
 					
 					for(String d : delDirs) {
 						String path = new File(parent, d).getPath();
-						Log.v(TAG, String.format("Deleting PATH %s and subdirs", path));
+						Log.d(TAG, "Deleting PATH %s and subdirs", path);
 						scanDb.delete("FILES", "PATH=? AND FILENAME=?", new String [] { parent, d} );
 						scanDb.delete("FILES", "PATH LIKE ?", new String [] { path + "/%" } );
 						scanDb.delete("FILES", "PATH=?", new String [] { path } );
 					}
 	
 					for(long id : delFiles) {
-						Log.v(TAG, String.format("Deleting FILE %d in %s", id, parent));
+						Log.d(TAG, "Deleting FILE %d in %s", id, parent);
 						scanDb.delete("FILES", "_id=?", new String [] { Long.toString(id) } );
 					}
 
@@ -784,7 +784,7 @@ public class SongDatabase implements Runnable {
 						values.put("PATH", f.getParentFile().getPath());
 						values.put("FILENAME", f.getName());
 						
-						Log.v(TAG, String.format("%s isfile %s", f.getPath(), String.valueOf(f.isFile())));
+						Log.d(TAG, "%s isfile %s", f.getPath(), String.valueOf(f.isFile()));
 	
 						if(f.isFile()) {
 							
@@ -797,25 +797,25 @@ public class SongDatabase implements Runnable {
 							}							
 							else
 							if(fn.toUpperCase().endsWith(".ZIP")) {
-								Log.v(TAG, String.format("Found zipfile (%s)", f.getPath()));
+								Log.d(TAG, "Found zipfile (%s)", f.getPath());
 								zipFiles.add(f);
 								
 								values = null;
 							}
 							else 
 							if(fn.toUpperCase().endsWith(".PLIST")) {
-								Log.v(TAG, String.format("Found playlist (%s)", fn));
+								Log.d(TAG, "Found playlist (%s)", fn);
 								values.put("TYPE", TYPE_PLIST);
 								values.put("TITLE", fn.substring(0, end - 6));								
 							}
 							else 
 							if(fn.toUpperCase().endsWith(".LNK")) {
-								Log.v(TAG, String.format("Found link (%s)", fn));
+								Log.d(TAG, "Found link (%s)", fn);
 								values.put("TYPE", TYPE_DIR);
 								values.put("TITLE", fn.substring(0, end - 4));								
 							} else {
 								values.put("TYPE", TYPE_FILE);
-								Log.v(TAG, String.format("Checking %s", f.getPath()));
+								Log.d(TAG, "Checking %s", f.getPath());
 																	
 								//InputStream is = new BufferedInputStream(new FileInputStream(f), 256);
 								//FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), is);
@@ -845,7 +845,7 @@ public class SongDatabase implements Runnable {
 							values.put("TYPE", TYPE_DIR);
 						}
 						if(values != null) {
-							Log.v(TAG, String.format("Inserting FILE... (%s)", s));
+							Log.d(TAG, "Inserting FILE... (%s)", s);
 							scanDb.insert("FILES", "PATH", values);
 						}
 						
@@ -857,7 +857,7 @@ public class SongDatabase implements Runnable {
 							}
 						}
 					}
-					Log.v(TAG, "TRANSACTION SUCCESSFUL");
+					Log.d(TAG, "TRANSACTION SUCCESSFUL");
 					scanDb.setTransactionSuccessful();
 					
 				} finally {
@@ -865,7 +865,7 @@ public class SongDatabase implements Runnable {
 				}
 			}
 			
-			Log.v(TAG, String.format("zipfiles (%d)", zipFiles.size()));
+			Log.d(TAG, "zipfiles (%d)", zipFiles.size());
 			if(zipFiles.size() > 0) {				
 				for(File f : zipFiles) {
 					try {
@@ -881,15 +881,15 @@ public class SongDatabase implements Runnable {
 							values.put("TYPE", TYPE_ARCHIVE);
 							int end = f.getName().length();
 							values.put("TITLE", f.getName().substring(0, end - 4));				
-							Log.v(TAG, String.format("Inserting FILE... (%s)", f.getName()));
+							Log.d(TAG, "Inserting FILE... (%s)", f.getName());
 							scanDb.insert("FILES", "PATH", values);
 							scanDb.setTransactionSuccessful();
-							Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
+							Log.d(TAG, "ZIP TRANSATION SUCCESSFUL");
 						}
 					} catch (ZipException e) {
-						Log.v(TAG, "Broken zip");
+						Log.d(TAG, "Broken zip");
 					} catch (IOException e) {
-						Log.v(TAG, "IO Error");
+						Log.d(TAG, "IO Error");
 					}
 					scanDb.endTransaction();
 				}
@@ -936,10 +936,10 @@ public class SongDatabase implements Runnable {
 							values.put("FILENAME", dump.getName());
 							values.put("TYPE", TYPE_ARCHIVE);
 							values.put("TITLE", ds.getTitle());
-							Log.v(TAG, String.format("Inserting %s from dump (%s)", ds.getTitle(), dump.getPath()));
+							Log.d(TAG, "Inserting %s from dump (%s)", ds.getTitle(), dump.getPath());
 							scanDb.insert("FILES", "PATH", values);
 							//db.setTransactionSuccessful();
-							//Log.v(TAG, "ZIP TRANSATION SUCCESSFUL");
+							//Log.d(TAG, "ZIP TRANSATION SUCCESSFUL");
 						}
 						is.close();
 					}
@@ -990,7 +990,7 @@ public class SongDatabase implements Runnable {
 				}
 			}
 			
-			Log.v(TAG, String.format("No change, scanning %d Datbase entries with %d dirs", fileCursor.getCount(), files.size()));
+			Log.d(TAG, "No change, scanning %d Datbase entries with %d dirs", fileCursor.getCount(), files.size());
 
 			fileCursor.close();
 			fileCursor = null;
@@ -1018,7 +1018,7 @@ public class SongDatabase implements Runnable {
 
 	public void setIndexMode(int mode) {
 		
-		 Log.v(TAG, "INDEX MODE " + mode);
+		 Log.d(TAG, "INDEX MODE " + mode);
 		 indexMode = mode;
 		 
 		 
@@ -1090,7 +1090,7 @@ public class SongDatabase implements Runnable {
 		
 		cursor.close();
 		
-		Log.v(TAG, String.format("Last scan %d\n", lastScan));
+		Log.d(TAG, "Last scan %d\n", lastScan);
 
 		File parentDir = new File(modsDir);
 		
@@ -1110,7 +1110,7 @@ public class SongDatabase implements Runnable {
 				// Remove orphaned directories
 				Cursor oc = scanDb.query("FILES", new String[] { "PATH", "FILENAME" }, "PATH NOT LIKE '%.zip%'", null, null, null, null, String.format("%d,%d", offset, limit));
 
-				Log.v(TAG, String.format("Orphan check on %d files\n", oc.getCount()));
+				Log.d(TAG, "Orphan check on %d files\n", oc.getCount());
 
 				if(oc.getCount() <= 0) {
 					oc.close();
@@ -1148,10 +1148,10 @@ public class SongDatabase implements Runnable {
 					isReady = false;
 					scanDb.beginTransaction();
 					for(File f : deletes) {
-						Log.v(TAG, String.format("Removing %s from DB\n", f.getPath()));
+						Log.d(TAG, "Removing %s from DB\n", f.getPath());
 						scanDb.delete("FILES", "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() });
 						if(f.getName().toUpperCase().endsWith(".ZIP")) {
-							Log.v(TAG, "Removing zip contents");
+							Log.d(TAG, "Removing zip contents");
 							scanDb.delete("FILES", "PATH LIKE ?", new String[] { f.getPath() + "/%" });
 						}
 					}
@@ -1237,7 +1237,7 @@ public class SongDatabase implements Runnable {
 			c = rdb.query("FILES", columns, "TITLE LIKE ? OR COMPOSER LIKE ?", new String[] { q, q }, null, null, searchOrder[sorting], "500");
 		}
 		if(c != null) {
-			Log.v(TAG, String.format("Got %d hits", c.getCount()));
+			Log.d(TAG, "Got %d hits", c.getCount());
 		}
 		return c;
 	}
@@ -1283,7 +1283,7 @@ public class SongDatabase implements Runnable {
 		int lIndex = upath.indexOf(".LNK");
 		if(lIndex > 0) {
 			String linkPath = path.substring(0, lIndex+4);
-			Log.v(TAG, String.format("linkPath '%s'", linkPath));
+			Log.d(TAG, "linkPath '%s'", linkPath);
 			String linkTarget = linkMap.get(linkPath);
 			if(linkTarget == null) {
 				try {
@@ -1302,7 +1302,7 @@ public class SongDatabase implements Runnable {
 				}
 			}
 			path = linkTarget + path.substring(lIndex+4);			
-			Log.v(TAG, String.format("Translated to '%s'", path));
+			Log.d(TAG, "Translated to '%s'", path);
 			
 		}
 		return path;
@@ -1324,13 +1324,13 @@ public class SongDatabase implements Runnable {
 			ext = upath.substring(dot);
 		}
 
-		Log.v(TAG, String.format("files in path '%s'", pathName));
+		Log.d(TAG, "files in path '%s'", pathName);
 		//String name = new File(pathName).getName().toUpperCase();
 		
 		int lIndex = upath.indexOf(".LNK");
 		if(lIndex > 0) {
 			String linkPath = pathName.substring(0, lIndex+4);
-			Log.v(TAG, String.format("linkPath '%s'", linkPath));
+			Log.d(TAG, "linkPath '%s'", linkPath);
 			String linkTarget = linkMap.get(linkPath);
 			if(linkTarget == null) {
 				try {
@@ -1351,7 +1351,7 @@ public class SongDatabase implements Runnable {
 			
 			pathName = linkTarget + pathName.substring(lIndex+4);
 			
-			Log.v(TAG, String.format("Translated to '%s'", pathName));
+			Log.d(TAG, "Translated to '%s'", pathName);
 		}
 		
 		/*
@@ -1416,7 +1416,7 @@ public class SongDatabase implements Runnable {
 			}
 		}
 
-		Log.v(TAG, String.format("Path now '%s'", pathName));
+		Log.d(TAG, "Path now '%s'", pathName);
 
 		String path = file.getParent();
 		String fname = file.getName();
@@ -1425,7 +1425,7 @@ public class SongDatabase implements Runnable {
 			return null;
 		}
 	
-		Log.v(TAG, "BEGIN");
+		Log.d(TAG, "BEGIN");
 		Cursor c = rdb.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { path, fname }, null, null, sortOrder[sorting], "5000");
 		if(c != null) {
 			if(c.moveToFirst()) {
@@ -1434,7 +1434,7 @@ public class SongDatabase implements Runnable {
 			c.close();
 		}
 		c = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, sortOrder[sorting], "5000");	
-		Log.v(TAG, "END");
+		Log.d(TAG, "END");
 		return c;
 	}
 	
@@ -1455,15 +1455,15 @@ public class SongDatabase implements Runnable {
 	public void addToPlaylist(Playlist pl, SongFile songFile) {
 		
 		
-		Log.v(TAG, String.format("Adding %s / %s to playlist %s", songFile.getPath(), songFile.getName(), pl.getFile().getName()));
+		Log.d(TAG, "Adding %s / %s to playlist %s", songFile.getPath(), songFile.getName(), pl.getFile().getName());
 		
 		if(pl.contains(songFile)) {
-			Log.v(TAG, "Song exists, ignoring");
+			Log.d(TAG, "Song exists, ignoring");
 			return;
 		}
 		
 		if(songFile.getName().toUpperCase().endsWith(".ZIP")) {
-			Log.v(TAG, "WONT add zip files");
+			Log.d(TAG, "WONT add zip files");
 			return;
 		}
 
@@ -1479,7 +1479,7 @@ public class SongDatabase implements Runnable {
 			if(songFile.getName().toUpperCase().endsWith(".PLIST")) {
 				Playlist newpl = Playlist.getPlaylist(songFile.getFile());
 				List<SongFile> files = newpl.getSongs();
-				Log.v(TAG, String.format("Adding %d files from playlist", files.size()));
+				Log.d(TAG, "Adding %d files from playlist", files.size());
 				for(SongFile f2 : files) {
 					addToPlaylist(pl, f2);
 				}
@@ -1494,7 +1494,7 @@ public class SongDatabase implements Runnable {
 			Cursor cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { songFile.getParent(), songFile.getName() }, null, null, null);
 			
 			
-			//Log.v(TAG, String.format("Got %d results from query", cursor.getCount()));
+			//Log.d(TAG, "Got %d results from query", cursor.getCount());
 			
 			if(cursor != null && cursor.moveToFirst()) {
 				int type = cursor.getInt(cursor.getColumnIndex("TYPE"));
@@ -1647,7 +1647,7 @@ public class SongDatabase implements Runnable {
 		
 		while(c.moveToNext()) {
 			String dbmd5 = c.getString(0);
-			Log.v(TAG, String.format("Comparing %s to %s", dbmd5, md5));
+			Log.d(TAG, "Comparing %s to %s", dbmd5, md5);
 			if(dbmd5.equals(md5)) {
 				info.comment = c.getString(1);
 				info.length = c.getString(2);

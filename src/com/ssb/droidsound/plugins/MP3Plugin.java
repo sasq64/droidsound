@@ -7,7 +7,7 @@ import java.util.List;
 
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.MediaStreamer;
 import com.ssb.droidsound.utils.CueFile;
@@ -54,7 +54,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandleExt(String ext) {		
 		ext = ext.toUpperCase();
-		Log.v(TAG, String.format("Checking ext '%s'", ext));
+		Log.d(TAG, "Checking ext '%s'", ext);
 		return ext.equals(".MP3") || ext.equals(".M3U") || ext.equals(".PLS");
 	}
 	
@@ -65,7 +65,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			return streamer.getDetailedInfo();
 		}
 
-		Log.v(TAG, "getDetailedInfo");
+		Log.d(TAG, "getDetailedInfo");
 		List<String> info = new ArrayList<String>();
 		
 		info.add("Format");
@@ -110,7 +110,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 					songTitle = streamer.getStringInfo(DroidSoundPlugin.INFO_TITLE);
 					songComposer = streamer.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
 					songLength = streamer.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-					Log.v(TAG, String.format(" NEW META %s %s %d", songTitle, songComposer, songLength));
+					Log.d(TAG, " NEW META %s %s %d", songTitle, songComposer, songLength);
 					return 1;
 				}
 			}
@@ -142,7 +142,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 				pos = mediaPlayer.getCurrentPosition();
 			if(cueFile != null) {
 				currentSong = cueFile.trackFromPos(pos);
-				// Log.v(TAG, String.format("TRACK FROM POS %d => %d", pos,
+				// Log.d(TAG, String.format("TRACK FROM POS %d => %d", pos,
 				// currentSong));
 			}
 			return currentSong;
@@ -199,7 +199,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		}
 
 		if(!prepared) {
-			Log.v(TAG, "-------- Not prepared yet");
+			Log.d(TAG, "-------- Not prepared yet");
 			return 0;
 		}
 
@@ -251,7 +251,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		loaded = false;
 			
 		if(simpleStream) {
-			Log.v(TAG, String.format("LOAD %s", songName));
+			Log.d(TAG, "LOAD %s", songName);
 			mediaPlayer = new MediaPlayer();
 			mediaPlayer.setDataSource(songName);
 			loaded = true;
@@ -266,12 +266,12 @@ public class MP3Plugin extends DroidSoundPlugin {
 		} else {
 			if(httpThread == null) {
 				mediaPlayer = new MediaPlayer();
-				Log.v(TAG, "Creating thread");
+				Log.d(TAG, "Creating thread");
 				streamer = new MediaStreamer(songName , mediaPlayer, true);
 				httpThread = new Thread(streamer);
 				httpThread.start();
 			}
-			Log.v(TAG, String.format("LOAD %s", songName));
+			Log.d(TAG, "LOAD %s", songName);
 			id3Tag = null;
 			cueFile = null;
 		}
@@ -303,7 +303,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			if(pls.getMediaCount() > 0) {
 
 				if(simpleStream) {
-					Log.v(TAG, String.format("LOAD %s", pls.getMedia(0)));
+					Log.d(TAG, "LOAD %s", pls.getMedia(0));
 					description = pls.getDescription(0);
 					mediaPlayer = new MediaPlayer();
 					mediaPlayer.setDataSource(pls.getMedia(0));
@@ -320,7 +320,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 					try {
 						if(httpThread == null) {
 							mediaPlayer = new MediaPlayer();
-							Log.v(TAG, "Creating thread");
+							Log.d(TAG, "Creating thread");
 							streamer = new MediaStreamer(pls.getMediaList(), mediaPlayer, false);
 							description = pls.getDescription(0);
 							httpThread = new Thread(streamer);
@@ -328,7 +328,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 							httpThread.start();
 						}
 
-						Log.v(TAG, String.format("LOAD %s", pls.getMedia(0)));
+						Log.d(TAG, "LOAD %s", pls.getMedia(0));
 						// mediaPlayer.setLooping(true);
 						id3Tag = null;
 						cueFile = null;
@@ -343,7 +343,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		}	
 
 		try {
-			Log.v(TAG, String.format("LOAD %s", file.getPath()));
+			Log.d(TAG, "LOAD %s", file.getPath());
 			mediaPlayer = new MediaPlayer();
 			mediaPlayer.setDataSource(file.getPath());
 			loaded = true;
@@ -365,7 +365,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			int x = file.getPath().lastIndexOf('.');
 			String cueName = file.getPath().substring(0, x) + ".cue";
 
-			Log.v(TAG, String.format("CUENAME %s", cueName));
+			Log.d(TAG, "CUENAME %s", cueName);
 			currentSong = 0;
 			cueFile = new CueFile(new File(cueName));
 			if(cueFile.getTrackCount() <= 0) {
@@ -381,7 +381,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 	public boolean loadInfo(File file) throws IOException {
 
-		Log.v(TAG, String.format("LoadInfo %s", file.getPath()));
+		Log.d(TAG, "LoadInfo %s", file.getPath());
 		type = "MP3";
 		if(file.getName().toUpperCase().endsWith(".M3U")) {
 			id3Tag = null;
@@ -401,7 +401,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 	@Override
 	public void close() {
-		Log.v(TAG, "CLOSE MP3");
+		Log.d(TAG, "CLOSE MP3");
 
 		started = false;
 
@@ -433,7 +433,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	@Override
 	public void unload() {
 		
-		Log.v(TAG, "UNLOAD MP3");
+		Log.d(TAG, "UNLOAD MP3");
 
 		started = false;
 
@@ -482,7 +482,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		// if(opt.equals("simplestream"))
 		simpleStream = (Boolean) val;
-		Log.v(TAG, String.format("Simple Streaming %s", simpleStream ? "ON" : "OFF"));
+		Log.d(TAG, "Simple Streaming %s", simpleStream ? "ON" : "OFF");
 	}
 
 }

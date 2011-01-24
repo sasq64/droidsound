@@ -12,7 +12,7 @@ import java.util.Set;
 
 import android.content.Context;
 import android.os.Environment;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
 
@@ -110,7 +110,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 								if(sp >= 0) {
 									ex = ex.substring(0, sp);
 								}
-								//Log.v(TAG, "Ext " + ex);
+								//Log.d(TAG, "Ext " + ex);
 								extensions.add(ex.toUpperCase());
 							}
 						}
@@ -138,7 +138,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 			x = name.indexOf('.', slash+1);
 			if(x < 0) return false;
 			ext = name.substring(slash+1, x).toUpperCase();
-			Log.v(TAG, "Checking prefix " + ext);
+			Log.d(TAG, "Checking prefix " + ext);
 			return extensions.contains(ext);
 		}
 		return true;
@@ -181,7 +181,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public int getSoundData(short [] dest, int size) {
-		//Log.v(TAG, "getSoundData()");
+		//Log.d(TAG, "getSoundData()");
 		return N_getSoundData(currentSong, dest, size);
 	}
 	
@@ -248,7 +248,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 
 			if(!libLoaded) {
-				Log.v(TAG, "Loading library");
+				Log.d(TAG, "Loading library");
 				System.loadLibrary("uade");
 				libLoaded = true;
 			}
@@ -318,16 +318,16 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 /*
 	public static void setFilter(boolean on) {
-		Log.v(TAG, "Setting filter to " + (on ? "ON" : "OFF"));
+		Log.d(TAG, "Setting filter to " + (on ? "ON" : "OFF"));
 		N_setOption(OPT_FILTER, on ? 1 : 0);
 	}
 
 	public static void setSpeedHack(boolean on) {
-		Log.v(TAG, "Setting speed hack to " + (on ? "ON" : "OFF"));
+		Log.d(TAG, "Setting speed hack to " + (on ? "ON" : "OFF"));
 		N_setOption(OPT_SPEED_HACK, on ? 1 : 0);
 	}
 	public static void setNtsc(boolean on) {
-	Log.v(TAG, "Setting ntsc to " + (on ? "ON" : "OFF"));
+	Log.d(TAG, "Setting ntsc to " + (on ? "ON" : "OFF"));
 		N_setOption(OPT_NTSC, on ? 1 : 0);
 	}
 */
@@ -337,7 +337,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public void setOption(String o, Object val) {
-		Log.v(TAG, String.format("UADE opt %s argtype %s", o, val.getClass().getSimpleName()));
+		Log.d(TAG, "UADE opt %s argtype %s", o, val.getClass().getSimpleName());
 		int v  = -1;
 		if(val instanceof Boolean) {
 			v = (Boolean)val ? 1 : 0;

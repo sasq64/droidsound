@@ -2,7 +2,7 @@ package com.ssb.droidsound;
 
 import java.io.File;
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class SongFile {
 
@@ -115,7 +115,7 @@ public class SongFile {
 		
 		file = new File(path, fileName);
 		
-		//Log.v(TAG, String.format("SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, playtime));
+		//Log.d(TAG, "SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, playtime);
 	}
 	
 	public String getTitle() {

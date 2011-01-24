@@ -14,7 +14,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class PlayerServiceConnection implements ServiceConnection {
 	private static final String TAG = PlayerServiceConnection.class.getSimpleName();
@@ -61,9 +61,9 @@ public class PlayerServiceConnection implements ServiceConnection {
 	public void onServiceConnected(ComponentName name, IBinder service) {
 		mService = IPlayerService.Stub.asInterface(service);
 		if(bound) {
-			Log.v(TAG, "Service Connected");
+			Log.d(TAG, "Service Connected");
 		} else {
-			Log.v(TAG, "Service Connected, but was unbound in the meantime");
+			Log.d(TAG, "Service Connected, but was unbound in the meantime");
 			return;
 		}
 
@@ -86,12 +86,12 @@ public class PlayerServiceConnection implements ServiceConnection {
 
 	@Override
 	public void onServiceDisconnected(ComponentName name) {
-		Log.v(TAG, "Service Disconnected!");
+		Log.d(TAG, "Service Disconnected!");
 	}
 
 	public void bindService(Activity activity, Callback cb) {
 		callback = cb;
-		Log.v(TAG, "binding");
+		Log.d(TAG, "binding");
 		Intent i = new Intent(activity, PlayerService.class);
 		bound = true;
 		activity.startService(i);
@@ -99,7 +99,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 	}
 
 	public void unbindService(Activity activity) {
-		Log.v(TAG, "Unbinding");
+		Log.d(TAG, "Unbinding");
 		callback = null;
 		bound = false;
 		if(mService != null) {

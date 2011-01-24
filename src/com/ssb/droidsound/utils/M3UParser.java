@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class M3UParser implements PlaylistParser {
 	private static final String TAG = M3UParser.class.getSimpleName();
@@ -25,7 +25,7 @@ public class M3UParser implements PlaylistParser {
 			String line = reader.readLine();
 			String desc = "";
 			while(line != null) {				
-				Log.v(TAG, line);
+				Log.d(TAG, line);
 				line = line.trim();
 				
 				if(line.length() > 0) {
@@ -39,7 +39,7 @@ public class M3UParser implements PlaylistParser {
 						songs.add(line);
 						descs.add(desc);
 						desc = "";
-						Log.v(TAG, String.format("Line:%s", line));
+						Log.d(TAG, "Line:%s", line);
 					}
 				}
 				line = reader.readLine();

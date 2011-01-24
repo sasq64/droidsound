@@ -7,7 +7,7 @@ import com.ssb.droidsound.SongDatabase;
 
 import android.database.Cursor;
 import android.database.MatrixCursor;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class DBFileSystem {
 	private static final String TAG = DBFileSystem.class.getSimpleName();
@@ -67,7 +67,7 @@ public class DBFileSystem {
 		for(int i=0; i<path.length; i++) {
 			if(j >= pattern.length)
 				return false;
-			Log.v(TAG, String.format("Match %s vs %s", i, pattern[j], path[i]));
+			Log.d(TAG, "Match %s vs %s", i, pattern[j], path[i]);
 
 			if(pattern[j].equals("*") || path[i].equals(pattern[j])) {
 				j++;	
@@ -81,11 +81,11 @@ public class DBFileSystem {
 	
 	public Cursor getFileInPath(String path, int sorting) {
 		
-		Log.v(TAG, String.format("PATH %s", path));
+		Log.d(TAG, "PATH %s", path);
 		String [] parts = path.split("/");
 		int n = parts.length;
 		for(int i=0; i<n; i++) {
-			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
+			Log.d(TAG, "PART %d: '%s'", i, parts[i]);
 		}
 		
 		String newParts [] = null;
@@ -106,7 +106,7 @@ public class DBFileSystem {
 		}
 		
 		for(int i=0; i<n; i++) {
-			Log.v(TAG, String.format("NEWPART %d: '%s'", i, newParts[i]));
+			Log.d(TAG, "NEWPART %d: '%s'", i, newParts[i]);
 		}
 
 		for(Path p : pathList) {

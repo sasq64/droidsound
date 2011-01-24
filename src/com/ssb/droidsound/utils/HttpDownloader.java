@@ -12,7 +12,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import android.os.Environment;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class HttpDownloader  {
 	private static final String TAG = HttpDownloader.class.getSimpleName();
@@ -67,7 +67,7 @@ public class HttpDownloader  {
 				String uu = urlencode(u);
 				URL url = new URL(uu);
 
-				Log.v(TAG, "Opening URL " + uu);
+				Log.d(TAG, "Opening URL " + uu);
 
 				URLConnection conn = url.openConnection();
 				if(!(conn instanceof HttpURLConnection))
@@ -78,13 +78,13 @@ public class HttpDownloader  {
 				httpConn.setInstanceFollowRedirects(true);
 				httpConn.setRequestMethod("GET");
 
-				Log.v(TAG, "Connecting");
+				Log.d(TAG, "Connecting");
 
 				httpConn.connect();
 
 				response = httpConn.getResponseCode();
 				if(response == HttpURLConnection.HTTP_OK) {
-					Log.v(TAG, "HTTP connected");
+					Log.d(TAG, "HTTP connected");
 					in = httpConn.getInputStream();
 
 					String ext = u.substring(u.lastIndexOf('.') + 1, u.length());
@@ -95,7 +95,7 @@ public class HttpDownloader  {
 						ZipEntry e;
 						int zipCount = 0;
 						while((e = zip.getNextEntry()) != null) {
-							Log.v(TAG, "Found file " + e.getName());
+							Log.d(TAG, "Found file " + e.getName());
 							FileOutputStream fos = new FileOutputStream(outDir + e.getName());
 							BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
 							while((size = zip.read(buffer, 0, buffer.length)) != -1) {
@@ -112,7 +112,7 @@ public class HttpDownloader  {
 
 					} else {
 
-						Log.v(TAG, "Writing " + baseName);
+						Log.d(TAG, "Writing " + baseName);
 
 						FileOutputStream fos = new FileOutputStream(outDir + baseName);
 						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);

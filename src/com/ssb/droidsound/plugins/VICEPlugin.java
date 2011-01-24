@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import android.os.Environment;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
 
@@ -93,7 +93,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		final int k, v;
 		if (opt.equals("active")) {
 			isActive = (Boolean)val;
-			Log.v(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (isActive ? "ACTIVE" : "NOT ACTIVE"));
+			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (isActive ? "ACTIVE" : "NOT ACTIVE"));
 			return;
 		} else if (opt.equals("filter")) {
 			k = OPT_FILTER;

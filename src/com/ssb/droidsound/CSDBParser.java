@@ -17,7 +17,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.provider.BaseColumns;
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.SongDatabase.ScanCallback;
 
@@ -83,7 +83,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		db.beginTransaction();
 		try {
 			int place = -1;
-			Log.v(TAG, "OPENING CSDB");			
+			Log.d(TAG, "OPENING CSDB");			
 			
 			reader = new BufferedReader(new InputStreamReader(is, "ISO-8859-1"));			
 			//reader = new BufferedReader(new FileReader(file));				
@@ -102,15 +102,15 @@ public class CSDBParser implements SongDatabase.DataSource {
 				}
 
 				if(line.equals("[Releases]")) {
-					Log.v(TAG, "RELEASES");
+					Log.d(TAG, "RELEASES");
 					place = 0;
 				} else
 				if(line.equals("[Groups]")) {
-					Log.v(TAG, "GROUPS");
+					Log.d(TAG, "GROUPS");
 					place = 1;
 				} else
 				if(line.equals("[Events]")) {
-					Log.v(TAG, "EVENTS");
+					Log.d(TAG, "EVENTS");
 					place = 2;
 				} else {
 					String[] args = line.split("\t");
@@ -146,12 +146,12 @@ public class CSDBParser implements SongDatabase.DataSource {
 							}
 						}
 					} else if(place == 1) {
-						//Log.v(TAG, String.format("Group (%s) %s \n", args[0], args[1]));
+						//Log.d(TAG, "Group (%s) %s \n", args[0], args[1]);
 						values.put("ID", Integer.parseInt(args[0]));
 						values.put("NAME", args[1]);
 						db.insert("GROUPS", "ID", values);
 					} else if(place == 2) {
-						//Log.v(TAG, String.format("Event (%s) %s \n", args[0], args[1]));
+						//Log.d(TAG, "Event (%s) %s \n", args[0], args[1]);
 						values.put("ID", Integer.parseInt(args[0]));
 						values.put("DATE", Integer.parseInt(args[1]));
 						values.put("NAME", args[2]);
@@ -172,7 +172,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		} finally {
 			db.endTransaction();
 		}
-		Log.v(TAG, "DONE");
+		Log.d(TAG, "DONE");
 		
 		return ok;
 	}
@@ -342,7 +342,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		pathTitle = null;
 
 		for(int i=0; i<n; i++) {
-			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
+			Log.d(TAG, "PART %d: '%s'", i, parts[i]);
 		}
 
 		for(int i=0; i<n; i++) {
@@ -361,7 +361,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 		}
 
 		for(int i=0; i<n; i++) {
-			Log.v(TAG, String.format("PART %d: '%s'", i, parts[i]));
+			Log.d(TAG, "PART %d: '%s'", i, parts[i]);
 		}
 
 		if(groups == null) {
@@ -393,7 +393,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 				}
 				
 			}
-			Log.v(TAG, "HVSC is " + hvsc);
+			Log.d(TAG, "HVSC is " + hvsc);
 			c.close();
 		}
 		
@@ -447,17 +447,17 @@ public class CSDBParser implements SongDatabase.DataSource {
 			} else if(parts[1].equals("GROUPS")) {
 				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, rating from releases where groupid in (select id from groups where name=?) order by rating desc", new String[] { parts[2] }));				
 			} else if(parts[1].equals("RELEASES")) {
-				Log.v(TAG, "RELEASES " + parts[2]);
+				Log.d(TAG, "RELEASES " + parts[2]);
 				setTitle(parts[2], rdb);
 				return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid=?", new String[] { parts[2] }));
 			}			
 			else { // Releases
-				Log.v(TAG, "Release " + parts[2]);
+				Log.d(TAG, "Release " + parts[2]);
 				setTitle(parts[2], rdb);
 				return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid=?", new String[] { parts[2] }));
 			}
 		} else {
-			Log.v(TAG, "SID " + parts[3]);
+			Log.d(TAG, "SID " + parts[3]);
 			setTitle(parts[3], rdb);
 			return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid=?", new String[] { parts[3] }));
 			//return new SidCursor(rdb.rawQuery("select path,filename from releasesids where releaseid in (select id from releases where name=?)", new String[] { parts[3] })); 
@@ -482,7 +482,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 	@Override
 	public Cursor search(String query, String path, SQLiteDatabase db) {
 	//public static Cursor search(SQLiteDatabase db, String query) {
-		Log.v(TAG, String.format("QUERY: %s PATH: %s",query, path));
+		Log.d(TAG, "QUERY: %s PATH: %s",query, path);
 		int csdb = path.toUpperCase().lastIndexOf(DUMP_NAME);
 		path = path.substring(0, csdb + DUMP_NAME.length()) + "/RELEASES";
 		return new ReleaseCursor(db.rawQuery("select id, name, type, groupid, rating from releases where name like ? order by name limit 250", new String [] {"%" + query + "%"} ), path);		

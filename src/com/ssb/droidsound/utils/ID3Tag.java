@@ -3,7 +3,7 @@ package com.ssb.droidsound.utils;
 import java.io.File;
 
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class ID3Tag {
 	
@@ -24,7 +24,7 @@ public class ID3Tag {
 	private long tagRef;
 
 	public ID3Tag(File path) {
-		Log.v(TAG, String.format("ID3Tag on %s", path.getPath()));
+		Log.d(TAG, "ID3Tag on %s", path.getPath());
 		openID3Tag(path.getPath());		
 	}
 	

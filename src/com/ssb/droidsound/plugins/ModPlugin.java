@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 
 public class ModPlugin extends DroidSoundPlugin {
@@ -62,14 +62,14 @@ public class ModPlugin extends DroidSoundPlugin {
 			String d [] = s[k].split("\\s+");
 			
 			for(int i=0; i<d.length; i++) {
-				//Log.v(TAG, d[i]);
+				//Log.d(TAG, d[i]);
 				
 				if(n >= t.length - 6)
 					break;
 				
 				String x = "";
 				if(d[i].equals("/")) {
-					//Log.v(TAG, "/BY/");
+					//Log.d(TAG, "/BY/");
 					x = "/";
 				} else
 				if(d[i].equals("&") || d[i].equals("&")) {
@@ -84,7 +84,7 @@ public class ModPlugin extends DroidSoundPlugin {
 					} else {				
 						x = d[i].replaceAll("^[^\\w]*", "").replaceAll("[^\\w]*$", "");
 					}
-					//Log.v(TAG, String.format("'%s' '%s'", t[i], x));
+					//Log.d(TAG, "'%s' '%s'", t[i], x);
 				}
 				
 				if(x.length() > 0) {
@@ -128,7 +128,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		for(int i=0; i<n; i++) {
 			
 			if(t[i].length() > 0 && !t[i].equals("EOL")) {
-				// Log.v(TAG, String.format("'%s'", t[i]));
+				// Log.d(TAG, "'%s'", t[i]);
 				
 				if(t[i].toUpperCase().equals("PRO-WIZARD")) {
 					break;
@@ -140,7 +140,7 @@ public class ModPlugin extends DroidSoundPlugin {
 					nextWord = t[ii++].toUpperCase();					
 				}
 				
-				// Log.v(TAG, String.format("NW:%s", nextWord));
+				// Log.d(TAG, "NW:%s", nextWord);
 				
 				String a = t[i];			
 				if(lastWord.equals("BY")) {
@@ -187,7 +187,7 @@ public class ModPlugin extends DroidSoundPlugin {
 					//if(nextWord.equals("of")) {
 					//	x = 3;
 					//}
-					//Log.v(TAG, String.format("OF AUTHOR '%s'", a));
+					//Log.d(TAG, "OF AUTHOR '%s'", a);
 					
 					if(author[2] == null) {
 						
@@ -204,7 +204,7 @@ public class ModPlugin extends DroidSoundPlugin {
 				lastLastWord = lastWord;
 				lastWord = t[i].toUpperCase();
 			} else {
-				// Log.v(TAG, String.format("(%s)", t[i]));
+				// Log.d(TAG, "(%s)", t[i]);
 			}
 		}
 		String a = null;
@@ -212,7 +212,7 @@ public class ModPlugin extends DroidSoundPlugin {
 			if(author[i] != null) {
 				//a = author[i].replace("/", " of ");
 				a = author[i];
-				Log.v(TAG, String.format("AUTHOR '%s', %d", author[i], i));
+				Log.d(TAG, "AUTHOR '%s', %d", author[i], i);
 				break;
 			}
 		}
@@ -276,7 +276,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
-		//Log.v(TAG, "INSTRUMENTS: " + instruments);
+		//Log.d(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo(currentSong, 101);
 
 		String[] info;

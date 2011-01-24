@@ -11,4 +11,26 @@ HOW TO BUILD
  * Build the project normally from inside Eclipse (don't forget F5 = Refresh - or native libs will not be found)
  
 
-  
+
+ANDROID SDK ETC, DETAILED INSTALLATION
+
+Go to http://developer.android.com/sdk/
+
+* Download and unpack the Android SDK (android-sdk_r08 or later)
+* Download and unpack the Android NDK (android-ndk-r5 or later)
+* Run the "android" application from the android-sdk_r08/tools/
+* Select Available Sites, Android Repository
+* Install the latest version of the SDK Platform-tools (r01) and the SDK Platform (2.2 or later)
+
+From within the project directory
+
+* Run "<sdk>/tools/android update project -p <path to droidsound>"
+* Run "<ndk>/ndk-build" to build the native libraries
+* Run "ant debug" to build the APK-file into bin/
+
+To Test it:
+
+* Make sure you have USB-divers for your device and it is connected
+* Run "<sdk>/platform-tools/adb devices". You should see your device listed.
+* Run "<sdk>/platform-tools/adb install -r bin/droidsound-debug.apk" 
+* Run "<sdk>/platform-tools/adb shell am start -n com.ssb.droidsound/.PlayerActivity"

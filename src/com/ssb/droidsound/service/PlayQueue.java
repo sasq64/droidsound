@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
@@ -46,11 +46,11 @@ public class PlayQueue {
 		int i = 0;
 		SongFile names [] = new SongFile [songs.size()];
 		musicList = new ArrayList<SongFile>();
-		Log.v(TAG, String.format("POS %d in playlist with %d files", index, songs.size()));
+		Log.d(TAG, "POS %d in playlist with %d files", index, songs.size());
 		for(SongFile ps : songs) {
 			SongFile song = new SongFile(ps);
 			
-			// Log.v(TAG, String.format("%s (%d)", song.filename, song.startSong));
+			// Log.d(TAG, "%s (%d)", song.filename, song.startSong);
 			
 			names[i++] = song;
 		}
@@ -116,7 +116,7 @@ public class PlayQueue {
 	private void unshuffle() {
 		
 		if(musicNames != null) {
-			Log.v(TAG, "Unshuffling");
+			Log.d(TAG, "Unshuffling");
 			musicList.clear();
 			for(int i=0; i<musicNames.length; i++) {
 				musicList.add(musicNames[i]);
@@ -126,7 +126,7 @@ public class PlayQueue {
 	
 	boolean songContains(List<SongFile> psongs, SongFile s) {
 		for(SongFile ps : psongs) {
-			//Log.v(TAG, String.format("%s(%d) vs %s(%d)", s.filename, s.startSong, ps.file.getPath(), ps.startsong));
+			//Log.d(TAG, "%s(%d) vs %s(%d)", s.filename, s.startSong, ps.file.getPath(), ps.startsong);
 			if(s.getPath().equals(ps.getPath())) {
 				return true;
 			}
@@ -138,7 +138,7 @@ public class PlayQueue {
         if(currentPlaylist != null) {
     		int hash = currentPlaylist.hashCode();
     		if(hash != oldPlaylistHash) {
-    			Log.v(TAG, "Current playlist has changed!");    			
+    			Log.d(TAG, "Current playlist has changed!");    			
     			List<SongFile> psongs = currentPlaylist.getSongs();
     			
     			musicNames = new SongFile [psongs.size()]; 
@@ -152,12 +152,12 @@ public class PlayQueue {
 				List<SongFile> removes = new ArrayList<SongFile>();
     			for(SongFile s : musicList) {
     				if(setNext) {
-    					Log.v(TAG, "Removed current song, changing to " + s);
+    					Log.d(TAG, "Removed current song, changing to " + s);
     					current = s;
     					setNext = false;
     				}
     				if(!songContains(psongs, s)) {
-    					Log.v(TAG, "Removing " + s.getPath());    					
+    					Log.d(TAG, "Removing " + s.getPath());    					
 
     					removes.add(s);
     					if(s.getPath().equals(current)) {
@@ -172,7 +172,7 @@ public class PlayQueue {
     			
     			for(SongFile ps : psongs) {
     				if(!songContains(musicList, ps)) {
-    					Log.v(TAG, "Adding " + ps.getFile().getPath());
+    					Log.d(TAG, "Adding " + ps.getFile().getPath());
     					musicList.add(new SongFile(ps));
     				}
     			}
@@ -232,7 +232,7 @@ public class PlayQueue {
 
 	public int setCurrent(SongFile song) {
 		for(int i=0; i<musicList.size(); i++) {
-			//Log.v(TAG, String.format("CMP %s to %s", musicList.get(i).getPath(), song.getPath()));
+			//Log.d(TAG, "CMP %s to %s", musicList.get(i).getPath(), song.getPath());
 			if(musicList.get(i).getPath().equals(song.getPath())) {
 				musicListPos = i;
 				return i;

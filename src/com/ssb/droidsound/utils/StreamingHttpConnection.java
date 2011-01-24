@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-import android.util.Log;
+import com.ssb.droidsound.utils.Log;
 
 public class StreamingHttpConnection {
 	private static final String TAG = StreamingHttpConnection.class.getSimpleName();
@@ -30,7 +30,7 @@ public class StreamingHttpConnection {
 
 	public StreamingHttpConnection(URL url) throws UnknownHostException, IOException {
 
-		Log.v(TAG, "Opening URL " + url.toString());
+		Log.d(TAG, "Opening URL " + url.toString());
 		int port = url.getPort();
 		if(port < 0) port = 80;
 		requestPath = url.getPath().trim();
@@ -67,7 +67,7 @@ public class StreamingHttpConnection {
 		
 		String req = reqLine + requestProperties + "\r\n";
 		
-		Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REQUEST:\n" + req);
+		Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REQUEST:\n" + req);
 		
 		
 		os.write(req.getBytes());
@@ -102,7 +102,7 @@ public class StreamingHttpConnection {
 			while(line == null) {
 				line = readLine(is);
 				if(line != null) {
-					Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! RESULT: " + line);
+					Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! RESULT: " + line);
 					String data [] = line.split(" ");
 					resultCode = -1;
 					if(data.length >= 3) {
@@ -130,7 +130,7 @@ public class StreamingHttpConnection {
 		while(true) {
 			line = readLine(is);
 			if(line != null) {
-				Log.v(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HEADER: " + line);
+				Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HEADER: " + line);
 				int pos = line.indexOf(":");
 				if(pos > 0) {
 					String var = line.substring(0,pos++);					
@@ -138,7 +138,7 @@ public class StreamingHttpConnection {
 					String val = line.substring(pos);
 					headers.put(var.toLowerCase(), val);
 				} else {
-					Log.v(TAG, "!! DONE");
+					Log.d(TAG, "!! DONE");
 					break;
 				}
 			}
