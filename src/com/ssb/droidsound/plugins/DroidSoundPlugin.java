@@ -48,6 +48,7 @@ public abstract class DroidSoundPlugin {
 	public static final int OPT_NTSC = 3;
 	public static final int OPT_SPEED_HACK = 4;
 	public static final int OPT_PANNING = 5;
+	public static final int OPT_FILTER_BIAS = 6;
 	
 
 	

@@ -126,6 +126,14 @@ to download more music from the web.</string>
 <item>Slowest (SINC)</item>
 </string-array>
 
+<string-array name="filter_bias_opts">
+<item>Lightest filter</item>
+<item>Light filter</item>
+<item>Normal filter</item>
+<item>Dark filter</item>
+<item>Darkest filter</item>
+</string-array>
+
 <string-array name="videomode_vals">
 <item>0</item>
 <item>1</item>
@@ -138,5 +146,13 @@ to download more music from the web.</string>
 <item>1</item>
 <item>3</item>
 <item>2</item>
+</string-array>
+
+<string-array name="filter_bias_vals">
+<item>500</item>
+<item>250</item>
+<item>0</item>
+<item>-250</item>
+<item>-500</item>
 </string-array>
 </resources>

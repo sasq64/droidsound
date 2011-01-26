@@ -70,6 +70,9 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1setOption(J
 	case com_ssb_droidsound_plugins_VICEPlugin_OPT_RESAMPLING:
 		resources_set_int("SidResidSampling", val);
 		break;
+	case com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER_BIAS:
+		resources_set_int("SidResidFilterBias", val);
+		break;
 	}
 }
 

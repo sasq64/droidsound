@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 import android.os.Environment;
-import com.ssb.droidsound.utils.Log;
 
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class VICEPlugin extends DroidSoundPlugin {
@@ -103,6 +103,9 @@ public class VICEPlugin extends DroidSoundPlugin {
 			v = (Integer) val;
 		} else if (opt.equals("resampling")) {
 			k = OPT_RESAMPLING;
+			v = (Integer) val;
+		} else if (opt.equals("filterBias")) {
+			k = OPT_FILTER_BIAS;
 			v = (Integer) val;
 		} else {
 			return;

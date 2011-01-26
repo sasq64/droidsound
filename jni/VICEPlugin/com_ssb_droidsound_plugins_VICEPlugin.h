@@ -41,6 +41,8 @@ extern "C" {
 #define com_ssb_droidsound_plugins_VICEPlugin_OPT_SPEED_HACK 4L
 #undef com_ssb_droidsound_plugins_VICEPlugin_OPT_PANNING
 #define com_ssb_droidsound_plugins_VICEPlugin_OPT_PANNING 5L
+#undef com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER_BIAS
+#define com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER_BIAS 6L
 /*
  * Class:     com_ssb_droidsound_plugins_VICEPlugin
  * Method:    N_loadFile
