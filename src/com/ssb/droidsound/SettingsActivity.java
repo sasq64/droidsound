@@ -50,11 +50,12 @@ public class SettingsActivity extends PreferenceActivity {
 			Log.d(TAG, "CHANGED " + k);
 			
 			if(k.equals("SidPlugin.engine")) {
-				Preference p = findPreference("SidPlugin.resampling");
 				if(((String) newValue).startsWith("VICE")) {
-					p.setEnabled(true);
+					findPreference("SidPlugin.resampling").setEnabled(true);
+					findPreference("SidPlugin.filter_bias").setEnabled(true);
 				} else {
-					p.setEnabled(false);
+					findPreference("SidPlugin.resampling").setEnabled(false);
+					findPreference("SidPlugin.filter_bias").setEnabled(false);
 				}
 			}
 			

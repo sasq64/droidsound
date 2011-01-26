@@ -88,7 +88,7 @@
                     android:entryValues="@array/resampling_vals"
 	            />
 		<ListPreference
-	            android:key="SidPlugin.filterBias"
+	            android:key="SidPlugin.filter_bias"
 	            android:title="Filter Bias"
 	            android:defaultValue="0"
                     android:entries="@array/filter_bias_opts"

@@ -104,7 +104,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		} else if (opt.equals("resampling")) {
 			k = OPT_RESAMPLING;
 			v = (Integer) val;
-		} else if (opt.equals("filterBias")) {
+		} else if (opt.equals("filter_bias")) {
 			k = OPT_FILTER_BIAS;
 			v = (Integer) val;
 		} else {

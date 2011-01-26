@@ -383,11 +383,11 @@ public class PlayerService extends Service {
                     break;
                 case Player.MSG_PROGRESS:
                 	int l = (Integer)info[SONG_LENGTH];
-                	if(l <= 0) {
+                	if(l < 0) {
                 		l = defaultLength;
                 	}
                 	//Log.d(TAG, "%d vs %d", msg.arg1, l);
-                	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE || defaultLength > 0)) {
+                	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE)) {
                 		playNextSong();
                 	} else {                	
                     	int pos = (Integer)msg.arg1;
