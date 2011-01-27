@@ -42,7 +42,6 @@ import android.speech.tts.TextToSpeech;
 import android.text.Html;
 import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
-import com.ssb.droidsound.utils.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
@@ -73,6 +72,7 @@ import android.widget.ViewFlipper;
 import com.ssb.droidsound.PlayListView.FileInfo;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
@@ -1011,7 +1011,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		titleBar.setOnClickListener(new OnClickListener() {
 			
-			final int [] sortNames = new int [] { R.string.sort_name, R.string.sort_author, R.string.sort_date };
+			final int [] sortNames = new int [] { R.string.sort_name, R.string.sort_date, R.string.sort_author };
 
 			@Override
 			public void onClick(View v) {
