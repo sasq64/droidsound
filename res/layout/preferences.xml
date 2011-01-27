@@ -83,7 +83,7 @@
 		<ListPreference
 	            android:key="SidPlugin.sid_model"
 	            android:title="Preferred SID Model"
-	            android:defaultValue="0"
+	            android:defaultValue="1"
                     android:entries="@array/sid_model_opts"
                     android:entryValues="@array/sid_model_vals"
 	            />
