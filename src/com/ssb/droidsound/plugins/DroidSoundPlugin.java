@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
+
 import com.ssb.droidsound.utils.Log;
 
 public abstract class DroidSoundPlugin {
@@ -49,7 +50,7 @@ public abstract class DroidSoundPlugin {
 	public static final int OPT_SPEED_HACK = 4;
 	public static final int OPT_PANNING = 5;
 	public static final int OPT_FILTER_BIAS = 6;
-	
+	public static final int OPT_SID_MODEL = 7;
 
 	
 	

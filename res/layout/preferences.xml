@@ -74,6 +74,20 @@
 	            android:summary="Emulate the SID filter"
 	            />
 		<ListPreference
+	            android:key="SidPlugin.filter_bias"
+	            android:title="Filter Bias"
+	            android:defaultValue="0"
+                    android:entries="@array/filter_bias_opts"
+                    android:entryValues="@array/filter_bias_vals"
+	            />
+		<ListPreference
+	            android:key="SidPlugin.sid_model"
+	            android:title="Preferred SID Model"
+	            android:defaultValue="0"
+                    android:entries="@array/sid_model_opts"
+                    android:entryValues="@array/sid_model_vals"
+	            />
+		<ListPreference
 	            android:key="SidPlugin.ntsc"
 	            android:title="Video Mode"
 	            android:defaultValue="0"
@@ -86,13 +100,6 @@
 	            android:defaultValue="0"
                     android:entries="@array/resampling_opts"
                     android:entryValues="@array/resampling_vals"
-	            />
-		<ListPreference
-	            android:key="SidPlugin.filter_bias"
-	            android:title="Filter Bias"
-	            android:defaultValue="0"
-                    android:entries="@array/filter_bias_opts"
-                    android:entryValues="@array/filter_bias_vals"
 	            />
 	    </PreferenceCategory>
 		<!-- 

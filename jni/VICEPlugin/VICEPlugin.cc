@@ -39,13 +39,15 @@ static jstring NewString(JNIEnv *env, unsigned char *str)
 
 static bool videomode_is_ntsc;
 static bool videomode_is_forced;
+static int sid;
+static bool sid_is_forced;
 
 static void c64_song_init()
 {
 	/* Set default, potentially overridden by reset. */
 	resources_set_int("MachineVideoStandard", videomode_is_ntsc ? MACHINE_SYNC_NTSC : MACHINE_SYNC_PAL);
 	/* Default to 6581 in case tune doesn't specify. */
-	resources_set_int("SidModel", 0);
+	resources_set_int("SidModel", sid);
 
 	/* Reset C64, which also initializes PSID for us. */
 	machine_trigger_reset(MACHINE_RESET_MODE_SOFT);
@@ -54,6 +56,9 @@ static void c64_song_init()
 	if (videomode_is_forced) {
 		resources_set_int("MachineVideoStandard", videomode_is_ntsc ? MACHINE_SYNC_NTSC : MACHINE_SYNC_PAL);
 	}
+        if (sid_is_forced) {
+                resources_set_int("SidModel", sid);
+        }
 }
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1setOption(JNIEnv *env, jclass cl, jint what, jint val)
@@ -72,6 +77,10 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1setOption(J
 		break;
 	case com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER_BIAS:
 		resources_set_int("SidResidFilterBias", val);
+		break;
+	case com_ssb_droidsound_plugins_VICEPlugin_OPT_SID_MODEL:
+		sid = val & 1;
+                sid_is_forced = (val & 2) != 0;
 		break;
 	}
 }

@@ -134,6 +134,13 @@ to download more music from the web.</string>
 <item>Darkest filter</item>
 </string-array>
 
+<string-array name="sid_model_opts">
+<item>6581</item>
+<item>8580</item>
+<item>6581 (forced)</item>
+<item>8580 (forced)</item>
+</string-array>
+
 <string-array name="videomode_vals">
 <item>0</item>
 <item>1</item>
@@ -154,5 +161,12 @@ to download more music from the web.</string>
 <item>0</item>
 <item>-250</item>
 <item>-500</item>
+</string-array>
+
+<string-array name="sid_model_vals">
+<item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
 </string-array>
 </resources>

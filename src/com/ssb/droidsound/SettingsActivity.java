@@ -19,12 +19,12 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
-import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.SidPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.VICEPlugin;
+import com.ssb.droidsound.utils.Log;
 
 public class SettingsActivity extends PreferenceActivity {
 
@@ -50,13 +50,12 @@ public class SettingsActivity extends PreferenceActivity {
 			Log.d(TAG, "CHANGED " + k);
 			
 			if(k.equals("SidPlugin.engine")) {
-				if(((String) newValue).startsWith("VICE")) {
-					findPreference("SidPlugin.resampling").setEnabled(true);
-					findPreference("SidPlugin.filter_bias").setEnabled(true);
-				} else {
-					findPreference("SidPlugin.resampling").setEnabled(false);
-					findPreference("SidPlugin.filter_bias").setEnabled(false);
-				}
+				boolean isVice = ((String) newValue).startsWith("VICE");
+				/* FIXME: Both sid model and resampling actually could be done
+				 * also in sidplayplugin, but it's not currently supported. */
+				findPreference("SidPlugin.filter_bias").setEnabled(isVice);
+				findPreference("SidPlugin.sid_model").setEnabled(isVice);
+				findPreference("SidPlugin.resampling").setEnabled(isVice);
 			}
 			
 			if(newValue instanceof String) {
