@@ -104,7 +104,7 @@ static void sid_write_off(WORD addr, BYTE val, int chipno)
 
 /* ------------------------------------------------------------------------- */
 
-static BYTE REGPARM2 sid_read_chip(WORD addr, int chipno)
+static BYTE sid_read_chip(WORD addr, int chipno)
 {
     int	val;
 
@@ -153,8 +153,16 @@ static BYTE REGPARM2 sid_read_chip(WORD addr, int chipno)
     return val;
 }
 
+static BYTE sid_peek_chip(WORD addr, int chipno)
+{
+    addr &= 0x1f;
+
+    /* FIXME: get 0x1b and 0x1c from engine */
+    return siddata[chipno][addr];
+}
+
 /* write register value to sid */
-static void REGPARM3 sid_store_chip(WORD addr, BYTE byte, int chipno)
+static void sid_store_chip(WORD addr, BYTE byte, int chipno)
 {
     addr &= 0x1f;
 
@@ -174,7 +182,7 @@ static void REGPARM3 sid_store_chip(WORD addr, BYTE byte, int chipno)
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 sid_read(WORD addr)
+BYTE sid_read(WORD addr)
 {
     if (sid_stereo
         && addr >= sid_stereo_address_start
@@ -184,12 +192,23 @@ BYTE REGPARM1 sid_read(WORD addr)
     return sid_read_chip(addr, 0);
 }
 
-BYTE REGPARM1 sid2_read(WORD addr)
+BYTE sid_peek(WORD addr)
+{
+    if (sid_stereo
+        && addr >= sid_stereo_address_start
+        && addr < sid_stereo_address_end) {
+        sid_peek_chip(addr, 1);
+    }
+
+    return sid_peek_chip(addr, 0);
+}
+
+BYTE sid2_read(WORD addr)
 {
     return sid_read_chip(addr, 1);
 }
 
-void REGPARM2 sid_store(WORD addr, BYTE byte)
+void sid_store(WORD addr, BYTE byte)
 {
     if (sid_stereo
         && addr >= sid_stereo_address_start
@@ -201,7 +220,7 @@ void REGPARM2 sid_store(WORD addr, BYTE byte)
     sid_store_chip(addr, byte, 0);
 }
 
-void REGPARM2 sid2_store(WORD addr, BYTE byte)
+void sid2_store(WORD addr, BYTE byte)
 {
     sid_store_chip(addr, byte, 1);
 }

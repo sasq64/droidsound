@@ -46,6 +46,7 @@ LOCAL_SRC_FILES := \
 	vice/joystick.c \
 	vice/lib.c \
 	vice/lightpen.c \
+	vice/log.c \
 	vice/machine.c \
 	vice/machine-bus.c \
 	vice/network.c \
@@ -142,7 +143,6 @@ LOCAL_SRC_FILES := \
 	overrides/attach.c \
 	overrides/autostart.c \
 	overrides/datasette.c \
-	overrides/log.c \
 	overrides/maincpu.c \
 	overrides/mouse.c \
 	overrides/serial.c \
@@ -177,8 +177,7 @@ LOCAL_SRC_FILES := \
 	overrides/video/video.c \
 #terminator for last backslash
 
-LOCAL_CFLAGS := -DHAVE_NEON -DHAVE_CONFIG_H
-
+LOCAL_CFLAGS := -DHAVE_CONFIG_H
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) \
 	$(LOCAL_PATH)/android \
