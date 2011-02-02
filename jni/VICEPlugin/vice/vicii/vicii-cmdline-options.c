@@ -118,7 +118,7 @@ static const cmdline_option_t cmdline_options[] =
       NULL, NULL, "ColorGamma", NULL,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_SET_GAMMA,
-      "<0-2000>", NULL },
+      "<0-4000>", NULL },
     { "-tint", SET_RESOURCE, 1,
       NULL, NULL, "ColorTint", NULL,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
@@ -134,6 +134,16 @@ static const cmdline_option_t cmdline_options[] =
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_SET_ODDLINES_OFFSET,
       "<0-2000>", NULL },
+    { "-crtblur", SET_RESOURCE, 1,
+      NULL, NULL, "PALBlur", NULL,
+      USE_PARAM_STRING, USE_DESCRIPTION_ID,
+      IDCLS_UNUSED, IDCLS_SET_BLUR,
+      "<0-1000>", NULL },
+    { "-crtscanlineshade", SET_RESOURCE, 1,
+      NULL, NULL, "PALScanLineShade", NULL,
+      USE_PARAM_STRING, USE_DESCRIPTION_ID,
+      IDCLS_UNUSED, IDCLS_SET_SCANLINE_SHADE,
+      "<0-1000>", NULL },
     { NULL }
 };
 
