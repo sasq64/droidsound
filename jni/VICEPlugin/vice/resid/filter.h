@@ -437,8 +437,9 @@ protected:
   chip_model sid_model;
 
   typedef struct {
-    int vo_N19;  // Fixed point scaling for 19 bit op-amp output.
+    int vo_N16;  // Fixed point scaling for 16 bit op-amp output.
     int vo_T19;  // Fixed point scaled translation for 19 bit op-amp output.
+    int vo_T16;  // Fixed point scaled translation for 16 bit op-amp output.
     int Vth;     // Transistor threshold voltage.
     int Vddt;    // Vdd - Vth
     int n_vcr;
@@ -455,7 +456,7 @@ protected:
     unsigned short gain[16][1 << 16];
     unsigned short mixer[mixer_offset<8>::value];
     // Cutoff frequency DAC output voltage table. FC is an 11 bit register.
-    unsigned int f0_dac[1 << 11];
+    unsigned short f0_dac[1 << 11];
     // Op-amp transfer function.
     int opamp[1 << 19];
   } model_filter_t;
@@ -489,9 +490,9 @@ void Filter::clock(int voice1, int voice2, int voice3)
 {
   model_filter_t& f = model_filter[sid_model];
 
-  v1 = (voice1*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v2 = (voice2*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v3 = (voice3*f.voice_scale_s14 >> 14) + f.voice_DC;
+  v1 = (voice1*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v2 = (voice2*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v3 = (voice3*f.voice_scale_s14 >> 18) + f.voice_DC;
 
   // This is handy for testing.
   if (unlikely(!enabled)) {
@@ -575,7 +576,7 @@ void Filter::clock(int voice1, int voice2, int voice3)
     // MOS 6581.
     Vlp = solve_integrate_6581(1, Vbp, Vlp_x, Vlp_vc, f);
     Vbp = solve_integrate_6581(1, Vhp, Vbp_x, Vbp_vc, f);
-    Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp >> 3] + ((Vlp + Vi) >> 3)] << 3;
+    Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp] + Vlp + Vi];
   }
   else {
     // MOS 8580. FIXME: Not yet using op-amp model.
@@ -583,8 +584,8 @@ void Filter::clock(int voice1, int voice2, int voice3)
     // delta_t = 1 is converted to seconds given a 1MHz clock by dividing
     // with 1 000 000.
 
-    int dVbp = w0*(Vhp >> 7) >> 13;
-    int dVlp = w0*(Vbp >> 7) >> 13;
+    int dVbp = w0*(Vhp >> 4) >> 16;
+    int dVlp = w0*(Vbp >> 4) >> 16;
     Vbp -= dVbp;
     Vlp -= dVlp;
     Vhp = (Vbp*_1024_div_Q >> 10) - Vlp - Vi;
@@ -599,9 +600,9 @@ void Filter::clock(cycle_count delta_t, int voice1, int voice2, int voice3)
 {
   model_filter_t& f = model_filter[sid_model];
 
-  v1 = (voice1*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v2 = (voice2*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v3 = (voice3*f.voice_scale_s14 >> 14) + f.voice_DC;
+  v1 = (voice1*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v2 = (voice2*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v3 = (voice3*f.voice_scale_s14 >> 18) + f.voice_DC;
 
   // Enable filter on/off.
   // This is not really part of SID, but is useful for testing.
@@ -697,7 +698,7 @@ void Filter::clock(cycle_count delta_t, int voice1, int voice2, int voice3)
       // Calculate filter outputs.
       Vlp = solve_integrate_6581(delta_t_flt, Vbp, Vlp_x, Vlp_vc, f);
       Vbp = solve_integrate_6581(delta_t_flt, Vhp, Vbp_x, Vbp_vc, f);
-      Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp >> 3] + ((Vlp + Vi) >> 3)] << 3;
+      Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp] + Vlp + Vi];
 
       delta_t -= delta_t_flt;
     }
@@ -716,8 +717,8 @@ void Filter::clock(cycle_count delta_t, int voice1, int voice2, int voice3)
       // Calculate filter outputs.
       int w0_delta_t = w0*delta_t_flt >> 2;
 
-      int dVbp = w0_delta_t*(Vhp >> 7) >> 11;
-      int dVlp = w0_delta_t*(Vbp >> 7) >> 11;
+      int dVbp = w0_delta_t*(Vhp >> 4) >> 14;
+      int dVlp = w0_delta_t*(Vbp >> 4) >> 14;
       Vbp -= dVbp;
       Vlp -= dVlp;
       Vhp = (Vbp*_1024_div_Q >> 10) - Vlp - Vi;
@@ -742,10 +743,9 @@ void Filter::input(short sample)
   // primary use of the emulator is not to process external signals.
   // The upside is that the MOS8580 "digi boost" works without a separate (DC)
   // input interface.
-  // Note that the input is 16 bits, compared to the 20 bit voice output;
-  // we thus right shift by 10 instead of 14.
+  // Note that the input is 16 bits, compared to the 20 bit voice output.
   model_filter_t& f = model_filter[sid_model];
-  ve = (sample*f.voice_scale_s14*3 >> 10) + (f.mixer[0] << 3);
+  ve = (sample*f.voice_scale_s14*3 >> 14) + f.mixer[0];
 }
 
 
@@ -1298,11 +1298,11 @@ for my $mix (0..2**@i-1) {
 
   // Sum the inputs in the mixer and run the mixer output through the gain.
   if (sid_model == 0) {
-    return (short)(f.gain[vol][f.mixer[offset + (Vi >> 3)]] - (1 << 15));
+    return (short)(f.gain[vol][f.mixer[offset + Vi]] - (1 << 15));
   }
   else {
     // FIXME: Temporary code for MOS 8580, should use code above.
-    return Vi*vol >> 7;
+    return Vi*vol >> 4;
   }
 }
 
@@ -1353,8 +1353,8 @@ int Filter::solve_gain(int n, int vi_n, int& x, model_filter_t& mf)
   // f is decreasing, so that f(ak) > 0 and f(bk) < 0.
   int ak = mf.vo_T19, bk = mf.vo_T19 + (1 << 19) - 1;
 
-  int a = n + (1 << 7); // Scaled by 2^7
-  int b = mf.Vddt;      // Scaled by m*2^19
+  int a = n + (1 << 7);       // Scaled by 2^7
+  int b = mf.Vddt << 3;       // Scaled by m*2^19
   unsigned int _2b = b << 1;  // Scaled by m*2^19, unsigned to use all bits.
   int c = n*(((_2b - vi) >> 4)*(vi >> 3) >> 11); // Scaled by m^2*2^27.
 
@@ -1466,15 +1466,12 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
 				 model_filter_t& mf)
 {
   // Translate normalized vi.
-  int vi = vi_n + mf.vo_T19; // Scaled by m*2^19
+  int vi = vi_n + mf.vo_T16; // Scaled by m*2^16
+  int Vddt = mf.Vddt;        // Scaled by m*2^16
 
-  int Vddt = mf.Vddt;        // Scaled by m*2^19
-  int n_vcr = mf.n_vcr;      // Scaled by (1/m)*2^9  (fits in 12 bits)
-  int n_snake = mf.n_snake;  // Scaled by (1/m)*2^19 (fits in 12 bits)
-
-  // VCR gate voltage.       // Scaled by m*2^19
+  // VCR gate voltage.       // Scaled by m*2^16
   // Vg = Vddt - sqrt(Vddt*(Vddt - Vw - Vi) + (Vw*Vw + Vi*Vi)/2)
-  int Vg = vcr_Vg[(Vw_term + (vi >> 4)*(((vi >> 1) - Vddt) >> 4)) >> 14] << 3;
+  int Vg = vcr_Vg[(Vw_term + (vi >> 1)*(((vi >> 1) - Vddt) >> 1)) >> 14];
 
   // Start with the current through the "snake" (triode mode).
   // n_I = n_snake*(2*Vov_snake - Vds)*Vds
@@ -1487,8 +1484,8 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
   // calculating the snake current with single expression, if the sign
   // is used as the direction of the current.
   //
-  // Scaled by (1/m)*2^13*m*2^19*m*2^19*2^-4*2^-4*2^-12 = m*2^31
-  int n_I = n_snake*((((Vddt << 1) - vi - x) >> 4)*((vi - x) >> 4) >> 12);
+  // Scaled by (1/m)*2^13*m*2^16*m*2^16*2^-1*2^-1*2^-12 = m*2^31
+  int n_I = mf.n_snake*((((Vddt << 1) - vi - x) >> 1)*((vi - x) >> 1) >> 12);
 
   // Determine the direction of the current flowing through the VCR and
   // the "snake" transistor.
@@ -1500,13 +1497,13 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
       // Add the current through the VCR.
 
       // Term for subthreshold mode / saturation mode.
-      n_I -= vcr_n_Ids[Vgs >> 3] << 15;
+      n_I -= vcr_n_Ids[Vgs] << 15;
 
       int Vgdt = Vg - x - mf.Vth;
       if (Vgdt > 0) {
 	// Triode mode: Subtract term from saturation mode.
-	// Scaled by (1/m)*2^13*m*2^19*m*2^19*2^-4*2^-4*2^-12 = m*2^31
-	n_I += n_vcr*((Vgdt >> 4)*(Vgdt >> 4) >> 12);
+	// Scaled by (1/m)*2^13*m*2^16*m*2^16*2^-14 = m*2^31
+	n_I += mf.n_vcr*int(unsigned(Vgdt)*unsigned(Vgdt) >> 14);
       }
     }
 
@@ -1521,11 +1518,11 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
     int Vgs = Vg - x;
 
     if (Vgs > 0) {
-      n_I += vcr_n_Ids[Vgs >> 3] << 15;
+      n_I += vcr_n_Ids[Vgs] << 15;
 
       int Vgdt = Vg - vi - mf.Vth;
       if (Vgdt > 0) {
-	n_I -= n_vcr*((Vgdt >> 4)*(Vgdt >> 4) >> 12);
+	n_I -= mf.n_vcr*int(unsigned(Vgdt)*unsigned(Vgdt) >> 14);
       }
     }
 
@@ -1536,15 +1533,10 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
   }
 
   // vx = g(vc)
-  //
-  // The expression here is based on the idea
-  // that the top bits will be zero, thus avoiding
-  // the need to write something like
-  // (vc >> 16) + (1 << 15).
-  x = mf.opamp_rev[(unsigned int) vc >> 16] << 3;
+  x = mf.opamp_rev[(vc >> 16) + (1 << 15)];
 
   // Return vo.
-  return (x - (vc >> 12)) - mf.vo_T19;
+  return (x - (vc >> 15)) - mf.vo_T16;
 }
 
 #endif // RESID_INLINING || defined(RESID_FILTER_CC)
