@@ -151,6 +151,37 @@ BYTE final_plus_a000_bfff_read(WORD addr)
     }
 }
 
+int final_plus_romh_phi1_read(WORD addr, BYTE *value)
+{
+    return CART_READ_C64MEM;
+}
+
+int final_plus_romh_phi2_read(WORD addr, BYTE *value)
+{
+    return final_plus_romh_phi1_read(addr, value);
+}
+
+int final_plus_peek_mem(struct export_s *export, WORD addr, BYTE *value)
+{
+    if (fcplus_roml == 1) {
+        if (addr >= 0x8000 && addr <= 0x9fff) {
+            *value = roml_banks[addr & 0x1fff];
+            return CART_READ_VALID;
+        }
+        if (addr >= 0xa000 && addr <= 0xbfff) {
+            *value = roml_banks[(addr & 0x1fff) + 0x2000];
+            return CART_READ_VALID;
+        }
+    }
+    if (fcplus_romh == 1) {
+        if (addr >= 0xe000) {
+            *value = romh_banks[addr & 0x1fff];
+            return CART_READ_VALID;
+        }
+    }
+    return CART_READ_THROUGH;
+}
+
 /* ---------------------------------------------------------------------*/
 
 void final_plus_freeze(void)
