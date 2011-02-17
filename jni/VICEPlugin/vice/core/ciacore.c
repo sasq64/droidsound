@@ -129,6 +129,8 @@ static void cia_do_update_tb(cia_context_t *cia_context, CLOCK rclk)
         {
             /* flag the timer B bug */
             cia_context->irqflags |= CIA_IM_TBB;
+        } else {
+            cia_context->irqflags &= ~CIA_IM_TBB;
         }
         cia_context->tbt = (cia_context->tbt + n) & 1;
     }
@@ -201,6 +203,14 @@ static void cia_do_set_int(cia_context_t *cia_context, CLOCK rclk)
     }
 
 #endif
+
+    if ((cia_context->rdi == rclk - 1)
+        && (cia_context->model == CIA_MODEL_6526A))
+    {
+        /* Interrupt delayed by 1/2 cycle if acknowledged on assert */
+        rclk++;
+    }
+
     if (!(cia_context->irqflags & cia_context->c_cia[CIA_ICR] & 0x7f)) {
         /* no interrupts */
         return;
