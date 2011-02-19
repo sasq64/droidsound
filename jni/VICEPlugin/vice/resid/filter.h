@@ -445,11 +445,9 @@ protected:
     unsigned short mixer[mixer_offset<8>::value];
     // Cutoff frequency DAC output voltage table. FC is an 11 bit register.
     unsigned short f0_dac[1 << 11];
-    // Op-amp transfer function.
-    int opamp[1 << 19];
   } model_filter_t;
 
-  int solve_gain(int n, int vi_t, int& x, model_filter_t& mf);
+  int solve_gain(int* opamp, int n, int vi_t, int& x, model_filter_t& mf);
   int solve_integrate_6581(int dt, int vi_t, int& x, int& vc, model_filter_t& mf);
 
   // VCR - 6581 only.
@@ -1332,7 +1330,7 @@ f = (2*b - vo)*vo - a*(2*b - vx)*vx + c
 df = 2*((b - vo)*dvo - a*(b - vx))
 */
 RESID_INLINE
-int Filter::solve_gain(int n, int vi_n, int& x, model_filter_t& mf)
+int Filter::solve_gain(int* opamp, int n, int vi_n, int& x, model_filter_t& mf)
 {
   // Translate normalized vi.
   int vi = vi_n + mf.vo_T19;
@@ -1350,7 +1348,7 @@ int Filter::solve_gain(int n, int vi_n, int& x, model_filter_t& mf)
     int xk = x;
 
     // Calculate f and df.
-    int vo_dvo = mf.opamp[x - mf.vo_T19];
+    int vo_dvo = opamp[x - mf.vo_T19];
     int vo = (vo_dvo & 0x7ffff) + mf.vo_T19;  // Scaled by m*2^19
     int dvo = vo_dvo >> 19;                   // Scaled by 2^8
 
@@ -1468,13 +1466,13 @@ blending using an elegant mathematical formulation:
   if = ln^2(1 + e^((k*(Vg - Vt) - Vs)/(2*Ut))
   ir = ln^2(1 + e^((k*(Vg - Vt) - Vd)/(2*Ut))
 
-For our purposes, the EKV model retains two important properties
+For our purposes, the EKV model preserves two important properties
 discussed above:
 
 - It consists of two independent terms, which can be represented by
   the same lookup table.
 - It is symmetrical, i.e. it calculates current in both directions,
-  and may thus save a branch.
+  facilitating a branch-free implementation.
 
 */
 RESID_INLINE
@@ -1485,42 +1483,32 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
   int vi = vi_n + mf.vo_T16; // Scaled by m*2^16
   int Vddt = mf.Vddt;        // Scaled by m*2^16
 
+  // "Snake" voltages for triode mode calculation.
+  unsigned int Vgst = Vddt - x;
+  unsigned int Vgdt = Vddt - vi;
+
+  // "Snake" current, scaled by (1/m)*2^13*m*2^16*m*2^16*2^-15 = m*2^30
+  int n_I_snake = mf.n_snake*(int(Vgst*Vgst - Vgdt*Vgdt) >> 15);
+
   // VCR gate voltage.       // Scaled by m*2^16
   // Vg = Vddt - sqrt(Vddt*(Vddt - Vw - Vi) + (Vw*Vw + Vi*Vi)/2)
   int Vg = vcr_Vg[(Vw_term + (vi >> 1)*(((vi >> 1) - Vddt) >> 1)) >> 14];
 
-  // Start with the current through the "snake" (triode mode).
-  // n_I = n_snake*(2*Vgst_snake - Vds)*Vds
-  //
-  // Substituting for the variables for forward and reverse directions:
-  // n_I = n_snake*(2*(Vddt - vi) - (vx - vi))*(vx - vi)
-  // n_I = n_snake*(2*(Vddt - vx) - (vi - vx))*(vi - vx)
-  //
-  // Multiplying either equation by -1 makes them equal, which allows
-  // calculating the snake current with single expression, if the sign
-  // is used as the direction of the current.
-  //
-  // Scaled by (1/m)*2^13*m*2^16*m*2^16*2^-1*2^-1*2^-13 = m*2^30
-  int n_I = mf.n_snake*((((Vddt << 1) - vi - x) >> 1)*((vi - x) >> 1) >> 13);
-
-  // Current flowing through the VCR transistor, calculated by EKV model
-  // table lookup.
-  int Vgx = Vg - x;
-  if (Vgx < 0) {
-    Vgx = 0;
+  // VCR voltages for EKV model table lookup.
+  int Vgs = Vg - x;
+  if (Vgs < 0) {
+    Vgs = 0;
   }
-  // Scaled by m*2^15*2^15 = m*2^30
-  n_I += vcr_n_Ids_term[Vgx] << 15;
-
-  int Vgi = Vg - vi;
-  if (Vgi < 0) {
-    Vgi = 0;
+  int Vgd = Vg - vi;
+  if (Vgd < 0) {
+    Vgd = 0;
   }
-  // Scaled by m*2^15*2^15 = m*2^30
-  n_I -= vcr_n_Ids_term[Vgi] << 15;
+
+  // VCR current, scaled by m*2^15*2^15 = m*2^30
+  int n_I_vcr = (vcr_n_Ids_term[Vgs] - vcr_n_Ids_term[Vgd]) << 15;
 
   // Change in capacitor charge.
-  vc += n_I*dt;
+  vc += (n_I_snake + n_I_vcr)*dt;
 
 /*
   FIXME: Check whether this check is necessary.
