@@ -531,6 +531,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "#### onCreate()");
 
+		PreferenceManager.setDefaultValues(this, R.layout.preferences, false);
+
 		DroidSoundPlugin.setContext(getApplicationContext());
 
 		Intent intent = getIntent();

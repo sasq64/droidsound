@@ -63,7 +63,7 @@
 		<ListPreference
 	            android:key="SidPlugin.engine"
 	            android:title="SID Engine"
-	            android:defaultValue="Sidplay2"
+	            android:defaultValue="VICE"
 				android:entries="@array/engine_opts"
 				android:entryValues="@array/engine_opts"
 	            />
@@ -97,7 +97,7 @@
 		<ListPreference
 	            android:key="SidPlugin.resampling"
 	            android:title="Resampling Mode"
-	            android:defaultValue="0"
+	            android:defaultValue="1"
                     android:entries="@array/resampling_opts"
                     android:entryValues="@array/resampling_vals"
 	            />
