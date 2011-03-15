@@ -151,8 +151,6 @@ static bool inside_monitor = FALSE;
 static unsigned int instruction_count;
 static bool skip_jsrs;
 static int wait_for_return_level;
-struct break_list_s *watchpoints_load[NUM_MEMSPACES];
-struct break_list_s *watchpoints_store[NUM_MEMSPACES];
 MEMSPACE caller_space;
 
 const char *_mon_space_strings[] = {
@@ -1207,7 +1205,7 @@ void monitor_init(monitor_interface_t *maincpu_interface_init,
 #endif
 
     if (mon_init_break != -1)
-        mon_breakpoint_add_checkpoint((WORD)mon_init_break, BAD_ADDR, FALSE, FALSE,FALSE, FALSE);
+        mon_breakpoint_add_checkpoint((WORD)mon_init_break, BAD_ADDR, TRUE, e_exec, FALSE);
 
     if (playback > 0) {
         playback_commands(playback);
@@ -1306,11 +1304,17 @@ void mon_display_screen(void)
     int bank;
 
     mem_get_screen_parameter(&base, &rows, &cols, &bank);
+    /* We need something like bankname = something(e_comp_space, bank) here */
+    mon_out("Displaying %dx%d screen at $%04x:\n", cols, rows, base);
+
     for (r = 0; r < rows; r++) {
         for (c = 0; c < cols; c++) {
             BYTE data;
 
-            data = mon_get_mem_val(e_comp_space, (WORD)ADDR_LIMIT(base++));
+            /* Not sure this really neads to use mon_get_mem_val_ex()
+               Do we want monitor sidefx in a function that's *supposed*
+               to just read from screen memory? */
+            data = mon_get_mem_val_ex(e_comp_space, bank, (WORD)ADDR_LIMIT(base++));
             data = charset_p_toascii(charset_screencode_to_petcii(data), 1);
 
             mon_out("%c", data);
@@ -1945,9 +1949,9 @@ static bool watchpoints_check_loads(MEMSPACE mem)
     while (count) {
         count--;
         addr = watch_load_array[count][mem];
-        if (monitor_breakpoint_check_checkpoint(mem, addr,
-                                                watchpoints_load[mem]))
+        if (mon_breakpoint_check_checkpoint(mem, addr, e_load)) {
             trap = TRUE;
+        }
     }
     return trap;
 }
@@ -1964,9 +1968,9 @@ static bool watchpoints_check_stores(MEMSPACE mem)
     while (count) {
         count--;
         addr = watch_store_array[count][mem];
-        if (monitor_breakpoint_check_checkpoint(mem, addr,
-            watchpoints_store[mem]))
+        if (mon_breakpoint_check_checkpoint(mem, addr, e_store)) {
             trap = TRUE;
+        }
     }
     return trap;
 }
@@ -2043,6 +2047,11 @@ void monitor_check_icount_interrupt(void)
     if (instruction_count)
         if (skip_jsrs == TRUE)
             wait_for_return_level++;
+}
+
+int monitor_check_breakpoints(MEMSPACE mem, WORD addr)
+{
+    return mon_breakpoint_check_checkpoint(mem, addr, e_exec);
 }
 
 void monitor_check_watchpoints(WORD a)

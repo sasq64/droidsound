@@ -20,7 +20,7 @@
 #ifndef RESID_VOICE_H
 #define RESID_VOICE_H
 
-#include "siddefs.h"
+#include "resid-config.h"
 #include "wave.h"
 #include "envelope.h"
 
@@ -42,10 +42,10 @@ public:
   // Range [-2048*255, 2047*255].
   int output();
 
-protected:
   WaveformGenerator wave;
   EnvelopeGenerator envelope;
 
+protected:
   // Waveform D/A zero level.
   short wave_zero;
 
