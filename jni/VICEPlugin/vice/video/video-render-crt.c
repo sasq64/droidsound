@@ -45,6 +45,9 @@
 #include "video-resources.h"
 #include "video.h"
 
+#ifdef DINGOO_NATIVE
+#include "render1x1_dingoo.h"
+#endif
 
 static void video_render_crt_main(video_render_config_t *config,
                                   BYTE *src, BYTE *trg,
@@ -52,6 +55,9 @@ static void video_render_crt_main(video_render_config_t *config,
                                   int yt, int pitchs, int pitcht, int depth,
                                   viewport_t *viewport)
 {
+#ifdef DINGOO_NATIVE
+    render_16_1x1_04_dingoo(&config->color_tables, src, trg, width, height, xs, ys, xt, yt, pitchs, pitcht);
+#else
     video_render_color_tables_t *colortab;
     int doublescan, delayloop, rendermode, scale2x, video;
 
@@ -202,6 +208,7 @@ static void video_render_crt_main(video_render_config_t *config,
         }
     }
     log_debug("video_render_crt_main unsupported rendermode (%d)\n", rendermode);
+#endif
 }
 
 void video_render_crt_init(void)

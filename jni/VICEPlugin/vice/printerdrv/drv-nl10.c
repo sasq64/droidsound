@@ -26,6 +26,9 @@
 
 #include "vice.h"
 
+/* Too much memory usage for native dingoo bins */
+#ifndef DINGOO_NATIVE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2212,3 +2215,4 @@ static int drv_nl10_init_charset(void)
 
   return 0;
 }
+#endif

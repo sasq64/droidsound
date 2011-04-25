@@ -782,14 +782,18 @@ int resources_set_defaults(void)
             if ((*resources[i].set_func_int)(vice_ptr_to_int(resources[i].factory_value),
                 resources[i].param) < 0) {
                 /*printf("Cannot set resource %s", resources[i].name);*/
+#ifndef DINGOO_NATIVE
                 return -1;
+#endif
             }
             break;
           case RES_STRING:
             if ((*resources[i].set_func_string)((const char *)(resources[i].factory_value),
                 resources[i].param) < 0) {
                 /*printf("Cannot set resource %s", resources[i].name);*/
+#ifndef DINGOO_NATIVE
                 return -1;
+#endif
             }
             break;
         }
