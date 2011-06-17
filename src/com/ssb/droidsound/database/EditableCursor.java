@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.database;
 
 public interface EditableCursor {
 	

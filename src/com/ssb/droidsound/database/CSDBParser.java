@@ -1,8 +1,7 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.database;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,11 +16,11 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.provider.BaseColumns;
+
 import com.ssb.droidsound.utils.Log;
 
-import com.ssb.droidsound.SongDatabase.ScanCallback;
 
-public class CSDBParser implements SongDatabase.DataSource {
+public class CSDBParser implements DataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
 
 	public static final String DUMP_NAME = "CSDBDUMP";
@@ -37,7 +36,7 @@ public class CSDBParser implements SongDatabase.DataSource {
 	}
 		
 	
-	boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, SongDatabase.ScanCallback scanCallback) {
+	boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, ScanCallback scanCallback) {
 		
 		boolean ok = false;
 		

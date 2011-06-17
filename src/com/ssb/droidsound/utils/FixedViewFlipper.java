@@ -1,9 +1,8 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import android.content.Context;
 import android.os.Build;
 import android.util.AttributeSet;
-import com.ssb.droidsound.utils.Log;
 import android.widget.ViewFlipper;
 
 public class FixedViewFlipper extends ViewFlipper {

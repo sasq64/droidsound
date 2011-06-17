@@ -2,12 +2,10 @@ package com.ssb.droidsound;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,26 +14,32 @@ import java.util.Map;
 
 import android.database.AbstractCursor;
 import android.database.Cursor;
-import android.database.MatrixCursor;
+
+import com.ssb.droidsound.database.EditableCursor;
 import com.ssb.droidsound.utils.Log;
 
 public class Playlist {
-
-	/* public class Song {
-
-		public File file;
-		public String title;
-		public String subtitle;
-		public int startsong;
-		
-	} */
-
 	private static final String TAG = Playlist.class.getSimpleName();
 	
 	
 	private static Map<File, Playlist> allPlaylists = new HashMap<File, Playlist>();
 	
 	private static Object lock = new Object();
+	
+	
+	private MyCursor cursor;
+	private File plistFile;
+	private List<String> lines;
+
+	private boolean changed;
+
+	private String title;
+	private String subtitle;
+
+	private boolean written;
+	private long fileModified;
+	
+
 	
 	public static Playlist getPlaylist(File file) {
 		
@@ -62,21 +66,6 @@ public class Playlist {
 		}
 	}
 
-	
-	private MyCursor cursor;
-	private File plistFile;
-	private List<String> lines;
-
-	private boolean changed;
-
-	private String title;
-	private String subtitle;
-
-
-	private boolean written;
-
-
-	private long fileModified;
 	
 	
 	 private Playlist(File file) {
@@ -352,7 +341,7 @@ public class Playlist {
 		return s;
 	}
 	
-	synchronized void add(SongFile songFile) {
+	synchronized public void add(SongFile songFile) {
 		
 		if(songFile.isDirectory()) {			
 			SongFile [] files = songFile.listSongFiles();

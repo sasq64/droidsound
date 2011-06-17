@@ -37,7 +37,7 @@
 		
 	</LinearLayout>
 
-	<com.ssb.droidsound.FixedViewFlipper 
+	<com.ssb.droidsound.utils.FixedViewFlipper 
 		android:id="@+id/flipper"
 	    android:layout_width="fill_parent"
 	    android:layout_height="fill_parent"
@@ -48,7 +48,7 @@
 			android:id="@+id/play_list_frame"
 			android:layout_width="fill_parent"
 			android:layout_height="fill_parent" >
-			<com.ssb.droidsound.PlayListView android:id="@+id/play_list" android:background="#ff000000"
+			<com.ssb.droidsound.playlistview.PlayListView android:id="@+id/play_list" android:background="#ff000000"
 				tlv:grabber="@+id/icon"
 				tlv:remove_mode="slideLeft"
 				tlv:normal_height="48dip"		
@@ -63,12 +63,12 @@
 			android:id="@+id/search_list_frame"
 			android:layout_width="fill_parent"
 			android:layout_height="fill_parent" >
-			<com.ssb.droidsound.PlayListView android:id="@+id/search_list" android:background="#ff000000"
+			<com.ssb.droidsound.playlistview.PlayListView android:id="@+id/search_list" android:background="#ff000000"
 				android:cacheColorHint="#ff000000"  android:fastScrollEnabled="true"
 				itemColor="#ffffffff" subitemColor="#ffa0a0ff" dirColor="#ffffffa0" archiveColor="#ffffffa0"
 				android:layout_width="fill_parent" android:layout_height="fill_parent" />
 		</FrameLayout>
 
 	
-	</com.ssb.droidsound.FixedViewFlipper>
+	</com.ssb.droidsound.utils.FixedViewFlipper>
 </LinearLayout>

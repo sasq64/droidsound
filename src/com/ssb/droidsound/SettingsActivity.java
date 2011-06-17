@@ -20,6 +20,7 @@ import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 
+import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.SidPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
