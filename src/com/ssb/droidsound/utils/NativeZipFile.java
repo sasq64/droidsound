@@ -1,13 +1,10 @@
 package com.ssb.droidsound.utils;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
-
-import com.ssb.droidsound.utils.Log;
 
 public class NativeZipFile {
 
@@ -75,6 +72,7 @@ public class NativeZipFile {
 	
 	class MyEnumeration implements Enumeration<MyZipEntry> {
 
+		@SuppressWarnings("unused")
 		private NativeZipFile zipFile;
 		private int currentIndex;
 		private int total;
@@ -106,6 +104,7 @@ public class NativeZipFile {
 	}
 	
 	static class NZInputStream extends InputStream {
+		@SuppressWarnings("unused")
 		private static final String TAG = NZInputStream.class.getSimpleName();
 
 		private NativeZipFile zipFile;

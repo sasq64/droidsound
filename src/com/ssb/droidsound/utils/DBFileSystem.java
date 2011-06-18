@@ -3,10 +3,11 @@ package com.ssb.droidsound.utils;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ssb.droidsound.SongDatabase;
 
 import android.database.Cursor;
 import android.database.MatrixCursor;
+
+import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.utils.Log;
 
 public class DBFileSystem {

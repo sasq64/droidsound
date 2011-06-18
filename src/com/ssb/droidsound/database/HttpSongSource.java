@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.database;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,6 +22,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.MatrixCursor;
+
+import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.utils.Log;
 
 public class HttpSongSource {

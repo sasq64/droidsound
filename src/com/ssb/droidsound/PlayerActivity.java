@@ -69,7 +69,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
-import com.ssb.droidsound.PlayListView.FileInfo;
+import com.ssb.droidsound.database.CSDBParser;
+import com.ssb.droidsound.database.MediaSource;
+import com.ssb.droidsound.database.SongDatabase;
+import com.ssb.droidsound.playlistview.PlayListView;
+import com.ssb.droidsound.playlistview.FileInfo;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
@@ -234,8 +238,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private TextView lowText;
 
-	private float aTime = 0;
-
 	private Method startTrackingMethod;
 
 	private byte[] md5;
@@ -260,13 +262,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "########## Activity finalize");
 	};
-
-	private void setDirectory(File path, PlayListView plv) {
-		setDirectory(path.getPath(), plv);
-	}
-	private void setDirectory(PlayListView plv) {
-		setDirectory((String)null, plv);
-	}
 
 	private void setDirectory(String path, PlayListView plv) {
 
@@ -312,6 +307,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 	}
+	
+	private void setDirectory(File path, PlayListView plv) {
+		setDirectory(path.getPath(), plv);
+	}
+	private void setDirectory(PlayListView plv) {
+		setDirectory((String)null, plv);
+	}
+
 
 	private void gotoParent(PlayListView plv) {
 
@@ -414,10 +417,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 	}
 
-	private void flipTo(int what) {
-		flipTo(what, true);
-	}
-
 	private void flipTo(int what, boolean animate) {
 		Animation ia = null;
 		Animation oa = null;
@@ -498,6 +497,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 	}
+	
+	private void flipTo(int what) {
+		flipTo(what, true);
+	}
+
 
 	private static boolean copyFile(File in, File out) {
 		FileChannel inChannel = null;

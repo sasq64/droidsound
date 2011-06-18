@@ -39,15 +39,15 @@ public class FileIdentifier {
 	//public static final int TYPE_VGM = 8;
 	
 	public static class MusicInfo {
-		String title;
-		String composer;
-		String copyright;
+		public String title;
+		public String composer;
+		public String copyright;
 		//String game;
-		String format;
+		public String format;
 
-		int channels;
-		int type;
-		int date;
+		public int channels;
+		public int type;
+		public int date;
 	};
 
 

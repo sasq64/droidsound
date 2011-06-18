@@ -1,6 +1,6 @@
 package com.ssb.droidsound.provider;
 
-import com.ssb.droidsound.SongDatabase;
+import com.ssb.droidsound.database.SongDatabase;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;

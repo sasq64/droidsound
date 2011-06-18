@@ -1,20 +1,13 @@
 package com.ssb.droidsound.utils;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-
-
-import com.ssb.droidsound.utils.Log;
 
 public class StreamingHttpConnection {
 	private static final String TAG = StreamingHttpConnection.class.getSimpleName();
@@ -24,7 +17,7 @@ public class StreamingHttpConnection {
 	private String requestPath;
 	private String resultString;
 	private boolean codeRead;
-	//private BufferedReader br;
+
 	private Map<String, String> headers;
 	private int resultCode;
 
@@ -120,6 +113,11 @@ public class StreamingHttpConnection {
 			
 		}
 		return resultCode;
+	}
+	
+	public String getResultString() throws IOException {
+		getResponseCode();
+		return resultString;
 	}
 	
 	private void readHeaderFields() throws IOException {

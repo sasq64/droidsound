@@ -1,14 +1,12 @@
 package com.ssb.droidsound.utils;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import android.database.Cursor;
 import android.database.CursorWrapper;
-import com.ssb.droidsound.utils.Log;
 
 public class CursorTransform {
 	private static final String TAG = CursorTransform.class.getSimpleName();
@@ -55,7 +53,6 @@ public class CursorTransform {
 		
 		@Override
 		public int getColumnIndex(String columnName) {
-			int ci = -1;
 			ColTransform ct = transformMap.get(columnName);
 			if(ct != null) {
 				if(ct.columnIndex >= 0)

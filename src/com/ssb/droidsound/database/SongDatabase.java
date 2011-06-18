@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.database;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,8 +32,14 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.BaseColumns;
+
+import com.ssb.droidsound.FileIdentifier;
+import com.ssb.droidsound.PlayerActivity;
+import com.ssb.droidsound.Playlist;
+import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.utils.Log;
 
+import com.ssb.droidsound.FileIdentifier.MusicInfo;
 import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
@@ -55,28 +61,8 @@ public class SongDatabase implements Runnable {
 	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 
 	private ScanCallback scanCallback;
-
-	public static interface ScanCallback {
-		void notifyScan(String path, int percent);
-	}
-	
-	public static class SongInfo {
-		String comment;
-		String length;
-	};
-	
-	public static interface DataSource {
-
-		boolean parseDump(InputStream is, int size, SQLiteDatabase scanDb, ScanCallback scanCallback);
-		String getTitle();
-		Cursor getCursorFromPath(File file, SQLiteDatabase db, int sorting);
-		String getPathTitle(File file);
-		void createIndex(int mode, SQLiteDatabase db);
-		Cursor search(String query, String fromPath, SQLiteDatabase db);
-	}
 	
 	private Map<String, DataSource> dbsources = new HashMap<String, DataSource>();
-	
 	
 	private SQLiteDatabase scanDb;
 	private SQLiteDatabase rdb;
@@ -117,7 +103,7 @@ public class SongDatabase implements Runnable {
 	public static final int INDEX_FULL = 2;
 
 	
-	boolean isReady() {
+	public boolean isReady() {
 		return  (mHandler != null);
 	}
 	

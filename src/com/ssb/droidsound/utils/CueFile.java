@@ -7,10 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ssb.droidsound.plugins.SidplayPlugin;
-
-import com.ssb.droidsound.utils.Log;
-
 public class CueFile {
 	private static final String TAG = CueFile.class.getSimpleName();
 

@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.database;
 
 import java.io.File;
 import java.io.InputStream;
@@ -11,13 +11,13 @@ import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.MediaStore;
+
 import com.ssb.droidsound.utils.Log;
 
-import com.ssb.droidsound.SongDatabase.ScanCallback;
 import com.ssb.droidsound.utils.CursorTransform;
 import com.ssb.droidsound.utils.DBFileSystem;
 
-public class MediaSource implements SongDatabase.DataSource  {
+public class MediaSource implements DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();
 	
 	private static String[] albumsFields = { MediaStore.Audio.Albums._ID,

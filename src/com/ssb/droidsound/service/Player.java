@@ -319,7 +319,7 @@ public class Player implements Runnable {
 		currentState = State.STOPPED;
 		
 		Message msg = mHandler.obtainMessage(MSG_WAVDUMPED, 0, 0, outFile.getPath());
-		mHandler.sendMessage(msg);		
+		mHandler.sendMessage(msg);
 	}
 
 	

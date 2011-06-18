@@ -11,9 +11,6 @@ import java.net.URLConnection;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import android.os.Environment;
-import com.ssb.droidsound.utils.Log;
-
 public class HttpDownloader  {
 	private static final String TAG = HttpDownloader.class.getSimpleName();
 	

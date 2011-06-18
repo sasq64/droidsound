@@ -41,7 +41,7 @@ static jstring NewString(JNIEnv *env, const char *str)
 #define OPT_FILTER 1
 #define OPT_RESAMPLING 2
 #define OPT_NTSC 3
-#define OPT_SPEEDHACK 4
+#define OPT_MODEL 4
 
 struct Player
 {
@@ -56,6 +56,8 @@ static bool filter_cfg = true;
 static bool filter_set = false;
 static int ntsc_cfg = false;
 static bool ntsc_set = false;
+static bool override_cfg = false;
+static bool use_6581 = false;
 
 
 
@@ -73,6 +75,8 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1setOptio
 		ntsc_cfg = val;
 		__android_log_print(ANDROID_LOG_VERBOSE, "SidplayPlugin", "NTSC %d", ntsc_cfg);
 		ntsc_set = true;
+		break;
+	case OPT_MODEL:
 		break;
 	}
 }
@@ -140,7 +144,12 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 		cfg.playback     = sid2_stereo;
 		cfg.precision    = 16;
 		//cfg.sidModel     = SID2_MODEL_CORRECT;
-		cfg.sidDefault   = SID2_MOS6581; // SIDTUNE_SIDMODEL_ANY
+
+		sid2_model_t model = use_6581 ? SID2_MOS6581 : SID2_MOS8580;
+
+		cfg.sidModel = override_cfg ? model : SID2_MODEL_CORRECT;
+		cfg.sidDefault = model;
+
 		cfg.sidSamples   = true;
 		//cfg.optimisation  = 2;
 
@@ -157,7 +166,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SidplayPlugin_N_1load(JN
 
 		  cfg.precision    = 16;
 		  //cfg.sidModel     = SID2_MODEL_CORRECT;
-		  cfg.sidDefault   = SID2_MOS6581;
+		  //cfg.sidDefault   = SID2_MOS6581;
 		  cfg.sidSamples   = true;
 		  cfg.optimisation  = SID2_MAX_OPTIMISATION;
 
