@@ -20,7 +20,7 @@
 #ifndef RESID_VOICE_H
 #define RESID_VOICE_H
 
-#include "resid-config.h"
+#include "siddefs.h"
 #include "wave.h"
 #include "envelope.h"
 
@@ -40,12 +40,12 @@ public:
 
   // Amplitude modulated waveform output.
   // Range [-2048*255, 2047*255].
-  int output();
+  RESID_INLINE int output();
 
+protected:
   WaveformGenerator wave;
   EnvelopeGenerator envelope;
 
-protected:
   // Waveform D/A zero level.
   short wave_zero;
 
