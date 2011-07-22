@@ -20,7 +20,7 @@
 #ifndef RESID_ENVELOPE_H
 #define RESID_ENVELOPE_H
 
-#include "resid-config.h"
+#include "siddefs.h"
 
 namespace reSID
 {
@@ -43,8 +43,8 @@ public:
 
   void set_chip_model(chip_model model);
 
-  void clock();
-  void clock(cycle_count delta_t);
+  RESID_INLINE void clock();
+  RESID_INLINE void clock(cycle_count delta_t);
   void reset();
 
   void writeCONTROL_REG(reg8);
@@ -53,10 +53,10 @@ public:
   reg8 readENV();
 
   // 8-bit envelope output.
-  short output();
+  RESID_INLINE reg8 output();
 
 protected:
-  void set_exponential_counter();
+  RESID_INLINE void set_exponential_counter();
 
   reg16 rate_counter;
   reg16 rate_period;
@@ -286,7 +286,7 @@ void EnvelopeGenerator::clock(cycle_count delta_t)
 // Read the envelope generator output.
 // ----------------------------------------------------------------------------
 RESID_INLINE
-short EnvelopeGenerator::output()
+reg8 EnvelopeGenerator::output()
 {
   // DAC imperfections are emulated by using envelope_counter as an index
   // into a DAC lookup table. readENV() uses envelope_counter directly.

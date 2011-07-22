@@ -20,7 +20,7 @@
 #ifndef RESID_WAVE_H
 #define RESID_WAVE_H
 
-#include "resid-config.h"
+#include "siddefs.h"
 
 namespace reSID
 {
@@ -41,9 +41,9 @@ public:
   void set_sync_source(WaveformGenerator*);
   void set_chip_model(chip_model model);
 
-  void clock();
-  void clock(cycle_count delta_t);
-  void synchronize();
+  RESID_INLINE void clock();
+  RESID_INLINE void clock(cycle_count delta_t);
+  RESID_INLINE void synchronize();
   void reset();
 
   void writeFREQ_LO(reg8);
@@ -54,17 +54,17 @@ public:
   reg8 readOSC();
 
   // 12-bit waveform output.
-  short output();
-
-  // Calculate and set waveform output value.
-  void set_waveform_output();
-  void set_waveform_output(cycle_count delta_t);
+  RESID_INLINE reg12 output();
 
 protected:
-  void clock_shift_register();
-  void write_shift_register();
-  void reset_shift_register();
-  void set_noise_output();
+  RESID_INLINE void clock_shift_register();
+  RESID_INLINE void write_shift_register();
+  RESID_INLINE void reset_shift_register();
+  RESID_INLINE void set_noise_output();
+
+  // Calculate and set waveform output value.
+  RESID_INLINE void set_waveform_output();
+  RESID_INLINE void set_waveform_output(cycle_count delta_t);
 
   const WaveformGenerator* sync_source;
   WaveformGenerator* sync_dest;
@@ -89,11 +89,11 @@ protected:
 
   // Helper variables for waveform table lookup.
   reg24 ring_msb_mask;
-  unsigned short no_noise;
-  unsigned short noise_output;
-  unsigned short no_noise_or_noise_output;
-  unsigned short no_pulse;
-  unsigned short pulse_output;
+  reg12 no_noise;
+  reg12 noise_output;
+  reg12 no_noise_or_noise_output;
+  reg12 no_pulse;
+  reg12 pulse_output;
 
   // The control register right-shifted 4 bits; used for waveform table lookup.
   reg8 waveform;
@@ -112,8 +112,8 @@ protected:
   chip_model sid_model;
 
   // Sample data for waveforms, not including noise.
-  unsigned short* wave;
-  static unsigned short model_wave[2][8][1 << 12];
+  static reg12 model_wave[2][8][1 << 12];
+  reg12* wave;
   // DAC lookup tables.
   static unsigned short model_dac[2][1 << 12];
 
@@ -542,7 +542,7 @@ void WaveformGenerator::set_waveform_output(cycle_count delta_t)
 //
 
 RESID_INLINE
-short WaveformGenerator::output()
+reg12 WaveformGenerator::output()
 {
   // DAC imperfections are emulated by using waveform_output as an index
   // into a DAC lookup table. readOSC() uses waveform_output directly.

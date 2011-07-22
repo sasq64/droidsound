@@ -26,7 +26,7 @@ namespace reSID
 {
 
 // Waveform lookup tables.
-unsigned short WaveformGenerator::model_wave[2][8][1 << 12] = {
+reg12 WaveformGenerator::model_wave[2][8][1 << 12] = {
   {
     {0},
     {0},
