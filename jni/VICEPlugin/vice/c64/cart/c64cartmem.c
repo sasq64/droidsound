@@ -1494,53 +1494,17 @@ void ultimax_d000_dfff_store(WORD addr, BYTE value)
 
 static int ultimax_romh_phi1_read_slotmain(WORD addr, BYTE *value)
 {
-    int res = CART_READ_THROUGH;
-
     switch (mem_cartridge_type) {
         case CARTRIDGE_GENERIC_8KB:
         case CARTRIDGE_GENERIC_16KB:
             return 0;
         case CARTRIDGE_ULTIMAX:
-            res = generic_romh_phi1_read(addr, value);
-            break;
-        case CARTRIDGE_CAPTURE:
-            res = capture_romh_phi1_read(addr, value);
-            break;
-        case CARTRIDGE_EXOS:
-            res = exos_romh_phi1_read(addr, value);
-            break;
-        case CARTRIDGE_FINAL_PLUS:
-            res = final_plus_romh_phi1_read(addr, value);
-            break;
-        case CARTRIDGE_MAGIC_FORMEL:
-            res = magicformel_romh_phi1_read(addr, value);
-            break;
-        case CARTRIDGE_MMC_REPLAY:
-            res = mmcreplay_romh_phi1_read(addr, value);
-            break;
-        case CARTRIDGE_STARDOS:
-            res = stardos_romh_phi1_read(addr, value);
-            break;
-        case CARTRIDGE_NONE:
-            break;
-        default:
-            /* generic fallback */
-            *value = ultimax_romh_read_hirom(addr);
+            *value = generic_romh_phi1_read(addr);
             return 1;
     }
 
-    switch (res) {
-        case CART_READ_VALID:
-            return 1;
-        case CART_READ_C64MEM:
-            /* fake ultimax hack, c64 basic, ram */
-            return 0;
-        case CART_READ_THROUGH_NO_ULTIMAX:
-            break;
-    }
-
-    /* default; no cart, open bus */
-    *value = vicii_read_phi1();
+    /* generic fallback */
+    *value = ultimax_romh_read_hirom(addr);
     return 1;
 }
 
@@ -1597,53 +1561,17 @@ int ultimax_romh_phi1_read(WORD addr, BYTE *value)
 
 static int ultimax_romh_phi2_read_slotmain(WORD addr, BYTE *value)
 {
-    int res = CART_READ_THROUGH;
-
     switch (mem_cartridge_type) {
         case CARTRIDGE_GENERIC_8KB:
         case CARTRIDGE_GENERIC_16KB:
             return 0;
         case CARTRIDGE_ULTIMAX:
-            res = generic_romh_phi2_read(addr, value);
-            break;
-        case CARTRIDGE_CAPTURE:
-            res = capture_romh_phi2_read(addr, value);
-            break;
-        case CARTRIDGE_EXOS:
-            res = exos_romh_phi2_read(addr, value);
-            break;
-        case CARTRIDGE_FINAL_PLUS:
-            res = final_plus_romh_phi2_read(addr, value);
-            break;
-        case CARTRIDGE_MAGIC_FORMEL:
-            res = magicformel_romh_phi2_read(addr, value);
-            break;
-        case CARTRIDGE_MMC_REPLAY:
-            res = mmcreplay_romh_phi2_read(addr, value);
-            break;
-        case CARTRIDGE_STARDOS:
-            res = stardos_romh_phi2_read(addr, value);
-            break;
-        case CARTRIDGE_NONE:
-            break;
-        default:
-            /* generic fallback */
-            *value = ultimax_romh_read_hirom(addr);
+            *value = generic_romh_phi2_read(addr);
             return 1;
     }
 
-    switch (res) {
-        case CART_READ_VALID:
-            return 1;
-        case CART_READ_C64MEM:
-            /* fake ultimax hack, c64 basic, ram */
-            return 0;
-        case CART_READ_THROUGH_NO_ULTIMAX:
-            break;
-    }
-
-    /* default; no cart, open bus */
-    *value = vicii_read_phi1();
+    /* generic fallback */
+    *value = ultimax_romh_read_hirom(addr);
     return 1;
 }
 
@@ -1799,81 +1727,39 @@ BYTE *ultimax_romh_phi2_ptr(WORD addr)
 */
 static BYTE cartridge_peek_mem_slotmain(WORD addr)
 {
-    BYTE value;
-    int res = CART_READ_THROUGH;
-
     /* "Main Slot" */
     switch (mem_cartridge_type) {
+        case CARTRIDGE_RETRO_REPLAY:
+            return retroreplay_peek_mem(addr);
         case CARTRIDGE_ULTIMAX:
         case CARTRIDGE_GENERIC_8KB:
         case CARTRIDGE_GENERIC_16KB:
-            res = generic_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_CAPTURE:
-            res = capture_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_EXOS:
-            res = exos_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_FINAL_PLUS:
-            res = final_plus_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_GAME_KILLER:
-            res = gamekiller_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_MAGIC_FORMEL:
-            res = magicformel_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_RETRO_REPLAY:
-            res = retroreplay_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_STARDOS:
-            res = stardos_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        case CARTRIDGE_ZAXXON:
-            res = zaxxon_peek_mem((struct export_s*)&export_slotmain, addr, &value);
-            break;
-        default:
-            /* generic fallback */
-            if (!export_slotmain.exrom && export_slotmain.game) {
-                /* ultimax mode */
-                if (addr >= 0x8000 && addr <= 0x9fff) {
-                    return roml_read_slotmain(addr);
-                }
-                if (addr >= 0xe000) {
-                    return ultimax_romh_read_hirom_slotmain(addr);
-                }
-            } else if (!export_slotmain.exrom && !export_slotmain.game) {
-                /* 16k Game */
-                if (addr >= 0x8000 && addr <= 0x9fff) {
-                    return roml_read_slotmain(addr);
-                }
-                if (addr >= 0xa000 && addr <= 0xbfff) {
-                    return romh_read_slotmain(addr);
-                }
-            } else if (export_slotmain.exrom && !export_slotmain.game) {
-                /* 8k Game */
-                if (addr >= 0x8000 && addr <= 0x9fff) {
-                    return roml_read_slotmain(addr);
-                }
-            }
-            break;
-        case CARTRIDGE_NONE:
-            break;
+            return generic_peek_mem(addr);
     }
 
-    switch (res) {
-        case CART_READ_VALID:
-            return value;
-        case CART_READ_THROUGH:
-            break;
-        case CART_READ_THROUGH_NO_ULTIMAX:
-            break;
-        case CART_READ_C64MEM:
-            /* return ram_read(addr); */
-            break;
+    /* generic fallback */
+    if (!export_slotmain.exrom && export_slotmain.game) {
+        /* ultimax mode */
+        if (addr >= 0x8000 && addr <= 0x9fff) {
+            return roml_read_slotmain(addr);
+        }
+        if (addr >= 0xe000) {
+            return ultimax_romh_read_hirom_slotmain(addr);
+        }
+    } else if (!export_slotmain.exrom && !export_slotmain.game) {
+        /* 16k Game */
+        if (addr >= 0x8000 && addr <= 0x9fff) {
+            return roml_read_slotmain(addr);
+        }
+        if (addr >= 0xa000 && addr <= 0xbfff) {
+            return romh_read_slotmain(addr);
+        }
+    } else if (export_slotmain.exrom && !export_slotmain.game) {
+        /* 8k Game */
+        if (addr >= 0x8000 && addr <= 0x9fff) {
+            return roml_read_slotmain(addr);
+        }
     }
-
     return ram_read(addr);
 }
 
