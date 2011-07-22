@@ -1,4 +1,4 @@
-/*
+﻿/*
  * keyboard.c - Common keyboard emulation.
  *
  * Written by
@@ -7,7 +7,7 @@
  * Based on old code by
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  Jouko Valta <jopi@stekt.oulu.fi>
- *  Andr� Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *  Bernhard Kuhn <kuhn@eikon.e-technik.tu-muenchen.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -35,11 +35,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifndef RAND_MAX
-#include <limits.h>
-#define RAND_MAX INT_MAX
-#endif
 
 #include "alarm.h"
 #include "archdep.h"
