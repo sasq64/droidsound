@@ -1039,4 +1039,3 @@ sid_engine_t fastsid_hooks =
     fastsid_state_read,
     fastsid_state_write
 };
-
