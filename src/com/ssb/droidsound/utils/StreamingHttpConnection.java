@@ -21,17 +21,21 @@ public class StreamingHttpConnection {
 	private Map<String, String> headers;
 	private int resultCode;
 
-	public StreamingHttpConnection(URL url) throws UnknownHostException, IOException {
+	public StreamingHttpConnection(URL url) throws IOException {
 
 		Log.d(TAG, "Opening URL " + url.toString());
 		int port = url.getPort();
-		if(port < 0) port = 80;
+		if(port < 0) {
+			port = 80;
+		}
 		requestPath = url.getPath().trim();
-		if(requestPath.length() == 0)
+		if(requestPath.length() == 0) {
 			requestPath = "/";
-		
-		requestProperties = new String();
-		
+		}
+
+		//requestProperties = new String();   redundant String() constructor call
+        requestProperties = "";
+
 		addRequestProperty("Host", url.getHost());
 		addRequestProperty("User-Agent", "Droidsound 1.2 (Linux;Android)");
 		addRequestProperty("Connection", "Close");
@@ -55,42 +59,33 @@ public class StreamingHttpConnection {
 
 	public void connect() throws IOException {
 		String reqLine = String.format("%s %s %s\r\n", requestMethod, requestPath, "HTTP/1.0");
-		
 		OutputStream os = httpSocket.getOutputStream();
-		
 		String req = reqLine + requestProperties + "\r\n";
-		
 		Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! REQUEST:\n" + req);
-		
-		
 		os.write(req.getBytes());
-		
 	}
-	
+
 	private String readLine(InputStream is) throws IOException {
-		
 		byte [] buffer = new byte [2048];
 		int pos = 0;
 		while(true) {
 			int b = -1;
-			while(b < 0)
+			while(b < 0) {
 				b = is.read();
-			if(b == 0xa)
+			}
+			if(b == 0xa) {
 				break;
-			else if(b != 0xd)
+			} else if(b != 0xd) {
 				buffer[pos++] = (byte) b;
+			}
 		}
-		
 		return new String(buffer, 0, pos);
 	}
 
 	public int getResponseCode() throws IOException {
 		if(!codeRead) {
-			
 			InputStream is = httpSocket.getInputStream();
-			
 			//br = new BufferedReader(new InputStreamReader(is));
-			
 			String line = null;
 			while(line == null) {
 				line = readLine(is);
@@ -110,7 +105,6 @@ public class StreamingHttpConnection {
 					break;
 				}
 			}
-			
 		}
 		return resultCode;
 	}
@@ -131,8 +125,8 @@ public class StreamingHttpConnection {
 				Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HEADER: " + line);
 				int pos = line.indexOf(":");
 				if(pos > 0) {
-					String var = line.substring(0,pos++);					
-					if(line.charAt(pos) == ' ') pos++;					
+					String var = line.substring(0,pos++);
+					if(line.charAt(pos) == ' ') pos++;
 					String val = line.substring(pos);
 					headers.put(var.toLowerCase(), val);
 				} else {

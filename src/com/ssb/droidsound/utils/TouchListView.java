@@ -35,7 +35,7 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 
-import com.ssb.droidsound.R;
+import com.ssb.droidsoundedit.R;
 
 public class TouchListView extends ListView {
 	private ImageView mDragView;
@@ -52,9 +52,9 @@ public class TouchListView extends ListView {
 	private int mLowerBound;
 	private int mHeight;
 	private GestureDetector mGestureDetector;
-	public static final int FLING = 0;
-	public static final int SLIDE_RIGHT = 1;
-	public static final int SLIDE_LEFT = 2;
+	private static final int FLING = 0;
+	private static final int SLIDE_RIGHT = 1;
+	private static final int SLIDE_LEFT = 2;
 	private int mRemoveMode = -1;
 	private Rect mTempRect = new Rect();
 	private Bitmap mDragBitmap;
@@ -68,7 +68,7 @@ public class TouchListView extends ListView {
 		this(context, attrs, 0);
 	}
 
-	public TouchListView(Context context, AttributeSet attrs, int defStyle) {
+	private TouchListView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 
 		mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();

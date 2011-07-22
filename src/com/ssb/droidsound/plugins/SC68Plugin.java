@@ -14,11 +14,10 @@ public class SC68Plugin extends DroidSoundPlugin {
 		System.loadLibrary("sc68");
 	}
 	private long currentSong;
-	private static Object lock = new Object();
+	private static final Object lock = new Object();
 	private static boolean inited = false;
-	
-	private File sc68Dir;
-	private long pluginRef;
+
+    private long pluginRef;
 
 	private String title = null;
 	private String composer = null;
@@ -29,7 +28,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	public SC68Plugin() {
 
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-		sc68Dir = new File(droidDir, "sc68data");
+        File sc68Dir = new File(droidDir, "sc68data");
 		synchronized (lock) {					
 			if(!sc68Dir.exists()) {
 				droidDir.mkdir();

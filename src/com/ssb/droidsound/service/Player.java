@@ -34,9 +34,9 @@ public class Player implements Runnable {
 
 	public enum State {
 		STOPPED, PAUSED, PLAYING, SWITCHING
-	};
+	}
 
-	public enum Command {
+    public enum Command {
 		NO_COMMAND,
 		STOP, // Unload and stop if playing
 		PLAY, // Play new file or last file
@@ -44,13 +44,13 @@ public class Player implements Runnable {
 		DUMP_WAV,
 		// Only when Playing:
 		PAUSE, UNPAUSE, SET_POS, SET_TUNE,
-	};
+	}
 
-	public static final int MSG_NEWSONG = 0;
+    public static final int MSG_NEWSONG = 0;
 	public static final int MSG_DONE = 2;
 	public static final int MSG_STATE = 1;
 	public static final int MSG_PROGRESS = 3;
-	protected static final int MSG_SILENT = 4;
+	private static final int MSG_SILENT = 4;
 	public static final int MSG_SUBTUNE = 5;
 	public static final int MSG_DETAILS = 6;
 	public static final int MSG_INFO = 7;
@@ -74,7 +74,7 @@ public class Player implements Runnable {
 		public String fileName;
 		public String source;
 		public byte[] md5;
-	};
+	}
 
 	private Handler mHandler;
 
@@ -88,14 +88,11 @@ public class Player implements Runnable {
 	private List<DroidSoundPlugin> plugins;
 
 	// Incoming state
-	private Object cmdLock = new Object();
+	private final Object cmdLock = new Object();
 	private Command command = Command.NO_COMMAND;
 	private Object argument;
 
-	// Player state
-	// private int currentPosition;
-	private int noPlayWait;
-	private int lastPos;
+    private int lastPos;
 	private int playPosOffset;
 	private SongInfo currentSong = new SongInfo();
 
@@ -109,20 +106,18 @@ public class Player implements Runnable {
 	private volatile State currentState = State.STOPPED;
 	private int silentPosition;
 
-	int FREQ = 44100;
+	private int FREQ = 44100;
 	private long audioTime;
 	private int aCount;
 	private long lastTime = -1;
-	private long frameTime;
-	// private int switchPos = -1;
+    // private int switchPos = -1;
 	private boolean songEnded = false;
 	private boolean reinitAudio;
 
 	private boolean startedFromSub;
 	private int lastLatency;
 	private boolean firstData;
-	private SongFile nextSong;
-	//private String lastSubtuneTitle;
+    //private String lastSubtuneTitle;
 	//private String lastTitle;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
@@ -184,8 +179,7 @@ public class Player implements Runnable {
 	}
 
 	private void startSong(SongFile song, SongFile song2) {
-		nextSong = song2;
-		startSong(song, false);
+        startSong(song, false);
 	}
 
 	private void dumpWav(SongFile song, File outFile, int length, int flags) throws IOException {
@@ -550,9 +544,10 @@ public class Player implements Runnable {
 				currentSong.canSeek = currentPlugin.canSeek();
 
 				currentSong.details = new String[info.length + 2];
-				for(int i = 0; i < info.length; i++) {
+				/*for(int i = 0; i < info.length; i++) {
 					currentSong.details[i] = info[i];
-				}
+				}*/
+                System.arraycopy(info, 0, currentSong.details, 0, info.length);  //Improved code, eliminating the for loop
 				currentSong.details[info.length] = "Size";
 
 				String size = makeSize(fileSize);
@@ -689,7 +684,7 @@ public class Player implements Runnable {
 				AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 		reinitAudio = false;
 		Log.d(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
-		noPlayWait = 0;
+        int noPlayWait = 0;
 		int pos = 0;
 		while(noPlayWait < 50) {
 			try {
@@ -1034,7 +1029,7 @@ public class Player implements Runnable {
 
 						long tt = System.currentTimeMillis();
 						if(lastTime > 0) {
-							frameTime = (tt - lastTime);
+                            long frameTime = (tt - lastTime);
 							long d = tt - t;
 							// Log.d(TAG, String.format("Frame %d, write %d",
 							// frameTime, d));
@@ -1087,11 +1082,11 @@ public class Player implements Runnable {
 	}
 
 	synchronized public boolean getSongInfo(SongInfo target) {
-		target.title = currentSong.title == null ? null : new String(currentSong.title);
-		target.author = currentSong.author == null ? null : new String(currentSong.author);
-		target.copyright = currentSong.copyright == null ? null : new String(currentSong.copyright);
+		target.title = currentSong.title == null ? null : currentSong.title;
+		target.author = currentSong.author == null ? null : currentSong.author;
+		target.copyright = currentSong.copyright == null ? null : currentSong.copyright;
 		// target.game = new String(currentSong.game);
-		target.type = currentSong.type == null ? null : new String(currentSong.type);
+		target.type = currentSong.type == null ? null : currentSong.type;
 		target.length = currentSong.length;
 		target.subTunes = currentSong.subTunes;
 		target.startTune = currentSong.startTune;

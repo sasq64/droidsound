@@ -57,8 +57,7 @@ public class HttpDownloader  {
 			byte[] buffer = new byte[16384];
 
 			//String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
-			String outDir = target;
-			int fileCount = 0;
+            int fileCount = 0;
 			for(String u : urls) {
 
 				String uu = urlencode(u);
@@ -93,7 +92,7 @@ public class HttpDownloader  {
 						int zipCount = 0;
 						while((e = zip.getNextEntry()) != null) {
 							Log.d(TAG, "Found file " + e.getName());
-							FileOutputStream fos = new FileOutputStream(outDir + e.getName());
+							FileOutputStream fos = new FileOutputStream(target + e.getName());
 							BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
 							while((size = zip.read(buffer, 0, buffer.length)) != -1) {
 								bos.write(buffer, 0, size);
@@ -111,7 +110,7 @@ public class HttpDownloader  {
 
 						Log.d(TAG, "Writing " + baseName);
 
-						FileOutputStream fos = new FileOutputStream(outDir + baseName);
+						FileOutputStream fos = new FileOutputStream(target + baseName);
 						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
 						while((size = in.read(buffer)) != -1) {
 							bos.write(buffer, 0, size);

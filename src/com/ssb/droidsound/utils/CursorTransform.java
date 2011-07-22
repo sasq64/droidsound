@@ -92,9 +92,9 @@ public class CursorTransform {
 			}
 			return super.getInt(columnIndex);
 		}
-	};
-	
-	private Map<String, ColTransform> transformMap = new HashMap<String, ColTransform>();
+	}
+
+    private Map<String, ColTransform> transformMap = new HashMap<String, ColTransform>();
 	
 	
 	public void addTransform(String column, int val) {

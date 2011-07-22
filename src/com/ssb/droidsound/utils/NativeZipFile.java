@@ -25,7 +25,7 @@ public class NativeZipFile {
 
 		public void setIndex(int i) { index = i; }
 		public int getIndex() { return index; }
-	};
+	}
 	
 	private long zipRef;	
 	
@@ -97,7 +97,7 @@ public class NativeZipFile {
 			currentIndex++;
 			return entry;
 		}
-	};
+	}
 	
 	public Enumeration<? extends ZipEntry> entries() {
 		return new MyEnumeration(this);

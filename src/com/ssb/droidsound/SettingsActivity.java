@@ -26,14 +26,14 @@ import com.ssb.droidsound.plugins.SidPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.VICEPlugin;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsoundedit.R;
 
 public class SettingsActivity extends PreferenceActivity {
 
 	protected static final String TAG = SettingsActivity.class.getSimpleName();
 	private SongDatabase songDatabase;
 	private boolean doFullScan;
-	private SharedPreferences prefs;
-	private String modsDir;
+    private String modsDir;
 	
 	class AudiopPrefsListener implements OnPreferenceChangeListener {
 		
@@ -61,8 +61,7 @@ public class SettingsActivity extends PreferenceActivity {
 			
 			if(newValue instanceof String) {
 				try {
-					int i = Integer.parseInt((String) newValue);
-					newValue = new Integer(i);
+                    newValue = Integer.parseInt((String) newValue);
 				} catch (NumberFormatException e) {
 				}
 			}
@@ -70,7 +69,7 @@ public class SettingsActivity extends PreferenceActivity {
 			plugin.setOption(k2, newValue);
 			return true;
 		}
-	};
+	}
 	
 
 	@Override
@@ -80,7 +79,7 @@ public class SettingsActivity extends PreferenceActivity {
 		
 		songDatabase = PlayerActivity.songDatabase;
 
-		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
 		
 		String s = prefs.getString("SidPlugin.engine", null);
@@ -301,8 +300,7 @@ public class SettingsActivity extends PreferenceActivity {
 			break;
 		}
 
-		AlertDialog alert = builder.create();
-		return alert;
+        return builder.create();
 	}
 
 	

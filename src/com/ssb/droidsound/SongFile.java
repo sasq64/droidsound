@@ -3,6 +3,7 @@ package com.ssb.droidsound;
 import java.io.File;
 
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsoundedit.R;
 
 public class SongFile {
 
@@ -10,7 +11,7 @@ public class SongFile {
 	private int subtune;
 	private int playtime;
 	private String fileName;
-	
+
 	private File file;
 	private String path;
 	private String prefix;
@@ -18,13 +19,13 @@ public class SongFile {
 	private String midfix;
 	private String zipPath;
 	private String zipName;
-	
+
 	//private String tuneString;
 	private String title;
 	private String composer;
-	
+
 	private String protocol;
-	
+
 	public SongFile(SongFile s) {
 		subtune = s.subtune;
 		playtime = s.playtime;
@@ -40,15 +41,15 @@ public class SongFile {
 		composer = s.composer;
 		protocol = s.protocol;
 	}
-	
+
 	public SongFile(File f) {
 		init(f.getPath());
 	}
-	
+
 	public SongFile(String fname) {
 		init(fname);
 	}
-	
+
 	private void init(String fname) {
 		subtune = -1;
 		playtime = -1;
@@ -59,9 +60,9 @@ public class SongFile {
 			fname = fname.substring(7);
 			protocol = "http://";
 		}
-		
+
 		title = composer = null;
-		
+
 		if(fname.indexOf('\t') >= 0) {
 			String t[] = fname.split("\t");
 			fname = t[0];
@@ -70,25 +71,25 @@ public class SongFile {
 				composer = t[2];
 			}
 		}
-		
+
 		String s[] = fname.split(";");
-		
+
 		fileName = s[0];
-		
+
 		//int sc = fileName.lastIndexOf(';');
 		if(s.length > 1) {
 			if(s.length > 2) {
 				try {
 					playtime = Integer.parseInt(s[2]);
-				} catch (NumberFormatException e) {}					
+				} catch (NumberFormatException e) {}
 			}
 			try {
 				subtune = Integer.parseInt(s[1]);
-			} catch (NumberFormatException e) {}					
+			} catch (NumberFormatException e) {}
 			fileName = s[0];
 		}
 
-		
+
 		int slash = fileName.lastIndexOf('/');
 		if(slash > 0) {
 			path = fileName.substring(0, slash);
@@ -112,48 +113,48 @@ public class SongFile {
 			zipPath = s[0].substring(0, zip+4);
 			zipName = s[0].substring(zip+5);
 		}
-		
+
 		file = new File(path, fileName);
-		
+
 		//Log.d(TAG, "SONGFILE -%s-%s-%s-%s- %d,%d", path, prefix, midfix, suffix, subtune, playtime);
 	}
-	
-	public String getTitle() {
+
+	public final String getTitle() {
 		return title;
 	}
-	
-	public String getComposer() {
+
+	public final String getComposer() {
 		return composer;
 	}
 
-	public String getPrefix() {
+	public final String getPrefix() {
 		return prefix;
 	}
-	
-	public String getSuffix() {
+
+	public final String getSuffix() {
 		return suffix;
 	}
-	
-	public File getFile() {
+
+	public final File getFile() {
 		return file;
 	}
-	
-	public int getSubtune() {
+
+	public final int getSubtune() {
 		return subtune;
 	}
-	
-	public int getPlaytime() {
+
+	public final int getPlaytime() {
 		return playtime;
 	}
-	
-	public void changePrefix(String p) {
+
+	public final void changePrefix(String p) {
 		prefix = p;
-		fileName = prefix + midfix + "suffix"; 
+		fileName = prefix + midfix + "suffix";
 	}
 	
-	public void changeSuffix(String s) {
+	public final void changeSuffix(String s) {
 		suffix = s;
-		fileName = prefix + midfix + "suffix"; 
+		fileName = prefix + midfix + "suffix";
 	}
 
 	public SongFile(File f, int t, String title) {
@@ -163,7 +164,7 @@ public class SongFile {
 		}
 		this.title = title;
 	}
-	
+
 	public SongFile(String song, int t) {
 		init(song);
 		if(t < 0) {
@@ -171,15 +172,15 @@ public class SongFile {
 		}
 	}
 
-	public String getZipPath() {
+	public final String getZipPath() {
 		return zipPath;
 	}
 
-	public String getZipName() {
+	public final String getZipName() {
 		return zipName;
 	}
 
-	public String getPath() {
+	public final String getPath() {
 		if(subtune >= 0) {
 			if(playtime >= 0) {
 				return protocol + path + "/" + fileName + ";" + subtune + ";" + playtime;
@@ -189,42 +190,42 @@ public class SongFile {
 			return protocol + path + "/" + fileName;
 		}
 	}
-	
-	public void setSubTune(int t) {
+
+	public final void setSubTune(int t) {
 		subtune = t;
 	}
 
-	public void setPlayTime(int t) {
+	public final void setPlayTime(int t) {
 		playtime = t;
 	}
 
-	public void setTitle(String t) {
+	public final void setTitle(String t) {
 		title = t;
 	}
 
-	public String getName() {
+	public final String getName() {
 		//return file.getName();
 		return fileName;
 	}
 
-	public boolean exists() {
+	public final boolean exists() {
 		return file.exists();
 	}
-	
 
-	public String getParent() {
+
+	public final String getParent() {
 		return protocol + file.getParent();
 	}
 
-	public boolean isDirectory() {
+	public final boolean isDirectory() {
 		return file.isDirectory();
 	}
 
-	public File[] listFiles() {
+	public final File[] listFiles() {
 		return file.listFiles();
 	}
 
-	public SongFile[] listSongFiles() {
+	public final SongFile[] listSongFiles() {
 		File [] files = file.listFiles();
 		SongFile [] sfiles = new SongFile [files.length];
 		for(int i=0; i<files.length; i++) {
@@ -233,7 +234,7 @@ public class SongFile {
 		return sfiles;
 	}
 
-	public boolean delete() {
+	public final boolean delete() {
 		return file.delete();
 	}
 

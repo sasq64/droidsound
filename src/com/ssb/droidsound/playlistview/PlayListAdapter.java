@@ -14,7 +14,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.ssb.droidsound.R;
+import com.ssb.droidsoundedit.R;
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.utils.Log;
 
@@ -104,7 +104,7 @@ class PlayListAdapter extends BaseAdapter {
 		if(mCursor != null) {
 			mCursor.close();
 		}
-	};
+	}
 	
 	public void close() {
 		if(mCursor != null) {
@@ -232,17 +232,18 @@ class PlayListAdapter extends BaseAdapter {
 			tv1.setVisibility(View.GONE);
 		}
 
-		
+
 		String path = mPathIndex >= 0 ? mCursor.getString(mPathIndex) : null;
-		if(path == null)
+		if(path == null) {
 			path = pathName;
-		
+		}
+
 		String upath = path.toUpperCase();
-		
+
 		String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
-		
+
 		boolean net = path != null && path.startsWith("http:/");
-		
+
 		if(type == SongDatabase.TYPE_FILE) {
 			tv0.setTextColor(itemColor);
 			if(net || ext.equals("M3U") || ext.equals("PLS"))

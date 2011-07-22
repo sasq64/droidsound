@@ -34,7 +34,7 @@ import android.view.KeyEvent;
 
 import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
-import com.ssb.droidsound.R;
+import com.ssb.droidsoundedit.R;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player.SongInfo;
@@ -390,8 +390,8 @@ public class PlayerService extends Service {
                 	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE)) {
                 		playNextSong();
                 	} else {                	
-                    	int pos = (Integer)msg.arg1;
-                    	int buffering = (Integer)msg.arg2;
+                    	int pos = msg.arg1;
+                    	int buffering = msg.arg2;
                     	if(pos >= 0 && buffering >= 0) {
 	                    	info[SONG_BUFFERING] = buffering;
 	                    	info[SONG_POS] = pos;
@@ -406,7 +406,7 @@ public class PlayerService extends Service {
                 	}
     				break;
                 case Player.MSG_STATE:
-                	info[SONG_STATE] = (Integer)msg.arg1;
+                	info[SONG_STATE] = msg.arg1;
                 	
                 	if(msg.arg1 == 0) {
                 		info[SONG_POS] = info[SONG_SUBSONG] = info[SONG_TOTALSONGS] = info[SONG_LENGTH] = 0;
@@ -557,11 +557,13 @@ public class PlayerService extends Service {
     /**
      * This is a wrapper around the new startForeground method, using the older
      * APIs if it is not available.
+     * @param id
+     * @param notification
      */
     void startForegroundCompat(int id, Notification notification) {
         // If we have the new startForeground API, then use it.
         if (mStartForeground != null) {
-            mStartForegroundArgs[0] = Integer.valueOf(id);
+            mStartForegroundArgs[0] = id;
             mStartForegroundArgs[1] = notification;
             try {
                 mStartForeground.invoke(this, mStartForegroundArgs);
@@ -585,6 +587,7 @@ public class PlayerService extends Service {
     /**
      * This is a wrapper around the new stopForeground method, using the older
      * APIs if it is not available.
+     * @param id
      */
     void stopForegroundCompat(int id) {
         // If we have the new stopForeground API, then use it.
@@ -930,30 +933,30 @@ public class PlayerService extends Service {
 					} catch (RemoteException e) {
 						Log.d(TAG, "Ignoring callback because peer is gone");
 						return;
-					}				
+					}
 				}
 			}
 			Log.d(TAG, "Adding %s", cb.toString());
-			callbacks.add(cb);			
+			callbacks.add(cb);
 		}
 
 		@Override
 		public void unRegisterCallback(IPlayerServiceCallback cb)
 				throws RemoteException {
-			
+
 			Log.d(TAG, "Removing %s", cb.toString());
 			callbacks.remove(cb);
 		}
 
-		
+
 		@Override
 		public boolean playPause(boolean play) throws RemoteException {
 			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
 				SongFile s = playQueue.current();
 				if(s != null) {
-	           		info[SONG_FILENAME] = s.getPath(); 		           		
+	           		info[SONG_FILENAME] = s.getPath();
 	           		createThread();
-	    			beforePlay(s.getName());			
+	    			beforePlay(s.getName());
 	           		player.playMod(s);
 	           		return true;
 	    		}
@@ -1018,7 +1021,7 @@ public class PlayerService extends Service {
 			
 			
  			player.setSubSong(song);
-			info[SONG_SUBSONG] = (Integer)song;			
+			info[SONG_SUBSONG] = song;
 			if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
 				info[SONG_REPEAT] = RM_KEEP_PLAYING;
 				performCallback(SONG_REPEAT);

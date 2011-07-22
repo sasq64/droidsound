@@ -31,9 +31,9 @@ public class DBFileSystem {
 			this.contents = contents;
 			this.contentPaths = contentPaths;
 		}
-	};
-	
-	private List<Path> pathList;
+	}
+
+    private List<Path> pathList;
 
 	
 	private String baseName;
@@ -95,9 +95,10 @@ public class DBFileSystem {
 			if(parts[i].startsWith(baseName)) {
 				n -= (i+1);
 				newParts = new String [n];
-				for(int j=0; j<n; j++) {
+				/*for(int j=0; j<n; j++) {
 					newParts[j] = parts[i+j+1];
-				}
+				}*/
+                System.arraycopy(parts, i + 1, newParts, 0, n); //Eliminates manually copying an array
 				break;
 			}
 		}

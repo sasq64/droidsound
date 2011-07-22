@@ -38,8 +38,8 @@ public class Unzipper {
 	
 	private static class UnzipWorker implements Runnable {
 
-		private List<UnzipJob> unzipList = new ArrayList<UnzipJob>();
-		private List<String> doneList = new ArrayList<String>();
+		private final List<UnzipJob> unzipList = new ArrayList<UnzipJob>();
+		private final List<String> doneList = new ArrayList<String>();
 		private Context context;
 		private boolean doQuit;
 		

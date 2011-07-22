@@ -8,6 +8,7 @@ import java.net.Socket;
 
 import android.media.MediaPlayer;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsoundedit.R;
 
 public class LocalMPConnection {
 	private static final String TAG = LocalMPConnection.class.getSimpleName();
@@ -15,25 +16,25 @@ public class LocalMPConnection {
 	private volatile int socketPort;
 	private Socket socket;
 	private String contentType;
-	
+
 	public LocalMPConnection() throws IOException {
 		serverSocket = new ServerSocket(0);
 		socketPort = serverSocket.getLocalPort();
 		contentType = "audio/mpeg";
 	}
-	
-	public void accept() throws IOException {
-		
+
+	public final void accept() throws IOException {
+
 		Log.d(TAG, "Accepting on port %d", socketPort);
 		socket = serverSocket.accept();
-		
+
 		Log.d(TAG, "Accepted");
-		
+
 		OutputStream os = socket.getOutputStream();
 		InputStream is = socket.getInputStream();
 
 		byte [] temp = new byte [2048];
-		
+
 		int bsize = -1;
 		while(bsize <= 0) {
 			bsize = is.read(temp);
@@ -41,34 +42,33 @@ public class LocalMPConnection {
 		}
 		String res = new String(temp, 0, bsize);
 		Log.d(TAG, "Got '%s'", res);
-		
+
 		//Log.d(TAG, "CONTENT TYPE '%s'", contentType);
 
 		String s = String.format("HTTP/1.1 200 OK\r\ncontent-type: %s\r\n\r\n", contentType);
-		os.write(s.getBytes());	
+		os.write(s.getBytes());
 	}
-	
-	
-	public boolean isListening() {
-		return (socketPort >= 0);
+
+
+	public final boolean isListening() {
+        return (socketPort >= 0);
 	}
-	
-	public void write(byte [] buffer, int offset, int size) throws IOException {
+
+	public final void write(byte [] buffer, int offset, int size) throws IOException {
 		socket.getOutputStream().write(buffer, offset, size);
 	}
-	
-	
-	public void connect(MediaPlayer mp) throws IllegalArgumentException, IllegalStateException, IOException {		
+
+	public final void connect(MediaPlayer mp) throws IllegalArgumentException, IllegalStateException, IOException {
 		mp.setDataSource(String.format("http://127.0.0.1:%d/", socketPort));
 	}
 
-	public void close() throws IOException {
+	public final void close() throws IOException {
 		socket.close();
 		serverSocket.close();
-		
+
 	}
 
-	public void setContentType(String ct) {
+	public final void setContentType(String ct) {
 		contentType = ct;
 	}
 

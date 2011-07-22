@@ -1,6 +1,7 @@
 package com.ssb.droidsound.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -69,9 +70,10 @@ public class PlayQueue {
 		musicNames = songs;
 		musicListPos = index;
 		if(musicNames != null) {
-			for(int i=0; i<musicNames.length; i++) {
+			/*for(int i=0; i<musicNames.length; i++) {
 				musicList.add(musicNames[i]);
-			}
+			}*/
+            Collections.addAll(musicList, musicNames); //Removes manual copy of array
 			if(shuffleOn) {
 				shuffle();
 			}
@@ -118,9 +120,10 @@ public class PlayQueue {
 		if(musicNames != null) {
 			Log.d(TAG, "Unshuffling");
 			musicList.clear();
-			for(int i=0; i<musicNames.length; i++) {
+			/*for(int i=0; i<musicNames.length; i++) {
 				musicList.add(musicNames[i]);
-			}
+			}*/
+            Collections.addAll(musicList, musicNames);  //Removes manual coppy of array to collection
 		}
 	}
 	

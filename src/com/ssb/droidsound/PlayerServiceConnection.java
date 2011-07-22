@@ -15,6 +15,7 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsoundedit.R;
 
 public class PlayerServiceConnection implements ServiceConnection {
 	private static final String TAG = PlayerServiceConnection.class.getSimpleName();
@@ -22,7 +23,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 	public static interface Callback {
 		public void stringChanged(int what, String value);
 		public void intChanged(int what, int value);
-	};
+	}
 	
 	protected IPlayerService mService;
 	private String modToPlay;
@@ -35,7 +36,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 			opt = o;
 			arg = a;
 		}
-	};
+	}
 	
 	private List<Opt> options = new ArrayList<Opt>();
 	

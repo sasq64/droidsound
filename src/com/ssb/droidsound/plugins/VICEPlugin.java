@@ -36,17 +36,22 @@ public class VICEPlugin extends DroidSoundPlugin {
 	 * Produces stereo, 44.1Khz, signed, native-encoding shorts.
 	 * 
 	 * @param dest the buffer to fill
+     * @param size
+     * @return
 	 */
 	native private static int N_getSoundData(short[] dest, int size);
 	
 	/**
 	 * Select a subsong.
-	 */
+     * @param tune
+     */
 	native private static boolean N_setTune(int tune);
 	
 	/**
 	 * Set an option from the known #defines.
-	 */
+     * @param what
+     * @param val
+     */
 	native private static void N_setOption(int what, int val);
 	
 	/**
@@ -65,9 +70,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	private static File dataDir;
 
-	private static boolean isActive = false;
-
-	private static boolean initialized = false;
+    private static boolean initialized = false;
 	
 	public VICEPlugin() {
 		if (! initialized) {
@@ -92,8 +95,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 	public void setOption(String opt, Object val) {
 		final int k, v;
 		if (opt.equals("active")) {
-			isActive = (Boolean)val;
-			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (isActive ? "ACTIVE" : "NOT ACTIVE"));
+            boolean active = (Boolean) val;
+			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (active ? "ACTIVE" : "NOT ACTIVE"));
 			return;
 		} else if (opt.equals("filter")) {
 			k = OPT_FILTER;
@@ -138,11 +141,10 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean setTune(int tune) {
-		boolean ok = N_setTune(tune + 1);
-		//if (ok) {
+        //if (ok) {
 		//	currentTune = tune;
 		//}
-		return ok;
+		return N_setTune(tune + 1);
 	}
 
 	@Override

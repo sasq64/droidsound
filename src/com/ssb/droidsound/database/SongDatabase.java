@@ -44,40 +44,29 @@ import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
- * 
+ *
  * SCANNING:
- * 
+ *
  * Enter only directories that have changed since last time Check all files and
  * dirs in directory against database entry. Remove missing, add new Enter new
  * directories regardless of modified.
- * 
+ *
  */
 
 public class SongDatabase implements Runnable {
 	private static final String TAG = SongDatabase.class.getSimpleName();
-	
-	public static final int DB_VERSION = 4;
-	
+	private static final int DB_VERSION = 4;
 	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
-
 	private ScanCallback scanCallback;
-	
 	private Map<String, DataSource> dbsources = new HashMap<String, DataSource>();
-	
 	private SQLiteDatabase scanDb;
 	private SQLiteDatabase rdb;
-	
 	private String dbName;
 	private volatile boolean stopScanning;
-
 	private Context context;
-
 	private volatile Handler mHandler;
-
 	private volatile boolean scanning;
-
 	private volatile boolean isReady;
-
 	private int indexMode = -1;
 	private int lastIndexMode = -1;
 	
@@ -89,13 +78,11 @@ public class SongDatabase implements Runnable {
 	public static final int SORT_TITLE = 0;
 	public static final int SORT_AUHTOR = 1;
 	public static final int SORT_DATE = 2;
-	
-
-	protected static final int MSG_SCAN = 0;
-	protected static final int MSG_OPEN = 1;
+	private static final int MSG_SCAN = 0;
+	private static final int MSG_OPEN = 1;
 	//protected static final int MSG_RESTORE = 2;
 	protected static final int MSG_DOWNLOAD = 3;
-	protected static final int MSG_QUIT = 4;
+	private static final int MSG_QUIT = 4;
 	protected static final int MSG_INDEXMODE = 5;
 	
 	public static final int INDEX_NONE = 0;
@@ -103,12 +90,12 @@ public class SongDatabase implements Runnable {
 	public static final int INDEX_FULL = 2;
 
 	
-	public boolean isReady() {
+	public final boolean isReady() {
 		return  (mHandler != null);
 	}
 	
-	public SongDatabase(Context ctx) {		
-		context = ctx;		
+	public SongDatabase(Context ctx) {
+		context = ctx;
 	}
 	
 	private SQLiteDatabase getReadableDatabase() {
@@ -142,14 +129,14 @@ public class SongDatabase implements Runnable {
 	}
 /*
 	private volatile String cancelUrl;
-	
-	
+
+
 	private boolean downloadURL(String ref, File target) throws IOException, InterruptedException {
-		
+	
 		URL url = new URL(ref);
-		
+	
 		Log.d(TAG, "Opening URL " + ref);
-		
+	
 		URLConnection conn = url.openConnection();
 		if (!(conn instanceof HttpURLConnection))
 			throw new IOException("Not a HTTP connection");
@@ -200,20 +187,17 @@ public class SongDatabase implements Runnable {
 						return false;
 					}
 				}
-				
-				
-				
+
+
+
 			}
 			bos.flush();
 			bos.close();
-			
 			return true;
 		}
 		return false;
-		
 	}
-	
-	
+
 	private List<String> dlList = new ArrayList<String>();
 	private String targetDir = "/sdcard/MODS";
 
@@ -227,12 +211,12 @@ public class SongDatabase implements Runnable {
 				if(dlList.size() < 1) {
 					break;
 				}
-				url = dlList.get(0);				
+				url = dlList.get(0);
 				f = new File(url);
-				dlList.remove(0);			
+				dlList.remove(0);
 			}
 			
-			File target = new File(targetDir, f.getName() + ".temp");		
+			File target = new File(targetDir, f.getName() + ".temp");
 			try {
 				if(downloadURL(url, target)) {
 					File nf = new File(targetDir, f.getName());
@@ -483,41 +467,43 @@ public class SongDatabase implements Runnable {
 			case INDEX_FULL:
 				db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
 				db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
-				db.execSQL("CREATE INDEX IF NOT EXISTS composerindex ON FILES (COMPOSER) ;");;
+				db.execSQL("CREATE INDEX IF NOT EXISTS composerindex ON FILES (COMPOSER) ;");
 				db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
+				break;
+			default:
 				break;
 			}
 			
-			for(Entry<String, DataSource> ds : dbsources.entrySet()) {			
-				ds.getValue().createIndex(indexMode, db);			
+			for(Entry<String, DataSource> ds : dbsources.entrySet()) {
+				ds.getValue().createIndex(indexMode, db);
 			}
 			
 			//if(scanCallback != null) {
 			//	scanCallback.notifyScan(null, -1);
 			//}
-			
+
 			//db.close();
-			
+
 			//scanning = false;
-			
-			//indexMode = mode; 
+
+			//indexMode = mode;
 		//}
 	}
-	
-	
-	private boolean scanZip(File zipFile) throws ZipException, IOException {
-		
+
+
+	private boolean scanZip(File zipFile) throws IOException {
+
 		Log.d(TAG, "Scanning %s", zipFile.getPath());
-		
+
 		// Erase any previous entries
-		scanDb.delete("FILES", "PATH=?", new String [] { zipFile.getPath() });		
-		scanDb.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
-		
+		scanDb.delete("FILES", "PATH=?", new String [] { zipFile.getPath() });
+		scanDb.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });
+
 		Log.d(TAG, "OPEN");
-		//ZipFile zfile = new ZipFile(zipFile);		
+		//ZipFile zfile = new ZipFile(zipFile);
 		NativeZipFile zfile = new NativeZipFile(zipFile);
 		Log.d(TAG, "ENTRY");
-		
+
 		String baseNameNoSlash = zipFile.getPath();
 		String baseName = zipFile.getPath() + "/";
 		// Basename = /sdcard/MODS/C64Music.zip/
@@ -525,17 +511,17 @@ public class SongDatabase implements Runnable {
 		//ZipEntry infoe = zfile.getEntry("C64Music/DOCUMENTS/Songlengths.txt");
 		//if(infoe != null) {
 		//	HVSCParser.parseSongLengths(zfile.getInputStream(infoe), scanDb);
-		//}		
-		
+		//}
+
 		Log.d(TAG, "ENUM");
 		Enumeration<? extends ZipEntry> entries = zfile.entries();
-		
+
 		Set<String> pathSet = new HashSet<String>();
-		
+
 		Log.d(TAG, "Scanning %d zip entries", zfile.size());
 		int count = 0;
 		int total = zfile.size();
-		
+
 		int reportPeriod = total / 100;
 		if(reportPeriod < 100) {
 			reportPeriod = 100;
@@ -544,18 +530,17 @@ public class SongDatabase implements Runnable {
 		ContentValues values = new ContentValues();
 		//values.put("LENGTH", 0);
 		values.put("TYPE", TYPE_FILE);
-				
+
 		while(entries.hasMoreElements()) {
-			
 			if(stopScanning) {
 				zfile.close();
 				return false;
 			}
-			
+
 			ZipEntry ze = entries.nextElement();
-			
-			String n = ze.getName();			
-			int slash = n.lastIndexOf('/');				
+
+			String n = ze.getName();
+			int slash = n.lastIndexOf('/');
 			String fileName = n.substring(slash+1);
 			String path;
 			if(slash >= 0) {
@@ -567,13 +552,11 @@ public class SongDatabase implements Runnable {
 			if(fileName.equals("")) {
 				pathSet.add(path);
 			} else {
-									
 				InputStream is = zfile.getInputStream(ze);
 				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, is);
 				is.close();
-	
+
 				if(info != null) {
-					
 					// NOTE: Fix for strange zip archives that does not contain directories
 					//if(!pathSet.contains(path))
 					//	pathSet.add(path);
@@ -597,47 +580,45 @@ public class SongDatabase implements Runnable {
 						scanCallback.notifyScan(null, count * 100 / total);
 					}
 				}
-					
 				//if(count == 4000)
 				//	break;
-			}			
+			}
 		}
-		
+
 		zfile.close();
 
 		Log.d(TAG, "Adding %d paths", pathSet.size());
-		
+
 		values.clear();
 		values.put("TYPE", TYPE_DIR);
 		for(String s : pathSet) {
 			//ContentValues values = new ContentValues();
-			
+
 			int slash = s.lastIndexOf('/');
 			String fileName = s.substring(slash+1);
 			String path = s.substring(0, slash);
-			
+
 			values.put("PATH", path);
 			values.put("FILENAME", fileName);
 			scanDb.insert("FILES", "PATH", values);
 		}
-		
 		return true;
-		
 	}
-	
+
 	private void scanFiles(File parentDir, boolean alwaysScan, long lastScan) {
-		
+
 		String parent = parentDir.getPath();
 		String[] parentArray = new String[] { parent };
-		
+
 		if(stopScanning) {
 			return;
 		}
-		
+
 		boolean hasChanged = (lastScan < parentDir.lastModified());
-		if(alwaysScan)
+		if(alwaysScan) {
 			hasChanged = true;
-		
+		}
+
 		Log.d(TAG, "Entering '%s', lastScan %d", parent, lastScan);
 		if(hasChanged) {
 			Log.d(TAG, ">> Doing FULL scan");

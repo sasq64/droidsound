@@ -14,9 +14,9 @@ public class CueFile {
 		public String performer;
 		public String title;
 		public int offset;
-	};
-	
-	private List<Track> tracks;
+	}
+
+    private List<Track> tracks;
 	private Track currentTrack;
 
 	public CueFile(File file) {

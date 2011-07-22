@@ -58,7 +58,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		
 		int n = 0;
 		
-		for(int k=0; k<s.length; k++) {
+		/*for(int k=0; k<s.length; k++) {
 			String d [] = s[k].split("\\s+");
 			
 			for(int i=0; i<d.length; i++) {
@@ -118,7 +118,67 @@ public class ModPlugin extends DroidSoundPlugin {
 			if(n >= t.length - 5)
 				break;
 
-		}
+		}*/
+
+        for (String value : s) {  //Replaced above with a foreach loop
+            String d[] = value.split("\\s+");
+
+            for (String aD : d) {
+                //Log.d(TAG, d[i]);
+
+                if (n >= t.length - 6)
+                    break;
+
+                String x = "";
+                if (aD.equals("/")) {
+                    //Log.d(TAG, "/BY/");
+                    x = "/";
+                } else if (aD.equals("&") || aD.equals("&")) {
+                    x = "and";
+                } else if (aD.length() > 1) {
+
+                    if (aD.endsWith("/")) {
+                        x = aD.replaceAll("^[^\\w]*", "");
+                    } else if (aD.startsWith("/")) {
+                        x = aD.replaceAll("[^\\w]*$", "");
+                    } else {
+                        x = aD.replaceAll("^[^\\w]*", "").replaceAll("[^\\w]*$", "");
+                    }
+                    //Log.d(TAG, "'%s' '%s'", t[i], x);
+                }
+
+                if (x.length() > 0) {
+
+                    int plus = x.indexOf('&');
+                    if (plus == -1) {
+                        plus = x.indexOf('+');
+                    }
+
+                    if (plus > 0) {
+                        t[n++] = x.substring(0, plus);
+                        t[n++] = "and";
+                        x = x.substring(plus + 1);
+                    }
+
+                    int slash = x.indexOf('/');
+
+                    if (slash >= 0) {
+                        t[n++] = x.substring(0, slash);
+                        t[n++] = "/";
+                        x = x.substring(slash + 1);
+                    }
+
+                    t[n++] = x;
+                }
+            }
+
+
+            t[n++] = "EOL";
+
+            if (n >= t.length - 5)
+                break;
+
+        }
 				
 		
 		String author [] = new String [4];
