@@ -199,4 +199,3 @@ char *findpath(const char *cmd, const char *syspath, int mode)
 }
 
 #endif /* __riscos */
-

@@ -327,4 +327,3 @@ unsigned int cbmdos_command_parse(cbmdos_cmd_parse_t *cmd_parse)
 
     return CBMDOS_IPE_OK;
 }
-

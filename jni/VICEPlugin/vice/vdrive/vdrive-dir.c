@@ -11,7 +11,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -485,4 +485,3 @@ int vdrive_dir_create_directory(vdrive_t *vdrive, const char *name,
 
     return (int)(l - origptr);
 }
-
