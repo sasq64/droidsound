@@ -455,7 +455,7 @@ protected:
     unsigned short gain[16][1 << 16];
     unsigned short mixer[mixer_offset<8>::value];
     // Cutoff frequency DAC output voltage table. FC is an 11 bit register.
-    unsigned short f0_dac[1 << 11]; //CHANGE BACK TO UNSIGNED INT IF ERRORS OCCUR
+    unsigned short f0_dac[1 << 11];
     // Op-amp transfer function.
     int opamp[1 << 19];
   } model_filter_t;
@@ -464,8 +464,8 @@ protected:
   int solve_integrate_6581(int dt, int vi_t, int& x, int& vc, model_filter_t& mf);
 
   // VCR - 6581 only.
-  static int vcr_Vg[1 << 16];
-  static int vcr_n_Ids[1 << 16];
+  static unsigned short vcr_Vg[1 << 16];
+  static unsigned short vcr_n_Ids[1 << 16];
   // Common parameters.
   static model_filter_t model_filter[2];
 
@@ -1474,7 +1474,7 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
 
   // VCR gate voltage.       // Scaled by m*2^19
   // Vg = Vddt - sqrt(Vddt*(Vddt - Vw - Vi) + (Vw*Vw + Vi*Vi)/2)
-  int Vg = vcr_Vg[(Vw_term + (vi >> 4)*(((vi >> 1) - Vddt) >> 4)) >> 14];
+  int Vg = vcr_Vg[(Vw_term + (vi >> 4)*(((vi >> 1) - Vddt) >> 4)) >> 14] << 3;
 
   // Determine the direction of the current flowing through the VCR and
   // the "snake" transistor.
@@ -1495,7 +1495,7 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
 
       // Term for subthreshold mode / saturation mode.
       // Scaled by (1/m)*2^9*m*2^19*m*2^19*2^-4*2^-4*2^-12*2^-8 = m*2^19
-      n_I += vcr_n_Ids[Vgs >> 3];
+      n_I += vcr_n_Ids[Vgs >> 3] << 3;
 
       int Vgdt = Vgs - Vds - mf.Vth;
       if (Vgdt > 0) {
@@ -1520,7 +1520,7 @@ int Filter::solve_integrate_6581(int dt, int vi_n, int& x, int& vc,
     int n_I = n_snake*((((Vov_snake << 1) - Vds) >> 4)*(Vds >> 4) >> 12) >> 18;
 
     if (Vgs > 0) {
-      n_I += vcr_n_Ids[Vgs >> 3];
+      n_I += vcr_n_Ids[Vgs >> 3] << 3;
 
       int Vgdt = Vgs - Vds - mf.Vth;
       if (Vgdt > 0) {
