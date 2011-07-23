@@ -577,6 +577,7 @@ int resources_set_int_sprintf(const char *name, int value, ...)
 
     va_start(args, value);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_set_int(resname, value);
     lib_free(resname);
@@ -592,6 +593,7 @@ int resources_set_string_sprintf(const char *name, const char *value, ...)
 
     va_start(args, value);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_set_string(resname, value);
     lib_free(resname);
@@ -722,6 +724,7 @@ int resources_get_int_sprintf(const char *name, int *value_return, ...)
 
     va_start(args, value_return);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_get_int(resname, value_return);
     lib_free(resname);
@@ -738,6 +741,7 @@ int resources_get_string_sprintf(const char *name, const char **value_return,
 
     va_start(args, value_return);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_get_string(resname, value_return);
     lib_free(resname);
@@ -1064,11 +1068,7 @@ int resources_load(const char *fname)
     if (resource_modified_callback != NULL)
         resources_exec_callback_chain(resource_modified_callback, NULL);
 
-#ifdef DINGOO_NATIVE
-    return 0;
-#else
     return err ? RESERR_FILE_INVALID : 0;
-#endif
 }
 
 

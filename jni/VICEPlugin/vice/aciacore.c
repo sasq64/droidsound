@@ -1,9 +1,9 @@
 /*! \file aciacore.c \n
- *  \author André Fachat, Spiro Trikaliotis\n
+ *  \author Andr? Fachat, Spiro Trikaliotis\n
  *  \brief  Template file for ACIA 6551 emulation.
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Spiro Trikaliotis <spiro.trikaliotis@gmx.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -443,12 +443,16 @@ static void set_acia_ticks(void)
 */
 static int acia_set_mode(int new_mode, void *param)
 {
-    if (new_mode < ACIA_MODE_LOWEST || new_mode > ACIA_MODE_HIGHEST)
+    if (new_mode < ACIA_MODE_LOWEST || new_mode > ACIA_MODE_HIGHEST) {
         return -1;
+    }
+
+    if (myacia_set_mode(new_mode) == 0 && new_mode != ACIA_MODE_LOWEST) {
+        return -1;
+    }
 
     acia.mode = new_mode;
     set_acia_ticks();
-
     return 0;
 }
 
@@ -1180,6 +1184,6 @@ static void int_acia_rx(CLOCK offset, void *data)
 
 int acia_dump(void *acia_context)
 {
-    /* FIXME: dump details using mod_out(), return 0 on success */
+    /* FIXME: dump details using mon_out(), return 0 on success */
     return -1;
 }

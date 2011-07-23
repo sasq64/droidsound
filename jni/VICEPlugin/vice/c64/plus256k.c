@@ -41,6 +41,7 @@
 #include "log.h"
 #include "machine.h"
 #include "mem.h"
+#include "monitor.h"
 #include "plus256k.h"
 #include "plus60k.h"
 #include "resources.h"
@@ -51,6 +52,7 @@
 #include "uiapi.h"
 #include "util.h"
 #include "vicii.h"
+#include "vicii-mem.h"
 
 /* PLUS256K registers */
 static BYTE plus256k_reg = 0;
@@ -71,6 +73,75 @@ static int plus256k_protected = 0;
 static char *plus256k_filename = NULL;
 
 BYTE *plus256k_ram = NULL;
+
+/* ------------------------------------------------------------------------- */
+
+static BYTE plus256k_peek(WORD addr)
+{
+    return plus256k_reg;
+}
+
+static BYTE plus256k_ff_read(WORD addr)
+{
+    return 0xff;
+}
+
+static int plus256k_dump(void)
+{
+    mon_out("$0000-$0FFF bank: %d\n", plus256k_low_bank);
+    mon_out("$1000-$FFFF bank: %d\n", plus256k_high_bank);
+    mon_out("VICII-bank : %d\n", plus256k_video_bank);
+    mon_out("Register protection: %s\n", (plus256k_protected) ? "on" : "off");
+    return 0;
+}
+
+static void plus256k_vicii_store(WORD addr, BYTE value)
+{
+    int new_bank;
+
+    if (plus256k_protected == 0) {
+        plus256k_reg = value;
+        plus256k_high_bank = (value & 0xc0) >> 6;
+        plus256k_low_bank = value & 3;
+        plus256k_protected = (value & 0x10) >> 4;
+        new_bank = (value & 0xc) >> 2;
+        if (new_bank != plus256k_video_bank) {
+            vicii_set_ram_base(plus256k_ram + (new_bank * 0x10000));
+            plus256k_video_bank = new_bank;
+        }
+    }
+}
+
+static io_source_t vicii_d000_device = {
+    "VIC-II",
+    IO_DETACH_CART, /* dummy */
+    NULL,           /* dummy */
+    0xd000, 0xd0ff, 0x3f,
+    1, /* read is always valid */
+    vicii_store,
+    vicii_read,
+    vicii_peek,
+    vicii_dump,
+    0, /* dummy (not a cartridge) */
+    1 /* priority, device and mirrors never involved in collisions */
+};
+
+static io_source_t vicii_d100_device = {
+    "+256K",
+    IO_DETACH_RESOURCE,
+    "PLUS256K",
+    0xd100, 0xd1ff, 1,
+    1, /* read is always valid */
+    plus256k_vicii_store,
+    plus256k_ff_read,
+    plus256k_peek,
+    plus256k_dump,
+    CARTRIDGE_PLUS256K,
+    0
+};
+
+static io_source_list_t *vicii_d000_list_item = NULL;
+static io_source_list_t *vicii_d100_list_item = NULL;
 
 static int set_plus256k_enabled(int val, void *param)
 {
@@ -207,14 +278,17 @@ static int plus256k_activate(void)
             if (util_file_save(plus256k_filename, plus256k_ram, 0x40000) < 0) {
                 log_message(plus256k_log, "Creating PLUS256K image %s failed.", plus256k_filename);
                 return -1;
+            } else {
+                log_message(plus256k_log, "Creating PLUS256K image %s.", plus256k_filename);
             }
-            log_message(plus256k_log, "Creating PLUS256K image %s.", plus256k_filename);
-            return 0;
         }
         log_message(plus256k_log, "Reading PLUS256K image %s.", plus256k_filename);
     }
     plus256k_reset();
     set_cpu_lines_lock(CPU_LINES_PLUS256K, "PLUS256K");
+    c64io_vicii_deinit();
+    vicii_d000_list_item = c64io_register(&vicii_d000_device);
+    vicii_d100_list_item = c64io_register(&vicii_d100_device);
     return 0;
 }
 
@@ -231,6 +305,17 @@ static int plus256k_deactivate(void)
     lib_free(plus256k_ram);
     plus256k_ram = NULL;
     remove_cpu_lines_lock();
+
+    if (vicii_d000_list_item != NULL) {
+        c64io_unregister(vicii_d000_list_item);
+        vicii_d000_list_item = NULL;
+    }
+
+    if (vicii_d100_list_item != NULL) {
+        c64io_unregister(vicii_d100_list_item);
+        vicii_d100_list_item = NULL;
+    }
+    c64io_vicii_init();
     return 0;
 }
 
@@ -242,37 +327,6 @@ void plus256k_shutdown(void)
 }
 
 /* ------------------------------------------------------------------------- */
-
-BYTE plus256k_vicii_read(WORD addr)
-{
-    return 0xff;
-}
-
-BYTE plus256k_vicii_read0(WORD addr)
-{
-    return addr >> 8;
-}
-
-void plus256k_vicii_store(WORD addr, BYTE value)
-{
-    int new_bank;
-
-    if (plus256k_protected == 0) {
-        plus256k_reg = value;
-        plus256k_high_bank = (value & 0xc0) >> 6;
-        plus256k_low_bank = value & 3;
-        plus256k_protected = (value & 0x10) >> 4;
-        new_bank = (value & 0xc) >> 2;
-        if (new_bank != plus256k_video_bank) {
-            vicii_set_ram_base(plus256k_ram + (new_bank * 0x10000));
-            plus256k_video_bank = new_bank;
-        }
-    }
-}
-
-void plus256k_vicii_store0(WORD addr, BYTE value)
-{
-}
 
 void plus256k_ram_low_store(WORD addr, BYTE value)
 {

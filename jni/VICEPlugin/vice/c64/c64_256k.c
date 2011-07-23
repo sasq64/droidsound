@@ -40,6 +40,7 @@
 #include "log.h"
 #include "machine.h"
 #include "mem.h"
+#include "monitor.h"
 #include "plus256k.h"
 #include "plus60k.h"
 #include "resources.h"
@@ -152,6 +153,15 @@ static void c64_256k_store(WORD addr, BYTE byte)
     }
 }
 
+static int c64_256k_dump(void)
+{
+    mon_out("$0000-$3FFF segment: %d\n", c64_256k_segment0);
+    mon_out("$4000-$7FFF segment: %d\n", c64_256k_segment1);
+    mon_out("$8000-$BFFF segment: %d\n", c64_256k_segment2);
+    mon_out("$C000-$FFFF segment: %d\n", c64_256k_segment3);
+    return 0;
+}
+
 /* ---------------------------------------------------------------------*/
 
 static io_source_t c64_256k_device = {
@@ -161,7 +171,11 @@ static io_source_t c64_256k_device = {
     0xdf80, 0xdfff, 0x7f,
     1, /* read is always valid */
     c64_256k_store,
-    c64_256k_read
+    c64_256k_read,
+    c64_256k_read,
+    c64_256k_dump,
+    CARTRIDGE_C64_256K,
+    0
 };
 
 static io_source_list_t *c64_256k_list_item = NULL;
