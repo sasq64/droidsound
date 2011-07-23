@@ -83,11 +83,6 @@ static int refresh_rate;
 /* "Warp mode".  If nonzero, attempt to run as fast as possible. */
 static int warp_mode_enabled;
 
-/* Dingoo overclocking mode */
-#ifdef DINGOO_NATIVE
-static int overclock_mode_enabled;
-#endif
-
 static int set_relative_speed(int val, void *param)
 {
     relative_speed = val;
@@ -117,12 +112,17 @@ static int set_warp_mode(int val, void *param)
 }
 
 #ifdef DINGOO_NATIVE
+
+
+static int overclock_mode_enabled = 1;
+
 static int set_overclock_mode(int val, void *param)
 {
     overclock_mode_enabled = val;
     set_overclock(val);
     return 0;
 }
+
 #endif
 
 /* Vsync-related resources. */
@@ -598,4 +598,3 @@ void vsyncarch_prepare_vbl(void)
 #endif /* WIN32 || HAVE_OPENGL_SYNC */
 
 #endif
-

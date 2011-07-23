@@ -82,18 +82,18 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
         vicii.screen_height = VICII_NTSC_SCREEN_HEIGHT;
         switch (border_mode) {
           default:
-          case VICII_NORMAL_BORDERS:
-#ifdef DINGOO_NATIVE
+	#ifdef DINGOO_NATIVE
             vicii.screen_leftborderwidth = VICII_SCREEN_TINY_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_TINY_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_TINY_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_TINY_LAST_DISPLAYED_LINE;
-#else
+	    break;
+	#else
+          case VICII_NORMAL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_NTSC_NORMAL_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_NTSC_NORMAL_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_NTSC_NORMAL_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_NTSC_NORMAL_LAST_DISPLAYED_LINE;
-#endif
             break;       
           case VICII_FULL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_NTSC_FULL_LEFTBORDERWIDTH;
@@ -107,6 +107,7 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.first_displayed_line = VICII_NTSC_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_NTSC_DEBUG_LAST_DISPLAYED_LINE;
             break;
+	#endif
         }
         vicii.cycles_per_line = VICII_NTSC_CYCLES_PER_LINE;
         vicii.draw_cycle = VICII_NTSC_DRAW_CYCLE;
@@ -117,18 +118,18 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
         vicii.screen_height = VICII_NTSCOLD_SCREEN_HEIGHT;
         switch (border_mode) {
           default:
-          case VICII_NORMAL_BORDERS:
-#ifdef DINGOO_NATIVE
+	#ifdef DINGOO_NATIVE
             vicii.screen_leftborderwidth = VICII_SCREEN_TINY_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_TINY_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_TINY_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_TINY_LAST_DISPLAYED_LINE;
-#else
+	    break;
+	#else
+          case VICII_NORMAL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_NTSCOLD_NORMAL_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_NTSCOLD_NORMAL_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_NTSCOLD_NORMAL_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_NTSCOLD_NORMAL_LAST_DISPLAYED_LINE;
-#endif
             break;
           case VICII_FULL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_NTSCOLD_FULL_LEFTBORDERWIDTH;
@@ -142,6 +143,7 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.first_displayed_line = VICII_NTSCOLD_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_NTSCOLD_DEBUG_LAST_DISPLAYED_LINE;
             break;
+	#endif
         }
         vicii.cycles_per_line = VICII_NTSCOLD_CYCLES_PER_LINE;
         vicii.draw_cycle = VICII_NTSCOLD_DRAW_CYCLE;
@@ -152,18 +154,18 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
         vicii.screen_height = VICII_PALN_SCREEN_HEIGHT;
         switch (border_mode) {
           default:
-          case VICII_NORMAL_BORDERS:
-#ifdef DINGOO_NATIVE
+	#ifdef DINGOO_NATIVE
             vicii.screen_leftborderwidth = VICII_SCREEN_TINY_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_TINY_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_TINY_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_TINY_LAST_DISPLAYED_LINE;
-#else
+	    break;
+	#else
+          case VICII_NORMAL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_PALN_NORMAL_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_PALN_NORMAL_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_PALN_NORMAL_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_PALN_NORMAL_LAST_DISPLAYED_LINE;
-#endif
             break;
           case VICII_FULL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_PALN_FULL_LEFTBORDERWIDTH;
@@ -177,6 +179,7 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.first_displayed_line = VICII_PALN_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_PALN_DEBUG_LAST_DISPLAYED_LINE;
             break;
+	#endif
         }
         vicii.cycles_per_line = VICII_PALN_CYCLES_PER_LINE;
         vicii.draw_cycle = VICII_PALN_DRAW_CYCLE;
@@ -188,18 +191,18 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
         vicii.screen_height = VICII_PAL_SCREEN_HEIGHT;
         switch (border_mode) {
           default:
-          case VICII_NORMAL_BORDERS:
-#ifdef DINGOO_NATIVE
+	#ifdef DINGOO_NATIVE
             vicii.screen_leftborderwidth = VICII_SCREEN_TINY_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_TINY_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_TINY_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_TINY_LAST_DISPLAYED_LINE;
-#else
+	    break;
+	#else
+          case VICII_NORMAL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_PAL_NORMAL_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_PAL_NORMAL_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_PAL_NORMAL_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_PAL_NORMAL_LAST_DISPLAYED_LINE;
-#endif
             break;
           case VICII_FULL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_PAL_FULL_LEFTBORDERWIDTH;
@@ -213,6 +216,7 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.first_displayed_line = VICII_PAL_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_PAL_DEBUG_LAST_DISPLAYED_LINE;
             break;
+	#endif
         }
         vicii.cycles_per_line = VICII_PAL_CYCLES_PER_LINE;
         vicii.draw_cycle = VICII_PAL_DRAW_CYCLE;

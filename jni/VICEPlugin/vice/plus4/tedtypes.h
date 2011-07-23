@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef VICE_TEDTYPES_H
-#define VICE_TEDTYPES_H
+#ifndef _TEDTYPES_H
+#define _TEDTYPES_H
 
 #include "raster.h"
 #include "types.h"
@@ -398,4 +398,3 @@ extern void ted_delay_oldclk(CLOCK num);
 #endif
 
 #endif
-

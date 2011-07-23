@@ -38,4 +38,3 @@ extern void catweaselmkiii_set_machine_parameter(long cycles_per_sec);
 extern int catweaselmkiii_available(void);
 
 #endif
-

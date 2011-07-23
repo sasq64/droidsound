@@ -94,7 +94,6 @@ void SID::reset()
 
 // ----------------------------------------------------------------------------
 // Write 16-bit sample to audio input.
-// NB! The caller is responsible for keeping the value within 16 bits.
 // Note that to mix in an external audio signal, the signal should be
 // resampled to 1MHz first to avoid sampling noise.
 // ----------------------------------------------------------------------------
@@ -102,14 +101,6 @@ void SID::input(short sample)
 {
   // The input can be used to simulate the MOS8580 "digi boost" hardware hack.
   filter.input(sample);
-}
-
-// ----------------------------------------------------------------------------
-// Read 16-bit sample from audio output.
-// ----------------------------------------------------------------------------
-short SID::output()
-{
-  return extfilt.output();
 }
 
 
@@ -172,7 +163,6 @@ void SID::write(reg8 offset, reg8 value)
 // ----------------------------------------------------------------------------
 // Write registers.
 // ----------------------------------------------------------------------------
-RESID_INLINE
 void SID::write()
 {
   switch (write_address) {
@@ -634,51 +624,6 @@ void SID::adjust_sampling_frequency(double sample_freq)
 
 
 // ----------------------------------------------------------------------------
-// SID clocking - 1 cycle.
-// ----------------------------------------------------------------------------
-void SID::clock()
-{
-  int i;
-
-  // Clock amplitude modulators.
-  for (i = 0; i < 3; i++) {
-    voice[i].envelope.clock();
-  }
-
-  // Clock oscillators.
-  for (i = 0; i < 3; i++) {
-    voice[i].wave.clock();
-  }
-
-  // Synchronize oscillators.
-  for (i = 0; i < 3; i++) {
-    voice[i].wave.synchronize();
-  }
-
-  // Calculate waveform output.
-  for (i = 0; i < 3; i++) {
-    voice[i].wave.set_waveform_output();
-  }
-
-  // Clock filter.
-  filter.clock(voice[0].output(), voice[1].output(), voice[2].output());
-
-  // Clock external filter.
-  extfilt.clock(filter.output());
-
-  // Pipelined writes on the MOS8580.
-  if (unlikely(write_pipeline)) {
-    write();
-  }
-
-  // Age bus value.
-  if (unlikely(!--bus_value_ttl)) {
-    bus_value = 0;
-  }
-}
-
-
-// ----------------------------------------------------------------------------
 // SID clocking - delta_t cycles.
 // ----------------------------------------------------------------------------
 void SID::clock(cycle_count delta_t)
@@ -801,10 +746,10 @@ int SID::clock(cycle_count& delta_t, short* buf, int n, int interleave)
   }
 }
 
+
 // ----------------------------------------------------------------------------
 // SID clocking with audio sampling - delta clocking picking nearest sample.
 // ----------------------------------------------------------------------------
-RESID_INLINE
 int SID::clock_fast(cycle_count& delta_t, short* buf, int n,
 		    int interleave)
 {
@@ -842,7 +787,6 @@ int SID::clock_fast(cycle_count& delta_t, short* buf, int n,
 // external filter attenuates frequencies above 16kHz, thus reducing
 // sampling noise.
 // ----------------------------------------------------------------------------
-RESID_INLINE
 int SID::clock_interpolate(cycle_count& delta_t, short* buf, int n,
 			   int interleave)
 {
@@ -915,7 +859,6 @@ int SID::clock_interpolate(cycle_count& delta_t, short* buf, int n,
 // NB! the result of right shifting negative numbers is really
 // implementation dependent in the C++ standard.
 // ----------------------------------------------------------------------------
-RESID_INLINE
 int SID::clock_resample(cycle_count& delta_t, short* buf, int n,
 			int interleave)
 {
@@ -993,7 +936,6 @@ int SID::clock_resample(cycle_count& delta_t, short* buf, int n,
 // ----------------------------------------------------------------------------
 // SID clocking with audio sampling - cycle based with audio resampling.
 // ----------------------------------------------------------------------------
-RESID_INLINE
 int SID::clock_resample_fastmem(cycle_count& delta_t, short* buf, int n,
 				int interleave)
 {
