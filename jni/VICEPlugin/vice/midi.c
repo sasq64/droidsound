@@ -5,7 +5,7 @@
  *  Hannu Nuotio <hannu.nuotio@tut.fi>
  *
  * Based on code by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -452,6 +452,8 @@ static void int_midi(CLOCK offset, void *data)
     alarm_active = 1;
 }
 
+#endif
+
 /* ---------------------------------------------------------------------*/
 /*    snapshot support functions                                             */
 
@@ -508,4 +510,3 @@ int midi_snapshot_read_module(snapshot_t *s)
     return 0;
 #endif
 }
-#endif

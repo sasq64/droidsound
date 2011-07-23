@@ -101,27 +101,22 @@ int c64_midi_cart_enabled(void)
 {
     return midi_enabled;
 }
-
 int c64_midi_seq_cart_enabled(void)
 {
     return midi_enabled && (export_res.cartid == CARTRIDGE_MIDI_SEQUENTIAL);
 }
-
 int c64_midi_pp_cart_enabled(void)
 {
     return midi_enabled && (export_res.cartid == CARTRIDGE_MIDI_PASSPORT);
 }
-
 int c64_midi_datel_cart_enabled(void)
 {
     return midi_enabled && (export_res.cartid == CARTRIDGE_MIDI_DATEL);
 }
-
 int c64_midi_nsoft_cart_enabled(void)
 {
     return midi_enabled && (export_res.cartid == CARTRIDGE_MIDI_NAMESOFT);
 }
-
 int c64_midi_maplin_cart_enabled(void)
 {
     return midi_enabled && (export_res.cartid == CARTRIDGE_MIDI_MAPLIN);
@@ -176,7 +171,6 @@ int c64_midi_enable(void)
 {
     return resources_set_int("MIDIEnable", 1);
 }
-
 void c64_midi_detach(void)
 {
     resources_set_int("MIDIEnable", 0);

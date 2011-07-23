@@ -1428,4 +1428,3 @@ void tap_init(const tape_init_t *init)
     tap_pulse_long_min = init->pulse_long_min / 8;
     tap_pulse_long_max = init->pulse_long_max / 8;
 }
-
