@@ -20,7 +20,7 @@
 #ifndef RESID_EXTFILT_H
 #define RESID_EXTFILT_H
 
-#include "resid-config.h"
+#include "siddefs.h"
 
 namespace reSID
 {
@@ -45,12 +45,12 @@ public:
 
   void enable_filter(bool enable);
 
-  void clock(short Vi);
-  void clock(cycle_count delta_t, short Vi);
+  RESID_INLINE void clock(short Vi);
+  RESID_INLINE void clock(cycle_count delta_t, short Vi);
   void reset();
 
   // Audio output (16 bits).
-  short output();
+  RESID_INLINE short output();
 
 protected:
   // Filter enabled.

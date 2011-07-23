@@ -364,13 +364,6 @@ static void printinfo(char *name)
     exit (0);
 }
 
-static void checkarg(char *arg)
-{
-    if (arg == NULL) {
-        usage();
-    }
-}
-
 static int checkflag(char *flg, char *arg)
 {
     int i;
@@ -383,7 +376,6 @@ static int checkflag(char *flg, char *arg)
             repair_mode = 1;
             return 1;
         case 'o':
-            checkarg(arg);
             if (output_filename == NULL) {
                 output_filename = strdup(arg);
             } else {
@@ -391,7 +383,6 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 'n':
-            checkarg(arg);
             if (cart_name == NULL) {
                 cart_name = strdup(arg);
             } else {
@@ -399,7 +390,6 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 'l':
-            checkarg(arg);
             if (load_address == 0) {
                 load_address = atoi(arg);
             } else {
@@ -407,7 +397,6 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 't':
-            checkarg(arg);
             if (cart_type != -1 || convert_to_bin != 0 || convert_to_prg != 0 || convert_to_ultimax != 0) {
                 usage();
             } else {
@@ -436,7 +425,6 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 'i':
-            checkarg(arg);
             if (input_filenames == 33) {
                 usage();
             }
@@ -1446,9 +1434,9 @@ int main(int argc, char *argv[])
         input_filename[i] = NULL;
     }
 
-    while (arg_counter < argc) {
+    while (arg_counter != argc) {
         flag = argv[arg_counter];
-        argument = (arg_counter + 1 < argc) ? argv[arg_counter + 1] : NULL;
+        argument = argv[arg_counter + 1];
         if (flag[0] != '-') {
             usage();
         } else {
