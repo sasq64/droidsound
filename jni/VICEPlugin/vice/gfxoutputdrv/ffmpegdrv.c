@@ -110,6 +110,7 @@ static double video_pts;
 static unsigned int framecounter;
 #ifdef HAVE_FFMPEG_SWSCALE
 static struct SwsContext *sws_ctx;
+static unsigned int framecounter;
 #endif
 
 /* resources */
@@ -119,6 +120,7 @@ static int audio_bitrate;
 static int video_bitrate;
 static int audio_codec;
 static int video_codec;
+static int video_halve_framerate;
 static int video_halve_framerate;
 
 static int ffmpegdrv_init_file(void);
