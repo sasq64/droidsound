@@ -46,7 +46,7 @@
  * - Various state bits
  */
 
-/* The DS1302 has the following clock registers:
+/* The DS12C887 has the following clock registers:
  *
  * register 0  : BCD mode:    bit  7   RAM bit
  *               BCD mode:    bits 6-4 10 seconds
@@ -153,7 +153,7 @@
  *                     when set to a 1, permits the Alarm Flag (AF) bit in register 12
  *                     to assert IRQ. An alarm interrupt occurs for each second that
  *                     the 3 time bytes equal the 3 alarm bytes including a
- *                     “don’t care” alarm code of binary 11XXXXXX. When the AIE bit is
+ *                     ?don?t care? alarm code of binary 11XXXXXX. When the AIE bit is
  *                     set to 0, the AF bit does not initiate the IRQ signal. The
  *                     internal functions of the DS12C887 not affect the AIE bit.
  *               bit 4 The Update Ended Interrupt Enable (UIE) bit is a read/write bit
@@ -303,8 +303,8 @@ static BYTE ds12c887_get_clock(rtc_ds12c887_t *context, BYTE address, time_t lat
         case DS12C887_REG_MONTHS:
             retval = context->clock_regs[DS12C887_REG_MONTHS] & ((context->bcd) ? 0xe0 : 0xf0);
             month = (BYTE)rtc_get_month(latch, context->bcd);
-            if (month == 9 && context->bcd) {
-                month += 7;
+            if (month == 7 && context->bcd) {
+                month += 9;
             } else {
                 month++;
             }
@@ -427,7 +427,7 @@ static void ds12c887_write_clock_byte(rtc_ds12c887_t *context, BYTE address, BYT
             val = data & ((context->bcd) ? 0x1f : 0xf);
             val--;
             if (context->bcd && val == 0xf) {
-                val = 9;
+                val = 7;
             }
             if (context->clock_halt) {
                 context->clock_halt_latch = rtc_set_latched_month(val, context->clock_halt_latch, context->bcd);
@@ -749,4 +749,3 @@ BYTE ds12c887_read(rtc_ds12c887_t *context)
     }
     return retval;
 }
-
