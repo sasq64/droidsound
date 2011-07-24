@@ -1,4 +1,3 @@
-
 WHAT YOU NEED
 
 * Eclipse
@@ -34,3 +33,7 @@ To Test it:
 * Run "<sdk>/platform-tools/adb devices". You should see your device listed.
 * Run "<sdk>/platform-tools/adb install -r bin/droidsound-debug.apk" 
 * Run "<sdk>/platform-tools/adb shell am start -n com.ssb.droidsound/.PlayerActivity"
+
+
+To Test it (continued).
+*Within Eclipse, if you simply hit the Run button with your android device connected (remember to turn USB Debugging on). It should push the application right onto your device.
