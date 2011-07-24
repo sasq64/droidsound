@@ -78,3 +78,4 @@ extern int mmcreplay_snapshot_read_module(struct snapshot_s *s);
 extern int mmcreplay_snapshot_write_module(struct snapshot_s *s);
 
 #endif
+
