@@ -1,8 +1,8 @@
 /*
- * c64export.h - Expansion port handling for the C64.
+ * c64export-stubs.h - C64 expansion port stubs for the VIC20 masC=erade adapter.
  *
  * Written by
- *  Andreas Boose <viceteam@t-online.de>
+ *  Marco van den Heuvel <blackystardust68@yahoo.com>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef VICE_C64EXPORT_H
-#define VICE_C64EXPORT_H
+#ifndef VICE_C64EXPORT_STUBS_H
+#define VICE_C64EXPORT_STUBS_H
 
 #include "cartio.h"
 

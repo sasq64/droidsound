@@ -5,7 +5,7 @@
  *  Daniel Kahlin <daniel@kahlin.net>
  *
  * Based on code by 
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -47,7 +47,7 @@
 #include "cartridge.h"
 #include "cmdline.h"
 #include "finalexpansion.h"
-#include "generic.h"
+#include "georam.h"
 #include "lib.h"
 #include "log.h"
 #include "mem.h"
@@ -61,6 +61,7 @@
 #include "vic20cart.h"
 #include "vic20cartmem.h"
 #include "vic20mem.h"
+#include "vic20-generic.h"
 #include "zfile.h"
 
 /* flag for indicating if cartridge is from snapshot, used for
@@ -134,12 +135,16 @@ static const resource_int_t resources_int[] = {
 
 int cartridge_resources_init(void)
 {
-    return resources_register_int(resources_int) < 0 ||
-        resources_register_string(resources_string) < 0 ||
-        generic_resources_init() < 0 ||
-        finalexpansion_resources_init() < 0 ||
-        vic_fp_resources_init() < 0 ||
-        megacart_resources_init() < 0;
+    if (resources_register_int(resources_int) < 0
+        || resources_register_string(resources_string) < 0
+        || generic_resources_init() < 0
+        || finalexpansion_resources_init() < 0
+        || vic_fp_resources_init() < 0
+        || megacart_resources_init() < 0
+        || georam_resources_init() < 0) {
+        return -1;
+    }
+    return 0;
 }
 
 void cartridge_resources_shutdown(void)
@@ -147,6 +152,7 @@ void cartridge_resources_shutdown(void)
     megacart_resources_shutdown();
     finalexpansion_resources_shutdown();
     generic_resources_shutdown();
+    georam_resources_shutdown();
 
     lib_free(cartridge_file);
     lib_free(cartfile);
@@ -238,10 +244,14 @@ int cartridge_cmdline_options_init(void)
     mon_cart_cmd.cartridge_attach_image = cartridge_attach_image;
     mon_cart_cmd.cartridge_detach_image = cartridge_detach_image;
 
-    return cmdline_register_options(cmdline_options) < 0 ||
-        finalexpansion_cmdline_options_init() < 0 ||
-        vic_fp_cmdline_options_init() < 0 ||
-        megacart_cmdline_options_init() < 0;
+    if (cmdline_register_options(cmdline_options) < 0
+        || finalexpansion_cmdline_options_init() < 0
+        || vic_fp_cmdline_options_init() < 0
+        || megacart_cmdline_options_init() < 0
+        || georam_cmdline_options_init() < 0) {
+        return -1;
+    }
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */

@@ -36,7 +36,7 @@
 #include "c64mem.h"
 #include "cartridge.h"
 #include "crt.h"
-#include "generic.h"
+#include "c64-generic.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"

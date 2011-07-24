@@ -37,7 +37,7 @@
 #define CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "crt.h"
 #include "log.h"
@@ -54,6 +54,7 @@
 #include "actionreplay.h"
 #include "atomicpower.h"
 #include "c64acia.h"
+#include "c64-generic.h"
 #include "c64-midi.h"
 #include "c64tpi.h"
 #include "comal80.h"
@@ -74,7 +75,6 @@
 #include "freezemachine.h"
 #include "funplay.h"
 #include "gamekiller.h"
-#include "generic.h"
 #include "georam.h"
 #include "gs.h"
 #include "ide64.h"

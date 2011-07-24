@@ -40,7 +40,7 @@
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
 #include "c64mem.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -64,6 +64,7 @@
 #include "actionreplay.h"
 #include "atomicpower.h"
 #include "c64acia.h"
+#include "c64-generic.h"
 #include "c64-midi.h"
 #include "c64tpi.h"
 #include "comal80.h"
@@ -86,7 +87,6 @@
 #include "freezemachine.h"
 #include "funplay.h"
 #include "gamekiller.h"
-#include "generic.h"
 #include "georam.h"
 #include "gs.h"
 #include "ide64.h"
@@ -3084,4 +3084,3 @@ fail:
     }
     return -1;
 }
-

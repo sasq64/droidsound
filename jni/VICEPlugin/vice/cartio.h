@@ -1,8 +1,8 @@
 /*
- * c64io.h -- C64 io handling.
+ * cartio.h -- C64/C128/VIC20 I/O handling.
  *
  * Written by
- *  Andreas Boose <viceteam@t-online.de>
+ *  Marco van den Heuvel <blackystardust68@yahoo.com>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -24,8 +24,8 @@
  *
  */
 
-#ifndef VICE_C64IO_H
-#define VICE_C64IO_H
+#ifndef VICE_CARTIO_H
+#define VICE_CARTIO_H
  
 #include "types.h"
 
@@ -71,6 +71,13 @@ extern BYTE c64io_df00_read(WORD addr);
 extern BYTE c64io_df00_peek(WORD addr);
 extern void c64io_df00_store(WORD addr, BYTE value);
 
+extern BYTE vic20io2_read(WORD addr);
+extern BYTE vic20io2_peek(WORD addr);
+extern void vic20io2_store(WORD addr, BYTE value);
+extern BYTE vic20io3_read(WORD addr);
+extern BYTE vic20io3_peek(WORD addr);
+extern void vic20io3_store(WORD addr, BYTE value);
+
 struct mem_ioreg_list_s;
 extern void io_source_ioreg_add_list(struct mem_ioreg_list_s **mem_ioreg_list);
 
@@ -85,7 +92,7 @@ typedef struct io_source_s {
     char *resource_name;
     WORD start_address;
     WORD end_address;
-    BYTE address_mask;
+    WORD address_mask;
     int  io_source_valid; /* after reading, is 1 if read was valid */
     void (*store)(WORD address, BYTE data);
     BYTE (*read)(WORD address);
@@ -113,13 +120,13 @@ typedef struct io_source_detach_s {
 extern io_source_list_t *io_source_register(io_source_t *device);
 extern void io_source_unregister(io_source_list_t *device);
 
-extern void c64io_shutdown(void);
+extern void cartio_shutdown(void);
+
 extern void c64io_vicii_init(void);
 extern void c64io_vicii_deinit(void);
 
-extern int c64io_resources_init(void);
-extern int c64io_cmdline_options_init(void);
-
-extern void c64io_set_highest_order(unsigned int nr);
+extern int cartio_resources_init(void);
+extern int cartio_cmdline_options_init(void);
+extern void cartio_set_highest_order(unsigned int nr);
 
 #endif
