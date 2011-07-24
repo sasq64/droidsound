@@ -44,6 +44,7 @@
 #include <sys/types.h>
 #endif
 
+#include "c64acia.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "finalexpansion.h"
@@ -56,6 +57,13 @@
 #include "monitor.h"
 #include "resources.h"
 #include "snapshot.h"
+#ifdef HAVE_TFE
+#define CARTRIDGE_INCLUDE_PRIVATE_API
+#define CARTRIDGE_INCLUDE_PUBLIC_API
+#include "tfe.h"
+#undef CARTRIDGE_INCLUDE_PRIVATE_API
+#undef CARTRIDGE_INCLUDE_PUBLIC_API
+#endif
 #include "translate.h"
 #include "util.h"
 #include "vic20cart.h"
@@ -141,6 +149,10 @@ int cartridge_resources_init(void)
         || finalexpansion_resources_init() < 0
         || vic_fp_resources_init() < 0
         || megacart_resources_init() < 0
+#ifdef HAVE_TFE
+        || tfe_resources_init() < 0
+#endif
+        || aciacart_resources_init() < 0
         || georam_resources_init() < 0) {
         return -1;
     }
@@ -152,6 +164,10 @@ void cartridge_resources_shutdown(void)
     megacart_resources_shutdown();
     finalexpansion_resources_shutdown();
     generic_resources_shutdown();
+#ifdef HAVE_TFE
+    tfe_resources_shutdown();
+#endif
+    aciacart_resources_shutdown();
     georam_resources_shutdown();
 
     lib_free(cartridge_file);
@@ -248,6 +264,10 @@ int cartridge_cmdline_options_init(void)
         || finalexpansion_cmdline_options_init() < 0
         || vic_fp_cmdline_options_init() < 0
         || megacart_cmdline_options_init() < 0
+#ifdef HAVE_TFE
+        || tfe_cmdline_options_init() < 0
+#endif
+        || aciacart_cmdline_options_init() < 0
         || georam_cmdline_options_init() < 0) {
         return -1;
     }

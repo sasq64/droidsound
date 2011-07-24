@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 
+#include "c64acia.h"
 #include "cartridge.h"
 #include "finalexpansion.h"
 #include "georam.h"
@@ -35,6 +36,13 @@
 #include "machine.h"
 #include "mem.h"
 #include "resources.h"
+#ifdef HAVE_TFE
+#define CARTRIDGE_INCLUDE_PRIVATE_API
+#define CARTRIDGE_INCLUDE_PUBLIC_API
+#include "tfe.h"
+#undef CARTRIDGE_INCLUDE_PRIVATE_API
+#undef CARTRIDGE_INCLUDE_PUBLIC_API
+#endif
 #include "types.h"
 #include "vic20mem.h"
 #include "vic20cartmem.h"
@@ -328,6 +336,10 @@ void cartridge_init(void)
     megacart_init();
     finalexpansion_init();
     vic_fp_init();
+#ifdef HAVE_TFE
+    tfe_init();
+#endif
+    aciacart_init();
     georam_init();
 }
 
@@ -346,6 +358,14 @@ void cartridge_reset(void)
     case CARTRIDGE_VIC20_FINAL_EXPANSION:
         finalexpansion_reset();
         break;
+    }
+#ifdef HAVE_TFE
+    if (tfe_cart_enabled()) {
+        tfe_reset();
+    }
+#endif
+    if (aciacart_cart_enabled()) {
+        aciacart_reset();
     }
     if (georam_cart_enabled()) {
         georam_reset();
