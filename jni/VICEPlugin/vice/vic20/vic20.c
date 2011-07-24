@@ -76,6 +76,7 @@
 #include "vic20.h"
 #include "vic20iec.h"
 #include "vic20ieeevia.h"
+#include "vic20io.h"
 #include "vic20mem.h"
 #include "vic20memrom.h"
 #include "vic20sound.h"
@@ -245,12 +246,13 @@ int machine_resources_init(void)
 #endif
         || drive_resources_init() < 0
         || datasette_resources_init() < 0
-        || cartridge_resources_init() <0
+        || cartridge_resources_init() < 0
 #ifdef HAVE_MIDI
-        || vic20_midi_resources_init() <0
+        || vic20_midi_resources_init() < 0
 #endif
-)
+        || vic20io_resources_init() < 0 ) {
         return -1;
+    }
 
     return 0;
 }
@@ -268,6 +270,7 @@ void machine_resources_shutdown(void)
 #ifdef HAVE_MIDI
     midi_resources_shutdown();
 #endif
+    vic20io_shutdown();
 }
 
 /* VIC20-specific command-line option initialization.  */
@@ -297,8 +300,9 @@ int machine_cmdline_options_init(void)
 #ifdef HAVE_MIDI
         || vic20_midi_cmdline_options_init() < 0
 #endif
-)
+        || vic20io_cmdline_options_init() < 0) {
         return -1;
+    }
 
     return 0;
 }
