@@ -1,8 +1,8 @@
 /*
- * sid-resources.h - SID resources.
+ * vic20-ieee488.c - VIC20 specific IEEE488 emulation.
  *
  * Written by
- *  Andreas Boose <viceteam@t-online.de>
+ *  Marco van den Heuvel <blackystardust68@yahoo.com>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -24,17 +24,14 @@
  *
  */
 
-#ifndef VICE_SID_RESOURCES_H
-#define VICE_SID_RESOURCES_H
+#ifndef VICE_VIC20_IEEE488_H
+#define VICE_VIC20_IEEE488_H
 
-extern int sid_resources_init(void);
-extern int sid_common_resources_init(void);
+extern int vic20_ieee488_resources_init(void);
+extern int vic20_ieee488_cmdline_options_init(void);
 
-extern int sid_set_sid_stereo_address(int val, void *param);
-
-extern int sid_stereo;
-extern int checking_sid_stereo;
-extern unsigned int sid_stereo_address_start;
-extern unsigned int sid_stereo_address_end;
+struct snapshot_s;
+extern int vic20_ieee488_snapshot_read_module(struct snapshot_s *s);
+extern int vic20_ieee488_snapshot_write_module(struct snapshot_s *s);
 
 #endif

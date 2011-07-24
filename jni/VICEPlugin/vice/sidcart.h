@@ -1,8 +1,8 @@
 /*
- * sid-resources.h - SID resources.
+ * sidcart.h - SID cart emulation.
  *
  * Written by
- *  Andreas Boose <viceteam@t-online.de>
+ *  Marco van den Heuvel <blackystardust68@yahoo.com>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -24,17 +24,19 @@
  *
  */
 
-#ifndef VICE_SID_RESOURCES_H
-#define VICE_SID_RESOURCES_H
+#ifndef VICE_SIDCART_H
+#define VICE_SIDCART_H
 
-extern int sid_resources_init(void);
-extern int sid_common_resources_init(void);
+extern int sidcartjoy_enabled;
 
-extern int sid_set_sid_stereo_address(int val, void *param);
+extern int sidcart_cmdline_options_init(void);
+extern int sidcart_resources_init(void);
 
-extern int sid_stereo;
-extern int checking_sid_stereo;
-extern unsigned int sid_stereo_address_start;
-extern unsigned int sid_stereo_address_end;
+extern void sidcartjoy_store(WORD addr, BYTE value);
+extern BYTE sidcartjoy_read(WORD addr);
+
+extern int sidcart_enabled;
+extern int sidcart_address;
+extern int sidcart_clock;
 
 #endif

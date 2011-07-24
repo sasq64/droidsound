@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *  Daniel Kahlin <daniel@kahlin.net>
  *
  * Multiple memory configuration support originally by
@@ -216,38 +216,6 @@ static BYTE via_peek(WORD addr)
 
 /*-------------------------------------------------------------------*/
 
-static BYTE io3_read(WORD addr)
-{
-    if (sidcart_enabled && sidcart_address==1 && addr>=0x9c00 && addr<=0x9c1f) {
-        vic20_cpu_last_data = sid_read(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-    if (mem_cart_blocks & VIC_CART_IO3) {
-        vic20_cpu_last_data = cartridge_read_io3(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-    return vic20io3_read(addr);
-}
-
-static void io3_store(WORD addr, BYTE value)
-{
-    vic20_cpu_last_data = value;
-
-    if (sidcart_enabled && sidcart_address==1 && addr>=0x9c00 && addr<=0x9c1f) {
-        sid_store(addr,value);
-    }
-
-    if (mem_cart_blocks & VIC_CART_IO3) {
-        cartridge_store_io3(addr, value);
-    }
-
-    vic20io3_store(addr, value);
-}
-
 static BYTE io3_peek(WORD addr)
 {
 #if 0
@@ -268,63 +236,7 @@ static BYTE io3_peek(WORD addr)
 #endif
 #endif
 
-    if (mem_cart_blocks & VIC_CART_IO3) {
-        return cartridge_peek_io3(addr);
-    }
-
     return vic20_v_bus_last_data;
-}
-
-static BYTE io2_read(WORD addr)
-{
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x9800 && addr<=0x981f) {
-        vic20_cpu_last_data = sid_read(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-    if (ieee488_enabled) {
-        if (addr & 0x10) {
-            vic20_cpu_last_data = ieeevia2_read(addr);
-            vic20_mem_v_bus_read(addr);
-            return vic20_cpu_last_data;
-        } else {
-            vic20_cpu_last_data = ieeevia1_read(addr);
-            vic20_mem_v_bus_read(addr);
-            return vic20_cpu_last_data;
-        }
-    }
-
-    if (mem_cart_blocks & VIC_CART_IO2) {
-        vic20_cpu_last_data = cartridge_read_io2(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-    return vic20io2_read(addr);
-}
-
-static void io2_store(WORD addr, BYTE value)
-{
-    vic20_cpu_last_data = value;
-
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x9800 && addr<=0x981f) {
-        sid_store(addr,value);
-    }
-
-    if (ieee488_enabled) {
-        if (addr & 0x10) {
-            ieeevia2_store(addr, value);
-        } else {
-            ieeevia1_store(addr, value);
-        }
-    }
-
-    if (mem_cart_blocks & VIC_CART_IO2) {
-        cartridge_store_io2(addr, value);
-    }
-
-    vic20io2_store(addr, value);
 }
 
 static BYTE io2_peek(WORD addr)
@@ -334,19 +246,7 @@ static BYTE io2_peek(WORD addr)
     if (sidcart_enabled && sidcart_address==0 && addr>=0x9800 && addr<=0x981f) {
         return sid_peek(addr);
     }
-
-    if (ieee488_enabled) {
-        if (addr & 0x10) {
-            return ieeevia2_peek(addr);
-        } else {
-            return ieeevia1_peek(addr);
-        }
-    }
 #endif
-
-    if (mem_cart_blocks & VIC_CART_IO2) {
-        return cartridge_peek_io2(addr);
-    }
 
     return vic20_v_bus_last_data;
 }
@@ -617,12 +517,12 @@ void mem_initialize_memory(void)
 
     /* Setup I/O2 at the expansion port */
     set_mem(0x98, 0x9b,
-            io2_read, io2_store, io2_peek,
+            vic20io2_read, vic20io2_store, io2_peek,
             NULL, 0);
 
     /* Setup I/O3 at the expansion port (includes emulator ID) */
     set_mem(0x9c, 0x9f,
-            io3_read, io3_store, io3_peek,
+            vic20io3_read, vic20io3_store, io3_peek,
             NULL, 0);
 
     /* Setup BASIC ROM at $C000-$DFFF. */
@@ -771,7 +671,7 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
     mon_ioreg_add_list(&mem_ioreg_list, "VIA1", 0x9120, 0x912f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "VIA2", 0x9110, 0x911f, mem_dump_io);
 
-    cartridge_ioreg_add_list(&mem_ioreg_list);
+    io_source_ioreg_add_list(&mem_ioreg_list);
 
     return mem_ioreg_list;
 }
@@ -853,3 +753,4 @@ int mem_patch_kernal(void)
 
     return 0;
 }
+

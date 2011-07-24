@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -48,6 +48,7 @@
 #include "ram.h"
 #include "resources.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-resources.h"
 #include "types.h"
 #include "via.h"
@@ -1173,4 +1174,3 @@ void petmem_check_info(petres_t *pi)
         pi->videoSize = 0x1000;
     }
 }
-

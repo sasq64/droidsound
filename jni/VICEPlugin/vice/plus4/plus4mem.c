@@ -51,7 +51,7 @@
 #include "resources.h"
 #include "sid-resources.h"
 #include "sid.h"
-#include "sidcartjoy.h"
+#include "sidcart.h"
 #include "ted.h"
 #include "ted-mem.h"
 #include "types.h"
@@ -1240,4 +1240,3 @@ void mem_get_screen_parameter(WORD *base, BYTE *rows, BYTE *columns, int *bank)
     *columns = 40;
     *bank = 0;
 }
-
