@@ -20,10 +20,10 @@ import com.ssb.droidsound.utils.Log;
 
 class PlayListAdapter extends BaseAdapter {
 	private static final String TAG = PlayListAdapter.class.getSimpleName();
-	
-	private static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };	
 
-	
+	private static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };
+
+
 	private Context mContext;
 	private Cursor mCursor;
 
@@ -32,7 +32,7 @@ class PlayListAdapter extends BaseAdapter {
 	private int mTypeIndex;
 	private int mFileIndex;
 	private int mPathIndex;
-	private String pathName; 
+	private String pathName;
 	private int hilightedPosition = -1;
 	private int itemColor;
 	private int subitemColor;
@@ -47,7 +47,7 @@ class PlayListAdapter extends BaseAdapter {
 
 	private boolean editMode;
 
-	
+
 	PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
 		mContext = context;
 
@@ -58,20 +58,20 @@ class PlayListAdapter extends BaseAdapter {
 		titleHeight = -1;
 		subtitleHeight = -1;
 	}
-	
+
 	public void setCursor(Cursor cursor, String dirName) {
-		
+
 		if(mCursor != null) {
 			mCursor.close();
 		}
-		
+
 		mCursor = cursor;
 		pathName = dirName;
-		
+
 		if(mCursor == null) {
 			return;
 		}
-		
+
 		subDate = false;
 		mSubIndex = mCursor.getColumnIndex("SUBTITLE");
 		if(mSubIndex < 0) {
@@ -85,9 +85,9 @@ class PlayListAdapter extends BaseAdapter {
 		}
 		mSideTitleIndex = mCursor.getColumnIndex("SIDETITLE");
 		mDateIndex = mCursor.getColumnIndex("DATE");
-		
+
 		//Log.d(TAG, "%% SIDETITLE %d", mSideTitleIndex);
-		
+
 		mTitleIndex = mCursor.getColumnIndex("TITLE");
 		mTypeIndex = mCursor.getColumnIndex("TYPE");
 		mFileIndex = mCursor.getColumnIndex("FILENAME");
@@ -98,24 +98,24 @@ class PlayListAdapter extends BaseAdapter {
 		notifyDataSetChanged();
 		setHilightedFile(null);
 	}
-	
+
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "finalize()");
 		if(mCursor != null) {
 			mCursor.close();
 		}
 	}
-	
+
 	public void close() {
 		if(mCursor != null) {
 			mCursor.close();
 			mCursor = null;
 		}
 	}
-	
+
 	@Override
 	public int getViewTypeCount() { return 2; }
-	
+
 	@Override
 	public int getItemViewType(int position) {
 		if(isEditMode()) {
@@ -124,12 +124,12 @@ class PlayListAdapter extends BaseAdapter {
 			return 0;
 		}
 	}
-	
+
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 
 		LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
-		
+
 		if(convertView == null) {
 			if(isEditMode()) {
 				convertView = inflater.inflate(R.layout.editsong_item, parent, false);
@@ -145,27 +145,27 @@ class PlayListAdapter extends BaseAdapter {
 			}
 			if(subtitleHeight < 0) {
 				subtitleHeight = tv1.getTextSize();
-			}				
+			}
 		}
 		ViewGroup vg = (ViewGroup)convertView;
 		ImageView iv = (ImageView)vg.getChildAt(0);
 		TextView tv0 = (TextView)vg.getChildAt(1);
 		TextView tv1 = (TextView)vg.getChildAt(2);
 		TextView tv2 = (TextView)vg.getChildAt(3);
-		
+
 
 		mCursor.moveToPosition(position);
 		int type = SongDatabase.TYPE_FILE;
 		if(mTypeIndex >= 0) {
 			type = mCursor.getInt(mTypeIndex);
 		}
-		
+
 		String title = null;
 		String sub = null;
 		String side = null;
-		
+
 		//Log.d(TAG, "DATEINDEX " + mDateIndex);
-		
+
 		if(mSideTitleIndex >= 0) {
 			side = mCursor.getString(mSideTitleIndex);
 		} else if(mDateIndex >= 0) {
@@ -175,31 +175,31 @@ class PlayListAdapter extends BaseAdapter {
 				side = String.format("(%04d)", date / 10000);
 			}
 		}
-		
+
 		String filename = mCursor.getString(mFileIndex);
 
 
 		if(mTitleIndex >= 0) {
 			title = mCursor.getString(mTitleIndex);
 		}
-		
+
 		if(title == null && mFileIndex >= 0) {
 			title = filename;
 			int sc = title.lastIndexOf(';');
-			
+
 			if(sc >= 0) {
 				try {
 					int tune = Integer.parseInt(title.substring(sc+1));
 					title = String.format("%s [#%02d]", title.substring(0, sc), tune+1);
 				} catch (NumberFormatException e) {
-				}					
+				}
 			}
 		}
-		
+
 		if(title == null) {
 			title = "<ERROR>";
 		}
-		
+
 		if(mSubIndex >= 0) {
 			if(subDate) {
 				int d = mCursor.getInt(mSubIndex);
@@ -214,13 +214,14 @@ class PlayListAdapter extends BaseAdapter {
 			}
 		}
 
-		if(!isEditMode())
+		if(!isEditMode()) {
 			tv2.setText(side != null ? side : "");
-		
+		}
+
 		if(sub == null && type == SongDatabase.TYPE_FILE) {
 			sub = "Unknown";
 		}
-		
+
 		tv0.setText(title);
 
 		if(sub != null) {
@@ -246,14 +247,16 @@ class PlayListAdapter extends BaseAdapter {
 
 		if(type == SongDatabase.TYPE_FILE) {
 			tv0.setTextColor(itemColor);
-			if(net || ext.equals("M3U") || ext.equals("PLS"))
+			if(net || ext.equals("M3U") || ext.equals("PLS")) {
 				tv0.setTextColor(0xffffc0c0);
+			}
 				//iv.setImageResource(R.drawable.gflat_headphones);
 			iv.setVisibility(View.GONE);
 		} else if(type == SongDatabase.TYPE_ARCHIVE) {
 			tv0.setTextColor(archiveColor);
-			if(net)
+			if(net) {
 				tv0.setTextColor(0xffff9090);
+			}
 			//iv.setImageResource(R.drawable.play_list);
 			if(title.equals("Local Mediastore")) {
 				iv.setImageResource(R.drawable.gflat_mus_folder);
@@ -265,8 +268,9 @@ class PlayListAdapter extends BaseAdapter {
 			iv.setVisibility(View.VISIBLE);
 		} else if(type == SongDatabase.TYPE_PLIST) {
 			tv0.setTextColor(archiveColor);
-			if(net)
+			if(net) {
 				tv0.setTextColor(0xffff9090);
+			}
 			//iv.setImageResource(R.drawable.play_list);
 			if(title.equals("Favorites")) {
 				iv.setImageResource(R.drawable.gflat_heart);
@@ -277,8 +281,9 @@ class PlayListAdapter extends BaseAdapter {
 			iv.setVisibility(View.VISIBLE);
 		} else {
 			tv0.setTextColor(dirColor);
-			if(net)
+			if(net) {
 				tv0.setTextColor(0xffff9090);
+			}
 			if(ext.equals("LNK")) {
 				iv.setImageResource(R.drawable.gflat_net_folder);
 				tv0.setTextColor(0xffffc0c0);
@@ -290,23 +295,23 @@ class PlayListAdapter extends BaseAdapter {
 			}
 			iv.setVisibility(View.VISIBLE);
 		}
-		
+
 		if(position == hilightedPosition) {
 			tv0.setTextColor(0xffffa000);
 		}
-		
+
 		if(isEditMode()) {
 			//iv.setImageResource(R.drawable.gflat_hand);
 			iv.setVisibility(View.VISIBLE);
 		}
-		
+
 		return convertView;
 	}
-	
+
 	public File getFile(int position) {
 		File f;
 		mCursor.moveToPosition(position);
-		String fileName = mCursor.getString(mFileIndex);			
+		String fileName = mCursor.getString(mFileIndex);
 		if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 			f = new File(mCursor.getString(mPathIndex), fileName);
 		} else {
@@ -318,7 +323,7 @@ class PlayListAdapter extends BaseAdapter {
 	public String getPath(int position) {
 		mCursor.moveToPosition(position);
 		String s;
-		String fileName = mCursor.getString(mFileIndex);			
+		String fileName = mCursor.getString(mFileIndex);
 		if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 			s = mCursor.getString(mPathIndex) + "/" + fileName;
 		} else {
@@ -330,8 +335,9 @@ class PlayListAdapter extends BaseAdapter {
 
 	@Override
 	public int getCount() {
-		if(mCursor == null)
+		if(mCursor == null) {
 			return 0;
+		}
 		return mCursor.getCount();
 	}
 
@@ -348,7 +354,7 @@ class PlayListAdapter extends BaseAdapter {
 				path = p;
 				Log.d(TAG, "PATH " + path);
 			}
-		} 
+		}
 
 		int type = SongDatabase.TYPE_FILE;
 		if(mTypeIndex >= 0) {
@@ -363,14 +369,14 @@ class PlayListAdapter extends BaseAdapter {
 	}
 
 	public FileInfo [] getFiles(boolean skipDirs) {
-		
+
 		if(mCursor == null) {
 			return new FileInfo [] {};
 		}
-		
+
 		//File [] names = new File [ mCursor.getCount() ];
 		ArrayList<FileInfo> files = new ArrayList<FileInfo>();
-					
+
 		mCursor.moveToPosition(-1);
 		while(mCursor.moveToNext()) {
 			String fileName = mCursor.getString(mFileIndex);
@@ -379,16 +385,16 @@ class PlayListAdapter extends BaseAdapter {
 				f = new FileInfo(mCursor.getString(mPathIndex), fileName);
 			} else {
 				f = new FileInfo(pathName, fileName);
-			}	
+			}
 			//String pathName = mCursor.getString(mPathIndex);
-			
+
 			int type = SongDatabase.TYPE_FILE;
 			if(mTypeIndex >= 0) {
 				type = mCursor.getInt(mTypeIndex);
 			}
-			
+
 			//Log.d(TAG, "File %s type %d", f.getPath(), type);
-			
+
 			if(!skipDirs || (type == SongDatabase.TYPE_FILE)) {
 				files.add(f);
 			}
@@ -407,11 +413,11 @@ class PlayListAdapter extends BaseAdapter {
 		}
 		hilightedPosition = -1;
 		hilightedFile = hfile;
-		
+
 		if(hilightedFile == null) {
 			return;
 		}
-		
+
 		FileInfo [] files = getFiles(false);
 		for(int i=0; i<files.length; i++) {
 			//Log.d(TAG, "%s vs %s", files[i].getPath(), hfile.getPath());
@@ -432,7 +438,7 @@ class PlayListAdapter extends BaseAdapter {
 		}
 		return mCursor;
 	}
-	
+
 	public String getPathName() {
 		return pathName;
 	}
@@ -440,5 +446,4 @@ class PlayListAdapter extends BaseAdapter {
 	public boolean isEditMode() {
 		return editMode;
 	}
-			
 }

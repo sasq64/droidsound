@@ -463,7 +463,7 @@ public class CSDBParser implements DataSource {
 
 
 	@Override
-	public Cursor search(String query, String path, SQLiteDatabase db) {
+	public final Cursor search(String query, String path, SQLiteDatabase db) {
 	//public static Cursor search(SQLiteDatabase db, String query) {
 		Log.d(TAG, "QUERY: %s PATH: %s",query, path);
 		int csdb = path.toUpperCase().lastIndexOf(DUMP_NAME);
@@ -473,13 +473,13 @@ public class CSDBParser implements DataSource {
 
 
 	@Override
-	public String getTitle() {
+	public final String getTitle() {
 		return "CSDb";
 	}
 
 
 	@Override
-	public boolean parseDump(InputStream is, int size, SQLiteDatabase scanDb, ScanCallback scanCallback) {
+	public final boolean parseDump(InputStream is, int size, SQLiteDatabase scanDb, ScanCallback scanCallback) {
 		return parseCSDB(is, size, scanDb, scanCallback);
 	}
 
@@ -491,7 +491,7 @@ public class CSDBParser implements DataSource {
 
 
 	@Override
-	public String getPathTitle(File file) {
+	public final String getPathTitle(File file) {
 		return pathTitle;
 	}
 
