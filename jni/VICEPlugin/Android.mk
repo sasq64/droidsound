@@ -97,6 +97,7 @@ LOCAL_SRC_FILES := \
 	vice/c64/plus256k.c \
 	vice/c64/plus60k.c \
 	vice/c64/psid.c \
+	vice/c64/cart/generic.c \
 	vice/c64/reloc65.c \
 	vice/core/ciacore.c \
 	vice/core/ciatimer.c \

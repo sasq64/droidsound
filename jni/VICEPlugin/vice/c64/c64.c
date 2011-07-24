@@ -38,6 +38,9 @@
 #include "c64.h"
 #include "c64_256k.h"
 #include "c64cart.h"
+#define CARTRIDGE_INCLUDE_SLOTMAIN_API
+#include "c64cartsystem.h"
+#undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64cia.h"
 #include "c64export.h"
 #include "c64fastiec.h"
@@ -329,9 +332,7 @@ static void c64io_init(void)
 int machine_resources_init(void)
 {
     if (traps_resources_init() < 0
-#ifdef DINGOO_NATIVE
         || rombanks_resources_init() < 0
-#endif
         || vsync_resources_init() < 0
         || machine_video_resources_init() < 0
         || c64_resources_init() < 0
@@ -379,9 +380,7 @@ void machine_resources_shutdown(void)
     printer_resources_shutdown();
     drive_resources_shutdown();
     cartridge_resources_shutdown();
-#ifdef DINGOO_NATIVE
     rombanks_resources_shutdown();
-#endif
     c64io_shutdown();
 }
 
