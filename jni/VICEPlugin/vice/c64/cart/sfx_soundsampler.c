@@ -44,10 +44,15 @@
 #include "uiapi.h"
 #include "translate.h"
 
-/* ------------------------------------------------------------------------- */
+static BYTE sfx_soundsampler_sound_data;
 
-/* some prototypes are needed */
-static void sfx_soundsampler_sound_store(WORD addr, BYTE value);
+static void sfx_soundsampler_sound_store(WORD addr, BYTE value)
+{
+    sfx_soundsampler_sound_data = value;
+    sound_store((WORD)0x40, value, 0);
+}
+
+/* ------------------------------------------------------------------------- */
 
 static io_source_t sfx_soundsampler_device = {
     CARTRIDGE_NAME_SFX_SOUND_SAMPLER,
@@ -72,64 +77,28 @@ static const c64export_resource_t export_res= {
 
 /* ------------------------------------------------------------------------- */
 
-/* Some prototypes are needed */
-static int sfx_soundsampler_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-static int sfx_soundsampler_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
-static void sfx_soundsampler_sound_machine_store(sound_t *psid, WORD addr, BYTE val);
-static BYTE sfx_soundsampler_sound_machine_read(sound_t *psid, WORD addr);
-static void sfx_soundsampler_sound_reset(sound_t *psid, CLOCK cpu_clk);
-
-static int sfx_soundsampler_sound_machine_cycle_based(void)
-{
-	return 0;
-}
-
-static int sfx_soundsampler_sound_machine_channels(void)
-{
-	return 1;
-}
-
-static sound_chip_t sfx_soundsampler_sound_chip = {
-    NULL, /* no open */
-    sfx_soundsampler_sound_machine_init,
-    NULL, /* no close */
-    sfx_soundsampler_sound_machine_calculate_samples,
-    sfx_soundsampler_sound_machine_store,
-    sfx_soundsampler_sound_machine_read,
-    sfx_soundsampler_sound_reset,
-    sfx_soundsampler_sound_machine_cycle_based,
-    sfx_soundsampler_sound_machine_channels,
-    0 /* chip enabled */
-};
-
-static WORD sfx_soundsampler_sound_chip_offset = 0;
-
-void sfx_soundsampler_sound_chip_init(void)
-{
-    sfx_soundsampler_sound_chip_offset = sound_chip_register(&sfx_soundsampler_sound_chip);
-}
-
-/* ------------------------------------------------------------------------- */
+/* Flag: Do we enable the SFX soundsampler cartridge?  */
+static int sfx_soundsampler_enabled = 0;
 
 int sfx_soundsampler_cart_enabled(void)
 {
-    return sfx_soundsampler_sound_chip.chip_enabled;
+    return sfx_soundsampler_enabled;
 }
 
 static int set_sfx_soundsampler_enabled(int val, void *param)
 {
-    if (sfx_soundsampler_sound_chip.chip_enabled != val) {
+    if (sfx_soundsampler_enabled != val) {
         if (val) {
             if (c64export_add(&export_res) < 0) {
                 return -1;
             }
             sfx_soundsampler_list_item = io_source_register(&sfx_soundsampler_device);
-            sfx_soundsampler_sound_chip.chip_enabled = 1;
+            sfx_soundsampler_enabled = 1;
         } else {
             c64export_remove(&export_res);
             io_source_unregister(sfx_soundsampler_list_item);
             sfx_soundsampler_list_item = NULL;
-            sfx_soundsampler_sound_chip.chip_enabled = 0;
+            sfx_soundsampler_enabled = 0;
         }
     }
     return 0;
@@ -153,7 +122,7 @@ void sfx_soundsampler_detach(void)
 
 static const resource_int_t resources_int[] = {
     { "SFXSoundSampler", 0, RES_EVENT_STRICT, (resource_value_t)0,
-      &sfx_soundsampler_sound_chip.chip_enabled, set_sfx_soundsampler_enabled, NULL },
+      &sfx_soundsampler_enabled, set_sfx_soundsampler_enabled, NULL },
     { NULL }
 };
 
@@ -161,7 +130,6 @@ int sfx_soundsampler_resources_init(void)
 {
     return resources_register_int(resources_int);
 }
-
 void sfx_soundsampler_resources_shutdown(void)
 {
 }
@@ -188,14 +156,6 @@ int sfx_soundsampler_cmdline_options_init(void)
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE sfx_soundsampler_sound_data;
-
-static void sfx_soundsampler_sound_store(WORD addr, BYTE value)
-{
-    sfx_soundsampler_sound_data = value;
-    sound_store(sfx_soundsampler_sound_chip_offset, value, 0);
-}
-
 struct sfx_soundsampler_sound_s
 {
     BYTE voice0;
@@ -203,11 +163,11 @@ struct sfx_soundsampler_sound_s
 
 static struct sfx_soundsampler_sound_s snd;
 
-static int sfx_soundsampler_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
+int sfx_soundsampler_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int i;
 
-    if (sfx_soundsampler_sound_chip.chip_enabled) {
+    if (sfx_soundsampler_enabled) {
         for (i = 0; i < nr; i++) {
             pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave], snd.voice0 << 8);
         }
@@ -215,24 +175,24 @@ static int sfx_soundsampler_sound_machine_calculate_samples(sound_t *psid, SWORD
     return 0;
 }
 
-static int sfx_soundsampler_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+int sfx_soundsampler_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
     snd.voice0 = 0;
 
     return 1;
 }
 
-static void sfx_soundsampler_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
+void sfx_soundsampler_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
 {
     snd.voice0 = val;
 }
 
-static BYTE sfx_soundsampler_sound_machine_read(sound_t *psid, WORD addr)
+BYTE sfx_soundsampler_sound_machine_read(sound_t *psid, WORD addr)
 {
     return sfx_soundsampler_sound_data;
 }
 
-static void sfx_soundsampler_sound_reset(sound_t *psid, CLOCK cpu_clk)
+void sfx_soundsampler_sound_reset(void)
 {
     snd.voice0 = 0;
     sfx_soundsampler_sound_data = 0;
@@ -283,11 +243,11 @@ int sfx_soundsampler_snapshot_read_module(snapshot_t *s)
         return -1;
     }
 
-    if (!sfx_soundsampler_sound_chip.chip_enabled) {
+    if (!sfx_soundsampler_enabled) {
         set_sfx_soundsampler_enabled(1, NULL);
     }
-    sound_store(sfx_soundsampler_sound_chip_offset, sfx_soundsampler_sound_data, 0);
-
+    sound_store((WORD)0x40, sfx_soundsampler_sound_data, 0);
+    
     snapshot_module_close(m);
     return 0;
 }

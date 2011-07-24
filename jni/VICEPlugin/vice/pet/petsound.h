@@ -34,8 +34,7 @@ extern void petsound_store_rate(CLOCK t);
 extern void petsound_store_sample(BYTE value);
 extern void petsound_store_manual(int value);
 
-extern void petsound_reset(sound_t *psid, CLOCK cpu_clk);
-
-extern void pet_sound_chip_init(void);
+extern void petsound_reset(void);
 
 #endif
+

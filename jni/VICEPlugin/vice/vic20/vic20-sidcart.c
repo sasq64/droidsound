@@ -26,7 +26,6 @@
 
 #include "vice.h"
 
-#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "resources.h"
@@ -35,7 +34,7 @@
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
 #include "translate.h"
-#include "vic20.h"
+#include "vic20io.h"
 
 /* ---------------------------------------------------------------------*/
 
@@ -58,46 +57,9 @@ static io_source_list_t *sidcart_list_item = NULL;
 
 /* ---------------------------------------------------------------------*/
 
-static int sidcart_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
-{
-    if (!sidcart_clock && cycles_per_sec == VIC20_PAL_CYCLES_PER_SEC) {
-        return sid_sound_machine_init(psid, (int)(speed * 1.125), cycles_per_sec);
-    } else {
-        return sid_sound_machine_init(psid, speed, cycles_per_sec);
-    }
-}
-
-static sound_chip_t sidcart_sound_chip = {
-    sid_sound_machine_open,
-    sidcart_sound_machine_init,
-    sid_sound_machine_close,
-    sid_sound_machine_calculate_samples,
-    sid_sound_machine_store,
-    sid_sound_machine_read,
-    sid_sound_machine_reset,
-    sid_sound_machine_enable,
-    sid_sound_machine_cycle_based,
-    sid_sound_machine_channels,
-    0x00, /* offset to be filled in by register routine */
-    0 /* chip enabled */
-};
-
-static sound_chip_list_t *sidcart_sound_chip_item = NULL;
-
-void sidcart_sound_chip_init(void)
-{
-    sidcart_sound_chip_item = sound_chip_register(&sidcart_sound_chip);
-}
-
-/* ---------------------------------------------------------------------*/
-
+int sidcart_enabled;
 int sidcart_address;
 int sidcart_clock;
-
-int sidcart_enabled(void)
-{
-    return sidcart_sound_chip.chip_enabled;
-}
 
 static void sidcart_enable(void)
 {
@@ -135,13 +97,13 @@ static void set_sidcart_address(int val)
 
 static int set_sidcart_enabled(int val, void *param)
 {
-    if (val != sidcart_sound_chip.chip_enabled) {
+    if (val != sidcart_enabled) {
         if (val) {
             sidcart_enable();
         } else {
             sidcart_disable();
         }
-        sidcart_sound_chip.chip_enabled = val;
+        sidcart_enabled = val;
         sound_state_changed = 1;
     }
     return 0;
@@ -169,7 +131,7 @@ static int set_sid_clock(int val, void *param)
 
 static const resource_int_t sidcart_resources_int[] = {
     { "SidCart", 0, RES_EVENT_SAME, NULL,
-      &sidcart_sound_chip.chip_enabled, set_sidcart_enabled, NULL },
+      &sidcart_enabled, set_sidcart_enabled, NULL },
     { "SidAddress", 0, RES_EVENT_SAME, NULL,
       &sidcart_address, set_sid_address, NULL },
     { "SidClock", 1, RES_EVENT_SAME, NULL,

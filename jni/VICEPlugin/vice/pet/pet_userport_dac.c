@@ -39,56 +39,28 @@
 #include "uiapi.h"
 #include "translate.h"
 
-/* ------------------------------------------------------------------------- */
+static BYTE pet_userport_dac_sound_data;
 
-/* Some prototypes are needed */
-static int pet_userport_dac_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-static int pet_userport_dac_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
-static void pet_userport_dac_sound_machine_store(sound_t *psid, WORD addr, BYTE val);
-static BYTE pet_userport_dac_sound_machine_read(sound_t *psid, WORD addr);
-static void pet_userport_dac_sound_reset(sound_t *psid, CLOCK cpu_clk);
-
-static int pet_userport_dac_sound_machine_cycle_based(void)
+void pet_userport_dac_store(BYTE value)
 {
-    return 0;
-}
-
-static int pet_userport_dac_sound_machine_channels(void)
-{
-    return 1;
-}
-
-static sound_chip_t pet_userport_dac_sound_chip = {
-    NULL, /* no open */
-    pet_userport_dac_sound_machine_init,
-    NULL, /* no close */
-    pet_userport_dac_sound_machine_calculate_samples,
-    pet_userport_dac_sound_machine_store,
-    pet_userport_dac_sound_machine_read,
-    pet_userport_dac_sound_reset,
-    pet_userport_dac_sound_machine_cycle_based,
-    pet_userport_dac_sound_machine_channels,
-    0 /* chip enabled */
-};
-
-static WORD pet_userport_dac_sound_chip_offset = 0;
-
-void pet_userport_dac_sound_chip_init(void)
-{
-    pet_userport_dac_sound_chip_offset = sound_chip_register(&pet_userport_dac_sound_chip);
+    pet_userport_dac_sound_data = value;
+    sound_store((WORD)0x40, value, 0);
 }
 
 /* ------------------------------------------------------------------------- */
+
+/* Flag: Do we enable the PET userport DAC?  */
+int pet_userport_dac_enabled;
 
 static int set_pet_userport_dac_enabled(int val, void *param)
 {
-    pet_userport_dac_sound_chip.chip_enabled = val;
+    pet_userport_dac_enabled = val;
     return 0;
 }
 
 static const resource_int_t resources_int[] = {
     { "PETUserportDAC", 0, RES_EVENT_STRICT, (resource_value_t)0,
-      &pet_userport_dac_sound_chip.chip_enabled, set_pet_userport_dac_enabled, NULL },
+      &pet_userport_dac_enabled, set_pet_userport_dac_enabled, NULL },
     { NULL }
 };
 
@@ -119,16 +91,6 @@ int pet_userport_dac_cmdline_options_init(void)
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE pet_userport_dac_sound_data;
-
-void pet_userport_dac_store(BYTE value)
-{
-    if (pet_userport_dac_sound_chip.chip_enabled) {
-        pet_userport_dac_sound_data = value;
-        sound_store(pet_userport_dac_sound_chip_offset, value, 0);
-    }
-}
-
 struct pet_userport_dac_sound_s
 {
     BYTE voice0;
@@ -136,11 +98,11 @@ struct pet_userport_dac_sound_s
 
 static struct pet_userport_dac_sound_s snd;
 
-static int pet_userport_dac_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
+int pet_userport_dac_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int i;
 
-    if (pet_userport_dac_sound_chip.chip_enabled) {
+    if (pet_userport_dac_enabled) {
         for (i = 0; i < nr; i++) {
             pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave], snd.voice0 << 8);
         }
@@ -148,24 +110,24 @@ static int pet_userport_dac_sound_machine_calculate_samples(sound_t *psid, SWORD
     return 0;
 }
 
-static int pet_userport_dac_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+int pet_userport_dac_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
     snd.voice0 = 0;
 
     return 1;
 }
 
-static void pet_userport_dac_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
+void pet_userport_dac_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
 {
     snd.voice0 = val;
 }
 
-static BYTE pet_userport_dac_sound_machine_read(sound_t *psid, WORD addr)
+BYTE pet_userport_dac_sound_machine_read(sound_t *psid, WORD addr)
 {
     return pet_userport_dac_sound_data;
 }
 
-static void pet_userport_dac_sound_reset(sound_t *psid, CLOCK cpu_clk)
+void pet_userport_dac_sound_reset(void)
 {
     snd.voice0 = 0;
     pet_userport_dac_sound_data = 0;

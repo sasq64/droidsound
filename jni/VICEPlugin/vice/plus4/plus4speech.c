@@ -120,6 +120,7 @@
 #define DBGIRQ(x)
 #endif
 
+static int speech_enabled = 0;
 static t6721_state *t6721; /* context for the t6721 chip */
 
 /* MOS 8706 context */
@@ -127,6 +128,11 @@ static BYTE regs[4];
 
 #define IRQNUM_DTRD     0
 #define IRQNUM_EOS      1
+
+int speech_cart_enabled(void)
+{
+    return speech_enabled;
+}
 
 /*
   IRQ latch
@@ -481,56 +487,11 @@ void speech_setup_context(machine_context_t *machine_context)
 }
 
 /* ------------------------------------------------------------------------- */
-
-/* Some prototypes are needed */
-static int speech_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-static void speech_sound_machine_close(sound_t *psid);
-static int speech_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
-static BYTE speech_sound_machine_read(sound_t *psid, WORD addr);
-static void speech_sound_machine_store(sound_t *psid, WORD addr, BYTE byte);
-
-static int speech_sound_machine_cycle_based(void)
-{
-	return 0;
-}
-
-static int speech_sound_machine_channels(void)
-{
-	return 1;
-}
-
-static sound_chip_t speech_sound_chip = {
-    NULL, /* no open */
-    speech_sound_machine_init,
-    speech_sound_machine_close,
-    speech_sound_machine_calculate_samples,
-    speech_sound_machine_store,
-    speech_sound_machine_read,
-    NULL, /* no reset */
-    speech_sound_machine_cycle_based,
-    speech_sound_machine_channels,
-    0 /* chip enabled */
-};
-
-static WORD speech_sound_chip_offset = 0;
-
-void speech_sound_chip_init(void)
-{
-    speech_sound_chip_offset = sound_chip_register(&speech_sound_chip);
-}
-
-int speech_cart_enabled(void)
-{
-    return speech_sound_chip.chip_enabled;
-}
-
-/* ------------------------------------------------------------------------- */
-
 char *speech_filename = NULL;
 
 static int set_speech_enabled(int val, void *param)
 {
-    speech_sound_chip.chip_enabled = 0;
+    speech_enabled = 0;
     memset(extromlo3, 0, PLUS4_CART16K_SIZE);
 
     if (val) {
@@ -539,7 +500,7 @@ static int set_speech_enabled(int val, void *param)
                 if (plus4cart_load_c2lo(speech_filename) < 0) {
                     return -1;
                 }
-                speech_sound_chip.chip_enabled = 1;
+                speech_enabled = 1;
             }
         }
     }
@@ -579,7 +540,7 @@ static const resource_string_t resources_string[] = {
 };
 static const resource_int_t resources_int[] = {
     { "SpeechEnabled", 0, RES_EVENT_STRICT, (resource_value_t)0,
-      &speech_sound_chip.chip_enabled, set_speech_enabled, NULL },
+      &speech_enabled, set_speech_enabled, NULL },
     { NULL }
 };
 
@@ -629,20 +590,19 @@ int speech_cmdline_options_init(void)
   return cmdline_register_options(cmdline_options);
 }
 
-
-/* ---------------------------------------------------------------------*/
+/* ------------------------------------------------------------------------- */
 
 /* FIXME: shutdown missing */
 
 /* FIXME: what are those two doing exactly ?! */
-static BYTE speech_sound_machine_read(sound_t *psid, WORD addr)
+BYTE speech_sound_machine_read(sound_t *psid, WORD addr)
 {
     DBG(("SPEECH: speech_sound_machine_read\n"));
 
     return 0; /* ? */
 }
 
-static void speech_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
+void speech_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
 {
     DBG(("SPEECH: speech_sound_machine_store\n"));
 }
@@ -650,12 +610,12 @@ static void speech_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
 /*
     called periodically for every sound fragment that is played
 */
-static int speech_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
+int speech_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int i;
     SWORD *buffer;
 
-    if (speech_sound_chip.chip_enabled) {
+    if (speech_enabled) {
         buffer = lib_malloc(nr * 2);
 
         t6721_update_output(t6721, buffer, nr);
@@ -671,20 +631,20 @@ static int speech_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, in
     return 0; /* ? */
 }
 
-static void speech_sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
+void speech_sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
 {
     DBG(("SPEECH: speech_sound_machine_reset\n"));
 }
 
-static int speech_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+int speech_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
     DBG(("SPEECH: speech_sound_machine_init: speed %d cycles/sec: %d\n", speed, cycles_per_sec));
     t6721_sound_machine_init(t6721, speed, cycles_per_sec);
 
-    return 1;
+    return 0; /* all ok */
 }
 
-static void speech_sound_machine_close(sound_t *psid)
+void speech_sound_machine_close(sound_t *psid)
 {
     DBG(("SPEECH: speech_sound_machine_close\n"));
 }

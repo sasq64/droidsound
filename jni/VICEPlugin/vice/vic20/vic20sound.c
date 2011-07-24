@@ -2,7 +2,7 @@
  * vic20sound.c - Implementation of VIC20 sound code.
  *
  * Written by
- *  Rami Räsänen <raipsu@users.sf.net>
+ *  Rami R?s?nen <raipsu@users.sf.net>
  *  Ville-Matias Heikkila <viznut@iki.fi>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -41,46 +41,6 @@
 #include "types.h"
 #include "vic20sound.h"
 #include "vic20.h"
-
-/* ---------------------------------------------------------------------*/
-
-/* Some prototypes are needed */
-static int vic_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-static int vic_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
-static void vic_sound_machine_store(sound_t *psid, WORD addr, BYTE value);
-static BYTE vic_sound_machine_read(sound_t *psid, WORD addr);
-
-static int vic_sound_machine_cycle_based(void)
-{
-	return 1;
-}
-
-static int vic_sound_machine_channels(void)
-{
-	return 1;
-}
-
-static sound_chip_t vic_sound_chip = {
-    NULL, /* no open */
-    vic_sound_machine_init,
-    NULL, /* no close */
-    vic_sound_machine_calculate_samples,
-    vic_sound_machine_store,
-    vic_sound_machine_read,
-    vic_sound_reset,
-    vic_sound_machine_cycle_based,
-    vic_sound_machine_channels,
-    1 /* chip enabled */
-};
-
-static WORD vic_sound_chip_offset = 0;
-
-void vic_sound_chip_init(void)
-{
-    vic_sound_chip_offset = sound_chip_register(&vic_sound_chip);
-}
-
-/* ---------------------------------------------------------------------*/
 
 static BYTE noisepattern[1024] = {
       7, 30, 30, 28, 28, 62, 60, 56,120,248,124, 30, 31,143,  7,  7,193,192,224,
@@ -278,7 +238,7 @@ static int vic_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int n
     return s;
 }
 
-void vic_sound_reset(sound_t *psid, CLOCK cpu_clk)
+void vic_sound_reset(void)
 {
     WORD i;
 
@@ -292,8 +252,7 @@ void vic_sound_store(WORD addr, BYTE value)
 {
     addr &= 0x0f;
     vic20_sound_data[addr] = value;
-
-    sound_store((WORD)(vic_sound_chip_offset | addr), value, 0);
+    sound_store((WORD)(addr+0x20), value, 0);
 }
 
 
@@ -404,6 +363,65 @@ static BYTE vic_sound_machine_read(sound_t *psid, WORD addr)
     return 0;
 }
 
+sound_t *sound_machine_open(int chipno)
+{
+    return sid_sound_machine_open(chipno);
+}
+
+int sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+{
+    vic_sound_machine_init(psid, speed, cycles_per_sec);
+
+    if (!sidcart_clock && cycles_per_sec == VIC20_PAL_CYCLES_PER_SEC) {
+        return sid_sound_machine_init(psid, (int)(speed*1.125), cycles_per_sec);
+    } else {
+        return sid_sound_machine_init(psid, speed, cycles_per_sec);
+    }
+}
+
+void sound_machine_close(sound_t *psid)
+{
+    sid_sound_machine_close(psid);
+}
+
+/* for read/store 0x00 <= addr <= 0x1f is the sid
+ *                0x20 <= addr <= 0x3f is the vic
+ *
+ * future sound devices will be able to use 0x40 and up
+ */
+
+BYTE sound_machine_read(sound_t *psid, WORD addr)
+{
+    if (addr >= 0x20 && addr <= 0x3f) {
+        return vic_sound_machine_read(psid, (WORD)(addr-0x20));
+    } else {
+        return sid_sound_machine_read(psid, addr);
+    }
+}
+
+void sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
+{
+    if (addr >= 0x20 && addr <= 0x3f) {
+        vic_sound_machine_store(psid, (WORD)(addr-0x20), byte);
+    } else {
+        sid_sound_machine_store(psid, addr, byte);
+    }
+}
+
+void sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
+{
+    sid_sound_machine_reset(psid, cpu_clk);
+}
+
+int sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr,
+                                    int interleave, int *delta_t)
+{
+    int temp;
+
+    temp = vic_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
+    return fastsid_calculate_samples_mix(psid, pbuf, temp, interleave, delta_t);
+}
+
 void sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub)
 {
     sid_sound_machine_prevent_clk_overflow(psid, sub);
@@ -412,6 +430,16 @@ void sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub)
 char *sound_machine_dump_state(sound_t *psid)
 {
     return sid_sound_machine_dump_state(psid);
+}
+
+int sound_machine_cycle_based(void)
+{
+    return 1;
+}
+
+int sound_machine_channels(void)
+{
+    return sid_sound_machine_channels();
 }
 
 void sound_machine_enable(int enable)

@@ -140,9 +140,16 @@ static int mv_mapped_game = 1, mv_mapped_exrom = 1;
 
 static int mv_game8000_enabled = 0; /* gamecart at passthrough enabled */
 
+static int mv_enabled = 0; /* cartridge physically enabled */
+
 static void ga_memconfig_changed(int mode);
 
 static void set_int(unsigned int int_num, int value);
+
+int magicvoice_cart_enabled(void)
+{
+    return mv_enabled;
+}
 
 /*****************************************************************************
  FIFO (CD 40105 BE)
@@ -808,50 +815,6 @@ static const c64export_resource_t export_res = {
 };
 
 /* ---------------------------------------------------------------------*/
-/* Some prototypes are needed */
-static int magicvoice_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-static void magicvoice_sound_machine_close(sound_t *psid);
-static int magicvoice_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
-static void magicvoice_sound_machine_store(sound_t *psid, WORD addr, BYTE byte);
-static BYTE magicvoice_sound_machine_read(sound_t *psid, WORD addr);
-
-static int magicvoice_sound_machine_cycle_based(void)
-{
-	return 0;
-}
-
-static int magicvoice_sound_machine_channels(void)
-{
-	return 1;
-}
-
-static sound_chip_t magicvoice_sound_chip = {
-    NULL, /* no open */
-    magicvoice_sound_machine_init,
-    magicvoice_sound_machine_close,
-    magicvoice_sound_machine_calculate_samples,
-    magicvoice_sound_machine_store,
-    magicvoice_sound_machine_read,
-    NULL, /* no reset */
-    magicvoice_sound_machine_cycle_based,
-    magicvoice_sound_machine_channels,
-    0 /* chip enabled */
-};
-
-static WORD magicvoice_sound_chip_offset = 0;
-
-void magicvoice_sound_chip_init(void)
-{
-    magicvoice_sound_chip_offset = sound_chip_register(&magicvoice_sound_chip);
-}
-
-int magicvoice_cart_enabled(void)
-{
-    return magicvoice_sound_chip.chip_enabled;
-}
-
-/* ---------------------------------------------------------------------*/
-
 int magicvoice_ultimax_read(WORD addr, BYTE *value)
 {
     /* disabled, read c64 memory */
@@ -1017,7 +980,7 @@ char *magicvoice_filename = NULL;
 static int set_magicvoice_enabled(int val, void *param)
 {
     DBG(("MV: set_enabled: '%s' %d to %d\n", magicvoice_filename, mv_enabled, val));
-    if (magicvoice_sound_chip.chip_enabled && !val) {
+    if (mv_enabled && !val) {
         cart_power_off();
 #ifdef MVDEBUG
         if (magicvoice_io2_list_item == NULL) {
@@ -1027,9 +990,9 @@ static int set_magicvoice_enabled(int val, void *param)
         c64export_remove(&export_res);
         io_source_unregister(magicvoice_io2_list_item);
         magicvoice_io2_list_item = NULL;
-        magicvoice_sound_chip.chip_enabled =  0;
+        mv_enabled =  0;
         DBG(("MV: set_enabled unregistered\n"));
-    } else if (!magicvoice_sound_chip.chip_enabled && val) {
+    } else if (!mv_enabled && val) {
         if (param) {
             /* if the param is != NULL, then we should load the default image file */
             if (magicvoice_filename) {
@@ -1051,7 +1014,7 @@ static int set_magicvoice_enabled(int val, void *param)
             } else {
                 DBG(("MV: set_enabled registered\n"));
                 magicvoice_io2_list_item = io_source_register(&magicvoice_io2_device);
-                magicvoice_sound_chip.chip_enabled =  1;
+                mv_enabled =  1;
             }
         }
     }
@@ -1091,7 +1054,7 @@ static const resource_string_t resources_string[] = {
 };
 static const resource_int_t resources_int[] = {
     { "MagicVoiceCartridgeEnabled", 0, RES_EVENT_STRICT, (resource_value_t)0,
-      &magicvoice_sound_chip.chip_enabled, set_magicvoice_enabled, (void *)1 },
+      &mv_enabled, set_magicvoice_enabled, (void *)1 },
     { NULL }
 };
 
@@ -1181,7 +1144,7 @@ void magicvoice_config_init(struct export_s *export)
     mv_extexrom = ((export_t*)export)->exrom;
     mv_extgame = ((export_t*)export)->game;
 
-    if (magicvoice_sound_chip.chip_enabled) {
+    if (mv_enabled) {
         mv_exrom = 1;
         ga_reset();
         ga_memconfig_changed(CMODE_READ);
@@ -1271,7 +1234,7 @@ void magicvoice_init(void)
 void magicvoice_reset(void)
 {
     DBG(("MV: reset\n"));
-    if (magicvoice_sound_chip.chip_enabled) {
+    if (mv_enabled) {
         mv_game8000_enabled = 0;
         mv_exrom = 1;
         ga_reset();
@@ -1284,14 +1247,14 @@ void magicvoice_reset(void)
 /* ---------------------------------------------------------------------*/
 
 /* FIXME: what are these two about anyway ? */
-static BYTE magicvoice_sound_machine_read(sound_t *psid, WORD addr)
+BYTE magicvoice_sound_machine_read(sound_t *psid, WORD addr)
 {
     DBG(("MV: magicvoice_sound_machine_read\n"));
 
     return 0; /* ? */
 }
 
-static void magicvoice_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
+void magicvoice_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
 {
     DBG(("MV: magicvoice_sound_machine_store\n"));
 }
@@ -1299,12 +1262,12 @@ static void magicvoice_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
 /*
     called periodically for every sound fragment that is played
 */
-static int magicvoice_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
+int magicvoice_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int i;
     SWORD *buffer;
 
-    if (magicvoice_sound_chip.chip_enabled) {
+    if (mv_enabled) {
         buffer = lib_malloc(nr * 2);
 
         t6721_update_output(t6721, buffer, nr);
@@ -1317,23 +1280,23 @@ static int magicvoice_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf
         lib_free(buffer);
     }
 
-    return nr;
+    return 0; /* ? */
 }
 
-static void magicvoice_sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
+void magicvoice_sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
 {
     DBG(("MV: magicvoice_sound_machine_reset\n"));
 }
 
-static int magicvoice_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+int magicvoice_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
     DBG(("MV: speech_sound_machine_init: speed %d cycles/sec: %d\n", speed, cycles_per_sec));
     t6721_sound_machine_init(t6721, speed, cycles_per_sec);
 
-    return 1;
+    return 0; /* ? */
 }
 
-static void magicvoice_sound_machine_close(sound_t *psid)
+void magicvoice_sound_machine_close(sound_t *psid)
 {
     DBG(("MV: magicvoice_sound_machine_close\n"));
 }
