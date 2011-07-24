@@ -151,6 +151,7 @@ static bool inside_monitor = FALSE;
 static unsigned int instruction_count;
 static bool skip_jsrs;
 static int wait_for_return_level;
+static bool trigger_break_on_next_instruction;
 MEMSPACE caller_space;
 
 const char *_mon_space_strings[] = {
@@ -1131,6 +1132,7 @@ void monitor_init(monitor_interface_t *maincpu_interface_init,
     instruction_count = 0;
     skip_jsrs = FALSE;
     wait_for_return_level = 0;
+    trigger_break_on_next_instruction = FALSE;
     mon_breakpoint_init();
     data_buf_len = 0;
     asm_mode = 0;
@@ -1774,8 +1776,7 @@ void mon_instructions_next(int count)
         mon_out("Nexting through the next %d instruction(s).\n",
                    count);
     instruction_count = (count >= 0) ? count : 1;
-    wait_for_return_level = (int)((MONITOR_GET_OPCODE(caller_space) == OP_JSR)
-                            ? 1 : 0);
+    wait_for_return_level = 0;
     skip_jsrs = TRUE;
     exit_mon = 1;
 
@@ -1789,10 +1790,7 @@ void mon_instructions_next(int count)
 void mon_instruction_return(void)
 {
     instruction_count = 1;
-    wait_for_return_level = (int)((MONITOR_GET_OPCODE(caller_space) == OP_RTS)
-                            ? 0
-                            : (MONITOR_GET_OPCODE(caller_space) == OP_JSR)
-                            ? 2 : 1);
+    wait_for_return_level = 1;
     skip_jsrs = TRUE;
     exit_mon = 1;
 
@@ -1991,11 +1989,20 @@ int monitor_force_import(MEMSPACE mem)
 
 void monitor_check_icount(WORD a)
 {
+    if (trigger_break_on_next_instruction) {
+        trigger_break_on_next_instruction = FALSE;
+        if (monitor_mask[caller_space] & MI_STEP) {
+            monitor_mask[caller_space] &= ~MI_STEP;
+            disassemble_on_entry = 1;
+        }
+        if (!monitor_mask[caller_space])
+            interrupt_monitor_trap_off(mon_interfaces[caller_space]->int_status);
+
+        monitor_startup();
+    }
+
     if (!instruction_count)
         return;
-
-    if (wait_for_return_level == 0)
-        instruction_count--;
 
     if (skip_jsrs == TRUE) {
         if (MONITOR_GET_OPCODE(caller_space) == OP_JSR)
@@ -2007,34 +2014,15 @@ void monitor_check_icount(WORD a)
         if (MONITOR_GET_OPCODE(caller_space) == OP_RTI)
             wait_for_return_level--;
 
-        if (wait_for_return_level < 0) {
+        if (wait_for_return_level < 0)
             wait_for_return_level = 0;
-
-            /* FIXME: [SRT], 01-24-2000: this is only a workaround.
-             this occurs when the commands 'n' or  'ret' are executed
-             out of an active IRQ or NMI processing routine.
-
-             the following command immediately stops executing when used
-             with 'n' and parameter > 1, but it's necessary because else,
-             it can occur that the monitor will not come back at all.
-             Don't know so far how this can be avoided. The only
-             solution I see is to keep track of every IRQ and NMI
-             invocation and every RTI. */
-            instruction_count = 0;
-        }
     }
 
-    if (instruction_count != 0)
-        return;
+    if (wait_for_return_level == 0)
+        instruction_count--;
 
-    if (monitor_mask[caller_space] & MI_STEP) {
-        monitor_mask[caller_space] &= ~MI_STEP;
-        disassemble_on_entry = 1;
-    }
-    if (!monitor_mask[caller_space])
-        interrupt_monitor_trap_off(mon_interfaces[caller_space]->int_status);
-
-    monitor_startup();
+    if (instruction_count == 0)
+        trigger_break_on_next_instruction = TRUE;
 }
 
 void monitor_check_icount_interrupt(void)
