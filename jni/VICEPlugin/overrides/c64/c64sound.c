@@ -71,7 +71,7 @@ int machine_sid2_check_range(unsigned int sid2_adr)
     if (machine_class == VICE_MACHINE_C128) {
         if (sid2_adr >= 0xd420 && sid2_adr <= 0xd4e0) {
             if (stereo_sid_list_item != NULL) {
-                c64io_unregister(stereo_sid_list_item);
+                io_source_unregister(stereo_sid_list_item);
                 stereo_sid_list_item = NULL;
             }
             current_device = NULL;
@@ -80,7 +80,7 @@ int machine_sid2_check_range(unsigned int sid2_adr)
 
         if (sid2_adr >= 0xd700 && sid2_adr <= 0xd7e0) {
             if (stereo_sid_list_item != NULL) {
-                c64io_unregister(stereo_sid_list_item);
+                io_source_unregister(stereo_sid_list_item);
                 stereo_sid_list_item = NULL;
             }
             current_device = NULL;
@@ -89,7 +89,7 @@ int machine_sid2_check_range(unsigned int sid2_adr)
     } else {
         if (sid2_adr >= 0xd420 && sid2_adr <= 0xd7e0) {
             if (stereo_sid_list_item != NULL) {
-                c64io_unregister(stereo_sid_list_item);
+                io_source_unregister(stereo_sid_list_item);
                 stereo_sid_list_item = NULL;
             }
             current_device = NULL;
@@ -102,11 +102,11 @@ int machine_sid2_check_range(unsigned int sid2_adr)
         stereo_sid_device.end_address = sid2_adr + 0x1f;
         current_device = &stereo_sid_device;
         if (stereo_sid_list_item != NULL) {
-            c64io_unregister(stereo_sid_list_item);
-            stereo_sid_list_item = c64io_register(&stereo_sid_device);
+            io_source_unregister(stereo_sid_list_item);
+            stereo_sid_list_item = io_source_register(&stereo_sid_device);
         } else {
             if (sid_stereo) {
-                stereo_sid_list_item = c64io_register(&stereo_sid_device);
+                stereo_sid_list_item = io_source_register(&stereo_sid_device);
             }
         }
         return 0;
@@ -119,11 +119,11 @@ void machine_sid2_enable(int val)
 {
     if (val) {
         if (current_device != NULL) {
-            stereo_sid_list_item = c64io_register(&stereo_sid_device);
+            stereo_sid_list_item = io_source_register(&stereo_sid_device);
         }
     } else {
         if (stereo_sid_list_item != NULL) {
-            c64io_unregister(stereo_sid_list_item);
+            io_source_unregister(stereo_sid_list_item);
             stereo_sid_list_item = NULL;
         }
     }
