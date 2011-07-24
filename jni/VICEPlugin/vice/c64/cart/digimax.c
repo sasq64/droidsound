@@ -30,156 +30,495 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "c64export.h"
+#include "cartio.h"
+#include "cartridge.h"
 #include "cmdline.h"
-#include "digiblaster.h"
+#include "digimax.h"
 #include "lib.h"
+#include "machine.h"
 #include "maincpu.h"
 #include "resources.h"
+#include "sid.h"
+#include "snapshot.h"
 #include "sound.h"
 #include "uiapi.h"
 #include "translate.h"
 
+/*
+    Digimax Cartridge
+
+    This cartridge is a 8bit 4-channel digital sound output
+    interface.
+
+    When inserted into the cart port the cart uses 4 registers,
+    one for each channel. The base address can be relocated
+    through the entire I/O-1 and I/O-2 range in 0x20 increments.
+
+    TODO: Userport pin description.
+*/
+
+/* DIGIMAX address */
+int digimax_address;
+
+/* DIGIMAX userport address latch */
+static BYTE digimax_userport_address;
+
+/* DIGIMAX userport direction latches */
+static BYTE digimax_userport_direction_A;
+static BYTE digimax_userport_direction_B;
+
+/* ---------------------------------------------------------------------*/
+
+static void digimax_sound_store(WORD addr, BYTE value);
+static BYTE digimax_sound_read(WORD addr);
+
+static io_source_t digimax_device = {
+    CARTRIDGE_NAME_DIGIMAX,
+    IO_DETACH_RESOURCE,
+    "DIGIMAX",
+    0xde00, 0xde03, 0x03,
+    1, /* read is always valid */
+    digimax_sound_store,
+    digimax_sound_read,
+    digimax_sound_read,
+    NULL,
+    CARTRIDGE_DIGIMAX,
+    0,
+    0
+};
+
+static io_source_list_t * digimax_list_item = NULL;
+
+static c64export_resource_t export_res = {
+    CARTRIDGE_NAME_DIGIMAX, 0, 0, &digimax_device, NULL, CARTRIDGE_DIGIMAX
+};
+
 /* ---------------------------------------------------------------------*/
 
 /* Some prototypes are needed */
-static int digiblaster_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-static int digiblaster_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
-static void digiblaster_sound_machine_store(sound_t *psid, WORD addr, BYTE val);
-static BYTE digiblaster_sound_machine_read(sound_t *psid, WORD addr);
-static void digiblaster_sound_reset(sound_t *psid, CLOCK cpu_clk);
+static int digimax_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
+static int digimax_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
+static void digimax_sound_machine_store(sound_t *psid, WORD addr, BYTE val);
+static BYTE digimax_sound_machine_read(sound_t *psid, WORD addr);
+static void digimax_sound_reset(sound_t *psid, CLOCK cpu_clk);
 
-static int digiblaster_sound_machine_cycle_based(void)
+static int digimax_sound_machine_cycle_based(void)
 {
 	return 0;
 }
 
-static int digiblaster_sound_machine_channels(void)
+static int digimax_sound_machine_channels(void)
 {
-	return 1;
+	return 1; /* FIXME: needs to become stereo for stereo capable ports */
 }
 
-static sound_chip_t digiblaster_sound_chip = {
+static sound_chip_t digimax_sound_chip = {
     NULL, /* no open */
-    digiblaster_sound_machine_init,
+    digimax_sound_machine_init,
     NULL, /* no close */
-    digiblaster_sound_machine_calculate_samples,
-    digiblaster_sound_machine_store,
-    digiblaster_sound_machine_read,
-    digiblaster_sound_reset,
-    digiblaster_sound_machine_cycle_based,
-    digiblaster_sound_machine_channels,
+    digimax_sound_machine_calculate_samples,
+    digimax_sound_machine_store,
+    digimax_sound_machine_read,
+    digimax_sound_reset,
+    digimax_sound_machine_cycle_based,
+    digimax_sound_machine_channels,
     0 /* chip enabled */
 };
 
-static WORD digiblaster_sound_chip_offset = 0;
+static WORD digimax_sound_chip_offset = 0;
 
-void digiblaster_sound_chip_init(void)
+void digimax_sound_chip_init(void)
 {
-    digiblaster_sound_chip_offset = sound_chip_register(&digiblaster_sound_chip);
+    digimax_sound_chip_offset = sound_chip_register(&digimax_sound_chip);
 }
 
 /* ---------------------------------------------------------------------*/
 
-int digiblaster_enabled(void)
+int digimax_cart_enabled(void)
 {
-    return digiblaster_sound_chip.chip_enabled;
+    return digimax_sound_chip.chip_enabled;
 }
 
-static int set_digiblaster_enabled(int val, void *param)
-{
-    digiblaster_sound_chip.chip_enabled = val;
+static BYTE digimax_sound_data[4];
 
+static int digimax_is_userport(void)
+{
+    return (digimax_address == 0xdd00);
+}
+
+static void digimax_sound_store(WORD addr, BYTE value)
+{
+    digimax_sound_data[addr] = value;
+    sound_store((WORD)(digimax_sound_chip_offset | addr), value, 0);
+}
+
+static BYTE digimax_sound_read(WORD addr)
+{
+    BYTE value = sound_read((WORD)(digimax_sound_chip_offset | addr), 0);
+
+    return value;
+}
+
+/*
+    PA2  low, /PA3  low: DAC #0 (left)
+    PA2 high, /PA3  low: DAC #1 (right)
+    PA2  low, /PA3 high: DAC #2 (left)
+    PA2 high, /PA3 high: DAC #3 (right).
+*/
+
+static void digimax_userport_sound_store(BYTE value)
+{
+    WORD addr = 0;
+
+    switch ((digimax_userport_address & digimax_userport_direction_A) & 0xc) {
+        case 0x0:
+            addr = 2;
+            break;
+        case 0x4:
+            addr = 3;
+            break;
+        case 0x8:
+            addr = 0;
+            break;
+        case 0xc:
+            addr = 1;
+            break;
+    }
+
+    digimax_sound_store(addr, (BYTE)(value & digimax_userport_direction_B));
+}
+
+void digimax_userport_store(WORD addr, BYTE value)
+{
+    switch (addr & 0x1f) {
+        case 0:
+            digimax_userport_address = value;
+            break;
+        case 1:
+            if (digimax_sound_chip.chip_enabled && digimax_is_userport()) {
+                digimax_userport_sound_store(value);
+            }
+            break;
+        case 2:
+            digimax_userport_direction_A = value;
+            break;
+        case 3:
+            digimax_userport_direction_B = value;
+            break;
+    }
+}
+
+/* ---------------------------------------------------------------------*/
+
+static int set_digimax_enabled(int val, void *param)
+{
+    if (!digimax_sound_chip.chip_enabled && val) {
+        if (!digimax_is_userport()) {
+            if (c64export_add(&export_res) < 0) {
+                return -1;
+            }
+            digimax_list_item = io_source_register(&digimax_device);
+        }
+        digimax_sound_chip.chip_enabled = 1;
+    } else if (digimax_sound_chip.chip_enabled && !val) {
+        if (digimax_list_item != NULL) {
+            c64export_remove(&export_res);
+            io_source_unregister(digimax_list_item);
+            digimax_list_item = NULL;
+        }
+        digimax_sound_chip.chip_enabled = 0;
+    }
     return 0;
 }
 
+static int set_digimax_base(int val, void *param)
+{
+    int old = digimax_sound_chip.chip_enabled;
+
+    if (val == digimax_address) {
+        return 0;
+    }
+
+    if (old) {
+        set_digimax_enabled(0, NULL);
+    }
+
+    switch (val) {
+        case 0xdd00:   /* special case, userport interface */
+            break;
+        case 0xde00:
+        case 0xde20:
+        case 0xde40:
+        case 0xde60:
+        case 0xde80:
+        case 0xdea0:
+        case 0xdec0:
+        case 0xdee0:
+            if (machine_class != VICE_MACHINE_VIC20) {
+                digimax_device.start_address = (WORD)val;
+                digimax_device.end_address = (WORD)(val + 3);
+                export_res.io1 = &digimax_device;
+                export_res.io2 = NULL;
+            } else {
+                return -1;
+            }
+            break;
+        case 0xdf00:
+        case 0xdf20:
+        case 0xdf40:
+        case 0xdf60:
+        case 0xdf80:
+        case 0xdfa0:
+        case 0xdfc0:
+        case 0xdfe0:
+            if (machine_class != VICE_MACHINE_VIC20) {
+                digimax_device.start_address = (WORD)val;
+                digimax_device.end_address = (WORD)(val + 3);
+                export_res.io1 = NULL;
+                export_res.io2 = &digimax_device;
+            } else {
+                return -1;
+            }
+            break;
+        case 0x9800:
+        case 0x9820:
+        case 0x9840:
+        case 0x9860:
+        case 0x9880:
+        case 0x98a0:
+        case 0x98c0:
+        case 0x98e0:
+        case 0x9c00:
+        case 0x9c20:
+        case 0x9c40:
+        case 0x9c60:
+        case 0x9c80:
+        case 0x9ca0:
+        case 0x9cc0:
+        case 0x9ce0:
+            if (machine_class == VICE_MACHINE_VIC20) {
+                digimax_device.start_address = (WORD)val;
+                digimax_device.end_address = (WORD)(val + 3);
+             } else {
+                return -1;
+            }
+            break;
+        default:
+            return -1;
+    }
+
+    digimax_address = val;
+
+    if (old) {
+        set_digimax_enabled(1, NULL);
+    }
+	return 0;
+}
+
+void digimax_reset(void)
+{
+}
+
+int digimax_enable(void)
+{
+    return resources_set_int("DIGIMAX", 1);
+}
+
+void digimax_detach(void)
+{
+    resources_set_int("DIGIMAX", 0);
+}
+
+/* ---------------------------------------------------------------------*/
+
 static const resource_int_t resources_int[] = {
-    { "DIGIBLASTER", 0, RES_EVENT_STRICT, (resource_value_t)0,
-      &digiblaster_sound_chip.chip_enabled, set_digiblaster_enabled, NULL },
-    { NULL }
+  { "DIGIMAX", 0, RES_EVENT_STRICT, (resource_value_t)0,
+    &digimax_sound_chip.chip_enabled, set_digimax_enabled, NULL },
+  { "DIGIMAXbase", 0xde00, RES_EVENT_NO, NULL,
+    &digimax_address, set_digimax_base, NULL },
+  { NULL }
 };
 
-int digiblaster_resources_init(void)
+int digimax_resources_init(void)
 {
     return resources_register_int(resources_int);
 }
 
+void digimax_resources_shutdown(void)
+{
+}
+
+/* ---------------------------------------------------------------------*/
+
 static const cmdline_option_t cmdline_options[] =
 {
-    { "-digiblaster", SET_RESOURCE, 0,
-      NULL, NULL, "DIGIBLASTER", (resource_value_t)1,
+    { "-digimax", SET_RESOURCE, 0,
+      NULL, NULL, "DIGIMAX", (resource_value_t)1,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_ENABLE_DIGIBLASTER,
+      IDCLS_UNUSED, IDCLS_ENABLE_DIGIMAX,
       NULL, NULL },
-    { "+digiblaster", SET_RESOURCE, 0,
-      NULL, NULL, "DIGIBLASTER", (resource_value_t)0,
+    { "+digimax", SET_RESOURCE, 0,
+      NULL, NULL, "DIGIMAX", (resource_value_t)0,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_DISABLE_DIGIBLASTER,
+      IDCLS_UNUSED, IDCLS_DISABLE_DIGIMAX,
+      NULL, NULL },
+    { "-digimaxbase", SET_RESOURCE, 1,
+      NULL, NULL, "DIGIMAXbase", NULL,
+      USE_PARAM_ID, USE_DESCRIPTION_ID,
+      IDCLS_P_BASE_ADDRESS, IDCLS_DIGIMAX_BASE,
       NULL, NULL },
     { NULL }
 };
 
-int digiblaster_cmdline_options_init(void)
+int digimax_cmdline_options_init(void)
 {
     return cmdline_register_options(cmdline_options);
 }
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE digiblaster_sound_data;
-
-struct digiblaster_sound_s
-{
+struct digimax_sound_s {
     BYTE voice0;
+    BYTE voice1;
+    BYTE voice2;
+    BYTE voice3;
 };
 
-static struct digiblaster_sound_s snd;
+static struct digimax_sound_s snd;
 
-static int digiblaster_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
+static int digimax_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int i;
 
-    if (digiblaster_sound_chip.chip_enabled)
-    {
-        for (i = 0; i < nr; i++)
-        {
-            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave],snd.voice0 << 8);
+    /* FIXME: this should use bandlimited step synthesis. Sadly, VICE does not
+     * have an easy-to-use infrastructure for blep generation. We should write
+     * this code. */
+    if (digimax_sound_chip.chip_enabled) {
+        for (i = 0; i < nr; i++) {
+            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave],((int)snd.voice0) << 6);
+            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave],((int)snd.voice1) << 6);
+            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave],((int)snd.voice2) << 6);
+            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave],((int)snd.voice3) << 6);
         }
     }
     return 0;
 }
 
-static int digiblaster_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+static int digimax_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
     snd.voice0 = 0;
+    snd.voice1 = 0;
+    snd.voice2 = 0;
+    snd.voice3 = 0;
 
     return 1;
 }
 
-static void digiblaster_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
+static void digimax_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
 {
-    snd.voice0 = val;
+    switch (addr & 3) {
+        case 0:
+            snd.voice0 = val;
+            break;
+        case 1:
+            snd.voice1 = val;
+            break;
+        case 2:
+            snd.voice2 = val;
+            break;
+        case 3:
+            snd.voice3 = val;
+            break;
+    }
 }
 
-static BYTE digiblaster_sound_machine_read(sound_t *psid, WORD addr)
+static BYTE digimax_sound_machine_read(sound_t *psid, WORD addr)
 {
-    return 0;
+    return digimax_sound_data[addr & 3];
 }
 
-static void digiblaster_sound_reset(sound_t *psid, CLOCK cpu_clk)
+static void digimax_sound_reset(sound_t *psid, CLOCK cpu_clk)
 {
     snd.voice0 = 0;
-    digiblaster_sound_data = 0;
+    snd.voice1 = 0;
+    snd.voice2 = 0;
+    snd.voice3 = 0;
+    digimax_sound_data[0] = 0;
+    digimax_sound_data[1] = 0;
+    digimax_sound_data[2] = 0;
+    digimax_sound_data[3] = 0;
 }
 
 /* ---------------------------------------------------------------------*/
 
-void digiblaster_store(WORD addr, BYTE value)
+#define CART_DUMP_VER_MAJOR   0
+#define CART_DUMP_VER_MINOR   0
+#define SNAP_MODULE_NAME  "CARTDIGIMAX"
+
+int digimax_snapshot_write_module(snapshot_t *s)
 {
-    digiblaster_sound_data = value;
-    sound_store(digiblaster_sound_chip_offset, value, 0);
+    snapshot_module_t *m;
+
+    m = snapshot_module_create(s, SNAP_MODULE_NAME,
+                          CART_DUMP_VER_MAJOR, CART_DUMP_VER_MINOR);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if (0
+        || (SMW_DW(m, (DWORD)digimax_address) < 0)
+        || (SMW_B(m, digimax_userport_address) < 0)
+        || (SMW_B(m, digimax_userport_direction_A) < 0)
+        || (SMW_B(m, digimax_userport_direction_B) < 0)
+        || (SMW_BA(m, digimax_sound_data, 4) < 0)
+        || (SMW_B(m, snd.voice0) < 0)
+        || (SMW_B(m, snd.voice1) < 0)
+        || (SMW_B(m, snd.voice2) < 0)
+        || (SMW_B(m, snd.voice3) < 0)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+    return 0;
 }
 
-BYTE digiblaster_read(WORD addr)
+int digimax_snapshot_read_module(snapshot_t *s)
 {
-    return sound_read(digiblaster_sound_chip_offset, 0);
+    BYTE vmajor, vminor;
+    snapshot_module_t *m;
+    int temp_digimax_address;
+
+    m = snapshot_module_open(s, SNAP_MODULE_NAME, &vmajor, &vminor);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if ((vmajor != CART_DUMP_VER_MAJOR) || (vminor != CART_DUMP_VER_MINOR)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    if (0
+        || (SMR_DW_INT(m, &temp_digimax_address) < 0)
+        || (SMR_B(m, &digimax_userport_address) < 0)
+        || (SMR_B(m, &digimax_userport_direction_A) < 0)
+        || (SMR_B(m, &digimax_userport_direction_B) < 0)
+        || (SMR_BA(m, digimax_sound_data, 4) < 0)
+        || (SMR_B(m, &snd.voice0) < 0)
+        || (SMR_B(m, &snd.voice1) < 0)
+        || (SMR_B(m, &snd.voice2) < 0)
+        || (SMR_B(m, &snd.voice3) < 0)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+
+    /* HACK set address to an invalid value, then use the function */
+    digimax_address = -1;
+    set_digimax_base(temp_digimax_address, NULL);
+
+    return digimax_enable();
 }
