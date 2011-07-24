@@ -45,9 +45,6 @@
 #include "uiapi.h"
 #include "translate.h"
 
-/* Flag: Do we enable the SFX soundexpander cartridge?  */
-static int sfx_soundexpander_enabled = 0;
-
 /* Flag: What type of ym chip is used?  */
 int sfx_soundexpander_chip = 3526;
 
@@ -105,14 +102,54 @@ static const c64export_resource_t export_res_piano= {
 
 /* ------------------------------------------------------------------------- */
 
+/* Some prototypes are needed */
+static int sfx_soundexpander_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
+static void sfx_soundexpander_sound_machine_close(sound_t *psid);
+static int sfx_soundexpander_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
+static void sfx_soundexpander_sound_machine_store(sound_t *psid, WORD addr, BYTE val);
+static BYTE sfx_soundexpander_sound_machine_read(sound_t *psid, WORD addr);
+static void sfx_soundexpander_sound_reset(sound_t *psid, CLOCK cpu_clk);
+
+static int sfx_soundexpander_sound_machine_cycle_based(void)
+{
+	return 0;
+}
+
+static int sfx_soundexpander_sound_machine_channels(void)
+{
+	return 1; /* FIXME: needs to become stereo for stereo capable ports */
+}
+
+static sound_chip_t sfx_soundexpander_sound_chip = {
+    NULL, /* no open */
+    sfx_soundexpander_sound_machine_init,
+    sfx_soundexpander_sound_machine_close,
+    sfx_soundexpander_sound_machine_calculate_samples,
+    sfx_soundexpander_sound_machine_store,
+    sfx_soundexpander_sound_machine_read,
+    sfx_soundexpander_sound_reset,
+    sfx_soundexpander_sound_machine_cycle_based,
+    sfx_soundexpander_sound_machine_channels,
+    0 /* chip enabled */
+};
+
+static WORD sfx_soundexpander_sound_chip_offset = 0;
+
+void sfx_soundexpander_sound_chip_init(void)
+{
+    sfx_soundexpander_sound_chip_offset = sound_chip_register(&sfx_soundexpander_sound_chip);
+}
+
+/* ------------------------------------------------------------------------- */
+
 int sfx_soundexpander_cart_enabled(void)
 {
-    return sfx_soundexpander_enabled;
+    return sfx_soundexpander_sound_chip.chip_enabled;
 }
 
 static int set_sfx_soundexpander_enabled(int val, void *param)
 {
-    if (sfx_soundexpander_enabled != val) {
+    if (sfx_soundexpander_sound_chip.chip_enabled != val) {
         if (val) {
             if (c64export_add(&export_res_sound) < 0) {
                 return -1;
@@ -122,7 +159,7 @@ static int set_sfx_soundexpander_enabled(int val, void *param)
             }
             sfx_soundexpander_sound_list_item = io_source_register(&sfx_soundexpander_sound_device);
             sfx_soundexpander_piano_list_item = io_source_register(&sfx_soundexpander_piano_device);
-            sfx_soundexpander_enabled = 1;
+            sfx_soundexpander_sound_chip.chip_enabled = 1;
         } else {
             c64export_remove(&export_res_sound);
             c64export_remove(&export_res_piano);
@@ -130,7 +167,7 @@ static int set_sfx_soundexpander_enabled(int val, void *param)
             io_source_unregister(sfx_soundexpander_piano_list_item);
             sfx_soundexpander_sound_list_item = NULL;
             sfx_soundexpander_piano_list_item = NULL;
-            sfx_soundexpander_enabled = 0;
+            sfx_soundexpander_sound_chip.chip_enabled = 0;
         }
     }
     return 0;
@@ -172,7 +209,7 @@ void sfx_soundexpander_detach(void)
 
 static const resource_int_t resources_int[] = {
     { "SFXSoundExpander", 0, RES_EVENT_STRICT, (resource_value_t)0,
-      &sfx_soundexpander_enabled, set_sfx_soundexpander_enabled, NULL },
+      &sfx_soundexpander_sound_chip.chip_enabled, set_sfx_soundexpander_enabled, NULL },
     { "SFXSoundExpanderChip", 0, RES_EVENT_STRICT, (resource_value_t)3526,
       &sfx_soundexpander_chip, set_sfx_soundexpander_chip, NULL },
     { NULL }
@@ -223,12 +260,12 @@ struct sfx_soundexpander_sound_s
 
 static struct sfx_soundexpander_sound_s snd;
 
-int sfx_soundexpander_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
+static int sfx_soundexpander_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int i;
     SWORD *buffer;
 
-    if (sfx_soundexpander_enabled) {
+    if (sfx_soundexpander_sound_chip.chip_enabled) {
         buffer = lib_malloc(nr * 2);
         if (sfx_soundexpander_chip == 3812) {
             ym3812_update_one(YM3812_chip, buffer, nr);
@@ -244,7 +281,7 @@ int sfx_soundexpander_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf
     return 0;
 }
 
-int sfx_soundexpander_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+static int sfx_soundexpander_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
     if (sfx_soundexpander_chip == 3812) {
         if (YM3812_chip != NULL) {
@@ -262,7 +299,7 @@ int sfx_soundexpander_sound_machine_init(sound_t *psid, int speed, int cycles_pe
     return 1;
 }
 
-void sfx_soundexpander_sound_machine_close(sound_t *psid)
+static void sfx_soundexpander_sound_machine_close(sound_t *psid)
 {
     if (YM3526_chip != NULL) {
         ym3526_shutdown(YM3526_chip);
@@ -274,7 +311,7 @@ void sfx_soundexpander_sound_machine_close(sound_t *psid)
     }
 }
 
-void sfx_soundexpander_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
+static void sfx_soundexpander_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
 {
     snd.command = val;
 
@@ -285,7 +322,7 @@ void sfx_soundexpander_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
     }
 }
 
-BYTE sfx_soundexpander_sound_machine_read(sound_t *psid, WORD addr)
+static BYTE sfx_soundexpander_sound_machine_read(sound_t *psid, WORD addr)
 {
     if (sfx_soundexpander_chip == 3812) {
         return ym3812_read(YM3812_chip, 1);
@@ -293,7 +330,7 @@ BYTE sfx_soundexpander_sound_machine_read(sound_t *psid, WORD addr)
     return ym3526_read(YM3526_chip, 1);
 }
 
-void sfx_soundexpander_sound_reset(void)
+static void sfx_soundexpander_sound_reset(sound_t *psid, CLOCK cpu_clk)
 {
     if (sfx_soundexpander_chip == 3812) {
         ym3812_reset_chip(YM3812_chip);
@@ -314,7 +351,7 @@ static void sfx_soundexpander_sound_store(WORD addr, BYTE value)
         }
     }
     if (addr == 0x50) {
-        sound_store((WORD)0x60, value, 0);
+        sound_store(sfx_soundexpander_sound_chip_offset, value, 0);
     }
 }
 
@@ -326,7 +363,7 @@ static BYTE sfx_soundexpander_sound_read(WORD addr)
 
     if (addr == 0x60) {
         sfx_soundexpander_sound_device.io_source_valid = 1;
-        value=sound_read((WORD)0x60, 0);
+        value = sound_read(sfx_soundexpander_sound_chip_offset, 0);
     }
     return value;
 }
@@ -501,7 +538,7 @@ int sfx_soundexpander_snapshot_read_module(snapshot_t *s)
         return -1;
     }
 
-    if (sfx_soundexpander_enabled) {
+    if (sfx_soundexpander_sound_chip.chip_enabled) {
         set_sfx_soundexpander_enabled(0, NULL);
     }
     set_sfx_soundexpander_chip(temp_chip, NULL);

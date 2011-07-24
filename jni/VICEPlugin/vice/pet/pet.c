@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -303,6 +303,15 @@ int machine_specific_init(void)
     vsync_set_machine_parameter(machine_timing.rfsh_per_sec,
                                 machine_timing.cycles_per_sec);
 
+    /* Initialize the sidcart first */
+    sidcart_sound_chip_init();
+
+    /* Initialize native sound chip */
+    pet_sound_chip_init();
+
+    /* Initialize cartridge based sound chips */
+    pet_userport_dac_sound_chip_init();
+
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
@@ -346,7 +355,6 @@ void machine_specific_reset(void)
     viacore_reset(machine_context.via);
     acia1_reset();
     crtc_reset();
-    petsound_reset();
     sid_reset();
     petmem_reset();
     rs232drv_reset();

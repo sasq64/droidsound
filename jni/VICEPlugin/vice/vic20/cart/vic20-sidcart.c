@@ -1,9 +1,9 @@
 /*
- * sidcartjoy.c - SIDCART joystick port emulation.
+ * vic20-sidcart.c - VIC20 specific SID cart emulation.
  *
  * Written by
  *  Marco van den Heuvel <blackystardust68@yahoo.com>
- * 
+ *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
  *
@@ -26,38 +26,42 @@
 
 #include "vice.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include "cartio.h"
+#include "cartridge.h"
 #include "cmdline.h"
-#include "keyboard.h"
-#include "plus4.h"
 #include "resources.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
-#include "sidcart.h"
-#include "sound.h"
 #include "translate.h"
-#include "types.h"
-#include "uiapi.h"
+#include "vic20.h"
 
-int sidcartjoy_enabled = 0;
+/* ---------------------------------------------------------------------*/
 
-int sidcart_address;
-int sidcart_clock;
+static io_source_t sidcart_device = {
+    "SIDCART",
+    IO_DETACH_RESOURCE,
+    "SidCart",
+    0x9800, 0x9bff, 0x3ff,
+    1, /* read is always valid */
+    sid_store,
+    sid_read,
+    NULL, /* TODO: peek */
+    NULL, /* TODO: dump */
+    CARTRIDGE_VIC20_SIDCART,
+    0,
+    0
+};
 
-/* ------------------------------------------------------------------------- */
+static io_source_list_t *sidcart_list_item = NULL;
+
+/* ---------------------------------------------------------------------*/
 
 static int sidcart_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
-    if (!sidcart_clock) {
-        if (cycles_per_sec == PLUS4_PAL_CYCLES_PER_SEC) {
-            return sid_sound_machine_init(psid, (int)(speed * 1.8), cycles_per_sec);
-        } else {
-            return sid_sound_machine_init(psid, (int)(speed * 1.75), cycles_per_sec);
-        }
+    if (!sidcart_clock && cycles_per_sec == VIC20_PAL_CYCLES_PER_SEC) {
+        return sid_sound_machine_init(psid, (int)(speed * 1.125), cycles_per_sec);
     } else {
         return sid_sound_machine_init(psid, speed, cycles_per_sec);
     }
@@ -83,16 +87,58 @@ void sidcart_sound_chip_init(void)
     sidcart_sound_chip_offset = sound_chip_register(&sidcart_sound_chip);
 }
 
-/* ------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------*/
+
+int sidcart_address;
+int sidcart_clock;
 
 int sidcart_enabled(void)
 {
     return sidcart_sound_chip.chip_enabled;
 }
 
+static void sidcart_enable(void)
+{
+    sidcart_list_item = io_source_register(&sidcart_device);
+}
+
+static void sidcart_disable(void)
+{
+    if (sidcart_list_item != NULL) {
+        io_source_unregister(sidcart_list_item);
+        sidcart_list_item = NULL;
+    }
+}
+
+static void set_sidcart_address(int val)
+{
+    WORD address = 0;
+
+    if (val) {
+        address = 0x9c00;
+    } else {
+        address = 0x9800;
+    }
+
+    if (sidcart_list_item != NULL) {
+        sidcart_disable();
+        sidcart_device.start_address = address;
+        sidcart_device.end_address = address + 0x3ff;
+        sidcart_enable();
+    } else {
+        sidcart_device.start_address = address;
+        sidcart_device.end_address = address + 0x3ff;
+    }
+}
+
 static int set_sidcart_enabled(int val, void *param)
 {
     if (val != sidcart_sound_chip.chip_enabled) {
+        if (val) {
+            sidcart_enable();
+        } else {
+            sidcart_disable();
+        }
         sidcart_sound_chip.chip_enabled = val;
         sound_state_changed = 1;
     }
@@ -102,6 +148,7 @@ static int set_sidcart_enabled(int val, void *param)
 static int set_sid_address(int val, void *param)
 {
     if (val != sidcart_address) {
+        set_sidcart_address(val);
         sidcart_address = val;
     }
     return 0;
@@ -116,17 +163,9 @@ static int set_sid_clock(int val, void *param)
     return 0;
 }
 
-static int set_sidcartjoy_enabled(int val, void *param)
-{
-    sidcartjoy_enabled = val;
-    return 0;
-}
-
-/* ------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------*/
 
 static const resource_int_t sidcart_resources_int[] = {
-    { "SIDCartJoy", 0, RES_EVENT_SAME, NULL,
-      &sidcartjoy_enabled, set_sidcartjoy_enabled, NULL },
     { "SidCart", 0, RES_EVENT_SAME, NULL,
       &sidcart_sound_chip.chip_enabled, set_sidcart_enabled, NULL },
     { "SidAddress", 0, RES_EVENT_SAME, NULL,
@@ -144,7 +183,7 @@ int sidcart_resources_init(void)
     return resources_register_int(sidcart_resources_int);
 }
 
-/* ------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------*/
 
 static const cmdline_option_t sidcart_cmdline_options[] = {
     { "-sidenginemodel", CALL_FUNCTION, 1,
@@ -162,16 +201,6 @@ static const cmdline_option_t sidcart_cmdline_options[] = {
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_DISABLE_SIDCART,
       NULL, NULL },
-    { "-sidcartjoy", SET_RESOURCE, 0,
-      NULL, NULL, "SIDCartJoy", (resource_value_t)1,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_ENABLE_SIDCARTJOY,
-      NULL, NULL },
-    { "+sidcartjoy", SET_RESOURCE, 0,
-      NULL, NULL, "SIDCartJoy", (resource_value_t)0,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_DISABLE_SIDCARTJOY,
-      NULL, NULL },
     { "-sidfilters", SET_RESOURCE, 0,
       NULL, NULL, "SidFilters", (void *)1,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
@@ -188,19 +217,4 @@ static const cmdline_option_t sidcart_cmdline_options[] = {
 int sidcart_cmdline_options_init(void)
 {
     return cmdline_register_options(sidcart_cmdline_options);
-}
-
-/* ------------------------------------------------------------------------- */
-
-/* dummy function for now, since only joystick support
-   has been added, might be expanded when other devices
-   get supported */
-
-void sidcartjoy_store(WORD addr, BYTE value)
-{
-}
-
-BYTE sidcartjoy_read(WORD addr)
-{
-  return ~joystick_value[3];
 }

@@ -197,6 +197,34 @@ int sound_machine_channels(void)
     return sid_sound_machine_channels();
 }
 
+
+static sound_chip_t sid_sound_chip = {
+	sid_sound_machine_open,
+	sid_sound_machine_init,
+	sid_sound_machine_close,
+	sid_sound_machine_calculate_samples,
+ 	sid_sound_machine_store,
+    sid_sound_machine_read,
+	sid_sound_machine_reset,
+	sid_sound_machine_enable,
+	sid_sound_machine_cycle_based,
+	sound_machine_channels,
+	 	     0x00, /* offset to be filled in by register routine */
+	 	     1 /* chip enabled */
+};
+	 	 
+
+static WORD sid_sound_chip_offset = 0;
+
+void sid_sound_chip_init(void)
+{
+    sid_sound_chip_offset = sound_chip_register(&sid_sound_chip);
+}
+
+void cartridge_sound_chip_init(void)
+{
+}
+
 void sound_machine_enable(int enable)
 {
     sid_sound_machine_enable(enable);
