@@ -2,7 +2,7 @@
  * vic20sound.c - Implementation of VIC20 sound code.
  *
  * Written by
- *  Rami Räsänen <raipsu@users.sf.net>
+ *  Rami R?s?nen <raipsu@users.sf.net>
  *  Ville-Matias Heikkila <viznut@iki.fi>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -234,8 +234,7 @@ static struct sound_vic20_s snd;
 
 void vic_sound_clock(int cycles);
 
-static int vic_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr,
-                                    int interleave, int *delta_t)
+static int vic_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int s = 0;
 
