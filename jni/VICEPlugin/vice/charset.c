@@ -36,6 +36,7 @@
 #include "lib.h"
 #include "log.h"
 #include "types.h"
+#include "util.h"
 
 /*
     test for line ending, return number of bytes to skip if found.
@@ -252,12 +253,12 @@ char * charset_hexstring_to_byte( char * source, char * destination )
 
         value <<= 4;
 
-        c = toupper( *next++ );
+        c = util_toupper( *next++ );
 
         if (c >= 'A' && c <= 'F' ) {
             value += c - 'A';
         }
-        else if ( isdigit(c) ) {
+        else if ( isdigit((int)c) ) {
             value += c - '0';
         }
         else {

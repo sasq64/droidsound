@@ -27,6 +27,7 @@
 #ifndef VICE_TRANSLATE_LANGUAGES_H
 #define VICE_TRANSLATE_LANGUAGES_H
 
+#ifdef HAS_TRANSLATION
 static char *language_table[] = {
 
 /* english */
@@ -52,9 +53,6 @@ static char *language_table[] = {
 
 /* dutch */
   "nl",
-
-/* polish */
-  "pl",
 
 /* russian */
   "ru",
@@ -94,10 +92,7 @@ static int language_cp_table[] = {
 /* dutch */
   28591,	/* ISO 8859-1 */
 
-/* polish */
-  28592,	/* ISO 8859-2 */
-
-/* polish */
+/* russian */
   28595,	/* ISO 8859-5 */
 
 /* swedish */
@@ -106,5 +101,6 @@ static int language_cp_table[] = {
 /* turkish */
   28599	/* ISO 8859-9 */
 };
+#endif
 
 #endif
