@@ -78,6 +78,7 @@
 #include "signals.h"
 #include "sysfile.h"
 #include "translate.h"
+#include "traps.h"
 #include "types.h"
 #include "uiapi.h"
 #include "uimon.h"
@@ -1755,16 +1756,17 @@ void mon_print_symbol_table(MEMSPACE mem)
 
 void mon_instructions_step(int count)
 {
-    if (count >= 0)
-        mon_out("Stepping through the next %d instruction(s).\n",
-                  count);
+    if (count >= 0) {
+        mon_out("Stepping through the next %d instruction(s).\n", count);
+    }
     instruction_count = (count >= 0) ? count : 1;
     wait_for_return_level = 0;
     skip_jsrs = FALSE;
     exit_mon = 1;
 
-    if (instruction_count == 1)
+    if (instruction_count == 1) {
         mon_console_close_on_leaving = 0;
+    }
 
     monitor_mask[caller_space] |= MI_STEP;
     interrupt_monitor_trap_on(mon_interfaces[caller_space]->int_status);
@@ -1772,16 +1774,17 @@ void mon_instructions_step(int count)
 
 void mon_instructions_next(int count)
 {
-    if (count >= 0)
-        mon_out("Nexting through the next %d instruction(s).\n",
-                   count);
+    if (count >= 0) {
+        mon_out("Nexting through the next %d instruction(s).\n", count);
+    }
     instruction_count = (count >= 0) ? count : 1;
     wait_for_return_level = 0;
     skip_jsrs = TRUE;
     exit_mon = 1;
 
-    if (instruction_count == 1)
+    if (instruction_count == 1) {
         mon_console_close_on_leaving = 0;
+    }
 
     monitor_mask[caller_space] |= MI_STEP;
     interrupt_monitor_trap_on(mon_interfaces[caller_space]->int_status);
@@ -1991,7 +1994,8 @@ int monitor_force_import(MEMSPACE mem)
     return result;
 }
 
-void monitor_check_icount(WORD a)
+/* called by cpu core */
+void monitor_check_icount(WORD pc)
 {
     if (trigger_break_on_next_instruction) {
         trigger_break_on_next_instruction = FALSE;
@@ -1999,36 +2003,50 @@ void monitor_check_icount(WORD a)
             monitor_mask[caller_space] &= ~MI_STEP;
             disassemble_on_entry = 1;
         }
-        if (!monitor_mask[caller_space])
+        if (!monitor_mask[caller_space]) {
             interrupt_monitor_trap_off(mon_interfaces[caller_space]->int_status);
+        }
 
         monitor_startup();
     }
 
-    if (!instruction_count)
+    if (!instruction_count) {
         return;
-
-    if (skip_jsrs == TRUE) {
-        if (MONITOR_GET_OPCODE(caller_space) == OP_JSR)
-            wait_for_return_level++;
-
-        if (MONITOR_GET_OPCODE(caller_space) == OP_RTS)
-            wait_for_return_level--;
-
-        if (MONITOR_GET_OPCODE(caller_space) == OP_RTI)
-            wait_for_return_level--;
-
-        if (wait_for_return_level < 0)
-            wait_for_return_level = 0;
     }
 
-    if (wait_for_return_level == 0)
-        instruction_count--;
+    if (skip_jsrs == TRUE) {
+        /*
+            maintain the return level while "trace over"
 
-    if (instruction_count == 0)
+            - if the current address is the start of a trap, the respective opcode
+              is not actually executed and thus is ignored.
+        */
+        if ((caller_space != e_comp_space) || (traps_checkaddr(pc) == 0)) {
+            if (MONITOR_GET_OPCODE(caller_space) == OP_JSR) {
+                wait_for_return_level++;
+            }
+            if (MONITOR_GET_OPCODE(caller_space) == OP_RTS) {
+                wait_for_return_level--;
+            }
+            if (MONITOR_GET_OPCODE(caller_space) == OP_RTI) {
+                wait_for_return_level--;
+            }
+            if (wait_for_return_level < 0) {
+                wait_for_return_level = 0;
+            }
+        }
+    }
+
+    if (wait_for_return_level == 0) {
+        instruction_count--;
+    }
+
+    if (instruction_count == 0) {
         trigger_break_on_next_instruction = TRUE;
+    }
 }
 
+/* called by cpu core */
 void monitor_check_icount_interrupt(void)
 {
     /* This is a helper for monitor_check_icount.
@@ -2122,12 +2140,13 @@ void monitor_change_device(MEMSPACE mem)
 
 static void make_prompt(char *str)
 {
-    if (asm_mode)
+    if (asm_mode) {
         sprintf(str, ".%04x  ", addr_location(asm_mode_addr));
-    else
+    } else {
         sprintf(str, "(%s:$%04x) ",
                 mon_memspace_string[default_memspace],
                 addr_location(dot_addr[default_memspace]));
+    }
 }
 
 void monitor_abort(void)
@@ -2139,16 +2158,26 @@ static void monitor_open(void)
 {
     unsigned int dnr;
 
+    mon_console_close_on_leaving = 1;
+
     if (monitor_is_remote()) {
         static console_t console_log_remote = { 80, 25, 0, 0 };
         console_log = &console_log_remote;
     } else {
+#if 0
         if (mon_console_close_on_leaving) {
             console_log = uimon_window_open();
             uimon_set_interface(mon_interfaces, NUM_MEMSPACES);
         } else {
             console_log = uimon_window_resume();
             mon_console_close_on_leaving = 1;
+        }
+#endif
+        if (console_log) {
+            console_log = uimon_window_resume();
+        } else {
+            console_log = uimon_window_open();
+            uimon_set_interface(mon_interfaces, NUM_MEMSPACES);
         }
     }
 
@@ -2157,6 +2186,8 @@ static void monitor_open(void)
         exit_mon = 1;
         return;
     }
+
+    mon_console_close_on_leaving = console_log->console_can_stay_open ^ 1;
 
     if ( ! monitor_is_remote() ) {
         signals_abort_set();
@@ -2272,6 +2303,10 @@ static void monitor_close(int check)
         signals_pipe_unset();
     }
 
+    /*
+        if there is no log, or if the console can not stay open when the emulation
+        runs, close the console.
+    */
     if ((console_log == NULL) || (console_log->console_can_stay_open == 0)) {
         mon_console_close_on_leaving = 1;
     }
@@ -2282,6 +2317,10 @@ static void monitor_close(int check)
         } else {
             uimon_window_suspend();
         }
+    }
+
+    if (mon_console_close_on_leaving) {
+        console_log = NULL;
     }
 }
 
