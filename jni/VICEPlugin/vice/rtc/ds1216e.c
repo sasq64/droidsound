@@ -33,10 +33,10 @@
 #include <string.h>
 
 /* The DS1216E is a phantom RTC module, it can be used in between a ROM
- * socket and the actual ROM, the RTS registers are accessed by first
+ * socket and the actual ROM, the RTC registers are accessed by first
  * activating the output by means of a read-bit-match-pattern, once
  * the output has been activated the RTC registers will be serially
- * output on the D0 pin in 64 consecutive reads. The RTS has the
+ * output on the D0 pin in 64 consecutive reads. The RTC has the
  * following features:
  * - Real-Time Clock Counts centi-seconds, seconds, minutes, hours, date of the month,
  *   months, and years
@@ -86,14 +86,11 @@
 
 /* ---------------------------------------------------------------------------------------------------- */
 
-rtc_ds1216e_t *ds1216e_init(BYTE *ram, time_t *offset)
+rtc_ds1216e_t *ds1216e_init(time_t *offset)
 {
     rtc_ds1216e_t *retval = lib_malloc(sizeof(rtc_ds1216e_t));
     memset(retval, 0, sizeof(rtc_ds1216e_t));
-    retval->ram = ram;
     retval->offset = offset;
-    retval->inactive = 1;
-    retval->reset = 1;
 
     return retval;
 }
