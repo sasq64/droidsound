@@ -75,18 +75,16 @@ static sound_chip_t sidcart_sound_chip = {
     sid_sound_machine_store,
     sid_sound_machine_read,
     sid_sound_machine_reset,
-    sid_sound_machine_enable,
     sid_sound_machine_cycle_based,
     sid_sound_machine_channels,
-    0x00, /* offset to be filled in by register routine */
     0 /* chip enabled */
 };
 
-static sound_chip_list_t *sidcart_sound_chip_item = NULL;
+static WORD sidcart_sound_chip_offset = 0;
 
 void sidcart_sound_chip_init(void)
 {
-    sidcart_sound_chip_item = sound_chip_register(&sidcart_sound_chip);
+    sidcart_sound_chip_offset = sound_chip_register(&sidcart_sound_chip);
 }
 
 /* ---------------------------------------------------------------------*/
@@ -179,7 +177,7 @@ static const resource_int_t sidcart_resources_int[] = {
 
 int sidcart_resources_init(void)
 {
-    if (sid_common_resources_init() < 0) {
+    if (sid_resources_init() < 0) {
         return -1;
     }
     return resources_register_int(sidcart_resources_int);
@@ -188,11 +186,6 @@ int sidcart_resources_init(void)
 /* ---------------------------------------------------------------------*/
 
 static const cmdline_option_t sidcart_cmdline_options[] = {
-    { "-sidenginemodel", CALL_FUNCTION, 1,
-      sid_common_set_engine_model, NULL, NULL, NULL,
-      USE_PARAM_ID, USE_DESCRIPTION_ID,
-      IDCLS_P_ENGINE_MODEL, IDCLS_SPECIFY_SIDCART_ENGINE_MODEL,
-      NULL, NULL },
     { "-sidcart", SET_RESOURCE, 1,
       NULL, NULL, "SidCart", NULL,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
@@ -203,20 +196,13 @@ static const cmdline_option_t sidcart_cmdline_options[] = {
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_DISABLE_SIDCART,
       NULL, NULL },
-    { "-sidfilters", SET_RESOURCE, 0,
-      NULL, NULL, "SidFilters", (void *)1,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_ENABLE_SID_FILTERS,
-      NULL, NULL },
-    { "+sidfilters", SET_RESOURCE, 0,
-      NULL, NULL, "SidFilters", (void *)0,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_DISABLE_SID_FILTERS,
-      NULL, NULL },
     { NULL }
 };
 
 int sidcart_cmdline_options_init(void)
 {
+    if (sid_cmdline_options_init() < 0) {
+        return -1;
+    }
     return cmdline_register_options(sidcart_cmdline_options);
 }
