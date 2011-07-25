@@ -2,7 +2,7 @@
  * vic20via2.c - VIA2 emulation in the VIC20.
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  Andreas Boose <viceteam@t-online.de>
  *
@@ -65,11 +65,11 @@ BYTE via2_peek(WORD addr)
     return viacore_peek(machine_context.via2, addr);
 }
 
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
 }
 
@@ -308,4 +308,3 @@ void vic20via2_setup_context(machine_context_t *machine_context)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-
