@@ -18,7 +18,7 @@ void monitor_abort(void) {}
 int monitor_force_import(MEMSPACE mem) { return 0; }
 void monitor_check_icount(WORD a) {}
 void monitor_check_icount_interrupt(void) {}
-void monitor_check_watchpoints(WORD a) {}
+void monitor_check_watchpoints(unsigned int lastpc, unsigned int pc) {}
 
 void monitor_cpu_type_set(const char *cpu_type) {}
 
