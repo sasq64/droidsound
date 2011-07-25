@@ -3,7 +3,7 @@
  * ($DD00).
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  Andreas Boose <viceteam@t-online.de>
  *
@@ -39,7 +39,6 @@
 #include "c64gluelogic.h"
 #include "c64parallel.h"
 #include "cia.h"
-#include "digimax.h"
 #include "iecbus.h"
 #include "interrupt.h"
 #include "joystick.h"
@@ -50,6 +49,7 @@
 #include "maincpu.h"
 #include "printer.h"
 #include "types.h"
+#include "../userport/userport_digimax.h"
 #include "vicii.h"
 
 #ifdef HAVE_RS232

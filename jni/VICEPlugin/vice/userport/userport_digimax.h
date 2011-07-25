@@ -1,8 +1,8 @@
 /*
- * petsound.h - implementation of PET sound code
+ * userport_digimax.h
  *
  * Written by
- *  Teemu Rantanen <tvr@cs.hut.fi>
+ *  Marco van den Heuvel <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -24,19 +24,11 @@
  *
  */
 
-#ifndef VICE_PETSOUND_H
-#define VICE_PETSOUND_H
+#ifndef VICE_USERPORT_DIGIMAX_H
+#define VICE_USERPORT_DIGIMAX_H
 
-#include "sound.h"
 #include "types.h"
 
-extern void petsound_store_onoff(int value);
-extern void petsound_store_rate(CLOCK t);
-extern void petsound_store_sample(BYTE value);
-extern void petsound_store_manual(int value);
-
-extern void petsound_reset(sound_t *psid, CLOCK cpu_clk);
-
-extern void pet_sound_chip_init(void);
+extern void digimax_userport_store(WORD addr, BYTE value);
 
 #endif
