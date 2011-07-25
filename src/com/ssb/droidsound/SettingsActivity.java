@@ -111,6 +111,7 @@ public class SettingsActivity extends PreferenceActivity {
 
 		pref = findPreference("download_link");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+		
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				
