@@ -46,7 +46,6 @@ extern const char machine_name[];
 #define VICE_MACHINE_PLUS4     7
 #define VICE_MACHINE_C64DTV    8
 #define VICE_MACHINE_C64SC     9
-#define VICE_MACHINE_VSID      10
 
 /* Sync factors.  */
 #define MACHINE_SYNC_PAL     -1
@@ -183,3 +182,4 @@ extern int machine_addr_in_ram(unsigned int addr);
 extern const char *machine_get_name(void);
 
 #endif
+

@@ -95,6 +95,7 @@
 #include "vicii.h"
 #include "vicii-mem.h"
 #include "video.h"
+#include "vsidui.h"
 #include "vsync.h"
 
 #ifdef HAVE_MOUSE
@@ -369,6 +370,10 @@ int machine_resources_init(void)
         || cartridge_resources_init() < 0) {
         return -1;
     }
+    if (vsid_mode && psid_init_resources() < 0) {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -392,6 +397,17 @@ void machine_resources_shutdown(void)
 /* C64-specific command-line option initialization.  */
 int machine_cmdline_options_init(void)
 {
+    if (vsid_mode) {
+        if (sound_cmdline_options_init() < 0
+            || sid_cmdline_options_init() < 0
+            || psid_init_cmdline_options() < 0
+            || vsync_cmdline_options_init() < 0) {
+            return -1;
+        }
+
+        return 0;
+    }
+
     if (traps_cmdline_options_init() < 0
         || vsync_cmdline_options_init() < 0
         || video_init_cmdline_options() < 0
@@ -420,6 +436,7 @@ int machine_cmdline_options_init(void)
         || cartridge_cmdline_options_init() < 0) {
         return -1;
     }
+
     return 0;
 }
 
@@ -462,40 +479,42 @@ int machine_specific_init(void)
         return -1;
     }
 
-    /* Setup trap handling.  */
-    traps_init();
+    if (!vsid_mode) {
+        /* Setup trap handling.  */
+        traps_init();
 
-    /* Initialize serial traps.  */
-    if (serial_init(c64_serial_traps) < 0) {
-        return -1;
+        /* Initialize serial traps.  */
+        if (serial_init(c64_serial_traps) < 0) {
+            return -1;
+        }
+
+        serial_trap_init(0xa4);
+        serial_iec_bus_init();
+
+        /* Initialize RS232 handler.  */
+        rs232drv_init();
+        c64_rsuser_init();
+
+        /* Initialize print devices.  */
+        printer_init();
+
+        /* Initialize the tape emulation.  */
+        tape_init(&tapeinit);
+
+        /* Initialize the datasette emulation.  */
+        datasette_init();
+
+        /* Fire up the hardware-level drive emulation.  */
+        drive_init();
+
+        resources_get_int("AutostartDelay", &delay);
+        if (delay == 0) {
+            delay = 3; /* default */
+        }
+
+        /* Initialize autostart.  */
+        autostart_init((CLOCK)(delay * C64_PAL_RFSH_PER_SEC * C64_PAL_CYCLES_PER_RFSH), 1, 0xcc, 0xd1, 0xd3, 0xd5);
     }
-
-    serial_trap_init(0xa4);
-    serial_iec_bus_init();
-
-    /* Initialize RS232 handler.  */
-    rs232drv_init();
-    c64_rsuser_init();
-
-    /* Initialize print devices.  */
-    printer_init();
-
-    /* Initialize the tape emulation.  */
-    tape_init(&tapeinit);
-
-    /* Initialize the datasette emulation.  */
-    datasette_init();
-
-    /* Fire up the hardware-level drive emulation.  */
-    drive_init();
-
-    resources_get_int("AutostartDelay", &delay);
-    if (delay == 0) {
-        delay = 3; /* default */
-    }
-
-    /* Initialize autostart.  */
-    autostart_init((CLOCK)(delay * C64_PAL_RFSH_PER_SEC * C64_PAL_CYCLES_PER_RFSH), 1, 0xcc, 0xd1, 0xd3, 0xd5);
 
     if (vicii_init(VICII_STANDARD) == NULL && !video_disabled_mode) {
         return -1;
@@ -506,13 +525,17 @@ int machine_specific_init(void)
     cia1_init(machine_context.cia1);
     cia2_init(machine_context.cia2);
 
+    if (!vsid_mode) {
+
 #ifndef COMMON_KBD
-    /* Initialize the keyboard.  */
-    if (c64_kbd_init() < 0) {
-        return -1;
-    }
+        /* Initialize the keyboard.  */
+        if (c64_kbd_init() < 0) {
+            return -1;
+        }
 #endif
-    c64keyboard_init();
+
+        c64keyboard_init();
+    }
 
     c64_monitor_init();
 
@@ -538,7 +561,9 @@ int machine_specific_init(void)
 
     /* Initialize the C64-specific part of the UI.  */
     if (!console_mode) {
-        if (machine_class == VICE_MACHINE_C64SC) {
+        if (vsid_mode) {
+            vsid_ui_init();
+        } else if (machine_class == VICE_MACHINE_C64SC) {
             c64scui_init();
         } else {
             c64ui_init();
@@ -548,28 +573,30 @@ int machine_specific_init(void)
     /* Initialize glue logic.  */
     c64_glue_init();
 
-    /* Initialize the +60K.  */
-    plus60k_init();
+    if (!vsid_mode) {
+        /* Initialize the +60K.  */
+        plus60k_init();
 
-    /* Initialize the +256K.  */
-    plus256k_init();
+        /* Initialize the +256K.  */
+        plus256k_init();
 
-    /* Initialize the C64 256K.  */
-    c64_256k_init();
+        /* Initialize the C64 256K.  */
+        c64_256k_init();
 
 #ifdef HAVE_MOUSE
-    /* Initialize mouse support (if present).  */
-    mouse_init();
+        /* Initialize mouse support (if present).  */
+        mouse_init();
 
-    /* Initialize lightpen support and register VICII callbacks */
-    lightpen_init();
-    lightpen_register_timing_callback(vicii_lightpen_timing, 0);
-    lightpen_register_trigger_callback(vicii_trigger_light_pen);
+        /* Initialize lightpen support and register VICII callbacks */
+        lightpen_init();
+        lightpen_register_timing_callback(vicii_lightpen_timing, 0);
+        lightpen_register_trigger_callback(vicii_trigger_light_pen);
 #endif
-    c64iec_init();
-    c64fastiec_init();
+        c64iec_init();
+        c64fastiec_init();
 
-    cartridge_init();
+        cartridge_init();
+    }
 
     machine_drive_stub();
 #if defined (USE_XF86_EXTENSIONS) && (defined(USE_XF86_VIDMODE_EXT) || defined (HAVE_XRANDR))
@@ -595,16 +622,25 @@ void machine_specific_reset(void)
     ciacore_reset(machine_context.cia2);
     sid_reset();
 
-    rs232drv_reset(); /* driver is used by both user- and expansion port ? */
-    rsuser_reset();
+    if (!vsid_mode) {
 
-    printer_reset();
+        rs232drv_reset(); /* driver is used by both user- and expansion port ? */
+        rsuser_reset();
 
-    /* FIXME: whats actually broken here? */
-    /* reset_reu(); */
+        printer_reset();
+
+        /* FIXME: whats actually broken here? */
+        /* reset_reu(); */
+    }
 
     /* The VIC-II must be the *last* to be reset.  */
     vicii_reset();
+
+    if (vsid_mode) {
+        psid_init_driver();
+        psid_init_tune();
+        return;
+    }
 
     cartridge_reset();
     drive_reset();
@@ -639,6 +675,10 @@ void machine_specific_shutdown(void)
 
     cartridge_shutdown();
 
+    if (vsid_mode) {
+        vsid_ui_close();
+    }
+
     c64ui_shutdown();
 }
 
@@ -653,6 +693,19 @@ void machine_handle_pending_alarms(int num_write_cycles)
 static void machine_vsync_hook(void)
 {
     CLOCK sub;
+
+    if (vsid_mode) {
+        unsigned int playtime;
+        static unsigned int time = 0;
+
+        playtime = (psid_increment_frames() * machine_timing.cycles_per_rfsh) / machine_timing.cycles_per_sec;
+        if (playtime != time) {
+            vsid_ui_display_time(playtime);
+            time = playtime;
+        }
+        clk_guard_prevent_overflow(maincpu_clk_guard);
+        return;
+    }
 
     network_hook();
 
@@ -871,6 +924,10 @@ int machine_addr_in_ram(unsigned int addr)
 
 const char *machine_get_name(void)
 {
+    if (vsid_mode) {
+        return "VSID";
+    }
+
     if (machine_class == VICE_MACHINE_C64SC) {
         return "C64SC";
     }

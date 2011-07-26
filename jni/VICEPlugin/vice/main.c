@@ -7,7 +7,7 @@
  *  Vesa-Matti Puro <vmp@lut.fi>
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
- *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  André Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -68,7 +68,7 @@
 #include "video.h"
 
 
-int vsid_mode = 0; /* FIXME: remove this if all ports are updated */
+int vsid_mode = 0;
 #ifdef __OS2__
 const
 #endif
@@ -84,12 +84,10 @@ int main_program(int argc, char **argv)
     int i;
     char *program_name;
 
-    /* Check for -config and -console before initializing the user interface.
+    /* Check for -config, -console and -vsid before initializing the user interface.
        -config  => use specified configuration file
        -console => no user interface
-
-       FIXME: remove cbm2 -model hack !
-    */
+       -vsid    => user interface in separate process */
     for (i = 0; i < argc; i++) {
 #ifndef __OS2__
         if (strcmp(argv[i], "-console") == 0) {
@@ -97,7 +95,12 @@ int main_program(int argc, char **argv)
             video_disabled_mode = 1;
         } else
 #endif
-        if (strcmp(argv[i], "-config") == 0) {
+        if ((strcmp(argv[i], "-vsid") == 0) && (machine_class == VICE_MACHINE_C64)) {
+            vsid_mode = 1;
+#ifndef USE_SDLUI
+            video_disabled_mode = 1;
+#endif
+        } else if (strcmp(argv[i], "-config") == 0) {
             if ((i+1) < argc) {
                 vice_config_file = lib_stralloc(argv[++i]);
             }
@@ -123,7 +126,7 @@ int main_program(int argc, char **argv)
     bindtextdomain(PACKAGE, NLS_LOCALEDIR);
     textdomain(PACKAGE);
 #endif
-
+    
     archdep_init(&argc, argv);
 
 #ifndef __riscos
@@ -143,9 +146,8 @@ int main_program(int argc, char **argv)
 
     gfxoutput_early_init();
 
-    if (init_resources() < 0 || init_cmdline_options() < 0) {
+    if (init_resources() < 0 || init_cmdline_options() < 0)
         return -1;
-    }
 
     /* Set factory defaults.  */
     if (resources_set_defaults() < 0) {
@@ -166,7 +168,7 @@ int main_program(int argc, char **argv)
     translate_arch_language_init();
 #endif
 
-    if (machine_class == VICE_MACHINE_VSID) {
+    if (vsid_mode) {
         /* FIXME: handle these elsewhere */
         resources_set_int("SoundSpeedAdjustment", 2);
         resources_set_int("SoundBufferSize", 1000);
@@ -180,7 +182,7 @@ int main_program(int argc, char **argv)
 
         /* Do not reset to defaults on vsid mode. This would override
            the settings made above when the config file is not available. */
-        if ((retval < 0) && (machine_class != VICE_MACHINE_VSID)) {
+        if ((retval < 0) && !vsid_mode) {
             /* The resource file might contain errors, and thus certain
                resources might have been initialized anyway.  */
             if (resources_set_defaults() < 0) {
@@ -190,13 +192,11 @@ int main_program(int argc, char **argv)
         }
     }
 
-    if (log_init() < 0) {
+    if (log_init() < 0)
         archdep_startup_log_error("Cannot startup logging system.\n");
-    }
 
-    if (initcmdline_check_args(argc, argv) < 0) {
+    if (initcmdline_check_args(argc, argv) < 0)
         return -1;
-    }
 
     program_name = archdep_program_name();
 
@@ -226,21 +226,17 @@ int main_program(int argc, char **argv)
 
     /* Complete the GUI initialization (after loading the resources and
        parsing the command-line) if necessary.  */
-    if (!console_mode && ui_init_finish() < 0) {
+    if (!console_mode && ui_init_finish() < 0)
         return -1;
-    }
 
-    if (!console_mode && video_init() < 0) {
+    if (!console_mode && video_init() < 0)
         return -1;
-    }
 
-    if (initcmdline_check_psid() < 0) {
+    if (initcmdline_check_psid() < 0)
         return -1;
-    }
 
-    if (init_main() < 0) {
+    if (init_main() < 0)
         return -1;
-    }
 
     initcmdline_check_attach();
 
@@ -254,3 +250,4 @@ int main_program(int argc, char **argv)
 
     return 0;
 }
+
