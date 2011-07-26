@@ -83,6 +83,7 @@ public class CSDBParser implements DataSource {
 			String line = reader.readLine();
 			int count = 0;
 			int total = line.length()+1;
+			
 			//int fileSize = (int) is.available();
 			while(line != null) {
 				count++;
