@@ -35,7 +35,6 @@
 #include "archdep.h"
 #include "attach.h"
 #include "autostart.h"
-#include "charset.h"
 #include "cmdline.h"
 #include "initcmdline.h"
 #include "ioutil.h"
@@ -86,7 +85,7 @@ static int cmdline_help(const char *param, void *extra_param)
 
 static int cmdline_dummy_callback(const char *param, void *extra_param)
 {
-    /* "-config" and "-vsid" need to be handled before this gets called
+    /* "-config" needs to be handled before this gets called
        but they also need to be registered as cmdline options,
        hence this kludge. */
     return 0;
@@ -208,16 +207,6 @@ static const cmdline_option_t common_cmdline_options[] = {
     { NULL }
 };
 
-static const cmdline_option_t vsid_cmdline_options[] = {
-    { "-vsid", CALL_FUNCTION, 0,
-      cmdline_dummy_callback, NULL, NULL, NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SID_PLAYER_MODE,
-      NULL, NULL },
-    { NULL }
-};
-
-
 /* These are the command-line options for the initialization sequence.  */
 
 static const cmdline_option_t cmdline_options[] = {
@@ -266,19 +255,12 @@ static const cmdline_option_t cmdline_options[] = {
 
 int initcmdline_init(void)
 {
-    /* Show "-vsid" only for x64 */
-    if (machine_class == VICE_MACHINE_C64) {
-        if (cmdline_register_options(vsid_cmdline_options) < 0) {
-            return -1;
-        }
-    }
-
     if (cmdline_register_options(common_cmdline_options) < 0) {
         return -1;
     }
 
     /* Disable autostart options for vsid */
-    if (!vsid_mode) {
+    if (machine_class != VICE_MACHINE_VSID) {
         if (cmdline_register_options(cmdline_options) < 0) {
             return -1;
         }
@@ -293,7 +275,7 @@ int initcmdline_check_psid(void)
 {
     /* Check for PSID here since we don't want to allow autodetection
        in autostart.c. */
-    if (vsid_mode) {
+    if (machine_class == VICE_MACHINE_VSID) {
         if (autostart_string != NULL
             && machine_autodetect_psid(autostart_string) == -1) {
             log_error(LOG_DEFAULT, "`%s' is not a valid PSID file.",
@@ -338,99 +320,14 @@ int initcmdline_check_args(int argc, char **argv)
     return 0;
 }
 
-/* These are a helper function for the `-autostart' command-line option.  It
-   replaces all the $[0-9A-Z][0-9A-Z] patterns in `string' and returns it.  */
-static char * hexstring_to_byte( char * source, char * destination )
-{
-    char * next = source + 1;
-    char c;
-    BYTE value = 0;
-    int digit = 0;
-    
-    while ( *next && digit++ < 2) {
-
-        value <<= 4;
-
-        c = toupper( *next++ );
-
-        if (c >= 'A' && c <= 'F' ) {
-            value += c - 'A';
-        }
-        else if ( isdigit(c) ) {
-            value += c - '0';
-        }
-        else {
-            break;
-        }
-    }
-
-    if (digit < 2) {
-        value = *source;
-        next = source + 1;
-    }
-
-    *destination = value;
-
-    return next;
-}
-
-static char *replace_hexcodes(char * source)
-{
-    char * destination = lib_stralloc(source ? source : "");
-
-    if ( destination ) {
-        char * pread = destination;
-        char * pwrite = destination;
-
-        while ( *pread != 0 ) {
-            if ( *pread == '$' ) {
-                pread = hexstring_to_byte( pread, pwrite++ );
-            }
-            else {
-                *pwrite ++ = *pread ++;
-            }
-        }
-        *pwrite = 0;
-    }
-
-    return destination;
-}
-
 void initcmdline_check_attach(void)
 {
-    if (!vsid_mode) {
+    if (machine_class != VICE_MACHINE_VSID) {
         /* Handle general-purpose command-line options.  */
 
         /* `-autostart' */
         if (autostart_string != NULL) {
-            char *tmp;
-
-            /* Check for image:prg -format.  */
-            tmp = strrchr(autostart_string, ':');
-            if (tmp) {
-                char *autostart_prg_name;
-                char *autostart_file;
-
-                autostart_file = lib_stralloc(autostart_string);
-                autostart_prg_name = strrchr(autostart_file, ':');
-                *autostart_prg_name++ = '\0';
-                /* Does the image exist?  */
-                if (util_file_exists(autostart_file)) {
-                    char *name;
-
-                    charset_petconvstring((BYTE *)autostart_prg_name, 0);
-                    name = replace_hexcodes(autostart_prg_name);
-                    autostart_autodetect(autostart_file, name, 0,
-                                         autostart_mode);
-                    lib_free(name);
-                } else
-                    autostart_autodetect(autostart_string, NULL, 0,
-                                         autostart_mode);
-                lib_free(autostart_file);
-            } else {
-                autostart_autodetect(autostart_string, NULL, 0,
-                                     autostart_mode);
-            }
+            autostart_autodetect_opt_prgname(autostart_string, 0, autostart_mode);
         }
         /* `-8', `-9', `-10' and `-11': Attach specified disk image.  */
         {
