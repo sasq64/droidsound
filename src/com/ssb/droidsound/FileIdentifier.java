@@ -16,7 +16,7 @@ import java.util.Map;
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsoundedit.R;
+//import com.ssb.droidsoundedit.R;
 
 public class FileIdentifier {
 	private static final String TAG = FileIdentifier.class.getSimpleName();

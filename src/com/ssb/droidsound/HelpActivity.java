@@ -6,7 +6,7 @@ import java.io.InputStream;
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebView;
-import com.ssb.droidsoundedit.R;
+//import com.ssb.droidsoundedit.R;
 
 public class HelpActivity extends Activity {
 

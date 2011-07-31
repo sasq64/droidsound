@@ -2,7 +2,7 @@
  * cbm2mem.c - CBM-II memory handling.
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -567,9 +567,9 @@ BYTE read_io(WORD addr)
           case 0xdb00:
             return read_unused(addr);
           case 0xdc00:
-            return cia1_read(addr);
+            return cia1_read((WORD)(addr & 0x0f));
           case 0xdd00:
-            return acia1_read(addr);
+            return acia1_read((WORD)(addr & 0x03));
           case 0xde00:
             /* FIXME: VIC-II irq? */
             /* if ((machine_class == VICE_MACHINE_CBM5x0) && ((addr & 7) == 2)) {
@@ -1108,4 +1108,3 @@ void mem_color_ram_from_snapshot(BYTE *color_ram)
 {
     memcpy(mem_color_ram, color_ram, 0x400);
 }
-
