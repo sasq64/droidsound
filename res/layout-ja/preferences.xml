@@ -1,0 +1,239 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+        android:key="main_prefs">
+    <CheckBoxPreference
+            android:key="extensions"
+            android:title="未知の拡張機能"
+            android:defaultValue="false"
+            android:summary="未知の拡張子を持つインデックスファイル"
+            />
+    <!--  CheckBoxPreference
+            android:key="silence"
+            android:title="Silence detection"
+            android:defaultValue="true"
+            android:summaryOff="Silence will not trigger a song change"
+            android:summaryOn="Silence will trigger a song change"
+            / -->
+    <CheckBoxPreference
+            android:key="speech"
+            android:title="音声"
+            android:defaultValue="false"
+            android:summary="テキストを音声に変換を使用して、DroidSoundは曲の演奏の名前を話すだろう。"
+            />
+            
+	<EditTextPreference
+			android:numeric="integer"
+            android:key="default_length"
+            android:title="デフォルトの曲の長さ"
+            android:dialogTitle="長さ（秒単位）"
+            android:defaultValue="900"
+            android:summary="実際の長さが不明なときに使用する長さ。"
+	/>
+
+    <ListPreference
+            android:key="buffer"
+            android:title="オーディオ入出力のバッファサイズ"
+            android:summary="サウンドバッファのサイズ。オーディオのスキップを避けるために増加する。"
+            android:defaultValue="Long"
+            android:entries="@array/buffer_opts"
+			android:entryValues="@array/buffer_opts"
+            android:summaryOn="オーディオバッファのサイズ"
+            />
+
+	<PreferenceScreen
+            android:key="audio_prefs"
+            android:title="Audio"
+            android:summary="プラグインのオーディオの設定"
+	>
+	
+		<PreferenceCategory
+			android:title="MP3"
+			android:key="MP3Plugin"
+		>
+		<CheckBoxPreference
+	            android:key="MP3Plugin.simplestream"
+	            android:title="シンプルなMP3ストリーミング"
+	            android:defaultValue="false"
+	            android:summary="シンプルなAndroidOSはストリーミング。より限定されたが、おそらくより安定。"
+	            />
+		</PreferenceCategory>
+		<PreferenceCategory
+			android:title="SID"
+			android:key="SidPlugin"
+		>
+		<ListPreference
+	            android:key="SidPlugin.engine"
+	            android:title="SIDエンジン"
+	            android:defaultValue="VICE"
+				android:entries="@array/engine_opts"
+				android:entryValues="@array/engine_opts"
+	            />
+		<CheckBoxPreference
+	            android:key="SidPlugin.filter"
+	            android:title="SIDフィルタ"
+	            android:defaultValue="true"
+	            android:summary="SIDフィルタをエミュレート"
+	            />
+		<ListPreference
+	            android:key="SidPlugin.filter_bias"
+	            android:title="フィルタバイアス"
+	            android:defaultValue="0"
+                    android:entries="@array/filter_bias_opts"
+                    android:entryValues="@array/filter_bias_vals"
+	            />
+		<ListPreference
+	            android:key="SidPlugin.sid_model"
+	            android:title="優先SIDチップモデル"
+	            android:defaultValue="1"
+                    android:entries="@array/sid_model_opts"
+                    android:entryValues="@array/sid_model_vals"
+	            />
+		<ListPreference
+	            android:key="SidPlugin.ntsc"
+	            android:title="ビデオモード"
+	            android:defaultValue="0"
+                android:entries="@array/videomode_opts"
+                android:entryValues="@array/videomode_vals"
+	            />
+		<ListPreference
+	            android:key="SidPlugin.resampling"
+	            android:title="モードのリサンプリング"
+	            android:defaultValue="1"
+                    android:entries="@array/resampling_opts"
+                    android:entryValues="@array/resampling_vals"
+	            />
+	    </PreferenceCategory>
+		<!-- 
+		<PreferenceCategory
+			android:title="VICE"
+			android:key="VICEPlugin"
+		>
+		
+		<CheckBoxPreference
+	            android:key="VICEPlugin.active"
+	            android:title="Active"
+	            android:defaultValue="false"
+	            android:summaryOff="This plugin is not active"
+	            android:summaryOn="This plugin is active"
+	            />
+		<CheckBoxPreference
+	            android:key="VICEPlugin.filter"
+	            android:title="SID Filter"
+	            android:defaultValue="true"
+	            android:summaryOff="Filter not emulated"
+	            android:summaryOn="Filter emulated"
+	            />
+		<ListPreference
+	            android:key="VICEPlugin.ntsc"
+	            android:title="Video Mode"
+	            android:defaultValue="0"
+                android:entries="@array/videomode_opts"
+                android:entryValues="@array/videomode_vals"
+	            />
+		<ListPreference
+	            android:key="VICEPlugin.resampling"
+	            android:title="Resampling Mode"
+	            android:defaultValue="0"
+                    android:entries="@array/resampling_opts"
+                    android:entryValues="@array/resampling_vals"
+	            />
+	    </PreferenceCategory>
+		<PreferenceCategory
+			android:title="Sidplay"
+			android:key="SidplayPlugin"
+		>
+		<CheckBoxPreference
+           android:key="SidplayPlugin.active"
+           android:title="Active"
+           android:defaultValue="false"
+           android:summaryOff="This plugin is not active"
+           android:summaryOn="This plugin is active"
+           />		
+		<CheckBoxPreference
+	            android:key="SidplayPlugin.filter"
+	            android:title="SID Filter"
+	            android:defaultValue="true"
+	            android:summaryOff="Filter not emulated"
+	            android:summaryOn="Filter emulated"
+	            />
+		<CheckBoxPreference
+	            android:key="SidplayPlugin.ntsc"
+	            android:title="NTSC Mode"
+	            android:defaultValue="false"
+	            android:summaryOff="Emulating PAL mode"
+	            android:summaryOn="Emulating NTSC mode"
+	            />
+		</PreferenceCategory>  -->
+		<PreferenceCategory
+			android:title="UADE"
+			android:key="UADEPlugin"
+		>
+
+		<CheckBoxPreference
+	            android:key="UADEPlugin.filter"
+	            android:title="Amigaのフィルタ"
+	            android:defaultValue="true"
+	            android:summary="Paulaフィルタをエミュレート"
+	            />
+		<ListPreference
+	            android:key="UADEPlugin.panning"
+	            android:title="パニング"
+	            android:defaultValue="Full Stereo"
+                android:entries="@array/panning_opts"
+                android:entryValues="@array/panning_opts"
+	            />
+		<!--   CheckBoxPreference
+	            android:key="UADEPlugin.speedhack"
+	            android:title="Speed Hack"
+	            android:defaultValue="true"
+	            android:summaryOff="Speed Hack Off"
+	            android:summaryOn="Speed Hack On"
+	            / -->
+		<CheckBoxPreference
+	            android:key="UADEPlugin.ntsc"
+	            android:title="NTSCモード"
+	            android:defaultValue="false"
+	            android:summary="NTSCモードをエミュレート"
+	            />
+		</PreferenceCategory>
+	</PreferenceScreen>
+            
+    <PreferenceScreen
+            android:key="database_prefs"
+            android:title="データベース"
+            android:summary="データベースの設定"
+            >
+        <ListPreference
+                android:key="indexing"
+                android:title="インデックス"
+                android:summary="データベースのインデックスレベル。あなたがする必要がない限り変更しないでください。"
+                android:defaultValue="Basic"
+                android:entries="@array/indexing_opts"
+                android:entryValues="@array/indexing_opts"
+		/>
+		<Preference android:key="rescan_pref"
+		android:title="再スキャンのデータベース"
+		android:summary="SDカードに変更をスキャンし、それに応じてデータベースを更新します。"
+		/>
+		<!-- 
+		<Preference android:key="backup_pref"
+		android:title="Backup database"
+		android:summary="Copy the database to sdcard"
+		/>
+		<Preference android:key="restore_pref"
+		android:title="Restore database"
+		android:summary="Restore database from file on sdcard"
+		/>  -->
+    </PreferenceScreen>
+    
+    <Preference
+    	android:key="download_link"
+		android:title="ダウンロード"
+		android:summary="より多くの音楽をダウンロードするウェブサイトに移動します。"
+   	/>
+
+    <Preference android:key="help_pref"
+		android:title="Droidsoundヘルプ"
+		/>
+    <PreferenceScreen android:key="about_prefs" android:title="Droidsoundについて" />
+    
+</PreferenceScreen> 

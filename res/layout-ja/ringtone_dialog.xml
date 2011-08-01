@@ -1,0 +1,31 @@
+
+<ScrollView android:layout_width="fill_parent" android:layout_height="fill_parent" 
+ xmlns:android="http://schemas.android.com/apk/res/android">
+                
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:id="@+id/layout_root"
+		android:orientation="vertical"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:padding="10dp"
+		android:scrollbars="vertical" 
+		>
+		<TextView android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="名前"/>
+		<EditText android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:id="@+id/tone_name" />
+		<TextView android:layout_width="fill_parent" android:layout_height="wrap_content" android:text="長さ"/>
+		<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
+		 android:orientation="horizontal" >
+			<SeekBar android:layout_marginLeft="8dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_width="wrap_content" android:id="@+id/tone_length" android:max="5" android:layout_marginRight="8dp"></SeekBar>
+		<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+		android:textSize="16dp"
+		android:id="@+id/tone_lentext" android:text="0:00" android:gravity="right|center_vertical" android:layout_weight="0" />
+		</LinearLayout>
+		<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
+		 android:orientation="horizontal" >
+		 <CheckBox  android:layout_width="wrap_content" android:layout_height="fill_parent" android:layout_weight="1" 
+		 android:id="@+id/tone_hq" android:text="HQ"  android:gravity="left|center_vertical" />
+		 </LinearLayout>
+		<CheckBox android:text="デフォルトとして設定します。" android:id="@+id/tone_set" android:layout_height="fill_parent" android:gravity="left|center_vertical" android:layout_width="wrap_content"></CheckBox>
+	</LinearLayout>
+</ScrollView>
