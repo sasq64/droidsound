@@ -15,7 +15,7 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
 import com.ssb.droidsound.utils.Log;
-//import com.ssb.droidsoundedit.R;
+import com.ssb.droidsoundedit.R;
 
 public class PlayerServiceConnection implements ServiceConnection {
 	private static final String TAG = PlayerServiceConnection.class.getSimpleName();

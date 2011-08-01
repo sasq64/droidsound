@@ -3,7 +3,7 @@ package com.ssb.droidsound;
 import java.io.File;
 
 import com.ssb.droidsound.utils.Log;
-//import com.ssb.droidsoundedit.R;
+import com.ssb.droidsoundedit.R;
 
 public class SongFile {
 

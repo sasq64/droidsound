@@ -4,7 +4,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.widget.TextView;
-//import com.ssb.droidsoundedit.R;
+import com.ssb.droidsoundedit.R;
 
 public class FontTextView extends TextView {
 

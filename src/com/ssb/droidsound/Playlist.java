@@ -17,7 +17,7 @@ import android.database.Cursor;
 
 import com.ssb.droidsound.database.EditableCursor;
 import com.ssb.droidsound.utils.Log;
-//import com.ssb.droidsoundedit.R;
+import com.ssb.droidsoundedit.R;
 
 public final class Playlist {
 	private static final String TAG = Playlist.class.getSimpleName();
