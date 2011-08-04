@@ -15,7 +15,7 @@ import com.ssb.droidsound.utils.DBFileSystem;
 
 public class MediaSource implements DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();
-	private static String[] albumsFields = { MediaStore.Audio.Albums._ID,
+	private static final String[] albumsFields = { MediaStore.Audio.Albums._ID,
 			  MediaStore.Audio.Albums.ALBUM,
 			  MediaStore.Audio.Albums.ARTIST,
 			  MediaStore.Audio.Albums.FIRST_YEAR,
@@ -25,7 +25,7 @@ public class MediaSource implements DataSource  {
 	private static String[] artistFields = { MediaStore.Audio.Albums._ID,
 		  MediaStore.Audio.Artists.ARTIST
 		  };
-	private static String[] fields = { MediaStore.Audio.Media._ID,
+	private static final String[] fields = { MediaStore.Audio.Media._ID,
 			  MediaStore.Audio.Media.DISPLAY_NAME,
 			  MediaStore.Audio.Media.YEAR,
 			  MediaStore.Audio.Media.TITLE,
@@ -37,15 +37,15 @@ public class MediaSource implements DataSource  {
 
 
 		public static final String NAME = "mediastore.source";
-	private Context context;
-	private DBFileSystem dbfs;
+	private final Context context;
+	private final DBFileSystem dbfs;
 	private String displayTitle;
-	private static final String sortOrder [] = new String[] {
+	private static final String sortOrder [] = {
 		String.format("%s, %s",  MediaStore.Audio.Media.TRACK, MediaStore.Audio.Media.TITLE),
 		String.format("%s, %s",  MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.TITLE),
 		String.format("%s, %s",  MediaStore.Audio.Media.YEAR, MediaStore.Audio.Media.TITLE)
 	};
-	private static final String albumSortOrder [] = new String[] {
+	private static final String albumSortOrder [] = {
 		String.format("%s, %s", MediaStore.Audio.Albums.ALBUM, MediaStore.Audio.Albums.LAST_YEAR),
 		String.format("%s, %s", MediaStore.Audio.Albums.ARTIST, MediaStore.Audio.Albums.LAST_YEAR),
 		String.format("%s, %s", MediaStore.Audio.Albums.LAST_YEAR, MediaStore.Audio.Albums.ALBUM)
@@ -140,7 +140,7 @@ public class MediaSource implements DataSource  {
         return artistFields;
     }
 
-    public static void setArtistFields(String[] artistFields) {
+    public static void setArtistFields(String... artistFields) {
         MediaSource.artistFields = artistFields;
     }
 

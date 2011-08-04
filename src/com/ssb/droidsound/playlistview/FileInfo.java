@@ -7,9 +7,9 @@ import com.ssb.droidsound.database.SongDatabase;
 /** Class used for returning information about songs in list */
 public class FileInfo {
 
-	public int type;
-	public String path;
-	public String name;
+	public final int type;
+	private String path;
+	private final String name;
 
 	FileInfo(String p, String fn, int fl) {
 		path = p;

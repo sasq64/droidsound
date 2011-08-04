@@ -10,9 +10,9 @@ public class GMEPlugin extends DroidSoundPlugin {
 	static {
 		System.loadLibrary("gme");
 	}
-	private Set<String> extensions;
-	static String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" };
-	long currentSong = 0;
+	private final Set<String> extensions;
+	private static final String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" };
+	private long currentSong = 0;
 	public GMEPlugin() {
 		extensions = new HashSet<String>();
 		/*for(String s : ex) {

@@ -2,6 +2,7 @@ package com.ssb.droidsound.playlistview;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 
 import android.app.Activity;
 import android.content.Context;
@@ -24,7 +25,7 @@ class PlayListAdapter extends BaseAdapter {
 	private static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };
 
 
-	private Context mContext;
+	private final Context mContext;
 	private Cursor mCursor;
 
 	private int mSubIndex;
@@ -34,10 +35,10 @@ class PlayListAdapter extends BaseAdapter {
 	private int mPathIndex;
 	private String pathName;
 	private int hilightedPosition = -1;
-	private int itemColor;
-	private int subitemColor;
-	private int archiveColor;
-	private int dirColor;
+	private final int itemColor;
+	private final int subitemColor;
+	private final int archiveColor;
+	private final int dirColor;
 	private float titleHeight;
 	private float subtitleHeight;
 	private boolean subDate;
@@ -160,9 +161,7 @@ class PlayListAdapter extends BaseAdapter {
 			type = mCursor.getInt(mTypeIndex);
 		}
 
-		String title = null;
-		String sub = null;
-		String side = null;
+        String side = null;
 
 		//Log.d(TAG, "DATEINDEX " + mDateIndex);
 
@@ -179,7 +178,8 @@ class PlayListAdapter extends BaseAdapter {
 		String filename = mCursor.getString(mFileIndex);
 
 
-		if(mTitleIndex >= 0) {
+        String title = null;
+        if(mTitleIndex >= 0) {
 			title = mCursor.getString(mTitleIndex);
 		}
 
@@ -200,7 +200,8 @@ class PlayListAdapter extends BaseAdapter {
 			title = "<ERROR>";
 		}
 
-		if(mSubIndex >= 0) {
+        String sub = null;
+        if(mSubIndex >= 0) {
 			if(subDate) {
 				int d = mCursor.getInt(mSubIndex);
 				if(d > 0) {
@@ -247,7 +248,7 @@ class PlayListAdapter extends BaseAdapter {
 
 		if(type == SongDatabase.TYPE_FILE) {
 			tv0.setTextColor(itemColor);
-			if(net || ext.equals("M3U") || ext.equals("PLS")) {
+			if(net || "M3U".equals(ext) || "PLS".equals(ext)) {
 				tv0.setTextColor(0xffffc0c0);
 			}
 				//iv.setImageResource(R.drawable.gflat_headphones);
@@ -258,9 +259,9 @@ class PlayListAdapter extends BaseAdapter {
 				tv0.setTextColor(0xffff9090);
 			}
 			//iv.setImageResource(R.drawable.play_list);
-			if(title.equals("Local Mediastore")) {
+			if("Local Mediastore".equals(title)) {
 				iv.setImageResource(R.drawable.gflat_mus_folder);
-			} else if(title.equals("CSDb")) {
+			} else if("CSDb".equals(title)) {
 				iv.setImageResource(R.drawable.gflat_bag);
 			} else {
 				iv.setImageResource(R.drawable.gflat_package);
@@ -272,7 +273,7 @@ class PlayListAdapter extends BaseAdapter {
 				tv0.setTextColor(0xffff9090);
 			}
 			//iv.setImageResource(R.drawable.play_list);
-			if(title.equals("Favorites")) {
+			if("Favorites".equals(title)) {
 				iv.setImageResource(R.drawable.gflat_heart);
 			} else {
 				iv.setImageResource(R.drawable.gflat_note3);
@@ -284,7 +285,7 @@ class PlayListAdapter extends BaseAdapter {
 			if(net) {
 				tv0.setTextColor(0xffff9090);
 			}
-			if(ext.equals("LNK")) {
+			if("LNK".equals(ext)) {
 				iv.setImageResource(R.drawable.gflat_net_folder);
 				tv0.setTextColor(0xffffc0c0);
 			} else if(upath.contains(".LNK")) {
@@ -309,10 +310,10 @@ class PlayListAdapter extends BaseAdapter {
 	}
 
 	public File getFile(int position) {
-		File f;
-		mCursor.moveToPosition(position);
+        mCursor.moveToPosition(position);
 		String fileName = mCursor.getString(mFileIndex);
-		if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
+        File f;
+        if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 			f = new File(mCursor.getString(mPathIndex), fileName);
 		} else {
 			f = new File(pathName, fileName);
@@ -375,7 +376,8 @@ class PlayListAdapter extends BaseAdapter {
 		}
 
 		//File [] names = new File [ mCursor.getCount() ];
-		ArrayList<FileInfo> files = new ArrayList<FileInfo>();
+        //ArrayList<FileInfo> files = new ArrayList(); Weakened type below.
+        Collection<FileInfo> files = new ArrayList();
 
 		mCursor.moveToPosition(-1);
 		while(mCursor.moveToNext()) {

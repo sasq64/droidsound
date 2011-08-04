@@ -14,7 +14,7 @@ public class FontTextView extends TextView {
 
 		for(int i=0; i<attrs.getAttributeCount(); i++) {
 			String name = attrs.getAttributeName(i);
-			if(name.equals("font")) {
+			if("font".equals(name)) {
 				font = attrs.getAttributeValue(i);
 			}
 		}

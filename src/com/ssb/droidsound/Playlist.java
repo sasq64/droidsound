@@ -23,13 +23,13 @@ public final class Playlist {
 	private static final String TAG = Playlist.class.getSimpleName();
 
 
-	private static Map<File, Playlist> allPlaylists = new HashMap<File, Playlist>();
+	private static final Map<File, Playlist> allPlaylists = new HashMap<File, Playlist>();
 
 	private static final Object lock = new Object();
 
 
 	private MyCursor cursor;
-	private File plistFile;
+	private final File plistFile;
 	private List<String> lines;
 
 	private boolean changed;
@@ -85,11 +85,10 @@ public final class Playlist {
 	}
 
 	 private void readLines() {
-		BufferedReader reader;
-		lines = new ArrayList<String>();
+         lines = new ArrayList<String>();
 		try {
-			reader = new BufferedReader(new FileReader(plistFile));
-			String line = reader.readLine();
+            BufferedReader reader = new BufferedReader(new FileReader(plistFile));
+            String line = reader.readLine();
 			while(line != null) {
 				//Log.d(TAG, line);
 				lines.add(line);
@@ -110,12 +109,12 @@ public final class Playlist {
 
 	 private class MyCursor extends AbstractCursor implements EditableCursor {
 
-		private List<SongFile> songs;
+		private final List<SongFile> songs;
 		private int position;
-		private String[] columnNames;
-		private String[] currentRow;
+		private final String[] columnNames;
+		private final String[] currentRow;
 		private SongFile currentSong;
-		private Playlist playlist;
+		private final Playlist playlist;
 
 		private static final int COL_PATH = 0;
 		private static final int COL_FILENAME = 1;
@@ -472,7 +471,8 @@ public final class Playlist {
 		return plistFile;
 	}
 
-	public synchronized String getTitle() {
+    //public synchronized String getTitle(){
+    public synchronized CharSequence getTitle(){
 		return title;
 	}
 	/*
@@ -544,7 +544,7 @@ public final class Playlist {
 		return hash;
 	}
 
-	public void move(int from, int to) {
+	void move(int from, int to) {
 
 		String fromLine = lines.get(from);
 		lines.add(to, fromLine);

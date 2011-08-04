@@ -36,7 +36,7 @@ public class NativeZipFile {
 	native String getEntry(int i);
 	native int getSize(int i);
 	native int findEntry(String name);
-	native int readData(int i, byte [] target);
+	native int readData(int i, byte... target);
 
 	native long open(int index);
 	native int read(long fd, byte [] target, int offs, int len);
@@ -72,10 +72,9 @@ public class NativeZipFile {
 	
 	class MyEnumeration implements Enumeration<MyZipEntry> {
 
-		@SuppressWarnings("unused")
-		private NativeZipFile zipFile;
+		private final NativeZipFile zipFile;
 		private int currentIndex;
-		private int total;
+		private final int total;
 
 		MyEnumeration(NativeZipFile zf){
 			zipFile = zf;
@@ -104,12 +103,11 @@ public class NativeZipFile {
 	}
 	
 	static class NZInputStream extends InputStream {
-		@SuppressWarnings("unused")
 		private static final String TAG = NZInputStream.class.getSimpleName();
 
-		private NativeZipFile zipFile;
+		private final NativeZipFile zipFile;
 		//private byte buffer [];
-		private long fd;
+		private final long fd;
 		private int total;
 		
 		private NZInputStream(long fd, NativeZipFile zf, int len) {
@@ -155,7 +153,7 @@ public class NativeZipFile {
 		}
 		
 		@Override
-		public int read(byte[] b) throws IOException {
+		public int read(byte... b) throws IOException {
 			return read(b, 0, b.length);
 		}
 	}

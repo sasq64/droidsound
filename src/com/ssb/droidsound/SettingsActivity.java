@@ -5,15 +5,13 @@ import java.util.List;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.Preference;
-import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
@@ -30,14 +28,14 @@ import com.ssb.droidsoundedit.R;
 
 public class SettingsActivity extends PreferenceActivity {
 
-	protected static final String TAG = SettingsActivity.class.getSimpleName();
+	private static final String TAG = SettingsActivity.class.getSimpleName();
 	private SongDatabase songDatabase;
 	private boolean doFullScan;
     private String modsDir;
-	
-	class AudiopPrefsListener implements OnPreferenceChangeListener {
+
+	class AudiopPrefsListener implements Preference.OnPreferenceChangeListener {
 		
-		private DroidSoundPlugin plugin;
+		private final DroidSoundPlugin plugin;
 
 		AudiopPrefsListener(DroidSoundPlugin pi) {
 			plugin = pi;
@@ -50,7 +48,7 @@ public class SettingsActivity extends PreferenceActivity {
 			
 			Log.d(TAG, "CHANGED " + k);
 			
-			if(k.equals("SidPlugin.engine")) {
+			if("SidPlugin.engine".equals(k)) {
 				boolean isVice = ((String) newValue).startsWith("VICE");
 				/* FIXME: Both sid model and resampling actually could be done
 				 * also in sidplayplugin, but it's not currently supported. */
@@ -118,7 +116,7 @@ public class SettingsActivity extends PreferenceActivity {
 				PackageInfo pinfo = null;
 				try {
 					pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-				} catch (NameNotFoundException e) {}
+				} catch (PackageManager.NameNotFoundException e) {}
 				Intent intent;
 				if(pinfo != null && pinfo.versionName.contains("beta")) {
 					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/beta.html"));
@@ -134,7 +132,7 @@ public class SettingsActivity extends PreferenceActivity {
 		PackageInfo pinfo = null;
 		try {
 			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-		} catch (NameNotFoundException e) {}
+		} catch (PackageManager.NameNotFoundException e) {}
 
 		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
 		String appName = getString(pinfo.applicationInfo.labelRes);
@@ -241,13 +239,13 @@ public class SettingsActivity extends PreferenceActivity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
-				}				
+				}
 			});
 			break;
 		case R.string.scan_db:
 			doFullScan = false;
 			builder.setTitle(id);
-			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
+			builder.setMultiChoiceItems(R.array.scan_opts, null, new DialogInterface.OnMultiChoiceClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
 					Log.d(TAG, "%d %s", which, String.valueOf(isChecked));
@@ -258,7 +256,7 @@ public class SettingsActivity extends PreferenceActivity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
-				}				
+				}
 			});
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int id) {

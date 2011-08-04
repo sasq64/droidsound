@@ -26,11 +26,11 @@ import android.database.MatrixCursor;
 import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.utils.Log;
 
-public class HttpSongSource {
+class HttpSongSource {
 	private static final String TAG = HttpSongSource.class.getSimpleName();
 	private static class CacheEntry {
-		public MatrixCursor cursor;
-		public int status;
+		public final MatrixCursor cursor;
+		public final int status;
 		public CacheEntry(MatrixCursor cr, int st) {
 			status = st;
 			cursor = cr;
@@ -39,7 +39,7 @@ public class HttpSongSource {
 
 	private static final Map<String, CacheEntry> dirMap = new HashMap<String, CacheEntry>();
 
-	private static Map<String, Character> htmlMap = new HashMap<String, Character>();
+	private static final Map<String, Character> htmlMap = new HashMap<String, Character>();
 
 	private static Thread httpThread = null;
 
@@ -101,7 +101,7 @@ public class HttpSongSource {
 	private static class HTTPWorker implements Runnable {
 
 		private final List<String> dirList = new ArrayList<String>();
-		private Context context;
+		private final Context context;
 		private boolean doQuit;
 		public HTTPWorker(Context ctx) {
 			context = ctx;
@@ -250,8 +250,8 @@ public class HttpSongSource {
                              String title = htmlFix(text);
                              String fileName = htmlFix(href);
 
-                             int type = SongDatabase.TYPE_FILE;
                              if (!fileName.startsWith("/") && !fileName.startsWith("?")) {
+                                 int type = SongDatabase.TYPE_FILE;
                                  if (fileName.endsWith("/")) {
                                      if (title.endsWith("/")) {
                                          title = title.substring(0, title.length() - 1);

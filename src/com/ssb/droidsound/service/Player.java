@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.zip.ZipEntry;
 
@@ -53,7 +54,7 @@ public class Player implements Runnable {
 	public static final int MSG_SUBTUNE = 5;
 	public static final int MSG_DETAILS = 6;
 	public static final int MSG_INFO = 7;
-	protected static final int MSG_WAVDUMPED = 8;
+	static final int MSG_WAVDUMPED = 8;
 
 	// public static final int MSG_SUBTUNE = 5;
 
@@ -75,7 +76,7 @@ public class Player implements Runnable {
 		public byte[] md5;
 	}
 
-	private Handler mHandler;
+	private final Handler mHandler;
 
 	// Audio data
 	private short[] samples;
@@ -84,7 +85,7 @@ public class Player implements Runnable {
 
 	// Plugins
 	private DroidSoundPlugin currentPlugin;
-	private List<DroidSoundPlugin> plugins;
+	private final List<DroidSoundPlugin> plugins;
 
 	// Incoming state
 	private final Object cmdLock = new Object();
@@ -93,7 +94,7 @@ public class Player implements Runnable {
 
     private int lastPos;
 	private int playPosOffset;
-	private SongInfo currentSong = new SongInfo();
+	private final SongInfo currentSong = new SongInfo();
 
 	// private Object songRef;
 
@@ -105,7 +106,7 @@ public class Player implements Runnable {
 	private volatile State currentState = State.STOPPED;
 	private int silentPosition;
 
-	private int FREQ = 44100;
+	private final int FREQ = 44100;
 	private long audioTime;
 	private int aCount;
 	private long lastTime = -1;
@@ -165,14 +166,18 @@ public class Player implements Runnable {
 
 	public static String makeSize(long fileSize) {
 		String s;
-		if(fileSize < 10 * 1024) {
+        //if(fileSize < 10 * 1024) { simplified using a shift
+		if(fileSize < 10 << 10) {
 			s = String.format("%1.1fKB", (float) fileSize / 1024F);
-		} else if(fileSize < 1024 * 1024) {
+            //} else if(fileSize < 1024 * 1024){ Simplified using a shift.
+		} else if(fileSize < 1024 << 10) {
 			s = String.format("%dKB", fileSize / 1024);
-		} else if(fileSize < 10 * 1024 * 1024) {
+            //} else if(fileSize < 10 * 1024 * 1024){ simplified using a shift.
+		} else if(fileSize < (10 << 10) << 10) {
 			s = String.format("%1.1fMB", (float) fileSize / (1024F * 1024F));
 		} else {
-			s = String.format("%dMB", fileSize / (1024 * 1024));
+            //s = String.format("%dMB, fileSize / (1024 * 1024)); Simplified using a shift.
+			s = String.format("%dMB", fileSize / (1024 << 10));
 		}
 		return s;
 	}
@@ -215,7 +220,8 @@ public class Player implements Runnable {
 		int freq = FREQ/divider;
 
 		// Size in bytes of wavdata
-		int dataSize = wavSamples * numChannels * 16/8;
+        //int dataSize = wavSamples * numChannels * 16/8; Simplified using a shift.
+		int dataSize = (wavSamples * numChannels << 4) /8;
 
 		Log.d(TAG, "%dsec => %d samples, %d wavSamples, %d dataSize", length/1000, numSamples, wavSamples, dataSize);
 
@@ -231,8 +237,10 @@ public class Player implements Runnable {
 		bb.putShort((short) 1);
 		bb.putShort((short) numChannels);
 		bb.putInt(freq);
-		bb.putInt(freq * numChannels * 16/8);
-		bb.putShort((short) (numChannels * 16/8));
+        //bb.putInt(freq * numChannels * 16/8); simplified using a shift.
+		bb.putInt((freq * numChannels << 4) /8);
+        //bb.putShort(numChannels * 16/8); Simplified using a shift.
+		bb.putShort((short) ((numChannels << 4) /8));
 		bb.putShort((short) 16);
 
 		bb.put(new byte[] { 'd', 'a', 't', 'a' });
@@ -251,8 +259,8 @@ public class Player implements Runnable {
 			Log.d(TAG, "READ %d (%d)", len, bufSize);
 			if(len < 0) {
 				wavSamples = sampleCount / divider;
-				dataSize = wavSamples * numChannels * 16/8;
-
+                //dataSize = wavSamples * numChannels * 16/8; Simplified using a shift.
+				dataSize = (wavSamples * numChannels << 4) /8;
 				Log.d(TAG, "Early end, new datasize is %d", dataSize);
 
 				bb.putInt(4, dataSize + 36);
@@ -276,8 +284,8 @@ public class Player implements Runnable {
 			int i = 0;
 			int volume = 100;
 			// Now we iterate over sample values which are twice as many
-			while(i < len*2) {
-
+            //while(i < len*2){ simplified using a shift.
+			while(i < len << 1) {
 				if((flags & 2) != 0) {
 					bbuffer[j++] = (byte) (samples[i]&0xff);
 					bbuffer[j++] = (byte) ((samples[i]>>8)&0xff);
@@ -326,13 +334,12 @@ public class Player implements Runnable {
 		playPosOffset = 0;
 		songEnded = false;
 
-		boolean flush = true; // (currentState != State.SWITCHING);
-
-		currentState = State.SWITCHING;
+        currentState = State.SWITCHING;
 
 		// SongFile sf = new SongFile(songName);
 
-		List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
+        //List<DroidSoundPlugin> list = new ArrayList(); //Below is weaker type of same thing
+		Collection<DroidSoundPlugin> list = new ArrayList();
 
 		for(DroidSoundPlugin plugin : plugins) {
 			if(plugin.canHandle(song.getName())) {
@@ -426,7 +433,7 @@ public class Player implements Runnable {
 				Log.d(TAG, "Trying to read normal file " + songFile.getPath());
 
 				fileSize = songFile.length();
-				System.gc();
+				//System.gc(); generally unecessary. Garbage Collection is automated
 
 				if(!songFile.exists()) {
 					songFile = null;
@@ -561,7 +568,7 @@ public class Player implements Runnable {
 
 				currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 
-				if(currentSong.title == null || currentSong.title.equals("")) {
+				if(currentSong.title == null || "".equals(currentSong.title)) {
 
 					if(currentPlugin.delayedInfo()) {
 						currentSong.title = null;
@@ -629,7 +636,8 @@ public class Player implements Runnable {
 
 				mHandler.sendMessage(msg);
 
-				if(flush) {
+                boolean flush = true; // (currentState != State.SWITCHING);
+                if(flush) {
 					audioTrack.stop();
 					audioTrack.flush();
 					try {
@@ -678,7 +686,7 @@ public class Player implements Runnable {
 			s = "";
 		}
 		return s;
-	}
+    }
 
 	@Override
 	public void run() {
@@ -856,8 +864,7 @@ public class Player implements Runnable {
 
 				if(currentState == State.PLAYING) {
 					// Log.d(TAG, "Get sound data");
-					int len = 0;
-					MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+                    MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
 					if(mp != null) {
 
 						int playPos = currentPlugin.getSoundData(null, 0);
@@ -973,7 +980,8 @@ public class Player implements Runnable {
 						continue;
 					}
 
-					if(!songEnded) {
+                    int len = 0;
+                    if(!songEnded) {
 						//Log.d(TAG, "Get sound data");
 						len = currentPlugin.getSoundData(samples, bufSize / 16);
 						//Log.d(TAG, "DONE");
@@ -1093,7 +1101,7 @@ public class Player implements Runnable {
 		return audioTrack.getPlaybackHeadPosition();
 	}
 
-	public final synchronized boolean getSongInfo(SongInfo target) {
+	public final synchronized void getSongInfo(SongInfo target) {
 		target.title = currentSong.title == null ? null : currentSong.title;
 		target.author = currentSong.author == null ? null : currentSong.author;
 		target.copyright = currentSong.copyright == null ? null : currentSong.copyright;
@@ -1109,8 +1117,7 @@ public class Player implements Runnable {
 		target.canSeek = currentSong.canSeek;
 		target.source = currentSong.source;
 		target.md5 = currentSong.md5;
-		return true;
-	}
+    }
 
 	public final void stop() {
 		synchronized (cmdLock) {

@@ -3,10 +3,10 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnPreparedListener;
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.MediaStreamer;
@@ -52,7 +52,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	public boolean canHandleExt(String ext) {
 		ext = ext.toUpperCase();
 		Log.d(TAG, "Checking ext '%s'", ext);
-		return ext.equals(".MP3") || ext.equals(".M3U") || ext.equals(".PLS");
+		return ".MP3".equals(ext) || ".M3U".equals(ext) || ".PLS".equals(ext);
 	}
 	@Override
 	public String[] getDetailedInfo() {
@@ -61,7 +61,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 		}
 
 		Log.d(TAG, "getDetailedInfo");
-		List<String> info = new ArrayList<String>();
+        //List<String> info = new ArrayList(); Weaker type is below
+		Collection<String> info = new ArrayList<String>();
 		info.add("Format");
 		info.add("MP3");
 		if(songAlbum != null && songAlbum.length() > 0) {
@@ -255,7 +256,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			mediaPlayer = new MediaPlayer();
 			mediaPlayer.setDataSource(songName);
 			loaded = true;
-			mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
+			mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
 				@Override
 				public void onPrepared(MediaPlayer mp) {
 					prepared = true;
@@ -289,9 +290,9 @@ public class MP3Plugin extends DroidSoundPlugin {
 		loaded = false;
 		songLength = -1;
 
-		PlaylistParser pls = null;
-		type = "MP3";
-		if(file.getName().toUpperCase().endsWith(".M3U")) {
+        type = "MP3";
+        PlaylistParser pls = null;
+        if(file.getName().toUpperCase().endsWith(".M3U")) {
 			pls = new M3UParser(file);
 			type = "M3U";
 		} else if(file.getName().toUpperCase().endsWith(".PLS")) {
@@ -307,7 +308,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 					mediaPlayer = new MediaPlayer();
 					mediaPlayer.setDataSource(pls.getMedia(0));
 					loaded = true;
-					mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
+					mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
 						@Override
 						public void onPrepared(MediaPlayer mp) {
 							prepared = true;

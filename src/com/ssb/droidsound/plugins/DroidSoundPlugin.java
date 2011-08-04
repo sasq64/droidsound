@@ -16,7 +16,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -31,7 +30,7 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_LENGTH = 2;
 	public static final int INFO_TYPE = 3;
 	public static final int INFO_COPYRIGHT = 4;
-	public static final int INFO_GAME = 5;
+	static final int INFO_GAME = 5;
 	public static final int INFO_SUBTUNE_COUNT = 6;
 	public static final int INFO_STARTTUNE = 7;
 	public static final int INFO_SUBTUNE_TITLE = 8;
@@ -41,19 +40,19 @@ public abstract class DroidSoundPlugin {
 	//public static final int SIZEOF_INFO = 11;
 
 	public static final int INFO_DETAILS_CHANGED = 15;
-	public static final int OPT_FILTER = 1;
-	public static final int OPT_RESAMPLING = 2;
-	public static final int OPT_NTSC = 3;
-	public static final int OPT_SPEED_HACK = 4;
-	public static final int OPT_PANNING = 5;
-	public static final int OPT_FILTER_BIAS = 6;
-	public static final int OPT_SID_MODEL = 7;
+	static final int OPT_FILTER = 1;
+	static final int OPT_RESAMPLING = 2;
+	static final int OPT_NTSC = 3;
+	static final int OPT_SPEED_HACK = 4;
+	static final int OPT_PANNING = 5;
+	static final int OPT_FILTER_BIAS = 6;
+	static final int OPT_SID_MODEL = 7;
 	private static Context context;
-	static Object lock = new Object();
+	static final Object lock = new Object();
 	public static void setContext(Context ctx) {
 		context = ctx;
 	}
-	public static Context getContext() { return context; }
+	static Context getContext() { return context; }
 	private byte[] md5;
 	private int streamSize;
 
@@ -83,7 +82,7 @@ public abstract class DroidSoundPlugin {
 
 
 
-	public boolean loadInfo(String name, byte [] module, int size) {
+	boolean loadInfo(String name, byte[] module, int size) {
 		return load(name, module, size);
 	}
 
@@ -104,17 +103,17 @@ public abstract class DroidSoundPlugin {
 			httpConn.connect();
 			int response = httpConn.getResponseCode();
 			if(response == HttpURLConnection.HTTP_OK) {
-				int size;
-				byte[] buffer = new byte[16384];
-				Log.d(TAG, "HTTP connected");
+                Log.d(TAG, "HTTP connected");
 				InputStream in = httpConn.getInputStream();
 				// URLUtil.guessFileName(songName, );
 				int dot = songName.lastIndexOf('.');
-				String ext = DroidSoundPlugin.getExt(songName);
+				String ext = getExt(songName);
 				File f = File.createTempFile("music", ext);
 				FileOutputStream fos = new FileOutputStream(f);
-				BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-				while((size = in.read(buffer)) != -1) {
+                byte[] buffer = new byte[16384];
+                BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
+                int size;
+                while((size = in.read(buffer)) != -1) {
 					bos.write(buffer, 0, size);
 				}
 				bos.flush();
@@ -155,9 +154,9 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public void calcMD5(byte[] songBuffer, int size) {
-		MessageDigest md = null;
-		Log.d(TAG, "MD5 CALCING TIME");
-		try {
+        Log.d(TAG, "MD5 CALCING TIME");
+        MessageDigest md = null;
+        try {
 			md = MessageDigest.getInstance("MD5");
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
@@ -168,7 +167,7 @@ public abstract class DroidSoundPlugin {
 		md.update(songBuffer, 0, size);
 		md5 = md.digest();
 	}
-	public void calcMD5(byte[] songBuffer) {
+	void calcMD5(byte... songBuffer) {
 		calcMD5(songBuffer, songBuffer.length);
 	}
 
@@ -213,7 +212,7 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public abstract void unload();
-	public static String getExt(String name) {
+	private static String getExt(String name) {
 		String ext = "";
 		int dot = name.lastIndexOf('.');
 		if(dot > 0) {
@@ -238,7 +237,7 @@ public abstract class DroidSoundPlugin {
 		return canHandleExt(getExt(name));
 	}
 	
-	public boolean canHandleExt(String ext) { return false; }
+	boolean canHandleExt(String ext) { return false; }
 	
 	
 	public abstract boolean load(String name, byte [] module, int size);
@@ -299,14 +298,14 @@ public abstract class DroidSoundPlugin {
 
 
 	public static void setOptions(SharedPreferences prefs) {
-		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList(); 
+		List<DroidSoundPlugin> list = createPluginList();
 		Map<String, ?> prefsMap = prefs.getAll();
 
 		for(DroidSoundPlugin plugin : list) {
 
 			String plname = plugin.getClass().getSimpleName();
 
-			for(Entry<String, ?> entry  : prefsMap.entrySet()) {
+			for(Map.Entry<String, ?> entry  : prefsMap.entrySet()) {
 				String k = entry.getKey();
 				int dot = k.indexOf('.');
 				if(dot >= 0) {
@@ -324,8 +323,8 @@ public abstract class DroidSoundPlugin {
 			}
 		}
 	}
-	static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
-	static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
+	private static final String [] pref0 = { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
+	private static final String [] pref1 = { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
 
 	public static String getSecondaryFile(String path) {
 

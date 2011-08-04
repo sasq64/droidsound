@@ -3,7 +3,7 @@ package com.ssb.droidsound.utils;
 import android.database.Cursor;
 import android.database.CursorWrapper;
 
-public class SortedCursor extends CursorWrapper {
+class SortedCursor extends CursorWrapper {
 
 	private int [] sorted;
 
@@ -18,12 +18,14 @@ public class SortedCursor extends CursorWrapper {
 
 	@Override
 	public boolean moveToFirst() {
-		return super.moveToPosition(sorted[0]);
+		//return super.moveToPosition(sorted[0]);
+        return moveToPosition(sorted[0]); //Super is redundant
 	}
 
 	@Override
 	public boolean moveToLast() {
-		return super.moveToPosition(sorted[sorted.length-1]);
+		//return super.moveToPosition(sorted[sorted.length-1]);
+        return moveToPosition(sorted[sorted.length-1]); //super is redundant
 	}
 
 	@Override
@@ -32,7 +34,7 @@ public class SortedCursor extends CursorWrapper {
 		return super.moveToNext();
 	}
 
-    public void setSorted(int[] sorted) {
+    public void setSorted(int... sorted) {
         this.sorted = sorted;
     }
 }

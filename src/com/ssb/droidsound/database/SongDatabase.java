@@ -9,14 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -56,14 +49,14 @@ import com.ssb.droidsound.utils.NativeZipFile;
 public class SongDatabase implements Runnable {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	private static final int DB_VERSION = 4;
-	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
+	private static final String[] FILENAME_array = { "_id", "FILENAME", "TYPE" };
 	private ScanCallback scanCallback;
-	private Map<String, DataSource> dbsources = new HashMap<String, DataSource>();
+	private final Map<String, DataSource> dbsources = new HashMap<String, DataSource>();
 	private SQLiteDatabase scanDb;
 	private SQLiteDatabase rdb;
 	private String dbName;
 	private volatile boolean stopScanning;
-	private Context context;
+	private final Context context;
 	private volatile Handler mHandler;
 	private volatile boolean scanning;
 	private volatile boolean isReady;
@@ -111,11 +104,11 @@ public class SongDatabase implements Runnable {
 	}
 
 	private SQLiteDatabase getWritableDatabase() {
-		SQLiteDatabase dbrc = null;
-		if(dbName == null) {
+        if(dbName == null) {
 			return null;
 		}
-		try {
+        SQLiteDatabase dbrc = null;
+        try {
 			dbrc =  SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.CREATE_IF_NECESSARY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -285,9 +278,8 @@ public class SongDatabase implements Runnable {
 			String oldPath;
 			@Override
 			public void notifyScan(String path, int percent) {
-				Intent intent;
 
-				if(path == null) {
+                if(path == null) {
 					path = oldPath;
 				} else {
 					oldPath = path;
@@ -295,7 +287,8 @@ public class SongDatabase implements Runnable {
 
 				Log.d(TAG, "PATH %s %d\n", path, percent);
 
-				if(percent >= 0) {
+                Intent intent;
+                if(percent >= 0) {
 					intent = new Intent("com.sddb.droidsound.SCAN_UPDATE");
 					intent.putExtra("PATH", path);
 					intent.putExtra("PERCENT", percent);
@@ -473,7 +466,7 @@ public class SongDatabase implements Runnable {
 				break;
 			}
 
-			for(Entry<String, DataSource> ds : dbsources.entrySet()) {
+			for(Map.Entry<String, DataSource> ds : dbsources.entrySet()) {
 				ds.getValue().createIndex(indexMode, db);
 			}
 
@@ -515,11 +508,11 @@ public class SongDatabase implements Runnable {
 		Log.d(TAG, "ENUM");
 		Enumeration<? extends ZipEntry> entries = zfile.entries();
 
-		Set<String> pathSet = new HashSet<String>();
+        //Set<String> pathSet = new HashSet<String>();
+		Collection<String> pathSet = new HashSet<String>();
 
 		Log.d(TAG, "Scanning %d zip entries", zfile.size());
-		int count = 0;
-		int total = zfile.size();
+        int total = zfile.size();
 
 		int reportPeriod = total / 100;
 		if(reportPeriod < 100) {
@@ -530,7 +523,8 @@ public class SongDatabase implements Runnable {
 		//values.put("LENGTH", 0);
 		values.put("TYPE", TYPE_FILE);
 
-		while(entries.hasMoreElements()) {
+        int count = 0;
+        while(entries.hasMoreElements()) {
 			if(stopScanning) {
 				zfile.close();
 				return false;
@@ -548,7 +542,7 @@ public class SongDatabase implements Runnable {
 				path = baseNameNoSlash;
 			}
 
-			if(fileName.equals("")) {
+			if("".equals(fileName)) {
 				pathSet.add(path);
 			} else {
 				InputStream is = zfile.getInputStream(ze);
@@ -607,7 +601,7 @@ public class SongDatabase implements Runnable {
 	private void scanFiles(File parentDir, boolean alwaysScan, long lastScan) {
 
 		String parent = parentDir.getPath();
-		String[] parentArray = new String[] { parent };
+		String[] parentArray = { parent };
 
 		if(stopScanning) {
 			return;
@@ -634,12 +628,17 @@ public class SongDatabase implements Runnable {
 				scanCallback.notifyScan(parentDir.getPath(), 0);
 			}
 			// All files and directories
-			Set<String> files = new HashSet<String>();
+            //Set<String> files = new HashSet<String>();  weakened type below
+			Collection<String> files = new HashSet<String>();
 
 			// Directories to scan later
-			Set<String> foundDirs = new HashSet<String>();
-			Set<String> foundDirsNew = new HashSet<String>();
-			Set<File> zipFiles = new HashSet<File>();
+            // Set<String> foundDirs = new HashSet<String>();
+			//Set<String> foundDirsNew = new HashSet<String>();
+			//Set<File> zipFiles = new HashSet<File>(); weakened types below
+
+			Collection<String> foundDirs = new HashSet<String>();
+			Collection<String> foundDirsNew = new HashSet<String>();
+			Collection<File> zipFiles = new HashSet<File>();
 
 			File [] fileList = parentDir.listFiles();
 
@@ -654,11 +653,14 @@ public class SongDatabase implements Runnable {
 
 			Log.d(TAG, "Datbase has %d entries, found %d files/dirs", fileCursor.getCount(), files.size());
 
-			Set<String> delDirs = new HashSet<String>();
-			Set<Long> delFiles = new HashSet<Long>();
+            //Set<String> delDirs = new HashSet<String>();
+			//Set<Long> delFiles = new HashSet<Long>();  weakened types below
 
+			Collection<String> delDirs = new HashSet<String>();
+			Collection<Long> delFiles = new HashSet<Long>();
 
-			Set<String> removes = new HashSet<String>();
+            //Set<String> removes = new HashSet<String>(); weakened type below
+			Collection<String> removes = new HashSet<String>();
 
 			Log.d(TAG, "Comparing DB to FS");
 
@@ -716,7 +718,8 @@ public class SongDatabase implements Runnable {
 			fileCursor.close();
 			fileCursor = null;
 			//File csdb = null;
-			List<File> foundDumps = new ArrayList<File>();
+            //List<File> foundDumps = new ArrayList<File>(); weakened type below
+			Collection<File> foundDumps = new ArrayList<File>();
 
 			if(files.size() > 0 || delDirs.size() > 0 || delFiles.size() > 0) {
 
@@ -738,13 +741,13 @@ public class SongDatabase implements Runnable {
 					}
 
 					// Iterate over added files
-					int count = 0;
-					int total = files.size();
+                    int total = files.size();
 					int reportPeriod = total / 100;
 					if(reportPeriod < 10) {
 						reportPeriod = 10;
 					}
-					for(String s : files) {
+                    int count = 0;
+                    for(String s : files) {
 						File f = new File(parentDir, s);
 						ContentValues values = new ContentValues();
 						values.put("PATH", f.getParentFile().getPath());
@@ -947,7 +950,8 @@ public class SongDatabase implements Runnable {
 
 			// This directory is not modified - we can rely on the database entries
 
-			Set<File> files = new HashSet<File>();
+            //Set<File> files = new HashSet<File>(); Weakened type below
+			Collection<File> files = new HashSet<File>();
 			while(fileCursor.moveToNext()) {
 				String fileName = fileCursor.getString(index);
 				int type = fileCursor.getInt(flindex);
@@ -1058,16 +1062,16 @@ public class SongDatabase implements Runnable {
 
 		if(full) {
 
-			Set<File> deletes = new HashSet<File>();
-			int limit, offset;
-			limit = 5000;
-			offset = 1;
+            //Set<File> deletes = new HashSet<File>(); Weakened type below
+			Collection<File> deletes = new HashSet<File>();
 
-			if(scanCallback != null) {
+            if(scanCallback != null) {
 				scanCallback.notifyScan("Checking orphans", 0);
 			}
 
-			while(true) {
+            int limit = 5000;
+            int offset = 1;
+            while(true) {
 
 				// Remove orphaned directories
 				Cursor oc = scanDb.query("FILES", new String[] { "PATH", "FILENAME" }, "PATH NOT LIKE '%.zip%'", null, null, null, null, String.format("%d,%d", offset, limit));
@@ -1151,7 +1155,7 @@ public class SongDatabase implements Runnable {
 		//rdb.close();
 	}
 
-	private static String searchOrder [] = new String[] { "TITLE", "COMPOSER", "DATE" };
+	private static final String searchOrder [] = { "TITLE", "COMPOSER", "DATE" };
 
 	public Cursor search(String query, String fromPath, int sorting) {
 
@@ -1162,7 +1166,7 @@ public class SongDatabase implements Runnable {
 		if(rdb == null) {
 			rdb = getReadableDatabase();
 		}
-		for(Entry<String, DataSource> ds : dbsources.entrySet()) {
+		for(Map.Entry<String, DataSource> ds : dbsources.entrySet()) {
 			if(fromPath.toUpperCase().contains("/" + ds.getKey())) {
 				Cursor cursor = ds.getValue().search(query, fromPath, rdb);
 				if(cursor != null) {
@@ -1172,7 +1176,7 @@ public class SongDatabase implements Runnable {
 		}
 		Cursor c = null;
 
-		String [] columns = new String[] { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE", "DATE" };
+		String [] columns = { "_id", "TITLE", "COMPOSER", "PATH", "FILENAME", "TYPE", "DATE" };
 		if(query.charAt(0) == '.') {
 			char x = query.toUpperCase().charAt(1);
 			String q = "%" + query.substring(2).trim() + "%" ;
@@ -1232,9 +1236,9 @@ public class SongDatabase implements Runnable {
 		return pathTitle;
 	}
 
-	private static String sortOrder [] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
+	private static final String sortOrder [] = { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
 
-	private Map<String, String> linkMap = new HashMap<String, String>();
+	private final Map<String, String> linkMap = new HashMap<String, String>();
 	/*
 	public String translatePath(String path) {
 		String upath = path.toUpperCase();
@@ -1335,7 +1339,7 @@ public class SongDatabase implements Runnable {
 
 		File file = new File(pathName);
 
-		if(ext.equals(".PLIST")) {
+		if(".PLIST".equals(ext)) {
 			String name = file.getName();
 			dot = name.lastIndexOf('.');
 			if(dot > 0) {
@@ -1358,7 +1362,7 @@ public class SongDatabase implements Runnable {
 		if(rdb.isDbLockedByOtherThreads()) {
 			return null;
 		}
-		for(Entry<String, DataSource> db : dbsources.entrySet()) {
+		for(Map.Entry<String, DataSource> db : dbsources.entrySet()) {
 			if(upath.contains("/" + db.getKey())) {
 				Cursor cursor = db.getValue().getCursorFromPath(file, rdb, sorting);
 				if(cursor != null) {
@@ -1389,7 +1393,7 @@ public class SongDatabase implements Runnable {
 		return c;
 	}
 
-	public final void setScanCallback(ScanCallback cb) {
+	final void setScanCallback(ScanCallback cb) {
 		scanCallback = cb;
 	}
 
@@ -1445,14 +1449,14 @@ public class SongDatabase implements Runnable {
 
 			if(cursor != null && cursor.moveToFirst()) {
 				int type = cursor.getInt(cursor.getColumnIndex("TYPE"));
-				if(type == SongDatabase.TYPE_DIR) {
+				if(type == TYPE_DIR) {
 					cursor.close();
 					cursor = rdb.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=?", new String[] { songFile.getPath() }, null, null, "TITLE");
 					if(cursor.moveToFirst()) {
 						pl.add(cursor, -1, null);
 					}
 
-				} else if(type == SongDatabase.TYPE_FILE) {
+				} else if(type == TYPE_FILE) {
 					pl.add(cursor, songFile.getSubtune(), songFile.getTitle());
 				}
 			}
@@ -1465,7 +1469,7 @@ public class SongDatabase implements Runnable {
 		return deleteFile(song.getFile());
 	}
 
-	public final boolean deleteFile(File f) {
+	final boolean deleteFile(File f) {
 		SQLiteDatabase db = getWritableDatabase();
 		if(db == null) {
 			return false;
@@ -1498,11 +1502,10 @@ public class SongDatabase implements Runnable {
 
 	public final void createPlaylist(File file) {
 
-		FileWriter writer;
-		String n = file.getName();
+        String n = file.getName();
 		try {
-			writer = new FileWriter(file);
-			writer.close();
+            FileWriter writer = new FileWriter(file);
+            writer.close();
 			ContentValues values = new ContentValues();
 			values.put("PATH", file.getParent());
 			values.put("FILENAME", n);
@@ -1522,13 +1525,13 @@ public class SongDatabase implements Runnable {
 		}
 	}
 
-	public final void createLink(File file, String contents) {
+    //public void createLink(File file, String contents) { Weakened type below
+	public final void createLink(File file, CharSequence contents) {
 
-		FileWriter writer;
-		String n = file.getName();
+        String n = file.getName();
 		try {
-			writer = new FileWriter(file);
-			writer.append(contents);
+            FileWriter writer = new FileWriter(file);
+            writer.append(contents);
 			writer.close();
 			ContentValues values = new ContentValues();
 			values.put("PATH", file.getParent());

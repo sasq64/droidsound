@@ -19,7 +19,7 @@ public class SongProvider extends ContentProvider {
 	public static final String FLAGS = "FLAGS";
 
     @Override
-	public int delete(Uri arg0, String arg1, String[] arg2) {
+	public int delete(Uri arg0, String arg1, String... arg2) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -55,7 +55,7 @@ public class SongProvider extends ContentProvider {
 	}
 
 	@Override
-	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+	public int update(Uri uri, ContentValues values, String selection, String... selectionArgs) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

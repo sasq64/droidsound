@@ -24,7 +24,8 @@ public class FixedViewFlipper extends ViewFlipper {
 			} catch (IllegalArgumentException e) {
 				Log.w("ViewFlipper", "Android project  issue 6191  workaround.");
 			} finally {
-				super.stopFlipping();
+				//super.stopFlipping();
+                stopFlipping(); //Super is not needed here
 			}
 		} else {
 			super.onDetachedFromWindow();

@@ -1,6 +1,7 @@
 package com.ssb.droidsound;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import com.ssb.droidsound.service.IPlayerService;
@@ -17,40 +18,41 @@ import android.os.RemoteException;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsoundedit.R;
 
-public class PlayerServiceConnection implements ServiceConnection {
+class PlayerServiceConnection implements ServiceConnection {
 	private static final String TAG = PlayerServiceConnection.class.getSimpleName();
 
-	public static interface Callback {
-		public void stringChanged(int what, String value);
-		public void intChanged(int what, int value);
+	public interface Callback {
+		void stringChanged(int what, String value);
+		void intChanged(int what, int value);
 	}
 	
-	protected IPlayerService mService;
+	private IPlayerService mService;
 	private String modToPlay;
 	private Callback callback;
 	
 	private static class Opt {
-		int opt;
-		String arg;
+		final int opt;
+		final String arg;
 		public Opt(int o, String a) {
 			opt = o;
 			arg = a;
 		}
 	}
+
+    //private List<Opt> options = new ArrayList<Opt>();   weakened type below
+	private final Collection<Opt> options = new ArrayList<Opt>();
 	
-	private List<Opt> options = new ArrayList<Opt>();
-	
-	private IPlayerServiceCallback mCallback = new IPlayerServiceCallback.Stub() {
+	private final IPlayerServiceCallback mCallback = new IPlayerServiceCallback.Stub() {
 
 		@Override
-		public void stringChanged(int what, String value) throws RemoteException {
+		public void stringChanged(int what, String value) {
 			if(callback != null) {
 				callback.stringChanged(what, value);
 			}
 		}
 
 		@Override
-		public void intChanged(int what, int value) throws RemoteException {
+		public void intChanged(int what, int value) {
 			if(callback != null) {
 				callback.intChanged(what, value);
 			}
@@ -121,7 +123,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		}
 	} */
 
-	public boolean playMod(String name) {
+	boolean playMod(String name) {
 		if(mService == null) {
 			modToPlay = name;
 			return true;

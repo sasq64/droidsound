@@ -18,7 +18,7 @@ import com.ssb.droidsound.utils.Log;
 public class PlayListView extends ListView { //extends TouchListView {
 	private static final String TAG = "PlayListView";
 
-	private PlayListAdapter adapter;
+	private final PlayListAdapter adapter;
 
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -31,16 +31,16 @@ public class PlayListView extends ListView { //extends TouchListView {
 
 		for(int i=0; i<attrs.getAttributeCount(); i++) {
 			String name = attrs.getAttributeName(i);
-			if(name.equals("dirColor")) {
+			if("dirColor".equals(name)) {
 				dirColor = attrs.getAttributeIntValue(i, -1);
 			} else
-			if(name.equals("archiveColor")) {
+			if("archiveColor".equals(name)) {
 				archiveColor = attrs.getAttributeIntValue(i, -1);
 			} else
-			if(name.equals("itemColor")) {
+			if("itemColor".equals(name)) {
 				itemColor = attrs.getAttributeIntValue(i, -1);
 			}
-			if(name.equals("subitemColor")) {
+			if("subitemColor".equals(name)) {
 				subitemColor = attrs.getAttributeIntValue(i, -1);
 			}
 		}

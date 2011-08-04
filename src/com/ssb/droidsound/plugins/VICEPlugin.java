@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import android.os.Environment;
 
@@ -63,8 +63,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 
 	//private int currentTune;
-
-	private HashMap<Integer, Integer> optMap = new HashMap<Integer, Integer>();
+    //private HashMap<Integer, Integer> optMap = new HashMap(); Below type is weaker
+	private final Map<Integer,Integer> optMap = new HashMap<Integer, Integer>();
 
 	private Unzipper unzipper = null;
 
@@ -81,7 +81,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 			}
 			
 			File viceDir = new File(dataDir, "VICE");
-			synchronized (lock) {					
+			synchronized (lock) {
 				if(!viceDir.exists()) {
 					unzipper = Unzipper.getInstance();
 					unzipper.unzipAssetAsync(getContext(), "vice.zip", dataDir);
@@ -93,24 +93,24 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public void setOption(String opt, Object val) {
-		final int k, v;
-		if (opt.equals("active")) {
+		int k, v;
+		if ("active".equals(opt)) {
             boolean active = (Boolean) val;
 			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (active ? "ACTIVE" : "NOT ACTIVE"));
 			return;
-		} else if (opt.equals("filter")) {
+		} else if ("filter".equals(opt)) {
 			k = OPT_FILTER;
 			v = (Boolean) val ? 1 : 0;
-		} else if (opt.equals("ntsc")) {
+		} else if ("ntsc".equals(opt)) {
 			k = OPT_NTSC;
 			v = (Integer) val;
-		} else if (opt.equals("resampling")) {
+		} else if ("resampling".equals(opt)) {
 			k = OPT_RESAMPLING;
 			v = (Integer) val;
-		} else if (opt.equals("filter_bias")) {
+		} else if ("filter_bias".equals(opt)) {
 			k = OPT_FILTER_BIAS;
 			v = (Integer) val;
-		} else if (opt.equals("sid_model")) {
+		} else if ("sid_model".equals(opt)) {
 			k = OPT_SID_MODEL;
 			v = (Integer) val;
 		} else {
@@ -119,7 +119,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		
 		if(!libraryLoaded) {
 			optMap.put(k, v);
-		} else {		
+		} else {
 			N_setOption(k, v);
 		}
 	}
@@ -169,14 +169,14 @@ public class VICEPlugin extends DroidSoundPlugin {
 			
 			N_setDataDir(new File(dataDir, "VICE").getAbsolutePath());
 			
-			for(Entry<Integer, Integer> e : optMap.entrySet()) {
+			for(Map.Entry<Integer, Integer> e : optMap.entrySet()) {
 				N_setOption(e.getKey(), e.getValue());
 			}
-			optMap.clear();						
+			optMap.clear();
 			libraryLoaded = true;
 		}
 
-		final String error;
+		String error;
 		try {
 			File file = File.createTempFile("tmp-XXXXX", "sid");
 			FileOutputStream fo = new FileOutputStream(file);

@@ -16,38 +16,36 @@ public class CueFile {
 		public int offset;
 	}
 
-    private List<Track> tracks;
+    private final List<Track> tracks;
 	private Track currentTrack;
 
 	public CueFile(File file) {
 
 		tracks = new ArrayList<Track>();
 
-		BufferedReader reader;
-		try {
-			reader = new BufferedReader(new FileReader(file));
-			String line = reader.readLine();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            String line = reader.readLine();
 			while(line != null) {				
 				Log.d(TAG, line);
 				String[] ll = line.trim().split(" ");
 				if(ll.length > 0) {
-					String arg;
-					String cmd = ll[0].toUpperCase();
-					arg = getQuotedString(line);
+                    String cmd = ll[0].toUpperCase();
+                    String arg = getQuotedString(line);
+
+                    Log.d(TAG, "%s '%s'", cmd, arg);
 					
-					Log.d(TAG, "%s '%s'", cmd, arg);
-					
-					if(cmd.equals("TRACK")) {
+					if("TRACK".equals(cmd)) {
 						currentTrack = new Track();
 						tracks.add(currentTrack);
 						Log.d(TAG, "New track %02d", tracks.size());
-					} else if(cmd.equals("TITLE")) {
+					} else if("TITLE".equals(cmd)) {
 						if(currentTrack != null)
 							currentTrack.title = arg;						
-					} else if(cmd.equals("PERFORMER")) {
+					} else if("PERFORMER".equals(cmd)) {
 						if(currentTrack != null)
 							currentTrack.performer = arg;
-					} else if(cmd.equals("INDEX")) {
+					} else if("INDEX".equals(cmd)) {
 						if(currentTrack != null) {
 							String index[] = ll[2].split(":");
 							int secs = Integer.parseInt(index[1]) + Integer.parseInt(index[0])*60;

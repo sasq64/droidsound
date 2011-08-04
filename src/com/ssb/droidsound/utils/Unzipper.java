@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -14,13 +15,16 @@ import java.util.zip.ZipFile;
 import android.content.Context;
 import com.ssb.droidsound.utils.Log;
 
-public class Unzipper {
+public final class Unzipper {
 
 	private static final String TAG = Unzipper.class.getSimpleName();
 	
 	private static Unzipper _instance = null;
-	
-	public static synchronized Unzipper getInstance() {
+
+    private Unzipper() {
+    }
+
+    public static synchronized Unzipper getInstance() {
 		if(_instance == null) {
 			_instance = new Unzipper();
 		}
@@ -28,8 +32,8 @@ public class Unzipper {
 	}
 	
 	private static class UnzipJob {
-		public String asset;
-		public File targetDir;
+		public final String asset;
+		public final File targetDir;
 		public UnzipJob(String a, File t) {
 			asset = a;
 			targetDir = t;
@@ -39,8 +43,11 @@ public class Unzipper {
 	private static class UnzipWorker implements Runnable {
 
 		private final List<UnzipJob> unzipList = new ArrayList<UnzipJob>();
-		private final List<String> doneList = new ArrayList<String>();
-		private Context context;
+
+        //private List<String> doneList = new ArrayList(); below is the weaker type of this one
+		private final Collection<String> doneList = new ArrayList<String>();
+
+		private final Context context;
 		private boolean doQuit;
 		
 		public UnzipWorker(Context ctx) {
@@ -100,7 +107,8 @@ public class Unzipper {
 		}
 		
 		public boolean checkJob(String asset) {
-			boolean rc = false;
+			//boolean rc = false; Redundant. Value never used
+            boolean rc;
 			synchronized (doneList) {
 				rc = doneList.contains(asset);
 				//if(rc) {
@@ -150,13 +158,12 @@ public class Unzipper {
 		File tempFile = null;
 		try {			
 			tempFile = new File(targetDir, asset);
-			
-			FileOutputStream os;
-			os = new FileOutputStream(tempFile);
 
-			InputStream is = context.getAssets().open(asset);
-			
-			byte [] buffer = new byte [128*1024];
+            FileOutputStream os = new FileOutputStream(tempFile);
+            InputStream is = context.getAssets().open(asset);
+
+            //byte [] buffer = new byte [(128*1024)]; Improved calculation by calculating total value.
+			byte [] buffer = new byte [131072];
 			while(true) {
 				int rc = is.read(buffer);
 				if(rc <= 0) {

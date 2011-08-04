@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,9 +22,10 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	static {
 		//System.loadLibrary("uade");
-	}
+    }
 
-	private static final Set<String> extensions = new HashSet<String>();
+    //private static Set<String> extensions = new HashSet();  below is weakened type of this
+	private static final Collection<String> extensions = new HashSet<String>();
 
 	private static boolean inited;
 	private static boolean libLoaded;
@@ -32,8 +34,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	private Unzipper unzipper;
 
-	private static String [] options = new String [] { "filter", "speedhack", "ntsc", "panning" };
-	private static int [] optvals = new int [] { OPT_FILTER, OPT_SPEED_HACK, OPT_NTSC, OPT_PANNING };
+	private static final String [] options = { "filter", "speedhack", "ntsc", "panning" };
+	private static final int [] optvals = { OPT_FILTER, OPT_SPEED_HACK, OPT_NTSC, OPT_PANNING };
 
 
 
@@ -47,11 +49,10 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 		File confFile = new File(droidDir, "eagleplayer.conf");
 
-		boolean extract = true;
+        synchronized (extensions) {
 
-		synchronized (extensions) {
-
-			if(eagleDir.exists()) {
+            boolean extract = true;
+            if(eagleDir.exists()) {
 
 				if(confFile.exists()) {
 					extract = false;
@@ -93,10 +94,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 				File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 				File confFile = new File(droidDir, "eagleplayer.conf");
 
-				BufferedReader reader;
-				try {
-					reader = new BufferedReader(new FileReader(confFile));
-					String line = reader.readLine();
+                try {
+                    BufferedReader reader = new BufferedReader(new FileReader(confFile));
+                    String line = reader.readLine();
 					while(line != null) {
 						int x = line.indexOf("prefixes=");
 						if(x >= 0) {
@@ -226,7 +226,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public final boolean load(File file) throws IOException {
+	public final boolean load(File file) {
 
 		init();
 
@@ -256,14 +256,14 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public final boolean loadInfo(File file) throws IOException {
+	public final boolean loadInfo(File file) {
 		currentSong = 0;
 		return true;
 		//return load(file);
 	}
 
 	@Override
-	public final boolean loadInfo(String name, InputStream is, int size) throws IOException {
+	public final boolean loadInfo(String name, InputStream is, int size) {
 		currentSong = 0;
 		return true;
 	}

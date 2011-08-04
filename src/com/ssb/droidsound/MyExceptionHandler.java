@@ -6,7 +6,7 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.Thread.UncaughtExceptionHandler;
+import java.lang.Thread;
 import java.util.Date;
 
 import android.content.Context;
@@ -14,13 +14,13 @@ import android.os.Build;
 import com.ssb.droidsoundedit.R;
 
 
-public class MyExceptionHandler implements UncaughtExceptionHandler {
+class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 
 	private Context application;
-	private UncaughtExceptionHandler oldHandler;
-	private String targetDir;
+	private final Thread.UncaughtExceptionHandler oldHandler;
+	private final String targetDir;
 
-	public MyExceptionHandler(UncaughtExceptionHandler oldh, String target) {
+	public MyExceptionHandler(Thread.UncaughtExceptionHandler oldh, String target) {
 		oldHandler = oldh;
 		targetDir = target;
 	}
@@ -28,8 +28,8 @@ public class MyExceptionHandler implements UncaughtExceptionHandler {
 	public void uncaughtException(Thread thread, Throwable ex)
 	{
 		ex.printStackTrace();
-        final Writer result = new StringWriter();
-        final PrintWriter printWriter = new PrintWriter(result);
+        Writer result = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(result);
         ex.printStackTrace(printWriter);
         String stacktrace = result.toString();
         printWriter.close();		

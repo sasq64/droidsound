@@ -11,15 +11,16 @@ import java.net.URLConnection;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class HttpDownloader  {
+class HttpDownloader  {
 	private static final String TAG = HttpDownloader.class.getSimpleName();
 	
-	static interface Callback {
+	interface Callback {
 		void onDisplayProgress(int progress);
 		void onDone();
 	}
-	
-	static private String urlencode(String s) {
+
+    //static private String urlencode(String s){ weakened type below
+	static private String urlencode(CharSequence s) {
 		StringBuilder t = new StringBuilder();
 
 		for(int i = 0; i < s.length(); i++) {
@@ -53,8 +54,7 @@ public class HttpDownloader  {
 		try {
 			InputStream in = null;
 			int response = -1;
-			int size;
-			byte[] buffer = new byte[16384];
+            byte[] buffer = new byte[16384];
 
 			//String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
             int fileCount = 0;
@@ -86,7 +86,8 @@ public class HttpDownloader  {
 					String ext = u.substring(u.lastIndexOf('.') + 1, u.length());
 					String baseName = new File(u).getName();
 
-					if(ext.compareToIgnoreCase("ZIP") == 0) {
+                    int size;
+                    if(ext.compareToIgnoreCase("ZIP") == 0) {
 						ZipInputStream zip = new ZipInputStream(in);
 						ZipEntry e;
 						int zipCount = 0;

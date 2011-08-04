@@ -24,7 +24,6 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,7 +36,7 @@ import android.widget.ListView;
 
 import com.ssb.droidsoundedit.R;
 
-public class TouchListView extends ListView {
+class TouchListView extends ListView {
 	private ImageView mDragView;
 	private WindowManager mWindowManager;
 	private WindowManager.LayoutParams mWindowParams;
@@ -56,7 +55,7 @@ public class TouchListView extends ListView {
 	private static final int SLIDE_RIGHT = 1;
 	private static final int SLIDE_LEFT = 2;
 	private int mRemoveMode = -1;
-	private Rect mTempRect = new Rect();
+	private final Rect mTempRect = new Rect();
 	private Bitmap mDragBitmap;
 	private final int mTouchSlop;
 	private int mItemHeightNormal = -1;
@@ -90,14 +89,15 @@ public class TouchListView extends ListView {
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
 		if(mRemoveListener != null && mGestureDetector == null) {
 			if(mRemoveMode == FLING) {
-				mGestureDetector = new GestureDetector(getContext(), new SimpleOnGestureListener() {
+				mGestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
 					@Override
 					public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
 						if(mDragView != null) {
 							if(velocityX > 1000) {
 								Rect r = mTempRect;
 								mDragView.getDrawingRect(r);
-								if(e2.getX() > r.right * 2 / 3) {
+                                //if e2.getX() > r.right * 2 / 3{ Simplified by using a shift
+								if(e2.getX() > (r.right << 1) / 3) {
 									// fast fling right with release near the right edge of the screen
 									stopDragging();
 									mRemoveListener.remove(mFirstDragPos);
@@ -144,7 +144,8 @@ public class TouchListView extends ListView {
 					mHeight = getHeight();
 					int touchSlop = mTouchSlop;
 					mUpperBound = Math.min(y - touchSlop, mHeight / 3);
-					mLowerBound = Math.max(y + touchSlop, mHeight * 2 / 3);
+                    //mLowerBound = Math.max(y + touchSlop, mHeight * 2 / 3; Simplified by using a shift.
+					mLowerBound = Math.max(y + touchSlop, (mHeight << 1) / 3);
 					return false;
 				}
 				mDragView = null;
@@ -159,9 +160,9 @@ public class TouchListView extends ListView {
 	 */
 	private int myPointToPosition(int x, int y) {
 		Rect frame = mTempRect;
-		final int count = getChildCount();
+		int count = getChildCount();
 		for(int i = count - 1; i >= 0; i--) {
-			final View child = getChildAt(i);
+			View child = getChildAt(i);
 			child.getHitRect(frame);
 			if(frame.contains(x, y)) {
 				return getFirstVisiblePosition() + i;
@@ -186,9 +187,11 @@ public class TouchListView extends ListView {
 	private void adjustScrollBounds(int y) {
 		if(y >= mHeight / 3) {
 			mUpperBound = mHeight / 3;
-		}
-		if(y <= mHeight * 2 / 3) {
-			mLowerBound = mHeight * 2 / 3;
+        }
+        //if(y <= mHeight * 2 / 3{ //Simplified using a shift.
+		if(y <= (mHeight << 1) / 3) {
+            //mLowerBound = mHeight * 2 / 3; Simplified using a shift.
+			mLowerBound = (mHeight << 1) / 3;
 		}
 	}
 
@@ -309,9 +312,9 @@ public class TouchListView extends ListView {
 						mDragPos = itemnum;
 						doExpansion();
 					}
-					int speed = 0;
-					adjustScrollBounds(y);
-					if(y > mLowerBound) {
+                    adjustScrollBounds(y);
+                    int speed = 0;
+                    if(y > mLowerBound) {
 						// scroll the list up a bit
 						speed = y > (mHeight + mLowerBound) / 2 ? 16 : 4;
 					} else if(y < mUpperBound) {

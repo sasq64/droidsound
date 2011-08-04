@@ -15,21 +15,21 @@ import com.ssb.droidsound.utils.Log;
 public class SidPlugin extends DroidSoundPlugin {
 	private static final String TAG = SidPlugin.class.getSimpleName();
 
-	private static VICEPlugin vicePlugin = new VICEPlugin();
-	private static SidplayPlugin sidplayPlugin = new SidplayPlugin();
+	private static final VICEPlugin vicePlugin = new VICEPlugin();
+	private static final SidplayPlugin sidplayPlugin = new SidplayPlugin();
 
 	private static volatile DroidSoundPlugin currentPlugin = sidplayPlugin;
 	private static volatile DroidSoundPlugin nextPlugin = sidplayPlugin;
 
 	private static class Info {
-		protected String name = "Unknown";
-		protected String composer = "Unknown";
-		protected String copyright = "Unknown";
-		protected int videoMode = 0;
-		protected int sidModel = 0;
-		protected int startSong = 1;
-		protected int songs = 1;
-		protected String format;
+		String name = "Unknown";
+		String composer = "Unknown";
+		String copyright = "Unknown";
+		int videoMode = 0;
+		int sidModel = 0;
+		int startSong = 1;
+		int songs = 1;
+		String format;
 	}
 
 	final byte [] header = new byte [128];
@@ -37,7 +37,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	private short[] extraLengths;
 	private int hashLen;
 
-	private int songLengths[] = new int [256];
+	private final int songLengths[] = new int [256];
 	private int currentTune;
 
 	private static class Option {
@@ -143,16 +143,17 @@ public class SidPlugin extends DroidSoundPlugin {
 		}
 		if (mainHash != null) {
 			byte[] md5 = calculateMD5(module, size);
-			int first = 0;
-			int upto = hashLen;
-			int found = -1;
-			long key = ((md5[0]&0xff) << 24) | ((md5[1]&0xff) << 16) | ((md5[2]&0xff) << 8) | (md5[3] & 0xff);
+            int upto = hashLen;
+            long key = ((md5[0]&0xff) << 24) | ((md5[1]&0xff) << 16) | ((md5[2]&0xff) << 8) | (md5[3] & 0xff);
 			key &= 0xffffffffL;
 
 			//short lens [] = new short [128];
 
 	    	Log.d(TAG, "MD5 %08x", key);
-			while (first < upto) {
+
+            int first = 0;
+            int found = -1;
+            while (first < upto) {
 		        int mid = (first + upto) / 2;  // Compute mid point.
 	    		long hash = ((mainHash[mid*6]&0xff) << 24) | ((mainHash[mid*6+1]&0xff) << 16) | ((mainHash[mid*6+2]&0xff) << 8) | (mainHash[mid*6+3] & 0xff);
 	    		hash &= 0xffffffffL;
@@ -193,9 +194,8 @@ public class SidPlugin extends DroidSoundPlugin {
 
 	@Override
 	public final boolean loadInfo(String name, InputStream is, int size) throws IOException {
-		final byte[] header = new byte[128];
 
-		songInfo = new Info();
+        songInfo = new Info();
 		if(name.toLowerCase().endsWith(".prg")) {
 			songInfo.name = name;
 			Log.d(TAG, "######################## PRG LOAD OK");
@@ -203,10 +203,11 @@ public class SidPlugin extends DroidSoundPlugin {
 			return true;
 		}
 
-		is.read(header);
+        byte[] header = new byte[128];
+        is.read(header);
 
 		String s = new String(header, 0, 4, "ISO-8859-1");
-		if (! (s.equals("PSID") || s.equals("RSID"))) {
+		if (! ("PSID".equals(s) || "RSID".equals(s))) {
 			return false;
 		}
 
@@ -227,14 +228,14 @@ public class SidPlugin extends DroidSoundPlugin {
 
 	@Override
 	public final boolean canHandleExt(String ext) {
-		return ext.equals(".SID") || ext.equals(".PRG") || ext.equals(".PSID");
+		return ".SID".equals(ext) || ".PRG".equals(ext) || ".PSID".equals(ext);
 	}
 
 
 	@Override
 	public final String[] getDetailedInfo() {
-		final String sids[] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
-		final String videoModes[] = { "UNKNOWN", "PAL", "NTSC", "PAL & NTSC" };
+		String sids[] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
+		String videoModes[] = { "UNKNOWN", "PAL", "NTSC", "PAL & NTSC" };
 		return new String[] {
 			"Format",
 			songInfo.format,
@@ -300,7 +301,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		songInfo = null;
 		int type = -1;
 		String s = new String(module, 0, 4);
-		if((s.equals("PSID") || s.equals("RSID"))) {
+		if(("PSID".equals(s) || "RSID".equals(s))) {
 			type = 0;
 		} else
 		if(name.toLowerCase().endsWith(".prg")) {
@@ -313,7 +314,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		}
 
 		if (type == 1) {
-			byte rsid[] = new byte [] {
+			byte rsid[] = {
 					0x52, 0x53, 0x49, 0x44, 0x00, 0x02, 0x00, 0x7c,
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 					0x00, 0x01, 0x00, 0x00, 0x00, 0x00
@@ -363,9 +364,9 @@ public class SidPlugin extends DroidSoundPlugin {
 
 	@Override
 	public final void setOption(String opt, Object val) {
-		if(opt.equals("engine")) {
+		if("engine".equals(opt)) {
 			String e = (String) val;
-			if(e.equals("VICE")) {
+			if("VICE".equals(e)) {
 				Log.d(TAG, "################ USING ENGINE: VICE");
 				nextPlugin = vicePlugin;
 			} else {

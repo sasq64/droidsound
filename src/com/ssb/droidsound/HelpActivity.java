@@ -16,10 +16,9 @@ public class HelpActivity extends Activity {
         //setContentView(R.layout.main);
         WebView webView = new WebView(this);
 
-        InputStream is;
-		try {
-			is = getAssets().open("doc.html");
-			byte [] data = new byte [is.available()];
+        try {
+            InputStream is = getAssets().open("doc.html");
+            byte [] data = new byte [is.available()];
 	        is.read(data);
 	        is.close();
 	        String html = new String(data, "ISO8859_1");

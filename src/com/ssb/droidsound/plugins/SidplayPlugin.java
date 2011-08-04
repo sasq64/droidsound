@@ -1,14 +1,15 @@
 package com.ssb.droidsound.plugins;
 
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Map;
 
 public class SidplayPlugin extends DroidSoundPlugin {
 	private static final String TAG = SidplayPlugin.class.getSimpleName();
 
 
 	private static boolean libraryLoaded = false;
-	private HashMap<Integer, Integer> optMap = new HashMap<Integer, Integer>();
+    //private HashMap<Integer,Integer> optMap = new Hashmap(); reduced type version below.
+	private final Map<Integer,Integer> optMap = new HashMap<Integer, Integer>();
 
 
 	private long currentSong = 0;
@@ -20,8 +21,8 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	}
 
 
-	private static String [] options = new String [] { "filter", "ntsc", "panning" };
-	private static int [] optvals = new int [] { OPT_FILTER, OPT_NTSC, OPT_PANNING };
+	private static final String [] options = { "filter", "ntsc", "panning" };
+	private static final int [] optvals = { OPT_FILTER, OPT_NTSC, OPT_PANNING };
 
 	@Override
 	public void setOption(String opt, Object val) {
@@ -86,7 +87,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 
 		if(!libraryLoaded) {
 			System.loadLibrary("sidplay2");
-			for(Entry<Integer, Integer> e : optMap.entrySet()) {
+			for(Map.Entry<Integer, Integer> e : optMap.entrySet()) {
 				N_setOption(e.getKey(), e.getValue());
 			}
 			optMap.clear();

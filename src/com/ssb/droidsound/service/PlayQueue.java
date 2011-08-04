@@ -1,21 +1,19 @@
 package com.ssb.droidsound.service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
 
-public class PlayQueue {
+class PlayQueue {
 	private static final String TAG = PlayQueue.class.getSimpleName();
 
-	private static Random rgen = new Random(System.currentTimeMillis());
+	//private static final Random rgen = new Random(System.currentTimeMillis());
+    private static final Random rgen = new Random(System.currentTimeMillis());
 
-	private List<SongFile> musicList;
+	private final List<SongFile> musicList;
 	private int musicListPos;
 	private SongFile[] musicNames;
 
@@ -26,7 +24,7 @@ public class PlayQueue {
 	private int oldPlaylistHash;
 
 
-	PlayQueue(String [] names) {
+	PlayQueue(String... names) {
 		musicList = new ArrayList<SongFile>();
 		init(createSongs(names), 0);
 	}
@@ -44,11 +42,11 @@ public class PlayQueue {
 		oldPlaylistHash = pl.hashCode();
 
 		List<SongFile> songs = currentPlaylist.getSongs();
-		int i = 0;
-		SongFile names [] = new SongFile [songs.size()];
+        SongFile names [] = new SongFile [songs.size()];
 		musicList = new ArrayList<SongFile>();
 		Log.d(TAG, "POS %d in playlist with %d files", index, songs.size());
-		for(SongFile ps : songs) {
+        int i = 0;
+        for(SongFile ps : songs) {
 			SongFile song = new SongFile(ps);
 			
 			// Log.d(TAG, "%s (%d)", song.filename, song.startSong);
@@ -58,7 +56,7 @@ public class PlayQueue {
 		init(names, index);
 	}
 
-	private SongFile [] createSongs(String [] names) {
+	private SongFile [] createSongs(String... names) {
 		SongFile [] songs = new SongFile [names.length];
 		for(int i=0; i<names.length; i++) {
 			songs[i] = new SongFile(names[i]);
@@ -100,15 +98,14 @@ public class PlayQueue {
 		if(musicNames == null) {
 			return;
 		}
-		SongFile t;
-		int sz = musicList.size();
+        int sz = musicList.size();
 
 		SongFile current = current();
 		
 		for (int i=0; i<sz; i++) {					
 		    int randomPosition = rgen.nextInt(sz);
-		    t = musicList.get(i);
-		    musicList.set(i, musicList.get(randomPosition));
+            SongFile t = musicList.get(i);
+            musicList.set(i, musicList.get(randomPosition));
 		    musicList.set(randomPosition, t);
 		}
 
@@ -126,8 +123,9 @@ public class PlayQueue {
             Collections.addAll(musicList, musicNames);  //Removes manual coppy of array to collection
 		}
 	}
-	
-	final boolean songContains(List<SongFile> psongs, SongFile s) {
+
+    //boolean songContains(List<SongFile> psongs, SongFile s){ weaker type below
+    boolean songContains(Iterable<SongFile> psongs, SongFile s){
 		for(SongFile ps : psongs) {
 			//Log.d(TAG, "%s(%d) vs %s(%d)", s.filename, s.startSong, ps.file.getPath(), ps.startsong);
 			if(s.getPath().equals(ps.getPath())) {
@@ -152,7 +150,8 @@ public class PlayQueue {
     			
     			SongFile current = current();
     			boolean setNext = false;
-				List<SongFile> removes = new ArrayList<SongFile>();
+                //List<SongFile> removes = new ArrayList(); Weakened type below.
+				Collection<SongFile> removes = new ArrayList<SongFile>();
     			for(SongFile s : musicList) {
     				if(setNext) {
     					Log.d(TAG, "Removed current song, changing to " + s);
@@ -233,7 +232,7 @@ public class PlayQueue {
 		musicListPos = i;
 	}
 
-	public final int setCurrent(SongFile song) {
+	final int setCurrent(SongFile song) {
 		for(int i=0; i<musicList.size(); i++) {
 			//Log.d(TAG, "CMP %s to %s", musicList.get(i).getPath(), song.getPath());
 			if(musicList.get(i).getPath().equals(song.getPath())) {

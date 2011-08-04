@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class StreamingHttpConnection {
 	private static final String TAG = StreamingHttpConnection.class.getSimpleName();
-	private Socket httpSocket;
+	private final Socket httpSocket;
 	private String requestMethod;
 	private String requestProperties;
 	private String requestPath;
@@ -115,11 +115,11 @@ public class StreamingHttpConnection {
 	}
 	
 	private void readHeaderFields() throws IOException {
-		String line = null;
-		headers = new HashMap<String, String>();
+        headers = new HashMap<String, String>();
 		
 		InputStream is = httpSocket.getInputStream();
-		while(true) {
+        String line = null;
+        while(true) {
 			line = readLine(is);
 			if(line != null) {
 				Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HEADER: " + line);

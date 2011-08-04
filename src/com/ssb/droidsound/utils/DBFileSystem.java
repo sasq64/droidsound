@@ -13,12 +13,12 @@ import com.ssb.droidsound.utils.Log;
 public class DBFileSystem {
 	private static final String TAG = DBFileSystem.class.getSimpleName();
 	
-	public static interface CursorFactory {
+	public interface CursorFactory {
 		Cursor getCursor(String parts[], int sorting);
 	}
 	
 	private static class Path {
-		public String [] parts;
+		public final String [] parts;
 		public CursorFactory factory;
 		public String [] contents;
 		public String[] contentPaths;
@@ -26,17 +26,17 @@ public class DBFileSystem {
 			this.parts = parts;
 			this.factory = factory;
 		}
-		public Path(String [] parts, String [] contents, String [] contentPaths) {
+		public Path(String [] parts, String [] contents, String... contentPaths) {
 			this.parts = parts;
 			this.contents = contents;
 			this.contentPaths = contentPaths;
 		}
 	}
 
-    private List<Path> pathList;
+    private final List<Path> pathList;
 
 	
-	private String baseName;
+	private final String baseName;
 	
 	public DBFileSystem(String base) {
 		baseName = base;
@@ -48,17 +48,17 @@ public class DBFileSystem {
 		pathList.add(new Path(parts, qf));
 	}
 	
-	public void addPath(String pathPattern, String [] contents) {
+	public void addPath(String pathPattern, String... contents) {
 		String [] parts = pathPattern.split("/");		
 		pathList.add(new Path(parts, contents, contents));
 	}
 
-	public void addPath(String pathPattern, String [] contents, String [] contentPaths) {
+	public void addPath(String pathPattern, String [] contents, String... contentPaths) {
 		String [] parts = pathPattern.split("/");		
 		pathList.add(new Path(parts, contents, contentPaths));
 	}
 
-	private boolean matchPath(String [] pattern, String [] path) {
+	private boolean matchPath(String [] pattern, String... path) {
 		
 		// **,ALBUM
 		// NEW RELEASES,* 
@@ -70,7 +70,7 @@ public class DBFileSystem {
 				return false;
 			Log.d(TAG, "Match %s vs %s", i, pattern[j], path[i]);
 
-			if(pattern[j].equals("*") || path[i].equals(pattern[j])) {
+			if("*".equals(pattern[j]) || path[i].equals(pattern[j])) {
 				j++;	
 			} else
 				break;			

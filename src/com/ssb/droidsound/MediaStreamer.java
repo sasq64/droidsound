@@ -1,7 +1,6 @@
 package com.ssb.droidsound;
 
 import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnPreparedListener;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player;
 import com.ssb.droidsound.utils.ID3Tag;
@@ -13,6 +12,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class MediaStreamer implements Runnable {
@@ -23,8 +23,8 @@ public class MediaStreamer implements Runnable {
 			msec = m;
 			text = t;
 		}
-		public int msec;
-		public String text;
+		public final int msec;
+		public final String text;
 	}
 
 
@@ -36,11 +36,11 @@ public class MediaStreamer implements Runnable {
 
 
     //private String httpName;
-	private List<MetaString> metaStrings = new ArrayList<MetaString>();
+	private final List<MetaString> metaStrings = new ArrayList<MetaString>();
 
-	private List<String> httpNames = new ArrayList<String>();
+	private final List<String> httpNames = new ArrayList<String>();
 
-	private MediaPlayer mediaPlayer;
+	private final MediaPlayer mediaPlayer;
 
 	//private boolean newMeta;
 
@@ -84,7 +84,7 @@ public class MediaStreamer implements Runnable {
 	private int tagFilled;
 	private int tagSize;
 
-	private ID3Tag id3 = new ID3Tag();
+	private final ID3Tag id3 = new ID3Tag();
 	private String songComposer;
 	private String songTitle;
 	private boolean gotID3;
@@ -92,7 +92,7 @@ public class MediaStreamer implements Runnable {
 	private long contentLength;
 	private int avgBitrate;
 	private int extraSize;
-	private boolean fileMode;
+	private final boolean fileMode;
 	private boolean bufferEnded;
 	private String songAlbum;
 	private String songTrack;
@@ -102,7 +102,7 @@ public class MediaStreamer implements Runnable {
 	private boolean VBR;
 	private boolean parseMp3;
 
-	private static final int bitRateTab[] = new int [] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
+	private static final int bitRateTab[] = {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 
 	public MediaStreamer(String http, MediaPlayer mp, boolean fileMode) {
 		//httpName = http;
@@ -111,8 +111,8 @@ public class MediaStreamer implements Runnable {
 		httpNames.add(http);
 		//socketPort = -1;
 	}
-
-	public MediaStreamer(List<String> https, MediaPlayer mp, boolean fileMode) {
+    //public MediaStreamer(List<String> https, MediaPlayer mp, boolean fileMode){
+	public MediaStreamer(Iterable<String> https, MediaPlayer mp, boolean fileMode) {
 
 		this.fileMode = fileMode;
 		mediaPlayer = mp;
@@ -147,9 +147,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
 
 			parseMp3 = false;
-			boolean doRetry = false;
 
-			Log.d(TAG, "Looping, doQuit is " + (doQuit ? "SET" : "UNSET"));
+            Log.d(TAG, "Looping, doQuit is " + (doQuit ? "SET" : "UNSET"));
 
 			String httpName = httpNames.get(httpNo);
 			StreamingHttpConnection httpConn;
@@ -184,7 +183,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			}
 			//Log.d(TAG, "RESPONSE %d %s", response, httpConn.getResponseMessage());
 
-			if (response == HttpURLConnection.HTTP_OK) {
+            boolean doRetry = false;
+            if (response == HttpURLConnection.HTTP_OK) {
 				Log.d(TAG, "HTTP connected");
 
 				metaInterval = -1;
@@ -220,11 +220,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					localMPConnection.accept();
 				}
 
-				int size;
-				frameHeader = new byte[4];
-				byte[] buffer = new byte[128*1024];
+                frameHeader = new byte[4];
+                //byte[] buffer = new byte[(128*1024)]; simplified multiplication below by already calculating the value
 
-				//tagBuffer = new byte[32768];
+                //tagBuffer = new byte[32768];
 				tagFilled = 0;
 				tagSize = 0;
 
@@ -236,9 +235,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				totalBytes = 0L;
 				totalFrameBytes = 0;
 				frameHeaderBits = 0;
-				boolean firstRead = true;
 
-				//last_usec = usec = 0L;
+                //last_usec = usec = 0L;
 				nextFramePos = -1;
 				hasQuit = false;
 				extraSize = 0;
@@ -254,12 +252,15 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					usec = -1000;
 				}
 
-				while (!doQuit) {
+                byte[] buffer = new byte[131072];
+                boolean firstRead = true;
+                while (!doQuit) {
 					int rem = buffer.length;
 					rem = updateMeta(in, rem);
 
 					if(rem > 0) {
-						try {
+                        int size;
+                        try {
 							size = in.read(buffer, 0, rem);
 						} catch (IOException e) {
 							Log.d(TAG, "####### LOST CONNECTION");
@@ -451,12 +452,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				bitRate = bitRateTab[(frameHeader[2]>>4) & 0xf] * 1000;
 
 				if(bitRate != 0) {
-                    int freq = 44100;
-					int ff = frameHeader[2] & 0xc;
+                    int ff = frameHeader[2] & 0xc;
 
 					if(ff != 0xc) {
 
-						if(ff == 4) {
+                        int freq = 44100;
+                        if(ff == 4) {
 							freq = 48000;
 						} else if(ff == 8) {
 							freq = 32000;
@@ -555,7 +556,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			}
 
 			if(metaPos > 0) {
-				metaSize = (metaArray[0] * 16) + 1;
+                //metaSize = (metaArray[0] * 16) + 1; //Simplified by using a shift.
+				metaSize = (metaArray[0] << 4) + 1;
 				Log.d(TAG, "META SIZE %d", metaSize-1);
 				if(metaSize == 1) {
 					metaCounter = 0;
@@ -598,7 +600,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				//mediaPlayer.setDataSource(String.format("http://127.0.0.1:%d/", socketPort));
 				loaded = true;
 				Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> PREPARING ");
-				mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
+				mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
 					@Override
 					public void onPrepared(MediaPlayer mp) {
 						prepared = true;
@@ -729,7 +731,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 	public final String[] getDetailedInfo() {
 
-		List<String> info = new ArrayList<String>();
+        //List<String> info = new ArrayList<String>();
+		Collection<String> info = new ArrayList<String>();
 
 		info.add("Format");
 		if(parseMp3) {

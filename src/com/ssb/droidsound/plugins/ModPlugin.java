@@ -15,7 +15,7 @@ public class ModPlugin extends DroidSoundPlugin {
 	static {
 		System.loadLibrary("modplug");
 	}
-	private Set<String> extensions;
+	private final Set<String> extensions;
 	private String author;
 
 	public ModPlugin() {
@@ -30,7 +30,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		extensions.add("STM");		
 	}
 	
-	long currentSong = 0;
+	private long currentSong = 0;
 
 	@Override
 	public boolean canHandle(String name) {
@@ -49,7 +49,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		return (currentSong != 0); 
 	}
 	
-	static String t [] = new String [256];
+	private static final String[] t  = new String [256];
 
 	
 	private String guessAuthor(String instr) {
@@ -130,10 +130,10 @@ public class ModPlugin extends DroidSoundPlugin {
                     break;
 
                 String x = "";
-                if (aD.equals("/")) {
+                if ("/".equals(aD)) {
                     //Log.d(TAG, "/BY/");
                     x = "/";
-                } else if (aD.equals("&") || aD.equals("&")) {
+                } else if ("&".equals(aD) || "&".equals(aD)) {
                     x = "and";
                 } else if (aD.length() > 1) {
 
@@ -187,35 +187,35 @@ public class ModPlugin extends DroidSoundPlugin {
 		String lastLastWord = "";
 		for(int i=0; i<n; i++) {
 			
-			if(t[i].length() > 0 && !t[i].equals("EOL")) {
+			if(t[i].length() > 0 && !"EOL".equals(t[i])) {
 				// Log.d(TAG, "'%s'", t[i]);
 				
-				if(t[i].toUpperCase().equals("PRO-WIZARD")) {
+				if("PRO-WIZARD".equals(t[i].toUpperCase())) {
 					break;
 				}
 				
 				String nextWord = "EOL";
 				int ii = i+1;
-				while(ii < n && (nextWord.equals("EOL") || nextWord.length() == 0)) {
+				while(ii < n && ("EOL".equals(nextWord) || nextWord.length() == 0)) {
 					nextWord = t[ii++].toUpperCase();					
 				}
 				
 				// Log.d(TAG, "NW:%s", nextWord);
 				
 				String a = t[i];			
-				if(lastWord.equals("BY")) {
+				if("BY".equals(lastWord)) {
 					
 					//if(nextWord.equals("AND") && i<n-2) {
 					//	a += ("and" + t[i+2]);
 					//}
 					
-					if(a.toUpperCase().equals("ME")) {
+					if("ME".equals(a.toUpperCase())) {
 						break;
 					}
 					
 					ii = i+1;
-					while(!t[ii].equals("EOL")) {
-						if(t[ii].toUpperCase().equals("OF") || t[ii].equals("/")) {
+					while(!"EOL".equals(t[ii])) {
+						if("OF".equals(t[ii].toUpperCase()) || "/".equals(t[ii])) {
 							break;
 						}
 						a += (" " + t[ii]);
@@ -230,18 +230,18 @@ public class ModPlugin extends DroidSoundPlugin {
 						}
 					} */
 	
-					if(lastLastWord.equals("COMPOSED") || lastLastWord.equals("MADE")) {
+					if("COMPOSED".equals(lastLastWord) || "MADE".equals(lastLastWord)) {
 						author[0] = a;
 						break;
 					}
 					else
-					if(lastLastWord.equals("RIPPED") || lastLastWord.equals("ORIGINAL")) {
+					if("RIPPED".equals(lastLastWord) || "ORIGINAL".equals(lastLastWord)) {
 					} else {
 						if(author[1] == null) {
 							author[1] = a;
 						}
 					}
-				} else if(nextWord.equals("/") || nextWord.equals("OF")) {
+				} else if("/".equals(nextWord) || "OF".equals(nextWord)) {
 					
 					//int x = 2;
 					//if(nextWord.equals("of")) {
@@ -251,7 +251,7 @@ public class ModPlugin extends DroidSoundPlugin {
 					
 					if(author[2] == null) {
 						
-						if(lastWord.equals("AND")) {
+						if("AND".equals(lastWord)) {
 							if(t[i-2].length() > 0) {
 								a = t[i-2] + " and " + a;
 							}

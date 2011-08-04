@@ -24,7 +24,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.PowerManager;
 import android.os.RemoteException;
 import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
@@ -37,7 +36,6 @@ import com.ssb.droidsound.Playlist;
 import com.ssb.droidsoundedit.R;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.service.Player.SongInfo;
 
 public class PlayerService extends Service {
 	private static final String TAG = PlayerService.class.getSimpleName();
@@ -54,7 +52,7 @@ public class PlayerService extends Service {
 	public static final int SONG_AUTHOR = 2;
 	public static final int SONG_COPYRIGHT = 3;
 	public static final int SONG_CPULOAD = 4;
-	public static final int SONG_FORMAT = 5;
+	private static final int SONG_FORMAT = 5;
 
 	public static final int SONG_POS = 6;
 	public static final int SONG_FILENAME = 7;
@@ -73,19 +71,19 @@ public class PlayerService extends Service {
 	public static final int SONG_FLAGS = 17;
 	public static final int SONG_SOURCE = 18;
 	public static final int SONG_BUFFERING = 19;
-	public static final int SONG_SIZEOF = 20;
+	private static final int SONG_SIZEOF = 20;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
-	public static final int OPTION_RESPECT_LENGTH = 2;
+	private static final int OPTION_RESPECT_LENGTH = 2;
 	public static final int OPTION_PLAYBACK_ORDER = 3;
 	public static final int OPTION_REPEATMODE = 4;
 	public static final int OPTION_BUFFERSIZE = 5;
 	public static final int OPTION_DEFAULT_LENGTH = 6;
 
 
-	public static final int RM_CONTINUE = 0;
-	public static final int RM_KEEP_PLAYING = 1;
+	private static final int RM_CONTINUE = 0;
+	private static final int RM_KEEP_PLAYING = 1;
 	public static final int RM_REPEAT = 2;
 	public static final int RM_CONTINUE_SUBSONGS = 3;
 	public static final int RM_REPEAT_SUBSONG = 4;
@@ -97,7 +95,7 @@ public class PlayerService extends Service {
 	private Thread playerThread;
 	private List<IPlayerServiceCallback> callbacks;
 
-	private SongInfo currentSongInfo = new SongInfo();
+	private final Player.SongInfo currentSongInfo = new Player.SongInfo();
 
 	//private boolean silenceDetect;
 	private boolean respectLength = true;
@@ -106,12 +104,12 @@ public class PlayerService extends Service {
 	private PhoneStateListener phoneStateListener;
 	private BroadcastReceiver mediaReceiver;
 
-	private int defaultRepeatMode = RM_CONTINUE;
+	private final int defaultRepeatMode = RM_CONTINUE;
 
-	protected String saySomething;
+	private String saySomething;
 
 
-	PlayQueue playQueue;
+	private PlayQueue playQueue;
 
 	private TextToSpeech textToSpeech;
 	private int ttsStatus = -1;
@@ -137,10 +135,10 @@ public class PlayerService extends Service {
 		}
 	}
 
-	final static String stripChars = "[]!<>?#${}";
-	final static String blankChars = ".-^,";
+	private final static String stripChars = "[]!<>?#${}";
+	private final static String blankChars = ".-^,";
 
-	final static Map<String, String> composerTranslation = new HashMap<String, String>();
+	private final static Map<String, String> composerTranslation = new HashMap<String, String>();
 
 
 	static {
@@ -186,7 +184,7 @@ public class PlayerService extends Service {
 
 		StringBuilder sb = new StringBuilder();
 
-		if(s.equals("<?>")) {
+		if("<?>".equals(s)) {
 			return "Unnamed";
 		}
 
@@ -227,9 +225,8 @@ public class PlayerService extends Service {
 	}
 
 	private void speakTitle() {
-		String text = "Unnamed song.";
 
-		if(info[SONG_TITLE] == null) {
+        if(info[SONG_TITLE] == null) {
 			return;
 		}
 
@@ -266,7 +263,8 @@ public class PlayerService extends Service {
 			songTitle += (" " + subtuneTitle);
 		} */
 
-		if(songComposer != null & songComposer.length() > 1) {
+        String text = "Unnamed song.";
+        if(songComposer != null & songComposer.length() > 1) {
 			text = songTitle + ". By " + songComposer + ".";
 		} else {
 			text = songTitle + ".";
@@ -280,7 +278,7 @@ public class PlayerService extends Service {
 
 	}
 
-    private Handler mHandler = new Handler() {
+    private final Handler mHandler = new Handler() {
 
 		@Override
         public void handleMessage(Message msg) {
@@ -478,7 +476,7 @@ public class PlayerService extends Service {
 
     final boolean playNextSong() {
     	if(playQueue == null) {
-    		return false;
+            return false;
     	}
     	SongFile song = playQueue.next();
     	/*
@@ -503,14 +501,14 @@ public class PlayerService extends Service {
 
        		beforePlay(song.getName());
        		player.playMod(song);
-       		return true;
-    	}
-		return false;
+            return true;
+        }
+        return false;
     }
 
     final boolean playPrevSong() {
     	if(playQueue == null) {
-    		return false;
+            return false;
     	}
     	SongFile song = playQueue.prev();
 		if(song != null) {
@@ -519,19 +517,19 @@ public class PlayerService extends Service {
        		createThread();
        		beforePlay(song.getName());
        		player.playMod(song);
-       		return true;
-    	}
-		return false;
+            return true;
+        }
+        return false;
     }
 
-    private static final Class[] mStartForegroundSignature = new Class[] { int.class, Notification.class};
-    private static final Class[] mStopForegroundSignature = new Class[] { boolean.class};
+    private static final Class[] mStartForegroundSignature = { int.class, Notification.class};
+    private static final Class[] mStopForegroundSignature = { boolean.class};
 
     private NotificationManager mNM;
     private Method mStartForeground;
     private Method mStopForeground;
-    private Object[] mStartForegroundArgs = new Object[2];
-    private Object[] mStopForegroundArgs = new Object[1];
+    private final Object[] mStartForegroundArgs = new Object[2];
+    private final Object[] mStopForegroundArgs = new Object[1];
 
 	//private PowerManager.WakeLock wakeLock;
 
@@ -539,26 +537,25 @@ public class PlayerService extends Service {
 
 	private PendingIntent contentIntent;
 
-	protected int bufSize = 0x40000;
+	private int bufSize = 0x40000;
 
-	protected int defaultLength = 60*15*1000;
+	private int defaultLength = 60*15*1000;
 
-	protected String playListName;
+	private String playListName;
 
-	protected int callState = TelephonyManager.CALL_STATE_IDLE;
+	private int callState = TelephonyManager.CALL_STATE_IDLE;
 
 	//private boolean foreground;
 
     /**
      * This is a wrapper around the new startForeground method, using the older
      * APIs if it is not available.
-     * @param id
      * @param notification
      */
-    final void startForegroundCompat(int id, Notification notification) {
+    final void startForegroundCompat(Notification notification) {
         // If we have the new startForeground API, then use it.
         if (mStartForeground != null) {
-            mStartForegroundArgs[0] = id;
+            mStartForegroundArgs[0] = R.string.notification;
             mStartForegroundArgs[1] = notification;
             try {
                 mStartForeground.invoke(this, mStartForegroundArgs);
@@ -575,16 +572,15 @@ public class PlayerService extends Service {
 
         // Fall back on the old API.
         setForeground(true);
-        mNM.notify(id, notification);
+        mNM.notify(R.string.notification, notification);
         //foreground = true;
     }
 
     /**
      * This is a wrapper around the new stopForeground method, using the older
      * APIs if it is not available.
-     * @param id
      */
-    void stopForegroundCompat(int id) {
+    void stopForegroundCompat() {
         // If we have the new stopForeground API, then use it.
         if (mStopForeground != null) {
             mStopForegroundArgs[0] = Boolean.TRUE;
@@ -603,7 +599,7 @@ public class PlayerService extends Service {
 
         // Fall back on the old API.  Note to cancel BEFORE changing the
         // foreground state, since we could be killed at that point.
-        mNM.cancel(id);
+        mNM.cancel(R.string.notification);
         setForeground(false);
         //foreground = false;
     }
@@ -812,16 +808,16 @@ public class PlayerService extends Service {
 	    //wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Droidsound");
 	    //wakeLock.acquire();
 	}
-
-	final void beforePlay(String name) {
+     //void beforePlay(String name) { Below code is a weaker type.
+	final void beforePlay(CharSequence name) {
 		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
 		//if(!foreground)
-			startForegroundCompat(R.string.notification, notification);
+			startForegroundCompat(notification);
 	}
 
 	final void whenStopped() {
 		//if(foreground)
-			stopForegroundCompat(R.string.notification);
+			stopForegroundCompat();
 	}
 
 	@Override
@@ -895,7 +891,7 @@ public class PlayerService extends Service {
 	private final IPlayerService.Stub mBinder = new IPlayerService.Stub() {
 
 		@Override
-		public boolean playMod(String name) throws RemoteException {
+		public boolean playMod(String name) {
 			Log.d(TAG, "Playmod called " + name);
 
 			createThread();
@@ -907,7 +903,7 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public void registerCallback(IPlayerServiceCallback cb, int flags) throws RemoteException {
+		public void registerCallback(IPlayerServiceCallback cb, int flags) {
 			if(cb != null) {
 				for(int i=1; i<SONG_SIZEOF; i++) {
 					try {
@@ -929,8 +925,7 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public void unRegisterCallback(IPlayerServiceCallback cb)
-				throws RemoteException {
+		public void unRegisterCallback(IPlayerServiceCallback cb) {
 
 			Log.d(TAG, "Removing %s", cb.toString());
 			callbacks.remove(cb);
@@ -938,7 +933,7 @@ public class PlayerService extends Service {
 
 
 		@Override
-		public boolean playPause(boolean play) throws RemoteException {
+		public boolean playPause(boolean play) {
 			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
 				SongFile s = playQueue.current();
 				if(s != null) {
@@ -956,7 +951,7 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public void stop() throws RemoteException {
+		public void stop() {
 			player.stop();
 			whenStopped();
 	    	//userInterferred = false;
@@ -966,7 +961,7 @@ public class PlayerService extends Service {
 
 
 		@Override
-		public boolean seekTo(int msec) throws RemoteException {
+		public boolean seekTo(int msec) {
 			player.seekTo(msec);
 			info[SONG_POS] = msec;
 			performCallback(SONG_POS);
@@ -979,7 +974,7 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public boolean setSubSong(int song) throws RemoteException {
+		public boolean setSubSong(int song) {
 
 	    	if(playQueue == null) {
 	    		return false;
@@ -1023,9 +1018,9 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public void setOption(int opt, String arg) throws RemoteException {
+		public void setOption(int opt, String arg) {
 
-			boolean on = arg.equals("on");
+			boolean on = "on".equals(arg);
 
 			try {
 				switch(opt) {
@@ -1060,13 +1055,13 @@ public class PlayerService extends Service {
 					break;
 				case OPTION_BUFFERSIZE:
 			 		bufSize = 176384; // 2s
-			 		if(arg.equals("Short")) {
+			 		if("Short".equals(arg)) {
 			 			bufSize = 66144; // 0.75s
 			 		} else
-			 		if(arg.equals("Medium")) {
+			 		if("Medium".equals(arg)) {
 			 			bufSize = 132288; // 1.5s
 			 		} else
-			 		if(arg.equals("Very Long")) {
+			 		if("Very Long".equals(arg)) {
 			 			bufSize = 352768; // 4s
 			 		}
 					player.setBufSize(bufSize);
@@ -1098,7 +1093,7 @@ public class PlayerService extends Service {
 		}
 */
 		@Override
-		public boolean playPlaylist(String name, int startIndex) throws RemoteException {
+		public boolean playPlaylist(String name, int startIndex) {
 
 			File pf = new File(name);
 			Playlist pl = Playlist.getPlaylist(pf);
@@ -1137,7 +1132,7 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public boolean playList(String[] names, int startIndex) throws RemoteException {
+		public boolean playList(String[] names, int startIndex) {
 
 			playQueue = new PlayQueue(names, startIndex, shuffleSongs);
 			/*
@@ -1169,33 +1164,33 @@ public class PlayerService extends Service {
 		}
 
 		@Override
-		public void playNext() throws RemoteException {
+		public void playNext() {
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 			playNextSong();
 		}
 
 		@Override
-		public void playPrev() throws RemoteException {
+		public void playPrev() {
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 			playPrevSong();
 		}
 
 		@Override
-		public String[] getSongInfo() throws RemoteException {
+		public String[] getSongInfo() {
 
 			return currentSongInfo.details;
 		}
 
 		@Override
-		public byte[] getSongMD5() throws RemoteException {
+		public byte[] getSongMD5() {
 
 			return currentSongInfo.md5;
 		}
 
 		@Override
-		public boolean dumpWav(String modName, String destFile, int length, int flags) throws RemoteException {
+		public boolean dumpWav(String modName, String destFile, int length, int flags) {
 			// TODO Auto-generated method stub
 
 			createThread();
@@ -1216,7 +1211,7 @@ public class PlayerService extends Service {
     	return mBinder;
     }
 
-    protected final void activateSpeech(boolean on) {
+    final void activateSpeech(boolean on) {
     	if(on) {
 			if(textToSpeech == null) {
 				Log.d(TAG, "Turning on speech");

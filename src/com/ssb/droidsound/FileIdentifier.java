@@ -7,11 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.ssb.droidsound.utils.Log;
 
@@ -21,20 +17,20 @@ import com.ssb.droidsoundedit.R;
 public class FileIdentifier {
 	private static final String TAG = FileIdentifier.class.getSimpleName();
 
-	private static Map<String, Integer> extensions;
+	private static final Map<String, Integer> extensions;
 
     private static List<DroidSoundPlugin> plugins;
 
 	private static boolean indexUnknown;
 
-	public static final int TYPE_MOD = 1;
-	public static final int TYPE_SID = 2;
-	public static final int TYPE_XM = 3;
-	public static final int TYPE_S3M = 4;
-	public static final int TYPE_IT = 5;
-	public static final int TYPE_NSF = 6;
-	public static final int TYPE_SPC = 7;
-	public static final int TYPE_PRG = 8;
+	private static final int TYPE_MOD = 1;
+	private static final int TYPE_SID = 2;
+	private static final int TYPE_XM = 3;
+	private static final int TYPE_S3M = 4;
+	private static final int TYPE_IT = 5;
+	private static final int TYPE_NSF = 6;
+	private static final int TYPE_SPC = 7;
+	private static final int TYPE_PRG = 8;
 	//public static final int TYPE_VGM = 8;
 
 	public static class MusicInfo {
@@ -62,8 +58,8 @@ public class FileIdentifier {
 		extensions.put("PRG", TYPE_PRG);
 		//extensions.put("VGM", TYPE_VGM);
 
-
-        HashSet<String> modMagic = new HashSet<String>();
+        //HashSet<String> modMagic = new HashSet(); Weaker type is below
+        Collection<String> modMagic = new HashSet<String>();
 		modMagic.add("M.K.");
 		modMagic.add("M!K!");
 		modMagic.add("M&K!");
@@ -218,12 +214,9 @@ public class FileIdentifier {
 	}
 
 
-	public static MusicInfo identify(String name, InputStream is, File file) {
+	private static MusicInfo identify(String name, InputStream is, File file) {
 
-		byte data [];
-		String magic;
-
-		if(plugins == null) {
+        if(plugins == null) {
 			plugins = DroidSoundPlugin.createPluginList();
 		}
 
@@ -234,8 +227,8 @@ public class FileIdentifier {
 		Integer i = extensions.get(ext);
 		if(i == null) {
 
-
-			List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
+            //List<DroidSoundPlugin> list = new ArrayList();
+			Collection<DroidSoundPlugin> list = new ArrayList();
 			for(DroidSoundPlugin plugin : plugins) {
 				if(plugin.canHandle(name)) {
 					list.add(plugin);
@@ -243,10 +236,9 @@ public class FileIdentifier {
 				}
 			}
 
-			int available = 0;
-
-			if(is != null) {
-				try {
+            if(is != null) {
+                int available = 0;
+                try {
 					available = is.available();
 				} catch (IOException e1) {
 					return null;
@@ -329,7 +321,9 @@ public class FileIdentifier {
 		}
 
 		try {
-			switch(i) {
+            byte[] data;
+            String magic;
+            switch(i) {
 			case TYPE_PRG:
 				name = getBaseName(name);
 				info.format = "SID";
@@ -339,14 +333,14 @@ public class FileIdentifier {
 				data = new byte [0x80];
 				is.read(data);
 				magic = new String(data, 1, 3);
-				if(magic.equals("SID")) {
+				if("SID".equals(magic)) {
 					info.title = fromData(data, 0x16, 32); //new String(data, 0x16, o-0x15, "ISO-8859-1");
 					info.composer = fromData(data, 0x36, 32); //new String(data, 0x36, o-0x35, "ISO-8859-1");
 					info.copyright = fromData(data, 0x56, 32); //new String(data, 0x56, o-0x55, "ISO-8859-1");
 					info.format = "SID";
-					int year = -1;
-					if(info.copyright.length() >= 4) {
-						try {
+                    if(info.copyright.length() >= 4) {
+                        int year = -1;
+                        try {
 							year = Integer.parseInt(info.copyright.substring(0,4));
 						} catch (NumberFormatException e) {
 						}
@@ -375,7 +369,7 @@ public class FileIdentifier {
 				data = new byte [50];
 				is.read(data);
 				magic = new String(data, 44, 4);
-				if(!magic.equals("SCRM")) {
+				if(!"SCRM".equals(magic)) {
 					return null;
 				}
 				info.title = fromData(data, 0, 28); //new String(data, 0, 28, "ISO-8859-1");
@@ -385,7 +379,7 @@ public class FileIdentifier {
 				data = new byte [0x70];
 				is.read(data);
 				magic = new String(data, 0, 15);
-				if(!magic.equals("Extended Module")) {
+				if(!"Extended Module".equals(magic)) {
 					return null;
 				}
 				info.title = fromData(data, 17, 20); //new String(data, 17, 20, "ISO-8859-1");
@@ -396,7 +390,7 @@ public class FileIdentifier {
 				data = new byte [32];
 				is.read(data);
 				magic = new String(data, 0, 4);
-				if(!magic.equals("IMPM")) {
+				if(!"IMPM".equals(magic)) {
 					return null;
 				}
 				info.title = fromData(data, 4, 26); //new String(data, 4, 26, "ISO-8859-1");
@@ -406,7 +400,7 @@ public class FileIdentifier {
 				data = new byte [128];
 				is.read(data);
 				magic = new String(data, 0, 4);
-				if(!magic.equals("NESM")) {
+				if(!"NESM".equals(magic)) {
 					return null;
 				}
 				info.title = fromData(data, 0xe, 32); //new String(data, 0xe, 32, "ISO-8859-1");
@@ -419,7 +413,7 @@ public class FileIdentifier {
 				is.read(data);
 				info.format = "SNES";
 				magic = new String(data, 0, 27);
-				if(!magic.equals("SNES-SPC700 Sound File Data")) {
+				if(!"SNES-SPC700 Sound File Data".equals(magic)) {
 					return null;
 				}
 

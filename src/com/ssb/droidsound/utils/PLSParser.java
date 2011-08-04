@@ -11,18 +11,17 @@ import com.ssb.droidsound.utils.Log;
 
 public class PLSParser implements PlaylistParser {
 	private static final String TAG = M3UParser.class.getSimpleName();
-	private List<String> songs;
-	private List<String> descs;
+	private final List<String> songs;
+	private final List<String> descs;
 
 	public PLSParser(File file) {
-		BufferedReader reader;
-		
-		songs = new ArrayList<String>();
+
+        songs = new ArrayList<String>();
 		descs = new ArrayList<String>();
 		
 		try {
-			reader = new BufferedReader(new FileReader(file));
-			String line = reader.readLine();
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            String line = reader.readLine();
 			while(line != null) {				
 				Log.d(TAG, line);
 				line = line.trim();
