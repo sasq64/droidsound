@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="app_name">Droidsound</string>
+<string name="create_moddir_failed">"N\'a pas pu créer le dossier MODS sur la carte SD"</string>
+<string name="sdcard_not_found">"N\'était pas en mesure d\'accéder à une carte SD</string>
+<string name="search_hint">Titre Recherche</string>
+<string name="scan_db">Rescan database</string>
+<string name="about_droidsound">"By sasq64@gmail.com"</string>
+<string name="recreate_confirm">Ce va scanner toute la base à nouveau. Cela pourrait prendre un certain temps. Etes-vous sûr?</string>
+<string-array name="scan_opts">
+    <item>Full</item>
+</string-array>
+<string name="details">Détails</string>
+<string name="favorite">Favorite</string>
+<string name="go_to_dir">Accéder au répertoire</string>
+<string name="remove">Retirer</string>
+<string name="cut">Couper</string>
+<string name="paste">Coller</string>
+<string name="remove_all">Retirer tout</string>
+<string name="do_remove_all">Effacer playlist?</string>
+<string name="del_dir">Supprimer</string>
+<string name="del_file">Supprimer</string>
+<string name="del_plist">Supprimer</string>
+<string name="make_wav">Créer sonnerie</string>
+<string name="do_del_plist">Supprimer la playlist?</string>
+<string name="do_del_dir">Supprimer le répertoire?</string>
+<string name="do_del_file">Supprimer le fichier?</string>
+<string name="do_make_wav">Définir comme sonnerie</string>
+<string name="ringtone_set">Configuration nouvelle sonnerie complète</string>
+<string name="ringtone_created">Nouvelle sonnerie créé</string>
+<string name="rescan">Rescan</string>
+<string name="abort_scan">Abandonner scan</string>
+<string name="about">À propos</string>
+<string name="new_">Nouveau</string>
+<string name="quit">Quitter</string>
+<string name="database_cleared">Base de données nettoyées</string>
+<string name="clearing_database">Nettoyage base de donnéese</string>
+<string name="database_busy">Base de données occupé!</string>
+<string name="scanning">Balayage</string>
+<string name="title">Titre</string>
+<string name="info">Info</string>
+<string name="composer">Compositeurr</string>
+<string name="copyright">Droit d\'auteur</string>
+<string name="upgrade_db">Format de base de données a changé. Ancienne base de données sera supprimé et recréé.</string>
+<string name="add_to_plist">Ajouter à \'[playlist]\'</string>
+<string name="create_playlist">Créer playlist</string>
+<string name="set_plist">Réglez playlist courante</string>
+<string name="name_playlist">Nom de la playlist.</string>
+<string name="name_folder">Nom du dossier.</string>
+<string name="name_link">Nom du lien (http://)</string>
+<string name="settings">Paramètres</string>
+<string name="will_be_downloaded">Va être téléchargé.</string>
+<string name="is_downloading">est en train de télécharger...</string>
+<string name="is_downloaded">est déjà téléchargé.</string>
+<string name="is_queued">est en attente pour le téléchargement.</string>
+
+<string name="hvsc_desc">The High Voltage Sid Collection (230 MB)</string>
+<string name="csdb_desc">The CSDb Scene Database (660 KB)</string>
+<string name="testmods_desc">Certains test de mods</string>
+
+<string name="zip_import_failed">Échec d\'importer le fichier zip</string>
+<string name="zip_import_replace">Ne remplacera pas les fichier zip existant. Retirez-le d\'abord.</string>
+<string name="ask_speech">Vous n\'avez pas d\'entrée vocale installé. Installez-le à partir du Android Market maintenant?</string>
+<string name="notification">Droidsound en lecture</string>
+
+<string name="sort_name">Trier par titre</string>
+<string name="sort_author">Trier par le compositeur</string>
+<string name="sort_date">Trier par date</string>
+
+<string name="unpack_examples">Depuis cela ressemble à la première fois que vous exécutez DroidSound, j\'ai extrait de la 
+musique de l\'échantillon pour vous. \n\nSi vous ne le voulez pas, il suffit de maintenir votre doigt vers le bas sur \'Examples\'  et sélectionnez Supprimer.\n\nConsultez également \'Download\' en les Paramètres
+pour télécharger plus de musique</string>
+
+<string-array name="fav_opts">
+	<item>Subtune défaut</item>
+	<item>Subtune actuelle</item>
+	<item>Tous subtunes</item>
+</string-array>
+
+
+<string-array name="new_opts">
+	<item>Dossier</item>
+	<item>Playlist</item>
+	<item>Lien HTTP</item>
+</string-array>
+
+<string-array name="indexing_opts">
+	<item>Aucun</item>
+	<item>De base</item>
+	<item>Complet</item>
+</string-array>
+
+<string-array name="panning_opts">
+	<item>Mono</item>
+	<item>Certains stéréo</item>
+	<item>50/50</item>
+	<item>Beaucoup de stéréo</item>
+	<item>Stéréo complet</item>
+</string-array>
+
+
+<string-array name="buffer_opts">
+	<item>Bref</item>
+	<item>Moyennes</item>
+	<item>Long</item>
+	<item>Très longue</item>
+</string-array>
+
+<string-array name="engine_opts">
+<item>Sidplay2</item>
+<item>VICE</item>
+</string-array>
+
+
+<string-array name="videomode_opts">
+<item>PAL</item>
+<item>NTSC</item>
+<item>PAL (Forcé)</item>
+<item>NTSC (Forcé)</item>
+</string-array>
+
+<string-array name="resampling_opts">
+<item>Fastest (cycle skipping)</item>
+<item>Fast (pas de cycle skipping)</item>
+<item>Slow (SINC)</item>
+<item>Slowest (SINC)</item>
+</string-array>
+
+<string-array name="filter_bias_opts">
+<item>Le plus léger filtre</item>
+<item>Light filtre</item>
+<item>Filtre normal</item>
+<item>Sombre filtre</item>
+<item>Darkest filtre</item>
+</string-array>
+
+<string-array name="sid_model_opts">
+<item>6581</item>
+<item>8580</item>
+<item>6581 (Forcé)</item>
+<item>8580 (Forcé)</item>
+</string-array>
+
+<string-array name="videomode_vals">
+<item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
+</string-array>
+
+<string-array name="resampling_vals">
+<item>0</item>
+<item>1</item>
+<item>3</item>
+<item>2</item>
+</string-array>
+
+<string-array name="filter_bias_vals">
+<item>500</item>
+<item>250</item>
+<item>0</item>
+<item>-250</item>
+<item>-500</item>
+</string-array>
+
+<string-array name="sid_model_vals">
+<item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
+</string-array>
+</resources>

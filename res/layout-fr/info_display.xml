@@ -1,0 +1,11 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+    android:layout_width="fill_parent" android:layout_height="fill_parent" >
+	<TextView android:text="@string/title" style="@style/InfoTitle"/>
+	<TextView android:id="@+id/title_text" style="@style/InfoText"/>
+	<TextView android:text="@string/composer" style="@style/InfoTitle"/>
+	<TextView android:id="@+id/composer_text" style="@style/InfoText"/>
+	<TextView android:text="@string/copyright" style="@style/InfoTitle"/>
+	<TextView android:id="@+id/copyright_text" style="@style/InfoText"/>
+	<TextView style="@style/InfoTitle"/>	
+	
+</LinearLayout>

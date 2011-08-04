@@ -1,0 +1,44 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/panel"
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:background="#ff232729"	
+>
+
+<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
+	android:orientation="horizontal" android:layout_alignParentTop="true"
+	android:background="#000080"
+	android:id="@+id/title_bar"
+>
+	<TextView android:id="@+id/song_title"
+	android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:textSize="20dp"
+    android:textColor="#FFFFFFFF"
+    android:layout_margin="4dp"
+    android:layout_weight="1.0"
+    android:singleLine="true"
+	/>
+	
+	<ImageButton android:id="@+id/search_button" android:src="@drawable/gflat_list"
+	android:layout_width="54dp" android:layout_height="54dp" android:layout_margin="4dp" />
+	
+</LinearLayout>
+
+
+	<FrameLayout 
+	    android:layout_width="fill_parent" android:layout_height="wrap_content" 
+	    android:id="@+id/info_display"
+	>
+		<include layout="@layout/info_display" />
+	</FrameLayout>
+	
+	<FrameLayout
+	    android:layout_width="fill_parent" android:layout_height="wrap_content" 
+	    android:layout_gravity="center_horizontal"
+	    android:id="@+id/controls">
+		<include layout="@layout/controls" />
+	</FrameLayout>
+</LinearLayout>
+	
