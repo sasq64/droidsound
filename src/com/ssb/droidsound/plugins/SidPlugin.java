@@ -40,7 +40,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	private final int songLengths[] = new int [256];
 	private int currentTune;
 
-	private static class Option {
+	public static class Option {
 		String name;
 		String description;
 		Object defaultValue;

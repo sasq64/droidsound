@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URL;
-import java.net.UnknownHostException;
+//import java.net.UnknownHostException; not used yet.
 import java.util.HashMap;
 import java.util.Map;
 

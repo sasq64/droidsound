@@ -209,7 +209,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private File moveFileHere;
 
-	private int operationTune;
+	public int operationTune;
 
 	private String operationTitle;
 
@@ -1327,7 +1327,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		return super.dispatchKeyEvent(event);
 	}
 
-	private static final Class[] mStartTracking = {};
+	public static final Class[] mStartTracking = {};
 
 
 	@Override

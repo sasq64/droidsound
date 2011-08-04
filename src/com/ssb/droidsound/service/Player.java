@@ -107,7 +107,7 @@ public class Player implements Runnable {
 	private int silentPosition;
 
 	private final int FREQ = 44100;
-	private long audioTime;
+	public long audioTime;
 	private int aCount;
 	private long lastTime = -1;
     // private int switchPos = -1;
@@ -339,7 +339,7 @@ public class Player implements Runnable {
 		// SongFile sf = new SongFile(songName);
 
         //List<DroidSoundPlugin> list = new ArrayList(); //Below is weaker type of same thing
-		Collection<DroidSoundPlugin> list = new ArrayList();
+		Collection<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 
 		for(DroidSoundPlugin plugin : plugins) {
 			if(plugin.canHandle(song.getName())) {

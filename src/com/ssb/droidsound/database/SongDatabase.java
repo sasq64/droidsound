@@ -32,7 +32,7 @@ import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.utils.Log;
 
-import com.ssb.droidsound.FileIdentifier.MusicInfo;
+//import com.ssb.droidsound.FileIdentifier.MusicInfo; Not used as of now.
 import com.ssb.droidsound.plugins.UADEPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
@@ -1213,12 +1213,10 @@ public class SongDatabase implements Runnable {
 
 	private Playlist currentPlaylist;
 	private Playlist activePlaylist;
-
 	private String pathTitle;
 
-	private boolean doQuit;
-
-	private String currentLink;
+	public boolean doQuit;
+	public String currentLink;
 
 	public Playlist getCurrentPlaylist() {
 		return currentPlaylist;

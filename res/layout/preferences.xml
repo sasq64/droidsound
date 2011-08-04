@@ -234,6 +234,5 @@
     <Preference android:key="help_pref"
 		android:title="Droidsound Help"
 		/>
-    <PreferenceScreen android:key="about_prefs" android:title="About Droidsound" />
-    
+    <PreferenceScreen android:key="about_prefs" android:title="About Droidsound"/>   
 </PreferenceScreen> 

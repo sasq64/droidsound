@@ -35,7 +35,7 @@ public final class Playlist {
 	private boolean changed;
 
 	private String title;
-	private String subtitle;
+	public String subtitle;
 
 	private boolean written;
 	private long fileModified;

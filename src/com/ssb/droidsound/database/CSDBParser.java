@@ -33,7 +33,7 @@ public class CSDBParser implements DataSource {
     public void setPath(String p) {
         String pathName = p;
 	}
-
+    
 	boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, ScanCallback scanCallback) {
         try {
 			db.execSQL("DELETE FROM RELEASES;");
@@ -80,6 +80,7 @@ public class CSDBParser implements DataSource {
 			String line = reader.readLine();
 			int count = 0;
 			int total = line.length()+1;
+			
 			//int fileSize = (int) is.available();
             int place = -1;
             while(line != null) {

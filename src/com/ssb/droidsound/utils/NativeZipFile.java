@@ -72,7 +72,7 @@ public class NativeZipFile {
 	
 	class MyEnumeration implements Enumeration<MyZipEntry> {
 
-		private final NativeZipFile zipFile;
+		public final NativeZipFile zipFile;
 		private int currentIndex;
 		private final int total;
 
@@ -103,7 +103,7 @@ public class NativeZipFile {
 	}
 	
 	static class NZInputStream extends InputStream {
-		private static final String TAG = NZInputStream.class.getSimpleName();
+		protected static final String TAG = NZInputStream.class.getSimpleName();
 
 		private final NativeZipFile zipFile;
 		//private byte buffer [];

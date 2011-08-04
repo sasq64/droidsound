@@ -98,6 +98,7 @@ public class MediaStreamer implements Runnable {
 	private String songTrack;
 	private String songGenre;
 	private String songComment;
+	private String songYear;
     private long totalFrameBytes;
 	private boolean VBR;
 	private boolean parseMp3;
@@ -381,6 +382,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				songTrack = id3.getStringInfo(ID3Tag.ID3INFO_TRACK);
 				songGenre = id3.getStringInfo(ID3Tag.ID3INFO_GENRE);
 				songComment = id3.getStringInfo(ID3Tag.ID3INFO_COMMENT);
+				songYear = id3.getStringInfo(ID3Tag.ID3INFO_YEAR);
                 String songCopyright = id3.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
 
 				//songLength  = id3.getIntInfo(DroidSoundPlugin.INFO_LENGTH);

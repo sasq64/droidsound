@@ -46,6 +46,7 @@ public class FileIdentifier {
 	}
 
 
+	//File extensions
 	static {
 		extensions = new HashMap<String, Integer>();
 		extensions.put("MOD", TYPE_MOD);
@@ -228,7 +229,7 @@ public class FileIdentifier {
 		if(i == null) {
 
             //List<DroidSoundPlugin> list = new ArrayList();
-			Collection<DroidSoundPlugin> list = new ArrayList();
+			Collection<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 			for(DroidSoundPlugin plugin : plugins) {
 				if(plugin.canHandle(name)) {
 					list.add(plugin);

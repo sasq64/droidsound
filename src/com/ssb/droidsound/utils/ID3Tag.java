@@ -1,8 +1,6 @@
 package com.ssb.droidsound.utils;
 
 import java.io.File;
-
-
 import com.ssb.droidsound.utils.Log;
 
 public class ID3Tag {
@@ -13,7 +11,7 @@ public class ID3Tag {
 		System.loadLibrary("id3tag");
 	}
 	
-	
+	public static final int ID3INFO_YEAR = 99;
 	public static final int ID3INFO_GENRE = 100;
 	public static final int ID3INFO_COMMENT = 101;
 	public static final int ID3INFO_ALBUM = 102;

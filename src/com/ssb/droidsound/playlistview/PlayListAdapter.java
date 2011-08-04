@@ -377,7 +377,7 @@ class PlayListAdapter extends BaseAdapter {
 
 		//File [] names = new File [ mCursor.getCount() ];
         //ArrayList<FileInfo> files = new ArrayList(); Weakened type below.
-        Collection<FileInfo> files = new ArrayList();
+        Collection<FileInfo> files = new ArrayList<FileInfo>();
 
 		mCursor.moveToPosition(-1);
 		while(mCursor.moveToNext()) {

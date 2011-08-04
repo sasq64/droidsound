@@ -2,12 +2,12 @@ package com.ssb.droidsound;
 
 import java.io.File;
 
-import com.ssb.droidsound.utils.Log;
+//import com.ssb.droidsound.utils.Log; Log is not used as of now.
 import com.ssb.droidsoundedit.R;
 
 public class SongFile {
 
-	private static final String TAG = SongFile.class.getSimpleName();
+	public static final String TAG = SongFile.class.getSimpleName();
 	private int subtune;
 	private int playtime;
 	private String fileName;

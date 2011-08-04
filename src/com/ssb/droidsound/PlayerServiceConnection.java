@@ -2,7 +2,7 @@ package com.ssb.droidsound;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+//import java.util.List; not used yet.
 
 import com.ssb.droidsound.service.IPlayerService;
 import com.ssb.droidsound.service.IPlayerServiceCallback;

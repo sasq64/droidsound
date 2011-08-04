@@ -16,7 +16,7 @@ import com.ssb.droidsoundedit.R;
 
 class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 
-	private Context application;
+	public Context application;
 	private final Thread.UncaughtExceptionHandler oldHandler;
 	private final String targetDir;
 

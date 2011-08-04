@@ -14,7 +14,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 
 	private long currentSong = 0;
 
-	private static class Option {
+	public static class Option {
 		String name;
 		String description;
 		Object defaultValue;

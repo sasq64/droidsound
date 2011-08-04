@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+//import java.util.List; not used. yet.
 
 import android.media.MediaPlayer;
 import com.ssb.droidsound.utils.Log;
@@ -22,7 +22,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private MediaPlayer mediaPlayer;
 	private volatile boolean started;
 	private volatile boolean prepared;
-	private volatile boolean loaded;
+	protected volatile boolean loaded;
 
 	private MediaStreamer streamer;
 
@@ -36,6 +36,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private String songGenre;
 	private String songComment;
 	private String songCopyright;
+	private String songYear;
     private ID3Tag id3Tag;
 	private CueFile cueFile;
 	private int currentSong;
@@ -81,6 +82,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 			info.add("Comment");
 			info.add(songComment);
 		}
+		if(songYear != null && songYear.length() > 0){
+			info.add("Year");
+			info.add(songYear);
+		}
 		if(info.size() == 0) {
 			return null;
 		}
@@ -105,6 +110,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 					songTitle = streamer.getStringInfo(DroidSoundPlugin.INFO_TITLE);
 					songComposer = streamer.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
 					songLength = streamer.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+					songYear = streamer.getStringInfo(DroidSoundPlugin.INFO_YEAR);
 					Log.d(TAG, " NEW META %s %s %d", songTitle, songComposer, songLength);
 					return 1;
 				}
@@ -355,6 +361,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			songTrack = id3Tag.getStringInfo(ID3Tag.ID3INFO_TRACK);
 			songGenre = id3Tag.getStringInfo(ID3Tag.ID3INFO_GENRE);
 			songComment = id3Tag.getStringInfo(ID3Tag.ID3INFO_COMMENT);
+			songYear = id3Tag.getStringInfo(ID3Tag.ID3INFO_YEAR);
 			songTitle = id3Tag.getStringInfo(INFO_TITLE);
 			songComposer = id3Tag.getStringInfo(INFO_AUTHOR);
 			songCopyright = id3Tag.getStringInfo(INFO_COPYRIGHT);
