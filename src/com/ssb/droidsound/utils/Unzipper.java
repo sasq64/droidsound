@@ -18,7 +18,7 @@ import com.ssb.droidsound.utils.Log;
 public final class Unzipper {
 
 	private static final String TAG = Unzipper.class.getSimpleName();
-	
+
 	private static Unzipper _instance = null;
 
     private Unzipper() {
@@ -30,7 +30,7 @@ public final class Unzipper {
 		}
 		return _instance;
 	}
-	
+
 	private static class UnzipJob {
 		public final String asset;
 		public final File targetDir;
@@ -39,7 +39,7 @@ public final class Unzipper {
 			targetDir = t;
 		}
 	}
-	
+
 	private static class UnzipWorker implements Runnable {
 
 		private final List<UnzipJob> unzipList = new ArrayList<UnzipJob>();
@@ -49,7 +49,7 @@ public final class Unzipper {
 
 		private final Context context;
 		private boolean doQuit;
-		
+
 		public UnzipWorker(Context ctx) {
 			context = ctx;
 		}
@@ -59,12 +59,12 @@ public final class Unzipper {
 			while(!doQuit) {
 				try {
 					synchronized (this) {
-						wait();						
+						wait();
 					}
 				} catch (InterruptedException e) {
 					return;
 				}
-				Log.d(TAG, "UNZIP THREAD WOKE UP");				
+				Log.d(TAG, "UNZIP THREAD WOKE UP");
 				while(true) {
 					UnzipJob job = null;
 					synchronized (unzipList) {
@@ -74,7 +74,7 @@ public final class Unzipper {
 							unzipList.remove(0);
 							Log.d(TAG, "Found " + job.asset);
 						} else {
-							//Log.d(TAG, "Quitting thread"); 
+							//Log.d(TAG, "Quitting thread");
 							//return;
 						}
 					}
@@ -82,7 +82,7 @@ public final class Unzipper {
 						unzipAsset(context, job.asset, job.targetDir);
 						synchronized (doneList) {
 							doneList.add(job.asset);
-						}							
+						}
 					} else
 						break;
 				}
@@ -91,7 +91,7 @@ public final class Unzipper {
 
 		public void addJob(String asset, File targetDir) {
 			synchronized (unzipList) {
-				
+
 				for(UnzipJob job : unzipList) {
 					if(job.asset.equals(asset)) {
 						Log.d(TAG, "##### SKIPPING " + asset);
@@ -99,13 +99,13 @@ public final class Unzipper {
 					}
 				}
 				Log.d(TAG, "##### ADDING " + asset);
-				unzipList.add(new UnzipJob(asset, targetDir));				
+				unzipList.add(new UnzipJob(asset, targetDir));
 			}
 			synchronized (this) {
-				notify();				
+				notify();
 			}
 		}
-		
+
 		public boolean checkJob(String asset) {
 			//boolean rc = false; Redundant. Value never used
             boolean rc;
@@ -117,27 +117,24 @@ public final class Unzipper {
 			}
 			return rc;
 		}
-		
+
 	}
 
 	private UnzipWorker unzipWorker;
 	private Thread unzipThread;
-	
-	
-	
+
 	public boolean checkJob(String asset) {
 		return unzipWorker.checkJob(asset);
 	}
-	
-	
+
 	public void unzipAssetAsync(Context context, String asset, File targetDir) {
-		
+
 		if(unzipThread != null) {
 			if(!unzipThread.isAlive()) {
 				unzipThread = null;
 			}
 		}
-	
+
 		if(unzipThread == null) {
 			unzipWorker = new UnzipWorker(context);
 			unzipThread = new Thread(unzipWorker);
@@ -147,23 +144,20 @@ public final class Unzipper {
 				Thread.sleep(300);
 			} catch (InterruptedException e) {
 			}
-		}		
-
+		}
 		unzipWorker.addJob(asset, targetDir);
-		
 	}
 
-	synchronized public static boolean unzipAsset(Context context, String asset, File targetDir) {
-		
+	public static synchronized boolean unzipAsset(Context context, String asset, File targetDir) {
+
 		File tempFile = null;
-		try {			
+		try {
 			tempFile = new File(targetDir, asset);
 
             FileOutputStream os = new FileOutputStream(tempFile);
             InputStream is = context.getAssets().open(asset);
 
-            //byte [] buffer = new byte [(128*1024)]; Improved calculation by calculating total value.
-			byte [] buffer = new byte [131072];
+            byte [] buffer = new byte [(128*1024)];
 			while(true) {
 				int rc = is.read(buffer);
 				if(rc <= 0) {
@@ -173,23 +167,22 @@ public final class Unzipper {
 			}
 			is.close();
 			os.close();
-			
+
 			ZipFile zf = new ZipFile(tempFile);
 			Enumeration<? extends ZipEntry> entries = zf.entries();
 			while(entries.hasMoreElements()) {
 				ZipEntry entry = entries.nextElement();
 				is = zf.getInputStream(entry);
-				String name = entry.getName();	
+				String name = entry.getName();
 				File efile = new File(targetDir, name);
-				
+
 				Log.d(TAG, "Extracting %s / %s", name, efile.getPath());
-				
+
 				if(name.endsWith("/")) {
 					continue;
 				}
-				
+
 				efile.getParentFile().mkdirs();
-				
 				os = new FileOutputStream(efile);
 
 				while(true) {
@@ -201,19 +194,16 @@ public final class Unzipper {
 				}
 				is.close();
 				os.close();
-			}			
+			}
 			tempFile.delete();
 			return true;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if(tempFile != null)
+		if(tempFile != null) {
 			tempFile.delete();
-		return false;		
+		}
+		return false;
 	}
-
-
-	
-	
 }
