@@ -72,6 +72,7 @@
 		
 		<activity android:name="com.ssb.droidsound.SettingsActivity" />
 		<activity android:name="com.ssb.droidsound.HelpActivity" />
+		<activity android:name="com.ssb.droidsound.DownloadLocalActivity" />
 		
 		<!-- provider android:name="com.ssb.droidsound.provider.SongProvider" android:authorities="com.ssb.droidsound.provider" / -->
 		

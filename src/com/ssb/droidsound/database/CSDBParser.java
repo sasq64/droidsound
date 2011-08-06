@@ -376,7 +376,7 @@ public class CSDBParser implements DataSource {
 				}
 				if(!(new File(hvsc).exists())) {
 					// TODO: This does not work since File() translates // to /
-					hvsc = "http://swimsuitboys.com/droidsound/dl/C64Music";
+					hvsc = "http://lioncash.uni.cc/droidsound/hvsc/C64Music";
 				}
 			}
 			Log.d(TAG, "HVSC is " + hvsc);

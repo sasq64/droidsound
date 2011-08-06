@@ -84,7 +84,7 @@ public class SongDatabase implements Runnable {
 
 
 	public final boolean isReady() {
-		return  (mHandler != null);
+		return (mHandler != null);
 	}
 
 	public SongDatabase(Context ctx) {

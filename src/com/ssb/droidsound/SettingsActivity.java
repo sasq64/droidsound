@@ -106,10 +106,17 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});
+		pref = findPreference("download_local_link");
+		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				startActivity(new Intent(SettingsActivity.this, DownloadLocalActivity.class));
+				return true;
+			}
+		});
 
 		pref = findPreference("download_link");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-		
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				
@@ -119,9 +126,9 @@ public class SettingsActivity extends PreferenceActivity {
 				} catch (PackageManager.NameNotFoundException e) {}
 				Intent intent;
 				if(pinfo != null && pinfo.versionName.contains("beta")) {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/beta.html"));
+					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://lioncash.uni.cc/droidsound/downloads.html"));
 				} else {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
+					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://lioncash.uni.cc/droidsound/downloads.html"));
 				}
 				startActivity(intent);
 				return true;
@@ -210,15 +217,17 @@ public class SettingsActivity extends PreferenceActivity {
 
 	}
 	
-	@Override
+	//TODO: This should do more than invoke the overridden method
+	/*@Override
 	protected void onPause() {
 		super.onPause();
-	}
+	}*/
 	
-	@Override
+	//TODO: This should do more than invoke the overridden method
+	/*@Override
 	protected void onDestroy() {
 		super.onDestroy();
-	}
+	}*/
 	
 	@Override
 	protected Dialog onCreateDialog(int id) {

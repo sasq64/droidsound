@@ -264,7 +264,7 @@ public class PlayerService extends Service {
 		} */
 
         String text = "Unnamed song.";
-        if(songComposer != null & songComposer.length() > 1) {
+        if(songComposer != null && songComposer.length() > 1) {
 			text = songTitle + ". By " + songComposer + ".";
 		} else {
 			text = songTitle + ".";
