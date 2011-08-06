@@ -1,5 +1,6 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -91,6 +92,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		}
 	}
 
+	//Adjusts to what options are set for the VICE plugin in the Preferences.
 	@Override
 	public void setOption(String opt, Object val) {
 		int k, v;
@@ -179,7 +181,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 		String error;
 		try {
 			File file = File.createTempFile("tmp-XXXXX", "sid");
-			FileOutputStream fo = new FileOutputStream(file);
+			//FileOutputStream fo = new FileOutputStream(file); //This is not Buffered I/O, this is left here incase buffering causes problems.
+			BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 			fo.write(module);
 			fo.close();
 			error = N_loadFile(file.getAbsolutePath());

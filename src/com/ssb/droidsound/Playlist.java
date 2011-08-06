@@ -1,6 +1,7 @@
 package com.ssb.droidsound;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -447,7 +448,8 @@ public final class Playlist {
 		Log.d(TAG, "Flushing " + plistFile.getPath());
 
 		try {
-			FileWriter writer = new FileWriter(plistFile);
+			//FileWriter writer = new FileWriter(plistfile); //Left here just incase the buffered one below causes problems.
+			BufferedWriter writer = new BufferedWriter(new FileWriter(plistFile));
 
 			for(String line : lines) {
 				writer.write(line + "\n");

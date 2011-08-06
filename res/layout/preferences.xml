@@ -230,6 +230,12 @@
 		android:title="Download"
 		android:summary="Go to web page for quick downloading of music and databases."
    	/>
+   	
+   	<Preference
+   		android:key="download_local_link"
+   		android:title="Download Local"
+   		android:summary="See the sites you can download from if you don't have an Internet connection."
+   	/>
 
     <Preference android:key="help_pref"
 		android:title="Droidsound Help"
