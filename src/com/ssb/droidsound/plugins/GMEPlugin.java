@@ -40,17 +40,17 @@ public class GMEPlugin extends DroidSoundPlugin {
 		List<String> list = new ArrayList<String>();
 		//String instruments = N_getStringInfo((Long)song, 100);
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
-		if(s != null & s.length() > 0) {
+		if(s != null && s.length() > 0) {
 			list.add("Format");
 			list.add("GME: " + s); //$NON-NLS-1$
 		}
 		s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
-		if(s != null & s.length() > 0) {
+		if(s != null && s.length() > 0) {
 			list.add("Copyright");
 			list.add(s);
 		}
 		s = N_getStringInfo(currentSong, INFO_GAME);
-		if(s != null & s.length() > 0) {
+		if(s != null && s.length() > 0) {
 			list.add("Game");
 			list.add(s);
 		}

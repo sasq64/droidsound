@@ -282,6 +282,7 @@ class HttpSongSource {
 			} catch (MalformedURLException me) {
 				msg = "<Illegal URL>";
 				status = -3;
+				Log.d(TAG, "Illegal URL", me);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
