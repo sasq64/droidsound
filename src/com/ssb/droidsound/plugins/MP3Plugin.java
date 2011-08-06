@@ -61,7 +61,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			return streamer.getDetailedInfo();
 		}
 
-		//Info that gets displayed when playing an MP3 track. 
+		//Info that gets displayed when playing an MP3 track.
 		Log.d(TAG, "getDetailedInfo");
         //List<String> info = new ArrayList(); Weaker type is below
 		Collection<String> info = new ArrayList<String>();

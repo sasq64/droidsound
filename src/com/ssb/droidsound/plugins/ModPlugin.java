@@ -11,7 +11,7 @@ import com.ssb.droidsound.utils.Log;
 
 public class ModPlugin extends DroidSoundPlugin {
 	private static final String TAG = ModPlugin.class.getSimpleName();
-	
+
 	static {
 		System.loadLibrary("modplug");
 	}
@@ -27,19 +27,21 @@ public class ModPlugin extends DroidSoundPlugin {
 		extensions.add("UMX");
 		extensions.add("ULT");
 		extensions.add("669");
-		extensions.add("STM");		
+		extensions.add("STM");
 	}
-	
+
 	private long currentSong = 0;
 
 	@Override
 	public boolean canHandle(String name) {
 		int x = name.lastIndexOf('.');
-		if(x < 0) return false;
+		if(x < 0) {
+			return false;
+		}
 		String ext = name.substring(x+1).toUpperCase();
 		return extensions.contains(ext);
 	}
-	
+
 	@Override
 	public boolean load(String name, byte [] module, int size) {
 		currentSong = N_load(module, size);
@@ -48,25 +50,25 @@ public class ModPlugin extends DroidSoundPlugin {
 		}
 		return (currentSong != 0); 
 	}
-	
+
 	private static final String[] t  = new String [256];
 
-	
+
 	private String guessAuthor(String instr) {
-		
+
 		String s [] = instr.split("\\n");
-		
+
 		int n = 0;
-		
+
 		/*for(int k=0; k<s.length; k++) {
 			String d [] = s[k].split("\\s+");
-			
+
 			for(int i=0; i<d.length; i++) {
 				//Log.d(TAG, d[i]);
-				
+
 				if(n >= t.length - 6)
 					break;
-				
+					
 				String x = "";
 				if(d[i].equals("/")) {
 					//Log.d(TAG, "/BY/");
@@ -76,24 +78,24 @@ public class ModPlugin extends DroidSoundPlugin {
 					x = "and";
 				} else
 				if(d[i].length() > 1) {
-					
+
 					if(d[i].endsWith("/")) {
 						x = d[i].replaceAll("^[^\\w]*", "");
 					} else if(d[i].startsWith("/")) {
 						x = d[i].replaceAll("[^\\w]*$", "");
-					} else {				
+					} else {
 						x = d[i].replaceAll("^[^\\w]*", "").replaceAll("[^\\w]*$", "");
 					}
 					//Log.d(TAG, "'%s' '%s'", t[i], x);
 				}
-				
+
 				if(x.length() > 0) {
-					
+
 					int plus = x.indexOf('&');
 					if(plus == -1) {
 						plus = x.indexOf('+');
 					}
-					
+
 					if(plus > 0) {
 						t[n++] = x.substring(0, plus);
 						t[n++] = "and";
@@ -101,23 +103,20 @@ public class ModPlugin extends DroidSoundPlugin {
 					}
 
 					int slash = x.indexOf('/');
-					
+
 					if(slash >= 0) {
 						t[n++] = x.substring(0, slash);
 						t[n++] = "/";
 						x = x.substring(slash+1);
 					}
 
-					t[n++] = x;					
-				}				
+					t[n++] = x;
+				}
 			}
-			
-			
 			t[n++] = "EOL";
-			
+
 			if(n >= t.length - 5)
 				break;
-
 		}*/
 
         for (String value : s) {  //Replaced above with a foreach loop
@@ -126,8 +125,9 @@ public class ModPlugin extends DroidSoundPlugin {
             for (String aD : d) {
                 //Log.d(TAG, d[i]);
 
-                if (n >= t.length - 6)
-                    break;
+                if (n >= t.length - 6) {
+					break;
+				}
 
                 String x = "";
                 if ("/".equals(aD)) {
@@ -175,44 +175,44 @@ public class ModPlugin extends DroidSoundPlugin {
 
             t[n++] = "EOL";
 
-            if (n >= t.length - 5)
-                break;
+            if (n >= t.length - 5) {
+				break;
+			}
 
         }
-				
-		
+
 		String author [] = new String [4];
-		
+
 		String lastWord = "";
 		String lastLastWord = "";
 		for(int i=0; i<n; i++) {
-			
+
 			if(t[i].length() > 0 && !"EOL".equals(t[i])) {
 				// Log.d(TAG, "'%s'", t[i]);
-				
+
 				if("PRO-WIZARD".equals(t[i].toUpperCase())) {
 					break;
 				}
-				
+
 				String nextWord = "EOL";
 				int ii = i+1;
 				while(ii < n && ("EOL".equals(nextWord) || nextWord.length() == 0)) {
-					nextWord = t[ii++].toUpperCase();					
+					nextWord = t[ii++].toUpperCase();
 				}
-				
+
 				// Log.d(TAG, "NW:%s", nextWord);
-				
-				String a = t[i];			
+
+				String a = t[i];
 				if("BY".equals(lastWord)) {
-					
+
 					//if(nextWord.equals("AND") && i<n-2) {
 					//	a += ("and" + t[i+2]);
 					//}
-					
+
 					if("ME".equals(a.toUpperCase())) {
 						break;
 					}
-					
+
 					ii = i+1;
 					while(!"EOL".equals(t[ii])) {
 						if("OF".equals(t[ii].toUpperCase()) || "/".equals(t[ii])) {
@@ -221,7 +221,7 @@ public class ModPlugin extends DroidSoundPlugin {
 						a += (" " + t[ii]);
 						ii++;
 					}
-					
+
 					/*
 					if(nextWord.equals("OF") && i<n-2) {
 						a += (" of " + t[i+2]);
@@ -229,7 +229,7 @@ public class ModPlugin extends DroidSoundPlugin {
 							a += (" " + t[i+2]);
 						}
 					} */
-	
+
 					if("COMPOSED".equals(lastLastWord) || "MADE".equals(lastLastWord)) {
 						author[0] = a;
 						break;
@@ -242,25 +242,23 @@ public class ModPlugin extends DroidSoundPlugin {
 						}
 					}
 				} else if("/".equals(nextWord) || "OF".equals(nextWord)) {
-					
+
 					//int x = 2;
 					//if(nextWord.equals("of")) {
 					//	x = 3;
 					//}
 					//Log.d(TAG, "OF AUTHOR '%s'", a);
-					
+
 					if(author[2] == null) {
-						
 						if("AND".equals(lastWord)) {
 							if(t[i-2].length() > 0) {
 								a = t[i-2] + " and " + a;
 							}
 						}
-						
 						author[2] = a;
 					}
-				} 
-					
+				}
+
 				lastLastWord = lastWord;
 				lastWord = t[i].toUpperCase();
 			} else {
@@ -276,30 +274,29 @@ public class ModPlugin extends DroidSoundPlugin {
 				break;
 			}
 		}
-		return a;		
-		
+		return a;
 	}
 
 	@Override
-	public void unload() {		
+	public void unload() {
 		author = null;
 		N_unload(currentSong);
 		currentSong = 0;
 	}
-	
+
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }	
+	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }
 	@Override
 	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
 	public boolean setTune(int tune) { return false; }
 	@Override
 	public String getStringInfo(int what) {
-		
+
 		if(what == INFO_AUTHOR) {
 			return author;
-		}		
+		}
 		return N_getStringInfo(currentSong, what);
 	}
 	@Override
@@ -318,14 +315,14 @@ public class ModPlugin extends DroidSoundPlugin {
 		fs.read(songBuffer);
 
 		long song = N_load(songBuffer, l);
-		if(song == 0)
+		if(song == 0) {
 			return false;
-		else {
+		} else {
 			author = guessAuthor(N_getStringInfo(song, 100));
 			return true;
 		}
 	}
-	
+
 	@Override
 	public boolean canSeek() {
 		return true;
@@ -333,7 +330,7 @@ public class ModPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String[] getDetailedInfo() {
-		
+
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
 		//Log.d(TAG, "INSTRUMENTS: " + instruments);
@@ -353,21 +350,21 @@ public class ModPlugin extends DroidSoundPlugin {
 		info[3] = Integer.toString(channels);
 		return info;
 	}
-	
+
 	@Override
 	public String getVersion() {
 		return "libmodplug v0.8.?";
 	}
-	
+
 	// --- Native functions
-	
+
 	native public boolean N_canHandle(String name);
 	native public long N_load(byte [] module, int size);
 	native public long N_loadInfo(byte [] module, int size);
 	native public void N_unload(long song);
-	
+
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);	
+	native public int N_getSoundData(long song, short [] dest, int size);
 	native public boolean N_seekTo(long song, int seconds);
 	native public boolean N_setTune(long song, int tune);
 	native public String N_getStringInfo(long song, int what);

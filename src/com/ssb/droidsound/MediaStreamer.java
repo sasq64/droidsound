@@ -325,7 +325,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 						if(usec - last_usec > 1000000) {
 							Log.d(TAG, "%%%%%%%%%% QUEUE POS %d msec", (int)(usec / 1000));
 							last_usec = usec;
-							int sl = (int) ((usec/1000) * (contentLength-extraSize) /  (totalFrameBytes));
+							int sl = (int) ((usec/1000) * (contentLength-extraSize) / (totalFrameBytes));
 							Log.d(TAG, "%d seconds in %dKB out of %dKB = %d seconds total", usec/1000000, totalBytes/1024, contentLength/1024, sl/1000);
 							//if(sl/1000 != songLength/1000) {
 								songLength = sl;
@@ -499,16 +499,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				}
 				frameHeaderBits = 0;
 				if(nextFramePos == -1) {
-					//Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-					//Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 					Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!! LOST SYNC !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-					//Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				}
 			} else {
 				break;
 			}
 		}
-
 		//if(contentLength > 0 && avgBitrate > 0) {
 		//	//Log.d(TAG, "BITRATE %d, FREQ %d -> FRAMESIZE %d, nextFramePos = %d", bitRate, freq, frameSize, nextFramePos);
 		//	songLength = contentLength / (avgBitrate/8000);
@@ -571,7 +567,9 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		} else {
 			if(metaInterval > 0) {
 				int toNextMeta = metaInterval - metaCounter;
-				if(toNextMeta < remaining) remaining = toNextMeta;
+				if(toNextMeta < remaining) {
+					remaining = toNextMeta;
+				}
 			}
 			//Log.d(TAG, "TO NEXT META %d", toNextMeta); 
 		}

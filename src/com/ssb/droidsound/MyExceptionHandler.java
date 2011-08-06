@@ -24,7 +24,7 @@ class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 		oldHandler = oldh;
 		targetDir = target;
 	}
-	
+
 	public void uncaughtException(Thread thread, Throwable ex)
 	{
 		ex.printStackTrace();
@@ -32,21 +32,21 @@ class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
         PrintWriter printWriter = new PrintWriter(result);
         ex.printStackTrace(printWriter);
         String stacktrace = result.toString();
-        printWriter.close();		
-        
-        File f = new File(targetDir,  "droidsound_crash.txt");		        
+        printWriter.close();
+
+        File f = new File(targetDir,  "droidsound_crash.txt");
         writeToFile(stacktrace, f);
         oldHandler.uncaughtException(thread, ex);
 	}
-	
+
 	private void writeToFile(String stacktrace, File f) {
 		try {
 			BufferedWriter bos = new BufferedWriter(new FileWriter(f));
-			
+
 			bos.write(String.format("Droidsound crash\n"));//, PlayerActivity.DROIDSOUND_VERSION));
-			Date d = new Date();					
+			Date d = new Date();
 			bos.write(String.format("%s\n\nMANUFACTURER:%s\nNMODEL:%s\n", d.toString(), Build.DEVICE, Build.MODEL)); 
-			
+
 			bos.write(stacktrace);
 			bos.flush();
 			bos.close();
@@ -54,5 +54,4 @@ class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 			e.printStackTrace();
 		}
 	}
-		 
 }

@@ -232,18 +232,16 @@ public abstract class DroidSoundPlugin {
 		}
 		return ext;
 	}
-	
-	
+
 	public boolean canHandle(String name) { 
 		return canHandleExt(getExt(name));
 	}
-	
+
 	boolean canHandleExt(String ext) { return false; }
-	
-	
+
 	public abstract boolean load(String name, byte [] module, int size);
 
-	
+
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	public abstract int getSoundData(short [] dest, int size);
 

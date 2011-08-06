@@ -4,14 +4,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+//import android.R;
+import com.ssb.droidsoundedit.R;
+
 
 public class GMEPlugin extends DroidSoundPlugin {
 
 	static {
-		System.loadLibrary("gme");
+		System.loadLibrary("gme"); //$NON-NLS-1$
 	}
 	private final Set<String> extensions;
-	private static final String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" };
+	private static final String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$
 	private long currentSong = 0;
 	public GMEPlugin() {
 		extensions = new HashSet<String>();
@@ -24,7 +27,9 @@ public class GMEPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandle(String name) {
 		int x = name.lastIndexOf('.');
-		if(x < 0) return false;
+		if(x < 0) {
+			return false;
+		}
 		String ext = name.substring(x+1).toUpperCase();
 		return extensions.contains(ext);
 	}
@@ -37,7 +42,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
 		if(s != null & s.length() > 0) {
 			list.add("Format");
-			list.add("GME: " + s);
+			list.add("GME: " + s); //$NON-NLS-1$
 		}
 		s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
 		if(s != null & s.length() > 0) {
@@ -56,7 +61,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 		}
 		return info;
 	}
-	
+
 	@Override
 	public boolean load(File file) throws IOException {
 		currentSong = N_loadFile(file.getPath());
@@ -87,7 +92,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }	
+	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }
 	@Override
 	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
