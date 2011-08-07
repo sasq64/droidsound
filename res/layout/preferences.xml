@@ -42,7 +42,7 @@
 	<PreferenceScreen
             android:key="audio_prefs"
             android:title="Audio"
-            android:summary="Plugin Audio Settings"
+            android:summary="Audio Plugin Settings"
 	>
 	
 		<PreferenceCategory
@@ -234,7 +234,7 @@
    	<Preference
    		android:key="download_local_link"
    		android:title="Download Local"
-   		android:summary="See the sites you can download from if you don't have an Internet connection."
+   		android:summary="Overview of the sites you can download from. Does not require internet."
    	/>
 
     <Preference android:key="help_pref"

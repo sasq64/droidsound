@@ -1,5 +1,6 @@
 package com.ssb.droidsound.service;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -149,8 +150,9 @@ public class Player implements Runnable {
 		} else {
 			file = new File(name);
 		}
-
-		FileOutputStream fo = new FileOutputStream(file);
+		
+		//FileOutputStream fo = new FileOutputStream(file); //Here just in case buffered I/O causes problems.
+		BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 		byte[] buffer = new byte[16384];
 
 		while(true) {

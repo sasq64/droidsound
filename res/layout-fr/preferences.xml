@@ -230,6 +230,12 @@
 		android:title="Télécharger"
 		android:summary="Téléchargez plus de musique."
    	/>
+   	
+   	<Preference
+   		android:key="download_local_link"
+   		android:title="Download Local"
+   		android:summary="Vue d'ensemble des sites que vous pouvez télécharger à partir. Ne nécessite pas d'internet."
+   	/>
 
     <Preference android:key="help_pref"
 		android:title="Aide de Droidsound."

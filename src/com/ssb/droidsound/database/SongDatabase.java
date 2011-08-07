@@ -275,7 +275,7 @@ public class SongDatabase implements Runnable {
 		};
 
 		setScanCallback(new ScanCallback() {
-			String oldPath;
+			private String oldPath;
 			@Override
 			public void notifyScan(String path, int percent) {
 

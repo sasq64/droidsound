@@ -10,6 +10,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import android.content.Context;
+import android.os.Debug;
+
 import com.ssb.droidsound.utils.Log;
 
 public class SidPlugin extends DroidSoundPlugin {
@@ -116,9 +118,9 @@ public class SidPlugin extends DroidSoundPlugin {
 	private void findLength(byte [] module, int size) {
 
 		for (int i=0; i < 256; i++) {
-			songLengths[i] = 60*60*1000;
+			songLengths[i] = 60*60*1000; 
 		}
-
+		
 		Context context = getContext();
 		if (context != null) {
 			if (mainHash == null) {

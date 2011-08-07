@@ -230,6 +230,12 @@
 		android:title="ダウンロード"
 		android:summary="より多くの音楽をダウンロードするウェブサイトに移動します。"
    	/>
+   	
+   	<Preference
+   		android:key="download_local_link"
+   		android:title="ローカルダウンロード"
+   		android:summary="インターネットでダウンロードできるサイトの概要。インターネットを必要としません。"
+   	/>
 
     <Preference android:key="help_pref"
 		android:title="Droidsoundヘルプ"
