@@ -1,5 +1,6 @@
 package com.ssb.droidsound.utils;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -154,7 +155,8 @@ public final class Unzipper {
 		try {
 			tempFile = new File(targetDir, asset);
 
-            FileOutputStream os = new FileOutputStream(tempFile);
+            //FileOutputStream os = new FileOutputStream(tempFile); //Left here in case the Buffered I/O causes any problems.
+			BufferedOutputStream os = new BufferedOutputStream (new FileOutputStream(tempFile));
             InputStream is = context.getAssets().open(asset);
 
             byte [] buffer = new byte [(128*1024)];
@@ -183,7 +185,8 @@ public final class Unzipper {
 				}
 
 				efile.getParentFile().mkdirs();
-				os = new FileOutputStream(efile);
+				//os = new FileOutputStream(efile); //Here in case Buffered I/O causes any problems.
+				os = new BufferedOutputStream(new FileOutputStream(efile));
 
 				while(true) {
 					int rc = is.read(buffer);

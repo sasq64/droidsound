@@ -1,5 +1,6 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -311,7 +312,8 @@ public class ModPlugin extends DroidSoundPlugin {
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}
-		FileInputStream fs = new FileInputStream(file);
+		//FileInputStream fs = new FileInputStream(file); Here in case the Buffered I/O causes problems.
+		BufferedInputStream fs = new BufferedInputStream(new FileInputStream(file));
 		fs.read(songBuffer);
 
 		long song = N_load(songBuffer, l);

@@ -123,7 +123,8 @@ public abstract class DroidSoundPlugin {
 				streamSize = (int) f.length();
 				Log.d(TAG, "Bytes written: " + streamSize);
 				byte [] songBuffer = new byte[streamSize];
-				FileInputStream fs = new FileInputStream(f);
+				//FileInputStream fs = new FileInputStream(f); //Here in case the Buffered I/O causes problems.
+				BufferedInputStream fs = new BufferedInputStream(new FileInputStream(f));
 				fs.read(songBuffer);
 				fs.close();
 				// f.delete();

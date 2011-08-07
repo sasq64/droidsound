@@ -154,7 +154,7 @@ public class Player implements Runnable {
 		//FileOutputStream fo = new FileOutputStream(file); //Here just in case buffered I/O causes problems.
 		BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 		byte[] buffer = new byte[16384];
-
+		
 		while(true) {
 			int rc = fs.read(buffer);
 			if(rc <= 0) {
@@ -255,6 +255,8 @@ public class Player implements Runnable {
 
 		int sampleCount = 0;
 		int bytesWritten = 0;
+		
+		
 		while(sampleCount < numSamples) {
 			// In and out are number of shorts, not number of samples (2 bytes vs 4 bytes in 16bit stereo)
 			int len = currentPlugin.getSoundData(samples, bufSize / 16);
@@ -279,22 +281,21 @@ public class Player implements Runnable {
 			}
 
 			sampleCount += len;
-
 			Log.d(TAG, "%d vs %d frames", numSamples, sampleCount);
 
 			int j = 0;
-			int i = 0;
+			int i = 0;			
 			int volume = 100;
 			// Now we iterate over sample values which are twice as many
             //while(i < len*2){ simplified using a shift.
+			int avg = ((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]);
+			short savg = (short) (avg * volume / 400);
 			while(i < len << 1) {
 				if((flags & 2) != 0) {
 					bbuffer[j++] = (byte) (samples[i]&0xff);
 					bbuffer[j++] = (byte) ((samples[i]>>8)&0xff);
 					i += 1;
 				} else {
-					int avg = ((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]);
-					short savg = (short) (avg * volume / 400);
 					i += 4;
 					bbuffer[j++] = (byte) (savg&0xff);
 					bbuffer[j++] = (byte) ((savg>>8)&0xff);

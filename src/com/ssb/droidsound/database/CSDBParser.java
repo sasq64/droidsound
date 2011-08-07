@@ -83,6 +83,7 @@ public class CSDBParser implements DataSource {
 			
 			//int fileSize = (int) is.available();
             int place = -1;
+            
             while(line != null) {
 				count++;
 				if((count % 300) == 0) {
@@ -104,8 +105,8 @@ public class CSDBParser implements DataSource {
 					Log.d(TAG, "EVENTS");
 					place = 2;
 				} else {
-					String[] args = line.split("\t");
-					ContentValues values = new ContentValues();
+		            String[] args = line.split("\t");
+		            ContentValues values = new ContentValues();
 					if(place == 0) {
 						// (id, name, gid, type, y, eid, compo, place, ','.join(fnames))
 						values.put("ID", Integer.parseInt(args[0]));
@@ -127,7 +128,8 @@ public class CSDBParser implements DataSource {
 							values.put("RATING", Integer.parseInt(args[7]));
 						}
 						db.insert("RELEASES", "ID", values);
-						String [] sids = args[8].split(",");
+	
+			            String [] sids = args[8].split(",");
 						if(sids.length > 0) {
 							ContentValues values2 = new ContentValues();
 							for(String s : sids) {

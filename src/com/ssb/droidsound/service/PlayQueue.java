@@ -9,8 +9,6 @@ import com.ssb.droidsound.SongFile;
 
 class PlayQueue {
 	private static final String TAG = PlayQueue.class.getSimpleName();
-
-	//private static final Random rgen = new Random(System.currentTimeMillis());
     private static final Random rgen = new Random(System.currentTimeMillis());
 
 	private final List<SongFile> musicList;

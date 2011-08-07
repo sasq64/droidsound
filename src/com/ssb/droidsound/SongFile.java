@@ -8,22 +8,21 @@ import com.ssb.droidsoundedit.R;
 public class SongFile {
 
 	public static final String TAG = SongFile.class.getSimpleName();
+	
 	private int subtune;
-	private int playtime;
-	private String fileName;
-
-	private File file;
-	private String path;
+	private int playtime;		//Duration track plays for
+	private String fileName;	//Name of file.
+	private File file;			//Actual file itself.
+	private String path;		//Path on the system to that file.
 	private String prefix;
 	private String suffix;
 	private String midfix;
-	private String zipPath;
-	private String zipName;
+	private String zipPath;		//Path on the system to the zip file 
+	private String zipName;		//Name of the zip file.
 
 	//private String tuneString;
 	private String title;
 	private String composer;
-
 	private String protocol;
 
 	public SongFile(SongFile s) {
@@ -172,10 +171,12 @@ public class SongFile {
 		}
 	}
 
+	//Returns zip file's file path.
 	public final String getZipPath() {
 		return zipPath;
 	}
 
+	//Returns filename of a zip file.
 	public final String getZipName() {
 		return zipName;
 	}
@@ -191,23 +192,28 @@ public class SongFile {
 		}
 	}
 
+	//Detects any subtunes within the file  (such as the SID, NSF, etc).
 	public final void setSubTune(int t) {
 		subtune = t;
 	}
 
+	//Sets the total time the track will play for.
 	public final void setPlayTime(int t) {
 		playtime = t;
 	}
 
+	//Sets title to display in the player.
 	public final void setTitle(String t) {
 		title = t;
 	}
 
+	//Gets filename of file.
 	public final String getName() {
 		//return file.getName();
 		return fileName;
 	}
 
+	//Checks if file exists.
 	public final boolean exists() {
 		return file.exists();
 	}
