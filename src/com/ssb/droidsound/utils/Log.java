@@ -1,6 +1,6 @@
 package com.ssb.droidsound.utils;
 
-public class Log {
+public final class Log {
 	
 	public static void d(String tag, String fmt, Object...args) {
 		String line = tag + ": " + String.format(fmt, args);

@@ -7,7 +7,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 
-public class SongProvider extends ContentProvider {
+public final class SongProvider extends ContentProvider {
 	
 	public static final Uri CONTENT_URI = Uri.parse("content://com.ssb.droidsound.provider");
 	private static final Uri SONG_URI = Uri.parse("content://com.ssb.droidsound.provider/songs");

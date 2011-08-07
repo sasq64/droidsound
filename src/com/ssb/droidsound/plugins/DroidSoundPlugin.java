@@ -54,7 +54,7 @@ public abstract class DroidSoundPlugin {
 	public static void setContext(Context ctx) {
 		context = ctx;
 	}
-	static Context getContext() { return context; }
+	static final Context getContext() { return context; }
 	private byte[] md5;
 	private int streamSize;
 
@@ -63,7 +63,7 @@ public abstract class DroidSoundPlugin {
 	}
 
 
-	public static List<DroidSoundPlugin> createPluginList() {
+	public static final List<DroidSoundPlugin> createPluginList() {
 		List<DroidSoundPlugin> pluginList;
 		synchronized (lock) {
 			pluginList = new ArrayList<DroidSoundPlugin>();
@@ -142,7 +142,7 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public int getStreamSize() { return streamSize; }
-	public boolean load(String name, InputStream is, int size) throws IOException {
+	public final boolean load(String name, InputStream is, int size) throws IOException {
 		Log.d(TAG, "PLUGIN LOAD STREAM");
 		boolean rc = false;
 		try {
@@ -156,7 +156,7 @@ public abstract class DroidSoundPlugin {
 		return rc;
 	}
 
-	public void calcMD5(byte[] songBuffer, int size) {
+	public final void calcMD5(byte[] songBuffer, int size) {
         Log.d(TAG, "MD5 CALCING TIME");
         MessageDigest md = null;
         try {

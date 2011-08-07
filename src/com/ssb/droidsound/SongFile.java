@@ -5,7 +5,7 @@ import java.io.File;
 //import com.ssb.droidsound.utils.Log; Log is not used as of now.
 import com.ssb.droidsoundedit.R;
 
-public class SongFile {
+public final class SongFile {
 
 	public static final String TAG = SongFile.class.getSimpleName();
 	

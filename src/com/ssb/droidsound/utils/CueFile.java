@@ -7,10 +7,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CueFile {
+public final class CueFile {
 	private static final String TAG = CueFile.class.getSimpleName();
 
-	public static class Track {
+	public static final class Track {
 		public String performer;
 		public String title;
 		public int offset;

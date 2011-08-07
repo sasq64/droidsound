@@ -3,7 +3,7 @@ package com.ssb.droidsound.plugins;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SidplayPlugin extends DroidSoundPlugin {
+public final class SidplayPlugin extends DroidSoundPlugin {
 	private static final String TAG = SidplayPlugin.class.getSimpleName();
 
 
@@ -14,7 +14,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 
 	private long currentSong = 0;
 
-	public static class Option {
+	public final static class Option {
 		String name;
 		String description;
 		Object defaultValue;

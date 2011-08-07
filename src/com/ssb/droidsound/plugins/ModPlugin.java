@@ -4,13 +4,15 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.ssb.droidsound.utils.Log;
 
 
-public class ModPlugin extends DroidSoundPlugin {
+public final class ModPlugin extends DroidSoundPlugin {
 	private static final String TAG = ModPlugin.class.getSimpleName();
 
 	static {
@@ -332,14 +334,39 @@ public class ModPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String[] getDetailedInfo() {
-
-		String instruments = N_getStringInfo(currentSong, 100);
-		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
 		//Log.d(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo(currentSong, 101);
 
-		String[] info;
-		if(instruments != null && instruments.length() > 0) {
+		List<String> list = new ArrayList<String>();
+		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
+		if (fmt != null && fmt.length() > 0){
+			list.add("Format");
+			list.add("MODPlug: " + fmt);
+		}
+		
+		if(INFO_AUTHOR > 0){
+			list.add("Author/Composer");
+			list.add(author);
+		}
+		
+		String instruments = N_getStringInfo(currentSong, 100);
+		if (instruments != null && instruments.length() > 0){
+			list.add("Instruments");
+			list.add(instruments);
+		}
+		
+		if (channels > 0){
+			list.add("Channels");
+			list.add(Integer.toString(channels));
+		}
+		
+		String [] info = new String [list.size()];
+		for(int i=0; i<info.length; i++) {
+			info[i] = list.get(i);
+		}
+		return info;
+}
+		/*if(instruments != null && instruments.length() > 0) {
 			info = new String [6];
 			info[4] = "Instruments";
 			info[5] = instruments;
@@ -350,8 +377,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		info[1] = "MODPlug: " + fmt;
 		info[2] = "Channels";
 		info[3] = Integer.toString(channels);
-		return info;
-	}
+		return info;*/
 
 	@Override
 	public String getVersion() {

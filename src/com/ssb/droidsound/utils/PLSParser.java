@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.ssb.droidsound.utils.Log;
 
-public class PLSParser implements PlaylistParser {
+public final class PLSParser implements PlaylistParser {
 	private static final String TAG = M3UParser.class.getSimpleName();
 	private final List<String> songs;
 	private final List<String> descs;

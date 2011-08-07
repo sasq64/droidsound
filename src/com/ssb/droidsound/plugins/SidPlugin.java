@@ -23,7 +23,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	private static volatile DroidSoundPlugin currentPlugin = sidplayPlugin;
 	private static volatile DroidSoundPlugin nextPlugin = sidplayPlugin;
 
-	private static class Info {
+	private static final class Info {
 		String name = "Unknown";
 		String composer = "Unknown";
 		String copyright = "Unknown";
@@ -42,7 +42,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	private final int[] songLengths = new int [256];
 	private int currentTune;
 
-	public static class Option {
+	public static final class Option {
 		String name;
 		String description;
 		Object defaultValue;
@@ -131,7 +131,8 @@ public class SidPlugin extends DroidSoundPlugin {
 						hashLen = dis.readInt();
 						mainHash = new byte [hashLen * 6];
 						dis.read(mainHash);
-						int l = is.available()/2;
+						//int l = is.available()/2; // >> is more efficient for powers.
+						int l = is.available()>>1; 
 						Log.d(TAG, "We have %d lengths and %d hashes", l, hashLen);
 						extraLengths = new short [l];
 						for(int i=0; i<l; i++) {
@@ -156,7 +157,8 @@ public class SidPlugin extends DroidSoundPlugin {
             int first = 0;
             int found = -1;
             while (first < upto) {
-		        int mid = (first + upto) / 2;  // Compute mid point.
+		        //int mid = (first + upto) / 2; >> is more efficient than division for powers.
+            	int mid = (first + upto) >> 1;  // Compute mid point.
 	    		long hash = ((mainHash[mid*6]&0xff) << 24) | ((mainHash[mid*6+1]&0xff) << 16) | ((mainHash[mid*6+2]&0xff) << 8) | (mainHash[mid*6+3] & 0xff);
 	    		hash &= 0xffffffffL;
 

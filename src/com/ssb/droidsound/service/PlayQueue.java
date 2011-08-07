@@ -7,7 +7,7 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
 
-class PlayQueue {
+final class PlayQueue {
 	private static final String TAG = PlayQueue.class.getSimpleName();
     private static final Random rgen = new Random(System.currentTimeMillis());
 

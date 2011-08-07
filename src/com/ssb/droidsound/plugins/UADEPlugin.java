@@ -18,7 +18,7 @@ import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
 
-public class UADEPlugin extends DroidSoundPlugin {
+public final class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
 
 	static {

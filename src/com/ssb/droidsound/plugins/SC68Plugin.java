@@ -8,7 +8,7 @@ import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
 
-public class SC68Plugin extends DroidSoundPlugin {
+public final class SC68Plugin extends DroidSoundPlugin {
 	private static final String TAG = SC68Plugin.class.getSimpleName();
 	static {
 		System.loadLibrary("sc68");

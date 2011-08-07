@@ -32,7 +32,7 @@ public final class Unzipper {
 		return _instance;
 	}
 
-	private static class UnzipJob {
+	private static final class UnzipJob {
 		public final String asset;
 		public final File targetDir;
 		public UnzipJob(String a, File t) {
@@ -41,7 +41,7 @@ public final class Unzipper {
 		}
 	}
 
-	private static class UnzipWorker implements Runnable {
+	private static final class UnzipWorker implements Runnable {
 
 		private final List<UnzipJob> unzipList = new ArrayList<UnzipJob>();
 

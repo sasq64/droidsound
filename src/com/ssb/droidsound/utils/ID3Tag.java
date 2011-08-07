@@ -3,7 +3,7 @@ package com.ssb.droidsound.utils;
 import java.io.File;
 import com.ssb.droidsound.utils.Log;
 
-public class ID3Tag {
+public final class ID3Tag {
 	
 	private static final String TAG = ID3Tag.class.getSimpleName();
 	

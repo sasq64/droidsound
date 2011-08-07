@@ -7,10 +7,10 @@ import java.util.Set;
 import android.database.Cursor;
 import android.database.CursorWrapper;
 
-public class CursorTransform {
+public final class CursorTransform {
 	private static final String TAG = CursorTransform.class.getSimpleName();
 	
-	private static class ColTransform {
+	private static final class ColTransform {
 		public String pattern;
 		public int[] offsets;
 		public String[] varnames;
@@ -18,7 +18,7 @@ public class CursorTransform {
 		public int value;
 	}
 
-	private static class TransformWrapper extends CursorWrapper {
+	private static final class TransformWrapper extends CursorWrapper {
 
 		private final Map<String, ColTransform> transformMap;
 		//private Map<Integer, Map<String, Integer> > transformColMap;

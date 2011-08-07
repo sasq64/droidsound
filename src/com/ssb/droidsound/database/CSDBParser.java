@@ -19,8 +19,7 @@ import android.provider.BaseColumns;
 
 import com.ssb.droidsound.utils.Log;
 
-
-public class CSDBParser implements DataSource {
+public final class CSDBParser implements DataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
 
 	public static final String DUMP_NAME = "CSDBDUMP";
@@ -180,7 +179,7 @@ public class CSDBParser implements DataSource {
 	 * select * from releasesids where group=booze release=eod
 	 *
 	 */
-	static class DirWrapper extends CursorWrapper {
+	static final class DirWrapper extends CursorWrapper {
 
 		public DirWrapper(Cursor cursor) {
 			super(cursor);
@@ -203,7 +202,7 @@ public class CSDBParser implements DataSource {
 		}
 	}
 
-    private class SidCursor extends CursorWrapper {
+    private static final class SidCursor extends CursorWrapper {
 		private final int pathIndex;
 
 		public SidCursor(Cursor cursor) {
@@ -235,7 +234,7 @@ public class CSDBParser implements DataSource {
 		}
 	}
 
-	private class ReleaseCursor extends CursorWrapper {
+	private final class ReleaseCursor extends CursorWrapper {
 		private final int gidIndex;
 		private final int nameIndex;
 		private final int typeIndex;

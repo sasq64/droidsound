@@ -12,7 +12,7 @@ import android.os.Environment;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
-public class VICEPlugin extends DroidSoundPlugin {
+public final class VICEPlugin extends DroidSoundPlugin {
 	private static final String TAG = VICEPlugin.class.getSimpleName();
 
 	private static boolean libraryLoaded = false;

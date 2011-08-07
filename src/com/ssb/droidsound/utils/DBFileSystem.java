@@ -10,14 +10,14 @@ import android.database.MatrixCursor;
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.utils.Log;
 
-public class DBFileSystem {
+public final class DBFileSystem {
 	private static final String TAG = DBFileSystem.class.getSimpleName();
 	
 	public interface CursorFactory {
 		Cursor getCursor(String parts[], int sorting);
 	}
 	
-	private static class Path {
+	private static final class Path {
 		public final String [] parts;
 		public CursorFactory factory;
 		public String [] contents;

@@ -30,7 +30,7 @@ import com.ssb.droidsound.utils.NativeZipFile;
 /*
  * The Player thread
  */
-public class Player implements Runnable {
+public final class Player implements Runnable {
 	private static final String TAG = "Player";
 
 	public enum State {
@@ -59,7 +59,7 @@ public class Player implements Runnable {
 
 	// public static final int MSG_SUBTUNE = 5;
 
-	public static class SongInfo {
+	public final static class SongInfo {
 		String title;
 		String author;
 		String copyright;
@@ -130,7 +130,8 @@ public class Player implements Runnable {
 		// Enough for 3000ms
 		bufSize = 0x40000;
 
-		samples = new short[bufSize / 2];
+		//samples = new short[bufSize / 2]; // >> is more efficient than dividing by powers.
+		samples = new short[bufSize >> 2];
 	}
 
 	private File writeFile(String name, InputStream fs, boolean temp) throws IOException {
@@ -173,7 +174,8 @@ public class Player implements Runnable {
 			s = String.format("%1.1fKB", (float) fileSize / 1024F);
             //} else if(fileSize < 1024 * 1024){ Simplified using a shift.
 		} else if(fileSize < 1024 << 10) {
-			s = String.format("%dKB", fileSize / 1024);
+			//s = String.format("%dKB", fileSize / 1024); // >> is more efficient for powers.
+			s = String.format("%dKB", fileSize >> 10);
             //} else if(fileSize < 10 * 1024 * 1024){ simplified using a shift.
 		} else if(fileSize < (10 << 10) << 10) {
 			s = String.format("%1.1fMB", (float) fileSize / (1024F * 1024F));
@@ -223,7 +225,7 @@ public class Player implements Runnable {
 
 		// Size in bytes of wavdata
         //int dataSize = wavSamples * numChannels * 16/8; Simplified using a shift.
-		int dataSize = (wavSamples * numChannels << 4) /8;
+		int dataSize = (wavSamples * numChannels << 4) >> 3;
 
 		Log.d(TAG, "%dsec => %d samples, %d wavSamples, %d dataSize", length/1000, numSamples, wavSamples, dataSize);
 

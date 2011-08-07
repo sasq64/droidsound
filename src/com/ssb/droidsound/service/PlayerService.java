@@ -37,7 +37,7 @@ import com.ssb.droidsoundedit.R;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 
-public class PlayerService extends Service {
+public final class PlayerService extends Service {
 	private static final String TAG = PlayerService.class.getSimpleName();
 
 	// Flags

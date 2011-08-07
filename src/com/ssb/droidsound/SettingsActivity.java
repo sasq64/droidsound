@@ -26,14 +26,14 @@ import com.ssb.droidsound.plugins.VICEPlugin;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsoundedit.R;
 
-public class SettingsActivity extends PreferenceActivity {
+public final class SettingsActivity extends PreferenceActivity {
 
 	private static final String TAG = SettingsActivity.class.getSimpleName();
 	private SongDatabase songDatabase;
 	private boolean doFullScan;
     private String modsDir;
 
-	class AudiopPrefsListener implements Preference.OnPreferenceChangeListener {
+final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener {
 		
 		private final DroidSoundPlugin plugin;
 

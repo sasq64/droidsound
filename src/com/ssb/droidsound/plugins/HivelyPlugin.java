@@ -1,6 +1,6 @@
 package com.ssb.droidsound.plugins;
 
-public class HivelyPlugin extends DroidSoundPlugin {
+public final class HivelyPlugin extends DroidSoundPlugin {
 
 	static {
 		System.loadLibrary("hively");

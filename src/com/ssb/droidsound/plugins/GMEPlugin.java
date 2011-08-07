@@ -4,11 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-//import android.R;
-import com.ssb.droidsoundedit.R;
+import android.R;
 
 
-public class GMEPlugin extends DroidSoundPlugin {
+public final class GMEPlugin extends DroidSoundPlugin {
 
 	static {
 		System.loadLibrary("gme"); //$NON-NLS-1$

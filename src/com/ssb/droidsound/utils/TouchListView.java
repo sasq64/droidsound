@@ -36,7 +36,7 @@ import android.widget.ListView;
 
 import com.ssb.droidsoundedit.R;
 
-class TouchListView extends ListView {
+final class TouchListView extends ListView {
 	private ImageView mDragView;
 	private WindowManager mWindowManager;
 	private WindowManager.LayoutParams mWindowParams;

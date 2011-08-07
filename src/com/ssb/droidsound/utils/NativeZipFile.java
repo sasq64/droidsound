@@ -6,13 +6,13 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 
-public class NativeZipFile {
+public final class NativeZipFile {
 
 	static {
 		System.loadLibrary("nativezipfile");
 	}
 	
-	static class MyZipEntry extends ZipEntry {
+	static final class MyZipEntry extends ZipEntry {
 
 		public MyZipEntry(String name) {
 			super(name);
@@ -70,7 +70,7 @@ public class NativeZipFile {
 		return null;
 	}
 	
-	class MyEnumeration implements Enumeration<MyZipEntry> {
+	final class MyEnumeration implements Enumeration<MyZipEntry> {
 
 		public final NativeZipFile zipFile;
 		private int currentIndex;
@@ -102,7 +102,7 @@ public class NativeZipFile {
 		return new MyEnumeration(this);
 	}
 	
-	static class NZInputStream extends InputStream {
+	static final class NZInputStream extends InputStream {
 		protected static final String TAG = NZInputStream.class.getSimpleName();
 
 		private final NativeZipFile zipFile;

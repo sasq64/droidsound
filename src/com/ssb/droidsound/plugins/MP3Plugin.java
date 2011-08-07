@@ -16,7 +16,7 @@ import com.ssb.droidsound.utils.M3UParser;
 import com.ssb.droidsound.utils.PLSParser;
 import com.ssb.droidsound.utils.PlaylistParser;
 
-public class MP3Plugin extends DroidSoundPlugin {
+public final class MP3Plugin extends DroidSoundPlugin {
 	private static final String TAG = MP3Plugin.class.getSimpleName();
 
 	private MediaPlayer mediaPlayer;

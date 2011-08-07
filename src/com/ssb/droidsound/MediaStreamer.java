@@ -7,8 +7,8 @@ import com.ssb.droidsound.utils.ID3Tag;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.StreamingHttpConnection;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;

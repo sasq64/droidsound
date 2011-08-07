@@ -243,7 +243,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private static final Class[] startTrackingSignature = {};
 
 	protected void finalize() throws Throwable {
-		Log.d(TAG, "########## Activity finalize");
+		try{
+			Log.d(TAG, "########## Activity finalize");
+		} finally {		
+			super.finalize();
+		}
     }
 
 	private void setDirectory(String path, PlayListView plv) {
