@@ -123,7 +123,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 			}
 			return -1;
 		case 204:
-			return (streamer != null && streamer.isBufferDone() ? 1 : 0);
+			return ((streamer != null && streamer.isBufferDone()) ? 1 : 0);
 		case INFO_LENGTH:
 			if(songLength > 0) return songLength;
 			if(mediaPlayer != null) {

@@ -101,16 +101,16 @@ public final class GMEPlugin extends DroidSoundPlugin {
 	@Override
 	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
 
-	native public boolean N_canHandle(String name);
-	native public long N_load(byte [] module, int size);
-	native public long N_loadFile(String name);
-	native public void N_unload(long song);
+	public native boolean N_canHandle(String name);
+	public native long N_load(byte [] module, int size);
+	public native long N_loadFile(String name);
+	public native void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);
-	native public boolean N_seekTo(long song, int seconds);
-	native public boolean N_setTune(long song, int tune);
-	native public String N_getStringInfo(long song, int what);
-	native public int N_getIntInfo(long song, int what);
+	public native int N_getSoundData(long song, short [] dest, int size);
+	public native boolean N_seekTo(long song, int seconds);
+	public native boolean N_setTune(long song, int tune);
+	public native String N_getStringInfo(long song, int what);
+	public native int N_getIntInfo(long song, int what);
 
 }

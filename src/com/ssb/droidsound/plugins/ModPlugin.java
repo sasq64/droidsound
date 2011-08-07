@@ -386,9 +386,9 @@ public final class ModPlugin extends DroidSoundPlugin {
 
 	// --- Native functions
 
-	native public boolean N_canHandle(String name);
-	native public long N_load(byte [] module, int size);
-	native public long N_loadInfo(byte [] module, int size);
+	public native boolean N_canHandle(String name);
+	public native long N_load(byte [] module, int size);
+	public native long N_loadInfo(byte [] module, int size);
 	native public void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts

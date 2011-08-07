@@ -216,7 +216,7 @@ public final class PlayerService extends Service {
 		if(composer) {
 			String a = sb.toString().toUpperCase();
 			String x = composerTranslation.get(a);
-			Log.d(TAG, "Checked %s became %s", a, x == null ? "NULL" : x);
+			Log.d(TAG, "Checked %s became %s", a, (x == null) ? "NULL" : x);
 			if(x != null) {
 				return x;
 			}

@@ -208,7 +208,7 @@ class PlayListAdapter extends BaseAdapter {
 					int year = d / 10000;
 					int rest = d - year*10000;
 					int month = rest / 100;
-					sub = String.format("%04d %s", year, month > 0 ? monthNames[month-1] : "");
+					sub = String.format("%04d %s", year, (month > 0) ? monthNames[month-1] : "");
 				}
 			} else {
 				sub = mCursor.getString(mSubIndex);
@@ -216,7 +216,7 @@ class PlayListAdapter extends BaseAdapter {
 		}
 
 		if(!isEditMode()) {
-			tv2.setText(side != null ? side : "");
+			tv2.setText((side != null) ? side : "");
 		}
 
 		if(sub == null && type == SongDatabase.TYPE_FILE) {
@@ -235,7 +235,7 @@ class PlayListAdapter extends BaseAdapter {
 		}
 
 
-		String path = mPathIndex >= 0 ? mCursor.getString(mPathIndex) : null;
+		String path = (mPathIndex >= 0) ? mCursor.getString(mPathIndex) : null;
 		if(path == null) {
 			path = pathName;
 		}

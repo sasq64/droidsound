@@ -25,12 +25,12 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	 * 
 	 * @return an error string, or null if successful.
 	 */
-	native private static String N_loadFile(String name);
+	private static native String N_loadFile(String name);
 	
 	/**
 	 * Unload song from memory.
 	 */
-	native private static void N_unload();
+	private static native void N_unload();
 
 	/** 
 	 * Generates audio.

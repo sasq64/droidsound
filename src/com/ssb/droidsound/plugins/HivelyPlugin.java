@@ -51,7 +51,7 @@ public final class HivelyPlugin extends DroidSoundPlugin {
 		N_unload(songRef);
 	}
 
-	native public long N_load(byte [] module, int size);
-	native public void N_unload(long song);
-	native public int N_getSoundData(long song, short [] dest, int size);
+	public native long N_load(byte [] module, int size);
+	public native void N_unload(long song);
+	public native int N_getSoundData(long song, short [] dest, int size);
 }

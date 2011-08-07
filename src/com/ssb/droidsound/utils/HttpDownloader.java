@@ -20,7 +20,7 @@ class HttpDownloader  {
 	}
 
     //static private String urlencode(String s){ weakened type below
-	static private String urlencode(CharSequence s) {
+	private static String urlencode(CharSequence s) {
 		StringBuilder t = new StringBuilder();
 
 		for(int i = 0; i < s.length(); i++) {

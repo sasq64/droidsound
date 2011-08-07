@@ -316,10 +316,10 @@ final class TouchListView extends ListView {
                     int speed = 0;
                     if(y > mLowerBound) {
 						// scroll the list up a bit
-						speed = y > (mHeight + mLowerBound) / 2 ? 16 : 4;
+						speed = (y > (mHeight + mLowerBound) / 2) ? 16 : 4;
 					} else if(y < mUpperBound) {
 						// scroll the list down a bit
-						speed = y < mUpperBound / 2 ? -16 : -4;
+						speed = (y < mUpperBound / 2) ? -16 : -4;
 					}
 					if(speed != 0) {
 						int ref = pointToPosition(0, mHeight / 2);

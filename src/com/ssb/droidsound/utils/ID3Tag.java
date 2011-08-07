@@ -48,8 +48,9 @@ public final class ID3Tag {
 	
 	native boolean openID3Tag(String fileName);
 	native void closeID3Tag();
-	native public String getStringInfo(int what);
-	native public int getIntInfo(int what);
+	
+	public native String getStringInfo(int what);
+	public native int getIntInfo(int what);
 	
 	
 }

@@ -338,7 +338,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				File f = new File(url.getPath());
 				String newPath = f.getParent();
 
-				Log.d(TAG, "Parent path %s", newPath == null ? "null" : newPath);
+				Log.d(TAG, "Parent path %s", (newPath == null) ? "null" : newPath);
 
 
 				if(newPath == null) {
