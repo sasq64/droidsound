@@ -40,27 +40,27 @@ public final class VICEPlugin extends DroidSoundPlugin {
      * @param size
      * @return
 	 */
-	native private static int N_getSoundData(short[] dest, int size);
+	private static native int N_getSoundData(short[] dest, int size);
 	
 	/**
 	 * Select a subsong.
      * @param tune
      */
-	native private static boolean N_setTune(int tune);
+	private static native boolean N_setTune(int tune);
 	
 	/**
 	 * Set an option from the known #defines.
      * @param what
      * @param val
      */
-	native private static void N_setOption(int what, int val);
+	private static native void N_setOption(int what, int val);
 	
 	/**
 	 * Set the directory of VICE's basic, kernal and chargen files.
 	 * 
 	 * @param path Where kernal, basic and chargen can be found.
 	 */
-	native private static void N_setDataDir(String path);
+	private static native void N_setDataDir(String path);
 
 
 	//private int currentTune;

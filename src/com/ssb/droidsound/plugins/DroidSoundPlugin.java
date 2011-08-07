@@ -51,7 +51,7 @@ public abstract class DroidSoundPlugin {
 	static final int OPT_SID_MODEL = 7;
 	private static Context context;
 	static final Object lock = new Object();
-	public static void setContext(Context ctx) {
+	public static final void setContext(Context ctx) {
 		context = ctx;
 	}
 	static final Context getContext() { return context; }

@@ -21,9 +21,10 @@ import com.ssb.droidsound.utils.Unzipper;
 public final class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
 
-	static {
+	//NOTE: Why is this commented by default? All it leaves is an empty initializer.
+	/*static {
 		//System.loadLibrary("uade");
-    }
+    }*/
 
     //private static Set<String> extensions = new HashSet();  below is weakened type of this
 	private static final Collection<String> extensions = new HashSet<String>();

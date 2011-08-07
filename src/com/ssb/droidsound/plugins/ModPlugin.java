@@ -337,36 +337,11 @@ public final class ModPlugin extends DroidSoundPlugin {
 		//Log.d(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo(currentSong, 101);
 
-		List<String> list = new ArrayList<String>();
+		String[] info;
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
-		if (fmt != null && fmt.length() > 0){
-			list.add("Format");
-			list.add("MODPlug: " + fmt);
-		}
-		
-		if(INFO_AUTHOR != 0){
-			list.add("Author/Composer");
-			list.add(author);
-		}
-		
 		String instruments = N_getStringInfo(currentSong, 100);
-		if (instruments != null && instruments.length() > 0){
-			list.add("Instruments");
-			list.add(instruments);
-		}
 		
-		if (channels > 0){
-			list.add("Channels");
-			list.add(Integer.toString(channels));
-		}
-		
-		String [] info = new String [list.size()];
-		for(int i=0; i<info.length; i++) {
-			info[i] = list.get(i);
-		}
-		return info;
-}
-		/*if(instruments != null && instruments.length() > 0) {
+		if(instruments != null && instruments.length() > 0) {
 			info = new String [6];
 			info[4] = "Instruments";
 			info[5] = instruments;
@@ -377,7 +352,9 @@ public final class ModPlugin extends DroidSoundPlugin {
 		info[1] = "MODPlug: " + fmt;
 		info[2] = "Channels";
 		info[3] = Integer.toString(channels);
-		return info;*/
+		
+		return info;
+}
 
 	@Override
 	public String getVersion() {
@@ -389,13 +366,13 @@ public final class ModPlugin extends DroidSoundPlugin {
 	public native boolean N_canHandle(String name);
 	public native long N_load(byte [] module, int size);
 	public native long N_loadInfo(byte [] module, int size);
-	native public void N_unload(long song);
+	public native void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);
-	native public boolean N_seekTo(long song, int seconds);
-	native public boolean N_setTune(long song, int tune);
-	native public String N_getStringInfo(long song, int what);
-	native public int N_getIntInfo(long song, int what);
+	public native int N_getSoundData(long song, short [] dest, int size);
+	public native boolean N_seekTo(long song, int seconds);
+	public native boolean N_setTune(long song, int tune);
+	public native String N_getStringInfo(long song, int what);
+	public native int N_getIntInfo(long song, int what);
 
 }

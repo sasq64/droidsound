@@ -135,10 +135,10 @@ public final class PlayerService extends Service {
 		}
 	}
 
-	private final static String stripChars = "[]!<>?#${}";
-	private final static String blankChars = ".-^,";
+	private static final String stripChars = "[]!<>?#${}";
+	private static final String blankChars = ".-^,";
 
-	private final static Map<String, String> composerTranslation = new HashMap<String, String>();
+	private static final Map<String, String> composerTranslation = new HashMap<String, String>();
 
 
 	static {
