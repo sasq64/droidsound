@@ -40,11 +40,13 @@ public final class CueFile {
 						tracks.add(currentTrack);
 						Log.d(TAG, "New track %02d", tracks.size());
 					} else if("TITLE".equals(cmd)) {
-						if(currentTrack != null)
-							currentTrack.title = arg;						
+						if(currentTrack != null){
+							currentTrack.title = arg;	
+						}
 					} else if("PERFORMER".equals(cmd)) {
-						if(currentTrack != null)
+						if(currentTrack != null){
 							currentTrack.performer = arg;
+						}
 					} else if("INDEX".equals(cmd)) {
 						if(currentTrack != null) {
 							String[] index = ll[2].split(":");
@@ -76,8 +78,9 @@ public final class CueFile {
 	
 	public int trackFromPos(int pos) {
 		for(int i=1; i<tracks.size(); i++) {
-			if(pos < tracks.get(i).offset) 
+			if(pos < tracks.get(i).offset){
 				return i-1;
+			}
 		}
 		return tracks.size()-1;
 	}

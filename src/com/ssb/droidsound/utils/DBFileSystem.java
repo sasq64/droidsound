@@ -66,19 +66,20 @@ public final class DBFileSystem {
 		int j = 0;
 		//boolean starstar = false;
 		for(int i=0; i<path.length; i++) {
-			if(j >= pattern.length)
+			if(j >= pattern.length){
 				return false;
+			}
+			
 			Log.d(TAG, "Match %s vs %s", i, pattern[j], path[i]);
 
 			if("*".equals(pattern[j]) || path[i].equals(pattern[j])) {
 				j++;	
-			} else
-				break;			
+			} else {
+				break;
+			}
 		}
-		
 		return (j == path.length);		
 	}
-	
 	
 	public Cursor getFileInPath(String path, int sorting) {
 		
@@ -120,13 +121,11 @@ public final class DBFileSystem {
 						mc.addRow(new String [] {p.contents[i], p.contentPaths[i], Integer.toString(SongDatabase.TYPE_DIR)});
 					}
 					return mc;
-				} else
+				} else {
 					return p.factory.getCursor(newParts, sorting);
+				}
 			}
 		}
-
 		return null;
 	}
-	
-
 }

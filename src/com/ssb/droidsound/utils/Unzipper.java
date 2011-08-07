@@ -84,8 +84,9 @@ public final class Unzipper {
 						synchronized (doneList) {
 							doneList.add(job.asset);
 						}
-					} else
+					} else {
 						break;
+					}
 				}
 			}
 		}

@@ -54,8 +54,9 @@ public final class CursorTransform {
 		public int getColumnIndex(String columnName) {
 			ColTransform ct = transformMap.get(columnName);
 			if(ct != null) {
-				if(ct.columnIndex >= 0)
+				if(ct.columnIndex >= 0){
 					return ct.columnIndex;
+				}
 				ct.columnIndex = colIndex++;
 				//Log.d(TAG, "Assigning %d to column %s", ct.columnIndex, columnName);
 				indexMap.put(ct.columnIndex, ct);				

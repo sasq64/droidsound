@@ -227,8 +227,9 @@ public abstract class DroidSoundPlugin {
 			int e = 0;
 			while(e < ext.length() && Character.isLetterOrDigit(c)) {
 				e++;
-				if(e == ext.length())
+				if(e == ext.length()){
 						break;
+				}
 				c = ext.charAt(e);
 			}
 			ext = ext.substring(0,e);

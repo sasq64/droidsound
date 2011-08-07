@@ -31,8 +31,9 @@ public final class M3UParser implements PlaylistParser {
 					if(line.charAt(0) == '#') {
 						if(line.startsWith("#EXTINF:")) {
 							String[] args = line.substring(8).split(",");
-							if(args.length >= 2)
+							if(args.length >= 2) {
 								desc = args[1];
+							}
 						}
 					} else {
 						songs.add(line);

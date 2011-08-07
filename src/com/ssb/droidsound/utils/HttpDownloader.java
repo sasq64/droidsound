@@ -49,7 +49,7 @@ class HttpDownloader  {
 		return t.toString();
 	}
 
-	static public boolean downloadFiles(Callback cb, String target, String... urls) {
+	public static boolean downloadFiles(Callback cb, String target, String... urls) {
 
 		try {
 			InputStream in = null;
@@ -66,8 +66,9 @@ class HttpDownloader  {
 				Log.d(TAG, "Opening URL " + uu);
 
 				URLConnection conn = url.openConnection();
-				if(!(conn instanceof HttpURLConnection))
+				if(!(conn instanceof HttpURLConnection)){
 					throw new IOException("Not a HTTP connection");
+				}
 
 				HttpURLConnection httpConn = (HttpURLConnection) conn;
 				httpConn.setAllowUserInteraction(false);
@@ -123,8 +124,9 @@ class HttpDownloader  {
 						cb.onDisplayProgress(fileCount * 100);
 					}
 
-				} else
+				} else {
 					return false;
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -136,5 +138,4 @@ class HttpDownloader  {
 		}
 		return true;
 	}
-
 }
