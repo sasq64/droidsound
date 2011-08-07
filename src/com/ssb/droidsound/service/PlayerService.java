@@ -89,7 +89,7 @@ public class PlayerService extends Service {
 	public static final int RM_REPEAT_SUBSONG = 4;
 	//private short[] shuffleArray;
 
-	private Object info[];
+	private Object[] info;
 
 	private Player player;
 	private Thread playerThread;

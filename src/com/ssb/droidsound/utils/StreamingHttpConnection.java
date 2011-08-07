@@ -91,7 +91,7 @@ public class StreamingHttpConnection {
 				line = readLine(is);
 				if(line != null) {
 					Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! RESULT: " + line);
-					String data [] = line.split(" ");
+					String[] data = line.split(" ");
 					resultCode = -1;
 					if(data.length >= 3) {
 						resultString = data[2];

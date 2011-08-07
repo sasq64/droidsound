@@ -57,7 +57,7 @@ public class ModPlugin extends DroidSoundPlugin {
 
 	private String guessAuthor(String instr) {
 
-		String s [] = instr.split("\\n");
+		String[] s  = instr.split("\\n");
 
 		int n = 0;
 
@@ -121,7 +121,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		}*/
 
         for (String value : s) {  //Replaced above with a foreach loop
-            String d[] = value.split("\\s+");
+            String[] d = value.split("\\s+");
 
             for (String aD : d) {
                 //Log.d(TAG, d[i]);
@@ -182,7 +182,7 @@ public class ModPlugin extends DroidSoundPlugin {
 
         }
 
-		String author [] = new String [4];
+		String[] author = new String [4];
 
 		String lastWord = "";
 		String lastLastWord = "";

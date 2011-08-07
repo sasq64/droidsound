@@ -119,7 +119,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		year = null;
 		type = null;
 
-		byte data [] = module;
+		byte[] data = module;
 		String head = new String(module, 0, 4);
 		if("ICE!".equals(head)) {
 			

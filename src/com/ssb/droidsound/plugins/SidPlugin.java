@@ -39,7 +39,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	private short[] extraLengths;
 	private int hashLen;
 
-	private final int songLengths[] = new int [256];
+	private final int[] songLengths = new int [256];
 	private int currentTune;
 
 	public static class Option {

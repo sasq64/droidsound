@@ -103,7 +103,7 @@ public class MediaStreamer implements Runnable {
 	private boolean VBR;
 	private boolean parseMp3;
 
-	private static final int bitRateTab[] = {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
+	private static final int[] bitRateTab = {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 
 	public MediaStreamer(String http, MediaPlayer mp, boolean fileMode) {
 		//httpName = http;

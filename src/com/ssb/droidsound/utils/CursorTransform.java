@@ -12,8 +12,8 @@ public class CursorTransform {
 	
 	private static class ColTransform {
 		public String pattern;
-		public int offsets [];
-		public String varnames [];
+		public int[] offsets;
+		public String[] varnames;
 		public int columnIndex;
 		public int value;
 	}

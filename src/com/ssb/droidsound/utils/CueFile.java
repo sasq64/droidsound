@@ -47,7 +47,7 @@ public class CueFile {
 							currentTrack.performer = arg;
 					} else if("INDEX".equals(cmd)) {
 						if(currentTrack != null) {
-							String index[] = ll[2].split(":");
+							String[] index = ll[2].split(":");
 							int secs = Integer.parseInt(index[1]) + Integer.parseInt(index[0])*60;
 							int frames = Integer.parseInt(index[2]);
 							

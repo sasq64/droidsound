@@ -28,7 +28,7 @@ public class PLSParser implements PlaylistParser {
 				
 				if(line.length() > 0) {
 					
-					String args [] = line.split("=");
+					String[] args = line.split("=");
 					if(args.length >= 2) {
 						if(line.startsWith("File")) {
 							songs.add(args[1]);

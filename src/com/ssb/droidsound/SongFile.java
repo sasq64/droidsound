@@ -63,7 +63,7 @@ public class SongFile {
 		title = composer = null;
 
 		if(fname.indexOf('\t') >= 0) {
-			String t[] = fname.split("\t");
+			String[] t = fname.split("\t");
 			fname = t[0];
 			title = t[1];
 			if(t.length > 2) {
@@ -71,7 +71,7 @@ public class SongFile {
 			}
 		}
 
-		String s[] = fname.split(";");
+		String[] s = fname.split(";");
 
 		fileName = s[0];
 

@@ -89,7 +89,7 @@ public class DBFileSystem {
 			Log.d(TAG, "PART %d: '%s'", i, parts[i]);
 		}
 		
-		String newParts [] = null;
+		String[] newParts = null;
 
 		for(int i=0; i<n; i++) {
 			if(parts[i].startsWith(baseName)) {

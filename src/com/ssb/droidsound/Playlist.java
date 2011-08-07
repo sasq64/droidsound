@@ -415,7 +415,7 @@ public final class Playlist {
 
 		String removeMe = null;
 		for(String line : lines) {
-			String cols [] = line.split("\t");
+			String[] cols  = line.split("\t");
 			//int sc = cols[0].lastIndexOf(';');
 			//if(sc >= 0) {
 			//	cols[0] = cols[0].substring(0, sc);
