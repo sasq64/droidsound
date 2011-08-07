@@ -344,7 +344,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 			list.add("MODPlug: " + fmt);
 		}
 		
-		if(INFO_AUTHOR > 0){
+		if(INFO_AUTHOR != 0){
 			list.add("Author/Composer");
 			list.add(author);
 		}
