@@ -122,7 +122,7 @@ public final class Playlist {
 		private static final int COL_TITLE = 2;
 		private static final int COL_SUBTITLE = 3;
 
-		public MyCursor(Playlist pl) {
+		private MyCursor(Playlist pl) {
 			playlist = pl;
 			songs = pl.getSongs();
 			columnNames = new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" };

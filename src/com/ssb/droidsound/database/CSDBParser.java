@@ -181,7 +181,7 @@ public final class CSDBParser implements DataSource {
 	 */
 	static final class DirWrapper extends CursorWrapper {
 
-		public DirWrapper(Cursor cursor) {
+		private DirWrapper(Cursor cursor) {
 			super(cursor);
 		}
 
@@ -205,7 +205,7 @@ public final class CSDBParser implements DataSource {
     private static final class SidCursor extends CursorWrapper {
 		private final int pathIndex;
 
-		public SidCursor(Cursor cursor) {
+		private SidCursor(Cursor cursor) {
 			super(cursor);
 			pathIndex = cursor.getColumnIndex("PATH");
 		}
@@ -243,7 +243,7 @@ public final class CSDBParser implements DataSource {
 		private String pathName;
 		private int idIndex;
 
-		public ReleaseCursor(Cursor cursor, String path) {
+		private ReleaseCursor(Cursor cursor, String path) {
 			super(cursor);
 			pathName = path;
 			gidIndex = cursor.getColumnIndex("GROUPID");
@@ -254,7 +254,7 @@ public final class CSDBParser implements DataSource {
 			idIndex = cursor.getColumnIndex("ID");
 		}
 
-		public ReleaseCursor(Cursor cursor) {
+		private ReleaseCursor(Cursor cursor) {
 			super(cursor);
 			gidIndex = cursor.getColumnIndex("GROUPID");
 			nameIndex = cursor.getColumnIndex("NAME");

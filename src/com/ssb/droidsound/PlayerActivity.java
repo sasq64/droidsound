@@ -91,7 +91,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private static class SearchCursor extends CursorWrapper {
 
-		public SearchCursor(Cursor cursor) {
+		private SearchCursor(Cursor cursor) {
 			super(cursor);
 		}
 

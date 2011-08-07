@@ -3,7 +3,7 @@ package com.ssb.droidsound.utils;
 import android.database.Cursor;
 import android.database.CursorWrapper;
 
-final class SortedCursor extends CursorWrapper {
+public final class SortedCursor extends CursorWrapper {
 
 	private int [] sorted;
 

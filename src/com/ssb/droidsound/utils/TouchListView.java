@@ -63,7 +63,7 @@ final class TouchListView extends ListView {
 	private int grabberId = -1;
 	private int dragndropBackgroundColor = 0x00000000;
 
-	public TouchListView(Context context, AttributeSet attrs) {
+	private TouchListView(Context context, AttributeSet attrs) {
 		this(context, attrs, 0);
 	}
 

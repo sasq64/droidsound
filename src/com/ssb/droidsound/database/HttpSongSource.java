@@ -31,7 +31,7 @@ class HttpSongSource {
 	private static class CacheEntry {
 		public final MatrixCursor cursor;
 		public final int status;
-		public CacheEntry(MatrixCursor cr, int st) {
+		private CacheEntry(MatrixCursor cr, int st) {
 			status = st;
 			cursor = cr;
 		}
@@ -103,7 +103,7 @@ class HttpSongSource {
 		private final List<String> dirList = new ArrayList<String>();
 		private final Context context;
 		private boolean doQuit;
-		public HTTPWorker(Context ctx) {
+		private HTTPWorker(Context ctx) {
 			context = ctx;
 		}
 

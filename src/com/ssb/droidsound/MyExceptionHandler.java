@@ -14,7 +14,7 @@ import android.os.Build;
 import com.ssb.droidsoundedit.R;
 
 
-class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
+public class MyExceptionHandler implements Thread.UncaughtExceptionHandler {
 
 	public Context application;
 	private final Thread.UncaughtExceptionHandler oldHandler;

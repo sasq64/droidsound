@@ -10,7 +10,7 @@ import android.media.MediaPlayer;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsoundedit.R;
 
-class LocalMPConnection {
+public class LocalMPConnection {
 	private static final String TAG = LocalMPConnection.class.getSimpleName();
 	private final ServerSocket serverSocket;
 	private final int socketPort;

@@ -22,11 +22,11 @@ public final class DBFileSystem {
 		public CursorFactory factory;
 		public String [] contents;
 		public String[] contentPaths;
-		public Path(String [] parts, CursorFactory factory) {
+		private Path(String [] parts, CursorFactory factory) {
 			this.parts = parts;
 			this.factory = factory;
 		}
-		public Path(String [] parts, String [] contents, String... contentPaths) {
+		private Path(String [] parts, String [] contents, String... contentPaths) {
 			this.parts = parts;
 			this.contents = contents;
 			this.contentPaths = contentPaths;

@@ -19,7 +19,7 @@ public class MediaStreamer implements Runnable {
 	private static final String TAG = MediaStreamer.class.getSimpleName();
 
 	private static class MetaString {
-		public MetaString(int m, String t) {
+		private MetaString(int m, String t) {
 			msec = m;
 			text = t;
 		}

@@ -35,7 +35,7 @@ public final class Unzipper {
 	private static final class UnzipJob {
 		public final String asset;
 		public final File targetDir;
-		public UnzipJob(String a, File t) {
+		private UnzipJob(String a, File t) {
 			asset = a;
 			targetDir = t;
 		}
@@ -51,7 +51,7 @@ public final class Unzipper {
 		private final Context context;
 		private boolean doQuit;
 
-		public UnzipWorker(Context ctx) {
+		private UnzipWorker(Context ctx) {
 			context = ctx;
 		}
 

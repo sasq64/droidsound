@@ -12,7 +12,7 @@ public final class NativeZipFile {
 		System.loadLibrary("nativezipfile");
 	}
 	
-	static final class MyZipEntry extends ZipEntry {
+static final class MyZipEntry extends ZipEntry {
 
 		public MyZipEntry(String name) {
 			super(name);

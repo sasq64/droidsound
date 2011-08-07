@@ -28,7 +28,7 @@ public final class CursorTransform {
 		private final Cursor cursor;
 		private int colIndex = 100;
 
-		public TransformWrapper(Cursor cr, Map<String, ColTransform> txmap) {
+		private TransformWrapper(Cursor cr, Map<String, ColTransform> txmap) {
 			super(cr);
 			transformMap = txmap;
 			indexMap = new HashMap<Integer, ColTransform>();
