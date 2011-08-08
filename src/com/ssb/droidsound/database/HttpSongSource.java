@@ -147,7 +147,7 @@ class HttpSongSource {
 				}
 			}
 			synchronized (this) {
-				notify();
+				notifyAll();
 			}
 		}
 

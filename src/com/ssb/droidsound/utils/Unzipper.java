@@ -104,7 +104,7 @@ public final class Unzipper {
 				unzipList.add(new UnzipJob(asset, targetDir));
 			}
 			synchronized (this) {
-				notify();
+				notifyAll();
 			}
 		}
 
@@ -160,7 +160,8 @@ public final class Unzipper {
 			BufferedOutputStream os = new BufferedOutputStream (new FileOutputStream(tempFile));
             InputStream is = context.getAssets().open(asset);
 
-            byte [] buffer = new byte [(128*1024)];
+            //byte [] buffer = new byte [(128*1024)]; //Left shift is more efficient.
+            byte [] buffer = new byte [(128 << 10)];
 			while(true) {
 				int rc = is.read(buffer);
 				if(rc <= 0) {

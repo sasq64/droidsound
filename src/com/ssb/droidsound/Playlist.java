@@ -108,7 +108,7 @@ public final class Playlist {
 		}
 	 }
 
-	 private class MyCursor extends AbstractCursor implements EditableCursor {
+private class MyCursor extends AbstractCursor implements EditableCursor {
 
 		private final List<SongFile> songs;
 		private int position;

@@ -59,7 +59,7 @@ public final class Player implements Runnable {
 
 	// public static final int MSG_SUBTUNE = 5;
 
-	public final static class SongInfo {
+	public static final class SongInfo {
 		String title;
 		String author;
 		String copyright;

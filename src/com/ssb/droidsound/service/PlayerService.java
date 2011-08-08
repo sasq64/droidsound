@@ -150,7 +150,7 @@ public final class PlayerService extends Service {
 		ct.put("A MAN", "A.Man");
 		ct.put("LMAN", "L.Man");
 		ct.put("LFT", "LFT");
-		ct.put("GREGFEEL", "Greg feel");
+		ct.put("GREGFEEL", "Greg Feel");
 		ct.put("CUBEHEAD", "Cube head");
 		ct.put("LFT", "LFT");
 		ct.put("XINY6581", "Xiny 6 5 8 1");
@@ -182,7 +182,7 @@ public final class PlayerService extends Service {
 			return s;
 		}
 
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(24);
 
 		if("<?>".equals(s)) {
 			return "Unnamed";
@@ -238,8 +238,8 @@ public final class PlayerService extends Service {
 		}
 
 		if(songComposer != null && songComposer.endsWith(")")) {
-			int lpara = songComposer.lastIndexOf("(");
-			int rpara = songComposer.lastIndexOf(")");
+			int lpara = songComposer.lastIndexOf('(');
+			int rpara = songComposer.lastIndexOf(')');
 			if(lpara > 0) {
 				songComposer = songComposer.substring(lpara+1, rpara);
 			}

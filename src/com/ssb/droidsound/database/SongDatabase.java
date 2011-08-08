@@ -46,7 +46,7 @@ import com.ssb.droidsound.utils.NativeZipFile;
  *
  */
 
-public class SongDatabase implements Runnable {
+public final class SongDatabase implements Runnable {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	private static final int DB_VERSION = 4;
 	private static final String[] FILENAME_array = { "_id", "FILENAME", "TYPE" };

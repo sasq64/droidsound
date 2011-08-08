@@ -11,7 +11,7 @@ import java.net.URLConnection;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-class HttpDownloader  {
+final class HttpDownloader  {
 	private static final String TAG = HttpDownloader.class.getSimpleName();
 	
 	interface Callback {

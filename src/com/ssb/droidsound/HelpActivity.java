@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.webkit.WebView;
 import com.ssb.droidsoundedit.R;
 
-public class HelpActivity extends Activity {
+public final class HelpActivity extends Activity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

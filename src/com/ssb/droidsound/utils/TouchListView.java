@@ -280,12 +280,14 @@ final class TouchListView extends ListView {
 				mDragView.getDrawingRect(r);
 				stopDragging();
 
-				if(mRemoveMode == SLIDE_RIGHT && ev.getX() > r.left + (r.width() * 3 / 4)) {
+				//if(mRemoveMode == SLIDE_RIGHT && ev.getX() > r.left + (r.width() * 3 / 4)) { //right shift is more efficient.
+				if(mRemoveMode == SLIDE_RIGHT && ev.getX() > r.left + (r.width() * 3 >> 2)) {
 					if(mRemoveListener != null) {
 						mRemoveListener.remove(mFirstDragPos);
 					}
 					unExpandViews(true);
-				} else if(mRemoveMode == SLIDE_LEFT && ev.getX() < r.left + (r.width() / 4)) {
+				//} else if(mRemoveMode == SLIDE_LEFT && ev.getX() < r.left + (r.width() / 4)) { //right shift is more efficient.
+				} else if(mRemoveMode == SLIDE_LEFT && ev.getX() < r.left + (r.width() >> 2)) {
 					if(mRemoveListener != null) {
 						mRemoveListener.remove(mFirstDragPos);
 					}
@@ -316,16 +318,20 @@ final class TouchListView extends ListView {
                     int speed = 0;
                     if(y > mLowerBound) {
 						// scroll the list up a bit
-						speed = (y > (mHeight + mLowerBound) / 2) ? 16 : 4;
+                    	//speed = (y > (mHeight + mLowerBound) / 2) ? 16 : 4; //Right shift is more efficient.
+						speed = (y > (mHeight + mLowerBound) >> 1) ? 16 : 4;
 					} else if(y < mUpperBound) {
 						// scroll the list down a bit
-						speed = (y < mUpperBound / 2) ? -16 : -4;
+						//speed = (y < mUpperBound / 2) ? -16 : -4; //right shift is more efficient.
+						speed = (y < mUpperBound >> 1) ? -16 : -4;
 					}
 					if(speed != 0) {
-						int ref = pointToPosition(0, mHeight / 2);
+						//int ref = pointToPosition(0, mHeight / 2); //right shift is more efficient.
+						int ref = pointToPosition(0, mHeight >> 1);
 						if(ref == AdapterView.INVALID_POSITION) {
 							// we hit a divider or an invisible view, check somewhere else
-							ref = pointToPosition(0, mHeight / 2 + getDividerHeight() + 64);
+							//ref = pointToPosition(0, mHeight / 2 + getDividerHeight() + 64); //right shift is more efficient.
+							ref = pointToPosition(0, mHeight >> 1 + getDividerHeight() + 64);
 						}
 						View v = getChildAt(ref - getFirstVisiblePosition());
 						if(v != null) {
@@ -373,13 +379,17 @@ final class TouchListView extends ListView {
 		int width = mDragView.getWidth();
 
 		if(mRemoveMode == SLIDE_RIGHT) {
-			if(x > width / 2) {
-				alpha = ((float) (width - x)) / (width / 2);
+			//if(x > width / 2) { //Right shift is better.
+			if(x > width >> 1) {
+				//alpha = ((float) (width - x)) / (width / 2); //Right shift is more efficient.
+				alpha = ((float) (width - x)) / (width >> 1);
 			}
 			mWindowParams.alpha = alpha;
 		} else if(mRemoveMode == SLIDE_LEFT) {
-			if(x < width / 2) {
-				alpha = ((float) x) / (width / 2);
+			//if(x < width / 2) { //Right shift is more efficient.
+			if(x < width >> 1) {
+				//alpha = ((float) x) / (width / 2); //Right shift is more efficient.
+				alpha = ((float) x) / (width >> 1);
 			}
 			mWindowParams.alpha = alpha;
 		}

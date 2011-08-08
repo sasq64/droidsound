@@ -6,7 +6,7 @@ import android.util.AttributeSet;
 import android.widget.TextView;
 import com.ssb.droidsoundedit.R;
 
-public class FontTextView extends TextView {
+public final class FontTextView extends TextView {
 
 	public FontTextView(Context context, AttributeSet attrs) {
 		super(context, attrs);

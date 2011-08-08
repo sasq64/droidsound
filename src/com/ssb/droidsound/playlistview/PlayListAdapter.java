@@ -105,6 +105,7 @@ class PlayListAdapter extends BaseAdapter {
 		if(mCursor != null) {
 			mCursor.close();
 		}
+		super.finalize();
 	}
 
 	public void close() {

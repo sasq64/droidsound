@@ -5,7 +5,7 @@ import java.io.File;
 import com.ssb.droidsound.database.SongDatabase;
 
 /** Class used for returning information about songs in list */
-public class FileInfo {
+public final class FileInfo {
 
 	public final int type;
 	private String path;

@@ -14,7 +14,7 @@ import android.os.Debug;
 
 import com.ssb.droidsound.utils.Log;
 
-public class SidPlugin extends DroidSoundPlugin {
+public final class SidPlugin extends DroidSoundPlugin {
 	private static final String TAG = SidPlugin.class.getSimpleName();
 
 	private static final VICEPlugin vicePlugin = new VICEPlugin();

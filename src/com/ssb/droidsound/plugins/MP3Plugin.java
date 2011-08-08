@@ -55,6 +55,8 @@ public final class MP3Plugin extends DroidSoundPlugin {
 		Log.d(TAG, "Checking ext '%s'", ext);
 		return ".MP3".equals(ext) || ".M3U".equals(ext) || ".PLS".equals(ext);
 	}
+	
+	
 	@Override
 	public String[] getDetailedInfo() {
 		if(streamer != null) {
@@ -87,6 +89,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 			info.add("Year");
 			info.add(songYear);
 		}
+		
 		if(info.size() == 0) {
 			return null;
 		}
@@ -246,7 +249,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 		songLength = -1;
 		songTitle = null;
 		songTrack = null;
-        String songYear = null;
+        songYear = null;
 	}
 	@Override
 	public boolean loadStream(String songName) throws IOException {

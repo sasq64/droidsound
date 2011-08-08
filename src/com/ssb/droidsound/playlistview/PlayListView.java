@@ -15,7 +15,7 @@ import com.ssb.droidsound.utils.Log;
  *
  *
  */
-public class PlayListView extends ListView { //extends TouchListView {
+public final class PlayListView extends ListView { //extends TouchListView {
 	private static final String TAG = "PlayListView";
 
 	private final PlayListAdapter adapter;

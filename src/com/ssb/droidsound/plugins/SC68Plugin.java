@@ -284,6 +284,6 @@ public final class SC68Plugin extends DroidSoundPlugin {
 	public native String N_getStringInfo(long song, int what);
 	public native int N_getIntInfo(long song, int what);
 	
-	native public void N_setDataDir(String dataDir);
-	native public int N_unice(byte [] data, byte... target);
+	public native void N_setDataDir(String dataDir);
+	public native int N_unice(byte [] data, byte... target);
 }

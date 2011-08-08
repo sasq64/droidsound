@@ -352,7 +352,6 @@ public final class ModPlugin extends DroidSoundPlugin {
 		info[1] = "MODPlug: " + fmt;
 		info[2] = "Channels";
 		info[3] = Integer.toString(channels);
-		
 		return info;
 }
 

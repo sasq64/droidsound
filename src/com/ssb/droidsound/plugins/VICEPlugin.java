@@ -162,7 +162,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 					try {
 						Thread.sleep(500);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						e.printStackTrace(); 
 						return false;
 					}
 				}

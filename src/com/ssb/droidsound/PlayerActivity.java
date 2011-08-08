@@ -80,7 +80,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	//public static final String DROIDSOUND_VERSION = "1.1beta3";
 	private static final int VERSION = 17;
 
-	private static class Config {
+	private static final class Config {
 		int ttsStatus;
 		SearchCursor searchCursor;
 		String activePlaylist;
@@ -89,7 +89,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		boolean shuffleSongs;
 	}
 
-	private static class SearchCursor extends CursorWrapper {
+	private static final class SearchCursor extends CursorWrapper {
 
 		private SearchCursor(Cursor cursor) {
 			super(cursor);
@@ -343,8 +343,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 				if(newPath == null) {
 					newPath = modsDir.getPath();
-				} else
+				} else {
 					newPath = "http://" + url.getHost() + newPath;
+				}
 
 				Log.d(TAG, "NewPath %s", newPath);
 
@@ -1908,8 +1909,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i = 0; i < songDetails.length; i += 2) {
-					// Log.d(TAG, songDetails[i]);
-					// Log.d(TAG, songDetails[i+1]);
+				    Log.d(TAG, songDetails[i]);
+					Log.d(TAG, songDetails[i+1]);
 					sb.append("<font color='yellow'><b>").append(songDetails[i]).append("</font></b><br/>");
 					if("Instruments".equals(songDetails[i])) {
 						// sb.append(songDetails[i+1].replace("\n",

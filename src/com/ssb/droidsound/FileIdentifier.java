@@ -14,7 +14,7 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsoundedit.R;
 
-public class FileIdentifier {
+public final class FileIdentifier {
 	private static final String TAG = FileIdentifier.class.getSimpleName();
 
 	private static final Map<String, Integer> extensions;
@@ -33,7 +33,7 @@ public class FileIdentifier {
 	private static final int TYPE_PRG = 8;
 	//public static final int TYPE_VGM = 8;
 
-	public static class MusicInfo {
+	public static final class MusicInfo {
 		public String title;
 		public String composer;
 		public String copyright;

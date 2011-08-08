@@ -30,7 +30,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 	private String modToPlay;
 	private Callback callback;
 	
-	private static class Opt {
+	private static final class Opt {
 		final int opt;
 		final String arg;
 		public Opt(int o, String a) {
@@ -99,9 +99,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		bound = true;
 		activity.startService(i);
 		activity.bindService(i, this, Context.BIND_AUTO_CREATE);        		
-	}
-
-	public void unbindService(Activity activity) {
+	}public void unbindService(Activity activity) {
 		Log.d(TAG, "Unbinding");
 		callback = null;
 		bound = false;
@@ -232,7 +230,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		return null;
 	}
 
-	public byte [] getSongMD5() {
+	public byte[] getSongMD5() {
 		try {
 			return mService.getSongMD5();
 		} catch (RemoteException e) {
