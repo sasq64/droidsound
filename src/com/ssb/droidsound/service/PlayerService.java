@@ -615,8 +615,9 @@ public final class PlayerService extends Service {
 		player = new Player(audioManager, mHandler, getApplicationContext());
 		callbacks = new ArrayList<IPlayerServiceCallback>();
 		info = new Object [20];
-		for(int i=0; i<20; i++)
+		for(int i=0; i<20; i++){
 			info[i] = null;
+		}
 
 		phoneStateListener = new PhoneStateListener() {
 

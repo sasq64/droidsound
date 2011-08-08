@@ -581,7 +581,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		if(usec < 0) {
 			return -1;
 		}
-		return (int) (usec/1000 - (mediaPlayer == null ? 0 : mediaPlayer.getCurrentPosition()));
+		return (int) (usec/1000 - ((mediaPlayer == null) ? 0 : mediaPlayer.getCurrentPosition()));
 	}
 
 	public final int update() {

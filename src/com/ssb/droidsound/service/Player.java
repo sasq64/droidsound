@@ -204,12 +204,9 @@ public final class Player implements Runnable {
 		//FileOutputStream fos = new FileOutputStream(outFile);
 		//BufferedOutputStream bos = new BufferedOutputStream(fos, bufSize);
 
-
 		int numSamples = (int)(((long)length * FREQ) / 1000);
-
 		int numChannels = 1;
 		int divider = 2;
-
 
 		if((flags & 2) != 0) {
 			Log.d(TAG, "HIGH QUALITY!");
@@ -220,7 +217,6 @@ public final class Player implements Runnable {
 		int wavSamples = numSamples / divider;
 
 		// the /2 halves the frequency
-
 		int freq = FREQ/divider;
 
 		// Size in bytes of wavdata
@@ -228,7 +224,6 @@ public final class Player implements Runnable {
 		int dataSize = (wavSamples * numChannels << 4) >> 3;
 
 		Log.d(TAG, "%dsec => %d samples, %d wavSamples, %d dataSize", length/1000, numSamples, wavSamples, dataSize);
-
 
 		byte [] barray = new byte [128];
 		ByteBuffer bb = ByteBuffer.wrap(barray);
@@ -257,7 +252,6 @@ public final class Player implements Runnable {
 
 		int sampleCount = 0;
 		int bytesWritten = 0;
-		
 		
 		while(sampleCount < numSamples) {
 			// In and out are number of shorts, not number of samples (2 bytes vs 4 bytes in 16bit stereo)
@@ -739,7 +733,7 @@ public final class Player implements Runnable {
 							if(currentState != State.STOPPED) {
 								// audioTrack.pause();
 								Log.d(TAG, "STOP");
-								MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+								MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
 								if(mp != null) {
 									mp.stop();
 								} else {
@@ -831,7 +825,7 @@ public final class Player implements Runnable {
 									currentState = State.PAUSED;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 2, 0);
 									mHandler.sendMessage(msg);
-									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+									MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
 									if(mp != null) {
 										mp.pause();
 									} else {
@@ -845,7 +839,7 @@ public final class Player implements Runnable {
 									currentState = State.PLAYING;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 1, 0);
 									mHandler.sendMessage(msg);
-									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+									MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
 									if(mp != null) {
 										mp.start();
 									} else {
@@ -869,7 +863,7 @@ public final class Player implements Runnable {
 
 				if(currentState == State.PLAYING) {
 					// Log.d(TAG, "Get sound data");
-                    MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+                    MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
 					if(mp != null) {
 
 						int playPos = currentPlugin.getSoundData(null, 0);
@@ -898,8 +892,9 @@ public final class Player implements Runnable {
 								if(sep > 0) {
 									currentSong.author = basename.substring(0, sep);
 									currentSong.title = basename.substring(sep+3);
-								} else
+								} else {
 									currentSong.title = basename;
+								}
 								Log.d(TAG, "FN Title '%s'", currentSong.title);
 								Message msg = mHandler.obtainMessage(MSG_INFO, 0, 0, new String[] { currentSong.title, currentSong.author });
 								mHandler.sendMessage(msg);
@@ -1107,11 +1102,11 @@ public final class Player implements Runnable {
 	}
 
 	public final synchronized void getSongInfo(SongInfo target) {
-		target.title = currentSong.title == null ? null : currentSong.title;
-		target.author = currentSong.author == null ? null : currentSong.author;
-		target.copyright = currentSong.copyright == null ? null : currentSong.copyright;
+		target.title = (currentSong.title == null) ? null : currentSong.title;
+		target.author = (currentSong.author == null) ? null : currentSong.author;
+		target.copyright = (currentSong.copyright == null) ? null : currentSong.copyright;
 		// target.game = new String(currentSong.game);
-		target.type = currentSong.type == null ? null : currentSong.type;
+		target.type = (currentSong.type == null) ? null : currentSong.type;
 		target.length = currentSong.length;
 		target.subTunes = currentSong.subTunes;
 		target.startTune = currentSong.startTune;

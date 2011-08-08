@@ -983,7 +983,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
                     operationTune = subTune;
                     operationTitle = null;
                     operationTuneCount = subTuneCount;
-                    Log.d(TAG, "%s - %s ADD", songTitle != null ? songTitle : "null", subtuneTitle != null ? subtuneTitle : "null");
+                    Log.d(TAG, "%s - %s ADD", (songTitle != null) ? songTitle : "null", (subtuneTitle != null) ? subtuneTitle : "null");
                     if (songTitle != null && subtuneTitle != null) {
                         // operationTitle = songTitle + " - " + subtuneTitle;
                         operationTitle = subtuneTitle + " (" + songTitle + ")";
@@ -1793,8 +1793,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			Log.d(TAG, "SOURCE IS " + value);
 			if(value != null && value.length() > 0) {
 				plinfoText.setText(value);
-			} else
+			} else {
 				plinfoText.setText("");
+			}
 			break;
 /*		case PlayerService.SONG_PLAYLIST:
 			if(value != null && value.length() > 0) {
@@ -1905,7 +1906,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
             String[] songDetails = player.getSongInfo();
 			md5 = player.getSongMD5();
 			hexdump(md5);
-			Log.d(TAG, "#### Got %d details", songDetails != null ? songDetails.length : -1);
+			Log.d(TAG, "#### Got %d details", (songDetails != null) ? songDetails.length : -1);
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i = 0; i < songDetails.length; i += 2) {
@@ -2145,10 +2146,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					File file = new File("/sdcard/droidsound/ringtones");
 					file.mkdir();
 					int tl = toneLength;
-					if(tl == 3) tl = 6;
-					else if(tl == 4) tl = 6*5;
-					else if(tl == 5) tl = 6*10;
-					else tl += 1;
+					if(tl == 3){
+						tl = 6;
+					} else if(tl == 4) {
+						tl = 6*5;
+					} else if(tl == 5) {
+						tl = 6*10;
+					} else {
+						tl += 1;
+					}
 					dumpingWav = tl * 10000;//30000;
 					toneName = toneNameText.getText().toString();
 					file = new File(file, toneName + ".wav"); 
@@ -2247,8 +2253,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					String s = input3.getText().toString();
-					if(!s.startsWith("http://"))
+					
+					if(!s.startsWith("http://")){
 						s = "http://" + s;
+					}
 					try {
 						URL url = new URL(s);
 						Log.d(TAG, "'%s', '%s', '%s'",url.toString(), url.getProtocol(), url.getFile());
@@ -2460,7 +2468,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Playlist pl = songDatabase.getCurrentPlaylist();
 		Playlist al = songDatabase.getActivePlaylist();
 		
-		SongFile song = pl != null ? pl.getSong(info.position) : null;
+		SongFile song = (pl != null) ? pl.getSong(info.position) : null;
 		
 		if(song != null) operationSong = song;
 		
