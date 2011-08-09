@@ -40,7 +40,7 @@ public final class PlayQueue {
 		oldPlaylistHash = pl.hashCode();
 
 		List<SongFile> songs = currentPlaylist.getSongs();
-        SongFile names[] = new SongFile [songs.size()];
+        SongFile[] names = new SongFile [songs.size()];
 		musicList = new ArrayList<SongFile>();
 		Log.d(TAG, "POS %d in playlist with %d files", index, songs.size());
         int i = 0;
