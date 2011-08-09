@@ -37,7 +37,7 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_SUBTUNE_TITLE = 8;
 	public static final int INFO_SUBTUNE_AUTHOR = 9;
 	public static final int INFO_SUBTUNE_NO = 10;
-	public static final int INFO_YEAR = 11;
+	static final int INFO_YEAR = 11;
 
 	//public static final int SIZEOF_INFO = 11;
 

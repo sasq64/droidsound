@@ -240,7 +240,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 	}
 
 
-	void clearInfo() {
+	private void clearInfo() {
 		songAlbum = null;
 		songComment = null;
 		songComposer = null;

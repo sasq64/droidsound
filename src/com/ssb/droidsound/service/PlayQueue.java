@@ -123,7 +123,7 @@ public final class PlayQueue {
 	}
 
     //boolean songContains(List<SongFile> psongs, SongFile s){ weaker type below
-    boolean songContains(Iterable<SongFile> psongs, SongFile s){
+    private boolean songContains(Iterable<SongFile> psongs, SongFile s){
 		for(SongFile ps : psongs) {
 			//Log.d(TAG, "%s(%d) vs %s(%d)", s.filename, s.startSong, ps.file.getPath(), ps.startsong);
 			if(s.getPath().equals(ps.getPath())) {
@@ -133,7 +133,7 @@ public final class PlayQueue {
 		return false;
 	}
 
-	final void updatePlaylist() {
+	private final void updatePlaylist() {
         if(currentPlaylist != null) {
     		int hash = currentPlaylist.hashCode();
     		if(hash != oldPlaylistHash) {
@@ -230,7 +230,7 @@ public final class PlayQueue {
 		musicListPos = i;
 	}
 
-	final int setCurrent(SongFile song) {
+	private final int setCurrent(SongFile song) {
 		for(int i=0; i<musicList.size(); i++) {
 			//Log.d(TAG, "CMP %s to %s", musicList.get(i).getPath(), song.getPath());
 			if(musicList.get(i).getPath().equals(song.getPath())) {
