@@ -36,7 +36,7 @@ public final class FileIdentifier {
 	public static final class MusicInfo {
 		public String title;
 		public String composer;
-		public String copyright;
+		private String copyright;
 		//String game;
 		public String format;
 

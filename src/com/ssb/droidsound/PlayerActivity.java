@@ -164,12 +164,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	//private int backDown;
 	private boolean atTop = true;
 
-	private String songTitle;
-	private String songComposer;
+	private String songTitle;		//Song Title	
+	private String songComposer;	//Song Composer
 
-	private String searchQuery;
-	private String dirTitle;
-	private String dirSubTitle;
+	private String searchQuery;		//Search Query
+	private String dirTitle;		//Directory Title
+	private String dirSubTitle;		//Directory SubTitle
     //private String indexSetting;
 
 	private static final int TTS_UNCHECKED = -1000;
@@ -204,10 +204,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	// protected int favSelection;
 
-	private String subtuneTitle;
-	private String subtuneAuthor;
+	private String subtuneTitle;	//Subtune Title
+	private String subtuneAuthor;	//Subtune Author
 
-	private File moveFileHere;
+	private File moveFileHere;		
 
 	public int operationTune;
 
@@ -223,21 +223,21 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
     private Method startTrackingMethod;
 
-	private byte[] md5;
+	private byte[] md5;				//MD5 Hash
 
 	private SongFile clipBoardFile;
 
-	private boolean backPressed;
+	private boolean backPressed;	//If the back button is pressed or not on the device.
 
-	private int dumpingWav = 0;
+	private int dumpingWav = 0;	
 
 	private TextView toneLenText;
 
-	private boolean toneHQ = false;
-	private String toneName = "Droidsound Ringtone";
+	private boolean toneHQ = false;						//HQ Box when making a ringtone.
+	private String toneName = "Droidsound Ringtone";	//Default name for a ringtone.
 	private boolean toneSet = true;
 
-	private int toneLength = 2;
+	private int toneLength = 2;		//Duration of the ringtone.
 
 	private TextView toneNameText;
 	private static final Class[] startTrackingSignature = {};
