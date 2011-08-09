@@ -589,8 +589,11 @@ public final class Player implements Runnable {
 				currentSong.subtuneTitle = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
 				currentSong.subtuneAuthor = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
 
-				if(currentSong.subTunes == -1) {
-					currentSong.subTunes = 0;
+				if(currentSong.subTunes == 0) {
+					currentSong.subTunes = 1;
+				} else {
+					if (currentSong.subTunes == -1) 
+						 currentSong.subTunes = 0;
 				}
 			}
 
