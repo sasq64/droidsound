@@ -3,7 +3,7 @@
 <string name="app_name">Droidsound</string>
 <string name="create_moddir_failed">Could not create MODS directory on sdcard!</string>
 <string name="sdcard_not_found">Could not access sdcard!</string>
-<string name="search_hint">Search title</string>
+<string name="search_hint">Search term</string>
 <string name="scan_db">Rescan database</string>
 <string name="about_droidsound">"By sasq64@gmail.com"</string>
 <string name="recreate_confirm">This will recreate the entire database. It may take a long time. Are you absolutely sure?</string>
@@ -35,7 +35,7 @@
 <string name="quit">Quit</string>
 <string name="database_cleared">Database cleared</string>
 <string name="clearing_database">Clearing database</string>
-<string name="database_busy">Database busy!</string>
+<string name="database_busy">Database is busy!</string>
 <string name="scanning">Scanning</string>
 <string name="title">Title</string>
 <string name="info">Info</string>
@@ -60,12 +60,14 @@
 
 <string name="zip_import_failed">Failed to import zip file.</string>
 <string name="zip_import_replace">Will not replace existing zip file. Remove it first.</string>
-<string name="ask_speech">You do not have speech installed - install it from Market now?</string>
-<string name="notification">Droidsound playing</string>
+<string name="ask_speech">You do not have speech installed - install it from the Market now?</string>
+<string name="notification">Droidsound Playing</string>
 
-<string name="sort_name">Sorting on Title</string>
-<string name="sort_author">Sorting on Composer</string>
-<string name="sort_date">Sorting on Date</string>
+<string name="name">Unknown</string>
+
+<string name="sort_name">Sorting by Title</string>
+<string name="sort_author">Sorting by Composer</string>
+<string name="sort_date">Sorting by Date</string>
 
 <string name="unpack_examples">Since this looks like the first time you are running Droidsound I have extracted some example
 music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.\n\nAlso check out \'Download\' in the Settings
