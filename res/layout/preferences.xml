@@ -2,7 +2,7 @@
         android:key="main_prefs">
     <CheckBoxPreference
             android:key="extensions"
-            android:title="Unknown extensions"
+            android:title="Unknown Extensions"
             android:defaultValue="false"
             android:summary="Index files with unknown extensions"
             />
@@ -23,7 +23,7 @@
 	<EditTextPreference
 			android:numeric="integer"
             android:key="default_length"
-            android:title="Default song length"
+            android:title="Default Song Length"
             android:dialogTitle="Length (in seconds)"
             android:defaultValue="900"
             android:summary="Length to use when real length is unknown."
@@ -51,7 +51,7 @@
 		>
 		<CheckBoxPreference
 	            android:key="MP3Plugin.simplestream"
-	            android:title="Simple MP3 streaming"
+	            android:title="Simple MP3 Streaming"
 	            android:defaultValue="false"
 	            android:summary="Use simple Android streaming. More limited but possibly more stable."
 	            />
@@ -211,7 +211,7 @@
                 android:entryValues="@array/indexing_opts"
 		/>
 		<Preference android:key="rescan_pref"
-		android:title="Rescan database"
+		android:title="Rescan Database"
 		android:summary="Scan sdcard for changes and update database."
 		/>
 		<!-- 
