@@ -247,7 +247,6 @@ final class PlayListAdapter extends BaseAdapter {
 		}
 
 		String upath = path.toUpperCase();
-
 		String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
 
 		boolean net = path != null && path.startsWith("http:/");
@@ -339,7 +338,6 @@ final class PlayListAdapter extends BaseAdapter {
 		return s;
 	}
 
-
 	@Override
 	public int getCount() {
 		if(mCursor == null) {
@@ -354,7 +352,7 @@ final class PlayListAdapter extends BaseAdapter {
 		String fileName = mCursor.getString(mFileIndex);
 		String path = pathName;
 		Log.d(TAG, "FILENAME " + fileName);
-		File f;
+		//File f; //unused variable. Left here incase it gets used eventually.
 		if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 			String p = mCursor.getString(mPathIndex);
 			if(p != null) {
