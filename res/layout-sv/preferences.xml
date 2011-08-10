@@ -15,7 +15,7 @@
             / -->
     <CheckBoxPreference
             android:key="speech"
-            android:title="Tal"
+            android:title="Låtarnas namn"
             android:defaultValue="false"
             android:summary="Använd 'text to speech' för uttal av låtarnas"
             />
@@ -233,8 +233,8 @@
    	
    	<Preference
    		android:key="download_local_link"
-   		android:title="Ladda ner lockalt"
-   		android:summary="Överblick av sidor du can ladda ner från, Behöver ej internet uppkoppling."
+   		android:title="Ladda ner lokalt"
+   		android:summary="Överblick av sidor du kan ladda ner från, Behöver ej internet uppkoppling."
    	/>
 
     <Preference android:key="help_pref"
