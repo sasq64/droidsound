@@ -39,7 +39,7 @@ public final class MyExceptionHandler implements Thread.UncaughtExceptionHandler
         oldHandler.uncaughtException(thread, ex);
 	}
 
-	private void writeToFile(String stacktrace, File f) {
+	private static void writeToFile(String stacktrace, File f) {
 		try {
 			BufferedWriter bos = new BufferedWriter(new FileWriter(f));
 

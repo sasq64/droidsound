@@ -2596,7 +2596,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		showDialog(textid);
 	}
 
-	private void delDir(File dd) {
+	private static void delDir(File dd) {
 
 		if(dd.isDirectory()) {
 			File[] files = dd.listFiles();

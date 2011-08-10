@@ -19,7 +19,7 @@ import com.ssb.droidsoundedit.R;
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.utils.Log;
 
-class PlayListAdapter extends BaseAdapter {
+final class PlayListAdapter extends BaseAdapter {
 	private static final String TAG = PlayListAdapter.class.getSimpleName();
 
 	private static final String [] monthNames = { "Jan", "Feb", "Mars", "Apr", "May", "June", "July", "Aug", "Sep", "Oct", "Nov", "Dev" };
@@ -236,7 +236,12 @@ class PlayListAdapter extends BaseAdapter {
 		}
 
 
-		String path = (mPathIndex >= 0) ? mCursor.getString(mPathIndex) : null;
+		String path;
+		if (mPathIndex >= 0)
+			path = mCursor.getString(mPathIndex);
+		else
+			path = null;
+		
 		if(path == null) {
 			path = pathName;
 		}
