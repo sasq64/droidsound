@@ -26,6 +26,6 @@
 		 <CheckBox  android:layout_width="wrap_content" android:layout_height="fill_parent" android:layout_weight="1" 
 		 android:id="@+id/tone_hq" android:text="HQ"  android:gravity="left|center_vertical" />
 		 </LinearLayout>
-		<CheckBox android:text="デフォルトとして設定します。" android:id="@+id/tone_set" android:layout_height="fill_parent" android:gravity="left|center_vertical" android:layout_width="wrap_content"></CheckBox>
+		<CheckBox android:text="デフォルトとして設定します。" android:id="@+id/tone_set" android:layout_height="fill_parent" android:gravity="left|center_vertical" android:layout_width="267dp"></CheckBox>
 	</LinearLayout>
 </ScrollView>
