@@ -6,8 +6,7 @@ import java.util.ResourceBundle;
 public final class Messages {
 	private static final String BUNDLE_NAME = "com.ssb.droidsound.plugins.messages"; //$NON-NLS-1$
 
-	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle
-			.getBundle(BUNDLE_NAME);
+	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle(BUNDLE_NAME);
 
 	private Messages() {
 	}
