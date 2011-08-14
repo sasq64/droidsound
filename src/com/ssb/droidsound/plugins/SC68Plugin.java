@@ -111,6 +111,10 @@ public final class SC68Plugin extends DroidSoundPlugin {
 		return info;
 	}
 
+	/*
+	 * Loads the generic info from the track such as:
+	 * year, date, composer, filetype, title, etc.
+	 */
 	@Override
 	public boolean loadInfo(String name, byte[] module, int size) {
 

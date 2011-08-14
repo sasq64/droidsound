@@ -1141,18 +1141,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		foundVersion = prefs.getInt("version", -1);
 		if(foundVersion == -1) {
 			File tempFile = new File(modsDir, "Examples.zip");
-			File tempfile1 = new File(modsDir, "ASMA34.zip");
-			if(!tempFile.exists() && !tempfile1.exists()) {
+			if(!tempFile.exists()) {
 				try {
 					
 					//Start unpacking the zip files
 					InputStream is = getAssets().open("Examples.zip");
-					InputStream si = getAssets().open("ASMA34.zip");
 					
 					if(is != null) {
 
 						FileOutputStream os = new FileOutputStream(tempFile);
-						FileOutputStream so = new FileOutputStream(tempfile1);
 
                         //byte[] buffer = new byte[1024 * 64] Simplified using a shift.
 						byte[] buffer = new byte[(1024 << 6)];
@@ -1161,12 +1158,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						while(rc >= 0) {
 							rc = is.read(buffer);
 							if(rc > 0) {
-								so.write(buffer, 0, rc);
 								os.write(buffer, 0, rc);
 							}
 						}
-						so.close();
-						si.close();
 						os.close();
 						is.close();
 					}
