@@ -483,6 +483,10 @@ public final class SongDatabase implements Runnable {
 	}
 
 
+	/*
+	 * ZIP files are scanned and the files inside that match with the 
+	 * file formats supported are added to the database index.
+	 */
 	private boolean scanZip(File zipFile) throws IOException {
 
 		Log.d(TAG, "Scanning %s", zipFile.getPath());
@@ -598,6 +602,10 @@ public final class SongDatabase implements Runnable {
 		return true;
 	}
 
+	/*
+	 * Scans for files that are not inside zip files, but correspond to the 
+	 * supported file types.
+	 */
 	private void scanFiles(File parentDir, boolean alwaysScan, long lastScan) {
 
 		String parent = parentDir.getPath();
@@ -1204,6 +1212,7 @@ public final class SongDatabase implements Runnable {
 		return c;
 	}
 
+	//Close database
 	public final void closeDB() {
 		if(rdb != null) {
 			rdb.close();
