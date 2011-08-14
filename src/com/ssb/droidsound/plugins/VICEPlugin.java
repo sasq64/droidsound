@@ -79,9 +79,9 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	private final Map<Integer,Integer> optMap = new HashMap<Integer, Integer>();
 
 	private Unzipper unzipper = null;
-
+	
 	private static File dataDir;
-
+	
     private static boolean initialized = false;
 	
 	public VICEPlugin() {
@@ -223,6 +223,6 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public String getVersion() {
-		return "VICE 2.3.9-r24328, reSID 1.0-pre1";
+		return "VICE 2.3.9-r24364, reSID 1.0-pre1";
 	}
 }

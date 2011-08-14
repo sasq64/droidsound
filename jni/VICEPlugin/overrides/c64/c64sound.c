@@ -156,9 +156,9 @@ void sid_sound_chip_init(void)
     sid_sound_chip_offset = sound_chip_register(&sid_sound_chip);
 }
 
-void cartridge_sound_chip_init(void)
+/*void cartridge_sound_chip_init(void)
 {
-}
+}*/
 
 void sound_machine_enable(int enable)
 {
