@@ -3,7 +3,7 @@
  * ($DC00).
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  Andreas Boose <viceteam@t-online.de>
  *
@@ -42,6 +42,7 @@
 #include "machine.h"
 #include "maincpu.h"
 #include "types.h"
+#include "../userport/userport_joystick.h"
 #include "vicii.h"
 
 #ifdef HAVE_RS232
@@ -263,9 +264,8 @@ static void store_sdr(cia_context_t *cia_context, BYTE byte)
         rsuser_tx_byte(byte);
     }
 #endif
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_HIT) {
-        extra_joystick_hit_store(byte);
-    }
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_sdr(byte);
 }
 
 void cia1_init(cia_context_t *cia_context)

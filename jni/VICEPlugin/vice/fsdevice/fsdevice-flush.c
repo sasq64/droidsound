@@ -9,7 +9,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -574,6 +574,7 @@ void fsdevice_flush(vdrive_t *vdrive, unsigned int secondary)
 
        cd
        cd_
+       cd:_
        /
        md
        rd
@@ -603,6 +604,8 @@ void fsdevice_flush(vdrive_t *vdrive, unsigned int secondary)
     } else if (!strcmp(cmd, "cd")) {
         er = fsdevice_flush_cd(vdrive, arg);
     } else if (!strcmp((char *)(fsdevice_dev[dnr].cmdbuf), "CD_")) {
+        er = fsdevice_flush_cdup(vdrive);
+    } else if (!strcmp((char *)(fsdevice_dev[dnr].cmdbuf), "CD:_")) {
         er = fsdevice_flush_cdup(vdrive);
     } else if (*cmd == '/') {
         er = fsdevice_flush_partition(vdrive, arg);
@@ -652,4 +655,3 @@ int fsdevice_flush_write_byte(vdrive_t *vdrive, BYTE data)
 
     return rc;
 }
-

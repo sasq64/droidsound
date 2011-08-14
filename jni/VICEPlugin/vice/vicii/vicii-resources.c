@@ -42,7 +42,7 @@
 #include "video.h"
 
 
-vicii_resources_t vicii_resources;
+vicii_resources_t vicii_resources = {};
 static video_chip_cap_t video_chip_cap;
 
 
@@ -126,4 +126,3 @@ int vicii_resources_init(void)
 
     return resources_register_int(resources_int);
 }
-

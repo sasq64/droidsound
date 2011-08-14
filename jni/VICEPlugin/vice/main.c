@@ -87,6 +87,8 @@ int main_program(int argc, char **argv)
     /* Check for -config and -console before initializing the user interface.
        -config  => use specified configuration file
        -console => no user interface
+
+       FIXME: remove cbm2 -model hack !
     */
     for (i = 0; i < argc; i++) {
 #ifndef __OS2__
@@ -98,6 +100,18 @@ int main_program(int argc, char **argv)
         if (strcmp(argv[i], "-config") == 0) {
             if ((i+1) < argc) {
                 vice_config_file = lib_stralloc(argv[++i]);
+            }
+        }  else if (strcmp(argv[i], "-model") == 0 &&
+                    (machine_class == VICE_MACHINE_CBM5x0 ||
+                     machine_class == VICE_MACHINE_CBM6x0)) {
+            if ((i+1) < argc) {
+                machine_class = (atoi(argv[++i]) == 510) ? VICE_MACHINE_CBM5x0 : VICE_MACHINE_CBM6x0;
+            }
+        }  else if (strcmp(argv[i], "-modelline") == 0 &&
+                    (machine_class == VICE_MACHINE_CBM5x0 ||
+                     machine_class == VICE_MACHINE_CBM6x0)) {
+            if ((i+1) < argc) {
+                machine_class = (atoi(argv[++i]) == 2) ? VICE_MACHINE_CBM5x0 : VICE_MACHINE_CBM6x0;
             }
         }
     }
@@ -240,4 +254,3 @@ int main_program(int argc, char **argv)
 
     return 0;
 }
-
