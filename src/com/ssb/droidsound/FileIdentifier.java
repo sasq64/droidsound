@@ -315,9 +315,9 @@ public final class FileIdentifier {
 
 		if(is == null) {
 			try {
-				//is = new FileInputStream(file); //Here in case the Buffered I/O causes problems
-				is = new BufferedInputStream(new FileInputStream(file));
+				is = new FileInputStream(file); //Here in case the Buffered I/O causes problems
 			} catch (FileNotFoundException e) {
+				Log.d(TAG, "Unexpected FileNotFoundException");
 				return null;
 			}
 		}

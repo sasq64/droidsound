@@ -1,7 +1,6 @@
 package com.ssb.droidsound.utils;
 
 import java.io.File;
-import com.ssb.droidsound.utils.Log;
 
 public final class ID3Tag {
 	

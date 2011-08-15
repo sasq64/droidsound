@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ssb.droidsound.utils.Log;
-
 public final class M3UParser implements PlaylistParser {
 	private static final String TAG = M3UParser.class.getSimpleName();
 	private final List<String> songs;

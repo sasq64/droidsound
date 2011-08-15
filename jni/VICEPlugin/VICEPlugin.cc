@@ -65,20 +65,20 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1setOption(J
 {
 	__android_log_print(ANDROID_LOG_VERBOSE, "VICEPlugin", "Setting %d to %d", what, val);
 	switch(what) {
-	case com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER:
+	case com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER:     //If SID Filter is enabled or not in the Settings.
 		resources_set_int("SidFilters", val);
 		break;
-	case com_ssb_droidsound_plugins_VICEPlugin_OPT_NTSC:
+	case com_ssb_droidsound_plugins_VICEPlugin_OPT_NTSC:	   //Related to the NTSC Video Mode in the Settings
 		videomode_is_ntsc = (val & 1) != 0;
 		videomode_is_forced = (val & 2) != 0;
 		break;
-	case com_ssb_droidsound_plugins_VICEPlugin_OPT_RESAMPLING:
+	case com_ssb_droidsound_plugins_VICEPlugin_OPT_RESAMPLING: //Controls Resampling Mode in the Settings
 		resources_set_int("SidResidSampling", val);
 		break;
-	case com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER_BIAS:
+	case com_ssb_droidsound_plugins_VICEPlugin_OPT_FILTER_BIAS: //Controls Filter Bias in the Settings
 		resources_set_int("SidResidFilterBias", val);
 		break;
-	case com_ssb_droidsound_plugins_VICEPlugin_OPT_SID_MODEL:
+	case com_ssb_droidsound_plugins_VICEPlugin_OPT_SID_MODEL:   //Controls SID Model in the Settings
 		sid = val & 1;
                 sid_is_forced = (val & 2) != 0;
 		break;

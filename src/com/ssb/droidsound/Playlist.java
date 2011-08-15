@@ -1,7 +1,6 @@
 package com.ssb.droidsound;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -448,8 +447,7 @@ private class MyCursor extends AbstractCursor implements EditableCursor {
 		Log.d(TAG, "Flushing " + plistFile.getPath());
 
 		try {
-			//FileWriter writer = new FileWriter(plistfile); //Left here just incase the buffered one below causes problems.
-			BufferedWriter writer = new BufferedWriter(new FileWriter(plistFile));
+			FileWriter writer = new FileWriter(plistFile); 
 
 			for(String line : lines) {
 				writer.write(line + "\n");

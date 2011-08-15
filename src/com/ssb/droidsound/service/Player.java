@@ -152,8 +152,7 @@ public final class Player implements Runnable {
 			file = new File(name);
 		}
 		
-		//FileOutputStream fo = new FileOutputStream(file); //Here just in case buffered I/O causes problems.
-		BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
+		FileOutputStream fo = new FileOutputStream(file);
 		byte[] buffer = new byte[16384];
 		
 		while(true) {

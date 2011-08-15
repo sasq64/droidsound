@@ -11,7 +11,6 @@
 
 package com.ssb.droidsound.plugins;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -192,8 +191,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 		String error;
 		try {
 			File file = File.createTempFile("tmp-XXXXX", "sid");
-			//FileOutputStream fo = new FileOutputStream(file); //This is not Buffered I/O, this is left here incase buffering causes problems.
-			BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
+			FileOutputStream fo = new FileOutputStream(file); 
 			fo.write(module);
 			fo.close();
 			error = N_loadFile(file.getAbsolutePath());

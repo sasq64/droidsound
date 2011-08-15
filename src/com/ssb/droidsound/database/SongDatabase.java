@@ -895,13 +895,16 @@ public final class SongDatabase implements Runnable {
 							}
 						}
 					} catch (ZipException e) {
+						Log.d(TAG, "Broken Zip");
 					} catch (IOException e) {
+						Log.d(TAG, "IO Error");
 					}
 				} else {
 					try {
 						is = new FileInputStream(dump);
 						size = (int) dump.length();
 					} catch (FileNotFoundException e) {
+						Log.d(TAG, "Unexpected FileNotFoundException");
 					}
 				}
 

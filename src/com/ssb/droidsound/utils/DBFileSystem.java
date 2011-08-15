@@ -8,7 +8,6 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 
 import com.ssb.droidsound.database.SongDatabase;
-import com.ssb.droidsound.utils.Log;
 
 public final class DBFileSystem {
 	private static final String TAG = DBFileSystem.class.getSimpleName();
