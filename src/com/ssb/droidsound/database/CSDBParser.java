@@ -90,6 +90,8 @@ public final class CSDBParser implements DataSource {
 			int count = 0;
 			int total = line.length()+1;
 			//int fileSize = (int) is.available();
+			ContentValues values = new ContentValues();
+			ContentValues values2 = new ContentValues();
 			while(line != null) {
 
 				count++;
@@ -113,7 +115,6 @@ public final class CSDBParser implements DataSource {
 					place = 2;
 				} else {
 					String[] args = line.split("\t");
-					ContentValues values = new ContentValues();
 					if(place == 0) {
 						// (id, name, gid, type, y, eid, compo, place, ','.join(fnames))						
 
@@ -141,7 +142,6 @@ public final class CSDBParser implements DataSource {
 
 						String [] sids = args[8].split(",");
 						if(sids.length > 0) {
-							ContentValues values2 = new ContentValues();
 							for(String s : sids) {
 								values2.put("RELEASEID", Integer.parseInt(args[0]));
 								File f = new File(s);

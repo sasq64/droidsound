@@ -9,7 +9,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class StreamingHttpConnection {
+public class StreamingHttpConnection {
 	private static final String TAG = StreamingHttpConnection.class.getSimpleName();
 	private final Socket httpSocket;
 	private String requestMethod;

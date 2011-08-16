@@ -154,9 +154,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			String httpName = httpNames.get(httpNo);
 			StreamingHttpConnection httpConn;
 			int response;
+			
 
 			while(true) {
-
+				
 				URL url = new URL(httpName);
 				Log.d(TAG, "Opening URL " + httpName);
 
@@ -223,6 +224,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
                 frameHeader = new byte[4];
                 //byte[] buffer = new byte[(128*1024)]; simplified multiplication below by already calculating the value
+                byte[] buffer = new byte[131072];
 
                 //tagBuffer = new byte[32768];
 				tagFilled = 0;
@@ -253,7 +255,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					usec = -1000;
 				}
 
-                byte[] buffer = new byte[131072];
                 boolean firstRead = true;
                 while (!doQuit) {
 					int rem = buffer.length;
