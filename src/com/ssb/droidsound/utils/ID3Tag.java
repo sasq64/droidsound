@@ -1,3 +1,12 @@
+/////////////////////////////////////////////////
+/// This class file is responsible for the 
+/// interpreting of ID3 Tags found within
+/// MP3 files.
+///
+/// Information and official doumentation on ID3
+/// tags can be found here: http://www.id3.org/
+/////////////////////////////////////////////////
+
 package com.ssb.droidsound.utils;
 
 import java.io.File;
