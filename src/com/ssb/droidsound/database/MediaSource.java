@@ -13,7 +13,7 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.CursorTransform;
 import com.ssb.droidsound.utils.DBFileSystem;
 
-public class MediaSource implements DataSource  {
+public final class MediaSource implements DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();
 	private static final String[] albumsFields = { MediaStore.Audio.Albums._ID,
 			  MediaStore.Audio.Albums.ALBUM,

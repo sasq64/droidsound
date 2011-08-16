@@ -237,10 +237,11 @@ final class PlayListAdapter extends BaseAdapter {
 
 
 		String path;
-		if (mPathIndex >= 0)
+		if (mPathIndex >= 0) {
 			path = mCursor.getString(mPathIndex);
-		else
+		} else {
 			path = null;
+		}
 		
 		if(path == null) {
 			path = pathName;

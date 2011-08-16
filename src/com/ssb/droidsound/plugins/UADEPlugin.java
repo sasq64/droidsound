@@ -1,6 +1,9 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -213,7 +216,8 @@ public final class UADEPlugin extends DroidSoundPlugin {
 			else {
 				file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
 			}
-			FileOutputStream fo = new FileOutputStream(file);
+			//FileOutputStream fo = new FileOutputStream(file); //Buffered I/O below
+			BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 			fo.write(module);
 			fo.close();
 			boolean rc = load(file);

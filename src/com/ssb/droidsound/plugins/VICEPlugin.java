@@ -11,6 +11,7 @@
 
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -23,6 +24,8 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
 public final class VICEPlugin extends DroidSoundPlugin {
+	
+
 	private static final String TAG = VICEPlugin.class.getSimpleName();
 
 	private static boolean libraryLoaded = false;
@@ -91,7 +94,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 				dataDir.mkdir();
 			}
 			
-			File viceDir = new File(dataDir, "VICE");
+			final File viceDir = new File(dataDir, "VICE");
 			synchronized (lock) {
 				if(!viceDir.exists()) {
 					unzipper = Unzipper.getInstance();
@@ -107,7 +110,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	public void setOption(String opt, Object val) {
 		int k, v;
 		if ("active".equals(opt)) {
-            boolean active = (Boolean) val;
+            final boolean active = (Boolean) val;
 			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (active ? "ACTIVE" : "NOT ACTIVE"));
 			return;
 		} else if ("filter".equals(opt)) {
@@ -188,10 +191,11 @@ public final class VICEPlugin extends DroidSoundPlugin {
 			libraryLoaded = true;
 		}
 
-		String error;
+		final String error;
 		try {
-			File file = File.createTempFile("tmp-XXXXX", "sid");
-			FileOutputStream fo = new FileOutputStream(file); 
+			final File file = File.createTempFile("tmp-XXXXX", "sid");
+			//FileOutputStream fo = new FileOutputStream(file); //Buffered I/O below
+			final BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 			fo.write(module);
 			fo.close();
 			error = N_loadFile(file.getAbsolutePath());

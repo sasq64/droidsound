@@ -74,7 +74,7 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 import com.ssb.droidsoundedit.R;
 
-public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
+public final class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
 
 	//public static final String DROIDSOUND_VERSION = "1.1beta3";

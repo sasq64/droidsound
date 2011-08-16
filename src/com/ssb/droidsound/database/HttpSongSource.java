@@ -26,9 +26,9 @@ import android.database.MatrixCursor;
 import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.utils.Log;
 
-class HttpSongSource {
+final class HttpSongSource {
 	private static final String TAG = HttpSongSource.class.getSimpleName();
-	private static class CacheEntry {
+	private static final class CacheEntry {
 		public final MatrixCursor cursor;
 		public final int status;
 		private CacheEntry(MatrixCursor cr, int st) {
@@ -68,7 +68,7 @@ class HttpSongSource {
 
 		int a = 0;
 		int start = 0;
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 
 		while(a >= 0) {
 			a = s.indexOf('&', start);
@@ -98,7 +98,7 @@ class HttpSongSource {
 		return sb.toString();
 	}
 
-	private static class HTTPWorker implements Runnable {
+	private static final class HTTPWorker implements Runnable {
 
 		private final List<String> dirList = new ArrayList<String>();
 		private final Context context;
@@ -152,7 +152,7 @@ class HttpSongSource {
 		}
 
 		private void getDirFromHTTP(String pathName) {
-			MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
+			final MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
 			String msg = null;
 			int status = 0;
 			try {

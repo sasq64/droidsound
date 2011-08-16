@@ -15,10 +15,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class MediaStreamer implements Runnable {
+public final class MediaStreamer implements Runnable {
 	private static final String TAG = MediaStreamer.class.getSimpleName();
 
-	private static class MetaString {
+	private static final class MetaString {
 		private MetaString(int m, String t) {
 			msec = m;
 			text = t;

@@ -152,7 +152,8 @@ public final class Player implements Runnable {
 			file = new File(name);
 		}
 		
-		FileOutputStream fo = new FileOutputStream(file);
+		//FileOutputStream fo = new FileOutputStream(file); Buffered I/O below
+		BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 		byte[] buffer = new byte[16384];
 		
 		while(true) {
@@ -236,9 +237,9 @@ public final class Player implements Runnable {
 		bb.putShort((short) numChannels);
 		bb.putInt(freq);
         //bb.putInt(freq * numChannels * 16/8); simplified using a shift.
-		bb.putInt((freq * numChannels << 4) /8);
+		bb.putInt((freq * numChannels << 4) >> 3);
         //bb.putShort(numChannels * 16/8); Simplified using a shift.
-		bb.putShort((short) ((numChannels << 4) /8));
+		bb.putShort((short) ((numChannels << 4) >> 3));
 		bb.putShort((short) 16);
 
 		bb.put(new byte[] { 'd', 'a', 't', 'a' });
@@ -259,7 +260,7 @@ public final class Player implements Runnable {
 			if(len < 0) {
 				wavSamples = sampleCount / divider;
                 //dataSize = wavSamples * numChannels * 16/8; Simplified using a shift.
-				dataSize = (wavSamples * numChannels << 4) /8;
+				dataSize = (wavSamples * numChannels << 4) >> 3;
 				Log.d(TAG, "Early end, new datasize is %d", dataSize);
 
 				bb.putInt(4, dataSize + 36);

@@ -1,5 +1,6 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -122,7 +123,8 @@ public abstract class DroidSoundPlugin {
 				streamSize = (int) f.length();
 				Log.d(TAG, "Bytes written: " + streamSize);
 				byte [] songBuffer = new byte[streamSize];
-				FileInputStream fs = new FileInputStream(f);
+				//FileInputStream fs = new FileInputStream(f); //Buffered I/O below
+				BufferedInputStream fs = new BufferedInputStream(new FileInputStream(f));
 				fs.read(songBuffer);
 				fs.close();
 				// f.delete();
@@ -139,7 +141,7 @@ public abstract class DroidSoundPlugin {
 		return false;
 	}
 
-	public int getStreamSize() { return streamSize; }
+	public final int getStreamSize() { return streamSize; }
 	public final boolean load(String name, InputStream is, int size) throws IOException {
 		Log.d(TAG, "PLUGIN LOAD STREAM");
 		boolean rc = false;
@@ -193,7 +195,8 @@ public abstract class DroidSoundPlugin {
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}
-		FileInputStream fs = new FileInputStream(file);
+		//FileInputStream fs = new FileInputStream(file); Buffered I/O below
+		BufferedInputStream fs = new BufferedInputStream(new FileInputStream(file));
 		fs.read(songBuffer);
 		calcMD5(songBuffer);
 		return load(file.getName(), songBuffer, songBuffer.length);
@@ -207,7 +210,8 @@ public abstract class DroidSoundPlugin {
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}
-		FileInputStream fs = new FileInputStream(file);
+		//FileInputStream fs = new FileInputStream(file); Buffered I/O below
+		BufferedInputStream fs = new BufferedInputStream(new FileInputStream(file));
 		fs.read(songBuffer);
 		return loadInfo(file.getName(), songBuffer, songBuffer.length);
 	}

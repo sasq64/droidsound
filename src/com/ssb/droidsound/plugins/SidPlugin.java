@@ -1,5 +1,6 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
