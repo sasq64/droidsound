@@ -145,6 +145,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 		//localMPConnection = null;
 
+		frameHeader = new byte[4];
+		metaArray = new byte[4092];
+		byte[] buffer = new byte[131072];
+	
 		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
 
 			parseMp3 = false;
@@ -222,15 +226,13 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					localMPConnection.accept();
 				}
 
-                frameHeader = new byte[4];
+                
                 //byte[] buffer = new byte[(128*1024)]; simplified multiplication below by already calculating the value
-                byte[] buffer = new byte[131072];
 
                 //tagBuffer = new byte[32768];
 				tagFilled = 0;
 				tagSize = 0;
 
-				metaArray = new byte[4092];
 				metaPos = 0;
 				metaSize = -1;
 				metaCounter = 0;
