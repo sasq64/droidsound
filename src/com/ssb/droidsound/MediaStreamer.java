@@ -227,7 +227,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				}
 
                 
-                //byte[] buffer = new byte[(128*1024)]; simplified multiplication below by already calculating the value
+                //byte[] buffer = new byte[(128*1024)]; simplified multiplication above by already calculating the value
 
                 //tagBuffer = new byte[32768];
 				tagFilled = 0;
