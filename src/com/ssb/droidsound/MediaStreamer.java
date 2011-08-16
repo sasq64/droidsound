@@ -397,7 +397,9 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				return;
 			}
 		}
-		if(nextFramePos < 0) {
+		if(nextFramePos < 0) {		
+			tagBuffer = new byte [tagSize];
+			
 			for(int i=0; i<size-3; i++) {
 				if(buffer[i] == -1 && (buffer[i+1] & 0xfe) == 0xfa  && (buffer[i+2] & 0xf0) != 0xf0) {
 					Log.d(TAG, "Synced at %d", i);
@@ -410,7 +412,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 					if(len > 0) {
 						tagSize = len;
 
-						tagBuffer = new byte [tagSize];
 
 						len = size-i;
 						if(tagSize < len) {
