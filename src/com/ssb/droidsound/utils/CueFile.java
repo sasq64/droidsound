@@ -1,3 +1,11 @@
+/********************************************//************
+ * This class file is responsible for the reading of .cue 
+ * sheet files for metadata.
+ * 
+ * More generic info on cue sheets can be found here:
+ * http://wiki.hydrogenaudio.org/index.php?title=Cue_sheet
+ ***********************************************************/
+
 package com.ssb.droidsound.utils;
 
 import java.io.BufferedReader;
