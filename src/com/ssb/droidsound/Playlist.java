@@ -371,13 +371,14 @@ private final class MyCursor extends AbstractCursor implements EditableCursor {
 
 	public synchronized void add(Cursor c, int subtune, String tuneTitle) {
 
+		String filename = c.getString(c.getColumnIndex("FILENAME")); //Gets File's name
+		String path = c.getString(c.getColumnIndex("PATH"));		 //Gets File Path
+		File f = new File(path, filename);
 		while(true) {
-			String title = c.getString(c.getColumnIndex("TITLE"));
-			String composer = c.getString(c.getColumnIndex("COMPOSER"));
-			String filename = c.getString(c.getColumnIndex("FILENAME"));
-			String path = c.getString(c.getColumnIndex("PATH"));
+			
+			String title = c.getString(c.getColumnIndex("TITLE")); 		 //Gets the title of the track
+			String composer = c.getString(c.getColumnIndex("COMPOSER")); //Get's the name of the composer
 
-			File f = new File(path, filename);
 			String line = f.getPath();
 			if(subtune >= 0) {
 				if(tuneTitle != null) {
@@ -388,7 +389,6 @@ private final class MyCursor extends AbstractCursor implements EditableCursor {
 				}
 
 				line += (";" + subtune);
-
 			}
 
 			if(title != null) {
