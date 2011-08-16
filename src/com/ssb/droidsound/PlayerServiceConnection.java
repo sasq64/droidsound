@@ -98,8 +98,10 @@ public final class PlayerServiceConnection implements ServiceConnection {
 		Intent i = new Intent(activity, PlayerService.class);
 		bound = true;
 		activity.startService(i);
-		activity.bindService(i, this, Context.BIND_AUTO_CREATE);        		
-	}public void unbindService(Activity activity) {
+		activity.bindService(i, this, Context.BIND_AUTO_CREATE);    
+	}
+	
+	public void unbindService(Activity activity) {
 		Log.d(TAG, "Unbinding");
 		callback = null;
 		bound = false;

@@ -62,12 +62,12 @@ public final class GMEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(File file) throws IOException {
+	public boolean load(File file) {
 		currentSong = N_loadFile(file.getPath());
 		return (currentSong != 0);
 	}
 
-	public boolean loadInfo(File file) throws IOException {
+	public boolean loadInfo(File file) {
 		currentSong = N_loadFile(file.getPath());
 		return (currentSong != 0);
 	}

@@ -160,12 +160,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			int response;
 			
 			URL url = new URL(httpName);
+			httpConn = new StreamingHttpConnection(url);
 	
 			while(true) {
-				
 				Log.d(TAG, "Opening URL " + httpName);
-
-				httpConn = new StreamingHttpConnection(url);
 				/*URLConnection conn = url.openConnection();
 				if (!(conn instanceof HttpURLConnection))
 					throw new IOException("Not a HTTP connection");

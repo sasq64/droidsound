@@ -136,13 +136,13 @@ static final class MyZipEntry extends ZipEntry {
 		}
 
 		@Override
-		public int available() throws IOException {
+		public int available() {
 			//Log.d(TAG, "Available: %d bytes", total);
 			return total;
 		}
 		
 		@Override
-		public int read(byte[] b, int offset, int length) throws IOException {
+		public int read(byte[] b, int offset, int length) {
 						
 			//Log.d(TAG, "Reading %d bytes", length);
 			int rc = zipFile.read(fd, b, offset, length);

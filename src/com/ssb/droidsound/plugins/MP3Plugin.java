@@ -387,7 +387,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 		return true;
 	}
 
-	public boolean loadInfo(File file) throws IOException {
+	public boolean loadInfo(File file) {
 
 		Log.d(TAG, "LoadInfo %s", file.getPath());
 		type = "MP3";
