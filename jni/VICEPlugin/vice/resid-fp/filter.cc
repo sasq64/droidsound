@@ -30,17 +30,11 @@ extern float expf(float val);
 #endif
  
 #ifndef HAVE_LOGF
-float logf(float val)
-{
-    return (float)log((double)val);
-}
+#define logf(val) (float)log((double)val)
 #endif
 
 #ifndef HAVE_EXPF
-float expf(float val)
-{
-    return (float)exp((double)val);
-}
+#define expf(val) (float)exp((double)val)
 #endif
 
 // ----------------------------------------------------------------------------
@@ -51,7 +45,7 @@ FilterFP::FilterFP()
       model(MOS6581FP),
       clock_frequency(1000000),
       attenuation(0.5f), distortion_nonlinearity(3.3e6f),
-    type3_baseresistance(129501), type3_offset(284015710), type3_steepness(1.0065), type3_minimumfetresistance(18741),
+    type3_baseresistance(129501), type3_offset(284015710.f), type3_steepness(1.0065f), type3_minimumfetresistance(18741),
       type4_k(20), type4_b(6.55f),
       nonlinearity(0.96f)
 {

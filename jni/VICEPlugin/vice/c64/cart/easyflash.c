@@ -35,8 +35,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -50,6 +50,10 @@
 #include "resources.h"
 #include "snapshot.h"
 #include "translate.h"
+
+#define EASYFLASH_N_BANK_BITS 6
+#define EASYFLASH_N_BANKS     (1 << (EASYFLASH_N_BANK_BITS))
+#define EASYFLASH_BANK_MASK   ((EASYFLASH_N_BANKS) - 1)
 
 /* the 29F040B statemachine */
 static flash040_context_t *easyflash_state_low = NULL;
@@ -98,14 +102,14 @@ static const char STRING_EASYFLASH[] = CARTRIDGE_NAME_EASYFLASH;
 
 /* ---------------------------------------------------------------------*/
 
-static void REGPARM2 easyflash_io1_store(WORD addr, BYTE value)
+static void easyflash_io1_store(WORD addr, BYTE value)
 {
     BYTE mem_mode;
 
     switch (addr & 2) {
         case 0:
             /* bank register */
-            easyflash_register_00 = value & 0x3f; /* we only remember 6 bits */
+            easyflash_register_00 = (BYTE)(value & EASYFLASH_BANK_MASK);
             break;
         default:
             /* mode register */
@@ -120,24 +124,24 @@ static void REGPARM2 easyflash_io1_store(WORD addr, BYTE value)
     cart_port_config_changed_slotmain();
 }
 
-static BYTE REGPARM1 easyflash_io2_read(WORD addr)
+static BYTE easyflash_io2_read(WORD addr)
 {
     return easyflash_ram[addr & 0xff];
 }
 
-static void REGPARM2 easyflash_io2_store(WORD addr, BYTE value)
+static void easyflash_io2_store(WORD addr, BYTE value)
 {
     easyflash_ram[addr & 0xff] = value;
 }
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE REGPARM1 easyflash_io1_peek(WORD addr)
+static BYTE easyflash_io1_peek(WORD addr)
 {
     return (addr & 2) ? easyflash_register_02 : easyflash_register_00;
 }
 
-static int REGPARM1 easyflash_io1_dump(void)
+static int easyflash_io1_dump(void)
 {
     mon_out("Mode %i, LED %s, jumper %s\n",
         easyflash_memconfig[(easyflash_jumper << 3) | (easyflash_register_02 & 0x07)],
@@ -158,7 +162,9 @@ static io_source_t easyflash_io1_device = {
     NULL,
     easyflash_io1_peek,
     easyflash_io1_dump,
-    CARTRIDGE_EASYFLASH
+    CARTRIDGE_EASYFLASH,
+    0,
+    0
 };
 
 static io_source_t easyflash_io2_device = {
@@ -171,7 +177,9 @@ static io_source_t easyflash_io2_device = {
     easyflash_io2_read,
     easyflash_io2_read, /* same implementation */
     NULL, /* nothing to dump */
-    CARTRIDGE_EASYFLASH
+    CARTRIDGE_EASYFLASH,
+    0,
+    0
 };
 
 static io_source_list_t *easyflash_io1_list_item = NULL;
@@ -183,7 +191,7 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
-static int easyflash_check_empty(BYTE *data)
+static int easyflash_check_empty(const BYTE *data)
 {
     int i;
 
@@ -207,6 +215,21 @@ static int set_easyflash_crt_write(int val, void *param)
     return 0;
 }
 
+static int easyflash_write_chip_if_not_empty(FILE* fd, const BYTE* chipheader, const BYTE* data)
+{
+    if (easyflash_check_empty(data) == 0) {
+
+        if (fwrite(chipheader, 1, 0x10, fd) != 0x10) {
+            return -1;
+        }
+
+        if (fwrite(data, 1, 0x2000, fd) != 0x2000) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 /* ---------------------------------------------------------------------*/
 
 static const resource_int_t resources_int[] = {
@@ -221,6 +244,7 @@ int easyflash_resources_init(void)
 {
     return resources_register_int(resources_int);
 }
+
 void easyflash_resources_shutdown(void)
 {
 }
@@ -259,22 +283,22 @@ int easyflash_cmdline_options_init(void)
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 easyflash_roml_read(WORD addr)
+BYTE easyflash_roml_read(WORD addr)
 {
     return flash040core_read(easyflash_state_low, (easyflash_register_00 * 0x2000) + (addr & 0x1fff));
 }
 
-void REGPARM2 easyflash_roml_store(WORD addr, BYTE value)
+void easyflash_roml_store(WORD addr, BYTE value)
 {
     flash040core_store(easyflash_state_low, (easyflash_register_00 * 0x2000) + (addr & 0x1fff), value);
 }
 
-BYTE REGPARM1 easyflash_romh_read(WORD addr)
+BYTE easyflash_romh_read(WORD addr)
 {
     return flash040core_read(easyflash_state_high, (easyflash_register_00 * 0x2000) + (addr & 0x1fff));
 }
 
-void REGPARM2 easyflash_romh_store(WORD addr, BYTE value)
+void easyflash_romh_store(WORD addr, BYTE value)
 {
     flash040core_store(easyflash_state_high, (easyflash_register_00 * 0x2000) + (addr & 0x1fff), value);
 }
@@ -307,8 +331,8 @@ static int easyflash_common_attach(const char *filename)
         return -1;
     }
 
-    easyflash_io1_list_item = c64io_register(&easyflash_io1_device);
-    easyflash_io2_list_item = c64io_register(&easyflash_io2_device);
+    easyflash_io1_list_item = io_source_register(&easyflash_io1_device);
+    easyflash_io2_list_item = io_source_register(&easyflash_io2_device);
 
     easyflash_filename = lib_stralloc(filename);
 
@@ -337,7 +361,7 @@ int easyflash_bin_attach(const char *filename, BYTE *rawcart)
     low = rawcart;
     high = rawcart + 0x80000;
 
-    for (i = 0; i < 64; i++, low += 0x2000, high += 0x2000) {
+    for (i = 0; i < EASYFLASH_N_BANKS; i++, low += 0x2000, high += 0x2000) {
         if ((fread(low, 0x2000, 1, fd) < 1) || (fread(high, 0x2000, 1, fd) < 1)) {
             fclose(fd);
             return -1;
@@ -366,14 +390,14 @@ int easyflash_crt_attach(FILE *fd, BYTE *rawcart, BYTE *header, const char *file
         length = (chipheader[0xe] << 8) | chipheader[0xf];
 
         if (length == 0x2000) {
-            if (bank >= 64 || !(offset == 0x8000 || offset == 0xa000 || offset == 0xe000)) {
+            if (bank >= EASYFLASH_N_BANKS || !(offset == 0x8000 || offset == 0xa000 || offset == 0xe000)) {
                 return -1;
             }
             if (fread(&rawcart[(bank << 13) | (offset == 0x8000 ? 0<<19 : 1<<19)], 0x2000, 1, fd) < 1) {
                 return -1;
             }
         } else if (length == 0x4000) {
-            if (bank >= 64 || offset != 0x8000) {
+            if (bank >= EASYFLASH_N_BANKS || offset != 0x8000) {
                 return -1;
             }
             if (fread(&rawcart[(bank << 13) | (0<<19)], 0x2000, 1, fd) < 1) {
@@ -402,8 +426,8 @@ void easyflash_detach(void)
     lib_free(easyflash_state_high);
     lib_free(easyflash_filename);
     easyflash_filename = NULL;
-    c64io_unregister(easyflash_io1_list_item);
-    c64io_unregister(easyflash_io2_list_item);
+    io_source_unregister(easyflash_io1_list_item);
+    io_source_unregister(easyflash_io2_list_item);
     easyflash_io1_list_item = NULL;
     easyflash_io2_list_item = NULL;
     c64export_remove(&export_res);
@@ -411,12 +435,15 @@ void easyflash_detach(void)
 
 int easyflash_flush_image(void)
 {
-    if (easyflash_filetype == CARTRIDGE_FILETYPE_BIN) {
-        return easyflash_bin_save(easyflash_filename);
-    } else if (easyflash_filetype == CARTRIDGE_FILETYPE_CRT) {
-        return easyflash_crt_save(easyflash_filename);
+    if (easyflash_filename != NULL) {
+        if (easyflash_filetype == CARTRIDGE_FILETYPE_BIN) {
+            return easyflash_bin_save(easyflash_filename);
+        } else if (easyflash_filetype == CARTRIDGE_FILETYPE_CRT) {
+            return easyflash_crt_save(easyflash_filename);
+        }
+        return -1;
     }
-    return -1;
+    return -2;
 }
 
 int easyflash_bin_save(const char *filename)
@@ -439,7 +466,7 @@ int easyflash_bin_save(const char *filename)
     low = easyflash_state_low->flash_data;
     high = easyflash_state_high->flash_data;
 
-    for (i = 0; i < 64; i++, low += 0x2000, high += 0x2000) {
+    for (i = 0; i < EASYFLASH_N_BANKS; i++, low += 0x2000, high += 0x2000) {
         if ((fwrite(low, 1, 0x2000, fd) != 0x2000) || (fwrite(high, 1, 0x2000, fd) != 0x2000)) {
             fclose(fd);
             return -1;
@@ -455,7 +482,7 @@ int easyflash_crt_save(const char *filename)
     FILE *fd;
     BYTE header[0x40], chipheader[0x10];
     BYTE *data;
-    int i;
+    int bank;
 
     if (filename == NULL) {
         return -1;
@@ -488,26 +515,21 @@ int easyflash_crt_save(const char *filename)
     chipheader[0x09] = 0x02;
     chipheader[0x0e] = 0x20;
 
-    for (i = 0; i < 128; i++) {
-        if (i > 63) {
-            data = easyflash_state_high->flash_data + ((i - 64) * 0x2000);
-        } else {
-            data = easyflash_state_low->flash_data + (i * 0x2000);
+    for (bank = 0; bank < EASYFLASH_N_BANKS; bank++) {
+        chipheader[0x0b] = bank;
+
+        data = easyflash_state_low->flash_data + bank * 0x2000;
+        chipheader[0x0c] = 0x80;
+        if (easyflash_write_chip_if_not_empty(fd, chipheader, data) != 0) {
+            fclose(fd);
+            return -1;
         }
 
-        if (easyflash_check_empty(data) == 0) {
-            chipheader[0x0b] = (i > 63) ? i - 64 : i;
-            chipheader[0x0c] = (i > 63) ? 0xa0 : 0x80;
-
-            if (fwrite(chipheader, 1, 0x10, fd) != 0x10) {
-                fclose(fd);
-                return -1;
-            }
-
-            if (fwrite(data, 1, 0x2000, fd) != 0x2000) {
-                fclose(fd);
-                return -1;
-            }
+        data = easyflash_state_high->flash_data + bank * 0x2000;
+        chipheader[0x0c] = 0xa0;
+        if (easyflash_write_chip_if_not_empty(fd, chipheader, data) != 0) {
+            fclose(fd);
+            return -1;
         }
     }
     fclose(fd);

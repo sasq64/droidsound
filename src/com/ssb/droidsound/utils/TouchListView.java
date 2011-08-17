@@ -24,7 +24,6 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,9 +34,9 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 
-import com.ssb.droidsound.R;
+import com.ssb.droidsoundedit.R;
 
-public class TouchListView extends ListView {
+final class TouchListView extends ListView {
 	private ImageView mDragView;
 	private WindowManager mWindowManager;
 	private WindowManager.LayoutParams mWindowParams;
@@ -52,11 +51,11 @@ public class TouchListView extends ListView {
 	private int mLowerBound;
 	private int mHeight;
 	private GestureDetector mGestureDetector;
-	public static final int FLING = 0;
-	public static final int SLIDE_RIGHT = 1;
-	public static final int SLIDE_LEFT = 2;
+	private static final int FLING = 0;
+	private static final int SLIDE_RIGHT = 1;
+	private static final int SLIDE_LEFT = 2;
 	private int mRemoveMode = -1;
-	private Rect mTempRect = new Rect();
+	private final Rect mTempRect = new Rect();
 	private Bitmap mDragBitmap;
 	private final int mTouchSlop;
 	private int mItemHeightNormal = -1;
@@ -64,11 +63,11 @@ public class TouchListView extends ListView {
 	private int grabberId = -1;
 	private int dragndropBackgroundColor = 0x00000000;
 
-	public TouchListView(Context context, AttributeSet attrs) {
+	private TouchListView(Context context, AttributeSet attrs) {
 		this(context, attrs, 0);
 	}
 
-	public TouchListView(Context context, AttributeSet attrs, int defStyle) {
+	private TouchListView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 
 		mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
@@ -90,14 +89,15 @@ public class TouchListView extends ListView {
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
 		if(mRemoveListener != null && mGestureDetector == null) {
 			if(mRemoveMode == FLING) {
-				mGestureDetector = new GestureDetector(getContext(), new SimpleOnGestureListener() {
+				mGestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
 					@Override
 					public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
 						if(mDragView != null) {
 							if(velocityX > 1000) {
 								Rect r = mTempRect;
 								mDragView.getDrawingRect(r);
-								if(e2.getX() > r.right * 2 / 3) {
+                                //if e2.getX() > r.right * 2 / 3{ Simplified by using a shift
+								if(e2.getX() > (r.right << 1) / 3) {
 									// fast fling right with release near the right edge of the screen
 									stopDragging();
 									mRemoveListener.remove(mFirstDragPos);
@@ -144,7 +144,8 @@ public class TouchListView extends ListView {
 					mHeight = getHeight();
 					int touchSlop = mTouchSlop;
 					mUpperBound = Math.min(y - touchSlop, mHeight / 3);
-					mLowerBound = Math.max(y + touchSlop, mHeight * 2 / 3);
+                    //mLowerBound = Math.max(y + touchSlop, mHeight * 2 / 3; Simplified by using a shift.
+					mLowerBound = Math.max(y + touchSlop, (mHeight << 1) / 3);
 					return false;
 				}
 				mDragView = null;
@@ -159,9 +160,9 @@ public class TouchListView extends ListView {
 	 */
 	private int myPointToPosition(int x, int y) {
 		Rect frame = mTempRect;
-		final int count = getChildCount();
+		int count = getChildCount();
 		for(int i = count - 1; i >= 0; i--) {
-			final View child = getChildAt(i);
+			View child = getChildAt(i);
 			child.getHitRect(frame);
 			if(frame.contains(x, y)) {
 				return getFirstVisiblePosition() + i;
@@ -186,9 +187,11 @@ public class TouchListView extends ListView {
 	private void adjustScrollBounds(int y) {
 		if(y >= mHeight / 3) {
 			mUpperBound = mHeight / 3;
-		}
-		if(y <= mHeight * 2 / 3) {
-			mLowerBound = mHeight * 2 / 3;
+        }
+        //if(y <= mHeight * 2 / 3{ //Simplified using a shift.
+		if(y <= (mHeight << 1) / 3) {
+            //mLowerBound = mHeight * 2 / 3; Simplified using a shift.
+			mLowerBound = (mHeight << 1) / 3;
 		}
 	}
 
@@ -277,12 +280,14 @@ public class TouchListView extends ListView {
 				mDragView.getDrawingRect(r);
 				stopDragging();
 
-				if(mRemoveMode == SLIDE_RIGHT && ev.getX() > r.left + (r.width() * 3 / 4)) {
+				//if(mRemoveMode == SLIDE_RIGHT && ev.getX() > r.left + (r.width() * 3 / 4)) { //right shift is more efficient.
+				if(mRemoveMode == SLIDE_RIGHT && ev.getX() > r.left + (r.width() * 3 >> 2)) {
 					if(mRemoveListener != null) {
 						mRemoveListener.remove(mFirstDragPos);
 					}
 					unExpandViews(true);
-				} else if(mRemoveMode == SLIDE_LEFT && ev.getX() < r.left + (r.width() / 4)) {
+				//} else if(mRemoveMode == SLIDE_LEFT && ev.getX() < r.left + (r.width() / 4)) { //right shift is more efficient.
+				} else if(mRemoveMode == SLIDE_LEFT && ev.getX() < r.left + (r.width() >> 2)) {
 					if(mRemoveListener != null) {
 						mRemoveListener.remove(mFirstDragPos);
 					}
@@ -309,20 +314,24 @@ public class TouchListView extends ListView {
 						mDragPos = itemnum;
 						doExpansion();
 					}
-					int speed = 0;
-					adjustScrollBounds(y);
-					if(y > mLowerBound) {
+                    adjustScrollBounds(y);
+                    int speed = 0;
+                    if(y > mLowerBound) {
 						// scroll the list up a bit
-						speed = y > (mHeight + mLowerBound) / 2 ? 16 : 4;
+                    	//speed = (y > (mHeight + mLowerBound) / 2) ? 16 : 4; //Right shift is more efficient.
+						speed = (y > (mHeight + mLowerBound) >> 1) ? 16 : 4;
 					} else if(y < mUpperBound) {
 						// scroll the list down a bit
-						speed = y < mUpperBound / 2 ? -16 : -4;
+						//speed = (y < mUpperBound / 2) ? -16 : -4; //right shift is more efficient.
+						speed = (y < mUpperBound >> 1) ? -16 : -4;
 					}
 					if(speed != 0) {
-						int ref = pointToPosition(0, mHeight / 2);
+						//int ref = pointToPosition(0, mHeight / 2); //right shift is more efficient.
+						int ref = pointToPosition(0, mHeight >> 1);
 						if(ref == AdapterView.INVALID_POSITION) {
 							// we hit a divider or an invisible view, check somewhere else
-							ref = pointToPosition(0, mHeight / 2 + getDividerHeight() + 64);
+							//ref = pointToPosition(0, mHeight / 2 + getDividerHeight() + 64); //right shift is more efficient.
+							ref = pointToPosition(0, mHeight >> 1 + getDividerHeight() + 64);
 						}
 						View v = getChildAt(ref - getFirstVisiblePosition());
 						if(v != null) {
@@ -370,13 +379,17 @@ public class TouchListView extends ListView {
 		int width = mDragView.getWidth();
 
 		if(mRemoveMode == SLIDE_RIGHT) {
-			if(x > width / 2) {
-				alpha = ((float) (width - x)) / (width / 2);
+			//if(x > width / 2) { //Right shift is better.
+			if(x > width >> 1) {
+				//alpha = ((float) (width - x)) / (width / 2); //Right shift is more efficient.
+				alpha = ((float) (width - x)) / (width >> 1);
 			}
 			mWindowParams.alpha = alpha;
 		} else if(mRemoveMode == SLIDE_LEFT) {
-			if(x < width / 2) {
-				alpha = ((float) x) / (width / 2);
+			//if(x < width / 2) { //Right shift is more efficient.
+			if(x < width >> 1) {
+				//alpha = ((float) x) / (width / 2); //Right shift is more efficient.
+				alpha = ((float) x) / (width >> 1);
 			}
 			mWindowParams.alpha = alpha;
 		}

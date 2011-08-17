@@ -41,6 +41,7 @@
 #include "actionreplay3.h"
 #include "actionreplay4.h"
 #include "atomicpower.h"
+#include "c64-generic.h"
 #include "c64tpi.h"
 #include "comal80.h"
 #include "capture.h"
@@ -60,11 +61,11 @@
 #include "freezemachine.h"
 #include "funplay.h"
 #include "gamekiller.h"
-#include "generic.h"
 #include "gs.h"
 #include "ide64.h"
 #include "isepic.h"
 #include "kcs.h"
+#include "kingsoft.h"
 #include "mach5.h"
 #include "magicdesk.h"
 #include "magicformel.h"
@@ -73,6 +74,7 @@
 #include "mmc64.h"
 #include "mmcreplay.h"
 #include "ocean.h"
+#include "pagefox.h"
 #include "prophet64.h"
 #include "retroreplay.h"
 #include "rexep256.h"
@@ -275,6 +277,9 @@ int crt_attach(const char *filename, BYTE *rawcart)
         case CARTRIDGE_KCS_POWER:
             rc = kcs_crt_attach(fd, rawcart);
             break;
+        case CARTRIDGE_KINGSOFT:
+            rc = kingsoft_crt_attach(fd, rawcart);
+            break;
         case CARTRIDGE_MACH5:
             rc = mach5_crt_attach(fd, rawcart);
             break;
@@ -301,6 +306,9 @@ int crt_attach(const char *filename, BYTE *rawcart)
             break;
         case CARTRIDGE_P64:
             rc = p64_crt_attach(fd, rawcart);
+            break;
+        case CARTRIDGE_PAGEFOX:
+            rc = pagefox_crt_attach(fd, rawcart);
             break;
         case CARTRIDGE_RETRO_REPLAY:
             rc = retroreplay_crt_attach(fd, rawcart, filename);

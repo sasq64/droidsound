@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef com_ssb_droidsound_utils_ID3Tag_ID3INFO_YEAR
+#define com_ssb_droidsound_utils_ID3Tag_ID3INFO_YEAR 99L
 #undef com_ssb_droidsound_utils_ID3Tag_ID3INFO_GENRE
 #define com_ssb_droidsound_utils_ID3Tag_ID3INFO_GENRE 100L
 #undef com_ssb_droidsound_utils_ID3Tag_ID3INFO_COMMENT

@@ -2,7 +2,7 @@
         android:key="main_prefs">
     <CheckBoxPreference
             android:key="extensions"
-            android:title="Unknown extensions"
+            android:title="Unknown Extensions"
             android:defaultValue="false"
             android:summary="Index files with unknown extensions"
             />
@@ -23,7 +23,7 @@
 	<EditTextPreference
 			android:numeric="integer"
             android:key="default_length"
-            android:title="Default song length"
+            android:title="Default Song Length"
             android:dialogTitle="Length (in seconds)"
             android:defaultValue="900"
             android:summary="Length to use when real length is unknown."
@@ -42,7 +42,7 @@
 	<PreferenceScreen
             android:key="audio_prefs"
             android:title="Audio"
-            android:summary="Plugin Audio Settings"
+            android:summary="Audio Plugin Settings"
 	>
 	
 		<PreferenceCategory
@@ -51,7 +51,7 @@
 		>
 		<CheckBoxPreference
 	            android:key="MP3Plugin.simplestream"
-	            android:title="Simple MP3 streaming"
+	            android:title="Simple MP3 Streaming"
 	            android:defaultValue="false"
 	            android:summary="Use simple Android streaming. More limited but possibly more stable."
 	            />
@@ -63,7 +63,7 @@
 		<ListPreference
 	            android:key="SidPlugin.engine"
 	            android:title="SID Engine"
-	            android:defaultValue="Sidplay2"
+	            android:defaultValue="VICE"
 				android:entries="@array/engine_opts"
 				android:entryValues="@array/engine_opts"
 	            />
@@ -97,7 +97,7 @@
 		<ListPreference
 	            android:key="SidPlugin.resampling"
 	            android:title="Resampling Mode"
-	            android:defaultValue="0"
+	            android:defaultValue="1"
                     android:entries="@array/resampling_opts"
                     android:entryValues="@array/resampling_vals"
 	            />
@@ -211,7 +211,7 @@
                 android:entryValues="@array/indexing_opts"
 		/>
 		<Preference android:key="rescan_pref"
-		android:title="Rescan database"
+		android:title="Rescan Database"
 		android:summary="Scan sdcard for changes and update database."
 		/>
 		<!-- 
@@ -230,10 +230,15 @@
 		android:title="Download"
 		android:summary="Go to web page for quick downloading of music and databases."
    	/>
+   	
+   	<Preference
+   		android:key="download_local_link"
+   		android:title="Download Local"
+   		android:summary="Overview of the sites you can download from. Does not require internet."
+   	/>
 
     <Preference android:key="help_pref"
 		android:title="Droidsound Help"
 		/>
-    <PreferenceScreen android:key="about_prefs" android:title="About Droidsound" />
-    
+    <PreferenceScreen android:key="about_prefs" android:title="About Droidsound"/>   
 </PreferenceScreen> 

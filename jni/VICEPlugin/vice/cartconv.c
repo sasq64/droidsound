@@ -93,6 +93,7 @@ typedef struct sorted_cart_s {
 static void save_regular_crt(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4, unsigned char game, unsigned char exrom);
 static void save_fcplus_crt(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4, unsigned char game, unsigned char exrom);
 static void save_2_blocks_crt(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4, unsigned char game, unsigned char exrom);
+static void save_8000_a000_crt(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4, unsigned char game, unsigned char exrom);
 static void save_generic_crt(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4, unsigned char p5, unsigned char p6);
 static void save_easyflash_crt(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4, unsigned char game, unsigned char exrom);
 static void save_ocean_crt(unsigned int p1, unsigned int p2, unsigned int p3, unsigned int p4, unsigned char game, unsigned char exrom);
@@ -156,22 +157,28 @@ static const cart_t cart_info[] = {
     {0, 0, CARTRIDGE_SIZE_32KB | CARTRIDGE_SIZE_64KB | CARTRIDGE_SIZE_128KB, 0x2000, 0x8000, 0, 0, CARTRIDGE_NAME_RETRO_REPLAY, "rr", save_regular_crt},
     {1, 0, CARTRIDGE_SIZE_8KB, 0x2000, 0x8000, 1, 0, CARTRIDGE_NAME_MMC64, "mmc64", save_regular_crt},
     {0, 0, CARTRIDGE_SIZE_64KB | CARTRIDGE_SIZE_512KB, 0x2000, 0x8000, 0, 0, CARTRIDGE_NAME_MMC_REPLAY, "mmcr", save_regular_crt},
-    {0, 0, CARTRIDGE_SIZE_64KB | CARTRIDGE_SIZE_128KB, 0x2000, 0x8000, 0, 0, CARTRIDGE_NAME_IDE64, "ide64", save_regular_crt},
-    {1, 0, CARTRIDGE_SIZE_32KB, 0x2000, 0x8000, 4, 0, CARTRIDGE_NAME_SUPER_SNAPSHOT, "ss4", save_regular_crt},
+    {1, 0, CARTRIDGE_SIZE_64KB | CARTRIDGE_SIZE_128KB, 0x4000, 0x8000, 0, 2, CARTRIDGE_NAME_IDE64, "ide64", save_regular_crt},
+    {1, 0, CARTRIDGE_SIZE_32KB, 0x2000, 0x8000, 4, 0, CARTRIDGE_NAME_SUPER_SNAPSHOT, "ss4", save_8000_a000_crt},
     {1, 0, CARTRIDGE_SIZE_4KB, 0x1000, 0x8000, 1, 0, CARTRIDGE_NAME_IEEE488, "ieee", save_regular_crt},
     {0, 0, CARTRIDGE_SIZE_8KB, 0x2000, 0xe000, 1, 0, CARTRIDGE_NAME_GAME_KILLER, "gk", save_regular_crt},
     {1, 0, CARTRIDGE_SIZE_256KB, 0x2000, 0x8000, 32, 0, CARTRIDGE_NAME_P64, "p64", save_regular_crt},
     {0, 1, CARTRIDGE_SIZE_8KB, 0x2000, 0xe000, 1, 0, CARTRIDGE_NAME_EXOS, "exos", save_regular_crt},
     {1, 0, CARTRIDGE_SIZE_8KB, 0x2000, 0x8000, 1, 0, CARTRIDGE_NAME_FREEZE_FRAME, "ff", save_regular_crt},
-    {1, 0, CARTRIDGE_SIZE_16KB | CARTRIDGE_SIZE_32KB, 0x2000, 0x8000, 0, 0, CARTRIDGE_NAME_FREEZE_MACHINE, "fm", save_regular_crt},
+    {1, 0, CARTRIDGE_SIZE_16KB | CARTRIDGE_SIZE_32KB, 0x2000, 0x8000, 0, 0, CARTRIDGE_NAME_FREEZE_MACHINE, "fm", save_8000_a000_crt},
     {0, 0, CARTRIDGE_SIZE_4KB, 0x1000, 0xe000, 1, 0, CARTRIDGE_NAME_SNAPSHOT64, "s64", save_regular_crt},
     {1, 0, CARTRIDGE_SIZE_16KB, 0x2000, 0x8000, 2, 0, CARTRIDGE_NAME_SUPER_EXPLODE_V5, "se5", save_regular_crt},
-    {1, 0, CARTRIDGE_SIZE_16KB, 0x2000, 0x8000, 2, 0, CARTRIDGE_NAME_MAGIC_VOICE, "mv", save_regular_crt},
+    {1, 0, CARTRIDGE_SIZE_16KB, 0x2000, 0x8000, 2, 0, CARTRIDGE_NAME_MAGIC_VOICE, "mv", save_8000_a000_crt},
     {1, 0, CARTRIDGE_SIZE_16KB, 0x2000, 0x8000, 2, 0, CARTRIDGE_NAME_ACTION_REPLAY2, "ar2", save_regular_crt},
-    {1, 0, CARTRIDGE_SIZE_8KB, 0x2000, 0x8000, 1, 0, CARTRIDGE_NAME_MACH5, "mach5", save_regular_crt},
+    {1, 0, CARTRIDGE_SIZE_4KB | CARTRIDGE_SIZE_8KB, 0x2000, 0x8000, 0, 0, CARTRIDGE_NAME_MACH5, "mach5", save_regular_crt},
     {1, 0, CARTRIDGE_SIZE_8KB, 0x2000, 0x8000, 1, 0, CARTRIDGE_NAME_DIASHOW_MAKER, "dsm", save_regular_crt},
+    {1, 1, CARTRIDGE_SIZE_64KB, 0x4000, 0x8000, 4, 0, CARTRIDGE_NAME_PAGEFOX, "pf", save_regular_crt},
+    {1, 1, CARTRIDGE_SIZE_24KB, 0x2000, 0x8000, 3, 0, CARTRIDGE_NAME_KINGSOFT, "ks", save_regular_crt},
     {0, 0, 0, 0, 0, 0, 0, NULL, NULL, NULL}
 };
+
+#ifndef HAVE_MEMMOVE
+#define memmove(x, y, z) bcopy(y, x, z)
+#endif
 
 #ifndef HAVE_STRDUP
 char *strdup(const char *string)
@@ -360,11 +367,18 @@ static void printinfo(char *name)
     exit (0);
 }
 
+static void checkarg(char *arg)
+{
+    if (arg == NULL) {
+        usage();
+    }
+}
+
 static int checkflag(char *flg, char *arg)
 {
     int i;
 
-    switch (tolower(flg[1])) {
+    switch (tolower((int)flg[1])) {
         case 'f':
             printinfo(arg);
             return 2;
@@ -372,6 +386,7 @@ static int checkflag(char *flg, char *arg)
             repair_mode = 1;
             return 1;
         case 'o':
+            checkarg(arg);
             if (output_filename == NULL) {
                 output_filename = strdup(arg);
             } else {
@@ -379,6 +394,7 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 'n':
+            checkarg(arg);
             if (cart_name == NULL) {
                 cart_name = strdup(arg);
             } else {
@@ -386,6 +402,7 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 'l':
+            checkarg(arg);
             if (load_address == 0) {
                 load_address = atoi(arg);
             } else {
@@ -393,6 +410,7 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 't':
+            checkarg(arg);
             if (cart_type != -1 || convert_to_bin != 0 || convert_to_prg != 0 || convert_to_ultimax != 0) {
                 usage();
             } else {
@@ -421,6 +439,7 @@ static int checkflag(char *flg, char *arg)
             }
             return 2;
         case 'i':
+            checkarg(arg);
             if (input_filenames == 33) {
                 usage();
             }
@@ -568,7 +587,7 @@ static int write_crt_header(unsigned char gameline, unsigned char exromline)
             if (cart_name[i] == 0) {
                 endofname = 1;
             } else {
-                crt_header[0x20 + i] = toupper(cart_name[i]);
+                crt_header[0x20 + i] = (char)toupper((int)cart_name[i]);
             }
         }
     }
@@ -647,6 +666,13 @@ static void save_regular_crt(unsigned int length, unsigned int banks, unsigned i
     }
 
     if (real_banks == 0) {
+        /* handle the case when a chip of half the regular size
+           is used on an otherwise identical hardware (eg 4k
+           chip on a 8k cart)
+        */
+        if (loadfile_size == (length / 2)) {
+            length /= 2;
+        }
         real_banks = loadfile_size / length;
     }
 
@@ -712,6 +738,39 @@ static void save_2_blocks_crt(unsigned int l1, unsigned int l2, unsigned int a1,
     if (write_chip_package(0x2000, 0, (a2 == 0xe000) ? 0xe000 : 0xa000, 0) < 0) {
         cleanup();
         exit(1);
+    }
+
+    fclose(outfile);
+    bin2crt_ok();
+    cleanup();
+    exit(0);
+}
+
+static void save_8000_a000_crt(unsigned int length, unsigned int banks, unsigned int a1, unsigned int a2, unsigned char game, unsigned char exrom)
+{
+    unsigned int i;
+    unsigned int real_banks = banks;
+
+
+    if (real_banks == 0) {
+        real_banks = loadfile_size / length;
+    }
+
+    if (write_crt_header(game, exrom) < 0) {
+        cleanup();
+        exit(1);
+    }
+
+    for (i = 0; i < (real_banks >> 1); i++) {
+        if (write_chip_package(0x2000, i, 0x8000, 0) < 0) {
+            cleanup();
+            exit(1);
+        }
+
+        if (write_chip_package(0x2000, i, 0xa000, 0) < 0) {
+            cleanup();
+            exit(1);
+        }
     }
 
     fclose(outfile);
@@ -1423,9 +1482,9 @@ int main(int argc, char *argv[])
         input_filename[i] = NULL;
     }
 
-    while (arg_counter != argc) {
+    while (arg_counter < argc) {
         flag = argv[arg_counter];
-        argument = argv[arg_counter + 1];
+        argument = (arg_counter + 1 < argc) ? argv[arg_counter + 1] : NULL;
         if (flag[0] != '-') {
             usage();
         } else {

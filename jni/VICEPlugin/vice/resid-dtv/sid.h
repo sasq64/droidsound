@@ -1,3 +1,5 @@
+/*! \file resid-dtv/sid.h */
+
 //  ---------------------------------------------------------------------------
 //  This file is part of reSID, a MOS6581 SID emulator engine.
 //  Copyright (C) 2004  Dag Lem <resid@nimrod.no>
@@ -23,7 +25,8 @@
 #ifndef VICE__SID_H__
 #define VICE__SID_H__
 
-#include "siddtvdefs.h"
+#include "residdtv-config.h"
+
 #include "bittrain.h"
 #include "voice.h"
 #include "filter.h"

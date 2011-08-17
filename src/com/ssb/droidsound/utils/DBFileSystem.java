@@ -8,35 +8,34 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 
 import com.ssb.droidsound.database.SongDatabase;
-import com.ssb.droidsound.utils.Log;
 
-public class DBFileSystem {
+public final class DBFileSystem {
 	private static final String TAG = DBFileSystem.class.getSimpleName();
 	
-	public static interface CursorFactory {
+	public interface CursorFactory {
 		Cursor getCursor(String parts[], int sorting);
 	}
 	
-	private static class Path {
-		public String [] parts;
+	private static final class Path {
+		public final String [] parts;
 		public CursorFactory factory;
 		public String [] contents;
 		public String[] contentPaths;
-		public Path(String [] parts, CursorFactory factory) {
+		private Path(String [] parts, CursorFactory factory) {
 			this.parts = parts;
 			this.factory = factory;
 		}
-		public Path(String [] parts, String [] contents, String [] contentPaths) {
+		private Path(String [] parts, String [] contents, String... contentPaths) {
 			this.parts = parts;
 			this.contents = contents;
 			this.contentPaths = contentPaths;
 		}
-	};
-	
-	private List<Path> pathList;
+	}
+
+    private final List<Path> pathList;
 
 	
-	private String baseName;
+	private final String baseName;
 	
 	public DBFileSystem(String base) {
 		baseName = base;
@@ -48,17 +47,17 @@ public class DBFileSystem {
 		pathList.add(new Path(parts, qf));
 	}
 	
-	public void addPath(String pathPattern, String [] contents) {
+	public void addPath(String pathPattern, String... contents) {
 		String [] parts = pathPattern.split("/");		
 		pathList.add(new Path(parts, contents, contents));
 	}
 
-	public void addPath(String pathPattern, String [] contents, String [] contentPaths) {
+	public void addPath(String pathPattern, String [] contents, String... contentPaths) {
 		String [] parts = pathPattern.split("/");		
 		pathList.add(new Path(parts, contents, contentPaths));
 	}
 
-	private boolean matchPath(String [] pattern, String [] path) {
+	private boolean matchPath(String [] pattern, String... path) {
 		
 		// **,ALBUM
 		// NEW RELEASES,* 
@@ -66,19 +65,20 @@ public class DBFileSystem {
 		int j = 0;
 		//boolean starstar = false;
 		for(int i=0; i<path.length; i++) {
-			if(j >= pattern.length)
+			if(j >= pattern.length){
 				return false;
+			}
+			
 			Log.d(TAG, "Match %s vs %s", i, pattern[j], path[i]);
 
-			if(pattern[j].equals("*") || path[i].equals(pattern[j])) {
+			if("*".equals(pattern[j]) || path[i].equals(pattern[j])) {
 				j++;	
-			} else
-				break;			
+			} else {
+				break;
+			}
 		}
-		
 		return (j == path.length);		
 	}
-	
 	
 	public Cursor getFileInPath(String path, int sorting) {
 		
@@ -89,15 +89,16 @@ public class DBFileSystem {
 			Log.d(TAG, "PART %d: '%s'", i, parts[i]);
 		}
 		
-		String newParts [] = null;
+		String[] newParts = null;
 
 		for(int i=0; i<n; i++) {
 			if(parts[i].startsWith(baseName)) {
 				n -= (i+1);
 				newParts = new String [n];
-				for(int j=0; j<n; j++) {
+				/*for(int j=0; j<n; j++) {
 					newParts[j] = parts[i+j+1];
-				}
+				}*/
+                System.arraycopy(parts, i + 1, newParts, 0, n); //Eliminates manually copying an array
 				break;
 			}
 		}
@@ -119,13 +120,11 @@ public class DBFileSystem {
 						mc.addRow(new String [] {p.contents[i], p.contentPaths[i], Integer.toString(SongDatabase.TYPE_DIR)});
 					}
 					return mc;
-				} else
+				} else {
 					return p.factory.getCursor(newParts, sorting);
+				}
 			}
 		}
-
 		return null;
 	}
-	
-
 }

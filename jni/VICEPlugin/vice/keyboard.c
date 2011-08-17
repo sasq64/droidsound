@@ -1,4 +1,4 @@
-/*
+﻿/*
  * keyboard.c - Common keyboard emulation.
  *
  * Written by
@@ -7,7 +7,7 @@
  * Based on old code by
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  Jouko Valta <jopi@stekt.oulu.fi>
- *  Andr� Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *  Bernhard Kuhn <kuhn@eikon.e-technik.tu-muenchen.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -851,15 +851,15 @@ static int keyboard_parse_keymap(const char *filename)
     do {
         buffer[0] = 0;
         if (fgets(buffer, 999, fp)) {
-  	    char *p;
+            char *p;
 
             if (strlen(buffer) == 0)
                 break;
 
             buffer[strlen(buffer) - 1] = 0; /* remove newline */
-	    /* remove comments */
-	    if ((p = strchr(buffer, '#')))
-	        *p=0;
+            /* remove comments */
+            if ((p = strchr(buffer, '#')))
+                *p=0;
 
             switch(*buffer) {
               case 0:
@@ -1081,9 +1081,10 @@ void keyboard_init(void)
 
     keyboard_alarm = alarm_new(maincpu_alarm_context, "Keyboard",
                                keyboard_latch_handler, NULL);
+#ifdef COMMON_KBD
     restore_alarm = alarm_new(maincpu_alarm_context, "Restore",
                                 restore_alarm_triggered, NULL);
-#ifdef COMMON_KBD
+
     kbd_arch_init();
 
     load_keymap_ok = 1;

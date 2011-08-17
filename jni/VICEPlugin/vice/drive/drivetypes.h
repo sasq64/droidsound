@@ -44,8 +44,8 @@ struct drive_context_s;         /* forward declaration */
 struct monitor_interface_s;
 
 /* This defines the memory access for the drive CPU.  */
-typedef BYTE REGPARM2 drive_read_func_t(struct drive_context_s *, WORD);
-typedef void REGPARM3 drive_store_func_t(struct drive_context_s *, WORD,
+typedef BYTE drive_read_func_t(struct drive_context_s *, WORD);
+typedef void drive_store_func_t(struct drive_context_s *, WORD,
                                          BYTE);
 
 /*
@@ -83,6 +83,9 @@ typedef struct drivecpu_context_s {
 
     /* Information about the last executed opcode.  */
     unsigned int last_opcode_info;
+
+    /* Address of the last executed opcode. This is used by watchpoints. */
+    unsigned int last_opcode_addr;
 
     /* Public copy of the registers.  */
     mos6510_regs_t cpu_regs;
@@ -160,4 +163,3 @@ typedef struct drive_context_s {
 } drive_context_t;
 
 #endif
-

@@ -93,7 +93,7 @@
 
 /* HACK this is C64 specific */
 
-void REGPARM2 memmap_mem_store(unsigned int addr, unsigned int value)
+void memmap_mem_store(unsigned int addr, unsigned int value)
 {
     if ((addr >= 0xd000)&&(addr <= 0xdfff)) {
         monitor_memmap_store(addr, MEMMAP_I_O_W);
@@ -103,7 +103,7 @@ void REGPARM2 memmap_mem_store(unsigned int addr, unsigned int value)
     (*_mem_write_tab_ptr[(addr) >> 8])((WORD)(addr), (BYTE)(value));
 }
 
-BYTE REGPARM1 memmap_mem_read(unsigned int addr)
+BYTE memmap_mem_read(unsigned int addr)
 {
     switch(addr >> 12) {
         case 0xa:
@@ -236,6 +236,9 @@ int maincpu_rmw_flag = 0;
    by one more cycle if necessary, as happens with conditional branch opcodes
    when the branch is taken.  */
 unsigned int last_opcode_info;
+
+/* Address of the last executed opcode. This is used by watchpoints. */
+unsigned int last_opcode_addr;
 
 /* Number of write cycles for each 6510 opcode.  */
 const CLOCK maincpu_opcode_write_cycles[] = {
@@ -443,6 +446,7 @@ void maincpu_mainloop(void)
 #define CLK maincpu_clk
 #define RMW_FLAG maincpu_rmw_flag
 #define LAST_OPCODE_INFO last_opcode_info
+#define LAST_OPCODE_ADDR last_opcode_addr
 #define TRACEFLG debug.maincpu_traceflg
 
 #define CPU_INT_STATUS maincpu_int_status
@@ -668,4 +672,3 @@ fail:
         snapshot_module_close(m);
     return -1;
 }
-

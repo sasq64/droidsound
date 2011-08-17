@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="droidsound" default="help">
+<project name="droidsound">
 
 <!-- The local.properties file is created and updated by the 'android'
      tool.
@@ -44,7 +44,6 @@
     <taskdef name="setup"
         classname="com.android.ant.SetupTask"
         classpathref="android.antlibs" />
-
 <!-- extension targets. Uncomment the ones where you want to do custom work
      in between standard targets -->
 <!--

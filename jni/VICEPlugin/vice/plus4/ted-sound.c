@@ -37,9 +37,50 @@
 #include "plus4.h"
 #include "plus4speech.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-resources.h"
 #include "sound.h"
 #include "ted-sound.h"
+
+/* ------------------------------------------------------------------------- */
+
+/* Some prototypes are needed */
+static int ted_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
+static int ted_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
+static void ted_sound_machine_store(sound_t *psid, WORD addr, BYTE val);
+static BYTE ted_sound_machine_read(sound_t *psid, WORD addr);
+
+static int ted_sound_machine_cycle_based(void)
+{
+    return 0;
+}
+
+static int ted_sound_machine_channels(void)
+{
+    return 1;
+}
+
+static sound_chip_t ted_sound_chip = {
+    NULL, /* no open */
+    ted_sound_machine_init,
+    NULL, /* no close */
+    ted_sound_machine_calculate_samples,
+    ted_sound_machine_store,
+    ted_sound_machine_read,
+    ted_sound_reset,
+    ted_sound_machine_cycle_based,
+    ted_sound_machine_channels,
+    1 /* chip enabled */
+};
+
+static WORD ted_sound_chip_offset = 0;
+
+void ted_sound_chip_init(void)
+{
+    ted_sound_chip_offset = sound_chip_register(&ted_sound_chip);
+}
+
+/* ------------------------------------------------------------------------- */
 
 static BYTE plus4_sound_data[5];
 
@@ -93,18 +134,18 @@ static const SWORD volume_tab[16] = {
     0x0000, 0x0800, 0x1000, 0x1800, 0x2000, 0x2800, 0x3000, 0x3800,
     0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff, 0x3fff };
 
-static int ted_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr,
-                                    int interleave, int *delta_t)
+static int ted_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
     int i;
     int j;
+    int k;
     SWORD volume;
 
     if (snd.digital) {
         for (i = 0; i < nr; i++) {
-            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave], (snd.volume *
-                                   (snd.voice0_output_enabled
-                                   + snd.voice1_output_enabled)));
+            for (k = 0; k < interleave; k++) {
+                pbuf[(i * interleave) + k] = sound_audio_mix(pbuf[(i * interleave) + k], (snd.volume * (snd.voice0_output_enabled + snd.voice1_output_enabled)));
+            }
         }
     } else {
         for (i = 0; i < nr; i++) {
@@ -182,10 +223,12 @@ static int ted_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int n
                 && (!(snd.noise_shift_register & 1)))
                 volume += snd.volume;
 
-            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave], volume);
+            for (k = 0; k < interleave; k++) {
+                pbuf[(i * interleave) + k] = sound_audio_mix(pbuf[(i * interleave) + k], volume);
+            }
         }
     }
-    return 0;
+    return nr;
 }
 
 static int ted_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
@@ -272,7 +315,7 @@ static BYTE ted_sound_machine_read(sound_t *psid, WORD addr)
     return 0;
 }
 
-void ted_sound_reset(void)
+void ted_sound_reset(sound_t *psid, CLOCK cpu_clk)
 {
     WORD i;
 
@@ -283,117 +326,21 @@ void ted_sound_reset(void)
 
 /* ---------------------------------------------------------------------*/
 
-void REGPARM2 ted_sound_store(WORD addr, BYTE value)
+void ted_sound_store(WORD addr, BYTE value)
 {
-    sound_store((WORD)(addr+0x20), value, 0);
+    sound_store((WORD)(ted_sound_chip_offset | addr), value, 0);
 }
 
-BYTE REGPARM1 ted_sound_read(WORD addr)
+BYTE ted_sound_read(WORD addr)
 {
     BYTE value;
 
-    value = sound_read((WORD)(addr+0x20), 0);
+    value = sound_read((WORD)(ted_sound_chip_offset | addr), 0);
 
     if (addr == 0x12)
         value &= 3;
 
     return value;
-}
-
-sound_t *sound_machine_open(int chipno)
-{
-    return sid_sound_machine_open(chipno);
-}
-
-int sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
-{
-    ted_sound_machine_init(psid, speed, cycles_per_sec);
-    digiblaster_sound_machine_init(psid, speed, cycles_per_sec);
-    /* FIXME: v364 only */
-    speech_sound_machine_init(psid, speed, cycles_per_sec);
-
-    if (!sidcart_clock)
-    {
-        if (cycles_per_sec==PLUS4_PAL_CYCLES_PER_SEC)
-        {
-            return sid_sound_machine_init(psid, (int)(speed*1.8), cycles_per_sec);
-        }
-        else
-        {
-            return sid_sound_machine_init(psid, (int)(speed*1.75), cycles_per_sec);
-        }
-    }
-    else
-    {
-        return sid_sound_machine_init(psid, speed, cycles_per_sec);
-    }
-}
-
-void sound_machine_close(sound_t *psid)
-{
-    sid_sound_machine_close(psid);
-}
-
-/* for read/store 0x00 <= addr <= 0x1f is the sid
- *                0x20 <= addr <= 0x3f is the ted
- *                0x40 <= addr <= 0x5f is the digiblaster
- *                0x60 <= addr <= 0x7f is the v364 speech add-on
- *
- * future sound devices will be able to use 0x60 and up
- */
-
-BYTE sound_machine_read(sound_t *psid, WORD addr)
-{
-    if (addr>=0x20 && addr<=0x3f) {
-        return ted_sound_machine_read(psid, (WORD)(addr-0x20));
-    }
-
-    if (addr>=0x40 && addr<=0x5f) {
-        return digiblaster_sound_machine_read(psid, (WORD)(addr-0x40));
-    }
-    /* FIXME: v364 only */
-    if (addr>=0x60 && addr<=0x7f) {
-        return speech_sound_machine_read(psid, (WORD)(addr-0x60));
-    }
-
-    return sid_sound_machine_read(psid, addr);
-}
-
-void sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
-{
-    if (addr>=0x20 && addr<=0x3f) {
-        ted_sound_machine_store(psid, (WORD)(addr-0x20), byte);
-    }
-
-    if (addr>=0x40 && addr<=0x5f) {
-        digiblaster_sound_machine_store(psid, (WORD)(addr-0x40), byte);
-    }
-    /* FIXME: v364 only */
-    if (addr>=0x60 && addr<=0x7f) {
-        speech_sound_machine_store(psid, (WORD)(addr-0x60), byte);
-    }
-
-    sid_sound_machine_store(psid, addr, byte);
-}
-
-void sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
-{
-    sid_sound_machine_reset(psid, cpu_clk);
-    /* FIXME: v364 only */
-    speech_sound_machine_reset(psid, cpu_clk);
-}
-
-int sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr,
-                                    int interleave, int *delta_t)
-{
-    int temp;
-
-    temp=sid_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    ted_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    digiblaster_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    /* FIXME: v364 only */
-    speech_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    return temp;
 }
 
 void sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub)
@@ -404,16 +351,6 @@ void sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub)
 char *sound_machine_dump_state(sound_t *psid)
 {
     return sid_sound_machine_dump_state(psid);
-}
-
-int sound_machine_cycle_based(void)
-{
-    return 0;
-}
-
-int sound_machine_channels(void)
-{
-    return sid_sound_machine_channels();
 }
 
 void sound_machine_enable(int enable)

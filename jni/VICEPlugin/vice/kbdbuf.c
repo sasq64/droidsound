@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -89,8 +89,8 @@ static void kbd_buf_parse_string(const char *string)
     memset(kbd_buf_string, 0, len + 1);
 
     for (i = 0, j = 0; i < len; i++) {
-        if (string[i] == '\\' && i < (len - 2) && isxdigit(string[i + 1])
-            && isxdigit(string[i + 2])) {
+        if (string[i] == '\\' && i < (len - 2) && isxdigit((int)string[i + 1])
+            && isxdigit((int)string[i + 2])) {
             char hexvalue[3];
 
             hexvalue[0] = string[i + 1];
@@ -211,4 +211,3 @@ void kbdbuf_flush(void)
     mem_store((WORD)(num_pending_location), (BYTE)(n));
     num_pending -= n;
 }
-

@@ -34,7 +34,7 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "rexutility.h"
 #include "snapshot.h"
@@ -50,7 +50,7 @@
     - reading dfc0-dfff enables ROM (8k game config)
 */
 
-static BYTE REGPARM1 rex_io2_read(WORD addr)
+static BYTE rex_io2_read(WORD addr)
 {
     if ((addr & 0xff) < 0xc0) {
         /* disable cartridge rom */
@@ -62,7 +62,7 @@ static BYTE REGPARM1 rex_io2_read(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 rex_io2_peek(WORD addr)
+static BYTE rex_io2_peek(WORD addr)
 {
     return 0;
 }
@@ -78,8 +78,10 @@ static io_source_t rex_device = {
     NULL,
     rex_io2_read,
     rex_io2_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_REX
+    NULL,
+    CARTRIDGE_REX,
+    0,
+    0
 };
 
 static io_source_list_t *rex_list_item = NULL;
@@ -106,7 +108,7 @@ static int rex_common_attach(void)
     if (c64export_add(&export_res_rex) < 0) {
         return -1;
     }
-    rex_list_item = c64io_register(&rex_device);
+    rex_list_item = io_source_register(&rex_device);
     return 0;
 }
 
@@ -136,7 +138,7 @@ int rex_crt_attach(FILE *fd, BYTE *rawcart)
 void rex_detach(void)
 {
     c64export_remove(&export_res_rex);
-    c64io_unregister(rex_list_item);
+    io_source_unregister(rex_list_item);
     rex_list_item = NULL;
 }
 

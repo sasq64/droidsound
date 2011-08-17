@@ -1,11 +1,16 @@
+/*! \file cia.h 
+ *
+ *  \brief Definitions for MOS6526 (CIA) chip emulation.
+ *
+ *  \author Jouko Valta <jopi@stekt.oulu.fi>
+ *  \author Andr? Fachat <fachat@physik.tu-chemnitz.de>
+ *  \author Andreas Boose <viceteam@t-online.de>
+ *
+ *  \page cia CIA timer emulation
+ *  \htmlinclude CIA-README.txt
+ */
+
 /*
- * cia.h - Definitions for MOS6526 (CIA) chip emulation.
- *
- * Written by
- *  Jouko Valta <jopi@stekt.oulu.fi>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
- *  Andreas Boose <viceteam@t-online.de>
- *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
  *
@@ -30,10 +35,6 @@
 #define VICE_CIA_H
 
 #include "types.h"
-
-
-#define byte2bcd(byte)  (((((byte) / 10) << 4) + ((byte) % 10)) & 0xff)
-#define bcd2byte(bcd)   (((10*(((bcd) & 0xf0) >> 4)) + ((bcd) & 0xf)) & 0xff)
 
 /* MOS 6526 models */
 #define CIA_MODEL_6526  0  /* "old" */
@@ -75,6 +76,7 @@ struct snapshot_s;
 #define CIA_IM_TOD      4       /* TOD Clock Alarm */
 #define CIA_IM_SDR      8       /* Shift Register completion */
 #define CIA_IM_FLG      16      /* Handshake */
+#define CIA_IM_TBB      0x100   /* Timer B bug flag */
 
 typedef struct cia_context_s {
     BYTE c_cia[16];
@@ -148,11 +150,11 @@ extern void ciacore_init(struct cia_context_s *cia_context,
 extern void ciacore_shutdown(cia_context_t *cia_context);
 extern void ciacore_reset(struct cia_context_s *cia_context);
 extern void ciacore_disable(struct cia_context_s *cia_context);
-extern void REGPARM3 ciacore_store(struct cia_context_s *cia_context,
+extern void ciacore_store(struct cia_context_s *cia_context,
                                    WORD addr, BYTE data);
-extern BYTE REGPARM2 ciacore_read(struct cia_context_s *cia_context,
+extern BYTE ciacore_read(struct cia_context_s *cia_context,
                                   WORD addr);
-extern BYTE REGPARM2 ciacore_peek(struct cia_context_s *cia_context,
+extern BYTE ciacore_peek(struct cia_context_s *cia_context,
                                   WORD addr);
 
 extern void ciacore_set_flag(struct cia_context_s *cia_context);
@@ -164,4 +166,3 @@ extern int ciacore_snapshot_read_module(struct cia_context_s *cia_context,
                                         struct snapshot_s *s);
 extern int ciacore_dump(cia_context_t *cia_context);
 #endif
-

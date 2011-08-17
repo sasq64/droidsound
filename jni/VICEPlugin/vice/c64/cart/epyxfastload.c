@@ -38,7 +38,7 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "epyxfastload.h"
 #include "maincpu.h"
@@ -88,19 +88,19 @@ static void epyxfastload_alarm_handler(CLOCK offset, void *data)
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE REGPARM1 epyxfastload_io1_read(WORD addr)
+static BYTE epyxfastload_io1_read(WORD addr)
 {
     /* IO1 discharges the capacitor, but does nothing else */
     epyxfastload_trigger_access();
     return 0;
 }
 
-static BYTE REGPARM1 epyxfastload_io1_peek(WORD addr)
+static BYTE epyxfastload_io1_peek(WORD addr)
 {
     return 0;
 }
 
-static BYTE REGPARM1 epyxfastload_io2_read(WORD addr)
+static BYTE epyxfastload_io2_read(WORD addr)
 {
     /* IO2 allows access to the last 256 bytes of the rom */
     return roml_banks[0x1f00 + (addr & 0xff)];
@@ -117,8 +117,10 @@ static io_source_t epyxfastload_io1_device = {
     NULL,
     epyxfastload_io1_read,
     epyxfastload_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_EPYX_FASTLOAD
+    NULL,
+    CARTRIDGE_EPYX_FASTLOAD,
+    0,
+    0
 };
 
 static io_source_t epyxfastload_io2_device = {
@@ -129,9 +131,11 @@ static io_source_t epyxfastload_io2_device = {
     1, /* read is always valid */
     NULL,
     epyxfastload_io2_read,
-    NULL, /* peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_EPYX_FASTLOAD
+    epyxfastload_io2_read,
+    NULL,
+    CARTRIDGE_EPYX_FASTLOAD,
+    0,
+    0
 };
 
 static io_source_list_t *epyxfastload_io1_list_item = NULL;
@@ -143,7 +147,7 @@ static const c64export_resource_t export_res_epyx = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 epyxfastload_roml_read(WORD addr)
+BYTE epyxfastload_roml_read(WORD addr)
 {
     /* ROML accesses also discharge the capacitor */
     epyxfastload_trigger_access();
@@ -181,8 +185,8 @@ static int epyxfastload_common_attach(void)
     epyxrom_alarm = alarm_new(maincpu_alarm_context, "EPYXCartRomAlarm", epyxfastload_alarm_handler, NULL);
     epyxrom_alarm_time = CLOCK_MAX;
 
-    epyxfastload_io1_list_item = c64io_register(&epyxfastload_io1_device);
-    epyxfastload_io2_list_item = c64io_register(&epyxfastload_io2_device);
+    epyxfastload_io1_list_item = io_source_register(&epyxfastload_io1_device);
+    epyxfastload_io2_list_item = io_source_register(&epyxfastload_io2_device);
 
     return 0;
 }
@@ -214,8 +218,8 @@ void epyxfastload_detach(void)
 {
     alarm_destroy(epyxrom_alarm);
     c64export_remove(&export_res_epyx);
-    c64io_unregister(epyxfastload_io1_list_item);
-    c64io_unregister(epyxfastload_io2_list_item);
+    io_source_unregister(epyxfastload_io1_list_item);
+    io_source_unregister(epyxfastload_io2_list_item);
     epyxfastload_io1_list_item = NULL;
     epyxfastload_io2_list_item = NULL;
 }

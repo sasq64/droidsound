@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "autostart.h"
+#include "cartridge.h"
 #include "clkguard.h"
 #include "datasette.h"
 #include "debug.h"
@@ -67,26 +68,19 @@
 #include "screenshot.h"
 #include "serial.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
-#include "sidcartjoy.h"
 #include "sound.h"
 #include "tape.h"
 #include "ted-cmdline-options.h"
 #include "ted-resources.h"
+#include "ted-sound.h"
 #include "ted.h"
 #include "traps.h"
 #include "types.h"
 #include "video.h"
 #include "vsync.h"
-
-/* beos dummy for the generally used cart function in ui_file.cc */
-#ifdef __BEOS__
-int cartridge_attach_image(int type, const char *filename)
-{
-    return 0;
-}
-#endif
 
 machine_context_t machine_context;
 
@@ -252,9 +246,9 @@ int machine_resources_init(void)
         || machine_video_resources_init() < 0
         || plus4_resources_init() < 0
         || ted_resources_init() < 0
+        || cartridge_resources_init() < 0
         || digiblaster_resources_init() < 0
         || speech_resources_init() < 0
-        || sidcartjoy_resources_init() < 0
         || sound_resources_init() < 0
         || sidcart_resources_init() < 0
         || acia_resources_init() < 0
@@ -274,6 +268,7 @@ int machine_resources_init(void)
 
 void machine_resources_shutdown(void)
 {
+    cartridge_resources_shutdown();
     serial_shutdown();
     video_resources_shutdown();
     plus4_resources_shutdown();
@@ -291,8 +286,8 @@ int machine_cmdline_options_init(void)
         || video_init_cmdline_options() < 0
         || plus4_cmdline_options_init() < 0
         || ted_cmdline_options_init() < 0
+        || cartridge_cmdline_options_init() < 0
         || digiblaster_cmdline_options_init() < 0
-        || sidcartjoy_cmdline_options_init() < 0
         || sound_cmdline_options_init() < 0
         || sidcart_cmdline_options_init() < 0
         || speech_cmdline_options_init() < 0
@@ -340,6 +335,8 @@ void machine_setup_context(void)
 /* Plus4-specific initialization.  */
 int machine_specific_init(void)
 {
+    int delay;
+
     plus4_log = log_open("Plus4");
 
     if (mem_load() < 0)
@@ -370,8 +367,22 @@ int machine_specific_init(void)
     drive_init();
 
     /* Initialize autostart.  */
-    autostart_init((CLOCK)(2 * PLUS4_PAL_RFSH_PER_SEC
+    resources_get_int("AutostartDelay", &delay);
+    if (delay == 0) {
+        delay = 2; /* default */
+    }
+    autostart_init((CLOCK)(delay * PLUS4_PAL_RFSH_PER_SEC
                    * PLUS4_PAL_CYCLES_PER_RFSH), 0, 0, 0xc8, 0xca, -40);
+
+    /* Initialize the sidcart first */
+    sidcart_sound_chip_init();
+
+    /* Initialize native sound chip */
+    ted_sound_chip_init();
+
+    /* Initialize cartridge based sound chips */
+    digiblaster_sound_chip_init();
+    speech_sound_chip_init();
 
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
@@ -436,8 +447,6 @@ void machine_specific_reset(void)
     plus4tcbm2_reset();
 
     ted_reset();
-
-    digiblaster_sound_reset();
 
     sid_reset();
 

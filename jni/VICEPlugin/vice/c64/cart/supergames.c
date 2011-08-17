@@ -34,9 +34,10 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "supergames.h"
 #include "types.h"
@@ -60,8 +61,11 @@
 
 static int currbank = 0;
 
-static void REGPARM2 supergames_io2_store(WORD addr, BYTE value)
+static BYTE regval = 0;
+
+static void supergames_io2_store(WORD addr, BYTE value)
 {
+    regval = value;
     cart_romhbank_set_slotmain(value & 3);
     cart_romlbank_set_slotmain(value & 3);
     currbank = value & 3;
@@ -80,9 +84,15 @@ static void REGPARM2 supergames_io2_store(WORD addr, BYTE value)
     cart_port_config_changed_slotmain();
 }
 
-static BYTE REGPARM1 supergames_io2_peek(WORD addr)
+static BYTE supergames_io2_peek(WORD addr)
 {
-    return currbank;
+    return regval;
+}
+
+static int supergames_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -96,8 +106,10 @@ static io_source_t supergames_device = {
     supergames_io2_store,
     NULL,
     supergames_io2_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_SUPER_GAMES
+    supergames_dump,
+    CARTRIDGE_SUPER_GAMES,
+    0,
+    0
 };
 
 static io_source_list_t *supergames_list_item = NULL;
@@ -132,7 +144,7 @@ static int supergames_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    supergames_list_item = c64io_register(&supergames_device);
+    supergames_list_item = io_source_register(&supergames_device);
     return 0;
 }
 
@@ -167,7 +179,7 @@ int supergames_crt_attach(FILE *fd, BYTE *rawcart)
 void supergames_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(supergames_list_item);
+    io_source_unregister(supergames_list_item);
     supergames_list_item = NULL;
 }
 

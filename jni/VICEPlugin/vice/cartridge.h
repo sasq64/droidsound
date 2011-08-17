@@ -45,6 +45,8 @@ extern void cartridge_resources_shutdown(void);
 /* init the cartridge config so the cartridge can start (or whatever) */
 extern void cartridge_init_config(void);
 
+/* detect cartridge type (takes crt and bin files) */
+extern int cartridge_detect(const char *filename);
 /* attach (and enable) a cartridge by type and filename (takes crt and bin files) */
 extern int cartridge_attach_image(int type, const char *filename);
 /* enable cartridge by type. loads default image if any.
@@ -95,12 +97,7 @@ extern BYTE cartridge_peek_mem(WORD addr);
 /* Initialize RAM for power-up.  */
 extern void cartridge_ram_init(void);
 
-extern int cartridge_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-extern void cartridge_sound_machine_close(sound_t *psid);
-extern int cartridge_sound_machine_read(sound_t *psid, WORD addr, BYTE *value);
-extern void cartridge_sound_machine_store(sound_t *psid, WORD addr, BYTE byte);
-extern void cartridge_sound_machine_reset(sound_t *psid, CLOCK cpu_clk);
-extern int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
+extern void cartridge_sound_chip_init(void);
 
 /* Carts that don't have a rom images */
 #define CARTRIDGE_DIGIMAX            -100 /* digimax.c */
@@ -118,6 +115,11 @@ extern int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf,
 #define CARTRIDGE_MIDI_MAPLIN        -112 /* c64-midi.c */
 #define CARTRIDGE_TFE                -116 /* tfe.c */
 #define CARTRIDGE_TURBO232           -117 /* c64acia1.c */
+#define CARTRIDGE_SWIFTLINK          -118 /* c64acia1.c */
+#define CARTRIDGE_ACIA               -119 /* c64acia1.c */
+#define CARTRIDGE_PLUS60K            -120 /* plus60k.c */
+#define CARTRIDGE_PLUS256K           -121 /* plus256k.c */
+#define CARTRIDGE_C64_256K           -122 /* c64_256k.c */
 
 /* Known cartridge types.  */
 /* TODO: cartconv (4k and 12k binaries) */
@@ -197,8 +199,10 @@ extern int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf,
 #define CARTRIDGE_ACTION_REPLAY2       50 /* actionreplay2.c */
 #define CARTRIDGE_MACH5                51 /* mach5.c */
 #define CARTRIDGE_DIASHOW_MAKER        52 /* diashowmaker.c */
+#define CARTRIDGE_PAGEFOX              53 /* pagefox.c */
+#define CARTRIDGE_KINGSOFT             54 /* pagefox.c */
 
-#define CARTRIDGE_LAST                 52 /* cartconv: last cartridge in list */
+#define CARTRIDGE_LAST                 54 /* cartconv: last cartridge in list */
 
 /* list of canonical names for the c64 cartridges:
    note: often it is hard to determine "the" official name, let alone the way it
@@ -249,6 +253,7 @@ extern int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf,
 #define CARTRIDGE_NAME_IEEE488            "IEEE-488 Interface"
 #define CARTRIDGE_NAME_ISEPIC             "ISEPIC" /* http://rr.pokefinder.org/wiki/Isepic */
 #define CARTRIDGE_NAME_KCS_POWER          "KCS Power Cartridge" /* http://rr.pokefinder.org/wiki/Power_Cartridge */
+#define CARTRIDGE_NAME_KINGSOFT           "Kingsoft"
 #define CARTRIDGE_NAME_MACH5              "MACH 5" /* http://rr.pokefinder.org/wiki/MACH_5 */
 #define CARTRIDGE_NAME_MAGIC_DESK         "Magic Desk" /* also: "Domark, Hes Australia" */
 #define CARTRIDGE_NAME_MAGIC_FORMEL       "Magic Formel" /* http://rr.pokefinder.org/wiki/Magic_Formel */
@@ -260,6 +265,7 @@ extern int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf,
 #define CARTRIDGE_NAME_MIDI_NAMESOFT      "Namesoft MIDI"
 #define CARTRIDGE_NAME_OCEAN              "Ocean"
 #define CARTRIDGE_NAME_MIDI_PASSPORT      "Passport MIDI"
+#define CARTRIDGE_NAME_PAGEFOX            "Pagefox"
 #define CARTRIDGE_NAME_P64                "Prophet64" /* see http://www.prophet64.com/ */
 #define CARTRIDGE_NAME_RAMCART            "RamCart" /* see cc65 driver */
 #define CARTRIDGE_NAME_REU                "RAM Expansion Module" /* http://www.retroport.de/C64_C128_Hardware.html */
@@ -294,6 +300,8 @@ extern int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf,
 #define CARTRIDGE_VIC20_MEGACART        2   /* megacart.c */
 #define CARTRIDGE_VIC20_FINAL_EXPANSION 3   /* finalexpansion.c */
 #define CARTRIDGE_VIC20_FP              4   /* vic-fp.c */
+#define CARTRIDGE_VIC20_IEEE488         5   /* vic20-ieee488.c */
+#define CARTRIDGE_VIC20_SIDCART         6   /* vic20-sidcart.c */
 
 /*
  * VIC20 Generic cartridges
@@ -330,7 +338,32 @@ extern int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf,
  * plus4 cartridge system
  */
 /* #define CARTRIDGE_NONE               -1 */
-#define CARTRIDGE_V364_SPEECH        0x8100
+#define CARTRIDGE_V364_SPEECH           0x8100
+
+#define CARTRIDGE_PLUS4_DETECT          0x8200 /* low byte must be 0x00 */
+
+#define CARTRIDGE_PLUS4_16KB_C0LO       0x8201
+#define CARTRIDGE_PLUS4_16KB_C0HI       0x8202
+#define CARTRIDGE_PLUS4_16KB_C1LO       0x8204
+#define CARTRIDGE_PLUS4_16KB_C1HI       0x8208
+#define CARTRIDGE_PLUS4_16KB_C2LO       0x8210
+#define CARTRIDGE_PLUS4_16KB_C2HI       0x8220
+
+#define CARTRIDGE_PLUS4_32KB_C0         0x8203
+#define CARTRIDGE_PLUS4_32KB_C1         0x820c
+#define CARTRIDGE_PLUS4_32KB_C2         0x8230
+
+#define CARTRIDGE_PLUS4_NEWROM          0x8207 /* c0lo,c0hi,c1lo (48k) */
+
+/*
+ * cbm2 cartridge system
+ */
+/* #define CARTRIDGE_NONE               -1 */
+/* #define CARTRIDGE_CBM2_DETECT          0x9000 */ /* not implemented yet */
+#define CARTRIDGE_CBM2_8KB_1000        0x9001
+#define CARTRIDGE_CBM2_8KB_2000        0x9002
+#define CARTRIDGE_CBM2_16KB_4000       0x9004
+#define CARTRIDGE_CBM2_16KB_6000       0x9008
 
 /* FIXME: cartconv: the sizes are used in a bitfield and also by their absolute values */
 #define CARTRIDGE_SIZE_4KB     0x00001000

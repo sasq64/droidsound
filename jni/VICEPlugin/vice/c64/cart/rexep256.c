@@ -34,9 +34,10 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
+#include "monitor.h"
 #include "rexep256.h"
 #include "snapshot.h"
 #include "types.h"
@@ -79,14 +80,16 @@
 
 static WORD rexep256_eprom[8];
 static BYTE rexep256_eprom_roml_bank_offset[8];
+static BYTE regval = 0;
 
 /* ---------------------------------------------------------------------*/
 
-static void REGPARM2 rexep256_io2_store(WORD addr, BYTE value)
+static void rexep256_io2_store(WORD addr, BYTE value)
 {
     BYTE eprom_bank, test_value, eprom_part = 0;
 
     if ((addr & 0xff) == 0xa0) {
+        regval = value;
         eprom_bank = (value & 0xf);
         if (eprom_bank > 7) {
             return;
@@ -113,7 +116,7 @@ static void REGPARM2 rexep256_io2_store(WORD addr, BYTE value)
 
 /* I'm unsure whether the register is write-only,
    but in this case it is assumed to be. */
-static BYTE REGPARM1 rexep256_io2_read(WORD addr)
+static BYTE rexep256_io2_read(WORD addr)
 {
     if ((addr & 0xff) == 0xc0) {
         cart_set_port_exrom_slotmain(0);
@@ -126,9 +129,17 @@ static BYTE REGPARM1 rexep256_io2_read(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 rexep256_io2_peek(WORD addr)
+static BYTE rexep256_io2_peek(WORD addr)
 {
-    return 0;
+    return regval;
+}
+
+static int rexep256_dump(void)
+{
+    mon_out("Socket: %d, bank: %d\n",
+	        regval & 7,
+			(regval & 0x30) >> 4);
+	return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -142,8 +153,10 @@ static io_source_t rexep256_device = {
     rexep256_io2_store,
     rexep256_io2_read,
     rexep256_io2_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_REX_EP256
+    rexep256_dump,
+    CARTRIDGE_REX_EP256,
+    0,
+    0
 };
 
 static io_source_list_t *rexep256_list_item = NULL;
@@ -160,9 +173,9 @@ void rexep256_config_init(void)
     cart_romlbank_set_slotmain(0);
 }
 
-/* FIXME: should copy rawcart to roml_banks ! */
 void rexep256_config_setup(BYTE *rawcart)
 {
+    memcpy(roml_banks, rawcart, 0x42000);
     cart_config_changed_slotmain(0, 0, CMODE_READ);
     cart_romlbank_set_slotmain(0);
 }
@@ -173,21 +186,19 @@ static int rexep256_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    rexep256_list_item = c64io_register(&rexep256_device);
+    rexep256_list_item = io_source_register(&rexep256_device);
     return 0;
 }
 
-/* FIXME: this function should setup rawcart instead of copying to roml_banks ! */
 /* FIXME: handle the various combinations / possible file lengths */
 int rexep256_bin_attach(const char *filename, BYTE *rawcart)
 {
-    if (util_file_load(filename, roml_banks, 0x2000, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
+    if (util_file_load(filename, rawcart, 0x2000, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
         return -1;
     }
     return rexep256_common_attach();
 }
 
-/* FIXME: this function should setup rawcart instead of copying to roml_banks ! */
 int rexep256_crt_attach(FILE *fd, BYTE *rawcart)
 {
     WORD chip;
@@ -196,7 +207,7 @@ int rexep256_crt_attach(FILE *fd, BYTE *rawcart)
     int rexep256_total_size = 0;
     int i;
 
-    memset(roml_banks, 0xff, 0x42000);
+    memset(rawcart, 0xff, 0x42000);
 
     for (i = 0; i < 8; i++) {
         rexep256_eprom[i] = 0x2000;
@@ -214,7 +225,7 @@ int rexep256_crt_attach(FILE *fd, BYTE *rawcart)
         return -1;
     }
 
-    if (fread(roml_banks, 0x2000, 1, fd) < 1) {
+    if (fread(rawcart, 0x2000, 1, fd) < 1) {
         return -1;
     }
 
@@ -237,11 +248,11 @@ int rexep256_crt_attach(FILE *fd, BYTE *rawcart)
         rexep256_eprom[chip - 1] = size;
         rexep256_eprom_roml_bank_offset[chip - 1] = rexep256_total_size >> 13;
 
-        if (fread(roml_banks + 0x2000 + rexep256_total_size, size, 1, fd) < 1) {
+        if (fread(rawcart + 0x2000 + rexep256_total_size, size, 1, fd) < 1) {
             return -1;
         }
 
-        rexep256_total_size=rexep256_total_size+size;
+        rexep256_total_size = rexep256_total_size + size;
     }
     return rexep256_common_attach();
 }
@@ -249,7 +260,7 @@ int rexep256_crt_attach(FILE *fd, BYTE *rawcart)
 void rexep256_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(rexep256_list_item);
+    io_source_unregister(rexep256_list_item);
     rexep256_list_item = NULL;
 }
 

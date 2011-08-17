@@ -66,7 +66,9 @@ int vsync_frame_counter;
 #include "sound.h"
 #include "translate.h"
 #include "types.h"
+#if (defined(WIN32) || defined (HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
 #include "videoarch.h"
+#endif
 #include "vsync.h"
 #include "vsyncapi.h"
 
@@ -82,6 +84,11 @@ static int refresh_rate;
 
 /* "Warp mode".  If nonzero, attempt to run as fast as possible. */
 static int warp_mode_enabled;
+
+/* Dingoo overclocking mode */
+#ifdef DINGOO_NATIVE
+static int overclock_mode_enabled;
+#endif
 
 static int set_relative_speed(int val, void *param)
 {
@@ -111,6 +118,15 @@ static int set_warp_mode(int val, void *param)
     return 0;
 }
 
+#ifdef DINGOO_NATIVE
+static int set_overclock_mode(int val, void *param)
+{
+    overclock_mode_enabled = val;
+    set_overclock(val);
+    return 0;
+}
+#endif
+
 /* Vsync-related resources. */
 static const resource_int_t resources_int[] = {
     { "Speed", 100, RES_EVENT_SAME, NULL,
@@ -120,6 +136,11 @@ static const resource_int_t resources_int[] = {
     { "WarpMode", 0, RES_EVENT_STRICT, (resource_value_t)0,
       /* FIXME: maybe RES_EVENT_NO */
       &warp_mode_enabled, set_warp_mode, NULL },
+#ifdef DINGOO_NATIVE
+    { "OverClock", 0, RES_EVENT_STRICT, (resource_value_t)1,
+      /* FIXME: maybe RES_EVENT_NO */
+      &overclock_mode_enabled, set_overclock_mode, NULL },
+#endif
     { NULL }
 };
 
@@ -224,7 +245,10 @@ static void display_speed(int num_frames)
                / factor;
     frame_rate = num_frames / diff_sec;
     speed_index = 100.0 * diff_clk / (cycles_per_sec * diff_sec);
-    vsyncarch_display_speed(speed_index, frame_rate, warp_mode_enabled);
+    
+    if (!console_mode) {
+        vsyncarch_display_speed(speed_index, frame_rate, warp_mode_enabled);
+    }
 
     speed_eval_prev_clk = maincpu_clk;
 }
@@ -579,4 +603,3 @@ void vsyncarch_prepare_vbl(void)
 #endif /* WIN32 || HAVE_OPENGL_SYNC */
 
 #endif
-

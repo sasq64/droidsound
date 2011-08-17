@@ -6,13 +6,13 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 
-public class NativeZipFile {
+public final class NativeZipFile {
 
 	static {
 		System.loadLibrary("nativezipfile");
 	}
 	
-	static class MyZipEntry extends ZipEntry {
+static final class MyZipEntry extends ZipEntry {
 
 		public MyZipEntry(String name) {
 			super(name);
@@ -25,7 +25,7 @@ public class NativeZipFile {
 
 		public void setIndex(int i) { index = i; }
 		public int getIndex() { return index; }
-	};
+	}
 	
 	private long zipRef;	
 	
@@ -36,7 +36,7 @@ public class NativeZipFile {
 	native String getEntry(int i);
 	native int getSize(int i);
 	native int findEntry(String name);
-	native int readData(int i, byte [] target);
+	native int readData(int i, byte... target);
 
 	native long open(int index);
 	native int read(long fd, byte [] target, int offs, int len);
@@ -70,12 +70,11 @@ public class NativeZipFile {
 		return null;
 	}
 	
-	class MyEnumeration implements Enumeration<MyZipEntry> {
+	final class MyEnumeration implements Enumeration<MyZipEntry> {
 
-		@SuppressWarnings("unused")
-		private NativeZipFile zipFile;
+		public final NativeZipFile zipFile;
 		private int currentIndex;
-		private int total;
+		private final int total;
 
 		MyEnumeration(NativeZipFile zf){
 			zipFile = zf;
@@ -97,19 +96,18 @@ public class NativeZipFile {
 			currentIndex++;
 			return entry;
 		}
-	};
+	}
 	
 	public Enumeration<? extends ZipEntry> entries() {
 		return new MyEnumeration(this);
 	}
 	
-	static class NZInputStream extends InputStream {
-		@SuppressWarnings("unused")
-		private static final String TAG = NZInputStream.class.getSimpleName();
+	static final class NZInputStream extends InputStream {
+		protected static final String TAG = NZInputStream.class.getSimpleName();
 
-		private NativeZipFile zipFile;
+		private final NativeZipFile zipFile;
 		//private byte buffer [];
-		private long fd;
+		private final long fd;
 		private int total;
 		
 		private NZInputStream(long fd, NativeZipFile zf, int len) {
@@ -138,13 +136,13 @@ public class NativeZipFile {
 		}
 
 		@Override
-		public int available() throws IOException {
+		public int available() {
 			//Log.d(TAG, "Available: %d bytes", total);
 			return total;
 		}
 		
 		@Override
-		public int read(byte[] b, int offset, int length) throws IOException {
+		public int read(byte[] b, int offset, int length) {
 						
 			//Log.d(TAG, "Reading %d bytes", length);
 			int rc = zipFile.read(fd, b, offset, length);
@@ -155,7 +153,7 @@ public class NativeZipFile {
 		}
 		
 		@Override
-		public int read(byte[] b) throws IOException {
+		public int read(byte... b) throws IOException {
 			return read(b, 0, b.length);
 		}
 	}

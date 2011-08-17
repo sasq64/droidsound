@@ -34,8 +34,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "freezeframe.h"
 #include "snapshot.h"
@@ -76,7 +76,7 @@
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE REGPARM1 freezeframe_io1_read(WORD addr)
+static BYTE freezeframe_io1_read(WORD addr)
 {
     DBG(("io1 r %04x\n", addr));
     if (addr == 0) {
@@ -86,17 +86,17 @@ static BYTE REGPARM1 freezeframe_io1_read(WORD addr)
     return 0; /* invalid */
 }
 
-static BYTE REGPARM1 freezeframe_io1_peek(WORD addr)
+static BYTE freezeframe_io1_peek(WORD addr)
 {
     return 0; /* invalid */
 }
 
-static void REGPARM2 freezeframe_io1_store(WORD addr, BYTE value)
+static void freezeframe_io1_store(WORD addr, BYTE value)
 {
     DBG(("io1 %04x %02x\n", addr, value));
 }
 
-static BYTE REGPARM1 freezeframe_io2_read(WORD addr)
+static BYTE freezeframe_io2_read(WORD addr)
 {
     DBG(("io2 r %04x\n", addr));
     if (addr == 0) {
@@ -106,12 +106,12 @@ static BYTE REGPARM1 freezeframe_io2_read(WORD addr)
     return 0; /* invalid */
 }
 
-static BYTE REGPARM1 freezeframe_io2_peek(WORD addr)
+static BYTE freezeframe_io2_peek(WORD addr)
 {
     return 0; /* invalid */
 }
 
-static void REGPARM2 freezeframe_io2_store(WORD addr, BYTE value)
+static void freezeframe_io2_store(WORD addr, BYTE value)
 {
     DBG(("io2 %04x %02x\n", addr, value));
 }
@@ -126,8 +126,11 @@ static io_source_t freezeframe_io1_device = {
     freezeframe_io1_read,
     freezeframe_io1_peek,
     NULL,
-    CARTRIDGE_FREEZE_FRAME
+    CARTRIDGE_FREEZE_FRAME,
+    0,
+    0
 };
+
 static io_source_t freezeframe_io2_device = {
     CARTRIDGE_NAME_FREEZE_FRAME,
     IO_DETACH_CART,
@@ -138,7 +141,9 @@ static io_source_t freezeframe_io2_device = {
     freezeframe_io2_read,
     freezeframe_io2_peek,
     NULL,
-    CARTRIDGE_FREEZE_FRAME
+    CARTRIDGE_FREEZE_FRAME,
+    0,
+    0
 };
 
 static io_source_list_t *freezeframe_io1_list_item = NULL;
@@ -176,8 +181,8 @@ static int freezeframe_common_attach(void)
         return -1;
     }
 
-    freezeframe_io1_list_item = c64io_register(&freezeframe_io1_device);
-    freezeframe_io2_list_item = c64io_register(&freezeframe_io2_device);
+    freezeframe_io1_list_item = io_source_register(&freezeframe_io1_device);
+    freezeframe_io2_list_item = io_source_register(&freezeframe_io2_device);
 
     return 0;
 }
@@ -214,8 +219,8 @@ int freezeframe_crt_attach(FILE *fd, BYTE *rawcart)
 void freezeframe_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(freezeframe_io1_list_item);
-    c64io_unregister(freezeframe_io2_list_item);
+    io_source_unregister(freezeframe_io1_list_item);
+    io_source_unregister(freezeframe_io2_list_item);
     freezeframe_io1_list_item = NULL;
     freezeframe_io2_list_item = NULL;
 }

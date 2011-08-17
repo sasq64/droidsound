@@ -5,15 +5,13 @@ import java.util.List;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.Preference;
-import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
@@ -26,18 +24,18 @@ import com.ssb.droidsound.plugins.SidPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.VICEPlugin;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsoundedit.R;
 
-public class SettingsActivity extends PreferenceActivity {
+public final class SettingsActivity extends PreferenceActivity {
 
-	protected static final String TAG = SettingsActivity.class.getSimpleName();
+	private static final String TAG = SettingsActivity.class.getSimpleName();
 	private SongDatabase songDatabase;
 	private boolean doFullScan;
-	private SharedPreferences prefs;
-	private String modsDir;
-	
-	class AudiopPrefsListener implements OnPreferenceChangeListener {
+    private String modsDir;
+
+final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener {
 		
-		private DroidSoundPlugin plugin;
+		private final DroidSoundPlugin plugin;
 
 		AudiopPrefsListener(DroidSoundPlugin pi) {
 			plugin = pi;
@@ -50,7 +48,7 @@ public class SettingsActivity extends PreferenceActivity {
 			
 			Log.d(TAG, "CHANGED " + k);
 			
-			if(k.equals("SidPlugin.engine")) {
+			if("SidPlugin.engine".equals(k)) {
 				boolean isVice = ((String) newValue).startsWith("VICE");
 				/* FIXME: Both sid model and resampling actually could be done
 				 * also in sidplayplugin, but it's not currently supported. */
@@ -61,8 +59,7 @@ public class SettingsActivity extends PreferenceActivity {
 			
 			if(newValue instanceof String) {
 				try {
-					int i = Integer.parseInt((String) newValue);
-					newValue = new Integer(i);
+                    newValue = Integer.parseInt((String) newValue);
 				} catch (NumberFormatException e) {
 				}
 			}
@@ -70,7 +67,7 @@ public class SettingsActivity extends PreferenceActivity {
 			plugin.setOption(k2, newValue);
 			return true;
 		}
-	};
+	}
 	
 
 	@Override
@@ -80,7 +77,7 @@ public class SettingsActivity extends PreferenceActivity {
 		
 		songDatabase = PlayerActivity.songDatabase;
 
-		prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
 		
 		String s = prefs.getString("SidPlugin.engine", null);
@@ -109,6 +106,14 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});
+		pref = findPreference("download_local_link");
+		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				startActivity(new Intent(SettingsActivity.this, DownloadLocalActivity.class));
+				return true;
+			}
+		});
 
 		pref = findPreference("download_link");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -118,12 +123,12 @@ public class SettingsActivity extends PreferenceActivity {
 				PackageInfo pinfo = null;
 				try {
 					pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-				} catch (NameNotFoundException e) {}
+				} catch (PackageManager.NameNotFoundException e) {}
 				Intent intent;
 				if(pinfo != null && pinfo.versionName.contains("beta")) {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/beta.html"));
+					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://lioncash.uni.cc/droidsound/downloads.html"));
 				} else {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
+					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://lioncash.uni.cc/droidsound/downloads.html"));
 				}
 				startActivity(intent);
 				return true;
@@ -134,7 +139,7 @@ public class SettingsActivity extends PreferenceActivity {
 		PackageInfo pinfo = null;
 		try {
 			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-		} catch (NameNotFoundException e) {}
+		} catch (PackageManager.NameNotFoundException e) {}
 
 		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
 		String appName = getString(pinfo.applicationInfo.labelRes);
@@ -212,15 +217,17 @@ public class SettingsActivity extends PreferenceActivity {
 
 	}
 	
-	@Override
+	//TODO: This should do more than invoke the overridden method
+	/*@Override
 	protected void onPause() {
 		super.onPause();
-	}
+	}*/
 	
-	@Override
+	//TODO: This should do more than invoke the overridden method
+	/*@Override
 	protected void onDestroy() {
 		super.onDestroy();
-	}
+	}*/
 	
 	@Override
 	protected Dialog onCreateDialog(int id) {
@@ -241,13 +248,13 @@ public class SettingsActivity extends PreferenceActivity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
-				}				
+				}
 			});
 			break;
 		case R.string.scan_db:
 			doFullScan = false;
 			builder.setTitle(id);
-			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
+			builder.setMultiChoiceItems(R.array.scan_opts, null, new DialogInterface.OnMultiChoiceClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
 					Log.d(TAG, "%d %s", which, String.valueOf(isChecked));
@@ -258,7 +265,7 @@ public class SettingsActivity extends PreferenceActivity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
-				}				
+				}
 			});
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int id) {
@@ -301,8 +308,7 @@ public class SettingsActivity extends PreferenceActivity {
 			break;
 		}
 
-		AlertDialog alert = builder.create();
-		return alert;
+        return builder.create();
 	}
 
 	

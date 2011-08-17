@@ -83,7 +83,7 @@
 
 /* ---------------------------------------------------------------------------------------------------- */
 
-rtc_bq4830y_t *bq4830y_init(BYTE *ram, int *offset)
+rtc_bq4830y_t *bq4830y_init(BYTE *ram, time_t *offset)
 {
     rtc_bq4830y_t *retval = lib_malloc(sizeof(rtc_bq4830y_t));
     memset(retval, 0, sizeof(rtc_bq4830y_t));
@@ -106,24 +106,24 @@ static void bq4830y_latch_write_regs(rtc_bq4830y_t *context)
     int i;
 
     context->clock_regs[BQ4830Y_REG_SECONDS & 7] &= 0x80;
-    context->clock_regs[BQ4830Y_REG_SECONDS & 7] |= (BYTE)rtc_get_second(context->latch, 1);
+    context->clock_regs[BQ4830Y_REG_SECONDS & 7] |= rtc_get_second(context->latch, 1);
     context->clock_regs[BQ4830Y_REG_MINUTES & 7] &= 0x80;
-    context->clock_regs[BQ4830Y_REG_MINUTES & 7] |= (BYTE)rtc_get_minute(context->latch, 1);
+    context->clock_regs[BQ4830Y_REG_MINUTES & 7] |= rtc_get_minute(context->latch, 1);
     context->clock_regs[BQ4830Y_REG_HOURS & 7] &= 0xc0;
-    context->clock_regs[BQ4830Y_REG_HOURS & 7] |= (BYTE)rtc_get_hour(context->latch, 1);
+    context->clock_regs[BQ4830Y_REG_HOURS & 7] |= rtc_get_hour(context->latch, 1);
     context->clock_regs[BQ4830Y_REG_DAYS_OF_WEEK & 7] &= 0xf8;
-    context->clock_regs[BQ4830Y_REG_DAYS_OF_WEEK & 7] |= (BYTE)rtc_get_weekday(context->latch) + 1;
+    context->clock_regs[BQ4830Y_REG_DAYS_OF_WEEK & 7] |= rtc_get_weekday(context->latch) + 1;
     context->clock_regs[BQ4830Y_REG_DAYS_OF_MONTH & 7] &= 0xc0;
-    context->clock_regs[BQ4830Y_REG_DAYS_OF_MONTH & 7] |= (BYTE)rtc_get_day_of_month(context->latch, 1);
+    context->clock_regs[BQ4830Y_REG_DAYS_OF_MONTH & 7] |= rtc_get_day_of_month(context->latch, 1);
     context->clock_regs[BQ4830Y_REG_MONTHS & 7] &= 0xe0;
     val = rtc_get_month(context->latch, 1);
-    if (val == 9) {
+    if (val >= 9) {
         val += 7;
     } else {
         val++;
     }
     context->clock_regs[BQ4830Y_REG_MONTHS & 7] |= val;
-    context->clock_regs[BQ4830Y_REG_YEARS & 7] = (BYTE)rtc_get_year(context->latch, 1);
+    context->clock_regs[BQ4830Y_REG_YEARS & 7] = rtc_get_year(context->latch, 1);
     for (i = 0; i < 8; i++) {
         context->clock_regs_changed[i] = 0;
     }
@@ -156,8 +156,8 @@ static void bq4830y_write_clock_data(rtc_bq4830y_t *context)
         }
         if (context->clock_regs_changed[BQ4830Y_REG_MONTHS & 7]) {
             val = (context->clock_regs[BQ4830Y_REG_MONTHS & 7] & 0x1f) - 1;
-            if (val == 0xf) {
-                val = 9;
+            if (val >= 0xf) {
+                val -= 6;
             }
             context->clock_halt_latch = rtc_set_latched_month(val, context->clock_halt_latch, 1);
         }
@@ -188,8 +188,8 @@ static void bq4830y_write_clock_data(rtc_bq4830y_t *context)
         }
         if (context->clock_regs_changed[BQ4830Y_REG_MONTHS & 7]) {
             val = (context->clock_regs[BQ4830Y_REG_MONTHS & 7] & 0x1f) -1;
-            if (val == 0xf) {
-                val = 9;
+            if (val >= 0xf) {
+                val -= 6;
             }
             context->offset[0] = rtc_set_month(val, context->offset[0], 1);
         }
@@ -360,9 +360,9 @@ void bq4830y_store(rtc_bq4830y_t *context, WORD address, BYTE val)
 
 BYTE bq4830y_read(rtc_bq4830y_t *context, WORD address)
 {
-    BYTE retval;
+    BYTE retval, val;
     int latch_state = context->read_latch | (context->write_latch << 1) | (context->clock_halt << 2);
-    int latch;
+    time_t latch;
 
     if (latch_state != LATCH_NONE) {
         if (!context->clock_halt) {
@@ -377,26 +377,32 @@ BYTE bq4830y_read(rtc_bq4830y_t *context, WORD address)
     switch (address & 0x7fff) {
         case BQ4830Y_REG_MINUTES:
             retval = context->clock_regs[address & 7] & 0x80;
-            retval |= (BYTE)rtc_get_minute(latch, 1);
+            retval |= rtc_get_minute(latch, 1);
             break;
         case BQ4830Y_REG_HOURS:
             retval = context->clock_regs[address & 7] & 0xc0;
-            retval |= (BYTE)rtc_get_hour(latch, 1);
+            retval |= rtc_get_hour(latch, 1);
             break;
         case BQ4830Y_REG_DAYS_OF_WEEK:
             retval = context->clock_regs[address & 7] & 0xf8;
-            retval |= (BYTE)rtc_get_weekday(latch) + 1;
+            retval |= rtc_get_weekday(latch) + 1;
             break;
         case BQ4830Y_REG_DAYS_OF_MONTH:
             retval = context->clock_regs[address & 7] & 0xc0;
-            retval |= (BYTE)rtc_get_day_of_month(latch, 1);
+            retval |= rtc_get_day_of_month(latch, 1);
             break;
         case BQ4830Y_REG_MONTHS:
             retval = context->clock_regs[address & 7] & 0xe0;
-            retval |= (BYTE)rtc_get_month(latch, 1) + 1;
+            val = rtc_get_month(latch, 1);
+            if (val >= 9) {
+                val += 7;
+            } else {
+                val++;
+            }
+            retval |= (BYTE)val;
             break;
         case BQ4830Y_REG_YEARS:
-            retval = (BYTE)rtc_get_year(latch, 1);
+            retval = rtc_get_year(latch, 1);
             break;
         case BQ4830Y_REG_CONTROL:
             retval = context->clock_regs[address & 7] & 0x3f;
@@ -405,7 +411,7 @@ BYTE bq4830y_read(rtc_bq4830y_t *context, WORD address)
             break;
         case BQ4830Y_REG_SECONDS:
             retval = context->clock_halt << 7;
-            retval |= (BYTE)rtc_get_second(latch, 1);
+            retval |= rtc_get_second(latch, 1);
             break;
         default:
             retval = context->ram[address];

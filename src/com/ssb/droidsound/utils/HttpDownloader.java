@@ -11,15 +11,16 @@ import java.net.URLConnection;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class HttpDownloader  {
+final class HttpDownloader  {
 	private static final String TAG = HttpDownloader.class.getSimpleName();
 	
-	static interface Callback {
+	interface Callback {
 		void onDisplayProgress(int progress);
 		void onDone();
 	}
-	
-	static private String urlencode(String s) {
+
+    //static private String urlencode(String s){ weakened type below
+	private static String urlencode(CharSequence s) {
 		StringBuilder t = new StringBuilder();
 
 		for(int i = 0; i < s.length(); i++) {
@@ -48,17 +49,15 @@ public class HttpDownloader  {
 		return t.toString();
 	}
 
-	static public boolean downloadFiles(Callback cb, String target, String... urls) {
+	public static boolean downloadFiles(Callback cb, String target, String... urls) {
 
 		try {
 			InputStream in = null;
 			int response = -1;
-			int size;
-			byte[] buffer = new byte[16384];
+            byte[] buffer = new byte[16384];
 
 			//String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
-			String outDir = target;
-			int fileCount = 0;
+            int fileCount = 0;
 			for(String u : urls) {
 
 				String uu = urlencode(u);
@@ -67,8 +66,9 @@ public class HttpDownloader  {
 				Log.d(TAG, "Opening URL " + uu);
 
 				URLConnection conn = url.openConnection();
-				if(!(conn instanceof HttpURLConnection))
+				if(!(conn instanceof HttpURLConnection)){
 					throw new IOException("Not a HTTP connection");
+				}
 
 				HttpURLConnection httpConn = (HttpURLConnection) conn;
 				httpConn.setAllowUserInteraction(false);
@@ -87,13 +87,14 @@ public class HttpDownloader  {
 					String ext = u.substring(u.lastIndexOf('.') + 1, u.length());
 					String baseName = new File(u).getName();
 
-					if(ext.compareToIgnoreCase("ZIP") == 0) {
+                    int size;
+                    if(ext.compareToIgnoreCase("ZIP") == 0) {
 						ZipInputStream zip = new ZipInputStream(in);
 						ZipEntry e;
 						int zipCount = 0;
 						while((e = zip.getNextEntry()) != null) {
 							Log.d(TAG, "Found file " + e.getName());
-							FileOutputStream fos = new FileOutputStream(outDir + e.getName());
+							FileOutputStream fos = new FileOutputStream(target + e.getName());
 							BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
 							while((size = zip.read(buffer, 0, buffer.length)) != -1) {
 								bos.write(buffer, 0, size);
@@ -111,7 +112,7 @@ public class HttpDownloader  {
 
 						Log.d(TAG, "Writing " + baseName);
 
-						FileOutputStream fos = new FileOutputStream(outDir + baseName);
+						FileOutputStream fos = new FileOutputStream(target + baseName);
 						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
 						while((size = in.read(buffer)) != -1) {
 							bos.write(buffer, 0, size);
@@ -123,8 +124,9 @@ public class HttpDownloader  {
 						cb.onDisplayProgress(fileCount * 100);
 					}
 
-				} else
+				} else {
 					return false;
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -136,5 +138,4 @@ public class HttpDownloader  {
 		}
 		return true;
 	}
-
 }

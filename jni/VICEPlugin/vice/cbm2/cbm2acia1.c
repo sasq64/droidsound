@@ -50,6 +50,9 @@
 #define myacia_reset acia1_reset
 #define myacia_store acia1_store
 
+/* no set mode */
+#define myacia_set_mode(x) 0
+
 #include "maincpu.h"
 
 #define mycpu_alarm_context maincpu_alarm_context
@@ -62,4 +65,3 @@
 #define mycpu_set_int_noclk(b,c) tpicore_restore_int(machine_context.tpi1, 4,(c))
 
 #include "aciacore.c"
-

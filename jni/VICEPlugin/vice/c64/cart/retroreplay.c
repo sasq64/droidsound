@@ -37,7 +37,7 @@
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
 #include "c64mem.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -122,10 +122,10 @@ static const char STRING_RETRO_REPLAY[] = CARTRIDGE_NAME_RETRO_REPLAY;
 /* ---------------------------------------------------------------------*/
 
 /* some prototypes are needed */
-static BYTE REGPARM1 retroreplay_io1_read(WORD addr);
-static void REGPARM2 retroreplay_io1_store(WORD addr, BYTE value);
-static BYTE REGPARM1 retroreplay_io2_read(WORD addr);
-static void REGPARM2 retroreplay_io2_store(WORD addr, BYTE value);
+static BYTE retroreplay_io1_read(WORD addr);
+static void retroreplay_io1_store(WORD addr, BYTE value);
+static BYTE retroreplay_io2_read(WORD addr);
+static void retroreplay_io2_store(WORD addr, BYTE value);
 
 static io_source_t retroreplay_io1_device = {
     CARTRIDGE_NAME_RETRO_REPLAY,
@@ -137,7 +137,9 @@ static io_source_t retroreplay_io1_device = {
     retroreplay_io1_read,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_RETRO_REPLAY
+    CARTRIDGE_RETRO_REPLAY,
+    0,
+    0
 };
 
 static io_source_t retroreplay_io2_device = {
@@ -150,7 +152,9 @@ static io_source_t retroreplay_io2_device = {
     retroreplay_io2_read,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_RETRO_REPLAY
+    CARTRIDGE_RETRO_REPLAY,
+    0,
+    0
 };
 
 static io_source_list_t *retroreplay_io1_list_item = NULL;
@@ -162,7 +166,7 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 retroreplay_io1_read(WORD addr)
+BYTE retroreplay_io1_read(WORD addr)
 {
     retroreplay_io1_device.io_source_valid = 0;
     
@@ -217,7 +221,7 @@ BYTE REGPARM1 retroreplay_io1_read(WORD addr)
     return 0;
 }
 
-void REGPARM2 retroreplay_io1_store(WORD addr, BYTE value)
+void retroreplay_io1_store(WORD addr, BYTE value)
 {
     int mode = CMODE_WRITE;
 
@@ -350,7 +354,7 @@ void REGPARM2 retroreplay_io1_store(WORD addr, BYTE value)
     }
 }
 
-BYTE REGPARM1 retroreplay_io2_read(WORD addr)
+BYTE retroreplay_io2_read(WORD addr)
 {
     retroreplay_io2_device.io_source_valid = 0;
 
@@ -382,7 +386,7 @@ BYTE REGPARM1 retroreplay_io2_read(WORD addr)
     return 0;
 }
 
-void REGPARM2 retroreplay_io2_store(WORD addr, BYTE value)
+void retroreplay_io2_store(WORD addr, BYTE value)
 {
     DBG(("io2 w %04x %02x\n",addr,value));
 
@@ -414,7 +418,7 @@ void REGPARM2 retroreplay_io2_store(WORD addr, BYTE value)
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 retroreplay_roml_read(WORD addr)
+BYTE retroreplay_roml_read(WORD addr)
 {
     if (export_ram) {
         switch (roml_bank & 3) {
@@ -432,7 +436,7 @@ BYTE REGPARM1 retroreplay_roml_read(WORD addr)
     return flash040core_read(flashrom_state, rom_offset + (addr & 0x1fff) + (roml_bank << 13));
 }
 
-void REGPARM2 retroreplay_roml_store(WORD addr, BYTE value)
+void retroreplay_roml_store(WORD addr, BYTE value)
 {
 /*    DBG(("roml w %04x %02x ram:%d flash:%d\n", addr, value, export_ram, rr_hw_flashjumper)); */
     if (export_ram) {
@@ -458,7 +462,7 @@ void REGPARM2 retroreplay_roml_store(WORD addr, BYTE value)
     }
 }
 
-int REGPARM2 retroreplay_roml_no_ultimax_store(WORD addr, BYTE value)
+int retroreplay_roml_no_ultimax_store(WORD addr, BYTE value)
 {
 /*    DBG(("roml w %04x %02x ram:%d flash:%d\n", addr, value, export_ram, rr_hw_flashjumper)); */
     if (rr_hw_flashjumper) {
@@ -486,27 +490,29 @@ int REGPARM2 retroreplay_roml_no_ultimax_store(WORD addr, BYTE value)
     return 0;
 }
 
-BYTE REGPARM1 retroreplay_romh_read(WORD addr)
+BYTE retroreplay_romh_read(WORD addr)
 {
     return flash040core_read(flashrom_state, rom_offset + (addr & 0x1fff) + (roml_bank << 13));
 }
 
-BYTE REGPARM1 retroreplay_peek_mem(WORD addr)
+int retroreplay_peek_mem(struct export_s *export, WORD addr, BYTE *value)
 {
     if (addr >= 0x8000 && addr <= 0x9fff) {
-        return retroreplay_roml_read(addr);
+        *value = retroreplay_roml_read(addr);
+        return CART_READ_VALID;
     }
-    /* FIXME: export.xxx */
-    if (!export.exrom && export.game) {
+    if (!(((export_t*)export)->exrom) && (((export_t*)export)->game)) {
         if (addr >= 0xe000) {
-            return retroreplay_romh_read(addr);
+            *value = retroreplay_romh_read(addr);
+            return CART_READ_VALID;
         }
     } else {
         if (addr >= 0xa000 && addr <= 0xbfff) {
-            return retroreplay_romh_read(addr);
+            *value = retroreplay_romh_read(addr);
+            return CART_READ_VALID;
         }
     }
-    return ram_read(addr);
+    return CART_READ_THROUGH;
 }
 /* ---------------------------------------------------------------------*/
 
@@ -687,8 +693,8 @@ static int retroreplay_common_attach(void)
         return -1;
     }
 
-    retroreplay_io1_list_item = c64io_register(&retroreplay_io1_device);
-    retroreplay_io2_list_item = c64io_register(&retroreplay_io2_device);
+    retroreplay_io1_list_item = io_source_register(&retroreplay_io1_device);
+    retroreplay_io2_list_item = io_source_register(&retroreplay_io2_device);
 
     return 0;
 }
@@ -930,8 +936,8 @@ void retroreplay_detach(void)
     lib_free(retroreplay_filename);
     retroreplay_filename = NULL;
     c64export_remove(&export_res);
-    c64io_unregister(retroreplay_io1_list_item);
-    c64io_unregister(retroreplay_io2_list_item);
+    io_source_unregister(retroreplay_io1_list_item);
+    io_source_unregister(retroreplay_io2_list_item);
     retroreplay_io1_list_item = NULL;
     retroreplay_io2_list_item = NULL;
 }

@@ -27,6 +27,7 @@
 
 #include "vice.h"
 
+#include "archdep.h"
 #include "c64.h"
 #include "machine.h"
 #include "resources.h"

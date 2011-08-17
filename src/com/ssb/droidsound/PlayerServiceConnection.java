@@ -1,7 +1,8 @@
 package com.ssb.droidsound;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+//import java.util.List; not used yet.
 
 import com.ssb.droidsound.service.IPlayerService;
 import com.ssb.droidsound.service.IPlayerServiceCallback;
@@ -15,41 +16,43 @@ import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsoundedit.R;
 
-public class PlayerServiceConnection implements ServiceConnection {
+public final class PlayerServiceConnection implements ServiceConnection {
 	private static final String TAG = PlayerServiceConnection.class.getSimpleName();
 
-	public static interface Callback {
-		public void stringChanged(int what, String value);
-		public void intChanged(int what, int value);
-	};
+	public interface Callback {
+		void stringChanged(int what, String value);
+		void intChanged(int what, int value);
+	}
 	
-	protected IPlayerService mService;
+	private IPlayerService mService;
 	private String modToPlay;
 	private Callback callback;
 	
-	private static class Opt {
-		int opt;
-		String arg;
+	private static final class Opt {
+		final int opt;
+		final String arg;
 		public Opt(int o, String a) {
 			opt = o;
 			arg = a;
 		}
-	};
+	}
+
+    //private List<Opt> options = new ArrayList<Opt>();   weakened type below
+	private final Collection<Opt> options = new ArrayList<Opt>();
 	
-	private List<Opt> options = new ArrayList<Opt>();
-	
-	private IPlayerServiceCallback mCallback = new IPlayerServiceCallback.Stub() {
+	private final IPlayerServiceCallback mCallback = new IPlayerServiceCallback.Stub() {
 
 		@Override
-		public void stringChanged(int what, String value) throws RemoteException {
+		public void stringChanged(int what, String value) {
 			if(callback != null) {
 				callback.stringChanged(what, value);
 			}
 		}
 
 		@Override
-		public void intChanged(int what, int value) throws RemoteException {
+		public void intChanged(int what, int value) {
 			if(callback != null) {
 				callback.intChanged(what, value);
 			}
@@ -95,9 +98,9 @@ public class PlayerServiceConnection implements ServiceConnection {
 		Intent i = new Intent(activity, PlayerService.class);
 		bound = true;
 		activity.startService(i);
-		activity.bindService(i, this, Context.BIND_AUTO_CREATE);        		
+		activity.bindService(i, this, Context.BIND_AUTO_CREATE);    
 	}
-
+	
 	public void unbindService(Activity activity) {
 		Log.d(TAG, "Unbinding");
 		callback = null;
@@ -120,7 +123,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		}
 	} */
 
-	public boolean playMod(String name) {
+	boolean playMod(String name) {
 		if(mService == null) {
 			modToPlay = name;
 			return true;
@@ -229,7 +232,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		return null;
 	}
 
-	public byte [] getSongMD5() {
+	public byte[] getSongMD5() {
 		try {
 			return mService.getSongMD5();
 		} catch (RemoteException e) {

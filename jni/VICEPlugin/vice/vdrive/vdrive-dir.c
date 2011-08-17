@@ -11,7 +11,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -156,8 +156,7 @@ void vdrive_dir_create_slot(bufferinfo_t *p, char *realname,
 #endif
     p->slot[SLOT_TYPE_OFFSET] = filetype;       /* unclosed */
 
-    p->buffer = lib_calloc(1, 256);
-    p->mode = BUFFER_SEQUENTIAL;
+    vdrive_alloc_buffer(p, BUFFER_SEQUENTIAL);
     p->bufptr = 2;
     return;
 }
@@ -443,7 +442,7 @@ int vdrive_dir_create_directory(vdrive_t *vdrive, const char *name,
                     (p[SLOT_TYPE_OFFSET] & CBMDOS_FT_LOCKED ? '<' : ' '),
                     0);
             l += 5;
-            i = l - tl;
+            i = (int)(l - tl);
 
             while (i < 31) {
                 *l++ = ' ';
@@ -483,6 +482,5 @@ int vdrive_dir_create_directory(vdrive_t *vdrive, const char *name,
     *l++ = (char) 0;
     *l   = (char) 0;
 
-    return (l - origptr);
+    return (int)(l - origptr);
 }
-

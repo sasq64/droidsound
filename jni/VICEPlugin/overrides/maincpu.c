@@ -230,6 +230,9 @@ int maincpu_rmw_flag = 0;
    when the branch is taken.  */
 unsigned int last_opcode_info;
 
+/*Address of the last executed opcode. This is used by watchpoints. */
+unsigned int last_opcode_addr;
+
 /* Number of write cycles for each 6510 opcode.  */
 const CLOCK maincpu_opcode_write_cycles[] = {
             /* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
@@ -446,7 +449,7 @@ void psid_play(short *buf, int n)
     } while (0)
 
 #define CALLER e_comp_space
-
+#define LAST_OPCODE_ADDR last_opcode_addr
 #define ROM_TRAP_ALLOWED() mem_rom_trap_allowed((WORD)reg_pc)
 
 #define GLOBAL_REGS maincpu_regs

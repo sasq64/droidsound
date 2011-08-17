@@ -199,5 +199,8 @@ extern void vdrive_get_last_read(unsigned int *track, unsigned int *sector,
                                  BYTE **buffer);
 extern void vdrive_set_last_read(unsigned int track, unsigned int sector,
                                  BYTE *buffer);
-#endif
 
+extern void vdrive_alloc_buffer(struct bufferinfo_s *p, int mode);
+extern void vdrive_free_buffer(struct bufferinfo_s *p);
+
+#endif

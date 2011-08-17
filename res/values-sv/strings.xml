@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="app_name">Droidsound</string>
+<string name="create_moddir_failed">Kunde inte skapa MODS katalogen på Sd-kortet!</string>
+<string name="sdcard_not_found">Sd-kortet kunde inte nås!</string>
+<string name="search_hint">Sök termer</string>
+<string name="scan_db">Skanna om databasen</string>
+<string name="about_droidsound">"By sasq64@gmail.com"</string>
+<string name="recreate_confirm">>Det här kommer att återskapa hela databasen. Det kan ta väldigt lång tid. Är du verkligen säker att du vill göra det här?</string>
+<string-array name="scan_opts">
+    <item>Full</item>
+</string-array>
+<string name="details">Detaljer</string>
+<string name="go_to_dir">Gå till filens sökväg</string>
+<string name="favorite">Favoriter</string>
+<string name="remove">Ta bort</string>
+<string name="cut">Klipp</string>
+<string name="paste">Klistra</string>
+<string name="remove_all">Ta bort allt</string>
+<string name="do_remove_all">Är du säker att du vill rensad spellistan?</string>
+<string name="del_dir">Radera</string>
+<string name="del_file">Radera</string>
+<string name="del_plist">Radera</string>
+<string name="make_wav">Skapa ringsigna</string>
+<string name="do_del_plist">Är du säker att du vill radera spellistan?</string>
+<string name="do_del_dir">Är du säker att du vill radera katalogen?</string>
+<string name="do_del_file">Är du säker att du vill radera filen?</string>
+<string name="do_make_wav">Är du säker att du vill ha det här som din ringsignal?</string>
+<string name="ringtone_set">Ny ringsignal sparad</string>
+<string name="ringtone_created">Ny ringsignal skapad</string>
+<string name="rescan">Skanna igen</string>
+<string name="abort_scan">Avbryt skanning</string>
+<string name="about">Om programmet</string>
+<string name="new_">Ny</string>
+<string name="quit">Avsluta</string>
+<string name="database_cleared">Databasen rensad</string>
+<string name="clearing_database">Rensar databasen</string>
+<string name="database_busy">Databasen är upptagen!</string>
+<string name="scanning">Skannar</string>
+<string name="title">Titel</string>
+<string name="info">Info</string>
+<string name="composer">Kompositör</string>
+<string name="copyright">Copyright</string>
+<string name="upgrade_db">Gammla databsen kommer att raderas och återskapas</string>
+<string name="add_to_plist">Lägg till låten till \'[playlist]\'</string>
+<string name="create_playlist">Skapa spellista</string>
+<string name="set_plist">Set current playlist</string>
+<string name="name_playlist">Namnge spellistan</string>
+<string name="name_folder">Namnge mappen</string>
+<string name="name_link">Namnge länk (http://)</string>
+<string name="settings">Inställningar</string>
+<string name="will_be_downloaded">kommer att laddas ner.</string>
+<string name="is_downloading">laddar ner...</string>
+<string name="is_downloaded">ar redan nedladdat.</string>
+<string name="is_queued">köad för nedladdningt.</string>
+
+<string name="hvsc_desc">The High Voltage Sid Collection (230 MB)</string>
+<string name="csdb_desc">The CSDb Scene Database (660 KB)</string>
+<string name="testmods_desc">Några test mods</string>
+
+<string name="zip_import_failed">Importering av zip fil misslyckades.</string>
+<string name="zip_import_replace">Kommer inte att ersätta befintlig zip-fil. Ta bort den först.</string>
+<string name="ask_speech">Du har inte röstsökning installerat, vill du installera det från Market?</string>
+<string name="notification">Droidsound spelar</string>
+
+<string name="sort_name">Sortera via namn</string>
+<string name="sort_author">Sortera via kompositör</string>
+<string name="sort_date">Sortera via datum</string>
+
+<string name="unpack_examples">Eftersom det här ser ut att vara din första gång du kör Droidsound så har jag extraherat några exemplen för dig.\n\n Om du ej vill ha dem, tryck på \'Examples\'  och håll i. Sen välj "Radera".\n\n Kom ihåg att kolla på \'Download\' i Inställningar för att ladda ner mer musik!</string>
+
+<string-array name="fav_opts">
+	<item>Standard subtune</item>
+	<item>Aktuell subtune</item>
+	<item>Alla subtunes</item>
+</string-array>
+
+
+<string-array name="new_opts">
+	<item>Mapp</item>
+	<item>Spellista</item>
+	<item>HTTP Länk</item>
+</string-array>
+
+<string-array name="indexing_opts">
+	<item>Ingen</item>
+	<item>Grundläggande</item>
+	<item>Full</item>
+</string-array>
+
+<string-array name="panning_opts">
+	<item>Mono</item>
+	<item>Some</item>
+	<item>50/50</item>
+	<item>Lots</item>
+	<item>Full Stereo</item>
+</string-array>
+
+
+<string-array name="buffer_opts">
+	<item>Kort</item>
+	<item>Medium</item>
+	<item>Lång</item>
+	<item>Väldigt lång</item>
+</string-array>
+
+<string-array name="engine_opts">
+<item>Sidplay2</item>
+<item>VICE</item>
+</string-array>
+
+
+<string-array name="videomode_opts">
+<item>PAL</item>
+<item>NTSC</item>
+<item>PAL (forced)</item>
+<item>NTSC (forced)</item>
+</string-array>
+
+<string-array name="resampling_opts">
+<item>Snabbast(cycle skipping)</item>
+<item>Snabb (no cycle skipping)</item>
+<item>Långsam (SINC)</item>
+<item>Väldigt långsam (SINC)</item>
+</string-array>
+
+<string-array name="filter_bias_opts">
+<item>Lightest filter</item>
+<item>Light filter</item>
+<item>Normal filter</item>
+<item>Dark filter</item>
+<item>Darkest filter</item>
+</string-array>
+
+<string-array name="sid_model_opts">
+<item>6581</item>
+<item>8580</item>
+<item>6581 (forced)</item>
+<item>8580 (forced)</item>
+</string-array>
+
+<string-array name="videomode_vals">
+<item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
+</string-array>
+
+<string-array name="resampling_vals">
+<item>0</item>
+<item>1</item>
+<item>3</item>
+<item>2</item>
+</string-array>
+
+<string-array name="filter_bias_vals">
+<item>500</item>
+<item>250</item>
+<item>0</item>
+<item>-250</item>
+<item>-500</item>
+</string-array>
+
+<string-array name="sid_model_vals">
+<item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
+</string-array>
+</resources>

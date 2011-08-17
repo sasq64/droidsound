@@ -34,8 +34,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "superexplode5.h"
@@ -98,13 +98,13 @@
 
 /* ---------------------------------------------------------------------*/
 
-static void REGPARM2 se5_io2_store(WORD addr, BYTE value)
+static void se5_io2_store(WORD addr, BYTE value)
 {
     DBG(("io2 wr %04x %02x\n", addr, value));
     cart_romlbank_set_slotmain((value & 0x80) >> 7);
 }
 
-static BYTE REGPARM1 se5_io2_read(WORD addr)
+static BYTE se5_io2_read(WORD addr)
 {
     addr |= 0xdf00;
     return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
@@ -122,7 +122,9 @@ static io_source_t se5_io2_device = {
     se5_io2_read,
     NULL,
     NULL,
-    CARTRIDGE_SUPER_EXPLODE_V5
+    CARTRIDGE_SUPER_EXPLODE_V5,
+    0,
+    0
 };
 
 static io_source_list_t *se5_io2_list_item = NULL;
@@ -133,7 +135,7 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 se5_roml_read(WORD addr)
+BYTE se5_roml_read(WORD addr)
 {
     if (addr < 0x9f00) {
         return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
@@ -166,7 +168,7 @@ static int se5_common_attach(void)
         return -1;
     }
 
-    se5_io2_list_item = c64io_register(&se5_io2_device);
+    se5_io2_list_item = io_source_register(&se5_io2_device);
 
     return 0;
 }
@@ -207,7 +209,7 @@ int se5_crt_attach(FILE *fd, BYTE *rawcart)
 void se5_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(se5_io2_list_item);
+    io_source_unregister(se5_io2_list_item);
     se5_io2_list_item = NULL;
 }
 

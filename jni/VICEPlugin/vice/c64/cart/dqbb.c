@@ -34,12 +34,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOT1_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "lib.h"
 #include "mem.h"
+#include "monitor.h"
 #include "resources.h"
 #include "snapshot.h"
 #include "translate.h"
@@ -68,7 +69,7 @@
     The register is write-only. Attempting to read it will
     only return random values.
 
-    The current emulation has the two registers mirrorred through the
+    The current emulation has the register mirrorred through the
     range of $de00-$deff
 */
 
@@ -105,8 +106,10 @@ static int reg_value = 0;
 static int dqbb_write_image = 0;
 
 /* ------------------------------------------------------------------------- */
-static BYTE REGPARM1 dqbb_io1_peek(WORD addr);
-static void REGPARM2 dqbb_io1_store(WORD addr, BYTE byte);
+
+static BYTE dqbb_io1_peek(WORD addr);
+static void dqbb_io1_store(WORD addr, BYTE byte);
+static int dqbb_dump(void);
 
 static io_source_t dqbb_io1_device = {
     CARTRIDGE_NAME_DQBB,
@@ -117,8 +120,10 @@ static io_source_t dqbb_io1_device = {
     dqbb_io1_store,
     NULL,
     dqbb_io1_peek,
-    NULL, /* dump */
-    CARTRIDGE_DQBB
+    dqbb_dump,
+    CARTRIDGE_DQBB,
+    0,
+    0
 };
 
 static io_source_list_t *dqbb_io1_list_item = NULL;
@@ -151,7 +156,7 @@ static void dqbb_change_config(void)
     }
 }
 
-static void REGPARM2 dqbb_io1_store(WORD addr, BYTE byte)
+static void dqbb_io1_store(WORD addr, BYTE byte)
 {
     dqbb_a000_mapped = (byte & 4) >> 2;
     dqbb_readwrite = (byte & 0x10) >> 4;
@@ -160,9 +165,17 @@ static void REGPARM2 dqbb_io1_store(WORD addr, BYTE byte)
     reg_value = byte;
 }
 
-static BYTE REGPARM1 dqbb_io1_peek(WORD addr)
+static BYTE dqbb_io1_peek(WORD addr)
 {
     return reg_value;
+}
+
+static int dqbb_dump(void)
+{
+    mon_out("$A000-$BFFF RAM: %s, cart status: %s\n",
+            (reg_value & 4) ? "mapped in" : "not mapped in",
+            (reg_value & 0x80) ? ((reg_value & 0x10) ? "read/write" : "read-only") : "disabled");
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -214,7 +227,7 @@ static int set_dqbb_enabled(int val, void *param)
         if (dqbb_deactivate() < 0) {
             return -1;
         }
-        c64io_unregister(dqbb_io1_list_item);
+        io_source_unregister(dqbb_io1_list_item);
         dqbb_io1_list_item = NULL;
         dqbb_enabled = 0;
         dqbb_reset();
@@ -227,7 +240,7 @@ static int set_dqbb_enabled(int val, void *param)
         if (dqbb_activate() < 0) {
             return -1;
         }
-        dqbb_io1_list_item = c64io_register(&dqbb_io1_device);
+        dqbb_io1_list_item = io_source_register(&dqbb_io1_device);
         dqbb_enabled = 1;
         dqbb_reset();
         dqbb_change_config();
@@ -410,12 +423,12 @@ int dqbb_flush_image(void)
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 dqbb_roml_read(WORD addr)
+BYTE dqbb_roml_read(WORD addr)
 {
     return dqbb_ram[addr & 0x1fff];
 }
 
-void REGPARM2 dqbb_roml_store(WORD addr, BYTE byte)
+void dqbb_roml_store(WORD addr, BYTE byte)
 {
     if (dqbb_readwrite) {
         dqbb_ram[addr & 0x1fff] = byte;
@@ -423,12 +436,12 @@ void REGPARM2 dqbb_roml_store(WORD addr, BYTE byte)
     mem_store_without_romlh(addr, byte);
 }
 
-BYTE REGPARM1 dqbb_romh_read(WORD addr)
+BYTE dqbb_romh_read(WORD addr)
 {
     return dqbb_ram[(addr & 0x1fff) + 0x2000];
 }
 
-void REGPARM2 dqbb_romh_store(WORD addr, BYTE byte)
+void dqbb_romh_store(WORD addr, BYTE byte)
 {
     if (dqbb_readwrite) {
         dqbb_ram[(addr & 0x1fff) + 0x2000] = byte;
@@ -516,12 +529,12 @@ int dqbb_snapshot_read_module(snapshot_t *s)
     dqbb_enabled = 1;
 
     /* FIXME: ugly code duplication to avoid cart_config_changed calls */
-    dqbb_io1_list_item = c64io_register(&dqbb_io1_device);
+    dqbb_io1_list_item = io_source_register(&dqbb_io1_device);
 
     if (c64export_add(&export_res) < 0) {
         lib_free(dqbb_ram);
         dqbb_ram = NULL;
-        c64io_unregister(dqbb_io1_list_item);
+        io_source_unregister(dqbb_io1_list_item);
         dqbb_io1_list_item = NULL;
         dqbb_enabled = 0;
         return -1;

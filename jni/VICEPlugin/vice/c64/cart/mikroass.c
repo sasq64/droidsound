@@ -34,7 +34,7 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "mikroass.h"
 #include "snapshot.h"
@@ -52,12 +52,12 @@
 
 */
 
-static BYTE REGPARM1 mikroass_io1_read(WORD addr)
+static BYTE mikroass_io1_read(WORD addr)
 {
     return roml_banks[0x1e00 + (addr & 0xff)];
 }
 
-static BYTE REGPARM1 mikroass_io2_read(WORD addr)
+static BYTE mikroass_io2_read(WORD addr)
 {
     return roml_banks[0x1f00 + (addr & 0xff)];
 }
@@ -72,9 +72,11 @@ static io_source_t mikroass_io1_device = {
     1, /* read is always valid */
     NULL,
     mikroass_io1_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MIKRO_ASSEMBLER
+    mikroass_io1_read,
+    NULL,
+    CARTRIDGE_MIKRO_ASSEMBLER,
+    0,
+    0
 };
 
 static io_source_t mikroass_io2_device = {
@@ -85,9 +87,11 @@ static io_source_t mikroass_io2_device = {
     1, /* read is always valid */
     NULL,
     mikroass_io2_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MIKRO_ASSEMBLER
+    mikroass_io2_read,
+    NULL,
+    CARTRIDGE_MIKRO_ASSEMBLER,
+    0,
+    0
 };
 
 static io_source_list_t *mikroass_io1_list_item = NULL;
@@ -117,8 +121,8 @@ static int mikroass_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    mikroass_io1_list_item = c64io_register(&mikroass_io1_device);
-    mikroass_io2_list_item = c64io_register(&mikroass_io2_device);
+    mikroass_io1_list_item = io_source_register(&mikroass_io1_device);
+    mikroass_io2_list_item = io_source_register(&mikroass_io2_device);
     return 0;
 }
 
@@ -148,8 +152,8 @@ int mikroass_crt_attach(FILE *fd, BYTE *rawcart)
 void mikroass_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(mikroass_io1_list_item);
-    c64io_unregister(mikroass_io2_list_item);
+    io_source_unregister(mikroass_io1_list_item);
+    io_source_unregister(mikroass_io2_list_item);
     mikroass_io1_list_item = NULL;
     mikroass_io2_list_item = NULL;
 }

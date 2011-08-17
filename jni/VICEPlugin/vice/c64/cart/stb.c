@@ -34,7 +34,7 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "stb.h"
@@ -50,9 +50,9 @@
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE REGPARM1 stb_io1_read(WORD addr);
-static BYTE REGPARM1 stb_io1_peek(WORD addr);
-static void REGPARM2 stb_io1_store(WORD addr, BYTE value);
+static BYTE stb_io1_read(WORD addr);
+static BYTE stb_io1_peek(WORD addr);
+static void stb_io1_store(WORD addr, BYTE value);
 
 static io_source_t stb_device = {
     CARTRIDGE_NAME_STRUCTURED_BASIC,
@@ -64,7 +64,9 @@ static io_source_t stb_device = {
     stb_io1_read,
     stb_io1_peek,
     NULL, /* dump */
-    CARTRIDGE_STRUCTURED_BASIC
+    CARTRIDGE_STRUCTURED_BASIC,
+    0,
+    0
 };
 
 static io_source_list_t *stb_list_item = NULL;
@@ -96,18 +98,18 @@ static void stb_io(WORD addr)
     }
 }
 
-static BYTE REGPARM1 stb_io1_read(WORD addr)
+static BYTE stb_io1_read(WORD addr)
 {
     stb_io(addr);
     return 0;
 }
 
-static BYTE REGPARM1 stb_io1_peek(WORD addr)
+static BYTE stb_io1_peek(WORD addr)
 {
     return 0;
 }
 
-static void REGPARM2 stb_io1_store(WORD addr, BYTE value)
+static void stb_io1_store(WORD addr, BYTE value)
 {
     stb_io(addr);
 }
@@ -138,7 +140,7 @@ static int stb_common_attach(void)
         return -1;
     }
 
-    stb_list_item = c64io_register(&stb_device);
+    stb_list_item = io_source_register(&stb_device);
 
     return 0;
 }
@@ -177,7 +179,7 @@ int stb_crt_attach(FILE *fd, BYTE *rawcart)
 void stb_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(stb_list_item);
+    io_source_unregister(stb_list_item);
     stb_list_item = NULL;
 }
 

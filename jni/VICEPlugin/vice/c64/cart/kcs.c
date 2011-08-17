@@ -34,7 +34,7 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "kcs.h"
 #include "snapshot.h"
@@ -64,7 +64,7 @@
 
 static int freeze_flag = 0;
 
-static BYTE REGPARM1 kcs_io1_read(WORD addr)
+static BYTE kcs_io1_read(WORD addr)
 {
     BYTE config;
 
@@ -76,18 +76,18 @@ static BYTE REGPARM1 kcs_io1_read(WORD addr)
     return roml_banks[0x1e00 + (addr & 0xff)];
 }
 
-static BYTE REGPARM1 kcs_io1_peek(WORD addr)
+static BYTE kcs_io1_peek(WORD addr)
 {
     return roml_banks[0x1e00 + (addr & 0xff)];
 }
 
-static void REGPARM2 kcs_io1_store(WORD addr, BYTE value)
+static void kcs_io1_store(WORD addr, BYTE value)
 {
     cart_config_changed_slotmain(CMODE_16KGAME, CMODE_16KGAME, CMODE_WRITE);
     freeze_flag = 0;
 }
 
-static BYTE REGPARM1 kcs_io2_read(WORD addr)
+static BYTE kcs_io2_read(WORD addr)
 {
     if (addr & 0x80) {
         cart_config_changed_slotmain(CMODE_ULTIMAX, CMODE_ULTIMAX, CMODE_READ | CMODE_RELEASE_FREEZE);
@@ -96,12 +96,12 @@ static BYTE REGPARM1 kcs_io2_read(WORD addr)
     return export_ram0[0x1f00 + (addr & 0x7f)];
 }
 
-static BYTE REGPARM1 kcs_io2_peek(WORD addr)
+static BYTE kcs_io2_peek(WORD addr)
 {
     return export_ram0[0x1f00 + (addr & 0x7f)];
 }
 
-static void REGPARM2 kcs_io2_store(WORD addr, BYTE value)
+static void kcs_io2_store(WORD addr, BYTE value)
 {
     if (freeze_flag == 0) {
         cart_config_changed_slotmain(CMODE_16KGAME, CMODE_16KGAME, CMODE_WRITE);
@@ -121,7 +121,9 @@ static io_source_t kcs_io1_device = {
     kcs_io1_read,
     kcs_io1_peek,
     NULL,
-    CARTRIDGE_KCS_POWER
+    CARTRIDGE_KCS_POWER,
+    0,
+    0
 };
 
 static io_source_t kcs_io2_device = {
@@ -134,7 +136,9 @@ static io_source_t kcs_io2_device = {
     kcs_io2_read,
     kcs_io2_peek,
     NULL,
-    CARTRIDGE_KCS_POWER
+    CARTRIDGE_KCS_POWER,
+    0,
+    0
 };
 
 static io_source_list_t *kcs_io1_list_item = NULL;
@@ -174,8 +178,8 @@ static int kcs_common_attach(void)
         return -1;
     }
 
-    kcs_io1_list_item = c64io_register(&kcs_io1_device);
-    kcs_io2_list_item = c64io_register(&kcs_io2_device);
+    kcs_io1_list_item = io_source_register(&kcs_io1_device);
+    kcs_io2_list_item = io_source_register(&kcs_io2_device);
     return 0;
 }
 
@@ -212,8 +216,8 @@ int kcs_crt_attach(FILE *fd, BYTE *rawcart)
 void kcs_detach(void)
 {
     c64export_remove(&export_res_kcs);
-    c64io_unregister(kcs_io1_list_item);
-    c64io_unregister(kcs_io2_list_item);
+    io_source_unregister(kcs_io1_list_item);
+    io_source_unregister(kcs_io2_list_item);
     kcs_io1_list_item = NULL;
     kcs_io2_list_item = NULL;
 }

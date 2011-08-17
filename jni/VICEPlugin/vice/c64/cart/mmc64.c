@@ -38,8 +38,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOT0_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -48,6 +48,7 @@
 #include "machine.h"
 #include "mem.h"
 #include "resources.h"
+#include "snapshot.h"
 #include "spi-sdcard.h"
 #include "translate.h"
 #include "types.h"
@@ -159,13 +160,13 @@ static int mmc64_deactivate(void);
 /* ---------------------------------------------------------------------*/
 
 /* some prototypes are needed */
-static void REGPARM2 mmc64_clockport_enable_store(WORD addr, BYTE value);
-static void REGPARM2 mmc64_io1_store(WORD addr, BYTE value);
-static BYTE REGPARM1 mmc64_io1_read(WORD addr);
-static BYTE REGPARM1 mmc64_io1_peek(WORD addr);
-static void REGPARM2 mmc64_io2_store(WORD addr, BYTE value);
-static BYTE REGPARM1 mmc64_io2_read(WORD addr);
-static BYTE REGPARM1 mmc64_io2_peek(WORD addr);
+static void mmc64_clockport_enable_store(WORD addr, BYTE value);
+static void mmc64_io1_store(WORD addr, BYTE value);
+static BYTE mmc64_io1_read(WORD addr);
+static BYTE mmc64_io1_peek(WORD addr);
+static void mmc64_io2_store(WORD addr, BYTE value);
+static BYTE mmc64_io2_read(WORD addr);
+static BYTE mmc64_io2_peek(WORD addr);
 
 static io_source_t mmc64_io1_clockport_device = {
     CARTRIDGE_NAME_MMC64 " CLOCKPORT ENABLE",
@@ -178,6 +179,7 @@ static io_source_t mmc64_io1_clockport_device = {
     NULL,
     NULL,
     CARTRIDGE_MMC64,
+    0,
     0
 };
 
@@ -192,6 +194,7 @@ static io_source_t mmc64_io2_clockport_device = {
     NULL,
     NULL,
     CARTRIDGE_MMC64,
+    0,
     0
 };
 
@@ -214,7 +217,8 @@ static io_source_t mmc64_io2_device = {
     mmc64_io2_peek,
     NULL,
     CARTRIDGE_MMC64,
-    1 /* mask df10-df13 from passthrough */
+    1, /* mask df10-df13 from passthrough */
+    0
 };
 
 static io_source_t mmc64_io1_device = {
@@ -228,6 +232,7 @@ static io_source_t mmc64_io1_device = {
     mmc64_io1_peek,
     NULL,
     CARTRIDGE_MMC64,
+    0,
     0
 };
 
@@ -350,9 +355,9 @@ static int set_mmc64_enabled(int val, void *param)
                 mmc64_enabled = 1;
                 cart_set_port_exrom_slot0(1);
                 cart_port_config_changed_slot0();
-                mmc64_clockport_list_item = c64io_register(mmc64_current_clockport_device);
-                mmc64_io1_list_item = c64io_register(&mmc64_io1_device);
-                mmc64_io2_list_item = c64io_register(&mmc64_io2_device);
+                mmc64_clockport_list_item = io_source_register(mmc64_current_clockport_device);
+                mmc64_io1_list_item = io_source_register(&mmc64_io1_device);
+                mmc64_io2_list_item = io_source_register(&mmc64_io2_device);
                 mmc64_reset();
             }
         }
@@ -367,9 +372,9 @@ static int set_mmc64_enabled(int val, void *param)
         mmc64_enabled = 0;
         cart_set_port_exrom_slot0(0);
         cart_port_config_changed_slot0();
-        c64io_unregister(mmc64_clockport_list_item);
-        c64io_unregister(mmc64_io1_list_item);
-        c64io_unregister(mmc64_io2_list_item);
+        io_source_unregister(mmc64_clockport_list_item);
+        io_source_unregister(mmc64_io1_list_item);
+        io_source_unregister(mmc64_io2_list_item);
         mmc64_clockport_list_item = NULL;
         mmc64_io1_list_item = NULL;
         mmc64_io2_list_item = NULL;
@@ -498,7 +503,7 @@ void mmc64_config_init(struct export_s *export)
     if (mmc64_enabled) {
 #if USEPASSTHROUGHHACK
         mmc64_io2_device.io_source_prio = 1;
-        cart_config_changed_slot0((0 << 1) | mmc64_extgame, (0 << 1) | mmc64_extgame, CMODE_READ);
+        cart_config_changed_slot0((BYTE)((0 << 1) | mmc64_extgame), (BYTE)((0 << 1) | mmc64_extgame), CMODE_READ);
 #else
         cart_config_changed_slot0(0, 0, CMODE_READ);
 #endif
@@ -517,11 +522,11 @@ void mmc64_passthrough_changed(struct export_s *export)
         cart_port_config_changed_slot0();
     } else {
         /* MMC64 is completely disabled */
-        cart_config_changed_slot0(((mmc64_extexrom ^ 1) << 1) | mmc64_extgame, ((mmc64_extexrom ^ 1) << 1) | mmc64_extgame, CMODE_READ);
+        cart_config_changed_slot0((BYTE)(((mmc64_extexrom ^ 1) << 1) | mmc64_extgame), (BYTE)(((mmc64_extexrom ^ 1) << 1) | mmc64_extgame), CMODE_READ);
     }
 }
 
-static void REGPARM2 mmc64_clockport_enable_store(WORD addr, BYTE value)
+static void mmc64_clockport_enable_store(WORD addr, BYTE value)
 {
     if ((value & 1) != mmc64_clockport_enabled) {
         mmc64_clockport_enabled = value & 1;
@@ -531,7 +536,7 @@ static void REGPARM2 mmc64_clockport_enable_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 mmc64_reg_store(WORD addr, BYTE value,int active)
+static void mmc64_reg_store(WORD addr, BYTE value,int active)
 {
     switch (addr) {
         case 0:
@@ -595,7 +600,7 @@ static void REGPARM2 mmc64_reg_store(WORD addr, BYTE value,int active)
                 if (mmc64_active) {
                     /* cart_set_port_exrom_slot0(0); */
                     log_message(mmc64_log,"disabling MMC64 (exrom:%d game:%d) mmc64_active: %d", mmc64_extexrom, mmc64_extgame, mmc64_active);
-                    cart_config_changed_slot0(((mmc64_extexrom ^ 1) << 1) | mmc64_extgame, ((mmc64_extexrom ^ 1) << 1) | mmc64_extgame, CMODE_READ);
+                    cart_config_changed_slot0((BYTE)(((mmc64_extexrom ^ 1) << 1) | mmc64_extgame), (BYTE)(((mmc64_extexrom ^ 1) << 1) | mmc64_extgame), CMODE_READ);
                     mmc64_io2_device.io_source_prio = 0;
                 } else {
                     /* this controls the mapping of the MMC64 bios */
@@ -622,16 +627,16 @@ static void REGPARM2 mmc64_reg_store(WORD addr, BYTE value,int active)
                 if (mmc64_cport) {
                     mmc64_hw_clockport = 0xdf22;
                     mmc64_current_clockport_device = &mmc64_io2_clockport_device;
-                    c64io_unregister(mmc64_clockport_list_item);
-                    mmc64_clockport_list_item = c64io_register(mmc64_current_clockport_device);
+                    io_source_unregister(mmc64_clockport_list_item);
+                    mmc64_clockport_list_item = io_source_register(mmc64_current_clockport_device);
 #ifdef HAVE_TFE
                     tfe_clockport_changed();
 #endif
                 } else {
                     mmc64_hw_clockport = 0xde02;
                     mmc64_current_clockport_device = &mmc64_io1_clockport_device;
-                    c64io_unregister(mmc64_clockport_list_item);
-                    mmc64_clockport_list_item = c64io_register(mmc64_current_clockport_device);
+                    io_source_unregister(mmc64_clockport_list_item);
+                    mmc64_clockport_list_item = io_source_register(mmc64_current_clockport_device);
 #ifdef HAVE_TFE
                     tfe_clockport_changed();
 #endif
@@ -676,19 +681,19 @@ static void REGPARM2 mmc64_reg_store(WORD addr, BYTE value,int active)
   }
 }
 
-static void REGPARM2 mmc64_io1_store(WORD addr, BYTE value)
+static void mmc64_io1_store(WORD addr, BYTE value)
 {
     if (mmc64_hw_flashjumper) {
         mmc64_reg_store(addr, value, 1);
     }
 }
 
-static void REGPARM2 mmc64_io2_store(WORD addr, BYTE value)
+static void mmc64_io2_store(WORD addr, BYTE value)
 {
     mmc64_reg_store(addr, value, mmc64_active ^ 1);
 }
 
-static BYTE REGPARM1 mmc64_io2_read(WORD addr)
+static BYTE mmc64_io2_read(WORD addr)
 {
     BYTE value;
 
@@ -794,12 +799,12 @@ static BYTE REGPARM1 mmc64_io2_read(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 mmc64_io1_read(WORD addr)
+static BYTE mmc64_io1_read(WORD addr)
 {
     return mmc64_io2_read(addr);
 }
 
-static BYTE REGPARM1 mmc64_io2_peek(WORD addr)
+static BYTE mmc64_io2_peek(WORD addr)
 {
     BYTE value = 0;
 
@@ -849,7 +854,7 @@ static BYTE REGPARM1 mmc64_io2_peek(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 mmc64_io1_peek(WORD addr)
+static BYTE mmc64_io1_peek(WORD addr)
 {
     return mmc64_io2_peek(addr);
 }
@@ -883,7 +888,7 @@ int mmc64_peek_mem(WORD addr, BYTE *value)
     return CART_READ_THROUGH;
 }
 
-void REGPARM2 mmc64_roml_store(WORD addr, BYTE byte)
+void mmc64_roml_store(WORD addr, BYTE byte)
 {
     /* if (addr == 0x8000) LOG(("roml w %04x %02x active: %d == 0 bios: %d == 0 flashjumper: %d == 1 flashmode: %d == 1\n", addr, byte, mmc64_active, mmc64_biossel, mmc64_flashjumper, mmc64_flashmode)); */
     if (!mmc64_active && !mmc64_biossel && mmc64_flashjumper && mmc64_flashmode) {
@@ -1146,4 +1151,65 @@ void mmc64_detach(void)
 int mmc64_enable(void)
 {
     return set_mmc64_enabled(1, (void*)1);
+}
+
+/* ---------------------------------------------------------------------*/
+/*    snapshot support functions                                             */
+
+#define CART_DUMP_VER_MAJOR   0
+#define CART_DUMP_VER_MINOR   0
+#define SNAP_MODULE_NAME  "CARTMMC64"
+
+/* FIXME: implement snapshot support */
+int mmc64_snapshot_write_module(snapshot_t *s)
+{
+    return -1;
+#if 0
+    snapshot_module_t *m;
+
+    m = snapshot_module_create(s, SNAP_MODULE_NAME,
+                          CART_DUMP_VER_MAJOR, CART_DUMP_VER_MINOR);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if (0) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+    return 0;
+#endif
+}
+
+int mmc64_snapshot_read_module(snapshot_t *s)
+{
+    return -1;
+#if 0
+    BYTE vmajor, vminor;
+    snapshot_module_t *m;
+
+    m = snapshot_module_open(s, SNAP_MODULE_NAME, &vmajor, &vminor);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if ((vmajor != CART_DUMP_VER_MAJOR) || (vminor != CART_DUMP_VER_MINOR)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    if (0) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+
+    if (mmc64_common_attach() < 0) {
+        return -1;
+    }
+    return 0;
+#endif
 }

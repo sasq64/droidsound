@@ -6,7 +6,7 @@
 void video_render_initconfig(video_render_config_t *config) {}
 void video_render_setphysicalcolor(video_render_config_t *config, int index, DWORD color, int depth) {}
 void video_render_setrawrgb(unsigned int index, DWORD r, DWORD g, DWORD b) {}
-void video_render_initraw(void) {}
+void video_render_initraw(struct video_render_config_s *videoconfig) {}
 
 /**************************************************************/
 

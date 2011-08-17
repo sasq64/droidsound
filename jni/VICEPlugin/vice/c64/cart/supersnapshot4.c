@@ -35,7 +35,7 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "supersnapshot4.h"
@@ -98,10 +98,10 @@ static BYTE ramconfig = 0xff, romconfig = 9;
 /* ---------------------------------------------------------------------*/
 
 /* some prototypes are needed */
-static BYTE REGPARM1 supersnapshot_v4_io1_read(WORD addr);
-static void REGPARM2 supersnapshot_v4_io1_store(WORD addr, BYTE value);
-static BYTE REGPARM1 supersnapshot_v4_io2_read(WORD addr);
-static void REGPARM2 supersnapshot_v4_io2_store(WORD addr, BYTE value);
+static BYTE supersnapshot_v4_io1_read(WORD addr);
+static void supersnapshot_v4_io1_store(WORD addr, BYTE value);
+static BYTE supersnapshot_v4_io2_read(WORD addr);
+static void supersnapshot_v4_io2_store(WORD addr, BYTE value);
 
 static io_source_t ss4_io1_device = {
     CARTRIDGE_NAME_SUPER_SNAPSHOT,
@@ -113,7 +113,9 @@ static io_source_t ss4_io1_device = {
     supersnapshot_v4_io1_read,
     NULL,
     NULL,
-    CARTRIDGE_SUPER_SNAPSHOT
+    CARTRIDGE_SUPER_SNAPSHOT,
+    0,
+    0
 };
 
 static io_source_t ss4_io2_device = {
@@ -126,7 +128,9 @@ static io_source_t ss4_io2_device = {
     supersnapshot_v4_io2_read,
     NULL,
     NULL,
-    CARTRIDGE_SUPER_SNAPSHOT
+    CARTRIDGE_SUPER_SNAPSHOT,
+    0,
+    0
 };
 
 static io_source_list_t *ss4_io1_list_item = NULL;
@@ -139,17 +143,17 @@ static const c64export_resource_t export_res_v4 = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 supersnapshot_v4_io1_read(WORD addr)
+BYTE supersnapshot_v4_io1_read(WORD addr)
 {
     return export_ram0[0x1e00 + (addr & 0xff)];
 }
 
-void REGPARM2 supersnapshot_v4_io1_store(WORD addr, BYTE value)
+void supersnapshot_v4_io1_store(WORD addr, BYTE value)
 {
     export_ram0[0x1e00 + (addr & 0xff)] = value;
 }
 
-BYTE REGPARM1 supersnapshot_v4_io2_read(WORD addr)
+BYTE supersnapshot_v4_io2_read(WORD addr)
 {
     ss4_io2_device.io_source_valid = 1;
 
@@ -161,7 +165,7 @@ BYTE REGPARM1 supersnapshot_v4_io2_read(WORD addr)
     return roml_banks[(addr & 0x1fff) + (0x2000 * roml_bank)];
 }
 
-void REGPARM2 supersnapshot_v4_io2_store(WORD addr, BYTE value)
+void supersnapshot_v4_io2_store(WORD addr, BYTE value)
 {
     DBG(("SS4: io2 w %04x %02x\n", addr, value));
 
@@ -240,7 +244,7 @@ void REGPARM2 supersnapshot_v4_io2_store(WORD addr, BYTE value)
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 supersnapshot_v4_roml_read(WORD addr)
+BYTE supersnapshot_v4_roml_read(WORD addr)
 {
     if (export_ram) {
         return export_ram0[addr & 0x1fff];
@@ -249,7 +253,7 @@ BYTE REGPARM1 supersnapshot_v4_roml_read(WORD addr)
     return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
 }
 
-void REGPARM2 supersnapshot_v4_roml_store(WORD addr, BYTE value)
+void supersnapshot_v4_roml_store(WORD addr, BYTE value)
 {
     if (export_ram) {
         export_ram0[addr & 0x1fff] = value;
@@ -284,8 +288,8 @@ static int supersnapshot_v4_common_attach(void)
     if (c64export_add(&export_res_v4) < 0) {
         return -1;
     }
-    ss4_io1_list_item = c64io_register(&ss4_io1_device);
-    ss4_io2_list_item = c64io_register(&ss4_io2_device);
+    ss4_io1_list_item = io_source_register(&ss4_io1_device);
+    ss4_io2_list_item = io_source_register(&ss4_io2_device);
     return 0;
 }
 
@@ -299,19 +303,19 @@ int supersnapshot_v4_bin_attach(const char *filename, BYTE *rawcart)
 
 int supersnapshot_v4_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    int i = 4;
+    int i;
     BYTE chipheader[0x10];
 
-    while (i--) {
+    for (i = 0; i < 4; i++) {
         if (fread(chipheader, 0x10, 1, fd) < 1) {
             return -1;
         }
 
-        if (chipheader[0xb] > 3) {
+        if (chipheader[0xb] > 1) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (fread(&rawcart[0x2000 * i], 0x2000, 1, fd) < 1) {
             return -1;
         }
     }
@@ -322,8 +326,8 @@ int supersnapshot_v4_crt_attach(FILE *fd, BYTE *rawcart)
 void supersnapshot_v4_detach(void)
 {
     c64export_remove(&export_res_v4);
-    c64io_unregister(ss4_io1_list_item);
-    c64io_unregister(ss4_io2_list_item);
+    io_source_unregister(ss4_io1_list_item);
+    io_source_unregister(ss4_io2_list_item);
     ss4_io1_list_item = NULL;
     ss4_io2_list_item = NULL;
 }

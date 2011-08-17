@@ -69,49 +69,35 @@ static io_source_t *current_device = NULL;
 int machine_sid2_check_range(unsigned int sid2_adr)
 {
     if (machine_class == VICE_MACHINE_C128) {
-        if (sid2_adr >= 0xd420 && sid2_adr <= 0xd4e0) {
-            if (stereo_sid_list_item != NULL) {
-                c64io_unregister(stereo_sid_list_item);
-                stereo_sid_list_item = NULL;
-            }
-            current_device = NULL;
-            return 0;
-        }
-
-        if (sid2_adr >= 0xd700 && sid2_adr <= 0xd7e0) {
-            if (stereo_sid_list_item != NULL) {
-                c64io_unregister(stereo_sid_list_item);
-                stereo_sid_list_item = NULL;
-            }
-            current_device = NULL;
-            return 0;
-        }
-    } else {
-        if (sid2_adr >= 0xd420 && sid2_adr <= 0xd7e0) {
-            if (stereo_sid_list_item != NULL) {
-                c64io_unregister(stereo_sid_list_item);
-                stereo_sid_list_item = NULL;
-            }
-            current_device = NULL;
-            return 0;
-        }
-    }
-
-    if (sid2_adr >= 0xde00 && sid2_adr <= 0xdfe0) {
+        if ((sid2_adr >= 0xd400/*0xde00*/ && sid2_adr <= 0xdfe0) || (sid2_adr >= 0xd700 && sid2_adr <= 0xdfe0)) {
         stereo_sid_device.start_address = sid2_adr;
         stereo_sid_device.end_address = sid2_adr + 0x1f;
         current_device = &stereo_sid_device;
         if (stereo_sid_list_item != NULL) {
-            c64io_unregister(stereo_sid_list_item);
-            stereo_sid_list_item = c64io_register(&stereo_sid_device);
+            io_source_unregister(stereo_sid_list_item);
+            stereo_sid_list_item = io_source_register(&stereo_sid_device);
         } else {
             if (sid_stereo) {
-                stereo_sid_list_item = c64io_register(&stereo_sid_device);
+                stereo_sid_list_item = io_source_register(&stereo_sid_device);
+             }
             }
+            return 0;
         }
-        return 0;
+       } else {
+        if (sid2_adr >= 0xd400 && sid2_adr <= 0xdfe0){
+            stereo_sid_device.start_address = sid2_adr;
+            stereo_sid_device.end_address = sid2_adr + 0x1f;
+            if (stereo_sid_list_item != NULL){
+                io_source_unregister(stereo_sid_list_item);
+                stereo_sid_list_item = io_source_register(&stereo_sid_device);
+            } else {
+                if (sid_stereo){
+                    stereo_sid_list_item = io_source_register(&stereo_sid_device);
+                }
+            }
+            return 0;
+        }
     }
-
     return -1;
 }
 
@@ -119,11 +105,11 @@ void machine_sid2_enable(int val)
 {
     if (val) {
         if (current_device != NULL) {
-            stereo_sid_list_item = c64io_register(&stereo_sid_device);
+            stereo_sid_list_item = io_source_register(&stereo_sid_device);
         }
     } else {
         if (stereo_sid_list_item != NULL) {
-            c64io_unregister(stereo_sid_list_item);
+            io_source_unregister(stereo_sid_list_item);
             stereo_sid_list_item = NULL;
         }
     }
@@ -139,44 +125,6 @@ int sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
     return sid_sound_machine_init(psid, speed, cycles_per_sec);
 }
 
-void sound_machine_close(sound_t *psid)
-{
-    sid_sound_machine_close(psid);
-}
-
-/* for read/store 0x00 <= addr <= 0x1f is the sid
- *                0x20 <= addr <= 0x3f is the digimax
- *                0x40 <= addr <= 0x5f is the SFX sound sampler
- *                0x60 <= addr <= 0x7f is the SFX sound expander
- *                0x80 <= addr <= 0x9f is the Magic Voice
- *
- * future sound devices will be able to use 0x80 and up
- */
-
-/* FIXME: make hook for carts */
-BYTE sound_machine_read(sound_t *psid, WORD addr)
-{
-    return sid_sound_machine_read(psid, addr);
-}
-
-/* FIXME: make hook for carts */
-void sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
-{
-    sid_sound_machine_store(psid, addr, byte);
-}
-
-/* FIXME: make hook for carts */
-void sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
-{
-    sid_sound_machine_reset(psid, cpu_clk);
-}
-
-/* FIXME: make hook for carts */
-int sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
-{
-    return sid_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-}
-
 void sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub)
 {
     sid_sound_machine_prevent_clk_overflow(psid, sub);
@@ -187,15 +135,30 @@ char *sound_machine_dump_state(sound_t *psid)
     return sid_sound_machine_dump_state(psid);
 }
 
-int sound_machine_cycle_based(void)
+static sound_chip_t sid_sound_chip = {
+	sid_sound_machine_open,
+	sid_sound_machine_init,
+	sid_sound_machine_close,
+	sid_sound_machine_calculate_samples,
+ 	sid_sound_machine_store,
+    sid_sound_machine_read,
+	sid_sound_machine_reset,
+	sid_sound_machine_cycle_based,
+	sid_sound_machine_channels,
+	 	     1 /* chip enabled */
+};
+	 	 
+
+static WORD sid_sound_chip_offset = 0;
+
+void sid_sound_chip_init(void)
 {
-    return sid_sound_machine_cycle_based();
+    sid_sound_chip_offset = sound_chip_register(&sid_sound_chip);
 }
 
-int sound_machine_channels(void)
+/*void cartridge_sound_chip_init(void)
 {
-    return sid_sound_machine_channels();
-}
+}*/
 
 void sound_machine_enable(int enable)
 {

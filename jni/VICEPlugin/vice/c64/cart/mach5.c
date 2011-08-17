@@ -34,7 +34,7 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "mach5.h"
 #include "snapshot.h"
@@ -56,25 +56,25 @@
 #define DBG(x)
 #endif
 
-static BYTE REGPARM1 mach5_io1_read(WORD addr)
+static BYTE mach5_io1_read(WORD addr)
 {
 /*    DBG(("io1 rd %04x\n", addr)); */
     return roml_banks[0x1e00 + (addr & 0xff)];
 }
 
-static void REGPARM2 mach5_io1_store(WORD addr, BYTE value)
+static void mach5_io1_store(WORD addr, BYTE value)
 {
     DBG(("io1 st %04x %02x\n", addr, value));
     cart_config_changed_slotmain(0, 0, CMODE_WRITE);
 }
 
-static BYTE REGPARM1 mach5_io2_read(WORD addr)
+static BYTE mach5_io2_read(WORD addr)
 {
 /*    DBG(("io2 rd %04x\n", addr)); */
     return roml_banks[0x1f00 + (addr & 0xff)];
 }
 
-static void REGPARM2 mach5_io2_store(WORD addr, BYTE value)
+static void mach5_io2_store(WORD addr, BYTE value)
 {
     DBG(("%04x io2 st %04x %02x\n", reg_pc, addr, value));
     cart_config_changed_slotmain(2, 2, CMODE_WRITE);
@@ -90,9 +90,11 @@ static io_source_t mach5_io1_device = {
     1, /* read is always valid */
     mach5_io1_store,
     mach5_io1_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MACH5
+    mach5_io1_read,
+    NULL,
+    CARTRIDGE_MACH5,
+    0,
+    0
 };
 
 static io_source_t mach5_io2_device = {
@@ -103,9 +105,11 @@ static io_source_t mach5_io2_device = {
     1, /* read is always valid */
     mach5_io2_store,
     mach5_io2_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MACH5
+    mach5_io2_read,
+    NULL,
+    CARTRIDGE_MACH5,
+    0,
+    0
 };
 
 static io_source_list_t *mach5_io1_list_item = NULL;
@@ -135,15 +139,18 @@ static int mach5_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    mach5_io1_list_item = c64io_register(&mach5_io1_device);
-    mach5_io2_list_item = c64io_register(&mach5_io2_device);
+    mach5_io1_list_item = io_source_register(&mach5_io1_device);
+    mach5_io2_list_item = io_source_register(&mach5_io2_device);
     return 0;
 }
 
 int mach5_bin_attach(const char *filename, BYTE *rawcart)
 {
     if (util_file_load(filename, rawcart, 0x2000, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
-        return -1;
+        if (util_file_load(filename, rawcart, 0x1000, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
+            return -1;
+        }
+        memcpy(&rawcart[0x1000], rawcart, 0x1000);
     }
 
     return mach5_common_attach();
@@ -157,8 +164,15 @@ int mach5_crt_attach(FILE *fd, BYTE *rawcart)
         return -1;
     }
 
-    if (fread(rawcart, 0x2000, 1, fd) < 1) {
-        return -1;
+    if (chipheader[6] == 0x10) {
+        if (fread(rawcart, 0x1000, 1, fd) < 1) {
+            return -1;
+        }
+        memcpy(&rawcart[0x1000], rawcart, 0x1000);
+    } else {
+        if (fread(rawcart, 0x2000, 1, fd) < 1) {
+            return -1;
+        }
     }
 
     return mach5_common_attach();
@@ -167,8 +181,8 @@ int mach5_crt_attach(FILE *fd, BYTE *rawcart)
 void mach5_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(mach5_io1_list_item);
-    c64io_unregister(mach5_io2_list_item);
+    io_source_unregister(mach5_io1_list_item);
+    io_source_unregister(mach5_io2_list_item);
     mach5_io1_list_item = NULL;
     mach5_io2_list_item = NULL;
 }

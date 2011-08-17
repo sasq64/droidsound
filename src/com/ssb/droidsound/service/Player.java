@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.zip.ZipEntry;
 
@@ -27,16 +28,16 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /*
- * The Player thread 
+ * The Player thread
  */
-public class Player implements Runnable {
+public final class Player implements Runnable {
 	private static final String TAG = "Player";
 
 	public enum State {
 		STOPPED, PAUSED, PLAYING, SWITCHING
-	};
+	}
 
-	public enum Command {
+    public enum Command {
 		NO_COMMAND,
 		STOP, // Unload and stop if playing
 		PLAY, // Play new file or last file
@@ -44,21 +45,21 @@ public class Player implements Runnable {
 		DUMP_WAV,
 		// Only when Playing:
 		PAUSE, UNPAUSE, SET_POS, SET_TUNE,
-	};
+	}
 
-	public static final int MSG_NEWSONG = 0;
+    public static final int MSG_NEWSONG = 0;
 	public static final int MSG_DONE = 2;
 	public static final int MSG_STATE = 1;
 	public static final int MSG_PROGRESS = 3;
-	protected static final int MSG_SILENT = 4;
+	private static final int MSG_SILENT = 4;
 	public static final int MSG_SUBTUNE = 5;
 	public static final int MSG_DETAILS = 6;
 	public static final int MSG_INFO = 7;
-	protected static final int MSG_WAVDUMPED = 8;
+	static final int MSG_WAVDUMPED = 8;
 
 	// public static final int MSG_SUBTUNE = 5;
 
-	public static class SongInfo {
+	public static final class SongInfo {
 		String title;
 		String author;
 		String copyright;
@@ -74,9 +75,9 @@ public class Player implements Runnable {
 		public String fileName;
 		public String source;
 		public byte[] md5;
-	};
+	}
 
-	private Handler mHandler;
+	private final Handler mHandler;
 
 	// Audio data
 	private short[] samples;
@@ -85,19 +86,16 @@ public class Player implements Runnable {
 
 	// Plugins
 	private DroidSoundPlugin currentPlugin;
-	private List<DroidSoundPlugin> plugins;
+	private final List<DroidSoundPlugin> plugins;
 
 	// Incoming state
-	private Object cmdLock = new Object();
+	private final Object cmdLock = new Object();
 	private Command command = Command.NO_COMMAND;
 	private Object argument;
 
-	// Player state
-	// private int currentPosition;
-	private int noPlayWait;
-	private int lastPos;
+    private int lastPos;
 	private int playPosOffset;
-	private SongInfo currentSong = new SongInfo();
+	private final SongInfo currentSong = new SongInfo();
 
 	// private Object songRef;
 
@@ -109,20 +107,18 @@ public class Player implements Runnable {
 	private volatile State currentState = State.STOPPED;
 	private int silentPosition;
 
-	int FREQ = 44100;
-	private long audioTime;
+	private final int FREQ = 44100;
+	public long audioTime;
 	private int aCount;
 	private long lastTime = -1;
-	private long frameTime;
-	// private int switchPos = -1;
+    // private int switchPos = -1;
 	private boolean songEnded = false;
 	private boolean reinitAudio;
 
 	private boolean startedFromSub;
 	private int lastLatency;
 	private boolean firstData;
-	private SongFile nextSong;
-	//private String lastSubtuneTitle;
+    //private String lastSubtuneTitle;
 	//private String lastTitle;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
@@ -134,7 +130,8 @@ public class Player implements Runnable {
 		// Enough for 3000ms
 		bufSize = 0x40000;
 
-		samples = new short[bufSize / 2];
+		//samples = new short[bufSize / 2]; // >> is more efficient than dividing by powers.
+		samples = new short[bufSize >> 2];
 	}
 
 	private File writeFile(String name, InputStream fs, boolean temp) throws IOException {
@@ -154,10 +151,11 @@ public class Player implements Runnable {
 		} else {
 			file = new File(name);
 		}
-
-		FileOutputStream fo = new FileOutputStream(file);
+		
+		//FileOutputStream fo = new FileOutputStream(file); Buffered I/O below
+		BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 		byte[] buffer = new byte[16384];
-
+		
 		while(true) {
 			int rc = fs.read(buffer);
 			if(rc <= 0) {
@@ -171,44 +169,45 @@ public class Player implements Runnable {
 
 	public static String makeSize(long fileSize) {
 		String s;
-		if(fileSize < 10 * 1024) {
+        //if(fileSize < 10 * 1024) { simplified using a shift
+		if(fileSize < 10 << 10) {
 			s = String.format("%1.1fKB", (float) fileSize / 1024F);
-		} else if(fileSize < 1024 * 1024) {
-			s = String.format("%dKB", fileSize / 1024);
-		} else if(fileSize < 10 * 1024 * 1024) {
+            //} else if(fileSize < 1024 * 1024){ Simplified using a shift.
+		} else if(fileSize < 1024 << 10) {
+			//s = String.format("%dKB", fileSize / 1024); // >> is more efficient for powers.
+			s = String.format("%dKB", fileSize >> 10);
+            //} else if(fileSize < 10 * 1024 * 1024){ simplified using a shift.
+		} else if(fileSize < (10 << 10) << 10) {
 			s = String.format("%1.1fMB", (float) fileSize / (1024F * 1024F));
 		} else {
-			s = String.format("%dMB", fileSize / (1024 * 1024));
+            //s = String.format("%dMB, fileSize / (1024 * 1024)); Simplified using a shift.
+			s = String.format("%dMB", fileSize / (1024 << 10));
 		}
 		return s;
 	}
 
 	private void startSong(SongFile song, SongFile song2) {
-		nextSong = song2;
-		startSong(song, false);
+        startSong(song, false);
 	}
 
 	private void dumpWav(SongFile song, File outFile, int length, int flags) throws IOException {
-		
+
 		Log.d(TAG, "IN DUMP WAV");
-		
+
 		startSong(song, true);
-		
+
 		audioTrack.stop();
 		audioTrack.flush();
 
 		byte [] bbuffer = new byte [bufSize];
-		
+
 		//FileOutputStream fos = new FileOutputStream(outFile);
 		//BufferedOutputStream bos = new BufferedOutputStream(fos, bufSize);
-		
 
 		int numSamples = (int)(((long)length * FREQ) / 1000);
-
 		int numChannels = 1;
 		int divider = 2;
-		
-		
+
 		if((flags & 2) != 0) {
 			Log.d(TAG, "HIGH QUALITY!");
 			numChannels = 2;
@@ -216,17 +215,16 @@ public class Player implements Runnable {
 		}
 
 		int wavSamples = numSamples / divider;
-		
+
 		// the /2 halves the frequency
-		
 		int freq = FREQ/divider;
-		
+
 		// Size in bytes of wavdata
-		int dataSize = wavSamples * numChannels * 16/8;
-		
+        //int dataSize = wavSamples * numChannels * 16/8; Simplified using a shift.
+		int dataSize = (wavSamples * numChannels << 4) >> 3;
+
 		Log.d(TAG, "%dsec => %d samples, %d wavSamples, %d dataSize", length/1000, numSamples, wavSamples, dataSize);
 
-		
 		byte [] barray = new byte [128];
 		ByteBuffer bb = ByteBuffer.wrap(barray);
 		bb.order(ByteOrder.LITTLE_ENDIAN);
@@ -238,73 +236,76 @@ public class Player implements Runnable {
 		bb.putShort((short) 1);
 		bb.putShort((short) numChannels);
 		bb.putInt(freq);
-		bb.putInt(freq * numChannels * 16/8);
-		bb.putShort((short) (numChannels * 16/8));
+        //bb.putInt(freq * numChannels * 16/8); simplified using a shift.
+		bb.putInt((freq * numChannels << 4) >> 3);
+        //bb.putShort(numChannels * 16/8); Simplified using a shift.
+		bb.putShort((short) ((numChannels << 4) >> 3));
 		bb.putShort((short) 16);
 
 		bb.put(new byte[] { 'd', 'a', 't', 'a' });
 		bb.putInt(dataSize);
-		
+
 		//bos.write(barray, 0, bb.position());
-			
+
 		RandomAccessFile raf = new RandomAccessFile(outFile, "rw");
 		raf.write(barray, 0, bb.position());
-		
+
 		int sampleCount = 0;
 		int bytesWritten = 0;
+		
 		while(sampleCount < numSamples) {
 			// In and out are number of shorts, not number of samples (2 bytes vs 4 bytes in 16bit stereo)
 			int len = currentPlugin.getSoundData(samples, bufSize / 16);
 			Log.d(TAG, "READ %d (%d)", len, bufSize);
 			if(len < 0) {
 				wavSamples = sampleCount / divider;
-				dataSize = wavSamples * numChannels * 16/8;
-				
+                //dataSize = wavSamples * numChannels * 16/8; Simplified using a shift.
+				dataSize = (wavSamples * numChannels << 4) >> 3;
 				Log.d(TAG, "Early end, new datasize is %d", dataSize);
-				
+
 				bb.putInt(4, dataSize + 36);
 				bb.putInt(40, dataSize);
 				raf.seek(0);
 				raf.write(barray, 0, bb.position());
 				break;
 			}
-			
+
 			len /= 2; // len now samples, not shorts
-			
-			if(sampleCount + len > numSamples)
-				len = numSamples - sampleCount; 
-			
+
+			if(sampleCount + len > numSamples) {
+				len = numSamples - sampleCount;
+			}
+
 			sampleCount += len;
-			
 			Log.d(TAG, "%d vs %d frames", numSamples, sampleCount);
-			
+
 			int j = 0;
 			int i = 0;			
 			int volume = 100;
 			// Now we iterate over sample values which are twice as many
-			while(i < len*2) {
-				
+            //while(i < len*2){ simplified using a shift.
+			int avg = ((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]);
+			short savg = (short) (avg * volume / 400);
+			while(i < len << 1) {
 				if((flags & 2) != 0) {
 					bbuffer[j++] = (byte) (samples[i]&0xff);
 					bbuffer[j++] = (byte) ((samples[i]>>8)&0xff);
 					i += 1;
 				} else {
-					int avg = ((int)samples[i] + (int)samples[i+1] + (int)samples[i+2] + (int)samples[i+3]);
-					short savg = (short) (avg * volume / 400);								
 					i += 4;
 					bbuffer[j++] = (byte) (savg&0xff);
 					bbuffer[j++] = (byte) ((savg>>8)&0xff);
 				}
-			}			
-			raf.write(bbuffer, 0, j);	
+			}
+			raf.write(bbuffer, 0, j);
 			bytesWritten += j;
 		}
 		//bos.flush();
 		//bos.close();
 		raf.close();
-		
+
 		Log.d(TAG, "Wrote %d samples in %d bytes", numSamples, bytesWritten);
-				
+
 		if(reinitAudio) {
 			audioTrack.release();
 			audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
@@ -314,7 +315,7 @@ public class Player implements Runnable {
 			reinitAudio = false;
 		}
 
-		currentPlugin.unload();		
+		currentPlugin.unload();
 		currentPlugin = null;
 		currentState = State.STOPPED;
 		
@@ -322,7 +323,7 @@ public class Player implements Runnable {
 		mHandler.sendMessage(msg);
 	}
 
-	
+
 	private void startSong(SongFile song, boolean skipStart) {
 
 		if(currentPlugin != null) {
@@ -332,13 +333,12 @@ public class Player implements Runnable {
 		playPosOffset = 0;
 		songEnded = false;
 
-		boolean flush = true; // (currentState != State.SWITCHING);
-
-		currentState = State.SWITCHING;
+        currentState = State.SWITCHING;
 
 		// SongFile sf = new SongFile(songName);
 
-		List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
+        //List<DroidSoundPlugin> list = new ArrayList(); //Below is weaker type of same thing
+		Collection<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 
 		for(DroidSoundPlugin plugin : plugins) {
 			if(plugin.canHandle(song.getName())) {
@@ -364,7 +364,7 @@ public class Player implements Runnable {
 				Log.d(TAG, "ZIP FILE");
 
 				File f = new File(song.getZipPath());
-	
+
 				if(currentZipFile != null && f.equals(currentZipFile)) {
 				} else {
 					if(currentZip != null) {
@@ -432,11 +432,11 @@ public class Player implements Runnable {
 				Log.d(TAG, "Trying to read normal file " + songFile.getPath());
 
 				fileSize = songFile.length();
-				System.gc();
+				//System.gc(); generally unecessary. Garbage Collection is automated
 
-				if(!songFile.exists())
+				if(!songFile.exists()) {
 					songFile = null;
-				else {
+				} else {
 
 					String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
 					if(fname2 != null) {
@@ -471,8 +471,9 @@ public class Player implements Runnable {
 					}
 				} else if(songBuffer != null) {
 					songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
-					if(songLoaded)
+					if(songLoaded) {
 						plugin.calcMD5(songBuffer, (int) fileSize);
+					}
 				}
 				if(songLoaded) {
 					if(currentPlugin != null && currentPlugin != plugin) {
@@ -500,8 +501,9 @@ public class Player implements Runnable {
 							}
 						} else if(songBuffer != null) {
 							songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
-							if(songLoaded)
+							if(songLoaded) {
 								plugin.calcMD5(songBuffer, (int) fileSize);
+							}
 
 						}
 						Log.d(TAG, "%s gave Songref %s", plugin.getClass().getName(), songLoaded ? "TRUE" : "FALSE");
@@ -523,7 +525,7 @@ public class Player implements Runnable {
 			synchronized (this) {
 				currentSong.md5 = currentPlugin.getMD5();
 				currentSong.fileName = song.getPath(); // songName;
-				
+
 
 				if(song.getTitle() != null) {
 					currentSong.title = song.getTitle();
@@ -550,9 +552,10 @@ public class Player implements Runnable {
 				currentSong.canSeek = currentPlugin.canSeek();
 
 				currentSong.details = new String[info.length + 2];
-				for(int i = 0; i < info.length; i++) {
+				/*for(int i = 0; i < info.length; i++) {
 					currentSong.details[i] = info[i];
-				}
+				}*/
+                System.arraycopy(info, 0, currentSong.details, 0, info.length);  //Improved code, eliminating the for loop
 				currentSong.details[info.length] = "Size";
 
 				String size = makeSize(fileSize);
@@ -564,20 +567,21 @@ public class Player implements Runnable {
 
 				currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 
-				if(currentSong.title == null || currentSong.title.equals("")) {
+				if(currentSong.title == null || "".equals(currentSong.title)) {
 
 					if(currentPlugin.delayedInfo()) {
 						currentSong.title = null;
-					} else {					
+					} else {
 						String basename = currentPlugin.getBaseName(currentSong.fileName);
-						
-						
+
+
 						int sep = basename.indexOf(" - ");
 						if(sep > 0) {
 							currentSong.author = basename.substring(0, sep);
 							currentSong.title = basename.substring(sep+3);
-						} else 
+						} else {
 							currentSong.title = basename;
+						}
 						Log.d(TAG, "FN Title '%s'", currentSong.title);
 					}
 				}
@@ -585,8 +589,12 @@ public class Player implements Runnable {
 				currentSong.subtuneTitle = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
 				currentSong.subtuneAuthor = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
 
-				if(currentSong.subTunes == -1)
-					currentSong.subTunes = 0;
+				if(currentSong.subTunes == 0) {
+					currentSong.subTunes = 1;
+				} else {
+					if (currentSong.subTunes == -1) 
+						 currentSong.subTunes = 0;
+				}
 			}
 
 			startedFromSub = false;
@@ -608,29 +616,30 @@ public class Player implements Runnable {
 
 			currentSong.source = "";
 			firstData = true;
-			
+
 			if(!skipStart) {
-	
+
 				Log.d(TAG, ":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type);
-	
+
 				Message msg = mHandler.obtainMessage(MSG_NEWSONG);
-	
+
 				MediaPlayer mp = currentPlugin.getMediaPlayer();
 				if(mp != null) {
 					currentState = State.PLAYING;
 					lastPos = -1000;
 					currentSong.source = currentPlugin.getStringInfo(102);
 					Log.d(TAG, "MP3 SOURCE IS " + currentSong.source);
-	
+
 					mHandler.sendMessage(msg);
-	
+
 					mp.start();
 					return;
 				}
-	
+
 				mHandler.sendMessage(msg);
-	
-				if(flush) {
+
+                boolean flush = true; // (currentState != State.SWITCHING);
+                if(flush) {
 					audioTrack.stop();
 					audioTrack.flush();
 					try {
@@ -641,10 +650,10 @@ public class Player implements Runnable {
 					}
 					// audioTrack.stop();
 					// audioTrack.flush();
-	
+
 					Log.d(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
 				}
-	
+
 				if(reinitAudio) {
 					audioTrack.release();
 					audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO,
@@ -652,7 +661,7 @@ public class Player implements Runnable {
 					samples = new short[bufSize / 2];
 					reinitAudio = false;
 				}
-	
+
 				audioTrack.play();
 				currentState = State.PLAYING;
 				// currentPosition = 0;
@@ -662,8 +671,9 @@ public class Player implements Runnable {
 			if(songFile2 != null) {
 				Log.d(TAG, "Deleting temporary files %s and %s", songFile.getPath(), songFile2.getPath());
 
-				if(songFile2 != songFile)
+				if(songFile2 != songFile) {
 					songFile2.delete();
+				}
 				songFile.delete();
 				songFile2 = null;
 			}
@@ -678,7 +688,7 @@ public class Player implements Runnable {
 			s = "";
 		}
 		return s;
-	}
+    }
 
 	@Override
 	public void run() {
@@ -689,7 +699,7 @@ public class Player implements Runnable {
 				AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 		reinitAudio = false;
 		Log.d(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
-		noPlayWait = 0;
+        int noPlayWait = 0;
 		int pos = 0;
 		while(noPlayWait < 50) {
 			try {
@@ -700,7 +710,7 @@ public class Player implements Runnable {
 					synchronized (cmdLock) {
 						switch(command) {
 						case PLAY_MULTIPLE:
-							SongFile [] songs = (SongFile[]) argument;							
+							SongFile [] songs = (SongFile[]) argument;
 							Log.d(TAG, "Playmod " + songs[0].getName());
 							startSong(songs[0], songs[1]);
 							break;
@@ -726,7 +736,7 @@ public class Player implements Runnable {
 							if(currentState != State.STOPPED) {
 								// audioTrack.pause();
 								Log.d(TAG, "STOP");
-								MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+								MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
 								if(mp != null) {
 									mp.stop();
 								} else {
@@ -818,11 +828,12 @@ public class Player implements Runnable {
 									currentState = State.PAUSED;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 2, 0);
 									mHandler.sendMessage(msg);
-									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
-									if(mp != null)
+									MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
+									if(mp != null) {
 										mp.pause();
-									else
+									} else {
 										audioTrack.pause();
+									}
 								}
 
 								break;
@@ -831,13 +842,16 @@ public class Player implements Runnable {
 									currentState = State.PLAYING;
 									Message msg = mHandler.obtainMessage(MSG_STATE, 1, 0);
 									mHandler.sendMessage(msg);
-									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
-									if(mp != null)
+									MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
+									if(mp != null) {
 										mp.start();
-									else
+									} else {
 										audioTrack.play();
+									}
 								}
 
+								break;
+							default:
 								break;
 							}
 						}
@@ -849,15 +863,14 @@ public class Player implements Runnable {
 				 * Always feed track - play zeroes after song ends Report song
 				 * end at correct time
 				 */
-				
+
 				if(currentState == State.PLAYING) {
 					// Log.d(TAG, "Get sound data");
-					int len = 0;
-					MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+                    MediaPlayer mp = (currentPlugin == null) ? null : currentPlugin.getMediaPlayer();
 					if(mp != null) {
 
 						int playPos = currentPlugin.getSoundData(null, 0);
-						
+
 						if(playPos < -0) { // !mp.isPlaying()) {
 							// songEnded = true;
 							Log.d(TAG, "SOUNDDATA DONE");
@@ -867,26 +880,29 @@ public class Player implements Runnable {
 						}
 
 						if(playPos > 0 && firstData) {
-							
 
-							if(currentSong.title == null)
+
+							if(currentSong.title == null) {
 								currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
-							if(currentSong.author == null)
+							}
+							if(currentSong.author == null) {
 								currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
-							
+							}
+
 							if(currentSong.title == null || currentSong.title.length() == 0) {
-								String basename = currentPlugin.getBaseName(currentSong.fileName);									
+								String basename = currentPlugin.getBaseName(currentSong.fileName);
 								int sep = basename.indexOf(" - ");
 								if(sep > 0) {
 									currentSong.author = basename.substring(0, sep);
 									currentSong.title = basename.substring(sep+3);
-								} else 
+								} else {
 									currentSong.title = basename;
+								}
 								Log.d(TAG, "FN Title '%s'", currentSong.title);
 								Message msg = mHandler.obtainMessage(MSG_INFO, 0, 0, new String[] { currentSong.title, currentSong.author });
 								mHandler.sendMessage(msg);
 							}
-							
+
 							String[] info = currentPlugin.getDetailedInfo();
 							if(info != null) {
 								Log.d(TAG, "########################################### GOT DETAILS");
@@ -896,14 +912,15 @@ public class Player implements Runnable {
 							}
 							firstData = false;
 						}
-						
+
 						// int playPos = mp.getCurrentPosition();
 
 						int latency = currentPlugin.getIntInfo(203);
 						if(latency >= 0) {
 							int diff = latency - lastLatency;
-							if(diff < 0)
+							if(diff < 0) {
 								diff = -diff;
+							}
 							if(diff > 1000) {
 								Message msg = mHandler.obtainMessage(MSG_PROGRESS, -1, latency);
 								mHandler.sendMessage(msg);
@@ -921,7 +938,7 @@ public class Player implements Runnable {
 							String subTuneTitle = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
 							String subTuneAuthor = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
 							int length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-							
+
 							Log.d(TAG, "######## GOT NEW META INFO");
 							Message msg;
 							if(subTuneTitle != null && (!subTuneTitle.equals(currentSong.subtuneTitle))) {
@@ -930,14 +947,13 @@ public class Player implements Runnable {
 							} else {
 								msg = mHandler.obtainMessage(MSG_SUBTUNE, -1, length, null);
 							}
-							mHandler.sendMessage(msg);							
-							
+							mHandler.sendMessage(msg);
+
 							if(title != null && (!title.equals(currentSong.title))) {
 								msg = mHandler.obtainMessage(MSG_INFO, 0, 0, new String[] { title, author });
 								mHandler.sendMessage(msg);
 								currentSong.title = title;
 							}
-							
 						}
 
 						int song = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
@@ -967,7 +983,8 @@ public class Player implements Runnable {
 						continue;
 					}
 
-					if(!songEnded) {
+                    int len = 0;
+                    if(!songEnded) {
 						//Log.d(TAG, "Get sound data");
 						len = currentPlugin.getSoundData(samples, bufSize / 16);
 						//Log.d(TAG, "DONE");
@@ -996,8 +1013,9 @@ public class Player implements Runnable {
 						// String.format("PLAY %d sec %d pos = %d msec ",
 						// currentPosition, pos, pos * 1000 / 44100));
 
-						if(aCount == 0)
+						if(aCount == 0) {
 							aCount = 1;
+						}
 						// cpu = 100 - (int) (audioTime / aCount);
 						Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos + playPosOffset, -1);
 						aCount = 0;
@@ -1034,7 +1052,7 @@ public class Player implements Runnable {
 
 						long tt = System.currentTimeMillis();
 						if(lastTime > 0) {
-							frameTime = (tt - lastTime);
+                            long frameTime = (tt - lastTime);
 							long d = tt - t;
 							// Log.d(TAG, String.format("Frame %d, write %d",
 							// frameTime, d));
@@ -1082,16 +1100,16 @@ public class Player implements Runnable {
 
 	}
 
-	synchronized int getPosition() {
+	final synchronized int getPosition() {
 		return audioTrack.getPlaybackHeadPosition();
 	}
 
-	synchronized public boolean getSongInfo(SongInfo target) {
-		target.title = currentSong.title == null ? null : new String(currentSong.title);
-		target.author = currentSong.author == null ? null : new String(currentSong.author);
-		target.copyright = currentSong.copyright == null ? null : new String(currentSong.copyright);
+	public final synchronized void getSongInfo(SongInfo target) {
+		target.title = (currentSong.title == null) ? null : currentSong.title;
+		target.author = (currentSong.author == null) ? null : currentSong.author;
+		target.copyright = (currentSong.copyright == null) ? null : currentSong.copyright;
 		// target.game = new String(currentSong.game);
-		target.type = currentSong.type == null ? null : new String(currentSong.type);
+		target.type = (currentSong.type == null) ? null : currentSong.type;
 		target.length = currentSong.length;
 		target.subTunes = currentSong.subTunes;
 		target.startTune = currentSong.startTune;
@@ -1102,16 +1120,15 @@ public class Player implements Runnable {
 		target.canSeek = currentSong.canSeek;
 		target.source = currentSong.source;
 		target.md5 = currentSong.md5;
-		return true;
-	}
+    }
 
-	public void stop() {
+	public final void stop() {
 		synchronized (cmdLock) {
 			command = Command.STOP;
 		}
 	}
 
-	public void paused(boolean pause) {
+	public final void paused(boolean pause) {
 		synchronized (cmdLock) {
 			if(pause) {
 				Log.d(TAG, "Pausing");
@@ -1123,46 +1140,46 @@ public class Player implements Runnable {
 		}
 	}
 
-	public void seekTo(int pos) {
+	public final void seekTo(int pos) {
 		synchronized (cmdLock) {
 			command = Command.SET_POS;
 			argument = pos;
 		}
 	}
 
-	public void playMod(SongFile mod) {
+	public final void playMod(SongFile mod) {
 		synchronized (cmdLock) {
 			command = Command.PLAY;
 			argument = mod;
 		}
 	}
-	public void playMod(SongFile mod, SongFile nextMod) {
+	public final void playMod(SongFile mod, SongFile nextMod) {
 		synchronized (cmdLock) {
 			command = Command.PLAY_MULTIPLE;
 			argument = new SongFile[] { mod, nextMod };
 		}
 	}
 
-	public void setSubSong(int song) {
+	public final void setSubSong(int song) {
 		synchronized (cmdLock) {
 			command = Command.SET_TUNE;
 			argument = song;
 		}
 	}
 
-	public boolean isActive() {
+	public final boolean isActive() {
 		return currentState != State.STOPPED;
 	}
 
-	public boolean isPlaying() {
+	public final boolean isPlaying() {
 		return (currentState == State.PLAYING);
 	}
 
-	public boolean isSwitching() {
+	public final boolean isSwitching() {
 		return (currentState == State.SWITCHING);
 	}
 
-	public void setBufSize(int bs) {
+	public final void setBufSize(int bs) {
 		synchronized (cmdLock) {
 			if(bufSize != bs) {
 				bufSize = bs;
@@ -1172,12 +1189,11 @@ public class Player implements Runnable {
 		}
 	}
 
-	public void dumpWav(SongFile song, String destFile, int length, int flags) {
+	public final void dumpWav(SongFile song, String destFile, int length, int flags) {
 		synchronized (cmdLock) {
 			command = Command.DUMP_WAV;
 			argument = new Object [] {song, new File(destFile), length, flags};
 		}
-		
 	}
 
 }

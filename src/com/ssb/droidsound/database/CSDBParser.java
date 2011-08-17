@@ -20,26 +20,26 @@ import android.provider.BaseColumns;
 import com.ssb.droidsound.utils.Log;
 
 
-public class CSDBParser implements DataSource {
+public final class CSDBParser implements DataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
 
 	public static final String DUMP_NAME = "CSDBDUMP";
 
 	private static String hvsc = null;
-	
+
 	//static Map<String, Integer> events = new HashMap<String, Integer>();
 	HashMap<Integer, String> groups = null;
 	String pathName = null;
-	
+
 	public void setPath(String p) {
 		pathName = p;
 	}
-		
-	
+
+
 	boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, ScanCallback scanCallback) {
-		
+
 		boolean ok = false;
-		
+
 		try {
 			db.execSQL("DELETE FROM RELEASES;");
 			db.execSQL("DELETE FROM GROUPS;");
@@ -47,12 +47,12 @@ public class CSDBParser implements DataSource {
 			db.execSQL("DELETE FROM RELEASESIDS;");
 		} catch (SQLException e) {
 		}
-		
+
 		// db.execSQL("DROP TABLE IF EXISTS RELEASES;");
 		// db.execSQL("DROP TABLE IF EXISTS GROUPS;");
 		// db.execSQL("DROP TABLE IF EXISTS EVENTS;");
 		// db.execSQL("DROP TABLE IF EXISTS RELEASESIDS;");
-		
+
 		db.execSQL("CREATE TABLE IF NOT EXISTS " + "RELEASES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 				"ID INTEGER," +
 				"NAME TEXT," +
@@ -77,21 +77,23 @@ public class CSDBParser implements DataSource {
 				"PATH" + " TEXT," +
 				"FILENAME" + " TEXT" + ");");
 
-		
+
 		BufferedReader reader;
 		db.beginTransaction();
 		try {
 			int place = -1;
 			Log.d(TAG, "OPENING CSDB");			
-			
+
 			reader = new BufferedReader(new InputStreamReader(is, "ISO-8859-1"));			
 			//reader = new BufferedReader(new FileReader(file));				
 			String line = reader.readLine();
 			int count = 0;
 			int total = line.length()+1;
 			//int fileSize = (int) is.available();
+			ContentValues values = new ContentValues();
+			ContentValues values2 = new ContentValues();
 			while(line != null) {
-				
+
 				count++;
 				if((count % 300) == 0) {
 					if(scanCallback != null) {
@@ -113,29 +115,33 @@ public class CSDBParser implements DataSource {
 					place = 2;
 				} else {
 					String[] args = line.split("\t");
-					ContentValues values = new ContentValues();
 					if(place == 0) {
 						// (id, name, gid, type, y, eid, compo, place, ','.join(fnames))						
-						
+
 						values.put("ID", Integer.parseInt(args[0]));
 						values.put("NAME", args[1]);
-						if(args[2].length() > 0)
-							values.put("GROUPID", Integer.parseInt(args[2])); 
+						if(args[2].length() > 0) {
+							values.put("GROUPID", Integer.parseInt(args[2]));
+						} 
 						values.put("TYPE", args[3]); 
-						if(args[4].length() > 0)
+						
+						if(args[4].length() > 0){
 							values.put("DATE", Integer.parseInt(args[4])); 
-						if(args[5].length() > 0)
+						}
+						if(args[5].length() > 0){
 							values.put("EVENTID", Integer.parseInt(args[5]));
-						if(args[6].length() > 0)
+						}
+						if(args[6].length() > 0){
 							values.put("PLACE", Integer.parseInt(args[6]));
-						if(args[7].length() > 0)
+						}
+						if(args[7].length() > 0){
 							values.put("RATING", Integer.parseInt(args[7]));
-						
+						}
+
 						db.insert("RELEASES", "ID", values);
-						
+
 						String [] sids = args[8].split(",");
 						if(sids.length > 0) {
-							ContentValues values2 = new ContentValues();
 							for(String s : sids) {
 								values2.put("RELEASEID", Integer.parseInt(args[0]));
 								File f = new File(s);
@@ -172,7 +178,7 @@ public class CSDBParser implements DataSource {
 			db.endTransaction();
 		}
 		Log.d(TAG, "DONE");
-		
+
 		return ok;
 	}
 
@@ -185,13 +191,13 @@ public class CSDBParser implements DataSource {
 	 * select * from releasesids where group=booze release=eod
 	 * 
 	 */
-	
-	static class DirWrapper extends CursorWrapper {
+
+	static final class DirWrapper extends CursorWrapper {
 
 		public DirWrapper(Cursor cursor) {
 			super(cursor);
 		}
-		
+
 		@Override
 		public int getColumnIndex(String columnName) {
 			if(columnName.equals("TYPE")) {
@@ -199,7 +205,7 @@ public class CSDBParser implements DataSource {
 			}
 			return super.getColumnIndex(columnName);
 		}
-		
+
 		@Override
 		public int getInt(int columnIndex) {
 			if(columnIndex == 99) {
@@ -209,14 +215,14 @@ public class CSDBParser implements DataSource {
 		}
 	};
 
-	private class SidCursor extends CursorWrapper {
+	private static final class SidCursor extends CursorWrapper {
 		private int pathIndex;
 
 		public SidCursor(Cursor cursor) {
 			super(cursor);
 			pathIndex = cursor.getColumnIndex("PATH");
 		}
-		
+
 		@Override
 		public int getColumnIndex(String columnName) {
 			if(columnName.equals("PATH")) {
@@ -227,7 +233,7 @@ public class CSDBParser implements DataSource {
 			}
 			return super.getColumnIndex(columnName);
 		}
-		
+
 		@Override
 		public String getString(int columnIndex) {
 			if(columnIndex == 99) {
@@ -239,10 +245,10 @@ public class CSDBParser implements DataSource {
 			}
 			return super.getString(columnIndex);
 		}
-		
+
 	}
 
-	private class ReleaseCursor extends CursorWrapper {
+	private final class ReleaseCursor extends CursorWrapper {
 		private int gidIndex;
 		private int nameIndex;
 		private int typeIndex;
@@ -261,7 +267,7 @@ public class CSDBParser implements DataSource {
 			ratingIndex = cursor.getColumnIndex("RATING");
 			idIndex = cursor.getColumnIndex("ID");
 		}
-		
+
 		public ReleaseCursor(Cursor cursor) {
 			super(cursor);
 			gidIndex = cursor.getColumnIndex("GROUPID");
@@ -270,7 +276,7 @@ public class CSDBParser implements DataSource {
 			placeIndex = cursor.getColumnIndex("PLACE");
 			ratingIndex = cursor.getColumnIndex("RATING");
 		}
-		
+
 		@Override
 		public int getColumnIndex(String columnName) {
 			if(columnName.equals("TYPE")) {
@@ -290,10 +296,10 @@ public class CSDBParser implements DataSource {
 			}
 			return super.getColumnIndex(columnName);
 		}
-		
+
 		@Override
 		public String getString(int columnIndex) {
-			
+
 			if(columnIndex == 99) {
 				String group = groups.get(getInt(gidIndex));
 				if(group != null) {
@@ -320,7 +326,7 @@ public class CSDBParser implements DataSource {
 			}
 			return super.getString(columnIndex);
 		}
-		
+
 		@Override
 		public int getInt(int columnIndex) {
 			if(columnIndex == 97) {
@@ -334,7 +340,7 @@ public class CSDBParser implements DataSource {
 	private String pathTitle;
 
 	public Cursor getPath(String path, SQLiteDatabase rdb, int sorting) {
-		
+
 		String [] parts = path.split("/");
 		int n = parts.length;
 		boolean found = false;
@@ -372,7 +378,7 @@ public class CSDBParser implements DataSource {
 			 }
 			 c.close();
 		}
-		
+
 		if(hvsc == null) {
 			Cursor c = rdb.rawQuery("select path from files where path like '%C64Music'", null);			
 			if(c.getCount() > 0) {
@@ -385,21 +391,21 @@ public class CSDBParser implements DataSource {
 				} else {
 					hvsc = "/sdcard/MODS/C64Music.zip/C64Music";
 				}
-				
+
 				if(!(new File(hvsc).exists())) {
 					// TODO: This does not work since File() translates // to /
 					hvsc = "http://swimsuitboys.com/droidsound/dl/C64Music";
 				}
-				
+
 			}
 			Log.d(TAG, "HVSC is " + hvsc);
 			c.close();
 		}
-		
+
 		if(n == 1) {
-			
+
 			pathTitle = "CSDb";
-			
+
 			MatrixCursor cursor = new MatrixCursor(new String [] {"NAME", "ID", "TYPE"});
 			cursor.addRow(new Object [] { "EVENTS", 0, SongDatabase.TYPE_DIR} );
 			cursor.addRow(new Object [] { "GROUPS", 1, SongDatabase.TYPE_DIR} );
@@ -467,7 +473,7 @@ public class CSDBParser implements DataSource {
 	}
 
 	private void setTitle(String id, SQLiteDatabase rdb) {
-		
+
 		Cursor c = rdb.rawQuery("select name from releases where id=?", new String[] {id });
 		if(c != null) {
 			if(c.moveToFirst()) {
@@ -514,7 +520,7 @@ public class CSDBParser implements DataSource {
 
 	@Override
 	public void createIndex(int mode, SQLiteDatabase db) {
-		
+
 		// TODO: Check that tables exist (csdb was imported)
 		/*
 		switch(mode) {
@@ -540,7 +546,4 @@ public class CSDBParser implements DataSource {
 	public static void init() {
 		hvsc = null;
 	}
-
-
-
 }

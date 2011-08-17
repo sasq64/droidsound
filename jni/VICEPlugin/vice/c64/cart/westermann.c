@@ -34,8 +34,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "types.h"
@@ -52,8 +52,8 @@
 */
 
 /* some prototypes are needed */
-static BYTE REGPARM1 westermann_io2_read(WORD addr);
-static BYTE REGPARM1 westermann_io2_peek(WORD addr);
+static BYTE westermann_io2_read(WORD addr);
+static BYTE westermann_io2_peek(WORD addr);
 
 static io_source_t westermann_device = {
     CARTRIDGE_NAME_WESTERMANN,
@@ -65,7 +65,9 @@ static io_source_t westermann_device = {
     westermann_io2_read,
     westermann_io2_peek,
     NULL, /* TODO: dump */
-    CARTRIDGE_WESTERMANN
+    CARTRIDGE_WESTERMANN,
+    0,
+    0
 };
 
 static io_source_list_t *westermann_list_item = NULL;
@@ -76,13 +78,13 @@ static const c64export_resource_t export_res_westermann = {
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE REGPARM1 westermann_io2_read(WORD addr)
+static BYTE westermann_io2_read(WORD addr)
 {
     cart_config_changed_slotmain(0, 0, CMODE_READ);
     return 0;
 }
 
-static BYTE REGPARM1 westermann_io2_peek(WORD addr)
+static BYTE westermann_io2_peek(WORD addr)
 {
     return 0;
 }
@@ -106,7 +108,7 @@ static int westermann_common_attach(void)
     if (c64export_add(&export_res_westermann) < 0) {
         return -1;
     }
-    westermann_list_item = c64io_register(&westermann_device);
+    westermann_list_item = io_source_register(&westermann_device);
 
     return 0;
 }
@@ -141,7 +143,7 @@ int westermann_crt_attach(FILE *fd, BYTE *rawcart)
 void westermann_detach(void)
 {
     c64export_remove(&export_res_westermann);
-    c64io_unregister(westermann_list_item);
+    io_source_unregister(westermann_list_item);
     westermann_list_item = NULL;
 }
 

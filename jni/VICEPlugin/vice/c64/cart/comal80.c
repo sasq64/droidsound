@@ -34,10 +34,11 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "comal80.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
@@ -58,7 +59,7 @@
 
 static int currbank = 0;
 
-static void REGPARM2 comal80_io1_store(WORD addr, BYTE value)
+static void comal80_io1_store(WORD addr, BYTE value)
 {
     if (value >= 0x80 && value <= 0x83) {
         cart_romhbank_set_slotmain(value & 3);
@@ -67,9 +68,15 @@ static void REGPARM2 comal80_io1_store(WORD addr, BYTE value)
     }
 }
 
-static BYTE REGPARM1 comal80_io1_peek(WORD addr)
+static BYTE comal80_io1_peek(WORD addr)
 {
     return currbank;
+}
+
+static int comal80_dump(void)
+{
+    mon_out("bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -83,8 +90,10 @@ static io_source_t comal80_device = {
     comal80_io1_store,
     NULL,
     comal80_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_COMAL80
+    comal80_dump,
+    CARTRIDGE_COMAL80,
+    0,
+    0
 };
 
 static io_source_list_t *comal80_list_item = NULL;
@@ -119,7 +128,7 @@ static int comal80_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    comal80_list_item = c64io_register(&comal80_device);
+    comal80_list_item = io_source_register(&comal80_device);
     return 0;
 }
 
@@ -154,7 +163,7 @@ int comal80_crt_attach(FILE *fd, BYTE *rawcart)
 void comal80_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(comal80_list_item);
+    io_source_unregister(comal80_list_item);
     comal80_list_item = NULL;
 }
 

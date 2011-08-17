@@ -1,11 +1,17 @@
+/////////////////////////////////////////////////
+/// This class file is responsible for the 
+/// interpreting of ID3 Tags found within
+/// MP3 files.
+///
+/// Information and official doumentation on ID3
+/// tags can be found here: http://www.id3.org/
+/////////////////////////////////////////////////
+
 package com.ssb.droidsound.utils;
 
 import java.io.File;
 
-
-import com.ssb.droidsound.utils.Log;
-
-public class ID3Tag {
+public final class ID3Tag {
 	
 	private static final String TAG = ID3Tag.class.getSimpleName();
 	
@@ -13,7 +19,7 @@ public class ID3Tag {
 		System.loadLibrary("id3tag");
 	}
 	
-	
+	public static final int ID3INFO_YEAR = 99;
 	public static final int ID3INFO_GENRE = 100;
 	public static final int ID3INFO_COMMENT = 101;
 	public static final int ID3INFO_ALBUM = 102;
@@ -50,8 +56,9 @@ public class ID3Tag {
 	
 	native boolean openID3Tag(String fileName);
 	native void closeID3Tag();
-	native public String getStringInfo(int what);
-	native public int getIntInfo(int what);
+	
+	public native String getStringInfo(int what);
+	public native int getIntInfo(int what);
 	
 	
 }

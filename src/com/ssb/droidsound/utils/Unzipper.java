@@ -1,10 +1,12 @@
 package com.ssb.droidsound.utils;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -12,38 +14,43 @@ import java.util.zip.ZipFile;
 
 
 import android.content.Context;
-import com.ssb.droidsound.utils.Log;
 
-public class Unzipper {
+public final class Unzipper {
 
 	private static final String TAG = Unzipper.class.getSimpleName();
-	
+
 	private static Unzipper _instance = null;
-	
-	public static synchronized Unzipper getInstance() {
+
+    private Unzipper() {
+    }
+
+    public static synchronized Unzipper getInstance() {
 		if(_instance == null) {
 			_instance = new Unzipper();
 		}
 		return _instance;
 	}
-	
-	private static class UnzipJob {
-		public String asset;
-		public File targetDir;
-		public UnzipJob(String a, File t) {
+
+	private static final class UnzipJob {
+		public final String asset;
+		public final File targetDir;
+		private UnzipJob(String a, File t) {
 			asset = a;
 			targetDir = t;
 		}
 	}
-	
-	private static class UnzipWorker implements Runnable {
 
-		private List<UnzipJob> unzipList = new ArrayList<UnzipJob>();
-		private List<String> doneList = new ArrayList<String>();
-		private Context context;
+	private static final class UnzipWorker implements Runnable {
+
+		private final List<UnzipJob> unzipList = new ArrayList<UnzipJob>();
+
+        //private List<String> doneList = new ArrayList(); below is the weaker type of this one
+		private final Collection<String> doneList = new ArrayList<String>();
+
+		private final Context context;
 		private boolean doQuit;
-		
-		public UnzipWorker(Context ctx) {
+
+		private UnzipWorker(Context ctx) {
 			context = ctx;
 		}
 
@@ -52,12 +59,12 @@ public class Unzipper {
 			while(!doQuit) {
 				try {
 					synchronized (this) {
-						wait();						
+						wait();
 					}
 				} catch (InterruptedException e) {
 					return;
 				}
-				Log.d(TAG, "UNZIP THREAD WOKE UP");				
+				Log.d(TAG, "UNZIP THREAD WOKE UP");
 				while(true) {
 					UnzipJob job = null;
 					synchronized (unzipList) {
@@ -67,7 +74,7 @@ public class Unzipper {
 							unzipList.remove(0);
 							Log.d(TAG, "Found " + job.asset);
 						} else {
-							//Log.d(TAG, "Quitting thread"); 
+							//Log.d(TAG, "Quitting thread");
 							//return;
 						}
 					}
@@ -75,16 +82,17 @@ public class Unzipper {
 						unzipAsset(context, job.asset, job.targetDir);
 						synchronized (doneList) {
 							doneList.add(job.asset);
-						}							
-					} else
+						}
+					} else {
 						break;
+					}
 				}
 			}
 		}
 
 		public void addJob(String asset, File targetDir) {
 			synchronized (unzipList) {
-				
+
 				for(UnzipJob job : unzipList) {
 					if(job.asset.equals(asset)) {
 						Log.d(TAG, "##### SKIPPING " + asset);
@@ -92,15 +100,16 @@ public class Unzipper {
 					}
 				}
 				Log.d(TAG, "##### ADDING " + asset);
-				unzipList.add(new UnzipJob(asset, targetDir));				
+				unzipList.add(new UnzipJob(asset, targetDir));
 			}
 			synchronized (this) {
-				notify();				
+				notifyAll();
 			}
 		}
-		
+
 		public boolean checkJob(String asset) {
-			boolean rc = false;
+			//boolean rc = false; Redundant. Value never used
+            boolean rc;
 			synchronized (doneList) {
 				rc = doneList.contains(asset);
 				//if(rc) {
@@ -109,27 +118,24 @@ public class Unzipper {
 			}
 			return rc;
 		}
-		
+
 	}
 
 	private UnzipWorker unzipWorker;
 	private Thread unzipThread;
-	
-	
-	
+
 	public boolean checkJob(String asset) {
 		return unzipWorker.checkJob(asset);
 	}
-	
-	
+
 	public void unzipAssetAsync(Context context, String asset, File targetDir) {
-		
+
 		if(unzipThread != null) {
 			if(!unzipThread.isAlive()) {
 				unzipThread = null;
 			}
 		}
-	
+
 		if(unzipThread == null) {
 			unzipWorker = new UnzipWorker(context);
 			unzipThread = new Thread(unzipWorker);
@@ -139,24 +145,22 @@ public class Unzipper {
 				Thread.sleep(300);
 			} catch (InterruptedException e) {
 			}
-		}		
-
+		}
 		unzipWorker.addJob(asset, targetDir);
-		
 	}
 
-	synchronized public static boolean unzipAsset(Context context, String asset, File targetDir) {
-		
-		File tempFile = null;
-		try {			
-			tempFile = new File(targetDir, asset);
-			
-			FileOutputStream os;
-			os = new FileOutputStream(tempFile);
+	public static synchronized boolean unzipAsset(Context context, String asset, File targetDir) {
 
-			InputStream is = context.getAssets().open(asset);
-			
-			byte [] buffer = new byte [128*1024];
+		File tempFile = null;
+		try {
+			tempFile = new File(targetDir, asset);
+
+            //FileOutputStream os = new FileOutputStream(tempFile); //Left here in case the Buffered I/O causes any problems.
+			BufferedOutputStream os = new BufferedOutputStream (new FileOutputStream(tempFile));
+            InputStream is = context.getAssets().open(asset);
+
+            //byte [] buffer = new byte [(128*1024)]; //Left shift is more efficient.
+            byte [] buffer = new byte [(128 << 10)];
 			while(true) {
 				int rc = is.read(buffer);
 				if(rc <= 0) {
@@ -166,24 +170,24 @@ public class Unzipper {
 			}
 			is.close();
 			os.close();
-			
+
 			ZipFile zf = new ZipFile(tempFile);
 			Enumeration<? extends ZipEntry> entries = zf.entries();
 			while(entries.hasMoreElements()) {
 				ZipEntry entry = entries.nextElement();
 				is = zf.getInputStream(entry);
-				String name = entry.getName();	
+				String name = entry.getName();
 				File efile = new File(targetDir, name);
-				
+
 				Log.d(TAG, "Extracting %s / %s", name, efile.getPath());
-				
+
 				if(name.endsWith("/")) {
 					continue;
 				}
-				
+
 				efile.getParentFile().mkdirs();
-				
-				os = new FileOutputStream(efile);
+				//os = new FileOutputStream(efile); //Here in case Buffered I/O causes any problems.
+				os = new BufferedOutputStream(new FileOutputStream(efile));
 
 				while(true) {
 					int rc = is.read(buffer);
@@ -194,19 +198,16 @@ public class Unzipper {
 				}
 				is.close();
 				os.close();
-			}			
+			}
 			tempFile.delete();
 			return true;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if(tempFile != null)
+		if(tempFile != null) {
 			tempFile.delete();
-		return false;		
+		}
+		return false;
 	}
-
-
-	
-	
 }

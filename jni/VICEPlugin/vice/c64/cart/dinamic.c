@@ -33,9 +33,10 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "dinamic.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
@@ -62,7 +63,7 @@
 
 static int currbank = 0;
 
-static BYTE REGPARM1 dinamic_io1_read(WORD addr)
+static BYTE dinamic_io1_read(WORD addr)
 {
     DBG(("@ $%04x io1 rd %04x (bank: %02x)\n", reg_pc, addr, addr & 0x0f));
     if ((addr & 0x0f) == addr) {
@@ -73,9 +74,15 @@ static BYTE REGPARM1 dinamic_io1_read(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 dinamic_io1_peek(WORD addr)
+static BYTE dinamic_io1_peek(WORD addr)
 {
-    return currbank;
+    return 0;
+}
+
+static int dinamic_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -89,8 +96,10 @@ static io_source_t dinamic_io1_device = {
     NULL,
     dinamic_io1_read,
     dinamic_io1_peek,
-    NULL, /* dump */
-    CARTRIDGE_DINAMIC
+    dinamic_dump,
+    CARTRIDGE_DINAMIC,
+    0,
+    0
 };
 
 static io_source_list_t *dinamic_io1_list_item = NULL;
@@ -119,7 +128,7 @@ static int dinamic_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    dinamic_io1_list_item = c64io_register(&dinamic_io1_device);
+    dinamic_io1_list_item = io_source_register(&dinamic_io1_device);
     return 0;
 }
 
@@ -155,7 +164,7 @@ int dinamic_crt_attach(FILE *fd, BYTE *rawcart)
 
 void dinamic_detach(void)
 {
-    c64io_unregister(dinamic_io1_list_item);
+    io_source_unregister(dinamic_io1_list_item);
     dinamic_io1_list_item = NULL;
     c64export_remove(&export_res);
 }

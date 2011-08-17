@@ -2,41 +2,40 @@ package com.ssb.droidsound.utils;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import android.database.Cursor;
 import android.database.CursorWrapper;
 
-public class CursorTransform {
+public final class CursorTransform {
 	private static final String TAG = CursorTransform.class.getSimpleName();
 	
-	private static class ColTransform {
+	private static final class ColTransform {
 		public String pattern;
-		public int offsets [];
-		public String varnames [];
+		public int[] offsets;
+		public String[] varnames;
 		public int columnIndex;
 		public int value;
 	}
 
-	private static class TransformWrapper extends CursorWrapper {
+	private static final class TransformWrapper extends CursorWrapper {
 
-		private Map<String, ColTransform> transformMap;
+		private final Map<String, ColTransform> transformMap;
 		//private Map<Integer, Map<String, Integer> > transformColMap;
 
 		
-		private Map<Integer, ColTransform> indexMap;
-		private Cursor cursor;
+		private final Map<Integer, ColTransform> indexMap;
+		private final Cursor cursor;
 		private int colIndex = 100;
 
-		public TransformWrapper(Cursor cr, Map<String, ColTransform> txmap) {
+		private TransformWrapper(Cursor cr, Map<String, ColTransform> txmap) {
 			super(cr);
 			transformMap = txmap;
 			indexMap = new HashMap<Integer, ColTransform>();
 			cursor = cr;
 			
-			Set<Entry<String, ColTransform>> es = txmap.entrySet();
-			for(Entry<String, ColTransform> e : es) {
+			Set<Map.Entry<String, ColTransform>> es = txmap.entrySet();
+			for(Map.Entry<String, ColTransform> e : es) {
 				ColTransform ct = e.getValue();
 				ct.columnIndex = -1;
 				
@@ -55,8 +54,9 @@ public class CursorTransform {
 		public int getColumnIndex(String columnName) {
 			ColTransform ct = transformMap.get(columnName);
 			if(ct != null) {
-				if(ct.columnIndex >= 0)
+				if(ct.columnIndex >= 0){
 					return ct.columnIndex;
+				}
 				ct.columnIndex = colIndex++;
 				//Log.d(TAG, "Assigning %d to column %s", ct.columnIndex, columnName);
 				indexMap.put(ct.columnIndex, ct);				
@@ -73,7 +73,7 @@ public class CursorTransform {
 				String result = cols.pattern;				
 				for(int i=0; i<cols.offsets.length; i++) {
 					String txt = cursor.getString(cols.offsets[i]>>8);
-					if(txt == null || txt.equals("null")) txt = "";
+					if(txt == null || "null".equals(txt)) txt = "";
 					//Log.d(TAG, "Col %d -> %d -> %s", columnIndex, cols.offsets[i]>>8, txt);
 					int pos = cols.offsets[i]&0xff;
 					result = result.substring(0,pos) + txt + result.substring(pos);
@@ -92,9 +92,9 @@ public class CursorTransform {
 			}
 			return super.getInt(columnIndex);
 		}
-	};
-	
-	private Map<String, ColTransform> transformMap = new HashMap<String, ColTransform>();
+	}
+
+    private final Map<String, ColTransform> transformMap = new HashMap<String, ColTransform>();
 	
 	
 	public void addTransform(String column, int val) {
@@ -105,17 +105,17 @@ public class CursorTransform {
 	}	
 
 	public void addTransform(String column, String pattern) {
-		
-		int start, end;
-		//Map<String, Integer> cols = new HashMap<String, Integer>();
-		int offsets [] = new int [16];
-		String varnames [] = new String [16]; 
-		
-		Log.d(TAG, "Checking '%s'", pattern);
-		
-		start = end = 0;
+
+        //Map<String, Integer> cols = new HashMap<String, Integer>();
+
+        Log.d(TAG, "Checking '%s'", pattern);
+
+        int end;
+        int start = end = 0;
 		int i = 0;
-		while(start >= 0 && end >= 0) {
+        int[] offsets = new int[16];
+        String[] varnames = new String[16];
+        while(start >= 0 && end >= 0) {
 			start = pattern.indexOf("${", start);
 			if(start >= 0) {
 				end = pattern.indexOf('}', start);

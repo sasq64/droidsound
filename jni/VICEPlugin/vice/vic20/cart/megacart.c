@@ -46,6 +46,7 @@
 #include "util.h"
 #include "vic20cart.h"
 #include "vic20cartmem.h"
+#include "vic20io.h"
 #include "vic20mem.h"
 #include "zfile.h"
 
@@ -110,8 +111,51 @@ static BYTE *cart_rom_high;
 
 /* ------------------------------------------------------------------------- */
 
+/* Some prototypes are needed */
+static BYTE megacart_io2_read(WORD addr);
+static void megacart_io2_store(WORD addr, BYTE value);
+static BYTE megacart_io3_read(WORD addr);
+static BYTE megacart_io3_peek(WORD addr);
+static void megacart_io3_store(WORD addr, BYTE value);
+static int megacart_mon_dump(void);
+
+static io_source_t megacart_io2_device = {
+    CARTRIDGE_VIC20_NAME_MEGACART,
+    IO_DETACH_CART,
+    NULL,
+    0x9800, 0x9bff, 0x3ff,
+    0,
+    megacart_io2_store,
+    megacart_io2_read,
+    NULL, /* TODO: peek */
+    megacart_mon_dump,
+    CARTRIDGE_VIC20_MEGACART,
+    0,
+    0
+};
+
+static io_source_t megacart_io3_device = {
+    CARTRIDGE_VIC20_NAME_MEGACART,
+    IO_DETACH_CART,
+    NULL,
+    0x9c00, 0x9fff, 0x3ff,
+    0,
+    megacart_io3_store,
+    megacart_io3_read,
+    megacart_io3_peek,
+    megacart_mon_dump,
+    CARTRIDGE_VIC20_MEGACART,
+    0,
+    0
+};
+
+static io_source_list_t *megacart_io2_list_item = NULL;
+static io_source_list_t *megacart_io3_list_item = NULL;
+
+/* ------------------------------------------------------------------------- */
+
 /* read 0x0400-0x0fff */
-BYTE REGPARM1 megacart_ram123_read(WORD addr)
+BYTE megacart_ram123_read(WORD addr)
 {
     if (nvram_en_flop) {
         return cart_nvram[addr & 0x1fff];
@@ -121,7 +165,7 @@ BYTE REGPARM1 megacart_ram123_read(WORD addr)
 }
 
 /* store 0x0400-0x0fff */
-void REGPARM2 megacart_ram123_store(WORD addr, BYTE value)
+void megacart_ram123_store(WORD addr, BYTE value)
 {
     if (nvram_en_flop) {
         cart_nvram[addr & 0x1fff] = value;
@@ -129,7 +173,7 @@ void REGPARM2 megacart_ram123_store(WORD addr, BYTE value)
 }
 
 /* read 0x2000-0x7fff */
-BYTE REGPARM1 megacart_blk123_read(WORD addr)
+BYTE megacart_blk123_read(WORD addr)
 {
     BYTE bank_low;
     BYTE bank_high;
@@ -156,7 +200,7 @@ BYTE REGPARM1 megacart_blk123_read(WORD addr)
 }
 
 /* store 0x2000-0x7fff */
-void REGPARM2 megacart_blk123_store(WORD addr, BYTE value)
+void megacart_blk123_store(WORD addr, BYTE value)
 {
     BYTE bank_low;
     BYTE bank_high;
@@ -179,7 +223,7 @@ void REGPARM2 megacart_blk123_store(WORD addr, BYTE value)
 }
 
 /* read 0xa000-0xbfff */
-BYTE REGPARM1 megacart_blk5_read(WORD addr)
+BYTE megacart_blk5_read(WORD addr)
 {
     BYTE bank_low;
     BYTE bank_high;
@@ -206,7 +250,7 @@ BYTE REGPARM1 megacart_blk5_read(WORD addr)
 }
 
 /* store 0xa000-0xbfff */
-void REGPARM2 megacart_blk5_store(WORD addr, BYTE value)
+void megacart_blk5_store(WORD addr, BYTE value)
 {
     BYTE bank_low;
     BYTE bank_high;
@@ -229,19 +273,21 @@ void REGPARM2 megacart_blk5_store(WORD addr, BYTE value)
 }
 
 /* read 0x9800-0x9bff */
-BYTE REGPARM1 megacart_io2_read(WORD addr)
+static BYTE megacart_io2_read(WORD addr)
 {
     BYTE value;
     if (nvram_en_flop) {
+        megacart_io2_device.io_source_valid = 1;
         value = cart_nvram[addr & 0x1fff];
     } else {
+        megacart_io2_device.io_source_valid = 0;
         value = vic20_cpu_last_data;
     }
     return value;
 }
 
 /* store 0x9800-0x9bff */
-void REGPARM2 megacart_io2_store(WORD addr, BYTE value)
+static void megacart_io2_store(WORD addr, BYTE value)
 {
     if (nvram_en_flop) {
         cart_nvram[addr & 0x1fff] = value;
@@ -249,18 +295,20 @@ void REGPARM2 megacart_io2_store(WORD addr, BYTE value)
 }
 
 /* read 0x9c00-0x9fff */
-BYTE REGPARM1 megacart_io3_read(WORD addr)
+static BYTE megacart_io3_read(WORD addr)
 {
     BYTE value;
     if (nvram_en_flop) {
+        megacart_io3_device.io_source_valid = 1;
         value = cart_nvram[addr & 0x1fff];
     } else {
+        megacart_io3_device.io_source_valid = 0;
         value = vic20_cpu_last_data;
     }
     return value;
 }
 
-BYTE REGPARM1 megacart_io3_peek(WORD addr)
+static BYTE megacart_io3_peek(WORD addr)
 {
     if ((addr & 0x180) == 0x080) { /* $9c80 */
         return bank_high_reg;
@@ -274,7 +322,7 @@ BYTE REGPARM1 megacart_io3_peek(WORD addr)
 }
 
 /* store 0x9c00-0x9fff */
-void REGPARM2 megacart_io3_store(WORD addr, BYTE value)
+static void megacart_io3_store(WORD addr, BYTE value)
 {
     if (nvram_en_flop) {
         cart_nvram[addr & 0x1fff] = value;
@@ -415,6 +463,10 @@ int megacart_bin_attach(const char *filename)
         VIC_CART_BLK1 | VIC_CART_BLK2 | VIC_CART_BLK3 | VIC_CART_BLK5 |
         VIC_CART_IO2 | VIC_CART_IO3;
     mem_initialize_memory();
+
+    megacart_io2_list_item = io_source_register(&megacart_io2_device);
+    megacart_io3_list_item = io_source_register(&megacart_io3_device);
+
     return 0;
 }
 
@@ -434,6 +486,16 @@ void megacart_detach(void)
     cart_ram = NULL;
     cart_nvram = NULL;
     cart_rom = NULL;
+
+    if (megacart_io2_list_item != NULL) {
+        io_source_unregister(megacart_io2_list_item);
+        megacart_io2_list_item = NULL;
+    }
+
+    if (megacart_io3_list_item != NULL) {
+        io_source_unregister(megacart_io3_list_item);
+        megacart_io3_list_item = NULL;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -606,7 +668,7 @@ int megacart_snapshot_read_module(snapshot_t *s)
 
 /* ------------------------------------------------------------------------- */
 
-static int REGPARM1 megacart_mon_dump(void)
+static int megacart_mon_dump(void)
 {
     BYTE bank_low;
     BYTE bank_high;
@@ -650,11 +712,4 @@ static int REGPARM1 megacart_mon_dump(void)
     }
 
     return 0;
-}
-
-void megacart_ioreg_add_list(struct mem_ioreg_list_s **mem_ioreg_list)
-{
-    /* The registers are rather far apart in the address space, so instead
-       of flooding the "io" output, just show the start of I/O3 range. */
-    mon_ioreg_add_list(mem_ioreg_list, CARTRIDGE_VIC20_NAME_MEGACART, 0x9c00, 0x9c00, megacart_mon_dump);
 }

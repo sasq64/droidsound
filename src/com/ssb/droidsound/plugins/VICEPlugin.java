@@ -1,17 +1,31 @@
+/////////////////////////////////////////
+/*         _________ _______  _______   *
+ *|\     /|\__   __/|  ____ \|  ____ \  *
+ *| |   | |   | |   | |    \/| |    \/  *
+ *| |   | |   | |   | |      | |__      *
+ *( |   | )   | |   | |      |  __|     *
+ * \ \_/ /    | |   | |      | |        *
+ *  \   /  ___| |___| |____/\| |____/\  *
+ *   \_/   \_______/|_______/|_______/  */
+//////////////////////////////////////////                                    
+
 package com.ssb.droidsound.plugins;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.Map;
 
 import android.os.Environment;
 
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
-public class VICEPlugin extends DroidSoundPlugin {
+public final class VICEPlugin extends DroidSoundPlugin {
+	
+
 	private static final String TAG = VICEPlugin.class.getSimpleName();
 
 	private static boolean libraryLoaded = false;
@@ -24,50 +38,53 @@ public class VICEPlugin extends DroidSoundPlugin {
 	 * 
 	 * @return an error string, or null if successful.
 	 */
-	native private static String N_loadFile(String name);
+	private static native String N_loadFile(String name);
 	
 	/**
 	 * Unload song from memory.
 	 */
-	native private static void N_unload();
+	private static native void N_unload();
 
 	/** 
 	 * Generates audio.
 	 * Produces stereo, 44.1Khz, signed, native-encoding shorts.
 	 * 
 	 * @param dest the buffer to fill
+     * @param size
+     * @return
 	 */
-	native private static int N_getSoundData(short[] dest, int size);
+	private static native int N_getSoundData(short[] dest, int size);
 	
 	/**
 	 * Select a subsong.
-	 */
-	native private static boolean N_setTune(int tune);
+     * @param tune
+     */
+	private static native boolean N_setTune(int tune);
 	
 	/**
 	 * Set an option from the known #defines.
-	 */
-	native private static void N_setOption(int what, int val);
+     * @param what
+     * @param val
+     */
+	private static native void N_setOption(int what, int val);
 	
 	/**
 	 * Set the directory of VICE's basic, kernal and chargen files.
 	 * 
 	 * @param path Where kernal, basic and chargen can be found.
 	 */
-	native private static void N_setDataDir(String path);
+	private static native void N_setDataDir(String path);
 
 
 	//private int currentTune;
-
-	private HashMap<Integer, Integer> optMap = new HashMap<Integer, Integer>();
+    //private HashMap<Integer, Integer> optMap = new HashMap(); Below type is weaker
+	private final Map<Integer,Integer> optMap = new HashMap<Integer, Integer>();
 
 	private Unzipper unzipper = null;
-
+	
 	private static File dataDir;
-
-	private static boolean isActive = false;
-
-	private static boolean initialized = false;
+	
+    private static boolean initialized = false;
 	
 	public VICEPlugin() {
 		if (! initialized) {
@@ -77,8 +94,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 				dataDir.mkdir();
 			}
 			
-			File viceDir = new File(dataDir, "VICE");
-			synchronized (lock) {					
+			final File viceDir = new File(dataDir, "VICE");
+			synchronized (lock) {
 				if(!viceDir.exists()) {
 					unzipper = Unzipper.getInstance();
 					unzipper.unzipAssetAsync(getContext(), "vice.zip", dataDir);
@@ -88,26 +105,27 @@ public class VICEPlugin extends DroidSoundPlugin {
 		}
 	}
 
+	//Adjusts to what options are set for the VICE plugin in the Preferences.
 	@Override
 	public void setOption(String opt, Object val) {
-		final int k, v;
-		if (opt.equals("active")) {
-			isActive = (Boolean)val;
-			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (isActive ? "ACTIVE" : "NOT ACTIVE"));
+		int k, v;
+		if ("active".equals(opt)) {
+            final boolean active = (Boolean) val;
+			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (active ? "ACTIVE" : "NOT ACTIVE"));
 			return;
-		} else if (opt.equals("filter")) {
+		} else if ("filter".equals(opt)) {
 			k = OPT_FILTER;
 			v = (Boolean) val ? 1 : 0;
-		} else if (opt.equals("ntsc")) {
+		} else if ("ntsc".equals(opt)) {
 			k = OPT_NTSC;
 			v = (Integer) val;
-		} else if (opt.equals("resampling")) {
+		} else if ("resampling".equals(opt)) {
 			k = OPT_RESAMPLING;
 			v = (Integer) val;
-		} else if (opt.equals("filter_bias")) {
+		} else if ("filter_bias".equals(opt)) {
 			k = OPT_FILTER_BIAS;
 			v = (Integer) val;
-		} else if (opt.equals("sid_model")) {
+		} else if ("sid_model".equals(opt)) {
 			k = OPT_SID_MODEL;
 			v = (Integer) val;
 		} else {
@@ -116,7 +134,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		
 		if(!libraryLoaded) {
 			optMap.put(k, v);
-		} else {		
+		} else {
 			N_setOption(k, v);
 		}
 	}
@@ -138,11 +156,10 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean setTune(int tune) {
-		boolean ok = N_setTune(tune + 1);
-		//if (ok) {
+        //if (ok) {
 		//	currentTune = tune;
 		//}
-		return ok;
+		return N_setTune(tune + 1);
 	}
 
 	@Override
@@ -158,7 +175,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 					try {
 						Thread.sleep(500);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						e.printStackTrace(); 
 						return false;
 					}
 				}
@@ -167,17 +184,18 @@ public class VICEPlugin extends DroidSoundPlugin {
 			
 			N_setDataDir(new File(dataDir, "VICE").getAbsolutePath());
 			
-			for(Entry<Integer, Integer> e : optMap.entrySet()) {
+			for(Map.Entry<Integer, Integer> e : optMap.entrySet()) {
 				N_setOption(e.getKey(), e.getValue());
 			}
-			optMap.clear();						
+			optMap.clear();
 			libraryLoaded = true;
 		}
 
 		final String error;
 		try {
-			File file = File.createTempFile("tmp-XXXXX", "sid");
-			FileOutputStream fo = new FileOutputStream(file);
+			final File file = File.createTempFile("tmp-XXXXX", "sid");
+			//FileOutputStream fo = new FileOutputStream(file); //Buffered I/O below
+			final BufferedOutputStream fo = new BufferedOutputStream(new FileOutputStream(file));
 			fo.write(module);
 			fo.close();
 			error = N_loadFile(file.getAbsolutePath());
@@ -207,6 +225,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public String getVersion() {
-		return "VICE 2.2.10-r23402, reSID 1.0-pre1";
+		return "VICE 2.3.9-r24364, reSID 1.0-pre1";
 	}
 }

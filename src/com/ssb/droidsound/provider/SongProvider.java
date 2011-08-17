@@ -7,21 +7,19 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 
-public class SongProvider extends ContentProvider {
+public final class SongProvider extends ContentProvider {
 	
 	public static final Uri CONTENT_URI = Uri.parse("content://com.ssb.droidsound.provider");
-	public static final Uri SONG_URI = Uri.parse("content://com.ssb.droidsound.provider/songs");
+	private static final Uri SONG_URI = Uri.parse("content://com.ssb.droidsound.provider/songs");
 	
 	public static final String TITLE = "TITLE";
 	public static final String _ID = "_id";
 	public static final String COMPOSER = "COMPOSER";
 	public static final String FILENAME = "FILENAME";
 	public static final String FLAGS = "FLAGS";
-	
-	private SongDatabase songDatabase;
 
-	@Override
-	public int delete(Uri arg0, String arg1, String[] arg2) {
+    @Override
+	public int delete(Uri arg0, String arg1, String... arg2) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -40,8 +38,8 @@ public class SongProvider extends ContentProvider {
 
 	@Override
 	public boolean onCreate() {
-		
-		songDatabase = new SongDatabase(getContext());
+
+        SongDatabase songDatabase = new SongDatabase(getContext());
 		return true;
 	}
 
@@ -57,7 +55,7 @@ public class SongProvider extends ContentProvider {
 	}
 
 	@Override
-	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+	public int update(Uri uri, ContentValues values, String selection, String... selectionArgs) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

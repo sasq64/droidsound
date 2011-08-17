@@ -35,8 +35,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOT1_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -44,6 +44,7 @@
 #include "log.h"
 #include "machine.h"
 #include "mem.h"
+#include "monitor.h"
 #include "resources.h"
 #include "snapshot.h"
 #include "translate.h"
@@ -121,11 +122,13 @@ static int isepic_load_image(void);
 /* ------------------------------------------------------------------------- */
 
 /* some prototypes are needed */
-static BYTE REGPARM1 isepic_io1_read(WORD addr);
-static BYTE REGPARM1 isepic_io1_peek(WORD addr);
-static void REGPARM2 isepic_io1_store(WORD addr, BYTE byte);
-static BYTE REGPARM1 isepic_io2_read(WORD addr);
-static void REGPARM2 isepic_io2_store(WORD addr, BYTE byte);
+static BYTE isepic_io1_read(WORD addr);
+static BYTE isepic_io1_peek(WORD addr);
+static void isepic_io1_store(WORD addr, BYTE byte);
+static BYTE isepic_io2_read(WORD addr);
+static BYTE isepic_io2_peek(WORD addr);
+static void isepic_io2_store(WORD addr, BYTE byte);
+static int isepic_dump(void);
 
 static io_source_t isepic_io1_device = {
     CARTRIDGE_NAME_ISEPIC,
@@ -136,8 +139,10 @@ static io_source_t isepic_io1_device = {
     isepic_io1_store,
     isepic_io1_read,
     isepic_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_ISEPIC
+    isepic_dump,
+    CARTRIDGE_ISEPIC,
+    0,
+    0
 };
 
 static io_source_t isepic_io2_device = {
@@ -148,9 +153,11 @@ static io_source_t isepic_io2_device = {
     0,
     isepic_io2_store,
     isepic_io2_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_ISEPIC
+    isepic_io2_peek,
+    isepic_dump,
+    CARTRIDGE_ISEPIC,
+    0,
+    0
 };
 
 static const c64export_resource_t export_res = {
@@ -243,8 +250,8 @@ static int set_isepic_enabled(int val, void *param)
             lib_free(isepic_filename);
             isepic_filename = NULL;
         }
-        c64io_unregister(isepic_io1_list_item);
-        c64io_unregister(isepic_io2_list_item);
+        io_source_unregister(isepic_io1_list_item);
+        io_source_unregister(isepic_io2_list_item);
         isepic_io1_list_item = NULL;
         isepic_io2_list_item = NULL;
         c64export_remove(&export_res);
@@ -255,13 +262,13 @@ static int set_isepic_enabled(int val, void *param)
     } else if (!isepic_enabled && val) {
         cart_power_off();
         isepic_ram = lib_malloc(ISEPIC_RAM_SIZE);
-        isepic_io1_list_item = c64io_register(&isepic_io1_device);
-        isepic_io2_list_item = c64io_register(&isepic_io2_device);
+        isepic_io1_list_item = io_source_register(&isepic_io1_device);
+        isepic_io2_list_item = io_source_register(&isepic_io2_device);
         if (c64export_add(&export_res) < 0) {
             lib_free(isepic_ram);
             isepic_ram = NULL;
-            c64io_unregister(isepic_io1_list_item);
-            c64io_unregister(isepic_io2_list_item);
+            io_source_unregister(isepic_io1_list_item);
+            io_source_unregister(isepic_io2_list_item);
             isepic_io1_list_item = NULL;
             isepic_io2_list_item = NULL;
             return -1;
@@ -408,7 +415,7 @@ int isepic_cmdline_options_init(void)
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 isepic_io1_read(WORD addr)
+static BYTE isepic_io1_read(WORD addr)
 {
     DBG(("io1 r %04x (sw:%d)\n", addr, isepic_switch));
 
@@ -418,12 +425,12 @@ BYTE REGPARM1 isepic_io1_read(WORD addr)
     return 0;
 }
 
-BYTE REGPARM1 isepic_io1_peek(WORD addr)
+static BYTE isepic_io1_peek(WORD addr)
 {
-    return isepic_page;
+    return 0;
 }
 
-void REGPARM2 isepic_io1_store(WORD addr, BYTE byte)
+static void isepic_io1_store(WORD addr, BYTE byte)
 {
     DBG(("io1 w %04x %02x (sw:%d)\n", addr, byte, isepic_switch));
 
@@ -432,7 +439,18 @@ void REGPARM2 isepic_io1_store(WORD addr, BYTE byte)
     }
 }
 
-BYTE REGPARM1 isepic_io2_read(WORD addr)
+static BYTE isepic_io2_peek(WORD addr)
+{
+    BYTE retval = 0;
+
+    if (isepic_switch) {
+        retval = isepic_ram[(isepic_page * 256) + (addr & 0xff)];
+    }
+
+    return retval;
+}
+
+static BYTE isepic_io2_read(WORD addr)
 {
     BYTE retval = 0;
 
@@ -448,7 +466,7 @@ BYTE REGPARM1 isepic_io2_read(WORD addr)
     return retval;
 }
 
-void REGPARM2 isepic_io2_store(WORD addr, BYTE byte)
+static void isepic_io2_store(WORD addr, BYTE byte)
 {
     DBG(("io2 w %04x %02x (sw:%d)\n", addr, byte, isepic_switch));
 
@@ -457,9 +475,15 @@ void REGPARM2 isepic_io2_store(WORD addr, BYTE byte)
     }
 }
 
+static int isepic_dump(void)
+{
+    mon_out("Page: %d, Switch: %d\n", isepic_page, isepic_switch);
+    return 0;
+}
+
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 isepic_romh_read(WORD addr)
+BYTE isepic_romh_read(WORD addr)
 {
     switch (addr) {
         case 0xfffa:
@@ -472,7 +496,7 @@ BYTE REGPARM1 isepic_romh_read(WORD addr)
     }
 }
 
-void REGPARM2 isepic_romh_store(WORD addr, BYTE byte)
+void isepic_romh_store(WORD addr, BYTE byte)
 {
     switch (addr) {
         case 0xfffa:
@@ -485,7 +509,7 @@ void REGPARM2 isepic_romh_store(WORD addr, BYTE byte)
     }
 }
 
-BYTE REGPARM1 isepic_page_read(WORD addr)
+BYTE isepic_page_read(WORD addr)
 {
     if (isepic_switch) {
         return isepic_ram[(isepic_page * 256) + (addr & 0xff)];
@@ -494,7 +518,7 @@ BYTE REGPARM1 isepic_page_read(WORD addr)
     }
 }
 
-void REGPARM2 isepic_page_store(WORD addr, BYTE value)
+void isepic_page_store(WORD addr, BYTE value)
 {
     if (isepic_switch) {
         isepic_ram[(isepic_page * 256) + (addr & 0xff)] = value;
@@ -861,14 +885,14 @@ int isepic_snapshot_read_module(snapshot_t *s)
     isepic_enabled = 1;
 
     /* FIXME: ugly code duplication to avoid cart_config_changed calls */
-    isepic_io1_list_item = c64io_register(&isepic_io1_device);
-    isepic_io2_list_item = c64io_register(&isepic_io2_device);
+    isepic_io1_list_item = io_source_register(&isepic_io1_device);
+    isepic_io2_list_item = io_source_register(&isepic_io2_device);
 
     if (c64export_add(&export_res) < 0) {
         lib_free(isepic_ram);
         isepic_ram = NULL;
-        c64io_unregister(isepic_io1_list_item);
-        c64io_unregister(isepic_io2_list_item);
+        io_source_unregister(isepic_io1_list_item);
+        io_source_unregister(isepic_io2_list_item);
         isepic_io1_list_item = NULL;
         isepic_io2_list_item = NULL;
         isepic_enabled = 0;

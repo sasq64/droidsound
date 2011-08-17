@@ -33,10 +33,11 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "funplay.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
@@ -72,8 +73,9 @@
 */
 
 static int currbank = 0;
+static BYTE regval = 0;
 
-static void REGPARM2 funplay_io1_store(WORD addr, BYTE value)
+static void funplay_io1_store(WORD addr, BYTE value)
 {
     currbank = ((value >> 3) & 7) | ((value & 1) << 3);
     cart_romhbank_set_slotmain(currbank);
@@ -85,9 +87,15 @@ static void REGPARM2 funplay_io1_store(WORD addr, BYTE value)
     cart_port_config_changed_slotmain();
 }
 
-static BYTE REGPARM1 funplay_io1_peek(WORD addr)
+static BYTE funplay_io1_peek(WORD addr)
 {
-    return currbank;
+    return regval;
+}
+
+static int funplay_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -101,8 +109,10 @@ static io_source_t funplay_device = {
     funplay_io1_store,
     NULL,
     funplay_io1_peek,
-    NULL, /* dump */
-    CARTRIDGE_FUNPLAY
+    funplay_dump,
+    CARTRIDGE_FUNPLAY,
+    0,
+    0
 };
 
 static io_source_list_t *funplay_list_item = NULL;
@@ -134,7 +144,7 @@ static int funplay_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    funplay_list_item = c64io_register(&funplay_device);
+    funplay_list_item = io_source_register(&funplay_device);
     return 0;
 }
 
@@ -166,7 +176,7 @@ int funplay_crt_attach(FILE *fd, BYTE *rawcart)
 
 void funplay_detach(void)
 {
-    c64io_unregister(funplay_list_item);
+    io_source_unregister(funplay_list_item);
     funplay_list_item = NULL;
     c64export_remove(&export_res);
 }

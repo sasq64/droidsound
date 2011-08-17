@@ -32,6 +32,7 @@
 
 #include "alarm.h"
 #include "autostart.h"
+#include "cartridge.h"
 #include "cbm2-cmdline-options.h"
 #include "cbm2-resources.h"
 #include "cbm2-snapshot.h"
@@ -68,6 +69,7 @@
 #include "resources.h"
 #include "rs232drv.h"
 #include "screenshot.h"
+#include "serial.h"
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
 #include "sid.h"
@@ -77,20 +79,10 @@
 #include "tpi.h"
 #include "traps.h"
 #include "types.h"
-#include "vicii.h"
-#include "vicii-resources.h"
 #include "video.h"
 #include "vsync.h"
 
 machine_context_t machine_context;
-
-/* beos dummy for the generally used cart function in ui_file.cc */
-#ifdef __BEOS__
-int cartridge_attach_image(int type, const char *filename)
-{
-    return 0;
-}
-#endif
 
 #define NUM_KEYBOARD_MAPPINGS 6
 
@@ -109,8 +101,6 @@ int machine_class = VICE_MACHINE_CBM6x0;
 
 static void machine_vsync_hook(void);
 
-#define C500_POWERLINE_CYCLES_PER_IRQ (C500_PAL_CYCLES_PER_RFSH)
-
 /*
 static long cbm2_cycles_per_sec = C610_PAL_CYCLES_PER_SEC;
 static double cbm2_rfsh_per_sec = C610_PAL_RFSH_PER_SEC;
@@ -119,15 +109,6 @@ static long cbm2_cycles_per_rfsh = C610_PAL_CYCLES_PER_RFSH;
 
 static log_t cbm2_log = LOG_ERR;
 static machine_timing_t machine_timing;
-
-int cbm2_isC500 = 0;
-
-/* ------------------------------------------------------------------------- */
-
-int cbm2_is_c500(void)
-{
-    return cbm2_isC500;
-}
 
 /* ------------------------------------------------------------------------- */
 
@@ -139,8 +120,8 @@ int machine_resources_init(void)
         || vsync_resources_init() < 0
         || machine_video_resources_init() < 0
         || cbm2_resources_init() < 0
+        || cartridge_resources_init() < 0
         || crtc_resources_init() < 0
-        || vicii_resources_init() < 0
         || sound_resources_init() < 0
         || sid_resources_init() < 0
         || drive_resources_init() < 0
@@ -173,8 +154,8 @@ int machine_cmdline_options_init(void)
         || vsync_cmdline_options_init() < 0
         || video_init_cmdline_options() < 0
         || cbm2_cmdline_options_init() < 0
+        || cartridge_cmdline_options_init() < 0
         || crtc_cmdline_options_init() < 0
-        || vicii_cmdline_options_init() < 0
         || sound_cmdline_options_init() < 0
         || sid_cmdline_options_init() < 0
         || drive_cmdline_options_init() < 0
@@ -197,29 +178,6 @@ int machine_cmdline_options_init(void)
 #define SIGNAL_VERT_BLANK_OFF tpicore_set_int(machine_context.tpi1, 0, 1);
 
 #define SIGNAL_VERT_BLANK_ON  tpicore_set_int(machine_context.tpi1, 0, 0);
-
-/* ------------------------------------------------------------------------- */
-/* for the C500 there is a powerline IRQ... */
-
-static alarm_t *c500_powerline_clk_alarm = NULL;
-static CLOCK c500_powerline_clk = 0;
-
-static void c500_powerline_clk_alarm_handler(CLOCK offset, void *data) {
-
-    c500_powerline_clk += C500_POWERLINE_CYCLES_PER_IRQ;
-
-    SIGNAL_VERT_BLANK_OFF
-
-    alarm_set(c500_powerline_clk_alarm, c500_powerline_clk);
-
-    SIGNAL_VERT_BLANK_ON
-
-}
-
-static void c500_powerline_clk_overflow_callback(CLOCK sub, void *data)
-{
-    c500_powerline_clk -= sub;
-}
 
 /* ------------------------------------------------------------------------- */
 /* ... while the other CBM-II use the CRTC retrace signal. */
@@ -280,30 +238,12 @@ int machine_specific_init(void)
     /* initialize print devices */
     printer_init();
 
-    if (!cbm2_isC500) {
-        if (crtc_init() == NULL)
-            return -1;
-        crtc_set_retrace_callback(cbm2_crtc_signal);
-        crtc_set_retrace_type(0);
-        crtc_set_hw_options(1, 0x7ff, 0x1000, 512, -0x2000);
-    } else {
-        if (vicii_init(VICII_STANDARD) == NULL)
-            return -1;
-        /*
-        c500_set_phi1_bank(15);
-        c500_set_phi2_bank(15);
-        */
-
-        c500_powerline_clk_alarm = alarm_new(maincpu_alarm_context,
-                                             "C500PowerlineClk",
-                                             c500_powerline_clk_alarm_handler,
-                                             NULL);
-        clk_guard_add_callback(maincpu_clk_guard,
-                               c500_powerline_clk_overflow_callback, NULL);
-        machine_timing.cycles_per_sec = C500_PAL_CYCLES_PER_SEC;
-        machine_timing.rfsh_per_sec = C500_PAL_RFSH_PER_SEC;
-        machine_timing.cycles_per_rfsh = C500_PAL_CYCLES_PER_RFSH;
+    if (crtc_init() == NULL) {
+        return -1;
     }
+    crtc_set_retrace_callback(cbm2_crtc_signal);
+    crtc_set_retrace_type(0);
+    crtc_set_hw_options(1, 0x7ff, 0x1000, 512, -0x2000);
 
     cia1_init(machine_context.cia1);
     acia1_init();
@@ -329,6 +269,9 @@ int machine_specific_init(void)
     vsync_set_machine_parameter(machine_timing.rfsh_per_sec,
                                 machine_timing.cycles_per_sec);
 
+    /* Initialize native sound chip */
+    sid_sound_chip_init();
+
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
@@ -347,12 +290,7 @@ int machine_specific_init(void)
         int fs;
         resources_get_int("UseFullscreen", &fs);
         if (fs) {
-            resources_get_int("UseVicII", &fs);
-            if (fs) {
-                resources_set_int("VICIIFullscreen", 1);
-            } else {
-                resources_set_int("CRTCFullscreen", 1);
-            }
+            resources_set_int("CRTCFullscreen", 1);
         }
     }
 #endif
@@ -369,13 +307,8 @@ void machine_specific_reset(void)
 
     sid_reset();
 
-    if (!cbm2_isC500) {
-        crtc_reset();
-    } else {
-        c500_powerline_clk = maincpu_clk + C500_POWERLINE_CYCLES_PER_IRQ;
-        alarm_set(c500_powerline_clk_alarm, c500_powerline_clk);
-        vicii_reset();
-    }
+    crtc_reset();
+
     printer_reset();
 
     rs232drv_reset();
@@ -400,11 +333,7 @@ void machine_specific_shutdown(void)
     tpicore_shutdown(machine_context.tpi2);
 
     /* close the video chip(s) */
-    if (cbm2_isC500) {
-        vicii_shutdown();
-    } else {
-        crtc_shutdown();
-    }
+    crtc_shutdown();
 
     cbm2ui_shutdown();
 }
@@ -465,57 +394,6 @@ void machine_get_line_cycle(unsigned int *line, unsigned int *cycle, int *half_c
     *half_cycle = (int)-1;
 }
 
-/* note: function splitted to prepare binary splitting */
-static void machine_change_timing_c500(int timeval)
-{
-   int border_mode;
-
-    /* log_message(LOG_DEFAULT, "machine_change_timing_c500 %d", timeval); */
-
-    switch (timeval) {
-      default:
-      case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_NORMAL_BORDERS):
-        timeval ^= VICII_BORDER_MODE(VICII_NORMAL_BORDERS);
-        border_mode = VICII_NORMAL_BORDERS;
-        break;
-      case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_FULL_BORDERS):
-        timeval ^= VICII_BORDER_MODE(VICII_FULL_BORDERS);
-        border_mode = VICII_FULL_BORDERS;
-        break;
-      case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_DEBUG_BORDERS):
-        timeval ^= VICII_BORDER_MODE(VICII_DEBUG_BORDERS);
-        border_mode = VICII_DEBUG_BORDERS;
-        break;
-   }
-
-    switch (timeval) {
-        case MACHINE_SYNC_PAL:
-            machine_timing.cycles_per_sec = C500_PAL_CYCLES_PER_SEC;
-            machine_timing.cycles_per_rfsh = C500_PAL_CYCLES_PER_RFSH;
-            machine_timing.rfsh_per_sec = C500_PAL_RFSH_PER_SEC;
-            machine_timing.cycles_per_line = C500_PAL_CYCLES_PER_LINE;
-            machine_timing.screen_lines = C500_PAL_SCREEN_LINES;
-            break;
-        case MACHINE_SYNC_NTSC:
-            machine_timing.cycles_per_sec = C500_NTSC_CYCLES_PER_SEC;
-            machine_timing.cycles_per_rfsh = C500_NTSC_CYCLES_PER_RFSH;
-            machine_timing.rfsh_per_sec = C500_NTSC_RFSH_PER_SEC;
-            machine_timing.cycles_per_line = C500_NTSC_CYCLES_PER_LINE;
-            machine_timing.screen_lines = C500_NTSC_SCREEN_LINES;
-            break;
-        default:
-            log_error(LOG_DEFAULT, "Unknown machine timing.");
-    }
-
-    debug_set_machine_parameter(machine_timing.cycles_per_line,
-                                machine_timing.screen_lines);
-    drive_set_machine_parameter(machine_timing.cycles_per_sec);
-    clk_guard_set_clk_base(maincpu_clk_guard, machine_timing.cycles_per_rfsh);
-
-    vicii_change_timing(&machine_timing, border_mode);
-    cia1_set_timing(machine_context.cia1, machine_timing.cycles_per_rfsh);
-}
-
 static void machine_change_timing_c610(int timeval)
 {
     /* log_message(LOG_DEFAULT, "machine_change_timing_c610 %d", timeval); */
@@ -549,13 +427,7 @@ static void machine_change_timing_c610(int timeval)
 
 void machine_change_timing(int timeval)
 {
-    if (cbm2_isC500) {
-        machine_change_timing_c500(timeval);
-    } else {
-        machine_change_timing_c610(timeval);
-        /* HACK: remove this when splitting the binary */
-        vicii_change_timing(&machine_timing, VICII_NORMAL_BORDERS);
-    }
+    machine_change_timing_c610(timeval);
 }
 
 /* Set the screen refresh rate, as this is variable in the CRTC */
@@ -601,10 +473,6 @@ void machine_play_psid(int tune)
 
 int machine_screenshot(screenshot_t *screenshot, struct video_canvas_s *canvas)
 {
-    if (canvas == vicii_get_canvas()) {
-        vicii_screenshot(screenshot);
-        return 0;
-    }
     if (canvas == crtc_get_canvas()) {
         crtc_screenshot(screenshot);
         return 0;
@@ -616,72 +484,14 @@ int machine_screenshot(screenshot_t *screenshot, struct video_canvas_s *canvas)
 int machine_canvas_async_refresh(struct canvas_refresh_s *refresh,
                                  struct video_canvas_s *canvas)
 {
-    if (canvas == vicii_get_canvas()) {
-        vicii_async_refresh(refresh);
-        return 0;
-    }
     if (canvas == crtc_get_canvas()) {
         crtc_async_refresh(refresh);
         return 0;
     }
-
     return -1;
 }
 
 /*-----------------------------------------------------------------------*/
-
-/*
- * C500 extra data (state of 50Hz clk)
- */
-#define C500DATA_DUMP_VER_MAJOR   0
-#define C500DATA_DUMP_VER_MINOR   0
-
-/*
- * DWORD        IRQCLK          CPU clock ticks until next 50 Hz IRQ
- *
- */
-
-static const char module_name[] = "C500DATA";
-
-int cbm2_c500_snapshot_write_module(snapshot_t *p)
-{
-    snapshot_module_t *m;
-
-    m = snapshot_module_create(p, module_name, C500DATA_DUMP_VER_MAJOR,
-                               C500DATA_DUMP_VER_MINOR);
-    if (m == NULL)
-        return -1;
-
-    SMW_DW(m, c500_powerline_clk - maincpu_clk);
-
-    snapshot_module_close(m);
-
-    return 0;
-}
-
-int cbm2_c500_snapshot_read_module(snapshot_t *p)
-{
-    BYTE vmajor, vminor;
-    snapshot_module_t *m;
-    DWORD dword;
-
-    m = snapshot_module_open(p, module_name, &vmajor, &vminor);
-    if (m == NULL)
-        return -1;
-
-    if (vmajor != C500DATA_DUMP_VER_MAJOR) {
-        snapshot_module_close(m);
-        return -1;
-    }
-
-    SMR_DW(m, &dword);
-    c500_powerline_clk = maincpu_clk + dword;
-    alarm_set(c500_powerline_clk_alarm, c500_powerline_clk);
-
-    snapshot_module_close(m);
-
-    return 0;
-}
 
 int machine_num_keyboard_mappings(void)
 {
@@ -714,3 +524,14 @@ const char *machine_get_name(void)
 const char **csidmodel = NULL;
 void psid_init_driver(void) {}
 #endif
+
+/* FIXME: further rework snapshot stuff and remove these */
+int cbm2_c500_snapshot_write_module(snapshot_t *p)
+{
+    return 0;
+}
+
+int cbm2_c500_snapshot_read_module(snapshot_t *p)
+{
+    return 0;
+}

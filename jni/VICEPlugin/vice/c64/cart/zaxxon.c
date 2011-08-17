@@ -54,10 +54,23 @@ static const c64export_resource_t export_res = {
     CARTRIDGE_NAME_ZAXXON, 1, 1, NULL, NULL, CARTRIDGE_ZAXXON
 };
 
-BYTE REGPARM1 zaxxon_roml_read(WORD addr)
+BYTE zaxxon_roml_read(WORD addr)
 {
     cart_romhbank_set_slotmain((addr & 0x1000) ? 1 : 0);
     return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
+}
+
+int zaxxon_peek_mem(struct export_s *export, WORD addr, BYTE *value)
+{
+    if (addr >= 0x8000 && addr <= 0x9fff) {
+        *value = roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
+        return CART_READ_VALID;
+    }
+    if (addr >= 0xa000 && addr <= 0xbfff) {
+        *value = romh_banks[(addr & 0x1fff) + (romh_bank << 13)];
+        return CART_READ_VALID;
+    }
+    return CART_READ_THROUGH;
 }
 
 void zaxxon_config_init(void)

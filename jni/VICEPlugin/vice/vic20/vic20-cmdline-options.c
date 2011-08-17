@@ -4,7 +4,7 @@
  * Written by
  *  Andreas Boose <viceteam@t-online.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -203,16 +203,6 @@ static cmdline_option_t const cmdline_options[] =
       NULL, NULL, "OEMJoy", (resource_value_t)0,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_DISABLE_OEM_JOY,
-      NULL, NULL },
-    { "-ieee488", SET_RESOURCE, 0,
-      NULL, NULL, "IEEE488", (resource_value_t)1,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_ENABLE_VIC1112_IEEE488,
-      NULL, NULL },
-    { "+ieee488", SET_RESOURCE, 0,
-      NULL, NULL, "IEEE488", (resource_value_t)0,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_DISABLE_VIC1112_IEEE488,
       NULL, NULL },
 #ifdef COMMON_KBD
     { "-keymap", SET_RESOURCE, 1,

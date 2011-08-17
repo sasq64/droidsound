@@ -35,10 +35,11 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "final3.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
@@ -76,11 +77,13 @@
 */
 
 static int fc3_reg_enabled = 1;
+static BYTE regval = 0;
 
 /* some prototypes are needed */
-static BYTE REGPARM1 final_v3_io1_read(WORD addr);
-static BYTE REGPARM1 final_v3_io2_read(WORD addr);
-static void REGPARM2 final_v3_io2_store(WORD addr, BYTE value);
+static BYTE final_v3_io1_read(WORD addr);
+static BYTE final_v3_io2_read(WORD addr);
+static void final_v3_io2_store(WORD addr, BYTE value);
+static int final_v3_dump(void);
 
 static io_source_t final3_io1_device = {
     CARTRIDGE_NAME_FINAL_III,
@@ -90,9 +93,11 @@ static io_source_t final3_io1_device = {
     1, /* read is always valid */
     NULL,
     final_v3_io1_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_FINAL_III
+    final_v3_io1_read,
+    final_v3_dump,
+    CARTRIDGE_FINAL_III,
+    0,
+    0
 };
 
 static io_source_t final3_io2_device = {
@@ -103,9 +108,11 @@ static io_source_t final3_io2_device = {
     1, /* read is always valid */
     final_v3_io2_store,
     final_v3_io2_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_FINAL_III
+    final_v3_io2_read,
+    final_v3_dump,
+    CARTRIDGE_FINAL_III,
+    0,
+    0
 };
 
 static io_source_list_t *final3_io1_list_item = NULL;
@@ -117,20 +124,22 @@ static const c64export_resource_t export_res_v3 = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 final_v3_io1_read(WORD addr)
+BYTE final_v3_io1_read(WORD addr)
 {
     return roml_banks[0x1e00 + (roml_bank << 13) + (addr & 0xff)];
 }
 
-BYTE REGPARM1 final_v3_io2_read(WORD addr)
+BYTE final_v3_io2_read(WORD addr)
 {
     return roml_banks[0x1f00 + (roml_bank << 13) + (addr & 0xff)];
 }
 
-void REGPARM2 final_v3_io2_store(WORD addr, BYTE value)
+void final_v3_io2_store(WORD addr, BYTE value)
 {
     unsigned int flags;
     BYTE mode;
+
+    regval = value;
 
     if ((fc3_reg_enabled) && ((addr & 0xff) == 0xff)) {
         flags = CMODE_WRITE;
@@ -146,9 +155,18 @@ void REGPARM2 final_v3_io2_store(WORD addr, BYTE value)
     }
 }
 
+/* FIXME: Add EXROM, GAME and NMI lines to the dump */
+static int final_v3_dump(void)
+{
+    mon_out("Bank: %d, register status: %s\n",
+            regval & 3,
+            (regval & 0x80) ? "Hidden" : "Visible");
+    return 0;
+}
+
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 final_v3_roml_read(WORD addr)
+BYTE final_v3_roml_read(WORD addr)
 {
     return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
 }
@@ -190,8 +208,8 @@ static int final_v3_common_attach(void)
         return -1;
     }
 
-    final3_io1_list_item = c64io_register(&final3_io1_device);
-    final3_io2_list_item = c64io_register(&final3_io2_device);
+    final3_io1_list_item = io_source_register(&final3_io1_device);
+    final3_io2_list_item = io_source_register(&final3_io2_device);
 
     return 0;
 }
@@ -230,8 +248,8 @@ int final_v3_crt_attach(FILE *fd, BYTE *rawcart)
 void final_v3_detach(void)
 {
     c64export_remove(&export_res_v3);
-    c64io_unregister(final3_io1_list_item);
-    c64io_unregister(final3_io2_list_item);
+    io_source_unregister(final3_io1_list_item);
+    io_source_unregister(final3_io2_list_item);
     final3_io1_list_item = NULL;
     final3_io2_list_item = NULL;
 }

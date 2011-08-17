@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 LOCAL_MODULE := resid
 LOCAL_ARM_MODE := arm
-LOCAL_CFLAGS := -ffast-math -fno-exceptions
+LOCAL_CFLAGS := -O3 -ffast-math -fno-exceptions
 LOCAL_CPP_EXTENSION := cc
 MY_RESID_FILES = $(wildcard $(LOCAL_PATH)/vice/resid/*.cc)
 LOCAL_SRC_FILES := $(MY_RESID_FILES:$(LOCAL_PATH)%=%)
@@ -11,6 +11,7 @@ include $(BUILD_STATIC_LIBRARY)
 include $(CLEAR_VARS)
 LOCAL_MODULE := vice
 LOCAL_ARM_MODE := arm
+LOCAL_CFLAGS = -O3
 LOCAL_CPP_EXTENSION := cc
 LOCAL_SRC_FILES := \
 	VICEPlugin.cc \
@@ -46,6 +47,7 @@ LOCAL_SRC_FILES := \
 	vice/joystick.c \
 	vice/lib.c \
 	vice/lightpen.c \
+	vice/log.c \
 	vice/machine.c \
 	vice/machine-bus.c \
 	vice/network.c \
@@ -63,34 +65,30 @@ LOCAL_SRC_FILES := \
 	vice/vsync.c \
 	vice/zfile.c \
 	vice/zipcode.c \
-	vice/c64/c64.c \
-	vice/c64/c64_256k.c \
-	vice/c64/c64-cmdline-options.c \
 	vice/c64/c64-resources.c \
 	vice/c64/c64-snapshot.c \
 	vice/c64/c64bus.c \
 	vice/c64/c64cia1.c \
 	vice/c64/c64cia2.c \
-	vice/c64/c64datasette.c \
-	vice/c64/c64embedded.c \
+	vice/c64/c64-cmdline-options.c \
 	vice/c64/c64export.c \
-	vice/c64/c64fastiec.c \
-	vice/c64/c64gluelogic.c \
 	vice/c64/c64iec.c \
+	vice/c64/c64fastiec.c \
 	vice/c64/c64io.c \
-	vice/c64/c64keyboard.c \
-	vice/c64/c64mem.c \
-	vice/c64/c64meminit.c \
-	vice/c64/c64memlimit.c \
-	vice/c64/c64memrom.c \
-	vice/c64/c64memsnapshot.c \
-	vice/c64/c64model.c \
-	vice/c64/c64pla.c \
-	vice/c64/c64printer.c \
 	vice/c64/c64rom.c \
 	vice/c64/c64romset.c \
-	vice/c64/c64rsuser.c \
+	vice/c64/c64gluelogic.c \
+	vice/c64/c64memsnapshot.c \
+	vice/c64/c64memrom.c \
+	vice/c64/c64meminit.c \
+	vice/c64/c64memlimit.c \
+	vice/c64/c64model.c \
+	vice/c64/c64pla.c \
 	vice/c64/c64video.c \
+	vice/c64/c64printer.c \
+	vice/c64/vsid.c \
+	vice/c64/vsidmem.c \
+	vice/c64/vsidstubs.c \
 	vice/c64/patchrom.c \
 	vice/c64/plus256k.c \
 	vice/c64/plus60k.c \
@@ -126,6 +124,7 @@ LOCAL_SRC_FILES := \
 	vice/sounddrv/soundmovie.c \
 	vice/sounddrv/soundvoc.c \
 	vice/sounddrv/soundwav.c \
+	vice/userport/userport_joystick.c \
 	vice/vicii/vicii.c \
 	vice/vicii/vicii-badline.c \
 	vice/vicii/vicii-color.c \
@@ -142,16 +141,10 @@ LOCAL_SRC_FILES := \
 	overrides/attach.c \
 	overrides/autostart.c \
 	overrides/datasette.c \
-	overrides/log.c \
 	overrides/maincpu.c \
 	overrides/mouse.c \
 	overrides/serial.c \
-	overrides/c64/c64drive.c \
-	overrides/c64/c64parallel.c \
 	overrides/c64/c64sound.c \
-	overrides/c64/cart/c64cart.c \
-	overrides/c64/cart/c64carthooks.c \
-	overrides/c64/cart/c64cartmem.c \
 	overrides/c64/cart/crt.c \
 	overrides/c64/cart/digimax.c \
 	overrides/c64/cart/reu.c \
@@ -167,7 +160,6 @@ LOCAL_SRC_FILES := \
 	overrides/iecbus/iecbus.c \
 	overrides/imagecontents/imagecontents.c \
 	overrides/monitor/monitor.c \
-	overrides/parallel/parallel.c \
 	overrides/printer/printer.c \
 	overrides/sounddrv/sounddummy.c \
 	overrides/tape/tape.c \
@@ -177,8 +169,7 @@ LOCAL_SRC_FILES := \
 	overrides/video/video.c \
 #terminator for last backslash
 
-LOCAL_CFLAGS := -DHAVE_NEON -DHAVE_CONFIG_H
-
+LOCAL_CFLAGS := -DHAVE_CONFIG_H
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) \
 	$(LOCAL_PATH)/android \

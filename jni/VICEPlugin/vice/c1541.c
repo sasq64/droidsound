@@ -441,6 +441,7 @@ static int split_args(const char *line, int *nargs, char **args)
 static int arg_to_int(const char *arg, int *return_value)
 {
     char *tailptr;
+    int counter = 0;
 
     *return_value = (int)strtol(arg, &tailptr, 10);
 
@@ -449,8 +450,9 @@ static int arg_to_int(const char *arg, int *return_value)
 
     /* Only whitespace is allowed after the last valid character.  */
     if (!util_check_null_string(tailptr)) {
-        while (isspace(*tailptr))
-            tailptr++;
+        while (isspace((int)tailptr[counter]))
+            counter++;
+        tailptr += counter;
         if (*tailptr != 0)
             return -1;
     }
@@ -1164,7 +1166,7 @@ static int format_cmd(int nargs, char **args)
         /* format <diskname,id> <type> <imagename> */
         /* Create a new image.  */
         /* FIXME: I want a unit number here too.  */
-        *args[2] = tolower(*args[2]);
+        *args[2] = util_tolower(*args[2]);
         if (strcmp(args[2], "d64") == 0)
             disk_type = DISK_IMAGE_TYPE_D64;
         else if (strcmp(args[2], "d67") == 0)
@@ -1309,6 +1311,41 @@ static int info_cmd(int nargs, char **args)
     return FD_OK;
 }
 
+static int list_match_pattern(char *pat, char *str)
+{
+    int n;
+
+    if (*str == '"') {
+        str++;
+    }
+
+    if ((*str == 0) && (*pat != 0)) {
+        return 0;
+    }
+
+    n = strlen(str);
+    while (n) {
+        n--;
+        if (str[n] == '"') {
+            str[n] = 0;
+            break;
+        }
+    }
+
+    while (*str) {
+        if (*pat == '*') {
+            return 1;
+        } else if ((*pat != '?') && (*pat != *str)) {
+            return 0;
+        }
+        str++; pat++;
+    }
+    if ((*pat != 0) && (*pat != '*')) {
+        return 0;
+    }
+    return 1;
+}
+
 static int list_cmd(int nargs, char **args)
 {
     char *pattern, *name;
@@ -1329,8 +1366,9 @@ static int list_cmd(int nargs, char **args)
         dnr = drive_number;
     }
 
-    if (check_drive(dnr, CHK_RDY) < 0)
+    if (check_drive(dnr, CHK_RDY) < 0) {
         return FD_NOTREADY;
+    }
 
     vdrive = drives[dnr & 3];
     name = disk_image_name_get(vdrive->image);
@@ -1347,11 +1385,14 @@ static int list_cmd(int nargs, char **args)
         lib_free(string);
         if (element == NULL) {
             pager_print("Empty image\n");
-        }
-        else do {
-            string = image_contents_file_to_string(element, 1);
-            pager_print(string);
-            pager_print("\n");
+        } else do {
+            string = image_contents_filename_to_string(element, 1);
+            if ((pattern == NULL) || list_match_pattern(pattern, string)) {
+                lib_free(string);
+                string = image_contents_file_to_string(element, 1);
+                pager_print(string);
+                pager_print("\n");
+            }
             lib_free(string);
         } while ( (element = element->next) != NULL);
         if (listing->blocks_free >= 0) {

@@ -40,37 +40,37 @@
 #include "maincpu.h"
 #include "parallel.h"
 #include "pet.h"
-#include "pet_userport_dac.h"
 #include "petsound.h"
 #include "petvia.h"
 #include "printer.h"
 #include "types.h"
+#include "userport_dac.h"
 #include "via.h"
 
 
-void REGPARM2 via_store(WORD addr, BYTE data)
+void via_store(WORD addr, BYTE data)
 {
     viacore_store(machine_context.via, addr, data);
 }
 
-BYTE REGPARM1 via_read(WORD addr)
+BYTE via_read(WORD addr)
 {
     return viacore_read(machine_context.via, addr);
 }
 
-BYTE REGPARM1 via_peek(WORD addr)
+BYTE via_peek(WORD addr)
 {
     return viacore_peek(machine_context.via, addr);
 }
 
 /* switching PET charrom with CA2 */
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
     crtc_set_chargen_offset(state ? 256 : 0);
 }
 
 /* switching userport strobe with CB2 */
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
     printer_userport_write_strobe(state);
 }
@@ -93,18 +93,14 @@ static void undump_pra(via_context_t *via_context, BYTE byte)
     if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA) {
         extra_joystick_cga_store(byte);
     }
-    if (pet_userport_dac_enabled) {
-        pet_userport_dac_store(byte);
-    }
+    userport_dac_store(byte);
 }
 
 static void store_pra(via_context_t *via_context, BYTE byte, BYTE myoldpa,
                       WORD addr)
 {
     printer_userport_write_data(byte);
-    if (pet_userport_dac_enabled) {
-        pet_userport_dac_store(byte);
-    }
+    userport_dac_store(byte);
 }
 
 static void undump_prb(via_context_t *via_context, BYTE byte)
@@ -297,4 +293,3 @@ void petvia_setup_context(machine_context_t *machine_context)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-

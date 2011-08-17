@@ -88,3 +88,9 @@ void autostart_reset(void)
 void autostart_shutdown(void)
 {
 }
+
+int autostart_autodetect_opt_prgname(const char *file_prog_name, 
+                                     unsigned int alt_prg_number,
+                                     unsigned int runmode) {
+    return 0;
+}

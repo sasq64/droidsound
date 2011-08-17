@@ -3,7 +3,7 @@
  * ($DC00).
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  Andreas Boose <viceteam@t-online.de>
  *
@@ -42,6 +42,7 @@
 #include "machine.h"
 #include "maincpu.h"
 #include "types.h"
+#include "../userport/userport_joystick.h"
 #include "vicii.h"
 
 #ifdef HAVE_RS232
@@ -52,17 +53,17 @@
 #include "mouse.h"
 #endif
 
-void REGPARM2 cia1_store(WORD addr, BYTE data)
+void cia1_store(WORD addr, BYTE data)
 {
     ciacore_store(machine_context.cia1, addr, data);
 }
 
-BYTE REGPARM1 cia1_read(WORD addr)
+BYTE cia1_read(WORD addr)
 {
     return ciacore_read(machine_context.cia1, addr);
 }
 
-BYTE REGPARM1 cia1_peek(WORD addr)
+BYTE cia1_peek(WORD addr)
 {
     return ciacore_peek(machine_context.cia1, addr);
 }
@@ -216,6 +217,26 @@ static BYTE read_ciapb(cia_context_t *cia_context)
 
     byte = (val & (cia_context->c_cia[CIA_PRB] | ~(cia_context->c_cia[CIA_DDRB]))) & ~joystick_value[1];
 
+    /*
+        handle the special case when both port a and port b are programmed as output,
+        port a outputs (active) low, and port b outputs high.
+
+        in this case pressing either shift-lock or two or more keys of the same column
+        is required to drive port b low, pressing a single key is not enough (and the
+        port will read back as high). (see testprogs/CIA/ciaports)
+
+        FIXME: this is not emulated yet. the line below will drive the respective port b
+               bits high if the above mentioned condition is met, which atleast gives the
+               expected result for single key presses.
+    */
+    byte |= ((cia_context->c_cia[CIA_DDRA]) & (cia_context->c_cia[CIA_DDRB])) & (cia_context->c_cia[CIA_PRB]);
+/*
+    if(val!=0xff) {
+        printf("keyval (PA) %02x   PA %02x DDRA %02x  PB %02x DDRB %02x  res: %02x\n",
+        val, cia_context->c_cia[CIA_PRA], cia_context->c_cia[CIA_DDRA],
+        cia_context->c_cia[CIA_PRB], cia_context->c_cia[CIA_DDRB], byte);
+    }
+*/
 #ifdef HAVE_MOUSE
     if (_mouse_enabled && (mouse_type == MOUSE_TYPE_NEOS) && (mouse_port == 1)) {
         byte &= neos_mouse_read();
@@ -243,9 +264,8 @@ static void store_sdr(cia_context_t *cia_context, BYTE byte)
         rsuser_tx_byte(byte);
     }
 #endif
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_HIT) {
-        extra_joystick_hit_store(byte);
-    }
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_sdr(byte);
 }
 
 void cia1_init(cia_context_t *cia_context)

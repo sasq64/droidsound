@@ -308,7 +308,6 @@ static int init_raster(void)
     raster_t *raster;
 
     raster = &ted.raster;
-    video_color_set_canvas(raster->canvas);
 
     raster->sprite_status = NULL;
     raster_line_changes_init(raster);
@@ -383,7 +382,6 @@ void ted_reset(void)
 /*    ted_change_timing();*/
 
     ted_timer_reset();
-    ted_sound_reset();
 
     raster_reset(&ted.raster);
 

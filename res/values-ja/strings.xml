@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="app_name">Droidsound</string>
+<string name="create_moddir_failed">SDカードにMODSのディレクトリを作成できませんでした!</string>
+<string name="sdcard_not_found">SDカードにアクセスできませんでした</string>
+<string name="search_hint">検索のタイトル</string>
+<string name="scan_db">再スキャンのデータベース</string>
+<string name="about_droidsound">"By sasq64@gmail.com and Lioncash(Japanese Translation)"</string>
+<string name="recreate_confirm">これは、データベースを再作成します。これは長い時間がかかる場合があります。よろしいですか？</string>
+<string-array name="scan_opts">
+    <item>Full</item>
+</string-array>
+<string name="details">詳細</string>
+<string name="favorite">お気に入り</string>
+<string name="go_to_dir">ディレクトリに移動します</string>
+<string name="remove">削除</string>
+<string name="cut">切り取り</string>
+<string name="paste">貼り付け</string>
+<string name="remove_all">すべてを削除する</string>
+<string name="do_remove_all">プレイリストをクリアしますか？</string>
+<string name="del_dir">削除</string>
+<string name="del_file">削除</string>
+<string name="del_plist">削除</string>
+<string name="make_wav">着信音を作成する</string>
+<string name="do_del_plist">プレイリストを削除しますか？</string>
+<string name="do_del_dir">ディレクトリを削除しますか？</string>
+<string name="do_del_file">ファイルを削除しますか？</string>
+<string name="do_make_wav">着信音として設定する？</string>
+<string name="ringtone_set">新しい着信音が設定さ</string>
+<string name="ringtone_created">新しい着メロ作成</string>
+<string name="rescan">再スキャン</string>
+<string name="abort_scan">スキャンの中止</string>
+<string name="about">について</string>
+<string name="new_">新</string>
+<string name="quit">終了</string>
+<string name="database_cleared">データベースがクリア</string>
+<string name="clearing_database">クリアリングデータベース</string>
+<string name="database_busy">データベースがビジー状態です！</string>
+<string name="scanning">スキャニング</string>
+<string name="title">タイトル</string>
+<string name="info">情報</string>
+<string name="composer">作曲家</string>
+<string name="copyright">著作権</string>
+<string name="upgrade_db">データベースのフォーマットが変更されました。古いデータベースは削除および再作成されます。</string>
+<string name="add_to_plist">\'[playlist]\'に追加</string>
+<string name="create_playlist">作成プレイリスト</string>
+<string name="set_plist">現在のプレイリストを設定します</string>
+<string name="name_playlist">プレイリストの名前</string>
+<string name="name_folder">フォルダ名</string>
+<string name="name_link">リンク名 (http://)</string>
+<string name="settings">設定</string>
+<string name="will_be_downloaded">ダウンロードされます.</string>
+<string name="is_downloading">現在ダウンロード中です...</string>
+<string name="is_downloaded">すでにダウンロードされます</string>
+<string name="is_queued">ダウンロードするためにキューイングされます</string>
+
+<string name="hvsc_desc">The High Voltage Sid Collection (230 MB)</string>
+<string name="csdb_desc">CSDbのデータベース (660 KB)</string>
+<string name="testmods_desc">MODファイル（テスト）</string>
+
+<string name="zip_import_failed">zipファイルのインポートに失敗しました。</string>
+<string name="zip_import_replace">既存のzipファイルを置き換えることはありません。まずそれを削除してください。</string>
+<string name="ask_speech">あなたがインストールされている音声がありません - 今、市場からそれをインストールしますか？</string>
+<string name="notification">Droidsoundは再生中です</string>
+
+<string name="sort_name">タイトルによるソート</string>
+<string name="sort_author">作曲家で並べ替え</string>
+<string name="sort_date">日付によるソート</string>
+
+<string name="unpack_examples">これはDroidSoundを実行するのが初めてであると思われる。私はあなたのためにいくつかの
+音楽を抽出している。\n\n あなたがそれをしたくない場合は、長いExamples.zipをクリックしてくださ\'Examples\'をクリックと削除]を選択します.\n\nまた、ネットからより多くの音楽をダウンロードする設定に
+\'Download\'をチェックアウトする</string>
+
+<string-array name="fav_opts">
+	<item>デフォルトサブチューン</item>
+	<item>現在サブチューン</item>
+	<item>すべてサブチューン</item>
+</string-array>
+
+
+<string-array name="new_opts">
+	<item>フォルダ</item>
+	<item>プレイリスト</item>
+	<item>HTTPのリンク</item>
+</string-array>
+
+<string-array name="indexing_opts">
+	<item>なし</item>
+	<item>基本的な</item>
+	<item>フル</item>
+</string-array>
+
+<string-array name="panning_opts">
+	<item>モノ</item>
+	<item>いくつか</item>
+	<item>50/50</item>
+	<item>たくさん</item>
+	<item>ステレオ</item>
+</string-array>
+
+
+<string-array name="buffer_opts">
+	<item>短</item>
+	<item>中位</item>
+	<item>長い</item>
+	<item>非常に長い</item>
+</string-array>
+
+<string-array name="engine_opts">
+<item>Sidplay2</item>
+<item>VICE</item>
+</string-array>
+
+
+<string-array name="videomode_opts">
+<item>PAL</item>
+<item>NTSC</item>
+<item>PAL (強制)</item>
+<item>NTSC (強制)</item>
+</string-array>
+
+<string-array name="resampling_opts">
+<item>最速 (サイクルがスキップ)</item>
+<item>高速 (スキップはサイクルしない)</item>
+<item>遅い (SINC)</item>
+<item>最も遅い (SINC)</item>
+</string-array>
+
+<string-array name="filter_bias_opts">
+<item>最軽量のフィルタ</item>
+<item>光フィルタ</item>
+<item>通常のフィルター</item>
+<item>暗いフィルター</item>
+<item>非常にダークフィルター</item>
+</string-array>
+
+<string-array name="sid_model_opts">
+<item>6581</item>
+<item>8580</item>
+<item>6581 (強制)</item>
+<item>8580 (強制)</item>
+</string-array>
+
+<string-array name="videomode_vals">
+<item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
+</string-array>
+
+<string-array name="resampling_vals">
+<item>0</item>
+<item>1</item>
+<item>3</item>
+<item>2</item>
+</string-array>
+
+<string-array name="filter_bias_vals">
+<item>500</item>
+<item>250</item>
+<item>0</item>
+<item>-250</item>
+<item>-500</item>
+</string-array>
+
+<string-array name="sid_model_vals">
+<item>0</item>
+<item>1</item>
+<item>2</item>
+<item>3</item>
+</string-array>
+</resources>

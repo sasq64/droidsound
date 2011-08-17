@@ -52,11 +52,57 @@
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
 int new_cmd = 1, quote = 0, opt_asm = 0, cur_len = 0, last_len = 0, dont_match_reg_a = 0;
+int memop_next = 0, memop_value = 0;
 int temp, push_back;
 static int yywrap(void);
 YY_BUFFER_STATE my_state;
 
 #define YY_USER_ACTION { last_len = cur_len; cur_len += yyleng; }
+
+static int hexint(char n) {
+    if ((n >= '0') && (n <= '9')) {
+        return n - '0';
+    } else if ((n >= 'a') && (n <= 'f')) {
+        return n - ('a' - 0x0a);
+    } else if ((n >= 'A') && (n <= 'F')) {
+        return n - ('A' - 0x0a);
+    }
+    return 0;
+}
+
+/* remove escaped codes from string and replace them by their actual character
+   codes. */
+static void unescape(char *s) {
+    char *d = s;
+    int n;
+    while (*s) {
+        if (*s == '\\') {
+            s++;
+            switch (*s) {
+                case '\\': *d = '\\'; break; /* backslash */
+                case 'n': *d = '\n'; break; /* lf */
+                case 'r': *d = '\r'; break; /* cr */
+                case '"': *d = '"';  break; /* quote */
+                case 'x': /* hex codes */
+                    s++; if (*s == 0) { goto send; }
+                    n = hexint(*s) << 4;
+                    s++; if (*s == 0) { goto send; }
+                    *d = n | hexint(*s);
+                    break;
+                default:
+                    *d = '\\'; d++;
+                    if (*s == 0) { goto send; }
+                    *d = *s;
+                    break;
+            }
+        } else {
+            *d = *s;
+        }
+        s++;d++;
+    }
+send:
+    *d = 0;
+} 
 
 %}
 
@@ -70,14 +116,15 @@ HDIGIT  [0-9a-f]
 
 %{
    if (new_cmd) {
-      if (!(asm_mode && opt_asm))
+      if (!(asm_mode && opt_asm)) {
          last_len = cur_len = 0;
-
+      }
       if (asm_mode) {
          BEGIN (ASM_MODE);
          opt_asm = 0;
-      } else
+      } else {
          BEGIN (CMD);
+      }
       new_cmd = 0;
    }
 %}
@@ -90,6 +137,8 @@ HDIGIT  [0-9a-f]
         a               { opt_asm = 1; BEGIN(INITIAL); return CMD_ASSEMBLE; }
         add_label|al    { BEGIN(INITIAL);       return CMD_ADD_LABEL; }
         attach          { BEGIN(FNAME);         return CMD_ATTACH; }
+        autostart       { BEGIN(FNAME);         return CMD_AUTOSTART; }
+        autoload        { BEGIN(FNAME);         return CMD_AUTOLOAD; }
         bank            { BEGIN(BNAME);         return CMD_BANK; }
         bload|bl        { BEGIN(FNAME);         return CMD_BLOAD; }
         block_read|br   { BEGIN(INITIAL);       return CMD_BLOCK_READ; }
@@ -123,7 +172,7 @@ HDIGIT  [0-9a-f]
         ii              { BEGIN(INITIAL);       return CMD_SCREENCODE_DISPLAY; }
         ignore          { BEGIN(INITIAL);       return CMD_IGNORE; }
         io              { BEGIN(INITIAL);       return CMD_IO; }
-        keybuf          { BEGIN(ROL);           return CMD_KEYBUF; }
+        keybuf          { BEGIN(INITIAL);       return CMD_KEYBUF; }
         list            { BEGIN(INITIAL);       return CMD_LIST; }
         load|l          { BEGIN(FNAME);         return CMD_LOAD; }
         load_labels|ll  { BEGIN(FNAME);         return CMD_LOAD_LABELS; }
@@ -170,8 +219,17 @@ on  		{ yylval.i = e_ON; return TOGGLE; }
 off 		{ yylval.i = e_OFF; return TOGGLE; }
 toggle		{ yylval.i = e_TOGGLE; return TOGGLE; }
 
-load 		{ yylval.i = e_load; return MEM_OP; }
-store 		{ yylval.i = e_store; return MEM_OP; }
+load\ [store|exec]  { memop_value |= e_load; memop_next = 1; REJECT; }
+store\ [load|exec]  { memop_value |= e_store; memop_next = 1; REJECT; }
+exec\ [load|store]  { memop_value |= e_exec; memop_next = 1; REJECT; }
+
+load  { memop_value |= e_load; if (memop_next == 0) { yylval.i = memop_value; memop_value = 0; return MEM_OP; } }
+store { memop_value |= e_store; if (memop_next == 0) { yylval.i = memop_value; memop_value = 0; return MEM_OP; } }
+exec  { memop_value |= e_exec; if (memop_next == 0) { yylval.i = memop_value; memop_value = 0; return MEM_OP; } }
+
+load\ [^store|^exec] { memop_value |= e_load; memop_next = 0; REJECT; }
+store\ [^load|^exec] { memop_value |= e_store; memop_next = 0; REJECT; }
+exec\ [^load|^store] { memop_value |= e_exec; memop_next = 0; REJECT; }
 
 if		{ BEGIN (COND_MODE); return IF; }
 
@@ -180,13 +238,35 @@ if		{ BEGIN (COND_MODE); return IF; }
                      BEGIN (STR);
                   }
                 }
+
 <STR>\" 	{ if (quote) {
-                     quote = 0;
-                     BEGIN (INITIAL);
+                     if ((yyleng > 1) && (yytext[yyleng - 2] == '\\')) {
+                         yymore(); /* skip escaped quote */
+                     } else if (((yyleng < 4) || (yytext[yyleng - 4] != '\\')) &&
+                                (yyleng > 2) && (yytext[yyleng - 3] == '\\') &&
+                                (yytext[yyleng - 2] == '"')) {
+                         /* special case, \"" at end of string */
+                         yylval.str = lib_stralloc(yytext);
+                         yylval.str[yyleng -1] = 0;
+                         unescape(yylval.str);
+                         quote = 0;
+                         BEGIN (INITIAL);
+                         return STRING;
+                     } else {
+                         quote = 0;
+                         BEGIN (INITIAL);
+                     }
                   }
                 }
 
-<STR>[^\"\n]*      { yylval.str = lib_stralloc(yytext); return STRING; }
+<STR>[^\"\n]*   { if (yytext[yyleng - 1] == '\\') {
+                     yymore(); /* skip escaped quote */
+                  } else {
+                     yylval.str = lib_stralloc(yytext);
+                     unescape(yylval.str);
+                     return STRING;
+                  }
+                }
 
  /* prefixes for numbers */
 \.\$		{ yylval.i = e_hexadecimal; return INPUT_SPEC; }
@@ -396,4 +476,3 @@ static int yywrap(void)
 {
     return 1;
 }
-

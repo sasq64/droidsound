@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -48,13 +48,14 @@
 #include "ram.h"
 #include "resources.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-resources.h"
 #include "types.h"
 #include "via.h"
 #include "vsync.h"
 
 
-static BYTE REGPARM1 mem_read_patchbuf(WORD addr);
+static BYTE mem_read_patchbuf(WORD addr);
 
 BYTE petmem_2001_buf_ef[256];
 
@@ -105,22 +106,22 @@ static log_t pet_mem_log = LOG_ERR;
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 zero_read(WORD addr)
+BYTE zero_read(WORD addr)
 {
     return mem_ram[addr & 0xff];
 }
 
-void REGPARM2 zero_store(WORD addr, BYTE value)
+void zero_store(WORD addr, BYTE value)
 {
     mem_ram[addr & 0xff] = value;
 }
 
-static BYTE REGPARM1 ram_read(WORD addr)
+static BYTE ram_read(WORD addr)
 {
     return mem_ram[addr];
 }
 
-static void REGPARM2 ram_store(WORD addr, BYTE value)
+static void ram_store(WORD addr, BYTE value)
 {
 /*
 if (addr == 0x8000) printf("charline=%d, ycount=%d, char=%d\n",
@@ -129,47 +130,47 @@ if (addr == 0x8000) printf("charline=%d, ycount=%d, char=%d\n",
     mem_ram[addr] = value;
 }
 
-static BYTE REGPARM1 read_ext8(WORD addr)
+static BYTE read_ext8(WORD addr)
 {
     return mem_ram[addr + bank8offset];
 }
 
-static void REGPARM2 store_ext8(WORD addr, BYTE value)
+static void store_ext8(WORD addr, BYTE value)
 {
     mem_ram[addr + bank8offset] = value;
 }
 
-static BYTE REGPARM1 read_extC(WORD addr)
+static BYTE read_extC(WORD addr)
 {
     return mem_ram[addr + bankCoffset];
 }
 
-static void REGPARM2 store_extC(WORD addr, BYTE value)
+static void store_extC(WORD addr, BYTE value)
 {
     mem_ram[addr + bankCoffset] = value;
 }
 
-static BYTE REGPARM1 read_vmirror(WORD addr)
+static BYTE read_vmirror(WORD addr)
 {
     return mem_ram[0x8000 + (addr & (petres.videoSize - 1))];
 }
 
-static void REGPARM2 store_vmirror(WORD addr, BYTE value)
+static void store_vmirror(WORD addr, BYTE value)
 {
     mem_ram[0x8000 + (addr & (petres.videoSize - 1))] = value;
 }
 
-BYTE REGPARM1 rom_read(WORD addr)
+BYTE rom_read(WORD addr)
 {
     return mem_rom[addr & 0x7fff];
 }
 
-void REGPARM2 rom_store(WORD addr, BYTE value)
+void rom_store(WORD addr, BYTE value)
 {
     mem_rom[addr & 0x7fff] = value;
 }
 
-static BYTE REGPARM1 read_unused(WORD addr)
+static BYTE read_unused(WORD addr)
 {
     if (petreu_enabled && addr>=0x8800 && addr<0x8900)
       return read_petreu_reg(addr);
@@ -188,16 +189,16 @@ static BYTE REGPARM1 read_unused(WORD addr)
         }
     }
 
-    if (sidcart_enabled && sidcart_address==1 && addr>=0xe900 && addr<=0xe91f)
+    if (sidcart_enabled() && sidcart_address==1 && addr>=0xe900 && addr<=0xe91f)
       return sid_read(addr);
 
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x8f00 && addr<=0x8f1f)
+    if (sidcart_enabled() && sidcart_address==0 && addr>=0x8f00 && addr<=0x8f1f)
       return sid_read(addr);
 
     return (addr >> 8) & 0xff;
 }
 
-static BYTE REGPARM1 mem_read_patchbuf(WORD addr)
+static BYTE mem_read_patchbuf(WORD addr)
 {
     return petmem_2001_buf_ef[addr & 0xff];
 }
@@ -206,13 +207,13 @@ static BYTE REGPARM1 mem_read_patchbuf(WORD addr)
 
 /* Functions for watchpoint memory access.  */
 
-static BYTE REGPARM1 read_watch(WORD addr)
+static BYTE read_watch(WORD addr)
 {
     monitor_watch_push_load_addr(addr, e_comp_space);
     return _mem_read_tab[addr >> 8](addr);
 }
 
-static void REGPARM2 store_watch(WORD addr, BYTE value)
+static void store_watch(WORD addr, BYTE value)
 {
     monitor_watch_push_store_addr(addr, e_comp_space);
     _mem_write_tab[addr >> 8](addr, value);
@@ -255,7 +256,7 @@ int petmem_superpet_diag(void)
     return petres.superpet && spet_diag;
 }
 
-static BYTE REGPARM1 read_super_io(WORD addr)
+static BYTE read_super_io(WORD addr)
 {
     if (addr >= 0xeff4) {       /* unused / readonly */
         return read_unused(addr);
@@ -271,7 +272,7 @@ static BYTE REGPARM1 read_super_io(WORD addr)
     return read_unused(addr);   /* fallback */
 }
 
-static void REGPARM2 store_super_io(WORD addr, BYTE value)
+static void store_super_io(WORD addr, BYTE value)
 {
     if (addr >= 0xeffe) {       /* RAM/ROM switch */
         spet_ramen = !(value & 1);
@@ -302,7 +303,7 @@ static void REGPARM2 store_super_io(WORD addr, BYTE value)
     }
 }
 
-static BYTE REGPARM1 read_super_9(WORD addr)
+static BYTE read_super_9(WORD addr)
 {
     if (spet_ramen) {
         return (mem_ram + 0x10000)[(spet_bank << 12) | (addr & 0x0fff)];
@@ -310,7 +311,7 @@ static BYTE REGPARM1 read_super_9(WORD addr)
     return rom_read(addr);
 }
 
-static void REGPARM2 store_super_9(WORD addr, BYTE value)
+static void store_super_9(WORD addr, BYTE value)
 {
     if (spet_ramen && !spet_ramwp) {
         (mem_ram + 0x10000)[(spet_bank << 12) | (addr & 0x0fff)] = value;
@@ -322,12 +323,12 @@ static void REGPARM2 store_super_9(WORD addr, BYTE value)
 
 /* Generic memory access.  */
 
-void REGPARM2 mem_store(WORD addr, BYTE value)
+void mem_store(WORD addr, BYTE value)
 {
     _mem_write_tab_ptr[addr >> 8](addr, value);
 }
 
-BYTE REGPARM1 mem_read(WORD addr)
+BYTE mem_read(WORD addr)
 {
     return _mem_read_tab_ptr[addr >> 8](addr);
 }
@@ -342,7 +343,7 @@ BYTE REGPARM1 mem_read(WORD addr)
 
 /* When we write, we write all involved chips.  */
 
-static void REGPARM2 store_io(WORD addr, BYTE value)
+static void store_io(WORD addr, BYTE value)
 {
     if (addr & 0x10)
         pia1_store(addr, value);
@@ -364,7 +365,7 @@ static void REGPARM2 store_io(WORD addr, BYTE value)
  * the bus drivers of all involved chips interact and you get strange
  * results...
  */
-static BYTE REGPARM1 read_io(WORD addr)
+static BYTE read_io(WORD addr)
 {
     BYTE v1, v2, v3, v4;
 
@@ -402,7 +403,7 @@ static BYTE REGPARM1 read_io(WORD addr)
     }
 }
 
-static void REGPARM2 store_dummy(WORD addr, BYTE value)
+static void store_dummy(WORD addr, BYTE value)
 {
     if (petreu_enabled && addr>=0x8800 && addr<0x8900)
       store_petreu_reg(addr,value);
@@ -421,10 +422,10 @@ static void REGPARM2 store_dummy(WORD addr, BYTE value)
         }
     }
 
-    if (sidcart_enabled && sidcart_address==1 && addr>=0xe900 && addr<0xe91f)
+    if (sidcart_enabled() && sidcart_address==1 && addr>=0xe900 && addr<0xe91f)
       sid_store(addr,value);
 
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x8f00 && addr<0x8f1f)
+    if (sidcart_enabled() && sidcart_address==0 && addr>=0x8f00 && addr<0x8f1f)
       sid_store(addr,value);
 
     return;
@@ -437,7 +438,7 @@ static void REGPARM2 store_dummy(WORD addr, BYTE value)
 static void set_std_9tof(void)
 {
     int i, l;
-    static void REGPARM2 (*store)(WORD, BYTE);
+    static void (*store)(WORD, BYTE);
     int ram9, rama;
 
     store = (petres.map == 2) ? ram_store : store_dummy;
@@ -587,10 +588,10 @@ void mem_toggle_watchpoints(int flag, void *context)
  */
 
 /* Save old store function for last byte.  */
-static void REGPARM2 (*store_ff)(WORD addr, BYTE value) = NULL;
+static void (*store_ff)(WORD addr, BYTE value) = NULL;
 
 /* Write to last page of memory in 8x96.  */
-static void REGPARM2 store_8x96(WORD addr, BYTE value)
+static void store_8x96(WORD addr, BYTE value)
 {
     BYTE changed;
     int l, protected;
@@ -1173,4 +1174,3 @@ void petmem_check_info(petres_t *pi)
         pi->videoSize = 0x1000;
     }
 }
-

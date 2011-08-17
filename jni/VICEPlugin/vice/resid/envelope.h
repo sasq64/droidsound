@@ -43,8 +43,8 @@ public:
 
   void set_chip_model(chip_model model);
 
-  RESID_INLINE void clock();
-  RESID_INLINE void clock(cycle_count delta_t);
+  void clock();
+  void clock(cycle_count delta_t);
   void reset();
 
   void writeCONTROL_REG(reg8);
@@ -53,10 +53,10 @@ public:
   reg8 readENV();
 
   // 8-bit envelope output.
-  RESID_INLINE reg8 output();
+  short output();
 
 protected:
-  RESID_INLINE void set_exponential_counter();
+  void set_exponential_counter();
 
   reg16 rate_counter;
   reg16 rate_period;
@@ -86,7 +86,7 @@ protected:
   static reg8 sustain_level[];
 
   // DAC lookup tables.
-  static reg12 model_dac[2][1 << 8];
+  static unsigned short model_dac[2][1 << 8];
 
 friend class SID;
 };
@@ -286,7 +286,7 @@ void EnvelopeGenerator::clock(cycle_count delta_t)
 // Read the envelope generator output.
 // ----------------------------------------------------------------------------
 RESID_INLINE
-reg8 EnvelopeGenerator::output()
+short EnvelopeGenerator::output()
 {
   // DAC imperfections are emulated by using envelope_counter as an index
   // into a DAC lookup table. readENV() uses envelope_counter directly.

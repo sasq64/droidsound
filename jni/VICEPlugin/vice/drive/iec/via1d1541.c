@@ -59,26 +59,26 @@ typedef struct drivevia1_context_s {
 } drivevia1_context_t;
 
 
-void REGPARM3 via1d1541_store(drive_context_t *ctxptr, WORD addr, BYTE data)
+void via1d1541_store(drive_context_t *ctxptr, WORD addr, BYTE data)
 {
     viacore_store(ctxptr->via1d1541, addr, data);
 }
 
-BYTE REGPARM2 via1d1541_read(drive_context_t *ctxptr, WORD addr)
+BYTE via1d1541_read(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_read(ctxptr->via1d1541, addr);
 }
 
-BYTE REGPARM2 via1d1541_peek(drive_context_t *ctxptr, WORD addr)
+BYTE via1d1541_peek(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_peek(ctxptr->via1d1541, addr);
 }
 
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
 }
 
@@ -371,4 +371,3 @@ void via1d1541_setup_context(drive_context_t *ctxptr)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-

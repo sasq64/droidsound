@@ -31,7 +31,7 @@
 
 #include "autostart.h"
 #include "cartridge.h"
-#include "cart/vic20cartmem.h"
+#include "cartio.h"
 #include "clkguard.h"
 #include "cmdline.h"
 #include "datasette.h"
@@ -61,6 +61,7 @@
 #include "screenshot.h"
 #include "serial.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
 #include "sound.h"
@@ -70,6 +71,7 @@
 #include "via.h"
 #include "vic.h"
 #include "vic20-cmdline-options.h"
+#include "vic20-ieee488.h"
 #include "vic20-midi.h"
 #include "vic20-resources.h"
 #include "vic20-snapshot.h"
@@ -245,12 +247,14 @@ int machine_resources_init(void)
 #endif
         || drive_resources_init() < 0
         || datasette_resources_init() < 0
-        || cartridge_resources_init() <0
+        || cartridge_resources_init() < 0
 #ifdef HAVE_MIDI
-        || vic20_midi_resources_init() <0
+        || vic20_midi_resources_init() < 0
 #endif
-)
+        || vic20_ieee488_resources_init() < 0
+        || cartio_resources_init() < 0 ) {
         return -1;
+    }
 
     return 0;
 }
@@ -268,6 +272,7 @@ void machine_resources_shutdown(void)
 #ifdef HAVE_MIDI
     midi_resources_shutdown();
 #endif
+    cartio_shutdown();
 }
 
 /* VIC20-specific command-line option initialization.  */
@@ -297,8 +302,10 @@ int machine_cmdline_options_init(void)
 #ifdef HAVE_MIDI
         || vic20_midi_cmdline_options_init() < 0
 #endif
-)
+        || vic20_ieee488_cmdline_options_init() < 0
+        || cartio_cmdline_options_init() < 0) {
         return -1;
+    }
 
     return 0;
 }
@@ -339,6 +346,8 @@ void machine_handle_pending_alarms(int num_write_cycles)
 /* VIC20-specific initialization.  */
 int machine_specific_init(void)
 {
+    int delay;
+
     vic20_log = log_open("VIC20");
 
     if (mem_load() < 0)
@@ -372,8 +381,12 @@ int machine_specific_init(void)
     drive_init();
 
     /* Initialize autostart.  */
+    resources_get_int("AutostartDelay", &delay);
+    if (delay == 0) {
+        delay = 3; /* default */
+    }
     autostart_init((CLOCK)
-                   (3 * VIC20_PAL_RFSH_PER_SEC * VIC20_PAL_CYCLES_PER_RFSH),
+                   (delay * VIC20_PAL_RFSH_PER_SEC * VIC20_PAL_CYCLES_PER_RFSH),
                    1, 0xcc, 0xd1, 0xd3, 0xd5);
 
     /* Initialize the VIC-I emulation.  */
@@ -398,6 +411,15 @@ int machine_specific_init(void)
     vsync_init(machine_vsync_hook);
     vsync_set_machine_parameter(machine_timing.rfsh_per_sec,
                                 machine_timing.cycles_per_sec);
+
+    /* Initialize native sound chip first */
+    vic_sound_chip_init();
+
+    /* Initialize the sidcart */
+    sidcart_sound_chip_init();
+
+    /* Initialize cartridge based sound chips */
+    cartridge_sound_chip_init();
 
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
@@ -454,7 +476,6 @@ void machine_specific_reset(void)
     viacore_reset(machine_context.via1);
     viacore_reset(machine_context.via2);
     vic_reset();
-    vic_sound_reset();
     sid_reset();
 
     viacore_reset(machine_context.ieeevia1);

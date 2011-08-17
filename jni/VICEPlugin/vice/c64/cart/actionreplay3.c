@@ -34,9 +34,10 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
@@ -68,9 +69,11 @@ static int ar_reg = 0;
 /* ---------------------------------------------------------------------*/
 
 /* some prototypes are needed */
-static BYTE REGPARM1 actionreplay3_io1_peek(WORD addr);
-static void REGPARM2 actionreplay3_io1_store(WORD addr, BYTE value);
-static BYTE REGPARM1 actionreplay3_io2_read(WORD addr);
+static BYTE actionreplay3_io1_peek(WORD addr);
+static void actionreplay3_io1_store(WORD addr, BYTE value);
+static BYTE actionreplay3_io2_peek(WORD addr);
+static BYTE actionreplay3_io2_read(WORD addr);
+static int actionreplay3_dump(void);
 
 static io_source_t actionreplay3_io1_device = {
     CARTRIDGE_NAME_ACTION_REPLAY3,
@@ -81,8 +84,10 @@ static io_source_t actionreplay3_io1_device = {
     actionreplay3_io1_store,
     NULL,
     actionreplay3_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_ACTION_REPLAY3
+    actionreplay3_dump,
+    CARTRIDGE_ACTION_REPLAY3,
+    0,
+    0
 };
 
 static io_source_t actionreplay3_io2_device = {
@@ -93,9 +98,11 @@ static io_source_t actionreplay3_io2_device = {
     1, /* read is always valid */
     NULL,
     actionreplay3_io2_read,
-    NULL,
-    NULL, /* TODO: dump */
-    CARTRIDGE_ACTION_REPLAY3
+    actionreplay3_io2_peek,
+    actionreplay3_dump,
+    CARTRIDGE_ACTION_REPLAY3,
+    0,
+    0
 };
 
 static io_source_list_t *actionreplay3_io1_list_item = NULL;
@@ -103,7 +110,7 @@ static io_source_list_t *actionreplay3_io2_list_item = NULL;
 
 /* ---------------------------------------------------------------------*/
 
-static void REGPARM2 actionreplay3_io1_store(WORD addr, BYTE value)
+static void actionreplay3_io1_store(WORD addr, BYTE value)
 {
     int exrom, bank, conf;
 
@@ -121,7 +128,7 @@ static void REGPARM2 actionreplay3_io1_store(WORD addr, BYTE value)
     }
 }
 
-static BYTE REGPARM1 actionreplay3_io2_read(WORD addr)
+static BYTE actionreplay3_io2_read(WORD addr)
 {
     actionreplay3_io2_device.io_source_valid = 0;
 
@@ -145,19 +152,46 @@ static BYTE REGPARM1 actionreplay3_io2_read(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 actionreplay3_io1_peek(WORD addr)
+static BYTE actionreplay3_io1_peek(WORD addr)
 {
     return ar_reg;
 }
 
+static BYTE actionreplay3_io2_peek(WORD addr)
+{
+    if (!ar_active) {
+        return 0;
+    }
+
+    addr |= 0xdf00;
+
+    switch (roml_bank) {
+        case 0:
+           return roml_banks[addr & 0x1fff];
+        case 1:
+           return roml_banks[(addr & 0x1fff) + 0x2000];
+    }
+
+    return 0;
+}
+
+static int actionreplay3_dump(void)
+{
+    mon_out("EXROM line: %d, bank: %d, cart state: %s\n",
+            ar_reg & 8,
+            ar_reg & 1,
+            (ar_reg & 4) ? "Disabled" : "Enabled");
+    return 0;
+}
+
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 actionreplay3_roml_read(WORD addr)
+BYTE actionreplay3_roml_read(WORD addr)
 {
     return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
 }
 
-BYTE REGPARM1 actionreplay3_romh_read(WORD addr)
+BYTE actionreplay3_romh_read(WORD addr)
 {
     return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
 }
@@ -201,8 +235,8 @@ static int actionreplay3_common_attach(void)
         return -1;
     }
 
-    actionreplay3_io1_list_item = c64io_register(&actionreplay3_io1_device);
-    actionreplay3_io2_list_item = c64io_register(&actionreplay3_io2_device);
+    actionreplay3_io1_list_item = io_source_register(&actionreplay3_io1_device);
+    actionreplay3_io2_list_item = io_source_register(&actionreplay3_io2_device);
 
     return 0;
 }
@@ -241,8 +275,8 @@ int actionreplay3_crt_attach(FILE *fd, BYTE *rawcart)
 void actionreplay3_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(actionreplay3_io1_list_item);
-    c64io_unregister(actionreplay3_io2_list_item);
+    io_source_unregister(actionreplay3_io1_list_item);
+    io_source_unregister(actionreplay3_io2_list_item);
     actionreplay3_io1_list_item = NULL;
     actionreplay3_io2_list_item = NULL;
 }

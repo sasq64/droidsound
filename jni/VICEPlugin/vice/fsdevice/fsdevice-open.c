@@ -9,7 +9,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -146,7 +146,7 @@ static int fsdevice_open_directory(vdrive_t *vdrive, unsigned int secondary,
     *p++ = ' ';
     *p++ = 0;
 
-    bufinfo[secondary].buflen = p - bufinfo[secondary].name;
+    bufinfo[secondary].buflen = (int)(p - bufinfo[secondary].name);
     bufinfo[secondary].bufp = bufinfo[secondary].name;
     bufinfo[secondary].mode = Directory;
     bufinfo[secondary].ioutil_dir = ioutil_dir;

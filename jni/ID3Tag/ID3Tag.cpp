@@ -85,6 +85,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_ID3Tag_closeID3Tag(JNIEnv *
 #define INFO_SUBTUNES 6
 #define INFO_STARTTUNE 7
 
+#define ID3INFO_YEAR 99
 #define ID3INFO_GENRE 100
 #define ID3INFO_COMMENT 101
 #define ID3INFO_ALBUM 102
@@ -130,6 +131,9 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo(JNI
 		break;
 	case ID3INFO_TRACK:
 		frame = id3_tag_findframe(tag, ID3_FRAME_TRACK, 0);
+		break;
+	case ID3INFO_YEAR:
+		frame = id3_tag_findframe(tag, ID3_FRAME_YEAR, 0);
 		break;
 	case ID3INFO_COMMENT:
 		frame = id3_tag_findframe(tag, ID3_FRAME_COMMENT, 0);

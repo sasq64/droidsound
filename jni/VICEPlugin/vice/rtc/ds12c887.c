@@ -46,7 +46,7 @@
  * - Various state bits
  */
 
-/* The DS1302 has the following clock registers:
+/* The DS12C887 has the following clock registers:
  *
  * register 0  : BCD mode:    bit  7   RAM bit
  *               BCD mode:    bits 6-4 10 seconds
@@ -153,7 +153,7 @@
  *                     when set to a 1, permits the Alarm Flag (AF) bit in register 12
  *                     to assert IRQ. An alarm interrupt occurs for each second that
  *                     the 3 time bytes equal the 3 alarm bytes including a
- *                     “don’t care” alarm code of binary 11XXXXXX. When the AIE bit is
+ *                     ?don?t care? alarm code of binary 11XXXXXX. When the AIE bit is
  *                     set to 0, the AF bit does not initiate the IRQ signal. The
  *                     internal functions of the DS12C887 not affect the AIE bit.
  *               bit 4 The Update Ended Interrupt Enable (UIE) bit is a read/write bit
@@ -215,7 +215,7 @@ void ds12c887_reset(rtc_ds12c887_t *context)
     context->end_of_update_flag = 0;
 }
 
-rtc_ds12c887_t *ds12c887_init(BYTE *data, int *offset)
+rtc_ds12c887_t *ds12c887_init(BYTE *data, time_t *offset)
 {
     rtc_ds12c887_t *retval = lib_malloc(sizeof(rtc_ds12c887_t));
 
@@ -233,7 +233,7 @@ void ds12c887_destroy(rtc_ds12c887_t *context)
 
 /* ---------------------------------------------------------------------------------------------------- */
 
-static BYTE ds12c887_get_clock(rtc_ds12c887_t *context, BYTE address, int latch)
+static BYTE ds12c887_get_clock(rtc_ds12c887_t *context, BYTE address, time_t latch)
 {
     BYTE retval;
     BYTE hour;
@@ -242,21 +242,21 @@ static BYTE ds12c887_get_clock(rtc_ds12c887_t *context, BYTE address, int latch)
     switch (address) {
         case DS12C887_REG_SECONDS:
             retval = context->clock_regs[DS12C887_REG_SECONDS] & ((context->bcd) ? 0x80 : 0xc0);
-            retval |= (BYTE)rtc_get_second(latch, context->bcd);
+            retval |= rtc_get_second(latch, context->bcd);
             break;
         case DS12C887_REG_SECONDS_ALARM:
             retval = context->clock_regs[DS12C887_REG_SECONDS_ALARM];
             break;
         case DS12C887_REG_MINUTES:
             retval = context->clock_regs[DS12C887_REG_MINUTES] & ((context->bcd) ? 0x80 : 0xc0);
-            retval |= (BYTE)rtc_get_minute(latch, context->bcd);
+            retval |= rtc_get_minute(latch, context->bcd);
             break;
         case DS12C887_REG_MINUTES_ALARM:
             retval = context->clock_regs[DS12C887_REG_MINUTES_ALARM];
             break;
         case DS12C887_REG_HOURS:
             retval = context->clock_regs[DS12C887_REG_HOURS] & ((context->bcd) ? ((context->am_pm) ? 0x60 : 0xc0) : ((context->am_pm) ? 0x70 : 0xe0));
-            hour = (BYTE)rtc_get_hour(latch, 0);
+            hour = rtc_get_hour(latch, 0);
             if (context->bcd) {
                 if (context->am_pm) {
                     if (hour == 0) {
@@ -294,16 +294,16 @@ static BYTE ds12c887_get_clock(rtc_ds12c887_t *context, BYTE address, int latch)
             break;
         case DS12C887_REG_DAY_OF_WEEK:
             retval = context->clock_regs[DS12C887_REG_DAY_OF_WEEK] & 0xf8;
-            retval |= (BYTE)rtc_get_weekday(latch) + 1;
+            retval |= rtc_get_weekday(latch) + 1;
             break;
         case DS12C887_REG_DAY_OF_MONTH:
             retval = context->clock_regs[DS12C887_REG_DAY_OF_MONTH] & ((context->bcd) ? 0xc0 : 0xe0);
-            retval |= (BYTE)rtc_get_day_of_month(latch, context->bcd);
+            retval |= rtc_get_day_of_month(latch, context->bcd);
             break;
         case DS12C887_REG_MONTHS:
             retval = context->clock_regs[DS12C887_REG_MONTHS] & ((context->bcd) ? 0xe0 : 0xf0);
-            month = (BYTE)rtc_get_month(latch, context->bcd);
-            if (month == 9 && context->bcd) {
+            month = rtc_get_month(latch, context->bcd);
+            if (month >= 9 && context->bcd) {
                 month += 7;
             } else {
                 month++;
@@ -313,15 +313,15 @@ static BYTE ds12c887_get_clock(rtc_ds12c887_t *context, BYTE address, int latch)
         case DS12C887_REG_YEARS:
             if (!context->bcd) {
                 retval = context->clock_regs[DS12C887_REG_YEARS] & 0x80;
-                retval |= (BYTE)rtc_get_year(latch, 0);
+                retval |= rtc_get_year(latch, 0);
             } else {
-                retval = (BYTE)rtc_get_year(latch, 1);
+                retval = rtc_get_year(latch, 1);
             }
             break;
         case DS12C887_REG_CENTURIES:
             if (context->bcd) {
                 retval = context->clock_regs[10] & 0xc0;
-                retval |= (BYTE)rtc_get_century(latch, 1);
+                retval |= rtc_get_century(latch, 1);
             } else {
                 retval = 0;
             }
@@ -426,8 +426,8 @@ static void ds12c887_write_clock_byte(rtc_ds12c887_t *context, BYTE address, BYT
             context->clock_regs[address] = data;
             val = data & ((context->bcd) ? 0x1f : 0xf);
             val--;
-            if (context->bcd && val == 0xf) {
-                val = 9;
+            if (context->bcd && val >= 0xf) {
+                val -= 6;
             }
             if (context->clock_halt) {
                 context->clock_halt_latch = rtc_set_latched_month(val, context->clock_halt_latch, context->bcd);
@@ -480,7 +480,7 @@ int ds12c887_update_flags(rtc_ds12c887_t *context)
 {
     BYTE current;
     BYTE alarm;
-    int latch;
+    time_t latch;
     int match = 1;
     int irq_return = 0;
 
@@ -701,7 +701,7 @@ void ds12c887_store_data(rtc_ds12c887_t *context, BYTE data)
 BYTE ds12c887_read(rtc_ds12c887_t *context)
 {
     BYTE retval;
-    int latch;
+    time_t latch;
 
     if (context->clock_halt || context->set) {
         if (!context->clock_halt) {
@@ -749,4 +749,3 @@ BYTE ds12c887_read(rtc_ds12c887_t *context)
     }
     return retval;
 }
-

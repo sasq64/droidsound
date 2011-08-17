@@ -1,3 +1,5 @@
+/*! \file resid-fp/sid.h */
+
 //  ---------------------------------------------------------------------------
 //  This file is part of reSID, a MOS6581 SID emulator engine.
 //  Copyright (C) 2004  Dag Lem <resid@nimrod.no>
@@ -20,7 +22,8 @@
 #ifndef VICE__SID_FP_H__
 #define VICE__SID_FP_H__
 
-#include "siddefs-fp.h"
+#include "residfp-config.h"
+
 #include "voice.h"
 #include "filter.h"
 #include "extfilt.h"

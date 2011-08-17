@@ -5,7 +5,7 @@
  *  Hannu Nuotio <hannu.nuotio@tut.fi>
  *
  * Based on code by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -43,6 +43,7 @@
 #include "maincpu.h"
 #include "midi.h"
 #include "mididrv.h"
+#include "snapshot.h"
 #include "resources.h"
 #include "translate.h"
 #include "types.h"
@@ -290,7 +291,7 @@ static void midi_activate(void)
     }
 }
 
-void REGPARM2 midi_store(WORD a, BYTE b)
+void midi_store(WORD a, BYTE b)
 {
 #ifdef DEBUG
     log_message(midi_log, "store(%x,%02x)", a, b);
@@ -341,7 +342,7 @@ void REGPARM2 midi_store(WORD a, BYTE b)
     }
 }
 
-BYTE REGPARM1 midi_read(WORD a)
+BYTE midi_read(WORD a)
 {
 #ifdef DEBUG
     log_message(midi_log, "read(%x)", a);
@@ -373,7 +374,7 @@ BYTE REGPARM1 midi_read(WORD a)
     return midi_last_read;
 }
 
-BYTE REGPARM1 midi_peek(WORD a)
+BYTE midi_peek(WORD a)
 {
     a &= midi_interface[midi_mode].mask;
 
@@ -392,7 +393,7 @@ BYTE REGPARM1 midi_peek(WORD a)
     return 0;
 }
 
-int REGPARM1 midi_test_read(WORD a)
+int midi_test_read(WORD a)
 {
     a &= midi_interface[midi_mode].mask;
 
@@ -400,7 +401,7 @@ int REGPARM1 midi_test_read(WORD a)
         || (a == midi_interface[midi_mode].rx_addr);
 }
 
-int REGPARM1 midi_test_peek(WORD a)
+int midi_test_peek(WORD a)
 {
     a &= midi_interface[midi_mode].mask;
 
@@ -451,4 +452,59 @@ static void int_midi(CLOCK offset, void *data)
     alarm_active = 1;
 }
 
+/* ---------------------------------------------------------------------*/
+/*    snapshot support functions                                             */
+
+#define CART_DUMP_VER_MAJOR   0
+#define CART_DUMP_VER_MINOR   0
+#define SNAP_MODULE_NAME  "MIDI"
+
+/* FIXME: implement snapshot support */
+int midi_snapshot_write_module(snapshot_t *s)
+{
+    return -1;
+#if 0
+    snapshot_module_t *m;
+
+    m = snapshot_module_create(s, SNAP_MODULE_NAME,
+                          CART_DUMP_VER_MAJOR, CART_DUMP_VER_MINOR);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if (0) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+    return 0;
 #endif
+}
+
+int midi_snapshot_read_module(snapshot_t *s)
+{
+    return -1;
+#if 0
+    BYTE vmajor, vminor;
+    snapshot_module_t *m;
+
+    m = snapshot_module_open(s, SNAP_MODULE_NAME, &vmajor, &vminor);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if ((vmajor != CART_DUMP_VER_MAJOR) || (vminor != CART_DUMP_VER_MINOR)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    if (0) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+    return 0;
+#endif
+}

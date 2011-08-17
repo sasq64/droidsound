@@ -37,7 +37,7 @@
 #undef CARTRIDGE_INCLUDE_SLOT1_API
 #include "c64export.h"
 #include "c64mem.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -63,7 +63,8 @@
       wether it is decoded fully or mirrored over the full IO1 range is unknown
       (the software only uses $de00).
       - any access to io1 toggles the flipflop, which means enabling or disabling
-        ROMH (exrom) (?)
+        the cartridge RAM, ie ROMH (exrom) (?)
+      - any access to io1 seems to disable write-access to the RAM
 
     the cartridge has a 3 way switch:
 
@@ -92,14 +93,13 @@
 
       - NMI logic and registers are disabled
       - RAM not mapped
+      - according to the documentation, the cartridge is disabled. however,
+        the NMI logic of the cart still seems to interfer somehow and makes
+        some program misbehave. the solution for this was to put an additional
+        switch at the NMI line of the cartridge port, which then allows to 
+        completely disable the cartridge for real.
 
-    - according to the documentation, the cartridge is disabled. however,
-      the NMI logic of the cart still seems to interfer somehow and makes
-      some program misbehave. the solution for this was to put an additional
-      switch at the NMI line of the cartridge port, which then allows to 
-      completely disable the cartridge for real.
-
-      this misbehavior is NOT emulated
+        this misbehavior is NOT emulated
 
     there also was an "upgrade" to the hardware at some point, called "EMS".
     this pretty much was no more no less than a freezer button :=)
@@ -189,6 +189,7 @@ NMI entry from expert 2.70:
 
 #ifdef DBGEXPERT
 #define DBG(x) printf x
+char *expert_mode[3]={"off","prg","on"};
 #else
 #define DBG(x)
 #endif
@@ -224,9 +225,9 @@ static int expert_load_image(void);
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 expert_io1_read(WORD addr);
-BYTE REGPARM1 expert_io1_peek(WORD addr);
-void REGPARM2 expert_io1_store(WORD addr, BYTE value);
+BYTE expert_io1_read(WORD addr);
+BYTE expert_io1_peek(WORD addr);
+void expert_io1_store(WORD addr, BYTE value);
 
 static io_source_t expert_io1_device = {
     CARTRIDGE_NAME_EXPERT,
@@ -234,11 +235,13 @@ static io_source_t expert_io1_device = {
     NULL,
     0xde00, 0xde01, 0xff,
     0, /* read is never valid */
-    NULL,
+    expert_io1_store,
     expert_io1_read,
     expert_io1_peek,
     NULL, /* dump */
-    CARTRIDGE_EXPERT
+    CARTRIDGE_EXPERT,
+    0,
+    0
 };
 
 static const c64export_resource_t export_res = {
@@ -259,7 +262,7 @@ int expert_cart_enabled(void)
 static int expert_mode_changed(int mode, void *param)
 {
     cartmode = mode;
-    DBG(("EXPERT: expert_mode_changed cartmode: %d\n", cartmode));
+    DBG(("EXPERT: expert_mode_changed cartmode: %d (%s)\n", cartmode, expert_mode[cartmode]));
     if (expert_enabled) {
         switch (mode) {
             case EXPERT_MODE_PRG:
@@ -339,7 +342,7 @@ static int set_expert_enabled(int val, void *param)
         if (expert_deactivate() < 0) {
             return -1;
         }
-        c64io_unregister(expert_io1_list_item);
+        io_source_unregister(expert_io1_list_item);
         expert_io1_list_item = NULL;
         c64export_remove(&export_res);
         expert_enabled = 0;
@@ -349,10 +352,10 @@ static int set_expert_enabled(int val, void *param)
         if (expert_activate() < 0) {
             return -1;
         }
-        expert_io1_list_item = c64io_register(&expert_io1_device);
+        expert_io1_list_item = io_source_register(&expert_io1_device);
         if (c64export_add(&export_res) < 0) {
             DBG(("EXPERT: set enabled: error\n"));
-            c64io_unregister(expert_io1_list_item);
+            io_source_unregister(expert_io1_list_item);
             expert_io1_list_item = NULL;
             expert_enabled = 0;
             return -1;
@@ -402,10 +405,21 @@ static int set_expert_filename(const char *name, void *param)
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 expert_io1_read(WORD addr)
+void expert_io1_store(WORD addr, BYTE value)
+{
+    DBG(("EXPERT: io1 wr %04x (%d)\n", addr, value));
+    if ((cartmode == EXPERT_MODE_ON) && (expert_register_enabled == 1)) {
+        cart_config_changed_slot1(2, 3, CMODE_READ | CMODE_RELEASE_FREEZE | CMODE_PHI2_RAM);
+        expert_ramh_enabled ^= 1;
+        expert_ram_writeable = 0; /* =0 ? */
+        DBG(("EXPERT: ON (regs: %d ramh: %d ramwrite: %d)\n",expert_register_enabled, expert_ramh_enabled, expert_ram_writeable));
+    }
+}
+
+BYTE expert_io1_read(WORD addr)
 {
     expert_io1_device.io_source_valid = 0;
-    /* DBG(("EXPERT: io1 rd %04x (%d)\n", addr, expert_ramh_enabled)); */
+    DBG(("EXPERT: io1 rd %04x (%d)\n", addr, expert_ramh_enabled));
     if ((cartmode == EXPERT_MODE_ON) && (expert_register_enabled == 1)) {
         cart_config_changed_slot1(2, 3, CMODE_READ | CMODE_RELEASE_FREEZE | CMODE_PHI2_RAM);
         expert_ramh_enabled ^= 1;
@@ -415,32 +429,32 @@ BYTE REGPARM1 expert_io1_read(WORD addr)
     return 0;
 }
 
-BYTE REGPARM1 expert_io1_peek(WORD addr)
+BYTE expert_io1_peek(WORD addr)
 {
     return 0;
 }
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 expert_roml_read(WORD addr)
+BYTE expert_roml_read(WORD addr)
 {
 /*    DBG(("EXPERT: set expert_roml_read: %x\n", addr)); */
     if (cartmode == EXPERT_MODE_PRG) {
         return expert_ram[addr & 0x1fff];
-    } else if (cartmode == EXPERT_MODE_ON) {
+    } else if ((cartmode == EXPERT_MODE_ON) && expert_ramh_enabled) {
         return expert_ram[addr & 0x1fff];
     } else {
         return ram_read(addr);
     }
 }
 
-void REGPARM2 expert_roml_store(WORD addr, BYTE value)
+void expert_roml_store(WORD addr, BYTE value)
 {
 /*    DBG(("EXPERT: set expert_roml_store: %x\n", addr)); */
     if (expert_ram_writeable) {
         if (cartmode == EXPERT_MODE_PRG) {
             expert_ram[addr & 0x1fff] = value;
-        } else if (cartmode == EXPERT_MODE_ON) {
+        } else if ((cartmode == EXPERT_MODE_ON) && expert_ramh_enabled) {
             expert_ram[addr & 0x1fff] = value;
         } else {
             /* mem_store_without_ultimax(addr, value); */
@@ -451,7 +465,7 @@ void REGPARM2 expert_roml_store(WORD addr, BYTE value)
     }
 }
 
-BYTE REGPARM1 expert_romh_read(WORD addr)
+BYTE expert_romh_read(WORD addr)
 {
 /*    DBG(("EXPERT: set expert_romh_read: %x mode %d %02x %02x\n", addr, cartmode, expert_ram[0x1ffe], expert_ram[0x1fff])); */
     if ((cartmode == EXPERT_MODE_ON) && expert_ramh_enabled) {
@@ -542,7 +556,7 @@ void expert_reset(void)
     } else if (cartmode == EXPERT_MODE_PRG) {
         expert_register_enabled = 1;
         expert_ram_writeable = 1;
-        expert_ramh_enabled = 0;
+        expert_ramh_enabled = 1;
         cart_config_changed_slot1(2, EXPERT_PRG, CMODE_READ);
     } else {
         expert_register_enabled = 0;
@@ -904,12 +918,12 @@ int expert_snapshot_read_module(snapshot_t *s)
     expert_enabled = 1;
 
     /* FIXME: ugly code duplication to avoid cart_config_changed calls */
-    expert_io1_list_item = c64io_register(&expert_io1_device);
+    expert_io1_list_item = io_source_register(&expert_io1_device);
 
     if (c64export_add(&export_res) < 0) {
         lib_free(expert_ram);
         expert_ram = NULL;
-        c64io_unregister(expert_io1_list_item);
+        io_source_unregister(expert_io1_list_item);
         expert_io1_list_item = NULL;
         expert_enabled = 0;
         return -1;

@@ -37,33 +37,14 @@
 /* TED command-line options.  */
 static const cmdline_option_t cmdline_options[] =
 {
-    { "-saturation", SET_RESOURCE, 1,
-      NULL, NULL, "ColorSaturation", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_SATURATION,
-      "<0-2000>", NULL },
-    { "-contrast", SET_RESOURCE, 1,
-      NULL, NULL, "ColorContrast", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_CONTRAST,
-      "<0-2000>", NULL },
-    { "-brightness", SET_RESOURCE, 1,
-      NULL, NULL, "ColorBrightness", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_BRIGHTNESS,
-      "<0-2000>", NULL },
-    { "-gamma", SET_RESOURCE, 1,
-      NULL, NULL, "ColorGamma", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_GAMMA,
-      "<0-2000>", NULL },
-    { NULL }
+    CMDLINE_LIST_END
 };
 
 int ted_cmdline_options_init(void)
 {
-    if (raster_cmdline_options_chip_init("TED", ted.video_chip_cap) < 0)
+    if (raster_cmdline_options_chip_init("TED", ted.video_chip_cap) < 0) {
         return -1;
+    }
 
     return cmdline_register_options(cmdline_options);
 }

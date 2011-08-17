@@ -34,9 +34,10 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "delaep7x8.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
@@ -79,11 +80,16 @@
 */
 
 /* ---------------------------------------------------------------------*/
+
 static int currbank = 0;
 
-static void REGPARM2 delaep7x8_io1_store(WORD addr, BYTE value)
+static BYTE regval = 0xfe;
+
+static void delaep7x8_io1_store(WORD addr, BYTE value)
 {
     BYTE bank, config, test_value;
+
+    regval = value;
 
     /* Each bit of the register set to low activates a
        respective EPROM, $FF switches off EXROM */
@@ -103,9 +109,17 @@ static void REGPARM2 delaep7x8_io1_store(WORD addr, BYTE value)
     }
 }
 
-static BYTE REGPARM1 delaep7x8_io1_peek(WORD addr)
+static BYTE delaep7x8_io1_peek(WORD addr)
 {
-    return currbank;
+    return regval;
+}
+
+static int delaep7x8_dump(void)
+{
+    mon_out("Currently active EPROM bank: %d, cart status: %s\n",
+            currbank,
+            (regval == 0xff) ? "Disabled" : "Enabled");
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -119,8 +133,10 @@ static io_source_t delaep7x8_device = {
     delaep7x8_io1_store,
     NULL,
     delaep7x8_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_DELA_EP7x8
+    delaep7x8_dump,
+    CARTRIDGE_DELA_EP7x8,
+    0,
+    0
 };
 
 static io_source_list_t *delaep7x8_list_item = NULL;
@@ -137,41 +153,47 @@ void delaep7x8_config_init(void)
     cart_romlbank_set_slotmain(0);
 }
 
-/* FIXME: should copy rawcart to roml_banks ! */
 void delaep7x8_config_setup(BYTE *rawcart)
 {
+    memcpy(roml_banks, rawcart, 0x2000 * 8);
     cart_config_changed_slotmain(0, 0, CMODE_READ);
     cart_romlbank_set_slotmain(0);
 }
 
 /* ---------------------------------------------------------------------*/
+
 static int delaep7x8_common_attach(void)
 {
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    delaep7x8_list_item = c64io_register(&delaep7x8_device);
+    delaep7x8_list_item = io_source_register(&delaep7x8_device);
     return 0;
 }
 
-/* FIXME: this function should setup rawcart instead of copying to roml_banks ! */
-/* FIXME: handle the various combinations / possible file lengths */
 int delaep7x8_bin_attach(const char *filename, BYTE *rawcart)
 {
-    if (util_file_load(filename, roml_banks, 0x2000, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
-        return -1;
+    int size = 0x10000;
+
+    memset(rawcart, 0xff, 0x10000);
+
+    while (size != 0) {
+        if (util_file_load(filename, rawcart, size, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
+            size -= 0x2000;
+        } else {
+            return delaep7x8_common_attach();
+        }
     }
-    return delaep7x8_common_attach();
+    return -1;
 }
 
-/* FIXME: this function should setup rawcart instead of copying to roml_banks ! */
 int delaep7x8_crt_attach(FILE *fd, BYTE *rawcart)
 {
     WORD chip;
     WORD size;
     BYTE chipheader[0x10];
 
-    memset(roml_banks, 0xff, 0x10000);
+    memset(rawcart, 0xff, 0x10000);
 
     while (1) {
         if (fread(chipheader, 0x10, 1, fd) < 1) {
@@ -189,7 +211,7 @@ int delaep7x8_crt_attach(FILE *fd, BYTE *rawcart)
             return -1;
         }
 
-        if (fread(roml_banks + (chip<<13), 0x2000, 1, fd)<1) {
+        if (fread(rawcart + (chip << 13), 0x2000, 1, fd) < 1) {
             return -1;
         }
     }
@@ -199,7 +221,7 @@ int delaep7x8_crt_attach(FILE *fd, BYTE *rawcart)
 void delaep7x8_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(delaep7x8_list_item);
+    io_source_unregister(delaep7x8_list_item);
     delaep7x8_list_item = NULL;
 }
 

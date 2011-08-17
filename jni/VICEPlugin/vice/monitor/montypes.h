@@ -39,7 +39,9 @@
 
 /* Types */
 
+#ifndef bool
 typedef int bool;
+#endif
 
 enum t_reg_id {
    e_A,
@@ -80,9 +82,9 @@ enum t_reg_id {
 typedef enum t_reg_id REG_ID;
 
 enum t_memory_op {
-   e_load,
-   e_store,
-   e_load_store
+   e_load  = 0x01,
+   e_store = 0x02,
+   e_exec  = 0x04
 };
 typedef enum t_memory_op MEMORY_OP;
 

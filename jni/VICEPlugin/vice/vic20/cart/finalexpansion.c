@@ -48,6 +48,7 @@
 #include "util.h"
 #include "vic20cart.h"
 #include "vic20cartmem.h"
+#include "vic20io.h"
 #include "vic20mem.h"
 #include "zfile.h"
 
@@ -155,6 +156,32 @@ static log_t fe_log = LOG_ERR;
 #define REGB_REG_OFF     0x80
 
 /* ------------------------------------------------------------------------- */
+
+/* Some prototypes are needed */
+static BYTE finalexpansion_io3_read(WORD addr);
+static BYTE finalexpansion_io3_peek(WORD addr);
+static void finalexpansion_io3_store(WORD addr, BYTE value);
+static int finalexpansion_mon_dump(void);
+
+static io_source_t finalexpansion_device = {
+    CARTRIDGE_VIC20_NAME_FINAL_EXPANSION,
+    IO_DETACH_CART,
+    NULL,
+    0x9c00, 0x9fff, 0x3ff,
+    0,
+    finalexpansion_io3_store,
+    finalexpansion_io3_read,
+    finalexpansion_io3_peek,
+    finalexpansion_mon_dump,
+    CARTRIDGE_VIC20_FINAL_EXPANSION,
+    0,
+    0
+};
+
+static io_source_list_t *finalexpansion_list_item = NULL;
+
+/* ------------------------------------------------------------------------- */
+
 static int is_locked(void)
 {
     if (register_b & REGB_REG_OFF) {
@@ -374,7 +401,7 @@ static void internal_store(WORD addr, BYTE value, int blk, WORD base, int sel)
 /* ------------------------------------------------------------------------- */
 
 /* read 0x0400 - 0x0fff */
-BYTE REGPARM1 finalexpansion_ram123_read(WORD addr)
+BYTE finalexpansion_ram123_read(WORD addr)
 {
     BYTE value;
     if ( !(register_b & REGB_BLK0_OFF) ) {
@@ -386,7 +413,7 @@ BYTE REGPARM1 finalexpansion_ram123_read(WORD addr)
 }
 
 /* store 0x0400 - 0x0fff */
-void REGPARM2 finalexpansion_ram123_store(WORD addr, BYTE value)
+void finalexpansion_ram123_store(WORD addr, BYTE value)
 {
     if ( !(register_b & REGB_BLK0_OFF) ) {
         internal_blk0_store(addr, value, BLK0_BASE, (register_a & REGA_BLK0_RO));
@@ -394,7 +421,7 @@ void REGPARM2 finalexpansion_ram123_store(WORD addr, BYTE value)
 }
 
 /* read 0x2000-0x3fff */
-BYTE REGPARM1 finalexpansion_blk1_read(WORD addr)
+BYTE finalexpansion_blk1_read(WORD addr)
 {
     BYTE value;
     if ( !(register_b & REGB_BLK1_OFF) ) {
@@ -406,7 +433,7 @@ BYTE REGPARM1 finalexpansion_blk1_read(WORD addr)
 }
 
 /* store 0x2000-0x3fff */
-void REGPARM2 finalexpansion_blk1_store(WORD addr, BYTE value)
+void finalexpansion_blk1_store(WORD addr, BYTE value)
 {
     if ( !(register_b & REGB_BLK1_OFF) ) {
         internal_store(addr, value, 1, BLK1_BASE, register_a & REGA_BLK1_SEL);
@@ -414,7 +441,7 @@ void REGPARM2 finalexpansion_blk1_store(WORD addr, BYTE value)
 }
 
 /* read 0x4000-0x5fff */
-BYTE REGPARM1 finalexpansion_blk2_read(WORD addr)
+BYTE finalexpansion_blk2_read(WORD addr)
 {
     BYTE value;
     if ( !(register_b & REGB_BLK2_OFF) ) {
@@ -426,7 +453,7 @@ BYTE REGPARM1 finalexpansion_blk2_read(WORD addr)
 }
 
 /* store 0x4000-0x5fff */
-void REGPARM2 finalexpansion_blk2_store(WORD addr, BYTE value)
+void finalexpansion_blk2_store(WORD addr, BYTE value)
 {
     if ( !(register_b & REGB_BLK2_OFF) ) {
         internal_store(addr, value, 2, BLK2_BASE, register_a & REGA_BLK2_SEL);
@@ -434,7 +461,7 @@ void REGPARM2 finalexpansion_blk2_store(WORD addr, BYTE value)
 }
 
 /* read 0x6000-0x7fff */
-BYTE REGPARM1 finalexpansion_blk3_read(WORD addr)
+BYTE finalexpansion_blk3_read(WORD addr)
 {
     BYTE value;
     if ( !(register_b & REGB_BLK3_OFF) ) {
@@ -446,7 +473,7 @@ BYTE REGPARM1 finalexpansion_blk3_read(WORD addr)
 }
 
 /* store 0x6000-0x7fff */
-void REGPARM2 finalexpansion_blk3_store(WORD addr, BYTE value)
+void finalexpansion_blk3_store(WORD addr, BYTE value)
 {
     if ( !(register_b & REGB_BLK3_OFF) ) {
         internal_store(addr, value, 3, BLK3_BASE, register_a & REGA_BLK3_SEL);
@@ -454,7 +481,7 @@ void REGPARM2 finalexpansion_blk3_store(WORD addr, BYTE value)
 }
 
 /* read 0xa000-0xbfff */
-BYTE REGPARM1 finalexpansion_blk5_read(WORD addr)
+BYTE finalexpansion_blk5_read(WORD addr)
 {
     BYTE value;
 
@@ -469,7 +496,7 @@ BYTE REGPARM1 finalexpansion_blk5_read(WORD addr)
 }
 
 /* store 0xa000-0xbfff */
-void REGPARM2 finalexpansion_blk5_store(WORD addr, BYTE value)
+void finalexpansion_blk5_store(WORD addr, BYTE value)
 {
     lock_bit = 0;
 
@@ -479,9 +506,11 @@ void REGPARM2 finalexpansion_blk5_store(WORD addr, BYTE value)
 }
 
 /* read 0x9c00-0x9fff */
-BYTE REGPARM1 finalexpansion_io3_read(WORD addr)
+static BYTE finalexpansion_io3_read(WORD addr)
 {
     BYTE value;
+
+    finalexpansion_device.io_source_valid = 0;
 
     addr &= 0x03;
     FE_DEBUG(("Read reg%02x. (locked=%d)", addr, is_locked()));
@@ -489,9 +518,11 @@ BYTE REGPARM1 finalexpansion_io3_read(WORD addr)
         switch (addr) {
         case 0x02:
             value = register_a;
+            finalexpansion_device.io_source_valid = 1;
             break;
         case 0x03:
             value = register_b;
+            finalexpansion_device.io_source_valid = 1;
             break;
         default:
             value = vic20_cpu_last_data;
@@ -503,7 +534,7 @@ BYTE REGPARM1 finalexpansion_io3_read(WORD addr)
     return value;
 }
 
-BYTE REGPARM1 finalexpansion_io3_peek(WORD addr)
+static BYTE finalexpansion_io3_peek(WORD addr)
 {
     BYTE value;
 
@@ -525,7 +556,7 @@ BYTE REGPARM1 finalexpansion_io3_peek(WORD addr)
 }
 
 /* store 0x9c00-0x9fff */
-void REGPARM2 finalexpansion_io3_store(WORD addr, BYTE value)
+static void finalexpansion_io3_store(WORD addr, BYTE value)
 {
     addr &= 0x03;
     FE_DEBUG(("Wrote reg%02x = %02x. (locked=%d)", addr, value, is_locked()));
@@ -632,6 +663,9 @@ int finalexpansion_bin_attach(const char *filename)
         VIC_CART_BLK1 | VIC_CART_BLK2 | VIC_CART_BLK3 | VIC_CART_BLK5 |
         VIC_CART_IO3;
     mem_initialize_memory();
+
+    finalexpansion_list_item = io_source_register(&finalexpansion_device);
+
     return 0;
 }
 
@@ -671,6 +705,11 @@ void finalexpansion_detach(void)
     cart_ram = NULL;
     lib_free(cartfile);
     cartfile = NULL;
+
+    if (finalexpansion_list_item != NULL) {
+        io_source_unregister(finalexpansion_list_item);
+        finalexpansion_list_item = NULL;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -931,7 +970,7 @@ static const char *finalexpansion_mode_name[] = {
     "RAM 2"
 };
 
-static int REGPARM1 finalexpansion_mon_dump(void)
+static int finalexpansion_mon_dump(void)
 {
     BYTE mode;
     int blk, active, ro;
@@ -976,9 +1015,4 @@ static int REGPARM1 finalexpansion_mon_dump(void)
     }
 
     return 0;
-}
-
-void finalexpansion_ioreg_add_list(struct mem_ioreg_list_s **mem_ioreg_list)
-{
-    mon_ioreg_add_list(mem_ioreg_list, CARTRIDGE_VIC20_NAME_FINAL_EXPANSION, 0x9c02, 0x9c03, finalexpansion_mon_dump);
 }

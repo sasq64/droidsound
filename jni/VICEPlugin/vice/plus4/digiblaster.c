@@ -39,19 +39,62 @@
 #include "uiapi.h"
 #include "translate.h"
 
-/* Flag: Do we enable the DIGIBLASTER add-on?  */
-int digiblaster_enabled;
+/* ---------------------------------------------------------------------*/
+
+/* Some prototypes are needed */
+static int digiblaster_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
+static int digiblaster_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
+static void digiblaster_sound_machine_store(sound_t *psid, WORD addr, BYTE val);
+static BYTE digiblaster_sound_machine_read(sound_t *psid, WORD addr);
+static void digiblaster_sound_reset(sound_t *psid, CLOCK cpu_clk);
+
+static int digiblaster_sound_machine_cycle_based(void)
+{
+	return 0;
+}
+
+static int digiblaster_sound_machine_channels(void)
+{
+	return 1;
+}
+
+static sound_chip_t digiblaster_sound_chip = {
+    NULL, /* no open */
+    digiblaster_sound_machine_init,
+    NULL, /* no close */
+    digiblaster_sound_machine_calculate_samples,
+    digiblaster_sound_machine_store,
+    digiblaster_sound_machine_read,
+    digiblaster_sound_reset,
+    digiblaster_sound_machine_cycle_based,
+    digiblaster_sound_machine_channels,
+    0 /* chip enabled */
+};
+
+static WORD digiblaster_sound_chip_offset = 0;
+
+void digiblaster_sound_chip_init(void)
+{
+    digiblaster_sound_chip_offset = sound_chip_register(&digiblaster_sound_chip);
+}
+
+/* ---------------------------------------------------------------------*/
+
+int digiblaster_enabled(void)
+{
+    return digiblaster_sound_chip.chip_enabled;
+}
 
 static int set_digiblaster_enabled(int val, void *param)
 {
-    digiblaster_enabled = val;
+    digiblaster_sound_chip.chip_enabled = val;
 
     return 0;
 }
 
 static const resource_int_t resources_int[] = {
     { "DIGIBLASTER", 0, RES_EVENT_STRICT, (resource_value_t)0,
-      &digiblaster_enabled, set_digiblaster_enabled, NULL },
+      &digiblaster_sound_chip.chip_enabled, set_digiblaster_enabled, NULL },
     { NULL }
 };
 
@@ -91,39 +134,36 @@ struct digiblaster_sound_s
 
 static struct digiblaster_sound_s snd;
 
-int digiblaster_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr,
-                                                int interleave, int *delta_t)
+static int digiblaster_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
 {
-    int i;
+    int i, j;
 
-    if (digiblaster_enabled)
-    {
-        for (i = 0; i < nr; i++)
-        {
-            pbuf[i * interleave] = sound_audio_mix(pbuf[i * interleave],snd.voice0 << 8);
+    for (i = 0; i < nr; i++) {
+        for (j = 0; j < interleave; j++) {
+            pbuf[(i * interleave) + j] = sound_audio_mix(pbuf[(i * interleave) + j],snd.voice0 << 8);
         }
     }
-    return 0;
+    return nr;
 }
 
-int digiblaster_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+static int digiblaster_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
 {
     snd.voice0 = 0;
 
     return 1;
 }
 
-void digiblaster_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
+static void digiblaster_sound_machine_store(sound_t *psid, WORD addr, BYTE val)
 {
     snd.voice0 = val;
 }
 
-BYTE digiblaster_sound_machine_read(sound_t *psid, WORD addr)
+static BYTE digiblaster_sound_machine_read(sound_t *psid, WORD addr)
 {
     return 0;
 }
 
-void digiblaster_sound_reset(void)
+static void digiblaster_sound_reset(sound_t *psid, CLOCK cpu_clk)
 {
     snd.voice0 = 0;
     digiblaster_sound_data = 0;
@@ -131,13 +171,13 @@ void digiblaster_sound_reset(void)
 
 /* ---------------------------------------------------------------------*/
 
-void REGPARM2 digiblaster_store(WORD addr, BYTE value)
+void digiblaster_store(WORD addr, BYTE value)
 {
     digiblaster_sound_data = value;
-    sound_store((WORD)(0x40), value, 0);
+    sound_store(digiblaster_sound_chip_offset, value, 0);
 }
 
-BYTE REGPARM1 digiblaster_read(WORD addr)
+BYTE digiblaster_read(WORD addr)
 {
-    return sound_read((WORD)(addr + 0x40), 0);
+    return sound_read(digiblaster_sound_chip_offset, 0);
 }

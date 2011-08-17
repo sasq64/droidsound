@@ -39,7 +39,7 @@
 #include "sid-resources.h"
 #include "translate.h"
 
-static int sid_common_set_engine_model(const char *param, void *extra_param)
+int sid_common_set_engine_model(const char *param, void *extra_param)
 {
     int engine;
     int model;
@@ -57,25 +57,6 @@ static int sid_common_set_engine_model(const char *param, void *extra_param)
 
     return sid_set_engine_model(engine, model);
 }
-
-static const cmdline_option_t sidcart_cmdline_options[] = {
-    { "-sidenginemodel", CALL_FUNCTION, 1,
-      sid_common_set_engine_model, NULL, NULL, NULL,
-      USE_PARAM_ID, USE_DESCRIPTION_ID,
-      IDCLS_P_ENGINE_MODEL, IDCLS_SPECIFY_SIDCART_ENGINE_MODEL,
-      NULL, NULL },
-    { "-sidcart", SET_RESOURCE, 1,
-      NULL, NULL, "SidCart", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_ENABLE_SIDCART,
-      NULL, NULL },
-    { "+sidcart", SET_RESOURCE, 0,
-      NULL, NULL, "SidCart", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_DISABLE_SIDCART,
-      NULL, NULL },
-    { NULL }
-};
 
 static const cmdline_option_t sidengine_cmdline_options[] = {
     { "-sidenginemodel", CALL_FUNCTION, 1,
@@ -145,14 +126,6 @@ static const cmdline_option_t common_cmdline_options[] = {
     { NULL }
 };
 
-int sidcart_cmdline_options_init(void)
-{
-    if (cmdline_register_options(sidcart_cmdline_options)<0)
-        return -1;
-
-    return cmdline_register_options(common_cmdline_options);
-}
-
 int sid_cmdline_options_init(void)
 {
 #ifdef HAVE_RESID
@@ -172,8 +145,9 @@ int sid_cmdline_options_init(void)
 #endif
 
 #ifdef HAVE_RESID
-    if (cmdline_register_options(resid_cmdline_options)<0)
+    if (cmdline_register_options(resid_cmdline_options) < 0) {
         return -1;
+    }
 #endif
 
     return cmdline_register_options(common_cmdline_options);
