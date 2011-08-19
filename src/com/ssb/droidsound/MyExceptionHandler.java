@@ -11,7 +11,6 @@ import java.util.Date;
 
 import android.content.Context;
 import android.os.Build;
-import com.ssb.droidsoundedit.R;
 
 
 public final class MyExceptionHandler implements Thread.UncaughtExceptionHandler {

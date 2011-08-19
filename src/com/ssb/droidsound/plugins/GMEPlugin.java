@@ -1,10 +1,7 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
-
-import android.R;
 
 
 public final class GMEPlugin extends DroidSoundPlugin {

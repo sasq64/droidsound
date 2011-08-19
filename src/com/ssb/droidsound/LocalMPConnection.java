@@ -8,7 +8,6 @@ import java.net.Socket;
 
 import android.media.MediaPlayer;
 import com.ssb.droidsound.utils.Log;
-import com.ssb.droidsoundedit.R;
 
 public final class LocalMPConnection {
 	private static final String TAG = LocalMPConnection.class.getSimpleName();

@@ -3,7 +3,6 @@ package com.ssb.droidsound.service;
 import java.util.*;
 
 import com.ssb.droidsound.utils.Log;
-
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
 

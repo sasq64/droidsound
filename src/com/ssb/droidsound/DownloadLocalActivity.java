@@ -3,8 +3,6 @@ package com.ssb.droidsound;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.ssb.droidsoundedit.R;
-
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebView;
