@@ -444,6 +444,7 @@ public final class PlayerService extends Service {
 			player.setBufSize(bufSize);
 		    playerThread = new Thread(player);
 		    playerThread.setPriority(Thread.MAX_PRIORITY);
+		    playerThread.setName("PlayerService-PlayerThread");
 		    playerThread.start();
     	}
     }

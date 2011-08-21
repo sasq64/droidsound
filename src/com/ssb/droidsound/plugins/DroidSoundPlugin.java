@@ -298,10 +298,9 @@ public abstract class DroidSoundPlugin {
 	//}
 
 	public void setOption(String string, Object val) {
-	}
+    }
 
-
-	public static void setOptions(SharedPreferences prefs) {
+    public static void setOptions(SharedPreferences prefs) {
 		List<DroidSoundPlugin> list = createPluginList();
 		Map<String, ?> prefsMap = prefs.getAll();
 

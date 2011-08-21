@@ -1,5 +1,6 @@
 package com.ssb.droidsound;
 
+import java.lang.String;
 import java.util.ArrayList;
 import java.util.Collection;
 //import java.util.List; not used yet.
@@ -135,7 +136,7 @@ public final class PlayerServiceConnection implements ServiceConnection {
 		}
 	}
 
-	public boolean playList(java.lang.String[] names, int startIndex) {
+	public boolean playList(String[] names, int startIndex) {
 		try {
 			return mService.playList(names, startIndex);
 		} catch (RemoteException e) {

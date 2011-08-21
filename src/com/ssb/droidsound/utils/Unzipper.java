@@ -24,6 +24,7 @@ public final class Unzipper {
     private Unzipper() {
     }
 
+    		
     public static synchronized Unzipper getInstance() {
 		if(_instance == null) {
 			_instance = new Unzipper();
@@ -139,6 +140,7 @@ public final class Unzipper {
 		if(unzipThread == null) {
 			unzipWorker = new UnzipWorker(context);
 			unzipThread = new Thread(unzipWorker);
+			unzipThread.setName("Unzipper-UnzipWorkerThread");
 			unzipThread.setPriority(2);
 			unzipThread.start();
 			try {

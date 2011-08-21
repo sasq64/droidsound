@@ -38,8 +38,6 @@ public final class CSDBParser implements DataSource {
 
 	boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, ScanCallback scanCallback) {
 
-		boolean ok = false;
-
 		try {
 			db.execSQL("DELETE FROM RELEASES;");
 			db.execSQL("DELETE FROM GROUPS;");
@@ -78,14 +76,13 @@ public final class CSDBParser implements DataSource {
 				"FILENAME" + " TEXT" + ");");
 
 
-		BufferedReader reader;
-		db.beginTransaction();
+        db.beginTransaction();
+        boolean ok = false;
 		try {
 			int place = -1;
-			Log.d(TAG, "OPENING CSDB");			
-
-			reader = new BufferedReader(new InputStreamReader(is, "ISO-8859-1"));			
-			//reader = new BufferedReader(new FileReader(file));				
+			Log.d(TAG, "OPENING CSDB");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, "ISO-8859-1"));
+            //reader = new BufferedReader(new FileReader(file));
 			String line = reader.readLine();
 			int count = 0;
 			int total = line.length()+1;
@@ -213,7 +210,7 @@ public final class CSDBParser implements DataSource {
 			}
 			return super.getInt(columnIndex);
 		}
-	};
+	}
 
 	private static final class SidCursor extends CursorWrapper {
 		private int pathIndex;

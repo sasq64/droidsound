@@ -280,6 +280,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 				Log.d(TAG, "Creating thread");
 				streamer = new MediaStreamer(songName , mediaPlayer, true);
 				httpThread = new Thread(streamer);
+				httpThread.setName("MP3Plugin-HTTPLoadStreamingThread");
 				httpThread.start();
 			}
 			Log.d(TAG, "LOAD %s", songName);
@@ -334,6 +335,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 							streamer = new MediaStreamer(pls.getMediaList(), mediaPlayer, false);
 							description = pls.getDescription(0);
 							httpThread = new Thread(streamer);
+							httpThread.setName("MP3Plugin-HTTPLoadThread");
 							// httpThread.setPriority(Thread.MAX_PRIORITY);
 							httpThread.start();
 						}

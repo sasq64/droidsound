@@ -517,7 +517,9 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			}
 		}
 		return true;
-	}
+    }
+
+
 
 	@Override
 	public final void onCreate(Bundle savedInstanceState) {
@@ -733,6 +735,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			songDatabase.registerDataSource(MediaSource.NAME, ms);
 
             Thread dbThread = new Thread(songDatabase);
+            dbThread.setName("PlayerActivity-DatabaseThread");
 			dbThread.start();
 
 			while(!songDatabase.isReady()) {

@@ -325,6 +325,7 @@ final class HttpSongSource {
 		if(httpThread == null) {
 			httpWorker = new HTTPWorker(ctx);
 			httpThread = new Thread(httpWorker);
+			httpThread.setName("HTTPSongSource-HTTPWorkerThread");
 			httpThread.start();
 			try {
 				Thread.sleep(300);
