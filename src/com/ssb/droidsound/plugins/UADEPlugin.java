@@ -181,11 +181,13 @@ public final class UADEPlugin extends DroidSoundPlugin {
 		//Log.d(TAG, "getSoundData()");
 		return N_getSoundData(currentSong, dest, size);
 	}
+	
+	private static final String[] zeroLengthArray = new String[0]; //Returning a zero-length array to handle a null value is faster.
 	@Override
 	public final String[] getDetailedInfo() {
 
 		if(currentSong == 0) {
-			return null;
+			return zeroLengthArray;
 		}
 
 		String [] details = new String [2];

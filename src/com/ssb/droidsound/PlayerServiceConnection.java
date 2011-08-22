@@ -222,6 +222,7 @@ public final class PlayerServiceConnection implements ServiceConnection {
 		}
 	}
 	
+	private static final String[] zeroLengthArray = new String[0];  //Returning zero-length arrays in an arrayed method is more performant
 	public String [] getSongInfo() {
 		try {
 			return mService.getSongInfo();
@@ -229,9 +230,10 @@ public final class PlayerServiceConnection implements ServiceConnection {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;
+		return zeroLengthArray;
 	}
 
+	private static final byte[] zeroLengthArray2 = new byte[0]; //Returning zero-length arrays in an arrayed method is more performant
 	public byte[] getSongMD5() {
 		try {
 			return mService.getSongMD5();
@@ -239,7 +241,7 @@ public final class PlayerServiceConnection implements ServiceConnection {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return null;
+		return zeroLengthArray2;
 	}
 
 	public boolean dumpWav(String modName, String destFile, int length, int flags) {
