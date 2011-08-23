@@ -29,6 +29,13 @@
 
 #include "types.h"
 #include "log.h"
+#include "alarm.h"
+
+#define ATA_DRIVE_NONE 0
+#define ATA_DRIVE_HDD 1
+#define ATA_DRIVE_FDD 2
+#define ATA_DRIVE_CD 3
+#define ATA_DRIVE_CF 4
 
 struct ata_drive_t {
     BYTE error;
@@ -40,6 +47,7 @@ struct ata_drive_t {
     BYTE control;
     BYTE cmd;
     BYTE power;
+    BYTE packet[12];
     int bufp;
     BYTE *buffer;
     FILE *file;
@@ -48,16 +56,23 @@ struct ata_drive_t {
     int default_cylinders, default_heads, default_sectors, size;
     int cylinders, heads, sectors;
     int settings_cylinders, settings_heads, settings_sectors;
-    int settings_autodetect_size;
+    int auto_cylinders, auto_heads, auto_sectors, auto_size;
+    int settings_autodetect_size, settings_type;
     int slave;
     int update_needed;
     int readonly;
-    int atapi;
-    int sector_size;
     int attention;
     int wcache;
     int lookahead;
+    int type;
+    int busy;
+    int pos;
+    alarm_t *bsy_alarm;
     log_t log;
+    int sector_size;
+    int atapi, lba;
+    CLOCK seek_time;
+    CLOCK spinup_time, spindown_time;
 };
 
 extern void ata_init(struct ata_drive_t *drv, int drive);
@@ -65,8 +80,9 @@ extern void ata_shutdown(struct ata_drive_t *drv);
 extern void ata_register_store(struct ata_drive_t *cdrive, BYTE addr, WORD value);
 extern WORD ata_register_read(struct ata_drive_t *cdrive, BYTE addr);
 extern WORD ata_register_peek(struct ata_drive_t *cdrive, BYTE addr);
-extern void ata_image_attach(struct ata_drive_t *cdrive, int slave);
+extern void ata_image_attach(struct ata_drive_t *cdrive);
 extern void ata_image_detach(struct ata_drive_t *cdrive);
+extern void ata_image_change(struct ata_drive_t *cdrive);
 extern void ata_reset(struct ata_drive_t *cdrive);
 
 struct snapshot_s;
