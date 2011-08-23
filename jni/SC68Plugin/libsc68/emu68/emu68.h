@@ -433,6 +433,14 @@ enum emu68_status_e {
   EMU68_BRK  =  2,          /**< Execution breaked.           */
   EMU68_XCT  =  3           /**< Execution in exception.      */
 };
+EMU68_API
+/**
+ *  Get status name.
+ *
+ *   @param  status  one of the emu68_status_e value.
+ *   @return status name
+ */
+const char * emu68_status_name(enum emu68_status_e status);
 
 EMU68_API
 /**

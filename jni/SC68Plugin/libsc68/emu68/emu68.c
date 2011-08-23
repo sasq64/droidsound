@@ -141,7 +141,13 @@ const char * emu68_exception_name(unsigned int vector)
   static const char * xcpt_names[] = {
     "reset", "reset_pc", "bus-error", "addr-error",
     "illegal", "0-divide", "chk", "trapv", "privv",
-    "trace", "linea", "linef", "spurious", "trap_0"
+    "trace", "linea", "linef"
+  };
+  static const char * trap_names[] = {
+    "trap#0", "trap#1", "trap#2", "trap#3",
+    "trap#4", "trap#5", "trap#6", "trap#7",
+    "trap#8", "trap#9", "trap#A", "trap#B",
+    "trap#C", "trap#D", "trap#E", "trap#F",
   };
 
   if (vector >= 0x100) {
@@ -149,7 +155,9 @@ const char * emu68_exception_name(unsigned int vector)
     if ( vector < sizeof(xtra_names)/sizeof(*xtra_names))
       ret = xtra_names[vector];
   } else if (vector < sizeof(xcpt_names)/sizeof(*xcpt_names)) {
-      ret = xtra_names[vector];
+    ret = xcpt_names[vector];
+  } else if (vector >= TRAP_VECTOR(0) && vector <= TRAP_VECTOR(15)) {
+    ret = trap_names[vector-TRAP_VECTOR_0];
   }
   return ret;
 }
@@ -387,6 +395,18 @@ static void loop68(emu68_t * const emu68)
   while ( controlled_step68(emu68) == EMU68_NRM &&
           emu68->finish_sp >= (addr68_t) REG68.a[7] )
     ;
+}
+
+const char * emu68_status_name(enum emu68_status_e status)
+{
+  switch (status) {
+  case EMU68_ERR: return "error";
+  case EMU68_NRM: return "ok";
+  case EMU68_STP: return "halt";
+  case EMU68_BRK: return "break";
+  case EMU68_XCT: return "exception";
+  }
+  return "unknown";
 }
 
 /* Execute one instruction. */
