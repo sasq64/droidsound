@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: emu68.c 126 2009-07-15 08:58:51Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -130,6 +130,28 @@ emu68_handler_t emu68_get_handler(emu68_t * const emu68)
     ? emu68->handler
     : 0
     ;
+}
+const char * emu68_exception_name(unsigned int vector)
+{
+  const char * ret = 0;
+
+  static const char * xtra_names[] = {
+    "hw-brkp", "hw-trace", "hw-halt"
+  };
+  static const char * xcpt_names[] = {
+    "reset", "reset_pc", "bus-error", "addr-error",
+    "illegal", "0-divide", "chk", "trapv", "privv",
+    "trace", "linea", "linef", "spurious", "trap_0"
+  };
+
+  if (vector >= 0x100) {
+    vector -= 0x100;
+    if ( vector < sizeof(xtra_names)/sizeof(*xtra_names))
+      ret = xtra_names[vector];
+  } else if (vector < sizeof(xcpt_names)/sizeof(*xcpt_names)) {
+      ret = xtra_names[vector];
+  }
+  return ret;
 }
 
 
@@ -257,7 +279,7 @@ int emu68_chkset(emu68_t * const emu68, addr68_t dst, u8 val, uint68_t sz)
   return -!ptr;
 }
 
-#include "crc32.inc"
+#include "crc32.cpp"
 
 uint68_t emu68_crc32(emu68_t * const emu68)
 {
@@ -315,6 +337,19 @@ static inline void step68(emu68_t * const emu68)
   opw  &=  7;           /* 0000 000 000-000 111 */
   (line_func[line])(emu68, reg9, opw);
 }
+/* $$$ evil duplicated code from mem68.c */
+static void chkframe(emu68_t * const emu68, addr68_t addr, const int flags)
+{
+  int oldchk;
+
+  assert ( ! (addr & 0x800000) );
+  addr &= MEMMSK68;
+  oldchk = emu68->chk[addr];
+  if ( ( oldchk & flags ) != flags ) {
+    emu68->framechk |= flags;
+    emu68->chk[addr] = oldchk|flags;
+  }
+}
 
 /* Run a single step emulation with all pogramm controls. */
 static inline int controlled_step68(emu68_t * const emu68)
@@ -333,6 +368,7 @@ static inline int controlled_step68(emu68_t * const emu68)
       if (emu68->status != EMU68_NRM)
         return emu68->status;
     }
+    chkframe(emu68, REG68.pc, EMU68_X);
   }
 
   /* Execute 68K instruction. */
@@ -638,9 +674,7 @@ void emu68_cycle(emu68_t * const emu68, cycle68_t cycleperpass)
   io68_t *io;
 
   /* Clear ORed memory access flags ... */
-#ifdef EMU68DEBUG
   REG68.framechk = 0;
-#endif
 
   /* Adjust internal IO cycle counter */
   for (io=emu68->iohead; io; io=io->next) {
@@ -797,7 +831,7 @@ emu68_t * emu68_create(emu68_parms_t * const parms)
   if (!emu68) {
     goto error;
   }
-  memset(emu68,0,membyte);
+  memset(emu68,0,sizeof(membyte));
   strncpy(emu68->name,p->name?p->name:"emu68",sizeof(emu68->name)-1);
   emu68->clock = p->clock;
 

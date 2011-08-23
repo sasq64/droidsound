@@ -144,21 +144,17 @@ typedef struct
 /** Exception trapping handler.
  *
  *    The emu68_handler_t handler is called by EMU68 when an exception
- *    occurs. This does not include interruption triggered by IO chip
- *    but only software exception like TRACE, ILLEGAL, ZERO DIVIDE,
- *    CHK, TRAP, RESET ...
+ *    occurs. It does include interruption triggered by IO chip as
+ *    well as software exception like TRACE, ILLEGAL, ZERO DIVIDE,
+ *    CHK, TRAP, RESET ... and special emulator interrupts.
  *
  *  @param  emu68   emulator instance
  *  @param  vector  exception vector number
  *  @param  cookie  user-data pointer
+ *  @return Execution break request (return non 0 to ask for a break)
 */
 typedef int (*emu68_handler_t)(emu68_t* const emu68, int vector, void * cookie);
 
-/** Init parameters. */
-/* typedef struct { */
-/*   int          * argc;                  /\**< Argument count.        *\/ */
-/*   char        ** argv;                  /\**< Arguments.             *\/ */
-/* } emu68_init_t; */
 
 /** Breakpoint definition. */
 typedef struct {

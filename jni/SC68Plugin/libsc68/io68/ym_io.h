@@ -79,6 +79,9 @@ cycle68_t ymio_cycle_cpu2ym(const io68_t * const io, const cycle68_t cycles);
 IO68_EXTERN
 /** Convert a ym-cycle to cpu-cycle. */
 cycle68_t ymio_cycle_ym2cpu(const io68_t * const io, const cycle68_t cycles);
+IO68_EXTERN
+/** Convert a ym-cycle to cpu-cycle. */
+int ymio_active_channels(const io68_t * const io, const int clr, const int set);
 
 
 /** @} */

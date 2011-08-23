@@ -376,7 +376,7 @@ int mw_command(mw_t * const mw)
   ctrl = ( mw->map[MW_CTRL] << 8 ) + mw->map[MW_CTRL+1];
   data = ( mw->map[MW_DATA] << 8 ) + mw->map[MW_DATA+1];
 
-  TRACE68(mw_cat,"microwire: shiting -- %04x:%04x\n", ctrl, data);
+  TRACE68(mw_cat,"microwire: shifting -- %04x:%04x\n", ctrl, data);
 
   /* Find first address */
   for(; ctrl && ( ctrl & 0xC000 ) != 0xC000; ctrl<<=1, data<<=1)
@@ -555,12 +555,14 @@ out:
   mw->ct  = ct;
   mw->end = end;
 }
+#define _VOL(LR) \
+  (mw->db_conv[mw->lmc.master+mw->lmc.LR] * 0xC0 >> 8)
 
 static void mix_ste(mw_t * const mw, s32 *b, int n)
 {
   mwct_t base, end2, ct, end, stp;
-  const int          vl = mw->db_conv[mw->lmc.master+mw->lmc.left];
-  const int          vr = mw->db_conv[mw->lmc.master+mw->lmc.right];
+  const int          vl = _VOL(left);
+  const int          vr = _VOL(right);
   const int        loop = mw->map[MW_ACTI] & 2;
   const int        mono = (mw->map[MW_MODE]>>7) & 1;
   const uint_t      frq = 50066u >> ((mw->map[MW_MODE]&3)^3);

@@ -38,30 +38,40 @@
  * SC68 file identification string definition V2.
  * @see file68_idstr_v2
  */
-#define SC68_IDSTR_V2 "SC68-V2"
+#define SC68_IDSTR_V2 "SC68/02"
 
 #define SC68_NOFILENAME "N/A"  /**< SC68 unknown filename or author.        */
-#define SC68_LOADADDR   0x8000 /**< Default load address in 68K memory.     */
-#define SC68_MAX_TRACK  99     /**< Maximum track per disk (display rules). */
+#define SC68_LOADADDR   0x10000 /**< Default load address in 68K memory.    */
+#define SC68_MAX_TRACK  99      /**< Maximum track per disk (2 digits max). */
 
 
 /**
  * @name  Features flag definitions for music68_t.
  * @{
  */
-#define SC68_YM        1     /**< YM-2149 actif.                  */
-#define SC68_STE       2     /**< STE sound actif.                */
-#define SC68_AMIGA     4     /**< AMIGA sound actif.              */
-#define SC68_STECHOICE 8     /**< Optionnal STF/STE (not tested). */
+enum  {
+  SC68_YM        = 1 << 0,   /**< YM-2149 actif.                  */
+  SC68_STE       = 1 << 1,   /**< STE sound actif.                */
+  SC68_AMIGA     = 1 << 2,   /**< AMIGA sound actif.              */
+  SC68_STECHOICE = 1 << 3,   /**< Optionnal STF/STE (not tested). */
+  SC68_TIMERS    = 1 << 4,   /**< Has timer info.                 */
+  SC68_TIMERA    = 1 << 5,   /**< Timer-A used.                   */
+  SC68_TIMERB    = 1 << 6,   /**< Timer-B used.                   */
+  SC68_TIMERC    = 1 << 7,   /**< Timer-C used.                   */
+  SC68_TIMERD    = 1 << 8    /**< Timer-D used.                   */
+};
 /**
  * @}
+ */
+/**
+ * SC68 file chunk header.
  */
 
 typedef struct
 {
   char id[4];   /**< Must be "SC??".            */
   char size[4]; /**< Size in bytes (MSB first). */
-} chunk68_t;    /**< SC68 file chunk header.    */
+} chunk68_t;
 
 
 /**
@@ -81,12 +91,15 @@ typedef struct
 #define CH68_CNAME     "CN"    /**< Composer name.               */
 #define CH68_D0        "D0"    /**< D0 value.                    */
 #define CH68_AT        "AT"    /**< Load address.                */
-#define CH68_TIME      "TI"    /**< length in seconds.           */
-#define CH68_FRAME     "FR"    /**< length in frames.            */
-#define CH68_FRQ       "FQ"    /**< Main replay frequency in Hz. */
+#define CH68_TIME      "TI"    /**< Length in seconds.           */
+#define CH68_FRAME     "FR"    /**< Length in frames.            */
+#define CH68_FRQ       "FQ"    /**< Replay frequency in Hz.      */
 #define CH68_LOOP      "LP"    /**< Number of loop.              */
 
-#define CH68_TYP       "TY"    /**< Not standard ST file.        */
+#define CH68_TYP       "TY"    /**< HW feature flag.             */
+
+#define CH68_UTF8      "U8"    /**< String are UTF-8 encoded.    */
+#define CH68_ALIGN     "32"    /**< Chunk are 32bit aligned.     */
 #define CH68_IMG       "IM"    /**< Picture.                     */
 #define CH68_REPLAY    "RE"    /**< External replay.             */
 
@@ -108,6 +121,11 @@ typedef union {
     unsigned ste:1;       /**< Music uses STE specific hardware. */
     unsigned amiga:1;     /**< Music uses Paula Amiga hardware.  */
     unsigned stechoice:1; /**< Music allow STF/STE choices.      */
+    unsigned timers:1;    /**< Set if the timer status is known. */
+    unsigned timera:1;    /**< Music uses timer A                */
+    unsigned timerb:1;    /**< Music uses timer B                */
+    unsigned timerc:1;    /**< Music uses timer C                */
+    unsigned timerd:1;    /**< Music uses timer D                */
   } bit;                  /**< Flags bit field.                  */
   unsigned all;           /**< All flags in one.                 */
 } hwflags68_t;
@@ -127,7 +145,7 @@ typedef struct
   unsigned int frq;      /**< Frequency in Hz (default:50).           */
   unsigned int start_ms; /**< Start time in ms from disk 1st track.   */
   unsigned int time_ms;  /**< Duration in ms.                         */
-  unsigned int frames;   /**< Number of frame.                        */
+  unsigned int frames;   /**< Duration in frame.                      */
   int loop;              /**< Default number of loop (0:infinite).    */
   int track;             /**< Track remapping number (0:default).     */
   hwflags68_t hwflags;   /**< Hardware and features.                  */
@@ -194,7 +212,8 @@ typedef struct
    * @{
    */
   music68_t mus[SC68_MAX_TRACK]; /**< Information for each music.        */
-  char      data[1];             /**< raw data (must be last in struct). */
+  unsigned int datasz;              /**< data size in byte.             */
+  char         data[1];             /**< raw data. MUST be last member. */
   /**
    * @}
    */
@@ -207,7 +226,7 @@ FILE68_API
  *
  * @see SC68_IDSTR
  */
-const char file68_idstr[56];
+const char file68_idstr[];
 
 FILE68_API
 /**
@@ -215,7 +234,7 @@ FILE68_API
  *
  * @see SC68_IDSTR_V2
  */
-const char file68_idstr_v2[8];
+const char file68_idstr_v2[];
 
 /**
  * @name  File verify functions.
