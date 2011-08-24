@@ -88,6 +88,7 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 	BYTE pattern_map[256];
 	BOOL samples_used[MAX_SAMPLES];
 	UINT unused_samples;
+	tagXMFILEHEADER xmhead;
 
 	m_nChannels = 0;
 	if ((!lpStream) || (dwMemLength < 0x200)) return FALSE;
@@ -95,29 +96,29 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 
 
 	memcpy(m_szNames[0], lpStream+17, 20);
-	dwHdrSize = bswapLE32(*((DWORD *)(lpStream+60)));
-	norders = bswapLE16(*((WORD *)(lpStream+64)));
+	xmhead = *(tagXMFILEHEADER *)(lpStream+60);
+	dwHdrSize = bswapLE32(xmhead.size);
+	norders = bswapLE16(xmhead.norder);
 	if ((!norders) || (norders > MAX_ORDERS)) return FALSE;
-	restartpos = bswapLE16(*((WORD *)(lpStream+66)));
-	channels = bswapLE16(*((WORD *)(lpStream+68)));
+	restartpos = bswapLE16(xmhead.restartpos);
+	channels = bswapLE16(xmhead.channels);
 	if ((!channels) || (channels > 64)) return FALSE;
 	m_nType = MOD_TYPE_XM;
 	m_nMinPeriod = 27;
 	m_nMaxPeriod = 54784;
 	m_nChannels = channels;
 	if (restartpos < norders) m_nRestartPos = restartpos;
-	patterns = bswapLE16(*((WORD *)(lpStream+70)));
+	patterns = bswapLE16(xmhead.patterns);
 	if (patterns > 256) patterns = 256;
-	instruments = bswapLE16(*((WORD *)(lpStream+72)));
+	instruments = bswapLE16(xmhead.instruments);
 	if (instruments >= MAX_INSTRUMENTS) instruments = MAX_INSTRUMENTS-1;
 	m_nInstruments = instruments;
 	m_nSamples = 0;
-	memcpy(&xmflags, lpStream+74, 2);
-	xmflags = bswapLE16(xmflags);
+	xmflags = bswapLE16(xmhead.flags);
 	if (xmflags & 1) m_dwSongFlags |= SONG_LINEARSLIDES;
 	if (xmflags & 0x1000) m_dwSongFlags |= SONG_EXFILTERRANGE;
-	defspeed = bswapLE16(*((WORD *)(lpStream+76)));
-	deftempo = bswapLE16(*((WORD *)(lpStream+78)));
+	defspeed = bswapLE16(xmhead.speed);
+	deftempo = bswapLE16(xmhead.tempo);
 	if ((deftempo >= 32) && (deftempo < 256)) m_nDefaultTempo = deftempo;
 	if ((defspeed > 0) && (defspeed < 40)) m_nDefaultSpeed = defspeed;
 	memcpy(Order, lpStream+80, norders);
@@ -156,7 +157,6 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 	dwMemPos = dwHdrSize + 60;
 	if (dwMemPos + 8 >= dwMemLength) return TRUE;
 
-	/// --------------- START
 
 	// Reading patterns
 	memset(channels_used, 0, sizeof(channels_used));
@@ -165,20 +165,16 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 		UINT ipatmap = pattern_map[ipat];
 		DWORD dwSize = 0;
 		WORD rows=64, packsize=0;
-		/// dwSize = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
-		dwSize = read32(lpStream+dwMemPos);
+		dwSize = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
 		while ((dwMemPos + dwSize >= dwMemLength) || (dwSize & 0xFFFFFF00))
 		{
 			if (dwMemPos + 4 >= dwMemLength) break;
 			dwMemPos++;
-			/// dwSize = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
-			dwSize = read32(lpStream+dwMemPos);
+			dwSize = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
 		}
-		/// rows = bswapLE16(*((WORD *)(lpStream+dwMemPos+5)));
-		rows = read16(lpStream+dwMemPos+5);
+		rows = bswapLE16(*((WORD *)(lpStream+dwMemPos+5)));
 		if ((!rows) || (rows > 256)) rows = 64;
-		// packsize = bswapLE16(*((WORD *)(lpStream+dwMemPos+7)));
-		packsize = read16(lpStream+dwMemPos+7);
+		packsize = bswapLE16(*((WORD *)(lpStream+dwMemPos+7)));
 		if (dwMemPos + dwSize + 4 > dwMemLength) return TRUE;
 		dwMemPos += dwSize;
 		if (dwMemPos + packsize + 4 > dwMemLength) return TRUE;
@@ -275,15 +271,11 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 	}
 
 
-	/// --------------- SSTOP
-
-	//__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "1");
 
 	// Wrong offset check
 	while (dwMemPos + 4 < dwMemLength)
 	{
-		/// DWORD d = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
-		DWORD d = read32(lpStream+dwMemPos);
+		DWORD d = bswapLE32(*((DWORD *)(lpStream+dwMemPos)));
 		if (d < 0x300) break;
 		dwMemPos++;
 	}
@@ -542,9 +534,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 	//__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "2");
 
 	// Read song comments: "TEXT"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x74786574))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x74786574))
 	{
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
 		dwMemPos += 8;
 		if ((dwMemPos + len <= dwMemLength) && (len < 16384))
 		{
@@ -558,9 +550,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 		}
 	}
 	// Read midi config: "MIDI"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x4944494D))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4944494D))
 	{
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
 		dwMemPos += 8;
 		if (len == sizeof(MODMIDICFG))
 		{
@@ -569,9 +561,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 		}
 	}
 	// Read pattern names: "PNAM"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x4d414e50))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e50))
 	{
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
 		dwMemPos += 8;
 		if ((dwMemPos + len <= dwMemLength) && (len <= MAX_PATTERNS*MAX_PATTERNNAME) && (len >= MAX_PATTERNNAME))
 		{
@@ -586,9 +578,9 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 		}
 	}
 	// Read channel names: "CNAM"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x4d414e43))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e43))
 	{
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = *((DWORD *)(lpStream+dwMemPos+4));
 		dwMemPos += 8;
 		if ((dwMemPos + len <= dwMemLength) && (len <= MAX_BASECHANNELS*MAX_CHANNELNAME))
 		{

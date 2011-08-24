@@ -47,7 +47,7 @@ BOOL CSoundFile::ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkver
 		memcpy(penv->filename, pis->filename, 12);
 		penv->nFadeOut = bswapLE16(pis->fadeout) << 6;
 		penv->nGlobalVol = 64;
-		for (UINT j=0; j<120; j++)
+		for (UINT j=0; j<NOTE_MAX; j++)
 		{
 			UINT note = pis->keyboard[j*2];
 			UINT ins = pis->keyboard[j*2+1];
@@ -86,7 +86,7 @@ BOOL CSoundFile::ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkver
 		penv->nFadeOut = bswapLE16(pis->fadeout) << 5;
 		penv->nGlobalVol = pis->gbv >> 1;
 		if (penv->nGlobalVol > 64) penv->nGlobalVol = 64;
-		for (UINT j=0; j<120; j++)
+		for (UINT j=0; j<NOTE_MAX; j++)
 		{
 			UINT note = pis->keyboard[j*2];
 			UINT ins = pis->keyboard[j*2+1];
@@ -161,7 +161,6 @@ BOOL CSoundFile::ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkver
 BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 //--------------------------------------------------------------
 {
-	ITFILEHEADER pifh = *(ITFILEHEADER *)lpStream;
 	DWORD dwMemPos = sizeof(ITFILEHEADER);
 	DWORD inspos[MAX_INSTRUMENTS];
 	DWORD smppos[MAX_SAMPLES];
@@ -169,7 +168,8 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	BYTE chnmask[64], channels_used[64];
 	MODCOMMAND lastvalue[64];
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Trying to load %d bytes IT", dwMemLength);
+	if ((!lpStream) || (dwMemLength < sizeof(ITFILEHEADER))) return FALSE;
+	ITFILEHEADER pifh = *(ITFILEHEADER *)lpStream;
 
 
 	pifh.id = bswapLE32(pifh.id);
@@ -188,8 +188,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "1");
 
-
-	if ((!lpStream) || (dwMemLength < 0x100)) return FALSE;
 	if ((pifh.id != 0x4D504D49) || (pifh.insnum >= MAX_INSTRUMENTS)
 	 || (!pifh.smpnum) || (pifh.smpnum >= MAX_INSTRUMENTS) || (!pifh.ordnum)) return FALSE;
 	if (dwMemPos + pifh.ordnum + pifh.insnum*4
@@ -230,7 +228,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 
 	if (m_nChannels < 4) m_nChannels = 4;
 	// Reading Song Message
-	if ((pifh.special & 0x01) && (pifh.msglength) && (pifh.msgoffset + pifh.msglength < dwMemLength))
+	if ((pifh.special & 0x01) && (pifh.msglength) && (pifh.msglength <= dwMemLength) && (pifh.msgoffset < dwMemLength - pifh.msglength))
 	{
 		m_lpszSongComments = new char[pifh.msglength+1];
 		if (m_lpszSongComments)
@@ -288,7 +286,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	// Reading IT Extra Info
 	if (dwMemPos + 2 < dwMemLength)
 	{
-		UINT nflt = read16(lpStream + dwMemPos);
+		UINT nflt = bswapLE16(*((WORD *)(lpStream + dwMemPos)));
 		dwMemPos += 2;
 		if (dwMemPos + nflt * 8 < dwMemLength) dwMemPos += nflt * 8;
 	}
@@ -306,10 +304,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 
 
 	// Read pattern names: "PNAM"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x4d414e50))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e50))
 	{
-		/// UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
 		dwMemPos += 8;
 		if ((dwMemPos + len <= dwMemLength) && (len <= MAX_PATTERNS*MAX_PATTERNNAME) && (len >= MAX_PATTERNNAME))
 		{
@@ -325,10 +322,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	// 4-channels minimum
 	m_nChannels = 4;
 	// Read channel names: "CNAM"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x4d414e43))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e43))
 	{
-		/// UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
 		dwMemPos += 8;
 		if ((dwMemPos + len <= dwMemLength) && (len <= 64*MAX_CHANNELNAME))
 		{
@@ -359,11 +355,11 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	for (UINT patchk=0; patchk<npatterns; patchk++)
 	{
 		memset(chnmask, 0, sizeof(chnmask));
-		if ((!patpos[patchk]) || ((DWORD)patpos[patchk] + 4 >= dwMemLength)) continue;
-		UINT len = read16(lpStream+patpos[patchk]);
-		UINT rows = read16(lpStream+patpos[patchk]+2);
+		if ((!patpos[patchk]) || ((DWORD)patpos[patchk] >= dwMemLength - 4)) continue;
+		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[patchk])));
+		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[patchk]+2)));
 		if ((rows < 4) || (rows > 256)) continue;
-		if (patpos[patchk]+8+len > dwMemLength) continue;
+		if (8+len > dwMemLength || patpos[patchk] > dwMemLength - (8+len)) continue;
 		UINT i = 0;
 		const BYTE *p = lpStream+patpos[patchk]+8;
 		UINT nrow = 0;
@@ -424,9 +420,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	// Reading Samples
 	m_nSamples = pifh.smpnum;
 	if (m_nSamples >= MAX_SAMPLES) m_nSamples = MAX_SAMPLES-1;
-	for (UINT nsmp=0; nsmp<pifh.smpnum; nsmp++)
-	{
-		if ((smppos[nsmp]) && (smppos[nsmp] + sizeof(ITSAMPLESTRUCT) <= dwMemLength))
+	for (UINT nsmp=0; nsmp<pifh.smpnum; nsmp++) if ((smppos[nsmp]) && (smppos[nsmp] <= dwMemLength - sizeof(ITSAMPLESTRUCT)))
 		{
 			ITSAMPLESTRUCT pis = *(ITSAMPLESTRUCT *)(lpStream+smppos[nsmp]);
 			pis.id = bswapLE32(pis.id);
@@ -492,24 +486,23 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 			}
 			memcpy(m_szNames[nsmp+1], pis.name, 26);
 		}
-	}
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "7");
 
 	// Reading Patterns
 	for (UINT npat=0; npat<npatterns; npat++)
 	{
-		if ((!patpos[npat]) || ((DWORD)patpos[npat] + 4 >= dwMemLength))
+		if ((!patpos[npat]) || ((DWORD)patpos[npat] >= dwMemLength - 4))
 		{
 			PatternSize[npat] = 64;
 			Patterns[npat] = AllocatePattern(64, m_nChannels);
 			continue;
 		}
 
-		UINT len = read16(lpStream+patpos[npat]);
-		UINT rows = read16(lpStream+patpos[npat]+2);
+		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[npat])));
+		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[npat]+2)));
 		if ((rows < 4) || (rows > 256)) continue;
-		if (patpos[npat]+8+len > dwMemLength) continue;
+		if (8+len > dwMemLength || patpos[npat] > dwMemLength - (8+len)) continue;
 		PatternSize[npat] = rows;
 		if ((Patterns[npat] = AllocatePattern(rows, m_nChannels)) == NULL) continue;
 		memset(lastvalue, 0, sizeof(lastvalue));
@@ -641,7 +634,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 
 #ifndef MODPLUG_NO_FILESAVE
 //#define SAVEITTIMESTAMP
+#ifdef _MSC_VER
 #pragma warning(disable:4100)
+#endif
 
 BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 //---------------------------------------------------------
@@ -740,7 +735,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		header.msgoffset = dwHdrPos + dwExtra + header.insnum*4 + header.patnum*4 + header.smpnum*4;
 	}
 	// Write file header
-	memcpy(writeheader, header, sizeof(header));
+	memcpy(&writeheader, &header, sizeof(header));
 
 	// Byteswap header information
 	writeheader.id = bswapLE32(writeheader.id);
@@ -792,7 +787,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		DWORD d = bswapLE32(0x4d414e50);
 		UINT len= bswapLE32(dwPatNamLen);
 		fwrite(&d, 1, 4, f);
-		write(&len, 1, 4, f);
+		fwrite(&len, 1, 4, f);
 		fwrite(m_lpszPatternNames, 1, dwPatNamLen, f);
 	}
 	// Writing channel Names
@@ -846,7 +841,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 			iti.ifc = penv->nIFC;
 			iti.ifr = penv->nIFR;
 			iti.nos = 0;
-			for (UINT i=0; i<120; i++) if (penv->Keyboard[i] < MAX_SAMPLES)
+			for (UINT i=0; i<NOTE_MAX; i++) if (penv->Keyboard[i] < MAX_SAMPLES)
 			{
 				UINT smp = penv->Keyboard[i];
 				if ((smp) && (!smpcount[smp]))
@@ -904,7 +899,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		} else
 		// Save Empty Instrument
 		{
-			for (UINT i=0; i<120; i++) iti.keyboard[i*2] = i;
+			for (UINT i=0; i<NOTE_MAX; i++) iti.keyboard[i*2] = i;
 			iti.ppc = 5*12;
 			iti.gbv = 128;
 			iti.dfp = 0x20;
@@ -947,8 +942,8 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		if (PatternSize[npat] == 64)
 		{
 			MODCOMMAND *pzc = Patterns[npat];
-			UINT nz = PatternSize[npat] * m_nChannels;
-			for (UINT iz=0; iz<nz; iz++)
+			UINT iz, nz = PatternSize[npat] * m_nChannels;
+			for (iz=0; iz<nz; iz++)
 			{
 				if ((pzc[iz].note) || (pzc[iz].instr)
 				 || (pzc[iz].volcmd) || (pzc[iz].command)) break;
@@ -1218,8 +1213,10 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	fclose(f);
 	return TRUE;
 }
+#ifdef _MSC_VER
 
 //#pragma warning(default:4100)
+#endif
 #endif // MODPLUG_NO_FILESAVE
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1268,7 +1265,7 @@ void ITUnpack8Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dwM
 		if (!wCount)
 		{
 			wCount = 0x8000;
-			wHdr = read16(pSrc);
+			wHdr = bswapLE16(*((LPWORD)pSrc));
 			pSrc += 2;
 			bLeft = 9;
 			bTemp = bTemp2 = 0;
@@ -1513,15 +1510,13 @@ UINT CSoundFile::LoadMixPlugins(const void *pData, UINT nLen)
 		DWORD nPluginSize;
 		UINT nPlugin;
 
-		/// nPluginSize = bswapLE32(*(DWORD *)(p+nPos+4));
-		nPluginSize = read32(p+nPos+4);
+		nPluginSize = bswapLE32(*(DWORD *)(p+nPos+4));
 		if (nPluginSize > nLen-nPos-8) break;;
-		/// if ((bswapLE32(*(DWORD *)(p+nPos))) == 0x58464843)
-		if (read32(p+nPos) == 0x58464843)
+		if ((bswapLE32(*(DWORD *)(p+nPos))) == 0x58464843)
 		{
 			for (UINT ch=0; ch<64; ch++) if (ch*4 < nPluginSize)
 			{
-				ChnSettings[ch].nMixPlugin = read32(p+nPos+8+ch*4);
+				ChnSettings[ch].nMixPlugin = bswapLE32(*(DWORD *)(p+nPos+8+ch*4));
 			}
 		} else
 		{
@@ -1533,7 +1528,7 @@ UINT CSoundFile::LoadMixPlugins(const void *pData, UINT nLen)
 			nPlugin = (p[nPos+2]-'0')*10 + (p[nPos+3]-'0');
 			if ((nPlugin < MAX_MIXPLUGINS) && (nPluginSize >= sizeof(SNDMIXPLUGININFO)+4))
 			{
-				DWORD dwExtra = read32(p+nPos+8+sizeof(SNDMIXPLUGININFO));
+				DWORD dwExtra = bswapLE32(*(DWORD *)(p+nPos+8+sizeof(SNDMIXPLUGININFO)));
 				m_MixPlugins[nPlugin].Info = *(const SNDMIXPLUGININFO *)(p+nPos+8);
 				m_MixPlugins[nPlugin].Info.dwPluginId1 = bswapLE32(m_MixPlugins[nPlugin].Info.dwPluginId1);
 				m_MixPlugins[nPlugin].Info.dwPluginId2 = bswapLE32(m_MixPlugins[nPlugin].Info.dwPluginId2);

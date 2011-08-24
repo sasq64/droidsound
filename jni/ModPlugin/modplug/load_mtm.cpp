@@ -60,11 +60,13 @@ BOOL CSoundFile::ReadMTM(LPCBYTE lpStream, DWORD dwMemLength)
 	if ((strncmp(pmh->id, "MTM", 3)) || (pmh->numchannels > 32)
 	 || (pmh->numsamples >= MAX_SAMPLES) || (!pmh->numsamples)
 	 || (!pmh->numtracks) || (!pmh->numchannels)
-	 || (!pmh->lastpattern) || (pmh->lastpattern > MAX_PATTERNS)) return FALSE;
+	 || (!pmh->lastpattern) || (pmh->lastpattern > MAX_PATTERNS)) 
+		return FALSE;
 	strncpy(m_szNames[0], pmh->songname, 20);
 	m_szNames[0][20] = 0;
 	if (dwMemPos + 37*pmh->numsamples + 128 + 192*pmh->numtracks
-	 + 64 * (pmh->lastpattern+1) + pmh->commentsize >= dwMemLength) return FALSE;
+	 + 64 * (pmh->lastpattern+1) + pmh->commentsize >= dwMemLength) 
+		return FALSE;
 	m_nType = MOD_TYPE_MTM;
 	m_nSamples = pmh->numsamples;
 	m_nChannels = pmh->numchannels;
@@ -86,8 +88,10 @@ BOOL CSoundFile::ReadMTM(LPCBYTE lpStream, DWORD dwMemLength)
 			Ins[i].nLength = len;
 			Ins[i].nLoopStart = pms->reppos;
 			Ins[i].nLoopEnd = pms->repend;
-			if (Ins[i].nLoopEnd > Ins[i].nLength) Ins[i].nLoopEnd = Ins[i].nLength;
-			if (Ins[i].nLoopStart + 4 >= Ins[i].nLoopEnd) Ins[i].nLoopStart = Ins[i].nLoopEnd = 0;
+			if (Ins[i].nLoopEnd > Ins[i].nLength) 
+				Ins[i].nLoopEnd = Ins[i].nLength;
+			if (Ins[i].nLoopStart + 4 >= Ins[i].nLoopEnd) 
+				Ins[i].nLoopStart = Ins[i].nLoopEnd = 0;
 			if (Ins[i].nLoopEnd) Ins[i].uFlags |= CHN_LOOP;
 			Ins[i].nFineTune = MOD2XMFineTune(pms->finetune);
 			if (pms->attribute & 0x01)
@@ -116,7 +120,7 @@ BOOL CSoundFile::ReadMTM(LPCBYTE lpStream, DWORD dwMemLength)
 	// Reading Patterns
 	LPCBYTE pTracks = lpStream + dwMemPos;
 	dwMemPos += 192 * pmh->numtracks;
-	LPCBYTE pSeq = (lpStream + dwMemPos);
+	LPWORD pSeq = (LPWORD)(lpStream + dwMemPos);
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "3");
 
@@ -124,9 +128,9 @@ BOOL CSoundFile::ReadMTM(LPCBYTE lpStream, DWORD dwMemLength)
 	{
 		PatternSize[pat] = 64;
 		if ((Patterns[pat] = AllocatePattern(64, m_nChannels)) == NULL) break;
-		for (UINT n=0; n<32; n++) if ((read16(pSeq+n*2)) && (read16(pSeq+n*2) <= pmh->numtracks) && (n < m_nChannels))
+		for (UINT n=0; n<32; n++) if ((pSeq[n]) && (pSeq[n] <= pmh->numtracks) && (n < m_nChannels))
 		{
-			LPCBYTE p = pTracks + 192 * (read16(pSeq+n*2)-1);
+			LPCBYTE p = pTracks + 192 * (pSeq[n]-1);
 			MODCOMMAND *m = Patterns[pat] + n;
 			__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Reading %d size structure from %p", sizeof(MODCOMMAND), m);
 			for (UINT i=0; i<64; i++, m+=m_nChannels, p+=3)
@@ -144,7 +148,7 @@ BOOL CSoundFile::ReadMTM(LPCBYTE lpStream, DWORD dwMemLength)
 				if ((cmd) || (param)) ConvertModCommand(m);
 			}
 		}
-		pSeq += (32*2);
+		pSeq += 32;
 	}
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "4");

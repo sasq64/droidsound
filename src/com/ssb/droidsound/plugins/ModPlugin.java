@@ -22,6 +22,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 	public ModPlugin() {
 		extensions = new HashSet<String>();
 		extensions.add("MOD");
+		//extensions.add("MED");
 		extensions.add("XM");
 		extensions.add("S3M");
 		extensions.add("IT");
@@ -355,7 +356,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String getVersion() {
-		return "libmodplug v0.8.?";
+		return "libmodplug v0.8.8.4";
 	}
 
 	// --- Native functions
