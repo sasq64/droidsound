@@ -251,11 +251,14 @@ static int set_sectors(int sectors, void *param)
 
 static int set_autodetect_size(int val, void *param)
 {
-    int i = vice_ptr_to_int(param);
+    struct ata_drive_t *drv = &drives[vice_ptr_to_int(param)];
 
-    if (drives[i].settings_autodetect_size != val) {
-        drives[i].settings_autodetect_size = val;
-        drives[i].update_needed = 1;
+    if (drv->settings_autodetect_size != val) {
+        drv->settings_autodetect_size = val;
+        if (val) {
+            detect_ide64_image(drv);
+            ata_image_change(drv);
+        }
     }
     return 0;
 }
@@ -656,11 +659,6 @@ static BYTE ide64_io1_peek(WORD addr)
     return value;
 }
 
-BYTE ide64_get_killport(void)
-{
-    return kill_port;
-}
-
 static void ide64_io1_store(WORD addr, BYTE value)
 {
     if (kill_port & 1) {
@@ -798,12 +796,15 @@ void ide64_config_init(void)
     ds1202_1302_set_lines(ds1302_context, 0u, 1u, 1u);
 
     for (i = 0; i < 4; i++) {
+        drives[i].cycles_1s = machine_get_cycles_per_second();
         if (drives[i].update_needed) {
             drives[i].update_needed = 0;
             ata_image_attach(&drives[i]);
             memset(export_ram0, 0, 0x8000);
         } else {
-            ata_reset(&drives[i]);
+            if (settings_version4) {
+                ata_reset(&drives[i]);
+            }
         }
     }
 }
