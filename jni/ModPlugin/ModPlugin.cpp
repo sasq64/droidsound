@@ -20,6 +20,7 @@
 #define MOD_TYPE_669		0x40
 #define MOD_TYPE_ULT		0x80
 #define MOD_TYPE_STM		0x100
+#define MOD_TYPE_OKT		0x8000
 
 
 #include "com_ssb_droidsound_plugins_ModPlugin.h"
@@ -80,6 +81,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandl
 			switch(ext)
 			{
 			case 'MOD ':
+			case 'OKT ':
 			case 'IT  ':
 			case 'S3M ':
 			case 'XM  ':
@@ -147,6 +149,9 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 			break;
 		case MOD_TYPE_XM:
 			info->modType = "XM";
+			break;
+		case MOD_TYPE_OKT:
+			info->modType = "OKT";
 			break;
 		case MOD_TYPE_IT:
 			info->modType = "IT";

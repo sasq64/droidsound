@@ -195,8 +195,8 @@ public abstract class DroidSoundPlugin {
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}
-		//FileInputStream fs = new FileInputStream(file); Buffered I/O below
-		BufferedInputStream fs = new BufferedInputStream(new FileInputStream(file));
+		FileInputStream fs = new FileInputStream(file); //Buffered I/O below
+		//BufferedInputStream fs = new BufferedInputStream(new FileInputStream(file));
 		fs.read(songBuffer);
 		calcMD5(songBuffer);
 		return load(file.getName(), songBuffer, songBuffer.length);
