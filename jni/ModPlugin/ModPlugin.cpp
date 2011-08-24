@@ -10,6 +10,11 @@
 
 #include "modplug/modplug.h"
 
+//If you need to define other ones 
+//to implement a file format. You can
+//find more of these defines in
+//  modplug/libmodplug/sndfile.h
+// starting at line 46.
 #define MOD_TYPE_NONE		0x00
 #define MOD_TYPE_MOD		0x01
 #define MOD_TYPE_S3M		0x02
