@@ -50,8 +50,8 @@ int ym_cat = msg68_DEFAULT;
 
 int ym_default_chans = 7;
 
-#include "ym_linear_table.cpp"
-#include "ym_atarist_table.cpp"
+#include "ym_linear_table.inc"
+#include "ym_atarist_table.inc"
 
 
 /** 3 channels output table.

@@ -18,13 +18,6 @@ IO68_EXTERN
  *  @retval  -1  on failure
  */
 int ym_dump_setup(ym_t * const ym);
-/** Get/Set sc68 dump ym engine active state.
- *
- *  @parm    ym   ym emulator instance to setup
- *  @parm    val  0:disable 1:enable -1:current
- *  @return  previous status
- */
-int ym_dump_active(ym_t * const ym, int val);
 
 typedef void (*ym_dump_filter_t)(ym_t * const);
 
@@ -33,7 +26,6 @@ struct ym2149_dump_s
 {
   uint64_t base_cycle;
   uint68_t pass;
-  int      active;
 };
 
 /** YM-2149 emulator instance type */

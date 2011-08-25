@@ -89,7 +89,7 @@ int run(ym_t * const ym, s32 * output, const cycle68_t ymcycles)
   ym_dump_t * const dump = &ym->emu.dump;
   cycle68_t curcycle;
   u64       longcycle;
-  int       i, len, ymreg[16], mute;
+  int       i, len, ymreg[16];
 
   char tmp [128], * buf;
   ym_waccess_t * ptr, * regs[3];
@@ -97,18 +97,12 @@ int run(ym_t * const ym, s32 * output, const cycle68_t ymcycles)
   regs[0] = ym->ton_regs.head;
   regs[1] = ym->noi_regs.head;
   regs[2] = ym->env_regs.head;
-  mute
-    = ( ( ym->voice_mute >> 0  ) & 1 )
-    | ( ( ym->voice_mute >> 5  ) & 2 )
-    | ( ( ym->voice_mute >> 10 ) & 4 )
-    ;
-  mute = ( mute | ( mute << 3 ) ) ^ 077;
 
   for ( i = 0; i < 16; ++i ) ymreg[i] = -1;
 
   ptr = advance_list(regs);
-  do {
-    curcycle  = ptr ? ptr->ymcycle : 0;
+  while (ptr) {
+    curcycle  = ptr->ymcycle;
     longcycle = dump->base_cycle + (u64) curcycle;
 
     /* Get all entry at this cycle */
@@ -131,21 +125,6 @@ int run(ym_t * const ym, s32 * output, const cycle68_t ymcycles)
     }
     /* dump register list */
     for ( i = 0; i < 14; ++i ) {
-      /* disable access for muted voices */
-      switch (i) {
-
-      case 0x0: case 0x1: case 0x2: case 0x3: case 0x4: case 0x5:
-        if ( ( mute & ( 1 << ( i >> 1 ) ) ) ) ymreg[i] = -1;
-        break;
-
-      case 0x8: case 0x9: case 0xA:
-        if ( ( mute & ( 1 << ( i - 8 ) ) ) ) ymreg[i] = -1;
-        break;
-
-      case 0x7:
-        if ( ymreg[i] >= 0 ) ymreg[i] |= mute;
-        break;
-      }
       *buf++ = (!i)  ? ' ' : '-';
       if (ymreg[i] < 0){
         *buf++ = '.';
@@ -157,9 +136,8 @@ int run(ym_t * const ym, s32 * output, const cycle68_t ymcycles)
       ymreg[i] = -1;
     }
     *buf++ = 0;
-    /* Dump only if actually active */
-    if (dump->active) puts(tmp);
-  } while (ptr);
+    puts(tmp);
+  }
 
   /* Reset write lists */
   ym->ton_regs.head = ym->ton_regs.tail = 0;
@@ -184,18 +162,6 @@ static
 void cleanup(ym_t * const ym)
 {
 }
-int ym_dump_active(ym_t * const ym, int val)
-{
-  int code = -1;
-  if (ym) {
-    ym_dump_t * const dump = &ym->emu.dump;
-    code = dump->active;
-    if (val != -1) {
-      dump->active = !!val;
-    }
-  }
-  return code;
-}
 
 int ym_dump_setup(ym_t * const ym)
 {
@@ -209,8 +175,6 @@ int ym_dump_setup(ym_t * const ym)
   ym->cb_buffersize    = buffersize;
   ym->cb_sampling_rate = (void*)0;
   dump->base_cycle     = 0;
-  dump->active         = 1;
-  dump->pass           = 0;
 
   return err;
 }

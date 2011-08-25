@@ -334,13 +334,3 @@ cycle68_t ymio_cycle_ym2cpu(const io68_t * const io, const cycle68_t cycles)
   ym_io68_t * const ymio = (ym_io68_t *)io;
   return cycle_ymtocpu(ymio,cycles);
 }
-
-/** Set/Get active channels */
-int ymio_active_channels(const io68_t * const io, const int clr, const int set)
-{
-  ym_io68_t * const ymio = (ym_io68_t *)io;
-  return ymio
-    ? ym_active_channels( &ymio->ym, clr, set)
-    : -1
-    ;
-}

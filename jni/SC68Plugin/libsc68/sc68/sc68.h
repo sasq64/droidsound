@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id$ */
+/* $Id: sc68.h 126 2009-07-15 08:58:51Z benjihan $ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 
@@ -229,11 +229,8 @@ typedef struct {
 #define SC68_LOOP       (1<<SC68_LOOP_BIT)   /**< @see SC68_LOOP_BIT   */
 #define SC68_END        (1<<SC68_END_BIT)    /**< @see SC68_END_BIT    */
 
-#define SC68_OK         0 /**< Ok.              */
-#define SC68_ERROR     ~0 /**< Error.           */
-
-#define SC68_MIX_OK     SC68_OK    /**< Backward compatibility. */
-#define SC68_MIX_ERROR  SC68_ERROR /**< Backward compatibility. */
+#define SC68_MIX_OK     0  /**< Not really used. */
+#define SC68_MIX_ERROR  -1 /**< Error.           */
 
 /** @} */
 
@@ -249,6 +246,7 @@ enum sc68_spr_e {
 
 SC68_API
 /** Get version number
+ *
  */
 int sc68_version(void);
 
@@ -298,15 +296,6 @@ SC68_API
  * @note  It is safe to call with null api.
  */
 void sc68_destroy(sc68_t * sc68);
-
-SC68_API
-/** Get instance name.
- *
- * @param   sc68  sc68 instance to destroy.
- * @return  sc68 instance name.
- *
- */
-const char * sc68_name(sc68_t * sc68);
 
 SC68_API
 /** Get user private data pointer.
@@ -405,7 +394,7 @@ SC68_API
  *    value that report events that have occured during this pass.
  *
  * @param  sc68  sc68 instance.
- * @param  buf   PCM buffer (must be at least 4*n bytes).
+ * @param  buf   PCM buffer (must be at leat 4*n bytes).
  * @param  n     Number of sample to fill.
  *
  * @return Process status
@@ -549,10 +538,7 @@ int sc68_load_url(sc68_t * sc68, const char * url);
 SC68_API
 int sc68_load_mem(sc68_t * sc68, const void * buffer, int len);
 
-/** Load an sc68 disk outside the API.
- *
- *  @notice Free it with sc68_disk_free() function.
- */
+/** Load an sc68 disk outside the API. Free it with sc68_free() function. */
 #ifdef _FILE68_ISTREAM68_H_
 SC68_API
 sc68_disk_t sc68_load_disk(istream68_t * is);
@@ -561,8 +547,6 @@ SC68_API
 sc68_disk_t sc68_load_disk_url(const char * url);
 SC68_API
 sc68_disk_t sc68_disk_load_mem(const void * buffer, int len);
-SC68_API
-void sc68_disk_free(sc68_disk_t disk);
 
 
 SC68_API

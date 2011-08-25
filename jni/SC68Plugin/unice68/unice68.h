@@ -7,9 +7,7 @@
  *
  */
 
-/* Copyright (C) 1998-2010 Benjamin Gerard */
-
-/* $Id$ */
+/* $Id: unice68.h 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifndef _UNICE68_H_
 #define _UNICE68_H_

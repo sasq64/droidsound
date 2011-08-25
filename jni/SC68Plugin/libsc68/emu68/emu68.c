@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id$ */
+/* $Id: emu68.c 126 2009-07-15 08:58:51Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -130,36 +130,6 @@ emu68_handler_t emu68_get_handler(emu68_t * const emu68)
     ? emu68->handler
     : 0
     ;
-}
-const char * emu68_exception_name(unsigned int vector)
-{
-  const char * ret = 0;
-
-  static const char * xtra_names[] = {
-    "hw-brkp", "hw-trace", "hw-halt"
-  };
-  static const char * xcpt_names[] = {
-    "reset", "reset_pc", "bus-error", "addr-error",
-    "illegal", "0-divide", "chk", "trapv", "privv",
-    "trace", "linea", "linef"
-  };
-  static const char * trap_names[] = {
-    "trap#0", "trap#1", "trap#2", "trap#3",
-    "trap#4", "trap#5", "trap#6", "trap#7",
-    "trap#8", "trap#9", "trap#A", "trap#B",
-    "trap#C", "trap#D", "trap#E", "trap#F",
-  };
-
-  if (vector >= 0x100) {
-    vector -= 0x100;
-    if ( vector < sizeof(xtra_names)/sizeof(*xtra_names))
-      ret = xtra_names[vector];
-  } else if (vector < sizeof(xcpt_names)/sizeof(*xcpt_names)) {
-    ret = xcpt_names[vector];
-  } else if (vector >= TRAP_VECTOR(0) && vector <= TRAP_VECTOR(15)) {
-    ret = trap_names[vector-TRAP_VECTOR_0];
-  }
-  return ret;
 }
 
 
@@ -287,7 +257,7 @@ int emu68_chkset(emu68_t * const emu68, addr68_t dst, u8 val, uint68_t sz)
   return -!ptr;
 }
 
-#include "crc32.cpp"
+#include "crc32.inc"
 
 uint68_t emu68_crc32(emu68_t * const emu68)
 {
@@ -345,19 +315,6 @@ static inline void step68(emu68_t * const emu68)
   opw  &=  7;           /* 0000 000 000-000 111 */
   (line_func[line])(emu68, reg9, opw);
 }
-/* $$$ evil duplicated code from mem68.c */
-static void chkframe(emu68_t * const emu68, addr68_t addr, const int flags)
-{
-  int oldchk;
-
-  assert ( ! (addr & 0x800000) );
-  addr &= MEMMSK68;
-  oldchk = emu68->chk[addr];
-  if ( ( oldchk & flags ) != flags ) {
-    emu68->framechk |= flags;
-    emu68->chk[addr] = oldchk|flags;
-  }
-}
 
 /* Run a single step emulation with all pogramm controls. */
 static inline int controlled_step68(emu68_t * const emu68)
@@ -376,7 +333,6 @@ static inline int controlled_step68(emu68_t * const emu68)
       if (emu68->status != EMU68_NRM)
         return emu68->status;
     }
-    chkframe(emu68, REG68.pc, EMU68_X);
   }
 
   /* Execute 68K instruction. */
@@ -395,18 +351,6 @@ static void loop68(emu68_t * const emu68)
   while ( controlled_step68(emu68) == EMU68_NRM &&
           emu68->finish_sp >= (addr68_t) REG68.a[7] )
     ;
-}
-
-const char * emu68_status_name(enum emu68_status_e status)
-{
-  switch (status) {
-  case EMU68_ERR: return "error";
-  case EMU68_NRM: return "ok";
-  case EMU68_STP: return "halt";
-  case EMU68_BRK: return "break";
-  case EMU68_XCT: return "exception";
-  }
-  return "unknown";
 }
 
 /* Execute one instruction. */
@@ -694,7 +638,9 @@ void emu68_cycle(emu68_t * const emu68, cycle68_t cycleperpass)
   io68_t *io;
 
   /* Clear ORed memory access flags ... */
+#ifdef EMU68DEBUG
   REG68.framechk = 0;
+#endif
 
   /* Adjust internal IO cycle counter */
   for (io=emu68->iohead; io; io=io->next) {
@@ -851,7 +797,7 @@ emu68_t * emu68_create(emu68_parms_t * const parms)
   if (!emu68) {
     goto error;
   }
-  memset(emu68,0,sizeof(membyte));
+  memset(emu68,0,membyte);
   strncpy(emu68->name,p->name?p->name:"emu68",sizeof(emu68->name)-1);
   emu68->clock = p->clock;
 

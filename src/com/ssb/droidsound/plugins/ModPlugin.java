@@ -22,7 +22,6 @@ public final class ModPlugin extends DroidSoundPlugin {
 	public ModPlugin() {
 		extensions = new HashSet<String>();
 		extensions.add("MOD");
-		extensions.add("OKT");
 		extensions.add("XM");
 		extensions.add("S3M");
 		extensions.add("IT");

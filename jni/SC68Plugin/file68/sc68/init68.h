@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id$ */
+/* $Id: init68.h 102 2009-03-14 17:21:58Z benjihan $ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 
