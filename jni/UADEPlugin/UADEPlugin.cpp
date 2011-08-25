@@ -362,16 +362,12 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit(JNIEnv
 
 int init()
 {
-
 	char temp[256];
-
 
     //uadeconf_loaded = uade_load_initial_config(uadeconfname,
 		//			       sizeof uadeconfname,
-			//		       &state.config, NULL);
-
-
-
+		//		     	   &state.config, NULL);
+			
 	if(eaglestore == 0) {
 
 	   memset(&state, 0, sizeof state);
@@ -385,12 +381,9 @@ int init()
 
 		// state.config.no_filter = 1;
 
-
-
 		uade_set_peer(&uadeipc, 1, "client", "server");
 		state.ipc = uadeipc;
 		eaglestore = 1;
-
 	}
 
 	if(thread == 0) {
@@ -406,7 +399,6 @@ int init()
 	if(!soundBuffer)
 		soundBuffer = (short*)malloc(44100 * 8);
 
-
 	return 0;
 }
 
@@ -418,10 +410,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv
 	env->ReleaseStringUTFChars(basedir, s);
 
 	init();
-
 }
-
-
 
 extern "C" {
 
@@ -431,7 +420,6 @@ void client_sleep(void)
 	//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Sleeping in %d", pthread_self());
 	usleep(100);
 }
-
 
 int get_write_mutex(void **m)
 {
@@ -451,8 +439,6 @@ int release_write_mutex(void **m)
 
 int get_read_mutex(void **m)
 {
-
-
 	if(!*m) {
 		pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
 		//*mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -482,8 +468,6 @@ static jstring NewString(JNIEnv *env, const char *str)
 	jstring j = env->NewString(temp, ptr - temp);
 	return j;
 }
-
-
 
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
@@ -590,7 +574,6 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	return 1;
 }
 
-
 static int wait_token()
 {
 	do
@@ -635,7 +618,6 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 	wait_token();
 
 	ctrlstate = UADE_S_STATE;
-
 }
 
 
@@ -645,7 +627,6 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 	Player *player = (Player*)song;
 
 	jshort *dest = env->GetShortArrayElements(sArray, NULL);
-
 
 	//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "getSoundData");
 
@@ -669,9 +650,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 
 	return soundPtr - dest;
 
-
-/*
-	int filled = (soundPtr - soundBuffer);
+	/*int filled = (soundPtr - soundBuffer);
 	int len = size;
 
 	while(filled < len)
@@ -685,8 +664,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 	memmove(soundBuffer, soundBuffer+len, (filled-len)*2);
 	soundPtr -= len;
     env->ReleaseShortArrayElements(sArray, dest, 0);
-	return len;
-*/
+	return len;*/
 }
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1seekTo(JNIEnv *, jobject, jlong, jint)
@@ -706,8 +684,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setTune
 	int rc = 0;
 	while(rc <= 0) {
 		rc = run_client();
-	}
-*/
+	}*/
 
 	return true;
 }
@@ -739,7 +716,6 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getStrin
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(JNIEnv *env, jclass cl, jint what, jint val)
 {
-
 	switch(what) {
 	case OPT_FILTER:
 		state.config.no_filter = (val ? 0 : 1);
@@ -779,10 +755,6 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(J
 		break;
 	}
 }
-
-
-
-
 
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getIntInfo(JNIEnv *env, jobject obj, jlong song, jint what)
 {
