@@ -28,7 +28,7 @@ User of the IEC bus system
 IEC bus access by the host CPU
 
 diskcontents:
-IEC bus and block acccess by image content lister
+IEC bus and block access by image content lister
 
 monitor:
 IEC bus access by the build in monitor
