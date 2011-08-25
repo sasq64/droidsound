@@ -1,6 +1,6 @@
 /*
-  zip_free.c -- free struct zip
-  Copyright (C) 1999-2007 Dieter Baron and Thomas Klausner
+  zip_source_error.c -- get last error from zip_source
+  Copyright (C) 2009 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <libzip@nih.at>
@@ -33,51 +33,55 @@
 
 
 
-#include <stdlib.h>
-
 #include "zipint.h"
 
 
 
-/* _zip_free:
-   frees the space allocated to a zipfile struct, and closes the
-   corresponding file. */
-
-void
-_zip_free(struct zip *za)
+ZIP_EXTERN void
+zip_source_error(struct zip_source *src, int *ze, int *se)
 {
-    int i;
+    int e[2];
 
-    if (za == NULL)
-	return;
+    if (src->src == NULL) {
+    }
+    else {
+	switch (src->error_source) {
+	case ZIP_LES_NONE:
+	    if (src->src == NULL) {
+		if (src->cb.f(src->ud, e, sizeof(e), ZIP_SOURCE_ERROR) < 0) {
+		    e[0] = ZIP_ER_INTERNAL;
+		    e[1] = 0;
+		}
+	    }
+	    else
+		e[0] = e[1] = 0;
+	    break;
 
-    if (za->zn)
-	free(za->zn);
+	case ZIP_LES_INVAL:
+	    e[0] = ZIP_ER_INVAL;
+	    e[1] = 0;
+	    break;
 
-    if (za->zp)
-	fclose(za->zp);
-    free(za->default_password);
+	case ZIP_LES_LOWER:
+	    zip_source_error(src->src, ze, se);
+	    return;
 
-    _zip_cdir_free(za->cdir);
-    free(za->ch_comment);
+	case ZIP_LES_UPPER:
+	    if (src->cb.l(src->src, src->ud, e, sizeof(e),
+			  ZIP_SOURCE_ERROR) < 0) {
+		e[0] = ZIP_ER_INTERNAL;
+		e[1] = 0;
+	    }
+	    break;
 
-    if (za->entry) {
-	for (i=0; i<za->nentry; i++) {
-	    _zip_entry_free(za->entry+i);
+	default:
+	    e[0] = ZIP_ER_INTERNAL;
+	    e[1] = 0;
 	}
-	free(za->entry);
     }
 
-    for (i=0; i<za->nfile; i++) {
-	if (za->file[i]->error.zip_err == ZIP_ER_OK) {
-	    _zip_error_set(&za->file[i]->error, ZIP_ER_ZIPCLOSED, 0);
-	    za->file[i]->za = NULL;
-	}
-    }
-
-    free(za->file);
-    
-    free(za);
-
-    return;
+    if (ze)
+	*ze = e[0];
+    if (se)
+	*se = e[1];
 }

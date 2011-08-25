@@ -1,6 +1,6 @@
 /*
   zip_dirent.c -- read directory entry (local or central), clean dirent
-  Copyright (C) 1999-2008 Dieter Baron and Thomas Klausner
+  Copyright (C) 1999-2009 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <libzip@nih.at>
@@ -45,7 +45,6 @@
 static time_t _zip_d2u_time(int, int);
 static char *_zip_readfpstr(FILE *, unsigned int, int, struct zip_error *);
 static char *_zip_readstr(unsigned char **, int, int, struct zip_error *);
-static void _zip_u2d_time(time_t, unsigned short *, unsigned short *);
 static void _zip_write2(unsigned short, FILE *);
 static void _zip_write4(unsigned int, FILE *);
 
@@ -213,13 +212,13 @@ _zip_dirent_init(struct zip_dirent *de)
 
 int
 _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
-				 unsigned char **bufp, unsigned int *leftp, int local,
+		 unsigned char **bufp, zip_uint32_t *leftp, int local,
 				 struct zip_error *error)
 {
     unsigned char buf[CDENTRYSIZE];
     unsigned char *cur;
     unsigned short dostime, dosdate;
-    unsigned int size;
+    zip_uint32_t size;
 
     if (local)
 		size = LENTRYSIZE;
@@ -244,10 +243,10 @@ _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
 		cur = buf;
     }
 
-    //if (memcmp(cur, (local ? LOCAL_MAGIC : CENTRAL_MAGIC), 4) != 0) {
-	//	_zip_error_set(error, ZIP_ER_NOZIP, 0);
-	//	return -1;
-    //}
+    if (memcmp(cur, (local ? LOCAL_MAGIC : CENTRAL_MAGIC), 4) != 0) {
+	_zip_error_set(error, ZIP_ER_NOZIP, 0);
+	return -1;
+    }
     cur += 4;
 
     
@@ -262,11 +261,9 @@ _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
     zde->comp_method = _zip_read2(&cur);
     
     /* convert to time_t */
-    // dostime = _zip_read2(&cur);
-    // dosdate = _zip_read2(&cur);
-    cur += 4;
-
-    zde->last_mod = 0 ;//_zip_d2u_time(dostime, dosdate);
+    dostime = _zip_read2(&cur);
+    dosdate = _zip_read2(&cur);
+    zde->last_mod = _zip_d2u_time(dostime, dosdate);
     
     zde->crc = _zip_read4(&cur);
     zde->comp_size = _zip_read4(&cur);
@@ -277,16 +274,15 @@ _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
     
     if (local) {
 		zde->comment_len = 0;
-		// zde->disk_number = 0;
-		// zde->int_attrib = 0;
-		// zde->ext_attrib = 0;
+	zde->disk_number = 0;
+	zde->int_attrib = 0;
+	zde->ext_attrib = 0;
 		zde->offset = 0;
     } else {
 		zde->comment_len = _zip_read2(&cur);
-		//zde->disk_number = _zip_read2(&cur);
-		// zde->int_attrib = _zip_read2(&cur);
-		// zde->ext_attrib = _zip_read4(&cur);
-		cur += 8;
+	zde->disk_number = _zip_read2(&cur);
+	zde->int_attrib = _zip_read2(&cur);
+	zde->ext_attrib = _zip_read4(&cur);
 		zde->offset = _zip_read4(&cur);
     }
 
@@ -294,7 +290,7 @@ _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
     zde->extrafield = NULL;
     zde->comment = NULL;
 
-    size += zde->filename_len; //+zde->extrafield_len+zde->comment_len;
+    size += zde->filename_len+zde->extrafield_len+zde->comment_len;
 
     if (leftp && (*leftp < size)) {
 		_zip_error_set(error, ZIP_ER_NOZIP, 0);
@@ -304,41 +300,41 @@ _zip_dirent_read(struct zip_dirent *zde, FILE *fp,
     if (bufp) {
 		if (zde->filename_len) {
 		    zde->filename = _zip_readstr(&cur, zde->filename_len, 1, error);
-		    // if (!zde->filename)
-			//	    return -1;
+	    if (!zde->filename)
+		    return -1;
 		}
 
 		if (zde->extrafield_len) {
 		    zde->extrafield = _zip_readstr(&cur, zde->extrafield_len, 0,
 										   error);
-		   // if (!zde->extrafield)
-			//	return -1;
+	    if (!zde->extrafield)
+		return -1;
 		}
 
 		if (zde->comment_len) {
 		    zde->comment = _zip_readstr(&cur, zde->comment_len, 0, error);
-		   // if (!zde->comment)
-			//	return -1;
+	    if (!zde->comment)
+		return -1;
 		}
     }
     else {
 		if (zde->filename_len) {
 		    zde->filename = _zip_readfpstr(fp, zde->filename_len, 1, error);
-		    //if (!zde->filename)
-			//	    return -1;
+	    if (!zde->filename)
+		    return -1;
 		}
 
 		if (zde->extrafield_len) {
 		    zde->extrafield = _zip_readfpstr(fp, zde->extrafield_len, 0,
 										     error);
-		    //if (!zde->extrafield)
-			//	return -1;
+	    if (!zde->extrafield)
+		return -1;
 		}
 
 		if (zde->comment_len) {
 		    zde->comment = _zip_readfpstr(fp, zde->comment_len, 0, error);
-		    //if (!zde->comment)
-			//	return -1;
+	    if (!zde->comment)
+		return -1;
 		}
     }
 
@@ -478,7 +474,7 @@ _zip_d2u_time(int dtime, int ddate)
 {
     struct tm tm;
 
-    memset(&tm, sizeof(tm), 0);
+    memset(&tm, 0, sizeof(tm));
     
     /* let mktime decide if DST is in effect */
     tm.tm_isdst = -1;
@@ -603,7 +599,7 @@ _zip_write4(unsigned int i, FILE *fp)
 
 
 
-static void
+void
 _zip_u2d_time(time_t time, unsigned short *dtime, unsigned short *ddate)
 {
     struct tm *tm;

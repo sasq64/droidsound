@@ -1,6 +1,6 @@
 /*
-  zip_free.c -- free struct zip
-  Copyright (C) 1999-2007 Dieter Baron and Thomas Klausner
+  zip_get_encryption_implementation.c -- get encryption implementation
+  Copyright (C) 2009 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <libzip@nih.at>
@@ -33,51 +33,14 @@
 
 
 
-#include <stdlib.h>
-
 #include "zipint.h"
 
 
 
-/* _zip_free:
-   frees the space allocated to a zipfile struct, and closes the
-   corresponding file. */
-
-void
-_zip_free(struct zip *za)
+ZIP_EXTERN zip_encryption_implementation
+zip_get_encryption_implementation(zip_uint16_t em)
 {
-    int i;
-
-    if (za == NULL)
-	return;
-
-    if (za->zn)
-	free(za->zn);
-
-    if (za->zp)
-	fclose(za->zp);
-    free(za->default_password);
-
-    _zip_cdir_free(za->cdir);
-    free(za->ch_comment);
-
-    if (za->entry) {
-	for (i=0; i<za->nentry; i++) {
-	    _zip_entry_free(za->entry+i);
-	}
-	free(za->entry);
-    }
-
-    for (i=0; i<za->nfile; i++) {
-	if (za->file[i]->error.zip_err == ZIP_ER_OK) {
-	    _zip_error_set(&za->file[i]->error, ZIP_ER_ZIPCLOSED, 0);
-	    za->file[i]->za = NULL;
-	}
-    }
-
-    free(za->file);
-    
-    free(za);
-
-    return;
+    if (em == ZIP_EM_TRAD_PKWARE)
+	return zip_source_pkware;
+    return NULL;
 }

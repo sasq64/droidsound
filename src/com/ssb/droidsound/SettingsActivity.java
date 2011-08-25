@@ -213,6 +213,13 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 			p.setTitle("Icons");
 			p.setSummary("G-Flat SVG by poptones");		
 			abScreen.addPreference(p);
+			
+			p = new Preference(this);
+			p.setTitle("Libzip (Mercurial Rev. 972");
+			p.setSummary("by Not Invented Here");
+			abScreen.addPreference(p);
+			
+			
 		}
 
 	}

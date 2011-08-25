@@ -1,6 +1,6 @@
 /*
-  zip_open.c -- open zip archive
-  Copyright (C) 1999-2008 Dieter Baron and Thomas Klausner
+  zip_open.c -- open zip archive by name
+  Copyright (C) 1999-2011 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <libzip@nih.at>
@@ -31,7 +31,7 @@
   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
+
 
 #include <sys/stat.h>
 #include <errno.h>
@@ -52,34 +52,16 @@ static int _zip_headercomp(struct zip_dirent *, int,
 						   struct zip_dirent *, int);
 static unsigned char *_zip_memmem(const unsigned char *, int,
 								  const unsigned char *, int);
-static struct zip_cdir *_zip_readcdir(FILE *, unsigned char *, unsigned char *,
+static struct zip_cdir *_zip_readcdir(FILE *, off_t, unsigned char *, unsigned char *,
 								 int, int, struct zip_error *);
 
 
-static struct zip_entry *
-_zip_entry_new2(struct zip *za)
-{
-	struct zip_entry *ze = za->entry+za->nentry;
-
-	ze->state = ZIP_ST_UNCHANGED;
-	ze->ch_filename = NULL;
-	ze->ch_comment = NULL;
-	ze->ch_comment_len = -1;
-	ze->source = NULL;
-	za->nentry++;
-
-	return ze;
-}
 
 
 ZIP_EXTERN struct zip *
 zip_open(const char *fn, int flags, int *zep)
 {
 	FILE *fp;
-	struct zip *za;
-	struct zip_cdir *cdir;
-	int i;
-	off_t len;
 
 	switch (_zip_file_exists(fn, flags, zep)) {
 	case -1:
@@ -96,9 +78,24 @@ zip_open(const char *fn, int flags, int *zep)
 	}
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "FILE OPENED");
+    return _zip_open(fn, fp, flags, 0, zep);
+}
 
 
-	fseeko(fp, 0, SEEK_END);
+
+struct zip *
+_zip_open(const char *fn, FILE *fp, int flags, int aflags, int *zep)
+{
+    struct zip *za;
+    struct zip_cdir *cdir;
+    int i;
+    off_t len;
+
+    if (fseeko(fp, 0, SEEK_END) < 0) {
+	*zep = ZIP_ER_SEEK;
+	return NULL;
+    }
+
 	len = ftello(fp);
 
 	/* treat empty files as empty archives */
@@ -141,12 +138,11 @@ zip_open(const char *fn, int flags, int *zep)
 		return NULL;
 	}
 
-	za->nentry_alloc = cdir->nentry;
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "FILLING ENTRIES");
 
 	for (i=0; i<cdir->nentry; i++)
-		_zip_entry_new2(za);
+		_zip_entry_new(za);
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "CHECK TORRENTZIP");
 
@@ -158,7 +154,7 @@ zip_open(const char *fn, int flags, int *zep)
 	return za;
 }
 
-
+
 
 static void
 set_error(int *zep, struct zip_error *err, int ze)
@@ -175,7 +171,7 @@ set_error(int *zep, struct zip_error *err, int ze)
 		*zep = ze;
 }
 
-
+
 
 /* _zip_readcdir:
    tries to find a valid end-of-central-directory at the beginning of
@@ -184,13 +180,13 @@ set_error(int *zep, struct zip_error *err, int ze)
    entries, or NULL if unsuccessful. */
 
 static struct zip_cdir *
-_zip_readcdir(FILE *fp, unsigned char *buf, unsigned char *eocd, int buflen,
+_zip_readcdir(FILE *fp, off_t buf_offset, unsigned char *buf, unsigned char *eocd, int buflen,
 			  int flags, struct zip_error *error)
 {
 	struct zip_cdir *cd;
 	unsigned char *cdp, **bufp;
 	int i, comlen, nentry;
-	unsigned int left;
+	zip_uint32_t left;
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "Trying to read CDIR from offset %d", ftell(fp));
 
@@ -225,15 +221,24 @@ _zip_readcdir(FILE *fp, unsigned char *buf, unsigned char *eocd, int buflen,
 	cd->offset = _zip_read4(&cdp);
 	cd->comment = NULL;
 	cd->comment_len = _zip_read2(&cdp);
+    if (cd->offset+cd->size > buf_offset + (eocd-buf)) {
+	/* cdir spans past EOCD record */
+	_zip_error_set(error, ZIP_ER_INCONS, 0);
+	cd->nentry = 0;
+	_zip_cdir_free(cd);
+	return NULL;
+    }
 
 	if ((comlen < cd->comment_len) || (cd->nentry != i)) {
 		_zip_error_set(error, ZIP_ER_NOZIP, 0);
-		free(cd);
+	cd->nentry = 0;
+	_zip_cdir_free(cd);
 		return NULL;
 	}
 	if ((flags & ZIP_CHECKCONS) && comlen != cd->comment_len) {
 		_zip_error_set(error, ZIP_ER_INCONS, 0);
-		free(cd);
+	cd->nentry = 0;
+	_zip_cdir_free(cd);
 		return NULL;
 	}
 
@@ -241,14 +246,15 @@ _zip_readcdir(FILE *fp, unsigned char *buf, unsigned char *eocd, int buflen,
 		if ((cd->comment=(char *)_zip_memdup(eocd+EOCDLEN,
 											 cd->comment_len, error))
 			== NULL) {
-			free(cd);
+	    cd->nentry = 0;
+	    _zip_cdir_free(cd);
 			return NULL;
 		}
 	}
 
-	if (cd->size < (unsigned int)(eocd-buf)) {
+    if (cd->offset >= buf_offset) {
 		/* if buffer already read in, use it */
-		cdp = eocd - cd->size;
+	cdp = buf + (cd->offset - buf_offset);
 		bufp = &cdp;
 	}
 	else {
@@ -264,35 +270,38 @@ _zip_readcdir(FILE *fp, unsigned char *buf, unsigned char *eocd, int buflen,
 				_zip_error_set(error, ZIP_ER_SEEK, errno);
 			else
 				_zip_error_set(error, ZIP_ER_NOZIP, 0);
-			free(cd);
+	    cd->nentry = 0;
+	    _zip_cdir_free(cd);
 			return NULL;
 		}
 	}
 
 	left = cd->size;
 	i=0;
-	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "Reading %d zipentries", cd->nentry);
-	do {
+    while (i<cd->nentry && left > 0) {
+	if ((_zip_dirent_read(cd->entry+i, fp, bufp, &left, 0, error)) < 0) {
+	    cd->nentry = i;
+	    _zip_cdir_free(cd);
+	    return NULL;
+	}
+	i++;
 		if (i == cd->nentry && left > 0) {
 			/* Infozip extension for more than 64k entries:
 			   nentries wraps around, size indicates correct EOCD */
-			_zip_cdir_grow(cd, cd->nentry+0x10000, error);
-		}
-
-		if ((_zip_dirent_read(cd->entry+i, fp, bufp, &left, 0, error)) < 0) {
+	    if (_zip_cdir_grow(cd, cd->nentry+ZIP_UINT16_MAX, error) < 0) {
 			cd->nentry = i;
 			_zip_cdir_free(cd);
 			return NULL;
 		}
-		i++;
-
-	} while (i<cd->nentry);
+	}
+    }
+    cd->nentry = i;
 	__android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "DONE");
 	
 	return cd;
 }
 
-
+
 
 /* _zip_checkcons:
    Checks the consistency of the central directory by comparing central
@@ -350,7 +359,7 @@ _zip_checkcons(FILE *fp, struct zip_cdir *cd, struct zip_error *error)
 	return max - min;
 }
 
-
+
 
 /* _zip_check_torrentzip:
    check wether ZA has a valid TORRENTZIP comment, i.e. is torrentzipped */
@@ -385,7 +394,7 @@ _zip_check_torrentzip(struct zip *za)
 }
 
 
-
+
 
 /* _zip_headercomp:
    compares two headers h1 and h2; if they are local headers, set
@@ -454,7 +463,7 @@ _zip_headercomp(struct zip_dirent *h1, int local1p, struct zip_dirent *h2,
 	return 0;
 }
 
-
+
 
 static struct zip *
 _zip_allocate_new(const char *fn, int *zep)
@@ -466,6 +475,9 @@ _zip_allocate_new(const char *fn, int *zep)
 		set_error(zep, &error, 0);
 		return NULL;
 	}
+    if (fn == NULL)
+	za->zn = NULL;
+    else {
 
 	za->zn = strdup(fn);
 	if (!za->zn) {
@@ -473,10 +485,11 @@ _zip_allocate_new(const char *fn, int *zep)
 		set_error(zep, NULL, ZIP_ER_MEMORY);
 		return NULL;
 	}
+    }
 	return za;
 }
 
-
+
 
 static int
 _zip_file_exists(const char *fn, int flags, int *zep)
@@ -506,13 +519,14 @@ _zip_file_exists(const char *fn, int flags, int *zep)
 	return 1;
 }
 
-
+
 
 static struct zip_cdir *
 _zip_find_central_dir(FILE *fp, int flags, int *zep, off_t len)
 {
 	struct zip_cdir *cdir, *cdirnew;
 	unsigned char *buf, *match;
+    off_t buf_offset;
 	int a, best, buflen, i;
 	struct zip_error zerr;
 
@@ -522,6 +536,7 @@ _zip_find_central_dir(FILE *fp, int flags, int *zep, off_t len)
 		set_error(zep, NULL, ZIP_ER_SEEK);
 		return NULL;
 	}
+    buf_offset = ftello(fp);
 
 	/* 64k is too much for stack */
 	if ((buf=(unsigned char *)malloc(CDBUFSIZE)) == NULL) {
@@ -548,7 +563,7 @@ _zip_find_central_dir(FILE *fp, int flags, int *zep, off_t len)
 		/* found match -- check, if good */
 		/* to avoid finding the same match all over again */
 		match++;
-		if ((cdirnew=_zip_readcdir(fp, buf, match-1, buflen, flags,
+	if ((cdirnew=_zip_readcdir(fp, buf_offset, buf, match-1, buflen, flags,
 								   &zerr)) == NULL)
 			continue;
 
@@ -585,7 +600,7 @@ _zip_find_central_dir(FILE *fp, int flags, int *zep, off_t len)
 	return cdir;
 }
 
-
+
 
 static unsigned char *
 _zip_memmem(const unsigned char *big, int biglen, const unsigned char *little, 
