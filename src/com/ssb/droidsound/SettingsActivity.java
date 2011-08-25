@@ -215,7 +215,7 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 			abScreen.addPreference(p);
 			
 			p = new Preference(this);
-			p.setTitle("Libzip (Mercurial Rev. 972");
+			p.setTitle("Libzip (Mercurial Rev. 972)");
 			p.setSummary("by Not Invented Here");
 			abScreen.addPreference(p);
 			
