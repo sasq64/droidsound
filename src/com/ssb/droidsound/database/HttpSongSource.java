@@ -2,6 +2,7 @@ package com.ssb.droidsound.database;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -283,11 +284,15 @@ final class HttpSongSource {
 				msg = "<Illegal URL>";
 				status = -3;
 				Log.d(TAG, "Illegal URL", me);
+			} catch (ConnectException me) {
+				msg = "<Connection Failed. Is WIFI turned on or configured?>";
+				status = -4;
+				Log.d(TAG, "Connection Failure. Is Wifi enabled and configured properly?" );
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				msg = "<IO Error>";
-				status = -4;
+				status = -5;
 			}
 			if(msg != null) {
 				cursor.addRow(new Object [] { msg, SongDatabase.TYPE_FILE, null, "" } );
