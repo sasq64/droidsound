@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 //import java.util.Arrays; not used?
 import java.util.Comparator;
@@ -285,14 +286,18 @@ final class HttpSongSource {
 				status = -3;
 				Log.d(TAG, "Illegal URL", me);
 			} catch (ConnectException me) {
-				msg = "<Connection Failed. Is WIFI turned on or configured?>";
+				msg = "<Connection Failed. Is Wifi turned on or configured?>";
 				status = -4;
-				Log.d(TAG, "Connection Failure. Is Wifi enabled and configured properly?" );
+				Log.d(TAG, "Connection Failure. Is Wifi enabled and configured properly?");
+			} catch (UnknownHostException me) {
+				msg = "Unable to resolve host. Is Wifi enabled and configured properly?";
+				status = -5;
+				Log.d(TAG, "Unable to resolve host. Is Wifi enabled and configured properly?");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				msg = "<IO Error>";
-				status = -5;
+				status = -6;
 			}
 			if(msg != null) {
 				cursor.addRow(new Object [] { msg, SongDatabase.TYPE_FILE, null, "" } );
@@ -340,7 +345,7 @@ final class HttpSongSource {
 
 		httpWorker.getDir(pathName);
 		MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
-		cursor.addRow(new Object [] { "<Working>", SongDatabase.TYPE_FILE, null, "" } );
+		cursor.addRow(new Object [] { "<Loading...>", SongDatabase.TYPE_FILE, null, "" } );
 		return cursor;
 	}
 }
