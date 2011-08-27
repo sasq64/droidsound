@@ -6,7 +6,7 @@ public final class SongFile {
 
 	public static final String TAG = SongFile.class.getSimpleName();
 	
-	private int subtune;
+	private int subtune;		//Subtunes of a file being played (depends if format supports subtunes)
 	private int playtime;		//Duration track plays for
 	private String fileName;	//Name of file.
 	private File file;			//Actual file itself.
@@ -219,7 +219,9 @@ public final class SongFile {
 	public final String getParent() {
 		return protocol + file.getParent();
 	}
-
+	
+	//Checks if the file is actually a directory, and 
+	//not to be played back, but browsed instead (ie. ZIP files).
 	public final boolean isDirectory() {
 		return file.isDirectory();
 	}

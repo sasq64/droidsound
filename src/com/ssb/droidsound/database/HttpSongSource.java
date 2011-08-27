@@ -9,7 +9,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-//import java.util.Arrays; not used?
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -206,7 +206,8 @@ final class HttpSongSource {
 								 return n0.compareTo(n1);
 							}
 						 };
-						//Arrays.sort(links, comparator);
+						 
+						 Arrays.sort(links, comparator);
 						 /*for(int i=0; i<links.length; i++) {
 							 TagNode atag = (TagNode) links[i];
 							 String href = atag.getAttributeByName("href");
@@ -306,6 +307,7 @@ final class HttpSongSource {
 			 synchronized (dirMap) {
 				 dirMap.put(pathName, new CacheEntry(cursor, status));
 			 }
+			 
 			Intent intent = new Intent("com.sddb.droidsound.REQUERY");
 			context.sendBroadcast(intent);
 		}
@@ -335,7 +337,7 @@ final class HttpSongSource {
 		if(httpThread == null) {
 			httpWorker = new HTTPWorker(ctx);
 			httpThread = new Thread(httpWorker);
-			httpThread.setName("HTTPSongSource-HTTPWorkerThread");
+			httpThread.setName("HTTPSongSource-HTTPWorkerThread"); //Name of the processing thread specific to this class file.
 			httpThread.start();
 			try {
 				Thread.sleep(300);

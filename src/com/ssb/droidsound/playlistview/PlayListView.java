@@ -11,9 +11,6 @@ import com.ssb.droidsound.utils.Log;
 
 /**
  * A ListView that lists songfiles.
- *
- *
- *
  */
 public final class PlayListView extends ListView { //extends TouchListView {
 	private static final String TAG = "PlayListView";
