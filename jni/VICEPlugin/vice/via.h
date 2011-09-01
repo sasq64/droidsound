@@ -2,7 +2,7 @@
  * via.h - VIA emulation.
  *
  * Written by
- *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -164,9 +164,12 @@ extern BYTE viacore_read(struct via_context_s *via_context,
 extern BYTE viacore_peek(struct via_context_s *via_context,
                                   WORD addr);
 
+extern void viacore_set_sr(via_context_t *via_context, BYTE data);
+
 extern int viacore_snapshot_write_module(struct via_context_s *via_context,
                                          struct snapshot_s *s);
 extern int viacore_snapshot_read_module(struct via_context_s *via_context,
                                         struct snapshot_s *s);
 extern int viacore_dump(via_context_t *via_context);
 #endif
+
