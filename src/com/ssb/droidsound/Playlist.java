@@ -337,9 +337,9 @@ private final class MyCursor extends AbstractCursor implements EditableCursor {
 		}
 
 		if(title != null) {
-			s = s + "\t" + title;
+			s += "\t" + title;
 			if(composer != null) {
-				s = s + "\t" + composer;
+				s += "\t" + composer;
 			}
 		}
 
@@ -391,9 +391,9 @@ private final class MyCursor extends AbstractCursor implements EditableCursor {
 			}
 
 			if(title != null) {
-				line = line + "\t" + title;
+				line += "\t" + title;
 				if(composer != null) {
-					line = line + "\t" + composer;
+					line += "\t" + composer;
 				}
 			}
 

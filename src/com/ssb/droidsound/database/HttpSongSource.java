@@ -253,7 +253,7 @@ final class HttpSongSource {
                              String title = htmlFix(text);
                              String fileName = htmlFix(href);
 
-                             if (!fileName.startsWith("/") && !fileName.startsWith("?")) {
+                             if ((fileName.length() == 0 || fileName.charAt(0) != '/') && (fileName.length() == 0 || fileName.charAt(0) != '?')) {
                                  int type = SongDatabase.TYPE_FILE;
                                  if (fileName.endsWith("/")) {
                                      if (title.endsWith("/")) {
@@ -319,7 +319,7 @@ final class HttpSongSource {
 		Log.d(TAG, "PATH '%s'", pathName);
 
 		if(!pathName.endsWith("/")) {
-			pathName = pathName + "/";
+			pathName += "/";
 		}
 		CacheEntry ce = null;
 		synchronized (dirMap) {
