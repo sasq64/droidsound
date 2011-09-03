@@ -267,7 +267,7 @@ public abstract class DroidSoundPlugin {
 	// "Channels" - Number of channels
 	// "Copyright" - Same as INFO_COPYRIGHT
 	// "Game" - Same as INFO_GAME
-	private static String[] zeroLengthArray = new String[0];  //Returning zero-length arrays in an arrayed method is more performant
+	private static final String[] zeroLengthArray = new String[0];  //Returning zero-length arrays in an arrayed method is more performant
 	public String [] getDetailedInfo() {
 		return zeroLengthArray;
 	}
