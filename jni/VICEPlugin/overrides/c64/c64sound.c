@@ -27,6 +27,7 @@
 #include "vice.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "c64io.h"
@@ -36,13 +37,13 @@
 #include "sound.h"
 #include "types.h"
 
-static BYTE REGPARM1 machine_sid2_read(WORD addr)
+static BYTE machine_sid2_read(WORD addr)
 {
     return sid2_read(addr);
 }
 
 
-static void REGPARM2 machine_sid2_store(WORD addr, BYTE byte)
+static void machine_sid2_store(WORD addr, BYTE byte)
 {
     sid2_store(addr, byte);
 }
@@ -50,13 +51,17 @@ static void REGPARM2 machine_sid2_store(WORD addr, BYTE byte)
 /* ---------------------------------------------------------------------*/
 
 static io_source_t stereo_sid_device = {
-    "STEREO SID",
+    "Stereo SID",
     IO_DETACH_RESOURCE,
     "SidStereo",
     0xde00, 0xde1f, 0x1f,
     1, /* read is always valid */
     machine_sid2_store,
-    machine_sid2_read
+    machine_sid2_read,
+    NULL, /* TODO: peek */
+    NULL, /* TODO: dump */
+    0,
+    0,
 };
 
 static io_source_list_t *stereo_sid_list_item = NULL;
@@ -69,10 +74,9 @@ static io_source_t *current_device = NULL;
 int machine_sid2_check_range(unsigned int sid2_adr)
 {
     if (machine_class == VICE_MACHINE_C128) {
-        if ((sid2_adr >= 0xd400/*0xde00*/ && sid2_adr <= 0xdfe0) || (sid2_adr >= 0xd700 && sid2_adr <= 0xdfe0)) {
+        if ((sid2_adr >= 0xd400 && sid2_adr <= 0xd4e0) || (sid2_adr >= 0xd700 && sid2_adr <= 0xdfe0)) {
         stereo_sid_device.start_address = sid2_adr;
         stereo_sid_device.end_address = sid2_adr + 0x1f;
-        current_device = &stereo_sid_device;
         if (stereo_sid_list_item != NULL) {
             io_source_unregister(stereo_sid_list_item);
             stereo_sid_list_item = io_source_register(&stereo_sid_device);
@@ -104,9 +108,7 @@ int machine_sid2_check_range(unsigned int sid2_adr)
 void machine_sid2_enable(int val)
 {
     if (val) {
-        if (current_device != NULL) {
             stereo_sid_list_item = io_source_register(&stereo_sid_device);
-        }
     } else {
         if (stereo_sid_list_item != NULL) {
             io_source_unregister(stereo_sid_list_item);
