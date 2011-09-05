@@ -81,7 +81,6 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandl
 				ext |= toupper(ptr[i+1]);
 			}
 
-
 			switch(ext)
 			{
 			case 'MOD ':
@@ -97,7 +96,6 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandl
 			}
 		}
 	}
-
 	return ok;
 }
 
