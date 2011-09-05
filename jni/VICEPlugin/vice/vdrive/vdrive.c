@@ -9,7 +9,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -247,6 +247,8 @@ void vdrive_detach_image(disk_image_t *image, unsigned int unit,
 
     disk_image_detach_log(image, vdrive_log, unit);
     vdrive_close_all_channels(vdrive);
+    lib_free(vdrive->bam);
+    vdrive->bam = NULL;
     vdrive->image = NULL;
 }
 
@@ -261,40 +263,49 @@ int vdrive_attach_image(disk_image_t *image, unsigned int unit,
       case DISK_IMAGE_TYPE_D64:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_1541;
         vdrive->num_tracks  = image->tracks;
+        vdrive->bam_size = 0x100;
         break;
       case DISK_IMAGE_TYPE_D67:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_2040;
         vdrive->num_tracks  = image->tracks;
+        vdrive->bam_size = 0x100;
         break;
       case DISK_IMAGE_TYPE_D71:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_1571;
         vdrive->num_tracks  = image->tracks;
+        vdrive->bam_size = 0x200;
         break;
       case DISK_IMAGE_TYPE_D81:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_1581;
         vdrive->num_tracks  = image->tracks;
+        vdrive->bam_size = 0x300;
         break;
       case DISK_IMAGE_TYPE_D80:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_8050;
         vdrive->num_tracks  = image->tracks;
+        vdrive->bam_size = 0x500;
         break;
       case DISK_IMAGE_TYPE_D82:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_8250;
         vdrive->num_tracks = image->tracks;
+        vdrive->bam_size = 0x500;
         break;
       case DISK_IMAGE_TYPE_G64:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_1541;
         vdrive->num_tracks = 35;
+        vdrive->bam_size = 0x100;
         break;
       case DISK_IMAGE_TYPE_X64:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_1541;
         vdrive->num_tracks = image->tracks;
+        vdrive->bam_size = 0x100;
         break;
       case DISK_IMAGE_TYPE_D1M:
       case DISK_IMAGE_TYPE_D2M:
       case DISK_IMAGE_TYPE_D4M:
         vdrive->image_format = VDRIVE_IMAGE_FORMAT_1992;
         vdrive->num_tracks = image->tracks - 1;
+        vdrive->bam_size = 0x2100;
         break;
       default:
         return -1;
@@ -304,6 +315,7 @@ int vdrive_attach_image(disk_image_t *image, unsigned int unit,
     vdrive_set_disk_geometry(vdrive);
 
     vdrive->image = image;
+    vdrive->bam = lib_malloc(vdrive->bam_size);
 
     if (vdrive_bam_read_bam(vdrive)) {
         log_error(vdrive_log, "Cannot access BAM.");
@@ -404,4 +416,3 @@ void vdrive_set_last_read(unsigned int track, unsigned int sector,
     last_read_sector = sector;
     memcpy(last_read_buffer, buffer, 256);
 }
-

@@ -10,7 +10,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -425,7 +425,7 @@ static int mystrncpy(BYTE *d, BYTE *s, int n)
 void vdrive_bam_create_empty_bam(vdrive_t *vdrive, const char *name, BYTE *id)
 {
     /* Create Disk Format for 1541/1571/1581/2040/1992 disks.  */
-    memset(vdrive->bam, 0, BAM_MAXSIZE);
+    memset(vdrive->bam, 0, vdrive->bam_size);
     if (vdrive->image_format != VDRIVE_IMAGE_FORMAT_8050
         && vdrive->image_format != VDRIVE_IMAGE_FORMAT_8250) {
         vdrive->bam[0] = vdrive->Dir_Track;
@@ -820,4 +820,3 @@ unsigned int vdrive_bam_free_block_count(vdrive_t *vdrive)
     }
     return blocks;
 }
-
