@@ -239,7 +239,7 @@ public final class SongFile {
 		return sfiles;
 	}
 
-	public final void delete() {
-		 file.delete();
+	public final boolean delete() {
+		 return file.delete();
 	}
 }

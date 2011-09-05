@@ -339,12 +339,12 @@ void REGPARM2 roml_store(WORD addr, BYTE value)
 {
 }
 
-static BYTE REGPARM1 romh_read_slot1(WORD addr)
+static BYTE romh_read_slot1(WORD addr)
 {
     return vicii_read_phi1();
 }
 
-BYTE REGPARM1 romh_read(WORD addr)
+static BYTE romh_read(WORD addr)
 {
     return romh_read_slot1(addr);
 }

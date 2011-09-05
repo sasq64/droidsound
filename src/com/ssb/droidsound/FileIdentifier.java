@@ -351,11 +351,10 @@ public final class FileIdentifier {
 						}
 					}
 					return info;
-
 				} else {
 					return null;
 				}
-
+				
 			case TYPE_MOD:
 				data = new byte [0x480];
 				is.read(data);

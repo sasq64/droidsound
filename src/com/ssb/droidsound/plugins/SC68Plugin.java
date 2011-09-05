@@ -150,6 +150,7 @@ public final class SC68Plugin extends DroidSoundPlugin {
 			int offset = 16;
 			boolean done = false;
 			
+			
 			while(offset < 1024) {
 				String tag = new String(data, offset, 4);
 				//Log.d(TAG, "TAG: %s", tag);
