@@ -20,7 +20,7 @@ void autostart_reinit(CLOCK _min_cycles, int _handle_drive_true_emulation,
 {
 }
 
-int autostart_init(CLOCK min_cycles, int handle_drive_true_emulation,
+int autostart_init(CLOCK _min_cycles, int handle_drive_true_emulation,
                    int blnsw, int pnt, int pntr, int lnmx)
 {
     return 0;
