@@ -26,6 +26,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
@@ -42,15 +43,20 @@ import android.text.Html;
 import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
 import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.widget.AdapterView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -115,10 +121,15 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 
 	static SongDatabase songDatabase = null;
+	private static Thread dbThread = null;
 
     private PlayerServiceConnection player;
 
 	private ImageButton playButton;
+	private ImageButton backButton;
+	private ImageButton fwdButton;
+	private ImageButton stopButton;
+	private ImageButton goinfoButton;
     private ImageButton searchButton;
 
 	private ViewFlipper flipper;
@@ -133,6 +144,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 	// private ViewFlipper seekFlipper;
 	private SeekBar songSeeker;
+	private OnItemClickListener listClickListener;
 
     private int sortOrder;
 
@@ -147,6 +159,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 	private SharedPreferences prefs;
 
 	private int searchDirDepth;
+	private int songPos;
 
     private int subTune;
 	private int subTuneCount;
@@ -170,6 +183,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 	private String searchQuery;		//Search Query
 	private String dirTitle;		//Directory Title
 	private String dirSubTitle;		//Directory SubTitle
+	private String[] songDetails;
     //private String indexSetting;
 
 	private static final int TTS_UNCHECKED = -1000;
@@ -190,13 +204,14 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 	private TextView shuffleText;
 
-	private boolean shuffleSongs;
+	protected boolean shuffleSongs;
 
 	private LinearLayout titleBar;
 
 	private TextView repeatText;
 
 	private int songRepeat;
+	private TextView plusText;
 
     private TextView wakeText;
 
@@ -209,7 +224,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 	private File moveFileHere;		
 
-	public int operationTune;
+	private int operationTune;
 
 	private String operationTitle;
 
@@ -219,7 +234,8 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 	private int foundVersion;
 
-	private boolean dialogShowing;
+	protected boolean dialogShowing;
+	private TextView lowText;
 
     private Method startTrackingMethod;
 
@@ -233,22 +249,18 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 	private TextView toneLenText;
 
-	private boolean toneHQ = false;						//HQ Box when making a ringtone.
-	private String toneName = "Droidsound Ringtone";	//Default name for a ringtone.
-	private boolean toneSet = true;
+	protected boolean toneHQ = false;						//HQ Box when making a ringtone.
+	protected String toneName = "Droidsound Ringtone";	//Default name for a ringtone.
+	protected boolean toneSet = true;
 
-	private int toneLength = 2;		//Duration of the ringtone.
+	protected int toneLength = 2;		//Duration of the ringtone.
 
 	private TextView toneNameText;
-	private static final Class[] startTrackingSignature = {};
+	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
-		try{
 			Log.d(TAG, "########## Activity finalize");
-		} finally {		
-			super.finalize();
-		}
-    }
+	};
 
 	private void setDirectory(String path, PlayListView plv) {
 
@@ -338,7 +350,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				File f = new File(url.getPath());
 				String newPath = f.getParent();
 
-				Log.d(TAG, "Parent path %s", (newPath == null) ? "null" : newPath);
+				Log.d(TAG, "Parent path %s", newPath == null ? "null" : newPath);
 
 
 				if(newPath == null) {
@@ -484,8 +496,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			titleBar.setBackgroundColor(0xff000080);
 
 			break;
-		default:
-			break;
 		}
 
 	}
@@ -590,15 +600,15 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 		setContentView(R.layout.player);
 		flipper = (ViewFlipper) findViewById(R.id.flipper);
-        ImageButton goinfoButton = (ImageButton) findViewById(R.id.go_info_button);
+		goinfoButton = (ImageButton) findViewById(R.id.go_info_button);
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 		titleBar = (LinearLayout) findViewById(R.id.title_bar);
 
 
 		playButton = (ImageButton) findViewById(R.id.play_button);
-        ImageButton backButton = (ImageButton) findViewById(R.id.back_button);
-        ImageButton fwdButton = (ImageButton) findViewById(R.id.fwd_button);
-        ImageButton stopButton = (ImageButton) findViewById(R.id.stop_button);
+		backButton = (ImageButton) findViewById(R.id.back_button);
+		fwdButton = (ImageButton) findViewById(R.id.fwd_button);
+		stopButton = (ImageButton) findViewById(R.id.stop_button);
 		infoText = (TextView) findViewById(R.id.info_text);
 
 		infoText.setMovementMethod(ScrollingMovementMethod.getInstance());
@@ -617,10 +627,10 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 		shuffleText = (TextView) findViewById(R.id.shuffle_text);
 		repeatText = (TextView) findViewById(R.id.repeat_text);
-        TextView plusText = (TextView) findViewById(R.id.plus_text);
+		plusText = (TextView) findViewById(R.id.plus_text);
 		wakeText = (TextView) findViewById(R.id.wake_text);
 
-        TextView lowText = (TextView) findViewById(R.id.low_text);
+		lowText = (TextView) findViewById(R.id.low_text);
 
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 
@@ -655,19 +665,19 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			public void onReceive(Context context, Intent intent) {
 				// TODO Auto-generated method stub
 
-				if("com.sddb.droidsound.REQUERY".equals(intent.getAction())) {
+				if(intent.getAction().equals("com.sddb.droidsound.REQUERY")) {
 					Log.d(TAG, "REQUERY");
 					//playListView.rescan();
 					setDirectory(playListView);
 				}
-				else if("com.sddb.droidsound.OPEN_DONE".equals(intent.getAction())) {
+				else if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
 					Log.d(TAG, "Open done!");
 
 					String s = prefs.getString("indexing", "Basic");
 					int imode = SongDatabase.INDEX_BASIC;
-					if("Full".equals(s)) {
+					if(s.equals("Full")) {
 						imode = SongDatabase.INDEX_FULL;
-					} else if("None".equals(s)) {
+					} else if(s.equals("None")) {
 						imode = SongDatabase.INDEX_NONE;
 					}
 					songDatabase.setIndexMode(imode);
@@ -684,7 +694,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 					setDirectory(playListView);
 
 					// songDatabase.scan(false, modsDir);
-				} else if("com.sddb.droidsound.SCAN_DONE".equals(intent.getAction())) {
+				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_DONE")) {
 
 					if(progressDialog != null) {
 						progressDialog.cancel();
@@ -694,7 +704,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 					Log.d(TAG, "Scan done!");
 					setDirectory(playListView);
 					// playListView.rescan();
-				} else if("com.sddb.droidsound.SCAN_UPDATE".equals(intent.getAction())) {
+				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_UPDATE")) {
 					Log.d(TAG, "Scan update!");
 					checkProgressDialog();
 					if(progressDialog != null) {
@@ -808,7 +818,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		// songDatabase.setActivePlaylist(mf);
 		// }
 
-        AdapterView.OnItemClickListener listClickListener = new AdapterView.OnItemClickListener() {
+		listClickListener = new OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -876,21 +886,21 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		registerForContextMenu(playListView);
 		registerForContextMenu(searchListView);
 
-		goinfoButton.setOnClickListener(new View.OnClickListener() {
+		goinfoButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 flipTo(NEXT_VIEW);
             }
         });
 
-		searchButton.setOnClickListener(new View.OnClickListener() {
+		searchButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				onSearchRequested();
 			}
 		});
 
-		playButton.setOnClickListener(new View.OnClickListener() {
+		playButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 
@@ -902,14 +912,14 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			}
 		});
 
-		stopButton.setOnClickListener(new View.OnClickListener() {
+		stopButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 player.stop();
             }
         });
 
-		backButton.setOnClickListener(new View.OnClickListener() {
+		backButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (subTune == 0 || subTuneCount == 0) {
@@ -921,7 +931,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
             }
         });
 
-		backButton.setOnLongClickListener(new View.OnLongClickListener() {
+		backButton.setOnLongClickListener(new OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
                 player.playPrev();
@@ -929,7 +939,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
             }
         });
 
-		fwdButton.setOnClickListener(new View.OnClickListener() {
+		fwdButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "NEXT %d %d", subTune, subTuneCount);
@@ -942,7 +952,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
             }
         });
 
-		fwdButton.setOnLongClickListener(new View.OnLongClickListener() {
+		fwdButton.setOnLongClickListener(new OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
                 player.playNext();
@@ -952,7 +962,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 		player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, shuffleSongs ? "R" : "S");
 
-		shuffleText.setOnClickListener(new View.OnClickListener() {
+		shuffleText.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				shuffleSongs = !shuffleSongs;
@@ -961,7 +971,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			}
 		});
 
-		repeatText.setOnClickListener(new View.OnClickListener() {
+		repeatText.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				// shuffleSongs = !shuffleSongs;
@@ -974,7 +984,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			}
 		});
 
-		plusText.setOnClickListener(new View.OnClickListener() {
+		plusText.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
 
@@ -986,7 +996,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
                     operationTune = subTune;
                     operationTitle = null;
                     operationTuneCount = subTuneCount;
-                    Log.d(TAG, "%s - %s ADD", (songTitle != null) ? songTitle : "null", (subtuneTitle != null) ? subtuneTitle : "null");
+					Log.d(TAG, "%s - %s ADD", songTitle != null ? songTitle : "null", subtuneTitle != null ? subtuneTitle : "null");
                     if (songTitle != null && subtuneTitle != null) {
                         // operationTitle = songTitle + " - " + subtuneTitle;
                         operationTitle = subtuneTitle + " (" + songTitle + ")";
@@ -997,7 +1007,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
             }
         });
 
-		wakeText.setOnClickListener(new View.OnClickListener() {
+		wakeText.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				if(wakeLock.isHeld()) {
@@ -1010,9 +1020,9 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			}
 		});
 
-		titleBar.setOnClickListener(new View.OnClickListener() {
-
-			final int [] sortNames = { R.string.sort_name, R.string.sort_date, R.string.sort_author };
+		titleBar.setOnClickListener(new OnClickListener() {
+			
+			final int [] sortNames = new int [] { R.string.sort_name, R.string.sort_date, R.string.sort_author };
 
 			@Override
 			public void onClick(View v) {
@@ -1122,7 +1132,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			showDialog(R.string.create_moddir_failed);
 			dialogShowing = true;
 		} else {
-			SharedPreferences.Editor editor = prefs.edit();
+			Editor editor = prefs.edit();
 			editor.putString("modsDir", modsDir.getPath());
 			editor.commit();
 			// showDialog(12);
@@ -1176,7 +1186,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			}
 		}
 
-		SharedPreferences.Editor e = prefs.edit();
+		Editor e = prefs.edit();
 		e.putInt("version", VERSION);
 		e.commit();
 
@@ -1245,7 +1255,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 	private void checkProgressDialog() {
 		if(!dialogShowing && songDatabase.isScanning() && progressDialog == null) {
-			progressDialog = new ProgressDialog(/*PlayerActivity.*/this);
+			progressDialog = new ProgressDialog(PlayerActivity.this);
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
 			progressDialog.setMessage("Updating database...");
 			progressDialog.setCancelable(false);
@@ -1266,13 +1276,13 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 	}
 
 	private void moveFileHere(File f) {
+		File t;// = new File(modsDir, f.getName());
 
         String n = f.getName();
 
 		n = n.replace('_', ' ');
 
 		int ext = n.indexOf('.');
-        File t;// = new File(modsDir, f.getName());
         if(ext > 2 && Character.isDigit(n.charAt(ext - 1)) && n.charAt(ext - 2) == '-') {
 			t = new File(modsDir, n.substring(0, ext - 2) + n.substring(ext));
 		} else {
@@ -1329,7 +1339,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		return super.dispatchKeyEvent(event);
 	}
 
-	public static final Class[] mStartTracking = {};
+	private static final Class[] mStartTracking = new Class[] {};
 
 
 	@Override
@@ -1472,8 +1482,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				}
 			}
 			 return true;
-		default:
-			break;
 		}
 
 		//backDown = 0;
@@ -1597,9 +1605,9 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 		String s = prefs.getString("indexing", "Basic");
 		int imode = SongDatabase.INDEX_BASIC;
-		if("Full".equals(s)) {
+		if(s.equals("Full")) {
 			imode = SongDatabase.INDEX_FULL;
-		} else if("None".equals(s)) {
+		} else if(s.equals("None")) {
 			imode = SongDatabase.INDEX_NONE;
 		}
 
@@ -1615,7 +1623,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 		//indexSetting = prefs.getString("indexing", "Basic");
 
-		SharedPreferences.Editor editor = prefs.edit();
+		Editor editor = prefs.edit();
 		editor.putString("currentPath", currentPath);
 		editor.putBoolean("shuffle", shuffleSongs);
 		editor.commit();
@@ -1678,18 +1686,16 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		return c;
 	}
 
-	private void hexdump(byte... data) {
+	private void hexdump(byte[] data) {
 		StringBuilder sb = new StringBuilder();
-		if(md5 == null) {
-			sb.append("NULL HEX");
-		} else {
+		if(md5 == null) sb.append("NULL HEX");
+		else
 			for(int i=0; i<data.length; i++) {
 				if(i % 8 == 0) {
 					sb.append(String.format("\n%04x:  ", i));
 				}
 				sb.append(String.format("%02x ", data[i]));
 			}
-		}
 		Log.d(TAG, sb.toString());
 	}
 	@Override
@@ -1739,9 +1745,8 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				} else {
 					songSeeker.setProgress(0);
 				}
-			} else {
+			} else
 				seekingSong--;
-			}
 
 			break;
 		case PlayerService.SONG_CPULOAD:
@@ -1777,8 +1782,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				}
 			}
 			break;
-		default:
-			break;
 		}
 	}
 
@@ -1790,9 +1793,8 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			Log.d(TAG, "SOURCE IS " + value);
 			if(value != null && value.length() > 0) {
 				plinfoText.setText(value);
-			} else {
+			} else 
 				plinfoText.setText("");
-			}
 			break;
 /*		case PlayerService.SONG_PLAYLIST:
 			if(value != null && value.length() > 0) {
@@ -1837,6 +1839,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 				//Insert it into the database
 				Uri uri = MediaStore.Audio.Media.getContentUriForPath(value);
+				Uri newUri = null;
                 Log.d(TAG, "URI " + uri.toString());
 				try {
 					int rows = getContentResolver().delete(uri, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { toneName });
@@ -1844,7 +1847,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-                Uri newUri = null;
                 try {
 					newUri = getContentResolver().insert(uri, values);
 				} catch (Exception e) {
@@ -1859,7 +1861,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				}
 				Toast toast;
 				if(toneSet) {
-					RingtoneManager.setActualDefaultRingtoneUri(/*PlayerActivity.*/this, RingtoneManager.TYPE_RINGTONE, newUri);
+					RingtoneManager.setActualDefaultRingtoneUri(PlayerActivity.this, RingtoneManager.TYPE_RINGTONE, newUri);				
 					toast = Toast.makeText(this, R.string.ringtone_set, Toast.LENGTH_LONG);
 				} else {
 					toast = Toast.makeText(this, R.string.ringtone_created, Toast.LENGTH_LONG);
@@ -1903,14 +1905,14 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
             String[] songDetails = player.getSongInfo();
 			md5 = player.getSongMD5();
 			hexdump(md5);
-			Log.d(TAG, "#### Got %d details", (songDetails != null) ? songDetails.length : -1);
+			Log.d(TAG, "#### Got %d details", songDetails != null ? songDetails.length : -1);
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i = 0; i < songDetails.length; i += 2) {
-				    Log.d(TAG, songDetails[i]);
-					Log.d(TAG, songDetails[i+1]);
+					// Log.d(TAG, songDetails[i]);
+					// Log.d(TAG, songDetails[i+1]);
 					sb.append("<font color='yellow'><b>").append(songDetails[i]).append("</font></b><br/>");
-					if("Instruments".equals(songDetails[i])) {
+					if(songDetails[i].equals("Instruments")) {
 						// sb.append(songDetails[i+1].replace("\n",
 						// "<br/><font color='white'>"));
 						String[] instr = songDetails[i + 1].split("\n");
@@ -1944,8 +1946,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		// songCopyrightText.setText(value);
 		// }
 		// break;
-		default:
-			break;
 		}
 	}
 
@@ -1994,8 +1994,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		case R.id.search:
 			onSearchRequested();
 			break;
-		default:
-			break;
 		}
 		return true;
 	}
@@ -2040,8 +2038,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			} else {
 				ad.setTitle(id);
 			}
-			break;
-		default:
 			break;
 		}
 	}
@@ -2090,9 +2086,11 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 
 		switch(id) {
 		case R.string.make_wav:
+		{
 			//Dialog dialog = new Dialog(this);
 			//dialog.setContentView(R.layout.ringtone_dialog);
 			//dialog.setTitle(id);
+			final String [] progressNames = new String [] { "0:10", "0:20", "0:30", "1:00", "5:00", "10:00" };
             LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
 			View dialog = inflater.inflate(R.layout.ringtone_dialog, (ViewGroup) findViewById(R.layout.player));
 			builder.setView(dialog);
@@ -2116,8 +2114,6 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				}
 			});
 			toneLenText =  (TextView) dialog.findViewById(R.id.tone_lentext);
-            //String[] progressNames = new String[]{"0:10", "0:20", "0:30", "1:00", "5:00", "10:00"};
-            final String[] progressNames = {"0:10", "0:20", "0:30", "1:00", "5:00", "10:00"};
             toneLenText.setText(progressNames[toneLength]);
 			SeekBar seekBar = (SeekBar) dialog.findViewById(R.id.tone_length);
 			seekBar.setProgress(toneLength);
@@ -2143,17 +2139,12 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 					File file = new File("/sdcard/droidsound/ringtones");
 					file.mkdir();
 					int tl = toneLength;
-					if(tl == 3){
-						tl = 6;
-					} else if(tl == 4) {
-						tl = 6*5;
-					} else if(tl == 5) {
-						tl = 6*10;
-					} else {
-						tl += 1;
-					}
+					if(tl == 3) tl = 6;
+					else if(tl == 4) tl = 6*5;
+					else if(tl == 5) tl = 6*10;
+					else tl += 1;
 					dumpingWav = tl * 10000;//30000;
-					toneName = toneNameText.getText().toString();
+					toneName = (String) toneNameText.getText().toString();
 					file = new File(file, toneName + ".wav"); 
 					
 					int flags = 0;
@@ -2187,6 +2178,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 			}); */
 			break;
 			//return dialog;			
+		}	
 		case R.string.new_:
 			builder.setTitle(id);
 			builder.setSingleChoiceItems(R.array.new_opts, -1, new DialogInterface.OnClickListener() {
@@ -2225,7 +2217,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				public void onClick(DialogInterface dialog, int which) {
 					String s = input.getText().toString();
 					File file = new File(currentPath, s + ".plist");
-					if(!file.exists() && !"Favorites.plist".equals(file.getName())) {
+					if(!file.exists() && !file.getName().equals("Favorites.plist")) {
 						songDatabase.createPlaylist(file);
 						songDatabase.setActivePlaylist(file);
 						playListView.rescan();
@@ -2251,9 +2243,8 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 				public void onClick(DialogInterface dialog, int which) {
 					String s = input3.getText().toString();
 					
-					if(!s.startsWith("http://")){
+					if(!s.startsWith("http://"))
 						s = "http://" + s;
-					}
 					try {
 						URL url = new URL(s);
 						Log.d(TAG, "'%s', '%s', '%s'",url.toString(), url.getProtocol(), url.getFile());
@@ -2450,7 +2441,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		// SQLiteDatabase db;
-		AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 		// PlayListView.FileInfo finfo = (PlayListView.FileInfo)
 		// playListView.getItemAtPosition(info.position);
 		// Cursor cursor = playListView.getCursor(info.position);
@@ -2465,7 +2456,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		Playlist pl = songDatabase.getCurrentPlaylist();
 		Playlist al = songDatabase.getActivePlaylist();
 		
-		SongFile song = (pl != null) ? pl.getSong(info.position) : null;
+		SongFile song = pl != null ? pl.getSong(info.position) : null;
 		
 		if(song != null) operationSong = song;
 		
@@ -2548,7 +2539,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 		case R.id.del_plist:
 			//operationFile = file;
 			operationSong = new SongFile(file);
-			if("Favorites.plist".equals(operationSong.getName())) {
+			if(operationSong.getName().equals("Favorites.plist")) {
 				break;
 			}
 			runConfirmable(R.string.do_del_plist, new Runnable() {

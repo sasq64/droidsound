@@ -59,8 +59,8 @@ public final class PlayQueue {
 		init(names, index);
 	}
 
-	private SongFile [] createSongs(String... names) {
-		SongFile [] songs = new SongFile [names.length];
+	private SongFile[] createSongs(String... names) {
+		SongFile[] songs = new SongFile [names.length];
 		for(int i=0; i<names.length; i++) {
 			songs[i] = new SongFile(names[i]);
 		}
@@ -81,8 +81,11 @@ public final class PlayQueue {
 		}
 	}
 
-	final void setShuffle(boolean on) {
-		
+	/**
+	 * Sets if shuffle will be on or off.
+	 * @param on | If shuffle is on or not
+	 */
+	 void setShuffle(boolean on) {
 		SongFile current = current();
 		if(on && !shuffleOn) {
 			// Turned on
@@ -93,10 +96,13 @@ public final class PlayQueue {
 			unshuffle();
 			setCurrent(current);
 		}
-		
 		shuffleOn = on;
 	}
 	
+	/**
+	 * The main shuffle method. 
+	 * This is responsible for randomly
+	 * shuffling the songs.*/
 	private void shuffle() {
 		if(musicNames == null) {
 			return;
@@ -111,12 +117,13 @@ public final class PlayQueue {
             musicList.set(i, musicList.get(randomPosition));
 		    musicList.set(randomPosition, t);
 		}
-
 		setCurrent(current);
 	}
 	
+	/**
+	 * This is when shuffle is turned off. It
+	 * "undoes" the shuffle method*/
 	private void unshuffle() {
-		
 		if(musicNames != null) {
 			Log.d(TAG, "Unshuffling");
 			musicList.clear();
@@ -190,7 +197,6 @@ public final class PlayQueue {
     		oldPlaylistHash = hash;
        	}
     }
-
 
 	public final SongFile prev() {
 		updatePlaylist();
