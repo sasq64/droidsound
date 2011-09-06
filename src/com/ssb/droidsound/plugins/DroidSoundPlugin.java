@@ -17,6 +17,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -31,7 +32,7 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_LENGTH = 2;
 	public static final int INFO_TYPE = 3;
 	public static final int INFO_COPYRIGHT = 4;
-	static final int INFO_GAME = 5;
+	public static final int INFO_GAME = 5;
 	public static final int INFO_SUBTUNE_COUNT = 6;
 	public static final int INFO_STARTTUNE = 7;
 	public static final int INFO_SUBTUNE_TITLE = 8;
@@ -60,9 +61,9 @@ public abstract class DroidSoundPlugin {
 
 	// Called when player thread exits due to inactivty
 	public void exit() {
-	}
+	};
 
-
+	
 	public static final List<DroidSoundPlugin> createPluginList() {
 		List<DroidSoundPlugin> pluginList;
 		synchronized (lock) {
@@ -105,6 +106,8 @@ public abstract class DroidSoundPlugin {
 			httpConn.connect();
 			int response = httpConn.getResponseCode();
 			if(response == HttpURLConnection.HTTP_OK) {
+				int size;
+				byte[] buffer = new byte[16384];
                 Log.d(TAG, "HTTP connected");
 				InputStream in = httpConn.getInputStream();
 				// URLUtil.guessFileName(songName, );
@@ -112,9 +115,7 @@ public abstract class DroidSoundPlugin {
 				String ext = getExt(songName);
 				File f = File.createTempFile("music", ext);
 				FileOutputStream fos = new FileOutputStream(f);
-                byte[] buffer = new byte[16384];
                 BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-                int size;
                 while((size = in.read(buffer)) != -1) {
 					bos.write(buffer, 0, size);
 				}
@@ -157,8 +158,8 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public final void calcMD5(byte[] songBuffer, int size) {
-        Log.d(TAG, "MD5 CALCING TIME");
         MessageDigest md = null;
+		Log.d(TAG, "MD5 CALCING TIME");
         try {
 			md = MessageDigest.getInstance("MD5");
 		} catch (NoSuchAlgorithmException e) {
@@ -170,7 +171,7 @@ public abstract class DroidSoundPlugin {
 		md.update(songBuffer, 0, size);
 		md5 = md.digest();
 	}
-	void calcMD5(byte... songBuffer) {
+	public void calcMD5(byte[] songBuffer) {
 		calcMD5(songBuffer, songBuffer.length);
 	}
 
@@ -217,7 +218,7 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public abstract void unload();
-	private static String getExt(String name) {
+	public static String getExt(String name) {
 		String ext = "";
 		int dot = name.lastIndexOf('.');
 		if(dot > 0) {
@@ -309,7 +310,7 @@ public abstract class DroidSoundPlugin {
 
 			String plname = plugin.getClass().getSimpleName();
 
-			for(Map.Entry<String, ?> entry  : prefsMap.entrySet()) {
+			for(Entry<String, ?> entry  : prefsMap.entrySet()) {
 				String k = entry.getKey();
 				int dot = k.indexOf('.');
 				if(dot >= 0) {
@@ -327,8 +328,8 @@ public abstract class DroidSoundPlugin {
 			}
 		}
 	}
-	private static final String [] pref0 = { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
-	private static final String [] pref1 = { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
+	private static final String [] pref0 = new String[] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
+	private static final String [] pref1 = new String[] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
 
 	public static String getSecondaryFile(String path) {
 

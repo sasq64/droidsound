@@ -1,13 +1,19 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.File;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 
 
 public final class GMEPlugin extends DroidSoundPlugin {
 
 	static {
-		System.loadLibrary("gme"); //$NON-NLS-1$
+		System.loadLibrary("gme");
 	}
 	private final Set<String> extensions;
 	private static final String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$
