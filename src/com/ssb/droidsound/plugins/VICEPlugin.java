@@ -17,6 +17,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import android.os.Environment;
 
@@ -83,6 +84,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	private Unzipper unzipper = null;
 	
 	private static File dataDir;
+	private static boolean isActive = false;
 	
     private static boolean initialized = false;
 	
@@ -94,7 +96,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 				dataDir.mkdir();
 			}
 			
-			final File viceDir = new File(dataDir, "VICE");
+			File viceDir = new File(dataDir, "VICE");
 			synchronized (lock) {
 				if(!viceDir.exists()) {
 					unzipper = Unzipper.getInstance();
@@ -108,24 +110,24 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	//Adjusts to what options are set for the VICE plugin in the Preferences.
 	@Override
 	public void setOption(String opt, Object val) {
-		int k, v;
-		if ("active".equals(opt)) {
-            final boolean active = (Boolean) val;
-			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (active ? "ACTIVE" : "NOT ACTIVE"));
+		final int k, v;
+		if (opt.equals("active")) {
+			isActive = (Boolean)val;
+			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (isActive ? "ACTIVE" : "NOT ACTIVE"));
 			return;
-		} else if ("filter".equals(opt)) {
+		} else if (opt.equals("filter")) {
 			k = OPT_FILTER;
 			v = (Boolean) val ? 1 : 0;
-		} else if ("ntsc".equals(opt)) {
+		} else if (opt.equals("ntsc")) {
 			k = OPT_NTSC;
 			v = (Integer) val;
-		} else if ("resampling".equals(opt)) {
+		} else if (opt.equals("resampling")) {
 			k = OPT_RESAMPLING;
 			v = (Integer) val;
-		} else if ("filter_bias".equals(opt)) {
+		} else if (opt.equals("filter_bias")) {
 			k = OPT_FILTER_BIAS;
 			v = (Integer) val;
-		} else if ("sid_model".equals(opt)) {
+		} else if (opt.equals("sid_model")) {
 			k = OPT_SID_MODEL;
 			v = (Integer) val;
 		} else {
@@ -156,10 +158,11 @@ public final class VICEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean setTune(int tune) {
+		boolean ok = N_setTune(tune + 1);
         //if (ok) {
 		//	currentTune = tune;
 		//}
-		return N_setTune(tune + 1);
+		return ok;
 	}
 
 	@Override
@@ -184,7 +187,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 			
 			N_setDataDir(new File(dataDir, "VICE").getAbsolutePath());
 			
-			for(Map.Entry<Integer, Integer> e : optMap.entrySet()) {
+			for(Entry<Integer, Integer> e : optMap.entrySet()) {
 				N_setOption(e.getKey(), e.getValue());
 			}
 			optMap.clear();

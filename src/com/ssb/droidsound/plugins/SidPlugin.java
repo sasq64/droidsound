@@ -208,11 +208,11 @@ public final class SidPlugin extends DroidSoundPlugin {
 			return true;
 		}
 
-        byte[] header = new byte[128];
+        final byte[] header = new byte[128];
         is.read(header);
 
 		String s = new String(header, 0, 4, "ISO-8859-1");
-		if (! ("PSID".equals(s) || "RSID".equals(s))) {
+		if (!(s.equals("PSID") || s.equals("RSID"))) {
 			return false;
 		}
 
@@ -233,14 +233,14 @@ public final class SidPlugin extends DroidSoundPlugin {
 
 	@Override
 	public final boolean canHandleExt(String ext) {
-		return ".SID".equals(ext) || ".PRG".equals(ext) || ".PSID".equals(ext);
+		return ext.equals(".SID") || ext.equals(".PRG") || ext.equals(".PSID");
 	}
 
 
 	@Override
 	public final String[] getDetailedInfo() {
-		String sids[] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
-		String videoModes[] = { "UNKNOWN", "PAL", "NTSC", "PAL & NTSC" };
+		final String sids[] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
+		final String videoModes[] = { "UNKNOWN", "PAL", "NTSC", "PAL & NTSC" };
 		return new String[] {
 			"Format",
 			songInfo.format,
@@ -306,7 +306,7 @@ public final class SidPlugin extends DroidSoundPlugin {
 		songInfo = null;
 		int type = -1;
 		String s = new String(module, 0, 4);
-		if(("PSID".equals(s) || "RSID".equals(s))) {
+		if((s.equals("PSID") || s.equals("RSID"))) {
 			type = 0;
 		} else
 		if(name.toLowerCase().endsWith(".prg")) {
@@ -319,7 +319,7 @@ public final class SidPlugin extends DroidSoundPlugin {
 		}
 
 		if (type == 1) {
-			byte rsid[] = {
+			byte rsid[] = new byte [] {
 					0x52, 0x53, 0x49, 0x44, 0x00, 0x02, 0x00, 0x7c,
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 					0x00, 0x01, 0x00, 0x00, 0x00, 0x00
@@ -369,9 +369,9 @@ public final class SidPlugin extends DroidSoundPlugin {
 
 	@Override
 	public final void setOption(String opt, Object val) {
-		if("engine".equals(opt)) {
+		if(opt.equals("engine")) {
 			String e = (String) val;
-			if("VICE".equals(e)) {
+			if(e.equals("VICE")) {
 				Log.d(TAG, "################ USING ENGINE: VICE");
 				nextPlugin = vicePlugin;
 			} else {
