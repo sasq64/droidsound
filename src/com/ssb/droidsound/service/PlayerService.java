@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
@@ -36,6 +37,8 @@ import com.ssb.droidsound.Playlist;
 import com.ssb.droidsoundedit.R;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+
+import com.ssb.droidsound.service.Player.SongInfo;
 
 public final class PlayerService extends Service {
 	private static final String TAG = PlayerService.class.getSimpleName();
@@ -95,7 +98,7 @@ public final class PlayerService extends Service {
 	private Thread playerThread;
 	private List<IPlayerServiceCallback> callbacks;
 
-	private final Player.SongInfo currentSongInfo = new Player.SongInfo();
+	private final SongInfo currentSongInfo = new SongInfo();
 
 	//private boolean silenceDetect;
 	private boolean respectLength = true;
@@ -178,13 +181,11 @@ public final class PlayerService extends Service {
 
 	private String fixSpeech(String s, boolean composer) {
 
-		if(s == null) {
-			return s;
-		}
-
-		StringBuilder sb = new StringBuilder(24);
-
-		if("<?>".equals(s)) {
+		if(s == null) return s;
+		
+		StringBuilder sb = new StringBuilder();
+		
+		if(s.equals("<?>")) {
 			return "Unnamed";
 		}
 
@@ -430,9 +431,7 @@ public final class PlayerService extends Service {
 
     };
 
-
-    final void createThread() {
-
+     void createThread() {
     	if(playerThread != null) {
 			if(!playerThread.isAlive()) {
 				playerThread = null;
@@ -475,7 +474,7 @@ public final class PlayerService extends Service {
     	} */
     }
 
-    final boolean playNextSong() {
+    boolean playNextSong() {
     	if(playQueue == null) {
             return false;
     	}
@@ -507,7 +506,7 @@ public final class PlayerService extends Service {
         return false;
     }
 
-    final boolean playPrevSong() {
+    boolean playPrevSong() {
     	if(playQueue == null) {
             return false;
     	}
@@ -523,8 +522,8 @@ public final class PlayerService extends Service {
         return false;
     }
 
-    private static final Class[] mStartForegroundSignature = { int.class, Notification.class};
-    private static final Class[] mStopForegroundSignature = { boolean.class};
+    private static final Class[] mStartForegroundSignature = new Class[] { int.class, Notification.class};
+    private static final Class[] mStopForegroundSignature = new Class[] { boolean.class};
 
     private NotificationManager mNM;
     private Method mStartForeground;
@@ -553,10 +552,10 @@ public final class PlayerService extends Service {
      * APIs if it is not available.
      * @param notification
      */
-    final void startForegroundCompat(Notification notification) {
+    final void startForegroundCompat(int id, Notification notification) {
         // If we have the new startForeground API, then use it.
         if (mStartForeground != null) {
-            mStartForegroundArgs[0] = R.string.notification;
+            mStartForegroundArgs[0] = Integer.valueOf(id);
             mStartForegroundArgs[1] = notification;
             try {
                 mStartForeground.invoke(this, mStartForegroundArgs);
@@ -573,7 +572,7 @@ public final class PlayerService extends Service {
 
         // Fall back on the old API.
         setForeground(true);
-        mNM.notify(R.string.notification, notification);
+        mNM.notify(id, notification);
         //foreground = true;
     }
 
@@ -581,7 +580,7 @@ public final class PlayerService extends Service {
      * This is a wrapper around the new stopForeground method, using the older
      * APIs if it is not available.
      */
-    void stopForegroundCompat() {
+    void stopForegroundCompat(int id) {
         // If we have the new stopForeground API, then use it.
         if (mStopForeground != null) {
             mStopForegroundArgs[0] = Boolean.TRUE;
@@ -600,7 +599,7 @@ public final class PlayerService extends Service {
 
         // Fall back on the old API.  Note to cancel BEFORE changing the
         // foreground state, since we could be killed at that point.
-        mNM.cancel(R.string.notification);
+        mNM.cancel(id);
         setForeground(false);
         //foreground = false;
     }
@@ -641,8 +640,6 @@ public final class PlayerService extends Service {
 						player.paused(false);
 					}
 					didPause = false;
-					break;
-				default:
 					break;
 				}
 				Log.d(TAG, "CALL STATE %d %s", state, incomingNumber);
@@ -814,12 +811,12 @@ public final class PlayerService extends Service {
 	final void beforePlay(CharSequence name) {
 		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
 		//if(!foreground)
-			startForegroundCompat(notification);
+			startForegroundCompat(R.string.notification, notification);
 	}
 
 	final void whenStopped() {
 		//if(foreground)
-			stopForegroundCompat();
+			stopForegroundCompat(R.string.notification);
 	}
 
 	@Override
@@ -1022,7 +1019,7 @@ public final class PlayerService extends Service {
 		@Override
 		public void setOption(int opt, String arg) {
 
-			boolean on = "on".equals(arg);
+			boolean on = arg.equals("on");
 
 			try {
 				switch(opt) {
@@ -1057,18 +1054,16 @@ public final class PlayerService extends Service {
 					break;
 				case OPTION_BUFFERSIZE:
 			 		bufSize = 176384; // 2s
-			 		if("Short".equals(arg)) {
+			 		if(arg.equals("Short")) {
 			 			bufSize = 66144; // 0.75s
 			 		} else
-			 		if("Medium".equals(arg)) {
+			 		if(arg.equals("Medium")) {
 			 			bufSize = 132288; // 1.5s
 			 		} else
-			 		if("Very Long".equals(arg)) {
+			 		if(arg.equals("Very Long")) {
 			 			bufSize = 352768; // 4s
 			 		}
 					player.setBufSize(bufSize);
-					break;
-				default:
 					break;
 				}
 			} catch (NumberFormatException e) {

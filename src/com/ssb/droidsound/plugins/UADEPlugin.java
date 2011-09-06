@@ -36,8 +36,8 @@ public final class UADEPlugin extends DroidSoundPlugin {
 
 	private Unzipper unzipper;
 
-	private static final String [] options = { "filter", "speedhack", "ntsc", "panning" };
-	private static final int [] optvals = { OPT_FILTER, OPT_SPEED_HACK, OPT_NTSC, OPT_PANNING };
+	private static final String[] options = new String[] { "filter", "speedhack", "ntsc", "panning" };
+	private static final int[] optvals = new int[] { OPT_FILTER, OPT_SPEED_HACK, OPT_NTSC, OPT_PANNING };
 
 
 
@@ -51,9 +51,9 @@ public final class UADEPlugin extends DroidSoundPlugin {
 
 		File confFile = new File(droidDir, "eagleplayer.conf");
 
-        synchronized (extensions) {
 
             boolean extract = true;
+		synchronized (extensions) {
             if(eagleDir.exists()) {
 
 				if(confFile.exists()) {
@@ -236,7 +236,7 @@ public final class UADEPlugin extends DroidSoundPlugin {
 		init();
 
 		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
+		return currentSong != 0;
 	}
 
 	private void init() {
