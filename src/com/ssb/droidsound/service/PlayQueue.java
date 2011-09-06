@@ -14,8 +14,14 @@ public final class PlayQueue {
 	private int musicListPos;
 	private SongFile[] musicNames;
 
+	/**
+	 * If shuffle is enabled or disabled
+	 */
 	private boolean shuffleOn;
-
+	
+	/**
+	 * The current playlist that is set.
+	 */
 	private Playlist currentPlaylist;
 
 	private int oldPlaylistHash;
