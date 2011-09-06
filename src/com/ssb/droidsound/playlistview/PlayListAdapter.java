@@ -105,8 +105,7 @@ final class PlayListAdapter extends BaseAdapter {
 		if(mCursor != null) {
 			mCursor.close();
 		}
-		super.finalize();
-	}
+	};
 
 	public void close() {
 		if(mCursor != null) {
@@ -209,7 +208,7 @@ final class PlayListAdapter extends BaseAdapter {
 					int year = d / 10000;
 					int rest = d - year*10000;
 					int month = rest / 100;
-					sub = String.format("%04d %s", year, (month > 0) ? monthNames[month-1] : "");
+					sub = String.format("%04d %s", year, month > 0 ? monthNames[month-1] : "");
 				}
 			} else {
 				sub = mCursor.getString(mSubIndex);
@@ -217,7 +216,7 @@ final class PlayListAdapter extends BaseAdapter {
 		}
 
 		if(!isEditMode()) {
-			tv2.setText((side != null) ? side : "");
+			tv2.setText(side != null ? side : "");
 		}
 
 		if(sub == null && type == SongDatabase.TYPE_FILE) {
@@ -236,16 +235,10 @@ final class PlayListAdapter extends BaseAdapter {
 		}
 
 
-		String path;
-		if (mPathIndex >= 0) {
-			path = mCursor.getString(mPathIndex);
-		} else {
-			path = null;
-		}
-		
-		if(path == null) {
+		String path = mPathIndex >= 0 ? mCursor.getString(mPathIndex) : null;
+
+		if(path == null)
 			path = pathName;
-		}
 
 		String upath = path.toUpperCase();
 		String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
@@ -254,20 +247,18 @@ final class PlayListAdapter extends BaseAdapter {
 
 		if(type == SongDatabase.TYPE_FILE) {
 			tv0.setTextColor(itemColor);
-			if(net || "M3U".equals(ext) || "PLS".equals(ext)) {
+			if(net || ext.equals("M3U") || ext.equals("PLS"))
 				tv0.setTextColor(0xffffc0c0);
-			}
 				//iv.setImageResource(R.drawable.gflat_headphones);
 			iv.setVisibility(View.GONE);
 		} else if(type == SongDatabase.TYPE_ARCHIVE) {
 			tv0.setTextColor(archiveColor);
-			if(net) {
+			if(net)
 				tv0.setTextColor(0xffff9090);
-			}
 			//iv.setImageResource(R.drawable.play_list);
-			if("Local Mediastore".equals(title)) {
+			if(title.equals("Local Mediastore")) {
 				iv.setImageResource(R.drawable.gflat_mus_folder);
-			} else if("CSDb".equals(title)) {
+			} else if(title.equals("CSDb")) {
 				iv.setImageResource(R.drawable.gflat_bag);
 			} else {
 				iv.setImageResource(R.drawable.gflat_package);
@@ -275,11 +266,10 @@ final class PlayListAdapter extends BaseAdapter {
 			iv.setVisibility(View.VISIBLE);
 		} else if(type == SongDatabase.TYPE_PLIST) {
 			tv0.setTextColor(archiveColor);
-			if(net) {
+			if(net)
 				tv0.setTextColor(0xffff9090);
-			}
 			//iv.setImageResource(R.drawable.play_list);
-			if("Favorites".equals(title)) {
+			if(title.equals("Favorites")) {
 				iv.setImageResource(R.drawable.gflat_heart);
 			} else {
 				iv.setImageResource(R.drawable.gflat_note3);
@@ -288,10 +278,9 @@ final class PlayListAdapter extends BaseAdapter {
 			iv.setVisibility(View.VISIBLE);
 		} else {
 			tv0.setTextColor(dirColor);
-			if(net) {
+			if(net)
 				tv0.setTextColor(0xffff9090);
-			}
-			if("LNK".equals(ext)) {
+			if(ext.equals("LNK")) {
 				iv.setImageResource(R.drawable.gflat_net_folder);
 				tv0.setTextColor(0xffffc0c0);
 			} else if(upath.contains(".LNK")) {

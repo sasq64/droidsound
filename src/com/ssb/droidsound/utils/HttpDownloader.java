@@ -14,7 +14,7 @@ import java.util.zip.ZipInputStream;
 final class HttpDownloader  {
 	private static final String TAG = HttpDownloader.class.getSimpleName();
 	
-	interface Callback {
+	static interface Callback {
 		void onDisplayProgress(int progress);
 		void onDone();
 	}
@@ -53,9 +53,11 @@ final class HttpDownloader  {
 		try {
 			InputStream in = null;
 			int response = -1;
+			int size;
             byte[] buffer = new byte[16384];
 
 			//String outDir = Environment.getExternalStorageDirectory() + "/MODS/";
+			String outDir = target;
             int fileCount = 0;
 			for(String u : urls) {
 
@@ -86,14 +88,13 @@ final class HttpDownloader  {
 					String ext = u.substring(u.lastIndexOf('.') + 1, u.length());
 					String baseName = new File(u).getName();
 
-                    int size;
                     if(ext.compareToIgnoreCase("ZIP") == 0) {
 						ZipInputStream zip = new ZipInputStream(in);
 						ZipEntry e;
 						int zipCount = 0;
 						while((e = zip.getNextEntry()) != null) {
 							Log.d(TAG, "Found file " + e.getName());
-							FileOutputStream fos = new FileOutputStream(target + e.getName());
+							FileOutputStream fos = new FileOutputStream(outDir + e.getName());
 							BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
 							while((size = zip.read(buffer, 0, buffer.length)) != -1) {
 								bos.write(buffer, 0, size);
@@ -111,7 +112,7 @@ final class HttpDownloader  {
 
 						Log.d(TAG, "Writing " + baseName);
 
-						FileOutputStream fos = new FileOutputStream(target + baseName);
+						FileOutputStream fos = new FileOutputStream(outDir + baseName);
 						BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
 						while((size = in.read(buffer)) != -1) {
 							bos.write(buffer, 0, size);

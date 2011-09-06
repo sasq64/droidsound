@@ -2,6 +2,7 @@ package com.ssb.droidsound.utils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import android.database.Cursor;
@@ -73,7 +74,7 @@ public final class CursorTransform {
 				String result = cols.pattern;				
 				for(int i=0; i<cols.offsets.length; i++) {
 					String txt = cursor.getString(cols.offsets[i]>>8);
-					if(txt == null || "null".equals(txt)) txt = "";
+					if(txt == null || txt.equals("null")) txt = "";
 					//Log.d(TAG, "Col %d -> %d -> %s", columnIndex, cols.offsets[i]>>8, txt);
 					int pos = cols.offsets[i]&0xff;
 					result = result.substring(0,pos) + txt + result.substring(pos);
@@ -92,7 +93,7 @@ public final class CursorTransform {
 			}
 			return super.getInt(columnIndex);
 		}
-	}
+	};
 
     private final Map<String, ColTransform> transformMap = new HashMap<String, ColTransform>();
 	

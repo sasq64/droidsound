@@ -4,7 +4,7 @@ import java.io.File;
 
 public final class SongFile {
 
-	public static final String TAG = SongFile.class.getSimpleName();
+	private static final String TAG = SongFile.class.getSimpleName();
 	
 	private int subtune;		//Subtunes of a file being played (depends if format supports subtunes)
 	private int playtime;		//Duration track plays for

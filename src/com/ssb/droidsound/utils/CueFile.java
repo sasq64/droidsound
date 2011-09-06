@@ -43,19 +43,19 @@ public final class CueFile {
 
                     Log.d(TAG, "%s '%s'", cmd, arg);
 					
-					if("TRACK".equals(cmd)) {
+					if(cmd.equals("TRACK")) {
 						currentTrack = new Track();
 						tracks.add(currentTrack);
 						Log.d(TAG, "New track %02d", tracks.size());
-					} else if("TITLE".equals(cmd)) {
+					} else if(cmd.equals("TITLE")) {
 						if(currentTrack != null){
 							currentTrack.title = arg;	
 						}
-					} else if("PERFORMER".equals(cmd)) {
+					} else if(cmd.equals("PERFORMER")) {
 						if(currentTrack != null){
 							currentTrack.performer = arg;
 						}
-					} else if("INDEX".equals(cmd)) {
+					} else if(cmd.equals("INDEX")) {
 						if(currentTrack != null) {
 							String[] index = ll[2].split(":");
 							int secs = Integer.parseInt(index[1]) + Integer.parseInt(index[0])*60;

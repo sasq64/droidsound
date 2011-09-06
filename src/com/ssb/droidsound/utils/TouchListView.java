@@ -24,6 +24,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -89,7 +90,7 @@ final class TouchListView extends ListView {
 	public boolean onInterceptTouchEvent(MotionEvent ev) {
 		if(mRemoveListener != null && mGestureDetector == null) {
 			if(mRemoveMode == FLING) {
-				mGestureDetector = new GestureDetector(getContext(), new GestureDetector.SimpleOnGestureListener() {
+				mGestureDetector = new GestureDetector(getContext(), new SimpleOnGestureListener() {
 					@Override
 					public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
 						if(mDragView != null) {
@@ -160,9 +161,9 @@ final class TouchListView extends ListView {
 	 */
 	private int myPointToPosition(int x, int y) {
 		Rect frame = mTempRect;
-		int count = getChildCount();
+		final int count = getChildCount();
 		for(int i = count - 1; i >= 0; i--) {
-			View child = getChildAt(i);
+			final View child = getChildAt(i);
 			child.getHitRect(frame);
 			if(frame.contains(x, y)) {
 				return getFirstVisiblePosition() + i;
@@ -314,8 +315,8 @@ final class TouchListView extends ListView {
 						mDragPos = itemnum;
 						doExpansion();
 					}
-                    adjustScrollBounds(y);
                     int speed = 0;
+					adjustScrollBounds(y);
                     if(y > mLowerBound) {
 						// scroll the list up a bit
                     	//speed = (y > (mHeight + mLowerBound) / 2) ? 16 : 4; //Right shift is more efficient.

@@ -162,7 +162,7 @@ public final class Unzipper {
             InputStream is = context.getAssets().open(asset);
 
             //byte [] buffer = new byte [(128*1024)]; //Left shift is more efficient.
-            byte [] buffer = new byte [(128 << 10)];
+            byte[] buffer = new byte [(128 << 10)];
 			while(true) {
 				int rc = is.read(buffer);
 				if(rc <= 0) {

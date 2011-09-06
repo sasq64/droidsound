@@ -17,20 +17,20 @@ public final class DBFileSystem {
 	}
 	
 	private static final class Path {
-		public final String [] parts;
+		public final String[] parts;
 		public CursorFactory factory;
-		public String [] contents;
+		public String[] contents;
 		public String[] contentPaths;
-		private Path(String [] parts, CursorFactory factory) {
+		private Path(String[] parts, CursorFactory factory) {
 			this.parts = parts;
 			this.factory = factory;
 		}
-		private Path(String [] parts, String [] contents, String... contentPaths) {
+		public Path(String[] parts, String[] contents, String[] contentPaths) {
 			this.parts = parts;
 			this.contents = contents;
 			this.contentPaths = contentPaths;
 		}
-	}
+	};
 
     private final List<Path> pathList;
 
@@ -47,17 +47,17 @@ public final class DBFileSystem {
 		pathList.add(new Path(parts, qf));
 	}
 	
-	public void addPath(String pathPattern, String... contents) {
+	public void addPath(String pathPattern, String[] contents) {
 		String [] parts = pathPattern.split("/");		
 		pathList.add(new Path(parts, contents, contents));
 	}
 
-	public void addPath(String pathPattern, String [] contents, String... contentPaths) {
+	public void addPath(String pathPattern, String[] contents, String[] contentPaths) {
 		String [] parts = pathPattern.split("/");		
 		pathList.add(new Path(parts, contents, contentPaths));
 	}
 
-	private boolean matchPath(String [] pattern, String... path) {
+	private boolean matchPath(String [] pattern, String[] path) {
 		
 		// **,ALBUM
 		// NEW RELEASES,* 
@@ -71,7 +71,7 @@ public final class DBFileSystem {
 			
 			Log.d(TAG, "Match %s vs %s", i, pattern[j], path[i]);
 
-			if("*".equals(pattern[j]) || path[i].equals(pattern[j])) {
+			if(pattern[j].equals("*") || path[i].equals(pattern[j])) {
 				j++;	
 			} else {
 				break;

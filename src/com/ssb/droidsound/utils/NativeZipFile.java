@@ -25,7 +25,7 @@ static final class MyZipEntry extends ZipEntry {
 
 		public void setIndex(int i) { index = i; }
 		public int getIndex() { return index; }
-	}
+	};
 	
 	private long zipRef;	
 	
@@ -36,10 +36,10 @@ static final class MyZipEntry extends ZipEntry {
 	native String getEntry(int i);
 	native int getSize(int i);
 	native int findEntry(String name);
-	native int readData(int i, byte... target);
+	native int readData(int i, byte[] target);
 
 	native long open(int index);
-	native int read(long fd, byte [] target, int offs, int len);
+	native int read(long fd, byte[] target, int offs, int len);
 	native void close(long fd);
 	
 	
@@ -72,7 +72,8 @@ static final class MyZipEntry extends ZipEntry {
 	
 	final class MyEnumeration implements Enumeration<MyZipEntry> {
 
-		public final NativeZipFile zipFile;
+		@SuppressWarnings("unused")
+		private final NativeZipFile zipFile;
 		private int currentIndex;
 		private final int total;
 
@@ -103,7 +104,7 @@ static final class MyZipEntry extends ZipEntry {
 	}
 	
 	static final class NZInputStream extends InputStream {
-		protected static final String TAG = NZInputStream.class.getSimpleName();
+		private static final String TAG = NZInputStream.class.getSimpleName();
 
 		private final NativeZipFile zipFile;
 		//private byte buffer [];
@@ -121,7 +122,7 @@ static final class MyZipEntry extends ZipEntry {
 		
 		@Override
 		public int read() throws IOException {
-			byte [] b = new byte [1];
+			byte[] b = new byte[1];
 			int rc = read(b, 0, 1);
 			if(rc > 0) {
 				return b[0];
@@ -153,7 +154,7 @@ static final class MyZipEntry extends ZipEntry {
 		}
 		
 		@Override
-		public int read(byte... b) throws IOException {
+		public int read(byte[] b) throws IOException {
 			return read(b, 0, b.length);
 		}
 	}

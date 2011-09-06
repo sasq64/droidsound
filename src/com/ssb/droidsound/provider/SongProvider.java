@@ -17,9 +17,10 @@ public final class SongProvider extends ContentProvider {
 	public static final String COMPOSER = "COMPOSER";
 	public static final String FILENAME = "FILENAME";
 	public static final String FLAGS = "FLAGS";
+	private SongDatabase songDatabase;
 
     @Override
-	public int delete(Uri arg0, String arg1, String... arg2) {
+	public int delete(Uri arg0, String arg1, String[] arg2) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -39,7 +40,7 @@ public final class SongProvider extends ContentProvider {
 	@Override
 	public boolean onCreate() {
 
-        SongDatabase songDatabase = new SongDatabase(getContext());
+		songDatabase = new SongDatabase(getContext());
 		return true;
 	}
 
@@ -50,14 +51,12 @@ public final class SongProvider extends ContentProvider {
 		if(uri.equals(SONG_URI)) {
 			
 		}
-		
 		return null;
 	}
 
 	@Override
-	public int update(Uri uri, ContentValues values, String selection, String... selectionArgs) {
+	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-
 }

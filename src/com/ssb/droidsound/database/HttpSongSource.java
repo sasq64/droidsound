@@ -221,6 +221,7 @@ final class HttpSongSource {
 
 							 String title = htmlFix(text);
 							 String fileName = htmlFix(href);
+							 String path = pathName;						 
 
                              int type = SongDatabase.TYPE_FILE;
 							 if(!fileName.startsWith("/") && !fileName.startsWith("?")) {
@@ -252,6 +253,7 @@ final class HttpSongSource {
 
                              String title = htmlFix(text);
                              String fileName = htmlFix(href);
+                             String path = pathName;
 
                              if ((fileName.length() == 0 || fileName.charAt(0) != '/') && (fileName.length() == 0 || fileName.charAt(0) != '?')) {
                                  int type = SongDatabase.TYPE_FILE;
@@ -264,7 +266,7 @@ final class HttpSongSource {
                                      cursor.addRow(new Object[]{title, type, null, fileName});
                                  } else {
                                      if (FileIdentifier.canHandle(fileName) != null) {
-                                         cursor.addRow(new Object[]{title, type, pathName, fileName});
+                                         cursor.addRow(new Object[]{title, type, path, fileName});
                                      }
                                  }
                              }

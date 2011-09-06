@@ -40,12 +40,12 @@ public final class MediaSource implements DataSource  {
 	private final Context context;
 	private final DBFileSystem dbfs;
 	private String displayTitle;
-	private static final String[] sortOrder  = {
+	private static final String[] sortOrder  = new String[] {
 		String.format("%s, %s",  MediaStore.Audio.Media.TRACK, MediaStore.Audio.Media.TITLE),
 		String.format("%s, %s",  MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.TITLE),
 		String.format("%s, %s",  MediaStore.Audio.Media.YEAR, MediaStore.Audio.Media.TITLE)
 	};
-	private static final String[] albumSortOrder  = {
+	private static final String[] albumSortOrder  = new String[] {
 		String.format("%s, %s", MediaStore.Audio.Albums.ALBUM, MediaStore.Audio.Albums.LAST_YEAR),
 		String.format("%s, %s", MediaStore.Audio.Albums.ARTIST, MediaStore.Audio.Albums.LAST_YEAR),
 		String.format("%s, %s", MediaStore.Audio.Albums.LAST_YEAR, MediaStore.Audio.Albums.ALBUM)
@@ -136,13 +136,6 @@ public final class MediaSource implements DataSource  {
 */
 	}
 
-    public static String[] getArtistFields() {
-        return artistFields;
-    }
-
-    public static void setArtistFields(String... artistFields) {
-        MediaSource.artistFields = artistFields;
-    }
 
     @Override
 	public void createIndex(int mode, SQLiteDatabase db) {

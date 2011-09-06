@@ -210,7 +210,7 @@ public final class CSDBParser implements DataSource {
 			}
 			return super.getInt(columnIndex);
 		}
-	}
+	};
 
 	private static final class SidCursor extends CursorWrapper {
 		private int pathIndex;

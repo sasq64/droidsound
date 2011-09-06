@@ -28,16 +28,16 @@ public final class PlayListView extends ListView { //extends TouchListView {
 
 		for(int i=0; i<attrs.getAttributeCount(); i++) {
 			String name = attrs.getAttributeName(i);
-			if("dirColor".equals(name)) {
+			if(name.equals("dirColor")) {
 				dirColor = attrs.getAttributeIntValue(i, -1);
 			} else
-			if("archiveColor".equals(name)) {
+			if(name.equals("archiveColor")) {
 				archiveColor = attrs.getAttributeIntValue(i, -1);
 			} else
-			if("itemColor".equals(name)) {
+			if(name.equals("itemColor")) {
 				itemColor = attrs.getAttributeIntValue(i, -1);
 			}
-			if("subitemColor".equals(name)) {
+			if(name.equals("subitemColor")) {
 				subitemColor = attrs.getAttributeIntValue(i, -1);
 			}
 		}

@@ -54,4 +54,4 @@ public final class FileInfo {
 		}
 		return super.equals(o);
 	}
-}
+};

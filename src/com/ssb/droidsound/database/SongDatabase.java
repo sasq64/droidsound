@@ -57,7 +57,7 @@ import com.ssb.droidsound.utils.NativeZipFile;
 public final class SongDatabase implements Runnable {
 	private static final String TAG = SongDatabase.class.getSimpleName();
 	private static final int DB_VERSION = 4;
-	private static final String[] FILENAME_array = { "_id", "FILENAME", "TYPE" };
+	private static final String[] FILENAME_array = new String[] { "_id", "FILENAME", "TYPE" };
 	private ScanCallback scanCallback;
 	private final Map<String, DataSource> dbsources = new HashMap<String, DataSource>();
 	private SQLiteDatabase scanDb;
@@ -644,7 +644,7 @@ public final class SongDatabase implements Runnable {
 			Collection<String> files = new HashSet<String>();
 
 			// Directories to scan later
-            // Set<String> foundDirs = new HashSet<String>();
+            //Set<String> foundDirs = new HashSet<String>();
 			//Set<String> foundDirsNew = new HashSet<String>();
 			//Set<File> zipFiles = new HashSet<File>(); weakened types below
 
@@ -1076,13 +1076,12 @@ public final class SongDatabase implements Runnable {
 
             //Set<File> deletes = new HashSet<File>(); Weakened type below
 			Collection<File> deletes = new HashSet<File>();
+			int limit = 5000;
+            int offset = 1;
 
             if(scanCallback != null) {
 				scanCallback.notifyScan("Checking orphans", 0);
 			}
-
-            int limit = 5000;
-            int offset = 1;
             while(true) {
 
 				// Remove orphaned directories
