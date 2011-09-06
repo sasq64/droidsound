@@ -100,7 +100,7 @@ final class PlayListAdapter extends BaseAdapter {
 		setHilightedFile(null);
 	}
 
-	protected void finalize() throws Throwable {
+	protected void finalize() {
 		Log.d(TAG, "finalize()");
 		if(mCursor != null) {
 			mCursor.close();

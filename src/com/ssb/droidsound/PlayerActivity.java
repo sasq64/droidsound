@@ -258,7 +258,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 	private TextView toneNameText;
 	private static final Class[] startTrackingSignature = new Class[] {};
 
-	protected void finalize() throws Throwable {
+	protected void finalize() {
 			Log.d(TAG, "########## Activity finalize");
 	};
 
