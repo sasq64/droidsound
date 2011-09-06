@@ -35,7 +35,7 @@ public final class Playlist {
 	private boolean changed;
 
 	private String title;
-	public String subtitle;
+	private String subtitle;
 
 	private boolean written;
 	private long fileModified;
@@ -293,7 +293,7 @@ private final class MyCursor extends AbstractCursor implements EditableCursor {
 			// TODO Auto-generated method stub
 			return false;
 		}
-     }
+     };
 
 
 
@@ -545,7 +545,7 @@ private final class MyCursor extends AbstractCursor implements EditableCursor {
 		return hash;
 	}
 
-	void move(int from, int to) {
+	public void move(int from, int to) {
 
 		String fromLine = lines.get(from);
 		lines.add(to, fromLine);

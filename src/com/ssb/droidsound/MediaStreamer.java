@@ -1,6 +1,8 @@
 package com.ssb.droidsound;
 
 import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnPreparedListener;
+
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player;
 import com.ssb.droidsound.utils.ID3Tag;
@@ -103,7 +105,7 @@ public final class MediaStreamer implements Runnable {
 	private boolean VBR;
 	private boolean parseMp3;
 
-	private static final int[] bitRateTab = {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
+	private static final int[] bitRateTab = new int[] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 
 	public MediaStreamer(String http, MediaPlayer mp, boolean fileMode) {
 		//httpName = http;
@@ -152,6 +154,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
 
 			parseMp3 = false;
+			boolean doRetry = false;
 
             Log.d(TAG, "Looping, doQuit is " + (doQuit ? "SET" : "UNSET"));
 
@@ -187,7 +190,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			}
 			//Log.d(TAG, "RESPONSE %d %s", response, httpConn.getResponseMessage());
 
-            boolean doRetry = false;
             if (response == HttpURLConnection.HTTP_OK) {
 				Log.d(TAG, "HTTP connected");
 
@@ -230,6 +232,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
                 //tagBuffer = new byte[32768];
 				tagFilled = 0;
 				tagSize = 0;
+				metaArray = new byte[4092];
 
 				metaPos = 0;
 				metaSize = -1;
@@ -238,6 +241,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				totalBytes = 0L;
 				totalFrameBytes = 0;
 				frameHeaderBits = 0;
+				boolean firstRead = true;
 
                 //last_usec = usec = 0L;
 				nextFramePos = -1;
@@ -254,8 +258,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				if(!parseMp3) {
 					usec = -1000;
 				}
-
-                boolean firstRead = true;
                 while (!doQuit) {
 					int rem = buffer.length;
 					rem = updateMeta(in, rem);
@@ -602,7 +604,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				//mediaPlayer.setDataSource(String.format("http://127.0.0.1:%d/", socketPort));
 				loaded = true;
 				Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> PREPARING ");
-				mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+				mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
 					@Override
 					public void onPrepared(MediaPlayer mp) {
 						prepared = true;
@@ -715,8 +717,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			return songComposer;
 		case DroidSoundPlugin.INFO_TITLE:
 			return songTitle;
-		default:
-			break;
 		}
 		return null;
 	}
@@ -725,8 +725,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		switch(what) {
 		case DroidSoundPlugin.INFO_LENGTH:
 			return songLength;
-		default:
-			break;
 		}
 		return 0;
 	}

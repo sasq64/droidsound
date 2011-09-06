@@ -7,17 +7,22 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import com.ssb.droidsound.utils.Log;
-
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsoundedit.R;
 
 public final class FileIdentifier {
 	private static final String TAG = FileIdentifier.class.getSimpleName();
 
 	private static final Map<String, Integer> extensions;
+
+	private static HashSet<String> modMagic;
 
     private static List<DroidSoundPlugin> plugins;
 
@@ -43,7 +48,7 @@ public final class FileIdentifier {
 		public int channels;
 		public int type;
 		public int date;
-	}
+	};
 
 
 	//File extensions
@@ -307,10 +312,11 @@ public final class FileIdentifier {
 
 			return null;
 		}
+		int extno = i;		
         //Log.d(TAG, "Ext %s -> Format %02x", ext, extno);
 
 		MusicInfo info = new MusicInfo();
-		info.type = i;
+		info.type = extno;
 		info.date = -1;
 
 		if(is == null) {
@@ -325,7 +331,7 @@ public final class FileIdentifier {
 		try {
             byte[] data;
             String magic;
-            switch(i) {
+            switch(extno) {
 			case TYPE_PRG:
 				name = getBaseName(name);
 				info.format = "SID";
@@ -335,7 +341,7 @@ public final class FileIdentifier {
 				data = new byte [0x80];
 				is.read(data);
 				magic = new String(data, 1, 3);
-				if("SID".equals(magic)) {
+				if(magic.equals("SID")) {
 					info.title = fromData(data, 0x16, 32); //new String(data, 0x16, o-0x15, "ISO-8859-1");
 					info.composer = fromData(data, 0x36, 32); //new String(data, 0x36, o-0x35, "ISO-8859-1");
 					info.copyright = fromData(data, 0x56, 32); //new String(data, 0x56, o-0x55, "ISO-8859-1");
@@ -370,7 +376,7 @@ public final class FileIdentifier {
 				data = new byte [50];
 				is.read(data);
 				magic = new String(data, 44, 4);
-				if(!"SCRM".equals(magic)) {
+				if(!magic.equals("SCRM")) {
 					return null;
 				}
 				info.title = fromData(data, 0, 28); //new String(data, 0, 28, "ISO-8859-1");
@@ -380,7 +386,7 @@ public final class FileIdentifier {
 				data = new byte [0x70];
 				is.read(data);
 				magic = new String(data, 0, 15);
-				if(!"Extended Module".equals(magic)) {
+				if(!magic.equals("Extended Module")) {
 					return null;
 				}
 				info.title = fromData(data, 17, 20); //new String(data, 17, 20, "ISO-8859-1");
@@ -391,7 +397,7 @@ public final class FileIdentifier {
 				data = new byte [32];
 				is.read(data);
 				magic = new String(data, 0, 4);
-				if(!"IMPM".equals(magic)) {
+				if(!magic.equals("IMPM")) {
 					return null;
 				}
 				info.title = fromData(data, 4, 26); //new String(data, 4, 26, "ISO-8859-1");
@@ -401,7 +407,7 @@ public final class FileIdentifier {
 				data = new byte [128];
 				is.read(data);
 				magic = new String(data, 0, 4);
-				if(!"NESM".equals(magic)) {
+				if(!magic.equals("NESM")) {
 					return null;
 				}
 				info.title = fromData(data, 0xe, 32); //new String(data, 0xe, 32, "ISO-8859-1");
@@ -414,7 +420,7 @@ public final class FileIdentifier {
 				is.read(data);
 				info.format = "SNES";
 				magic = new String(data, 0, 27);
-				if(!"SNES-SPC700 Sound File Data".equals(magic)) {
+				if(!magic.equals("SNES-SPC700 Sound File Data")) {
 					return null;
 				}
 

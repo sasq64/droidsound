@@ -27,8 +27,8 @@ public final class MyExceptionHandler implements Thread.UncaughtExceptionHandler
 	public void uncaughtException(Thread thread, Throwable ex)
 	{
 		ex.printStackTrace();
-        Writer result = new StringWriter();
-        PrintWriter printWriter = new PrintWriter(result);
+        final Writer result = new StringWriter();
+        final PrintWriter printWriter = new PrintWriter(result);
         ex.printStackTrace(printWriter);
         String stacktrace = result.toString();
         printWriter.close();

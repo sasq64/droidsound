@@ -21,7 +21,7 @@ import com.ssb.droidsound.utils.Log;
 public final class PlayerServiceConnection implements ServiceConnection {
 	private static final String TAG = PlayerServiceConnection.class.getSimpleName();
 
-	public interface Callback {
+	public static interface Callback {
 		void stringChanged(int what, String value);
 		void intChanged(int what, int value);
 	}
@@ -37,7 +37,7 @@ public final class PlayerServiceConnection implements ServiceConnection {
 			opt = o;
 			arg = a;
 		}
-	}
+	};
 
     //private List<Opt> options = new ArrayList<Opt>();   weakened type below
 	private final Collection<Opt> options = new ArrayList<Opt>();
@@ -123,7 +123,7 @@ public final class PlayerServiceConnection implements ServiceConnection {
 		}
 	} */
 
-	boolean playMod(String name) {
+	public boolean playMod(String name) {
 		if(mService == null) {
 			modToPlay = name;
 			return true;
