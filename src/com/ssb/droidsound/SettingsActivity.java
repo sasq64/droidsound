@@ -5,13 +5,15 @@ import java.util.List;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
@@ -31,6 +33,7 @@ public final class SettingsActivity extends PreferenceActivity {
 	private static final String TAG = SettingsActivity.class.getSimpleName();
 	private SongDatabase songDatabase;
 	private boolean doFullScan;
+	private SharedPreferences prefs;
     private String modsDir;
 
 final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener {
@@ -48,7 +51,7 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 			
 			Log.d(TAG, "CHANGED " + k);
 			
-			if("SidPlugin.engine".equals(k)) {
+			if(k.equals("SidPlugin.engine")) {
 				boolean isVice = ((String) newValue).startsWith("VICE");
 				/* FIXME: Both sid model and resampling actually could be done
 				 * also in sidplayplugin, but it's not currently supported. */
@@ -67,7 +70,7 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 			plugin.setOption(k2, newValue);
 			return true;
 		}
-	}
+	};
 	
 
 	@Override
@@ -77,7 +80,7 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 		
 		songDatabase = PlayerActivity.songDatabase;
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
 		
 		String s = prefs.getString("SidPlugin.engine", null);
@@ -123,7 +126,7 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 				PackageInfo pinfo = null;
 				try {
 					pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-				} catch (PackageManager.NameNotFoundException e) {}
+				} catch (NameNotFoundException e) {}
 				Intent intent;
 				if(pinfo != null && pinfo.versionName.contains("beta")) {
 					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://lioncash.uni.cc/droidsound/downloads.html"));
@@ -139,7 +142,7 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 		PackageInfo pinfo = null;
 		try {
 			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-		} catch (PackageManager.NameNotFoundException e) {}
+		} catch (NameNotFoundException e) {}
 
 		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
 		String appName = getString(pinfo.applicationInfo.labelRes);
@@ -261,7 +264,7 @@ final class AudiopPrefsListener implements Preference.OnPreferenceChangeListener
 		case R.string.scan_db:
 			doFullScan = false;
 			builder.setTitle(id);
-			builder.setMultiChoiceItems(R.array.scan_opts, null, new DialogInterface.OnMultiChoiceClickListener() {				
+			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
 					Log.d(TAG, "%d %s", which, String.valueOf(isChecked));
