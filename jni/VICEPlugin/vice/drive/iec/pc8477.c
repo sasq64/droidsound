@@ -1,5 +1,5 @@
 /*
- * pc8477.c - dp8473/pc8477 emulation for the 1992 disk drive.
+ * pc8477.c - dp8473/pc8477 emulation for the 4000 disk drive.
  *
  * Written by
  *  Kajtar Zsolt <soci@c64.rulez.org>
@@ -643,3 +643,4 @@ int pc8477_detach_image(disk_image_t *image, unsigned int unit)
     fdd_image_detach(drive_context[unit - 8]->pc8477->fdds[1]);
     return 0;
 }
+
