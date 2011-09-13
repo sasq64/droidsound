@@ -1,5 +1,5 @@
 /*
- * vsyn.h - Common vsync API.
+ * vsync.h - Common vsync API.
  *
  * Written by
  *  Andreas Boose <viceteam@t-online.de>
@@ -42,4 +42,3 @@ extern int vsync_do_vsync(struct video_canvas_s *c, int been_skipped);
 extern int vsync_disable_timer(void);
 
 #endif
-
