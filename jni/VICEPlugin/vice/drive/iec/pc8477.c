@@ -442,7 +442,6 @@ static pc8477_state_t pc8477_execute(pc8477_t *drv, int phase)
             }
             if (drv->cmd[2] == bytes) {
                 drv->st[1] = 0x08;
-                drv->sector++;
                 drv->buf_size = 4;
                 drv->bufp = 0;
                 return PC8477_WRITE;
@@ -688,4 +687,3 @@ int pc8477_detach_image(disk_image_t *image, unsigned int unit)
     fdd_image_detach(drive_context[unit - 8]->pc8477->fdds[1]);
     return 0;
 }
-
