@@ -349,9 +349,12 @@ public final class CSDBParser implements DataSource {
 
 		for(int i=0; i<n; i++) {
 			if(parts[i].toUpperCase().startsWith(DUMP_NAME)) {
-				for(int j=0; j<(n-i); j++) {
+                /*
+                for(int j=0; j<(n-i); j++) {
 					parts[j] = parts[i+j];
-				}
+				}*/
+                //System.arraycopy eliminates the need to manually copy the array
+                System.arraycopy(parts, i + 0, parts, 0, n - i);
 				found = true;
 				n -= i;
 				break;

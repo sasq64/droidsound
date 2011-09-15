@@ -1184,15 +1184,11 @@ public final class Player implements Runnable {
 	}
 
 	synchronized public boolean getSongInfo(SongInfo target) {
-		target.title = currentSong.title == null ? null : new String(
-				currentSong.title);
-		target.author = currentSong.author == null ? null : new String(
-				currentSong.author);
-		target.copyright = currentSong.copyright == null ? null : new String(
-				currentSong.copyright);
+		target.title = currentSong.title == null ? null : currentSong.title;
+		target.author = currentSong.author == null ? null : currentSong.author;
+		target.copyright = currentSong.copyright == null ? null : currentSong.copyright;
 		// target.game = new String(currentSong.game);
-		target.type = currentSong.type == null ? null : new String(
-				currentSong.type);
+		target.type = currentSong.type == null ? null : currentSong.type;
 		target.length = currentSong.length;
 		target.subTunes = currentSong.subTunes;
 		target.startTune = currentSong.startTune;
