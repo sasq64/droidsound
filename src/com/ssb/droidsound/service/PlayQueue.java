@@ -145,7 +145,7 @@ public final class PlayQueue {
 		return false;
 	}
 
-	private final void updatePlaylist() {
+	private void updatePlaylist() {
         if(currentPlaylist != null) {
     		int hash = currentPlaylist.hashCode();
     		if(hash != oldPlaylistHash) {
@@ -241,7 +241,7 @@ public final class PlayQueue {
 		musicListPos = i;
 	}
 
-	private final int setCurrent(SongFile song) {
+	private int setCurrent(SongFile song) {
 		for(int i=0; i<musicList.size(); i++) {
 			//Log.d(TAG, "CMP %s to %s", musicList.get(i).getPath(), song.getPath());
 			if(musicList.get(i).getPath().equals(song.getPath())) {
