@@ -555,7 +555,7 @@ public final class PlayerService extends Service {
     final void startForegroundCompat(int id, Notification notification) {
         // If we have the new startForeground API, then use it.
         if (mStartForeground != null) {
-            mStartForegroundArgs[0] = Integer.valueOf(id);
+            mStartForegroundArgs[0] = id;
             mStartForegroundArgs[1] = notification;
             try {
                 mStartForeground.invoke(this, mStartForegroundArgs);
