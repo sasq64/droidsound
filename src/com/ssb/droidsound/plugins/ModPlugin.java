@@ -29,6 +29,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 		extensions.add("ULT");
 		extensions.add("669");
 		extensions.add("STM");
+        extensions.add("OKT");
 	}
 
 	private long currentSong = 0;
