@@ -36,6 +36,7 @@ public final class FileIdentifier {
 	private static final int TYPE_NSF = 6;
 	private static final int TYPE_SPC = 7;
 	private static final int TYPE_PRG = 8;
+    private static final int TYPE_OKT = 9;
 	//public static final int TYPE_VGM = 8;
 
 	public static final class MusicInfo {
@@ -51,7 +52,9 @@ public final class FileIdentifier {
 	};
 
 
-	//File extensions
+	//File extensions that are handled when adding to a playlist.
+    //If you add any file formats to Droidsound, make sure to add
+    //an entry here.
 	static {
 		extensions = new HashMap<String, Integer>();
 		extensions.put("MOD", TYPE_MOD);
@@ -62,6 +65,7 @@ public final class FileIdentifier {
 		extensions.put("NSF", TYPE_NSF);
 		extensions.put("SPC", TYPE_SPC);
 		extensions.put("PRG", TYPE_PRG);
+        extensions.put("OKT", TYPE_OKT);
 		//extensions.put("VGM", TYPE_VGM);
 
         //HashSet<String> modMagic = new HashSet(); Weaker type is below

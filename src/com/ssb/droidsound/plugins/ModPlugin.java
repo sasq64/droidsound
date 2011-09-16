@@ -368,7 +368,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 	
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);	
+	native public int N_getSoundData(long song, short[] dest, int size);
 	native public boolean N_seekTo(long song, int seconds);
 	native public boolean N_setTune(long song, int tune);
 	native public String N_getStringInfo(long song, int what);
