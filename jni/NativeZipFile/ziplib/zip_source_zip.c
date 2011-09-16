@@ -31,7 +31,7 @@
   IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
+
 
 #include <stdlib.h>
 #include <string.h>
@@ -48,7 +48,7 @@ struct read_zip {
 static zip_int64_t read_zip(void *st, void *data, zip_uint64_t len,
 			enum zip_source_cmd cmd);
 
-
+
 
 ZIP_EXTERN struct zip_source *
 zip_source_zip(struct zip *za, struct zip *srcza, zip_uint64_t srcidx,
@@ -63,7 +63,7 @@ zip_source_zip(struct zip *za, struct zip *srcza, zip_uint64_t srcidx,
     if (za == NULL)
 	return NULL;
 
-    if (srcza == NULL || len < -1 || srcidx < 0 || srcidx >= srcza->nentry) {
+    if (srcza == NULL || len < -1 || srcidx >= srcza->nentry) {
 	_zip_error_set(&za->error, ZIP_ER_INVAL, 0);
 	return NULL;
     }
@@ -114,7 +114,7 @@ zip_source_zip(struct zip *za, struct zip *srcza, zip_uint64_t srcidx,
     return zs;
 }
 
-
+
 
 static zip_int64_t
 read_zip(void *state, void *data, zip_uint64_t len, enum zip_source_cmd cmd)
