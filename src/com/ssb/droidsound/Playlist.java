@@ -606,7 +606,4 @@ private final class MyCursor extends AbstractCursor implements EditableCursor {
 		} */
 		return songs;
 	}
-
-
-
 }
