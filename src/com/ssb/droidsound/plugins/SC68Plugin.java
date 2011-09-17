@@ -59,7 +59,6 @@ public final class SC68Plugin extends DroidSoundPlugin {
 	@Override
 	public boolean load(String name, byte[] module, int size) {
 		
-		
 		if(unzipper != null) {
 			while(!unzipper.checkJob("sc68data.zip")) {
 				try {
@@ -150,7 +149,6 @@ public final class SC68Plugin extends DroidSoundPlugin {
 			int offset = 16;
 			boolean done = false;
 			
-			
 			while(offset < 1024) {
 				String tag = new String(data, offset, 4);
 				//Log.d(TAG, "TAG: %s", tag);
@@ -214,16 +212,11 @@ public final class SC68Plugin extends DroidSoundPlugin {
 				}
 				offset += tsize;
 			}			
-			
-			return true;
-			
-			
+			return true;	
 		}
-
 		return false;
 	}
 	
-
 	@Override
 	public int getSoundData(short[] dest, int size) {
 		return N_getSoundData(currentSong, dest, size);
@@ -278,9 +271,12 @@ public final class SC68Plugin extends DroidSoundPlugin {
 		return "Version 3.0.0a (Revision 199) \nCopyright (C) 2010 Benjamin Gerard";
 	}
 
+	/*-- Native Functions --*/
 	public native long N_load(byte [] module, int size);
 	public native long N_loadInfo(byte [] module, int size);
 	public native void N_unload(long song);
+	public native void N_setDataDir(String dataDir);
+	public native int N_unice(byte [] data, byte... target);
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	public native int N_getSoundData(long song, short [] dest, int size);	
@@ -288,7 +284,4 @@ public final class SC68Plugin extends DroidSoundPlugin {
 	public native boolean N_setTune(long song, int tune);
 	public native String N_getStringInfo(long song, int what);
 	public native int N_getIntInfo(long song, int what);
-	
-	public native void N_setDataDir(String dataDir);
-	public native int N_unice(byte [] data, byte... target);
 }
