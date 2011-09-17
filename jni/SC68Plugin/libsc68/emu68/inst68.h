@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id: inst68.h 122 2009-07-02 04:07:08Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 

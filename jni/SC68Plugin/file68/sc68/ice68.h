@@ -7,9 +7,9 @@
  *
  */
 
-/* $Id: ice68.h 102 2009-03-14 17:21:58Z benjihan $ */
+/* $Id$ */
 
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2010 Benjamin Gerard */
 
 #ifndef _FILE68_ICE68_H_
 #define _FILE68_ICE68_H_

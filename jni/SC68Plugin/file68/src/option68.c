@@ -1,7 +1,11 @@
 /*
  *                 option68 - cli options functions
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ *
+ *              Copyright (C) 2001-2011 Ben(jamin) Gerard
+ *
+ *                     <benjihan -4t- sourceforge>
+ *
+ * Time-stamp: <2011-08-29 13:59:43 ben>
  *
  * This  program is  free  software: you  can  redistribute it  and/or
  * modify  it under the  terms of  the GNU  General Public  License as
@@ -19,7 +23,6 @@
  *
  */
 
-/* $Id: init68.c 13 2009-01-22 01:45:25Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -27,15 +30,30 @@
 
 #include "file68_api.h"
 #include "msg68.h"
+#include "alloc68.h"
 #include "option68.h"
 #include "string68.h"
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 static option68_t * opts;
 
 #define FOREACH_OPT(opt) for (opt=opts; opt; opt = opt->next)
+static inline int opt_isset(const option68_t * opt)
+{
+  return opt->has_arg < 0;
+}
+
+static inline void opt_free_str(option68_t * opt)
+{
+  if (opt->has_arg == ~option68_STR) {
+    free68((void *) opt->val.str);
+    opt->val.str = 0;
+    opt->has_arg = option68_STR;
+  }
+}
 
 static inline int opt_type (const option68_t * opt)
 {
@@ -44,39 +62,49 @@ static inline int opt_type (const option68_t * opt)
     : ~opt->has_arg
     ;
 }
-
-static inline int opt_set_bool(option68_t * opt, int val)
-{
-  opt->has_arg = ~option68_BOL;
-  return opt->val.num = -!!val;
-}
-
-static inline const char * opt_set_str(option68_t * opt, const char * val)
-{
-  opt->has_arg = ~option68_STR;
-  return opt->val.str = val;
-}
-
-static inline int opt_set_int(option68_t * opt, int val)
-{
-  opt->has_arg = ~option68_INT;
-  return opt->val.num = val;
-}
-
 static inline void opt_unset(option68_t * opt)
 {
+  opt_free_str(opt);
   if (opt->has_arg < 0)
     opt->has_arg = ~opt->has_arg;
   opt->val.num = 0;
   opt->val.str = 0;
 }
 
+static inline int opt_set_bool(option68_t * opt, int val)
+{
+  opt_free_str(opt);
+  opt->has_arg = ~option68_BOL;
+  return opt->val.num = -!!val;
+}
+
+
+static inline int opt_set_int(option68_t * opt, int val)
+{
+  opt_free_str(opt);
+  opt->has_arg = ~option68_INT;
+  return opt->val.num = val;
+}
+
+static inline const char * opt_set_str(option68_t * opt, const char * val)
+{
+  opt_free_str(opt);
+  opt->val.str = strdup68(val);
+  if (opt->val.str)
+    opt->has_arg = ~option68_STR;
+  return opt->val.str;
+}
+
 static int opt_set_strtol(option68_t * opt, const char * val)
 {
-  int res, ok;
+  int res = 0, ok = 0;
+  int type = opt_type(opt);
 
-  if (!val) {
-    ok = 0;
+  if (!val || !*val) {
+    if (type == option68_BOL) {
+      ok  = 1;
+      res = 1;
+    }
   } else if (!strcmp68(val,"yes")  ||
              !strcmp68(val,"true") ||
              !strcmp68(val,"on")) {
@@ -100,7 +128,7 @@ static int opt_set_strtol(option68_t * opt, const char * val)
   if (!ok) {
     res = opt->val.num;
   }
-  if (opt_type(opt) == 0) {
+  if (type == option68_BOL) {
     res = opt_set_bool(opt, res);
   } else {
     res = opt_set_int(opt, res);
@@ -108,10 +136,6 @@ static int opt_set_strtol(option68_t * opt, const char * val)
   return res;
 }
 
-static inline int opt_isset(const option68_t * opt)
-{
-  return opt->has_arg < 0;
-}
 
 static option68_t * opt_of(const char * key)
 {
@@ -133,7 +157,7 @@ int option68_unset(option68_t * opt)
 void option68_unset_all(void)
 {
   option68_t * opt;
-  FOREACH_OPT(opt) option68_unset(opt);
+  FOREACH_OPT(opt) opt_unset(opt);
 }
 
 int option68_set(option68_t * opt, const char * str)
@@ -164,8 +188,12 @@ int option68_iset(option68_t * opt, int val)
       opt_set_bool(opt,val); break;
     case option68_INT:
       opt_set_int(opt,val); break;
-    case option68_STR:
-      /* Can't set string without allocating */
+    case option68_STR: {
+      char tmp[128];
+      snprintf(tmp,sizeof(tmp),"%d",val);
+      tmp[sizeof(tmp)-1] = 0;
+      opt_set_str(opt,tmp);
+    } break;
     default:
       err = -1;
     }
@@ -180,9 +208,8 @@ int option68_parse(int argc, char ** argv, int reset)
   option68_t * opt;
 
   /* Reset options */
-  if (reset) {
+  if (reset)
     option68_unset_all();
-  }
 
   /* Parse arguments */
   for (i=n=1; i<argc; ++i) {
@@ -283,7 +310,12 @@ int option68_init(void)
 
 void option68_shutdown(void)
 {
+  option68_t * opt, * nxt;
   option68_unset_all();
+  for (nxt=opts; opt=nxt;) {
+    nxt = opt->next;
+    opt->next = 0;
+  }
   opts = 0;
 }
 
@@ -300,6 +332,11 @@ int option68_append(option68_t * options, int n)
                     options[i].prefix ? options[i].prefix : "",
                     options[i].name);
       continue;
+    }
+    if (opt_isset(&options[i])) {
+      msg68_warning("option68: --%s%s is already set\n",
+                    options[i].prefix ? options[i].prefix : "",
+                    options[i].name);
     }
     options[i].prefix_len = options[i].prefix ? strlen(options[i].prefix) : 0;
     options[i].name_len   = strlen(options[i].name);
@@ -362,9 +399,7 @@ char * mygetenv(const char *name, const char * prefix, int prefix_len)
 
 const char * option68_getenv(option68_t * opt, int set)
 {
-  const char * val;
-
-  val = opt
+  const char * val = opt
     ? mygetenv(opt->name, opt->prefix, opt->prefix_len)
     : 0
     ;
@@ -372,7 +407,7 @@ const char * option68_getenv(option68_t * opt, int set)
   if (val && set) {
     switch (opt_type(opt)) {
     case option68_STR: opt_set_str(opt,val); break;
-    case option68_BOL: if (!val) val = "yes";
+    case option68_BOL: /* if (!val) val = "yes"; */
     case option68_INT: opt_set_strtol(opt,val); break;
     }
   }

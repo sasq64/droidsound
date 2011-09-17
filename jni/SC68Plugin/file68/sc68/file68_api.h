@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id: file68_api.h 124 2009-07-02 18:51:52Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 

@@ -1,6 +1,6 @@
 /*
  *                      file68 - url functions
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
+ *            Copyright (C) 2001-2010 Ben(jamin) Gerard
  *           <benjihan -4t- users.sourceforge -d0t- net>
  *
  * This  program is  free  software: you  can  redistribute it  and/or
@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: url68.c 102 2009-03-14 17:21:58Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"

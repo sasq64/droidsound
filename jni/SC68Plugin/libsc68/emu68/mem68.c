@@ -19,13 +19,14 @@
  *
  */
 
-/* $Id: mem68.c 126 2009-07-15 08:58:51Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
 #include "mem68.h"
+#include "assert68.h"
 
 /** Test for direct memory access or IO quick table access */
 #define ISIO68(ADDR) ((ADDR)&0x800000)
@@ -33,7 +34,11 @@
 /* Set memory access check flags. */
 static void chkframe(emu68_t * const emu68, addr68_t addr, const int flags)
 {
-  int oldchk = emu68->chk[addr];
+  int oldchk;
+
+  assert( ! ISIO68(addr) );
+  addr &= MEMMSK68;
+  oldchk = emu68->chk[addr];
   if ((oldchk&flags) != flags) {
     emu68->framechk |= flags;
     emu68->chk[addr] = oldchk|flags;
@@ -42,21 +47,21 @@ static void chkframe(emu68_t * const emu68, addr68_t addr, const int flags)
 
 static void chkframe_b(emu68_t * const emu68, const int flags)
 {
-  chkframe(emu68, emu68->bus_addr&MEMMSK68, flags);
+  chkframe(emu68, emu68->bus_addr, flags);
 }
 
 static void chkframe_w(emu68_t * const emu68, const int flags)
 {
-  chkframe(emu68, (emu68->bus_addr+0)&MEMMSK68, flags);
-  chkframe(emu68, (emu68->bus_addr+1)&MEMMSK68, flags);
+  chkframe(emu68, emu68->bus_addr+0, flags);
+  chkframe(emu68, emu68->bus_addr+1, flags);
 }
 
 static void chkframe_l(emu68_t * const emu68, const int flags)
 {
-  chkframe(emu68, (emu68->bus_addr+0)&MEMMSK68, flags);
-  chkframe(emu68, (emu68->bus_addr+1)&MEMMSK68, flags);
-  chkframe(emu68, (emu68->bus_addr+3)&MEMMSK68, flags);
-  chkframe(emu68, (emu68->bus_addr+4)&MEMMSK68, flags);
+  chkframe(emu68, emu68->bus_addr+0, flags);
+  chkframe(emu68, emu68->bus_addr+1, flags);
+  chkframe(emu68, emu68->bus_addr+2, flags);
+  chkframe(emu68, emu68->bus_addr+3, flags);
 }
 
 
@@ -197,11 +202,16 @@ void mem68_write_l(emu68_t * emu68)
 int68_t mem68_nextw(emu68_t * const emu68)
 {
   int68_t v;
-  u8 *mem = emu68->mem+(REG68.pc&MEMMSK68);
+  u8 *mem;
+
+  assert( ! ISIO68(REG68.pc) );
+
+  mem = emu68->mem + ( REG68.pc & MEMMSK68 );
   v  = (int68_t)(s8)mem[0]<<8;
   v |=              mem[1];
   if (emu68->chk) {
-    chkframe_w(emu68, EMU68_R+EMU68_X);
+    chkframe(emu68, REG68.pc+0, EMU68_R);
+    chkframe(emu68, REG68.pc+1, EMU68_R);
   }
   REG68.pc += 2;
   return v;
@@ -210,13 +220,20 @@ int68_t mem68_nextw(emu68_t * const emu68)
 int68_t mem68_nextl(emu68_t * const emu68)
 {
   int68_t v;
-  u8 *mem = emu68->mem+(REG68.pc&MEMMSK68);
+  u8 *mem;
+
+  assert( ! ISIO68(REG68.pc) );
+
+  mem = emu68->mem + ( REG68.pc & MEMMSK68 );
   v  = (int68_t)(s8)mem[0]<<24;
   v |=              mem[1]<<16;
   v |=              mem[2]<< 8;
   v |=              mem[3];
   if (emu68->chk) {
-    chkframe_l(emu68, EMU68_R+EMU68_X);
+    chkframe(emu68, REG68.pc+0, EMU68_R);
+    chkframe(emu68, REG68.pc+1, EMU68_R);
+    chkframe(emu68, REG68.pc+2, EMU68_R);
+    chkframe(emu68, REG68.pc+3, EMU68_R);
   }
   REG68.pc += 4;
   return v;

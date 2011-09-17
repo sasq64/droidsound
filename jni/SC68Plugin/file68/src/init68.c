@@ -1,7 +1,11 @@
 /*
  *                init68 - initialization functions
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ *
+ *              Copyright (C) 2001-2011 Ben(jamin) Gerard
+ *
+ *                     <benjihan -4t- sourceforge>
+ *
+ * Time-stamp: <2011-08-29 14:08:19 ben>
  *
  * This  program is  free  software: you  can  redistribute it  and/or
  * modify  it under the  terms of  the GNU  General Public  License as
@@ -19,7 +23,6 @@
  *
  */
 
-/* $Id: init68.c 126 2009-07-15 08:58:51Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -45,8 +48,8 @@ static volatile int init;
 void istream68_ao_shutdown(void); /* defined in istream68_ao.c */
 int istream68_z_init(void);       /* defined in istream68_z.c  */
 void istream68_z_shutdown(void);  /* defined in istream68_z.c  */
-int option68_init(void);          /* defined int option68.c    */
-void option68_shutdown(void);     /* defined void option68.c   */
+int option68_init(void);          /* defined in option68.c     */
+void option68_shutdown(void);     /* defined in option68.c     */
 int file68_o_init(void);          /* defined in file68.c       */
 void file68_o_shutdown(void);     /* defined in file68.c       */
 int istream68_ao_init(void);      /* defined in istream68_ao.c */
@@ -121,6 +124,8 @@ int file68_init(int argc, char **argv)
     goto out_no_init;
   }
   init = 3;
+  /* Options */
+  option68_init();
 
   /* Zlib */
   istream68_z_init();
@@ -137,8 +142,6 @@ int file68_init(int argc, char **argv)
   /* Loader */
   file68_o_init();
 
-  /* Options */
-  option68_init();
 
   option68_append(opts,sizeof(opts)/sizeof(*opts));
   argc = option68_parse(argc, argv, 1);
@@ -183,15 +186,28 @@ int file68_init(int argc, char **argv)
     /* Setup new data path */
     if (option68_isset(opt)) {
       rsc68_set_share(opt->val.str);
+#if 0 /* not needed anynore since option68 properly alloc strings */
       if (opt->val.str == tmp)
         option68_unset(opt);    /* Must release tmp ! */
+#endif
     }
 
   }
 
-  /* Get user path from registry (prior to HOME) */
+  /* Get user path  */
   opt=option68_get("home", 0);
   if (opt) {
+    /* Get user path from HOME */
+    if (!option68_isset(opt)) {
+      const char path[] = "/.sc68";
+      const char * env = mygetenv("HOME");
+      if(env && strlen(env)+sizeof(path) < sizeof(tmp)) {
+        strncpy(tmp,env,sizeof(tmp));
+        strcat68(tmp,path,sizeof(tmp));
+        /* $$$ We should test if this directory actually exists */
+        option68_set(opt,tmp);
+      }
+    }
 
     /* Get user path from registry */
     if (!option68_isset(opt)) {
@@ -206,17 +222,6 @@ int file68_init(int argc, char **argv)
       }
     }
 
-    /* Get user path from HOME */
-    if (!option68_isset(opt)) {
-      const char path[] = "/.sc68";
-      const char * env = mygetenv("HOME");
-      if(env && strlen(env)+sizeof(path) < sizeof(tmp)) {
-        strncpy(tmp,env,sizeof(tmp));
-        strcat68(tmp,path,sizeof(tmp));
-        /* $$$ We should test if this directory actually exists */
-        option68_set(opt,tmp);
-      }
-    }
 
     /* Setup new user path */
     if (option68_isset(opt)) {

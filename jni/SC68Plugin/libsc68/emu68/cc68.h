@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id: cc68.h 116 2009-06-18 14:09:54Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 
@@ -68,7 +68,6 @@ static inline int inl_is_cc2(const int sr)
       ( sr >> SR_Z_BIT )
       ) & 1;
 }
-/* #define IS_HI(SR) inl_is_cc2(SR) */
 
 /** 0011 Low or Same.
  *  @param  sr  current SR value
@@ -113,7 +112,6 @@ static inline int inl_is_cc6(const int sr)
   return ~
     ( sr >> SR_Z_BIT ) & 1;
 }
-/* #define IS_NE(SR) IS_EQ(~SR) */
 
 /** 0111 Equal (zero).
  *  @param  sr  current SR value

@@ -1,4 +1,4 @@
-/* $Id: default_option68.h 95 2009-02-12 00:05:40Z benjihan $ */
+/* $Id$ */
 
 #ifndef _IO68_DEFAULT_OPTION68_H_
 #define _IO68_DEFAULT_OPTION68_H_

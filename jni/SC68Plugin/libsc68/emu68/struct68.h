@@ -7,9 +7,9 @@
  *
  */
 
-/* $Id: struct68.h 126 2009-07-15 08:58:51Z benjihan $ */
+/* $Id$ */
 
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2010 Benjamin Gerard */
 
 #ifndef _EMU68_STRUCT68_H_
 #define _EMU68_STRUCT68_H_
@@ -144,21 +144,17 @@ typedef struct
 /** Exception trapping handler.
  *
  *    The emu68_handler_t handler is called by EMU68 when an exception
- *    occurs. This does not include interruption triggered by IO chip
- *    but only software exception like TRACE, ILLEGAL, ZERO DIVIDE,
- *    CHK, TRAP, RESET ...
+ *    occurs. It does include interruption triggered by IO chip as
+ *    well as software exception like TRACE, ILLEGAL, ZERO DIVIDE,
+ *    CHK, TRAP, RESET ... and special emulator interrupts.
  *
  *  @param  emu68   emulator instance
  *  @param  vector  exception vector number
  *  @param  cookie  user-data pointer
+ *  @return Execution break request (return non 0 to ask for a break)
 */
 typedef int (*emu68_handler_t)(emu68_t* const emu68, int vector, void * cookie);
 
-/** Init parameters. */
-/* typedef struct { */
-/*   int          * argc;                  /\**< Argument count.        *\/ */
-/*   char        ** argv;                  /\**< Arguments.             *\/ */
-/* } emu68_init_t; */
 
 /** Breakpoint definition. */
 typedef struct {
@@ -204,7 +200,7 @@ struct emu68_s {
   /* Onboard memory. */
   addr68_t memmsk;     /**< Onboard memory mask (2^log2mem-1).      */
   int      log2mem;    /**< Onboard memory buffer size (2^log2mem). */
-  u8       mem[16];    /**< Onboard memory buffer.
+  u8       mem[32];    /**< Onboard memory buffer.
                             @notice Must be last in struct.         */
 };
 

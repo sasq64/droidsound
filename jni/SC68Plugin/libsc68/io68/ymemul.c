@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: ymemul.c 127 2009-09-14 02:51:23Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -82,7 +82,7 @@ static void access_list_add(ym_t * const ym,
     /* No more free entries. */
     /* $$$ TODO: realloc buffer, reloc all lists ... */
     TRACE68(msg68_CRITICAL,
-            "ym-2148: access list *%s* -- *OVERFLOW*", access_list->name);
+            "ym-2149: access list *%s* -- *OVERFLOW*\n", access_list->name);
     return;
   }
   ym->waccess_nxt = free_access+1;
@@ -161,12 +161,12 @@ int ym_reset(ym_t * const ym, const cycle68_t ymcycle)
  *                  Yamaha init                        *
  ******************************************************/
 
-/* -DYM_ENGINE=YM_ENGINE_BLEP choose BLEP as default engine */
+/* Select default engine */
 #ifndef YM_ENGINE
-# define YM_ENGINE YM_ENGINE_PULS
+# define YM_ENGINE YM_ENGINE_BLEP
 #endif
 
-/* -DYM_VOL_TABLE=YM_VOL_LINEAR choose linear volume table */
+/* Select default volume table */
 #ifndef YM_VOL_TABLE
 # define YM_VOL_TABLE YM_VOL_ATARIST
 #endif

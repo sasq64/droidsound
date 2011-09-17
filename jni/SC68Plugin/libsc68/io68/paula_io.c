@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: paula_io.c 126 2009-07-15 08:58:51Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 

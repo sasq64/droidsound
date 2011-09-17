@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: istream68_mem.c 102 2009-03-14 17:21:58Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -126,7 +126,8 @@ static int ism_read(istream68_t * istream, void * data, int n)
 
 static int ism_write(istream68_t * istream, const void * data, int n)
 {
-  return ism_read_or_write(istream, (void *)data, n, ISTREAM68_OPEN_WRITE);
+  void * rw = (void *)data;
+  return ism_read_or_write(istream, rw, n, ISTREAM68_OPEN_WRITE);
 }
 
 static int ism_length(istream68_t * istream)

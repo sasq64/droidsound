@@ -1,6 +1,6 @@
 /* YM-2149 D/A output levels
  *
- * $Id: ymout1c5bit.h 127 2009-09-14 02:51:23Z benjihan $
+ * $Id$
  *
  */
 

@@ -9,7 +9,7 @@
 
 /* $Id: string68.h 18 2009-01-25 03:39:15Z benjihan $ */
 
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2011 Benjamin Gerard */
 
 #ifndef _FILE68_OPTION68_H_
 #define _FILE68_OPTION68_H_
@@ -18,7 +18,8 @@
 # include "file68_api.h"
 #endif
 
-/** @defgroup  file68_option  Options manipulation
+/**
+ *  @defgroup  file68_option  Options manipulation
  *  @ingroup   file68_lib
  *
  *    Provides command line options manipulation functions.
@@ -33,7 +34,8 @@ enum option68_e {
   option68_INT = 2              /**< Intrger value.          */
 };
 
-/** Options help display function.
+/**
+ *  Options help display function.
  *
  *  -# user data
  *  -# option
@@ -52,7 +54,7 @@ struct option68_s {
   const char   * cat;     /**< Category name.                            */
   const char   * desc;    /**< Short description.                        */
   union {
-    const char * str;      /**< Value for string argument.               */
+    char       * str;      /**< Value for string argument.               */
     int          num;      /**< Value for integer argument.              */
   }              val;      /**< Melted value.                            */
 
@@ -66,7 +68,8 @@ struct option68_s {
 };
 
 FILE68_API
-/** Print defined options.
+/**
+ * Print defined options.
  *
  * @param  cookie  User data used as 1st argument for fct
  * @param  fct     Fonction call for each possible option
@@ -75,7 +78,8 @@ void option68_help(void * cookie, option68_help_t fct);
 
 
 FILE68_API
-/** Append option definitions.
+/**
+ * Append option definitions.
  *
  * @param  options  Array of options
  * @param  n        Array size
@@ -85,7 +89,8 @@ FILE68_API
 int option68_append(option68_t * options, int n);
 
 FILE68_API
-/** Parse command line options.
+/**
+ * Parse command line options.
  *
  * @param  argc     argument count
  * @param  argv     arguments
@@ -95,7 +100,8 @@ FILE68_API
 int option68_parse(int argc, char ** argv, int reset);
 
 FILE68_API
-/** Get option by name.
+/**
+ * Get option by name.
  *
  * @param   key      argument count
  * @param   setonly  only if option has been set
@@ -106,7 +112,9 @@ FILE68_API
 option68_t * option68_get(const char * key, const int setonly);
 
 FILE68_API
-/** Test if option has been set.
+/**
+ * Test if option has been set.
+ *
  * @param   opt  option to test
  * @retval  1    option has been set
  * @retval  0    option has not been set
@@ -114,7 +122,9 @@ FILE68_API
 int option68_isset(const option68_t * opt);
 
 FILE68_API
-/** Set option.
+/**
+ * Set option.
+ *
  * @param   option  option to set
  * @retval  0       on success
  * @retval -1       on failure
@@ -122,7 +132,9 @@ FILE68_API
 int option68_set(option68_t * opt, const char * str);
 
 FILE68_API
-/** Set option (integer and boolean only).
+/**
+ * Set option (integer and boolean only).
+ *
  * @param   opt  option to set
  * @retval  0    on success
  * @retval -1    on failure
@@ -130,7 +142,9 @@ FILE68_API
 int option68_iset(option68_t * opt, int val);
 
 FILE68_API
-/** Unset option.
+/**
+ * Unset option.
+ *
  * @param   opt  option to unset
  * @retval  0    on success
  * @retval -1    on failure
@@ -138,7 +152,9 @@ FILE68_API
 int option68_unset(option68_t * opt);
 
 FILE68_API
-/** Get associate environment variable value.
+/**
+ * Get associate environment variable value.
+ *
  * @param   opt  option
  * @param   set  enable option set at the same time
  * @retval  0    on error (or envvar does not exist)

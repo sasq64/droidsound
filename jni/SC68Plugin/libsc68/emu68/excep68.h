@@ -7,9 +7,9 @@
  *
  */
 
-/* $Id: excep68.h 121 2009-06-30 17:30:22Z benjihan $ */
+/* $Id$ */
 
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2010 Benjamin Gerard */
 
 #ifndef _EMU68_EXCEP68_H_
 #define _EMU68_EXCEP68_H_
@@ -18,7 +18,8 @@
  *  @{
  */
 
-/** @name  68k exceptions and interruptions
+/**
+ *   @name  68k exceptions and interruptions
  *
  *   68K interruptions are defined by a vector and a level. The
  *   interrupt vector is a long word stored in memory at vector
@@ -48,7 +49,7 @@ enum {
   TRACE_VECTOR    = 0x009, /**< TRACE vector address.                   */
   LINEA_VECTOR    = 0x00A, /**< LINEA vector address.                   */
   LINEF_VECTOR    = 0x00B, /**< LINEF vector address.                   */
-  SPURIOUS_VECTOR = 0x018, /**< Spurious Interrupt cvector address.     */
+  SPURIOUS_VECTOR = 0x018, /**< Spurious Interrupt vector address.      */
   TRAP_VECTOR_0   = 0x020, /**< TRAP #N vector address.                 */
 };
 

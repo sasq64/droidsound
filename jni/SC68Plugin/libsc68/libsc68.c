@@ -18,7 +18,7 @@
  *
  */
 
-/* $Id: libsc68.c 106 2009-05-11 04:58:26Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"

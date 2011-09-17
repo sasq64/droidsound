@@ -1,7 +1,11 @@
 /*
  *                      file68 - debug message
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ *
+ *              Copyright (C) 2001-2011 Ben(jamin) Gerard
+ *
+ *                     <benjihan -4t- sourceforge>
+ *
+ * Time-stamp: <2011-08-29 13:59:14 ben>
  *
  * This  program is  free  software: you  can  redistribute it  and/or
  * modify  it under the  terms of  the GNU  General Public  License as
@@ -19,7 +23,6 @@
  *
  */
 
-/* $Id: msg68.c 126 2009-07-15 08:58:51Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -40,10 +43,10 @@ static int       curcat = msg68_DEBUG; /* Current category. */
 static unsigned int msg68_bitmsk =
 #if defined(DEBUGMSG_MASK)
   DEBUGMSG_MASK
-#elif defined(DEBUG_FILE68)
+#elif defined(DEBUG)
   ~0
-#elif defined(NDEBUG_FILE68)
-  (1<<msg68_CRITICAL)|(1<<msg68_ERROR)|(1<<msg68_INFO)
+#elif defined(NDEBUG)
+  (1<<msg68_CRITICAL)|(1<<msg68_ERROR)|(1<<msg68_WARNING)
 #else
   (1<<msg68_CRITICAL)|(1<<msg68_ERROR)|(1<<msg68_WARNING)|(1<<msg68_INFO)
 #endif

@@ -5,7 +5,7 @@
  *
  */
 
-/* $Id: ym_blep.h 102 2009-03-14 17:21:58Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Antti Lankila */
 

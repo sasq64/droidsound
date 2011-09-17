@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id: srdef68.h 121 2009-06-30 17:30:22Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 

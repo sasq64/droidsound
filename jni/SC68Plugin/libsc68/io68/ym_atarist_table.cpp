@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: ym_atarist_table.c 127 2009-09-14 02:51:23Z benjihan $ */
+/* $Id$ */
 
 /* Table of 4 bit D/A output level for 1 channel.*/
 static const u16 volumetable_original[32 * 32 * 32] =

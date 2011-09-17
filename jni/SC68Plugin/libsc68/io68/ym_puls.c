@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: ym_puls.c 127 2009-09-14 02:51:23Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 

@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: ym_linear_table.c 127 2009-09-14 02:51:23Z benjihan $ */
+/* $Id$ */
 
 /* Table of 5 bit D/A output level for 1 channel. */
 static const u16 ymout1c5bit[32] =

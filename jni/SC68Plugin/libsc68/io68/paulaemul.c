@@ -17,7 +17,7 @@
  * along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  *
- * $Id: paulaemul.c 126 2009-07-15 08:58:51Z benjihan $
+ * $Id$
  *
  */
 

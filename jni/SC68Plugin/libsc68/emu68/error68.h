@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id: error68.h 116 2009-06-18 14:09:54Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 

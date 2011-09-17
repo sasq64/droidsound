@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: shifter_io.c 126 2009-07-15 08:58:51Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"

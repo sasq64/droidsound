@@ -7,7 +7,7 @@
  *
  */
 
-/* $Id: type68.h 126 2009-07-15 08:58:51Z benjihan $ */
+/* $Id$ */
 
 /* Copyright (C) 1998-2009 Benjamin Gerard */
 
@@ -16,6 +16,9 @@
 
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
+#else
+typedef  int32_t  int_fast32_t;
+typedef uint32_t uint_fast32_t;
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
@@ -26,10 +29,6 @@
  *  @ingroup   emu68_lib
  *
  *   Definition of types used by EMU68 and SC68 related projects.
- *   Some of them are probably not neccessary and should be remove to
- *   improve execution time on 64 or more bit platforms.
- *   Setting wrong types may probably produce annoying effects on EMU68.
- *   It is a limitation to EMU68 portability.
  *
  *  @{
  */
@@ -74,15 +73,6 @@ typedef           u64 uint68_t;    /**< 64bit unsigned integer type. */
 #else
 # error "invalid define INT68_BITS"
 #endif
-
-/* $$$ Switch back to int_fast as soon as it is safe to have int68_t
- * width > 32bit. Most problems about it probably are in the macro68.h
- * file.
- *
- * $$$ Thing should be fixed now. Still need more testing to validate
- * the new 68K emulator engine.
- *
- * */
 
 //typedef   unsigned int    uint_t; /**< natural unsigned int.           */
 typedef       uint68_t cycle68_t; /**< Type for cycle counters.        */

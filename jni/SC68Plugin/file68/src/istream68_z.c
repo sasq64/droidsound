@@ -19,7 +19,7 @@
  *
  */
 
-/* $Id: istream68_z.c 124 2009-07-02 18:51:52Z benjihan $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
