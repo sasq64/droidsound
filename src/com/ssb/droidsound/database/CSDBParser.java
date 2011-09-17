@@ -354,7 +354,7 @@ public final class CSDBParser implements DataSource {
 					parts[j] = parts[i+j];
 				}*/
                 //System.arraycopy eliminates the need to manually copy the array
-                System.arraycopy(parts, i + 0, parts, 0, n - i);
+                System.arraycopy(parts, i, parts, 0, n - i);
 				found = true;
 				n -= i;
 				break;
