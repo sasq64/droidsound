@@ -1,6 +1,5 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -11,8 +10,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import android.content.Context;
-import android.os.Debug;
-
 import com.ssb.droidsound.utils.Log;
 
 public final class SidPlugin extends DroidSoundPlugin {

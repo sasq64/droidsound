@@ -173,8 +173,6 @@ public final class ModPlugin extends DroidSoundPlugin {
                     t[n++] = x;
                 }
             }
-
-
             t[n++] = "EOL";
 
             if (n >= t.length - 5) {
