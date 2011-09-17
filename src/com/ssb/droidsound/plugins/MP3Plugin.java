@@ -91,7 +91,7 @@ public final class MP3Plugin extends DroidSoundPlugin {
 		}
 		
 		final String[] zeroLengthArray = new String[0]; //Returning zero-length arrays are faster than returning null.
-		if(info.size() == 0) {
+		if(info.isEmpty()) {
 			return zeroLengthArray;
 		}
 		String[] strArray = new String[info.size()];
