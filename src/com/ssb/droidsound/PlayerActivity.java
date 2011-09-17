@@ -2144,7 +2144,7 @@ public final class PlayerActivity extends Activity implements PlayerServiceConne
 					else if(tl == 5) tl = 6*10;
 					else tl += 1;
 					dumpingWav = tl * 10000;//30000;
-					toneName = (String) toneNameText.getText().toString();
+					toneName = toneNameText.getText().toString();
 					file = new File(file, toneName + ".wav"); 
 					
 					int flags = 0;
