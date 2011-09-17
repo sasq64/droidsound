@@ -68,7 +68,6 @@ public final class FileIdentifier {
         extensions.put("OKT", TYPE_OKT);
 		//extensions.put("VGM", TYPE_VGM);
 
-        //HashSet<String> modMagic = new HashSet(); Weaker type is below
         modMagic = new HashSet<String>();
 		modMagic.add("M.K.");
 		modMagic.add("M!K!");
