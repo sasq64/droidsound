@@ -65,6 +65,7 @@ LOCAL_SRC_FILES := \
 	vice/vsync.c \
 	vice/zfile.c \
 	vice/zipcode.c \
+	vice/core/viacore.c \
 	vice/c64/c64-resources.c \
 	vice/c64/c64-snapshot.c \
 	vice/c64/c64bus.c \
