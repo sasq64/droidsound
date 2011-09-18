@@ -166,7 +166,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
+	public boolean load(String name, byte [] module, int size) {
 		
 		//currentTune = 0;
 		
@@ -212,6 +212,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 			Log.i(TAG, "Native code error: " + error);
 			return false;
 		}
+
 		return true; 
 	}
 
@@ -227,6 +228,6 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public String getVersion() {
-		return "VICE 2.3.10-r24639, reSID 1.0-pre1";
+		return "VICE 2.3.10-r24640, reSID 1.0-pre1";
 	}
 }
