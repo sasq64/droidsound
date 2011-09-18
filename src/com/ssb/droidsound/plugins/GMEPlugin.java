@@ -15,7 +15,7 @@ public final class GMEPlugin extends DroidSoundPlugin {
 		System.loadLibrary("gme");
 	}
 	private final Set<String> extensions;
-	private static final String [] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$
+	private static final String[] ex = { "SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ", "HES", "KSS" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$
 	private long currentSong = 0;
 	public GMEPlugin() {
 		extensions = new HashSet<String>();
@@ -56,7 +56,7 @@ public final class GMEPlugin extends DroidSoundPlugin {
 			list.add(s);
 		}
 
-		String [] info = new String [list.size()];
+		String[] info = new String[list.size()];
 		for(int i=0; i<info.length; i++) {
 			info[i] = list.get(i);
 		}
@@ -75,7 +75,7 @@ public final class GMEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte [] module, int size) {
+	public boolean load(String name, byte[] module, int size) {
 		currentSong = N_load(module, size);
 		return (currentSong != 0);
 	}
@@ -93,7 +93,7 @@ public final class GMEPlugin extends DroidSoundPlugin {
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }
+	public int getSoundData(short[] dest, int size) { return N_getSoundData(currentSong, dest, size); }
 	@Override
 	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
@@ -104,12 +104,12 @@ public final class GMEPlugin extends DroidSoundPlugin {
 	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
 
 	public native boolean N_canHandle(String name);
-	public native long N_load(byte [] module, int size);
+	public native long N_load(byte[] module, int size);
 	public native long N_loadFile(String name);
 	public native void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	public native int N_getSoundData(long song, short [] dest, int size);
+	public native int N_getSoundData(long song, short[] dest, int size);
 	public native boolean N_seekTo(long song, int seconds);
 	public native boolean N_setTune(long song, int tune);
 	public native String N_getStringInfo(long song, int what);

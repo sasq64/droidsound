@@ -26,7 +26,6 @@ public final class SC68Plugin extends DroidSoundPlugin {
 	private Unzipper unzipper = null;
 
 	public SC68Plugin() {
-
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
         File sc68Dir = new File(droidDir, "sc68data");
 		synchronized (lock) {					
@@ -70,7 +69,6 @@ public final class SC68Plugin extends DroidSoundPlugin {
 			}
 			unzipper = null;
 		}
-		
 		Log.d(TAG, "Trying to load '%s'", name);
 		currentSong = N_load(module, size);
 		Log.d(TAG, "Trying to load '%s' -> %d", name, currentSong);
@@ -80,7 +78,7 @@ public final class SC68Plugin extends DroidSoundPlugin {
 	private static byte[] targetBuffer;
 	
 	
-	private static String fromData(byte [] data, int start, int len) throws UnsupportedEncodingException {
+	private static String fromData(byte[] data, int start, int len) throws UnsupportedEncodingException {
 		int i = start;
 		for(; i<start+len; i++) {
 			if(data[i] == 0) {
@@ -91,7 +89,7 @@ public final class SC68Plugin extends DroidSoundPlugin {
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
 	
-	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
+	private static final String[] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
 	
 	@Override
 	public String[] getDetailedInfo() {
@@ -272,14 +270,14 @@ public final class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	/*-- Native Functions --*/
-	public native long N_load(byte [] module, int size);
-	public native long N_loadInfo(byte [] module, int size);
+	public native long N_load(byte[] module, int size);
+	public native long N_loadInfo(byte[] module, int size);
 	public native void N_unload(long song);
 	public native void N_setDataDir(String dataDir);
-	public native int N_unice(byte [] data, byte... target);
+	public native int N_unice(byte[] data, byte... target);
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	public native int N_getSoundData(long song, short [] dest, int size);	
+	public native int N_getSoundData(long song, short[] dest, int size);	
 	public native boolean N_seekTo(long song, int seconds);
 	public native boolean N_setTune(long song, int tune);
 	public native String N_getStringInfo(long song, int what);

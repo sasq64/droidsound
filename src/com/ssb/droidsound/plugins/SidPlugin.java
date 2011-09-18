@@ -32,7 +32,7 @@ public final class SidPlugin extends DroidSoundPlugin {
 		String format;
 	}
 
-	final byte [] header = new byte [128];
+	final byte[] header = new byte [128];
 	private byte[] mainHash;
 	private short[] extraLengths;
 	private int hashLen;
@@ -113,7 +113,7 @@ public final class SidPlugin extends DroidSoundPlugin {
 	}
 
 
-	private void findLength(byte [] module, int size) {
+	private void findLength(byte[] module, int size) {
 
 		for (int i=0; i < 256; i++) {
 			songLengths[i] = 60*60*1000; 
@@ -188,7 +188,6 @@ public final class SidPlugin extends DroidSoundPlugin {
 		        	break;
 		        }
 		    }
-
 			Log.d(TAG, "Found md5 at offset %d", found);
 		}
 	}
@@ -385,5 +384,4 @@ public final class SidPlugin extends DroidSoundPlugin {
 	public final String getVersion() {
 		return "SidplayPlugin\n" + sidplayPlugin.getVersion() + "\nVICEPlugin\n" + vicePlugin.getVersion();
 	}
-
 }

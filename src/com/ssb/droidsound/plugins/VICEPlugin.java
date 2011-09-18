@@ -166,7 +166,7 @@ public final class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte [] module, int size) {
+	public boolean load(String name, byte[] module, int size) {
 		
 		//currentTune = 0;
 		
@@ -212,7 +212,6 @@ public final class VICEPlugin extends DroidSoundPlugin {
 			Log.i(TAG, "Native code error: " + error);
 			return false;
 		}
-
 		return true; 
 	}
 

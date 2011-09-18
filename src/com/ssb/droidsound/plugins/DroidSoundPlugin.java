@@ -147,7 +147,7 @@ public abstract class DroidSoundPlugin {
 		Log.d(TAG, "PLUGIN LOAD STREAM");
 		boolean rc = false;
 		try {
-			byte [] songBuffer = new byte [size];
+			byte[] songBuffer = new byte[size];
 			is.read(songBuffer);
 			calcMD5(songBuffer);
 			rc = load(name, songBuffer, songBuffer.length);
@@ -178,7 +178,7 @@ public abstract class DroidSoundPlugin {
 	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
 		boolean rc = false;
 		try {
-			byte [] songBuffer = new byte [size];
+			byte[] songBuffer = new byte[size];
 			is.read(songBuffer);
 			rc = loadInfo(name, songBuffer, songBuffer.length);
 		} catch (OutOfMemoryError e) {
@@ -190,7 +190,7 @@ public abstract class DroidSoundPlugin {
 	public boolean load(File file) throws IOException {
 		Log.d(TAG, "PLUGIN LOAD FILE");
 		int l = (int)file.length();
-		byte [] songBuffer = null;
+		byte[] songBuffer = null;
 		try {
 			songBuffer = new byte [l];
 		} catch (OutOfMemoryError e) {
@@ -205,7 +205,7 @@ public abstract class DroidSoundPlugin {
 
 	public boolean loadInfo(File file) throws IOException {
 		int l = (int)file.length();
-		byte [] songBuffer = null;
+		byte[] songBuffer = null;
 		try {
 			songBuffer = new byte [l];
 		} catch (OutOfMemoryError e) {
@@ -328,11 +328,11 @@ public abstract class DroidSoundPlugin {
 			}
 		}
 	}
+    
 	private static final String [] pref0 = new String[] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
 	private static final String [] pref1 = new String[] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
 
 	public static String getSecondaryFile(String path) {
-
 		int dot = path.lastIndexOf('.');
 		int slash = path.lastIndexOf('/');
 

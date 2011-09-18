@@ -175,7 +175,7 @@ public final class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public final int getSoundData(short [] dest, int size) {
+	public final int getSoundData(short[] dest, int size) {
 		//Log.d(TAG, "getSoundData()");
 		return N_getSoundData(currentSong, dest, size);
 	}
@@ -188,7 +188,7 @@ public final class UADEPlugin extends DroidSoundPlugin {
 			return zeroLengthArray;
 		}
 
-		String [] details = new String [2];
+		String[] details = new String [2];
 		details[0] = "Format";
 		details[1] = "UADE: " + N_getStringInfo(currentSong, INFO_TYPE);
 		return details;
@@ -357,12 +357,12 @@ public final class UADEPlugin extends DroidSoundPlugin {
 	public final native void N_exit();
 	public static native void N_setOption(int what, int val);
 	public final native boolean N_canHandle(String name);
-	public final native long N_load(byte [] module, int size);
+	public final native long N_load(byte[] module, int size);
 	public final native long N_loadFile(String name);
 	public final native void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	public final native int N_getSoundData(long song, short [] dest, int size);
+	public final native int N_getSoundData(long song, short[] dest, int size);
 	public final native boolean N_seekTo(long song, int seconds);
 	public final native boolean N_setTune(long song, int tune);
 	public final native String N_getStringInfo(long song, int what);

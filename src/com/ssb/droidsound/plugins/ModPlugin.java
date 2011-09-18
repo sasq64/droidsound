@@ -285,7 +285,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }
+	public int getSoundData(short[] dest, int size) { return N_getSoundData(currentSong, dest, size); }
 	@Override
 	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
@@ -304,7 +304,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean loadInfo(File file) throws IOException {
 		int l = (int)file.length();
-		byte [] songBuffer = null;
+		byte[] songBuffer = null;
 		try {
 			songBuffer = new byte [l];
 		} catch (OutOfMemoryError e) {
@@ -342,7 +342,7 @@ public final class ModPlugin extends DroidSoundPlugin {
 			info[4] = "Instruments";
 			info[5] = instruments;
 		} else {
-			info = new String [4];
+			info = new String[4];
 		}
 		info[0] = "Format";
 		info[1] = "MODPlug: " + fmt;
@@ -359,8 +359,8 @@ public final class ModPlugin extends DroidSoundPlugin {
 	// --- Native functions
 
 	native public boolean N_canHandle(String name);
-	native public long N_load(byte [] module, int size);
-	native public long N_loadInfo(byte [] module, int size);
+	native public long N_load(byte[] module, int size);
+	native public long N_loadInfo(byte[] module, int size);
 	native public void N_unload(long song);
 	
 
