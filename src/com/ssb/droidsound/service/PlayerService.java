@@ -428,7 +428,6 @@ public final class PlayerService extends Service {
                     super.handleMessage(msg);
             }
         }
-
     };
 
      void createThread() {
@@ -930,7 +929,6 @@ public final class PlayerService extends Service {
 			callbacks.remove(cb);
 		}
 
-
 		@Override
 		public boolean playPause(boolean play) {
 			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
@@ -957,7 +955,6 @@ public final class PlayerService extends Service {
 			info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 		}
-
 
 		@Override
 		public boolean seekTo(int msec) {
@@ -1198,9 +1195,7 @@ public final class PlayerService extends Service {
 
 			return false;
 		}
-
-		};
-
+	};
 
     @Override
 	public final IBinder onBind(Intent intent) {

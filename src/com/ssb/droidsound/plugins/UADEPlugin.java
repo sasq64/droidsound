@@ -65,9 +65,7 @@ public final class UADEPlugin extends DroidSoundPlugin {
 				droidDir.mkdir();
 				unzipper = Unzipper.getInstance();
 				unzipper.unzipAssetAsync(getContext(), "eagleplayers.zip", droidDir);
-
 			}
-
 		}
 		//for(String s : ex) {
 		//	extensions.add(s);
@@ -369,6 +367,4 @@ public final class UADEPlugin extends DroidSoundPlugin {
 	public final native boolean N_setTune(long song, int tune);
 	public final native String N_getStringInfo(long song, int what);
 	public final native int N_getIntInfo(long song, int what);
-
-
 }

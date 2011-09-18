@@ -192,7 +192,6 @@ public final class PlayQueue {
     			if(current == null || setCurrent(current) < 0) {
     				musicListPos = 0;
     			}
-
     		}
     		oldPlaylistHash = hash;
        	}
