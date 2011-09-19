@@ -487,7 +487,7 @@ int play_loop(struct uade_state *state)
 
   if (record_playtime && us->md5[0] != 0) {
     uint32_t playtime = (us->out_bytes * 1000) / bytes_per_second;
-    uade_add_playtime(us->md5, playtime);
+    uade_add_playtime(state, us->md5, playtime);
   }
 
   do {

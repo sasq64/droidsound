@@ -12,7 +12,8 @@ int uade_load_initial_config(char *uadeconfname, size_t maxlen,
 			     struct uade_config *ucbase);
 int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 				struct uade_config *uc,
-				struct uade_config *ucbase);
+				struct uade_config *ucbase,
+				struct uade_state *state);
 void uade_merge_configs(struct uade_config *ucd, const struct uade_config *ucs);
 char *uade_open_create_home(void);
 int uade_parse_subsongs(int **subsongs, char *option);

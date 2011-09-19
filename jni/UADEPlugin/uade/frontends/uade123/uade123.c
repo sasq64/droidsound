@@ -68,10 +68,10 @@ static void setup_sighandlers(void);
 ssize_t stat_file_size(const char *name);
 static void trivial_sigchld(int sig);
 static void trivial_sigint(int sig);
-static void cleanup(void);
+static void cleanup(struct uade_state *state);
 
 
-static void load_content_db(struct uade_config *uc)
+static void load_content_db(struct uade_config *uc, struct uade_state *state)
 {
   struct stat st;
   time_t curtime = time(NULL);
@@ -90,13 +90,13 @@ static void load_content_db(struct uade_config *uc)
   if (md5name[0]) {
     /* Try home directory first */
     if (stat(md5name, &st) == 0) {
-      if (uade_read_content_db(md5name))
+      if (uade_read_content_db(md5name, state))
 	return;
     } else {
       FILE *f = fopen(md5name, "w");
       if (f)
 	fclose(f);
-      uade_read_content_db(md5name);
+      uade_read_content_db(md5name, state);
     }
   }
 
@@ -104,19 +104,19 @@ static void load_content_db(struct uade_config *uc)
      from user database */
   snprintf(name, sizeof name, "%s/contentdb", uc->basedir.name);
   if (stat(name, &st) == 0)
-    uade_read_content_db(name);
+    uade_read_content_db(name, state);
 }
 
 
-static void save_content_db(void)
+static void save_content_db(struct uade_state *state)
 {
   struct stat st;
   if (md5name[0] && stat(md5name, &st) == 0) {
 
     if (md5_load_time < st.st_mtime)
-      uade_read_content_db(md5name);
+      uade_read_content_db(md5name, state);
 
-    uade_save_content_db(md5name);
+    uade_save_content_db(md5name, state);
   }
 }
 
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
   int plistdir;
   int scanmode = 0;
 
-  struct uade_state state;
+  struct uade_state state = {};
 
   enum {
     OPT_FIRST = 0x1FFF,
@@ -450,8 +450,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof uadeconfname,
-					     &uc_main, &uc_cmdline);
+  uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof uadeconfname, &uc_main, &uc_cmdline);
 
   /* Merge loaded configurations and command line options */
   uc_eff = uc_main;
@@ -463,9 +462,7 @@ int main(int argc, char *argv[])
     debug(uc_eff.verbose, "Loaded configuration: %s\n", uadeconfname);
   }
 
-  songconf_loaded = uade_load_initial_song_conf(songconfname,
-						sizeof songconfname,
-						&uc_main, &uc_cmdline);
+  songconf_loaded = uade_load_initial_song_conf(songconfname, sizeof songconfname, &uc_main, &uc_cmdline, &state);
 
   if (songconf_loaded == 0) {
     debug(uc_eff.verbose, "Not able to load song.conf from ~/.uade2/ or %s/.\n", uc_eff.basedir.name);
@@ -504,7 +501,7 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  load_content_db(&uc_eff);
+  load_content_db(&uc_eff, &state);
 
   if (uc_eff.random_play)
     playlist_randomize(&uade_playlist);
@@ -548,8 +545,6 @@ int main(int argc, char *argv[])
   } while (0);
 
   setup_sighandlers();
-
-  memset(&state, 0, sizeof state);
 
   uade_spawn(&state, uadename, configname);
 
@@ -678,11 +673,11 @@ int main(int argc, char *argv[])
   }
 
   debug(uc_cmdline.verbose || uc_main.verbose, "Killing child (%d).\n", uadepid);
-  cleanup();
+  cleanup(&state);
   return 0;
 
  cleanup:
-  cleanup();
+  cleanup(&state);
   return 1;
 }
 
@@ -868,9 +863,9 @@ int test_song_end_trigger(void)
 }
 
 
-static void cleanup(void)
+static void cleanup(struct uade_state *state)
 {
-  save_content_db();
+  save_content_db(state);
 
   if (uadepid != -1) {
     kill(uadepid, SIGTERM);
