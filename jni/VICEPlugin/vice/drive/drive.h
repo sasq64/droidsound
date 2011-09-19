@@ -124,9 +124,7 @@ typedef struct drive_s {
 
     /* Original ROM code is saved here.  */
     BYTE rom_idle_trap[4];
-
-    /* Original ROM code of the checksum routine is saved here.  */
-    BYTE rom_checksum[4];
+    int trap, trapcont;
 
     /* Byte ready line.  */
     unsigned int byte_ready_level;
@@ -277,7 +275,6 @@ extern int drive_check_expansion8000(int drive_type);
 extern int drive_check_expansionA000(int drive_type);
 extern int drive_check_parallel_cable(int drive_type);
 extern int drive_check_extend_policy(int drive_type);
-extern int drive_check_idle_method(int drive_type);
 extern int drive_check_profdos(int drive_type);
 
 extern int drive_num_leds(unsigned int dnr);
@@ -287,4 +284,3 @@ extern void drive_setup_context(void);
 extern int drive_resources_type_init(unsigned int default_type);
 
 #endif
-
