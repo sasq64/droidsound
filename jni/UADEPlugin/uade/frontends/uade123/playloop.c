@@ -420,7 +420,7 @@ int play_loop(struct uade_state *state)
       case UADE_REPLY_SONG_END:
 	if (um->size < 9) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nInvalid song end reply\n");
-	  exit(-1);
+	  exit(1);
 	}
 	tailbytes = ntohl(((uint32_t *) um->data)[0]);
 	/* next ntohl() is only there for a principle. it is not useful */
@@ -438,7 +438,7 @@ int play_loop(struct uade_state *state)
 	  i++;
 	if (reason[i] != 0 || (i != (um->size - 9))) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nbroken reason string with song end notice\n");
-	  exit(-1);
+	  exit(1);
 	}
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nSong end (%s)\n", reason);
 	break;
@@ -446,7 +446,7 @@ int play_loop(struct uade_state *state)
       case UADE_REPLY_SUBSONG_INFO:
 	if (um->size != 12) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nsubsong info: too short a message\n");
-	  exit(-1);
+	  exit(1);
 	}
 
 	u32ptr = (uint32_t *) um->data;

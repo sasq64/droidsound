@@ -303,7 +303,7 @@ void uade_effect_normalise_serialise(char *buf, size_t len)
 
 	if (snprintf(buf, len, "v=1,p=%d", peak) >= len) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"normalise effect: buffer too short, gain would be truncated. This is a bug in UADE.\n");
-		exit(-1);
+		exit(1);
 	}
 }
 
@@ -323,17 +323,17 @@ void uade_effect_normalise_unserialise(const char *buf)
 
 	if (readcount == 0) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "normalise effect: gain string invalid: '%s'\n", buf);
-		exit(-1);
+		exit(1);
 	}
 
 	if (version != 1) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"normalise effect: unrecognized gain version: '%s'\n", buf);
-		exit(-1);
+		exit(1);
 	}
 
 	if (readcount != 2) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"Could not read peak value for version 1: '%s'\n", buf);
-		exit(-1);
+		exit(1);
 	}
 
 	if (peak >= 0.0 && peak <= 1.0) {
