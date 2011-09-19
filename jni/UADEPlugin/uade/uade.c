@@ -817,7 +817,6 @@ void uade_reset(void)
 
   ret = uade_receive_string(song.scorename, UADE_COMMAND_SCORE, sizeof(song.scorename), &uadeipc);
   if (ret == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: No more songs to play.\n");
     exit(0);
     pthread_exit(NULL);
   } else if (ret < 0) {
