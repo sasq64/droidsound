@@ -23,7 +23,7 @@
 
 #include "cia.h"
 
-#include "uade.h"
+#include "uadectl.h"
 #include "uadeipc.h"
 
 

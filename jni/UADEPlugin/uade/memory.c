@@ -13,7 +13,7 @@
 #include "uae.h"
 #include "include/uadememory.h"
 
-#include "uade.h"
+#include "uadectl.h"
 
 #ifdef USE_MAPPED_MEMORY
 #include <sys/mman.h>

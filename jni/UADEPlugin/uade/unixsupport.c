@@ -20,7 +20,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <android/log.h>
-#include "uade.h"
+#include "uadectl.h"
 #include "unixatomic.h"
 
 

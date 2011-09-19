@@ -24,8 +24,9 @@
 #include "osemu.h"
 #include "compiler.h"
 
-#include "uade.h"
+#include "uadectl.h"
 #include "ossupport.h"
+#include "uadeconstants.h"
 
 struct uae_prefs currprefs, changed_prefs;
 
