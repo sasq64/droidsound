@@ -123,6 +123,11 @@ struct stash stashes[NSTASHES];
 
 static ssize_t get_file_size(const char *path);
 
+static size_t snd_per_second(void)
+{
+	return 4 * uadestate.permconfig.frequency;
+}
+
 /*
  * xread() is the same as the read(), but it automatically restarts read()
  * operations with a recoverable error (EAGAIN and EINTR). xread()
@@ -283,7 +288,7 @@ static ssize_t cache_block_read(struct sndctx *ctx, char *buf, size_t offset,
 static void cache_init(struct sndctx *ctx)
 {
 	ctx->end_bi = 0;
-	ctx->nblocks = (SND_PER_SECOND * CACHE_SECONDS + CACHE_BLOCK_SIZE - 1) >> CACHE_BLOCK_SHIFT;
+	ctx->nblocks = (snd_per_second() * CACHE_SECONDS + CACHE_BLOCK_SIZE - 1) >> CACHE_BLOCK_SHIFT;
 	ctx->blocks = calloc(1, ctx->nblocks * sizeof(ctx->blocks[0]));
 	if (ctx->blocks == NULL)
 		LOGDIE("No memory for cache\n");
@@ -675,7 +680,7 @@ static ssize_t get_file_size(const char *path)
 	if (msecs <= 0)
 		msecs = 1000 * CACHE_SECONDS;
 
-	return WAV_HEADER_LEN + (((msecs * SND_PER_SECOND) / 1000) & ~0x3);
+	return WAV_HEADER_LEN + (((msecs * snd_per_second()) / 1000) & ~0x3);
 }
 
 static int uadefs_getattr(const char *fpath, struct stat *stbuf)
