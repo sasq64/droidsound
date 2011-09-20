@@ -18,13 +18,10 @@
 
 #include "uadeipc.h"
 #include "eagleplayer.h"
-#include "uadeconfig.h"
 #include "uadecontrol.h"
 #include "uadeconstants.h"
-#include "ossupport.h"
 #include "uadeconf.h"
 #include "effects.h"
-#include "sysincludes.h"
 #include "songdb.h"
 #include "plugin.h"
 #include "subsongseek.h"
