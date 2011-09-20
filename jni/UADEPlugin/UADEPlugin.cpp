@@ -363,6 +363,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit(JNIEnv
 int init()
 {
 	char temp[256];
+	char *basedir;
 
     //uadeconf_loaded = uade_load_initial_config(uadeconfname,
 		//			       sizeof uadeconfname,
@@ -370,10 +371,11 @@ int init()
 			
 	if(eaglestore == 0) {
 
+	   basedir = NULL;
 	   memset(&state, 0, sizeof state);
 	    __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "baseDir os '%s'", baseDir);
 
-		uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof(uadeconfname), &main_config, NULL);
+		uadeconf_loaded = uade_load_initial_config(&state, uadeconfname, sizeof(uadeconfname), basedir);
 
 		strcpy(main_config.basedir.name, baseDir);
 

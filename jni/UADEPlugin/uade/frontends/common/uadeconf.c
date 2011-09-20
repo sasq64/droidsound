@@ -290,7 +290,7 @@ int uade_load_config(struct uade_config *uc, const char *filename)
 	return 1;
 }
 
-int uade_load_initial_config(char *uadeconfname, size_t maxlen, struct uade_config *uc, struct uade_config *ucbase)
+int uade_load_initial_config(struct uade_state *state, char *uadeconfname, size_t maxlen, const char *bdir)
 {
 	int loaded;
 	char *home;
@@ -298,31 +298,30 @@ int uade_load_initial_config(char *uadeconfname, size_t maxlen, struct uade_conf
 	assert(maxlen > 0);
 	uadeconfname[0] = 0;
 
-	uade_config_set_defaults(uc);
+	uade_config_set_defaults(&state->permconfig);
 
 	loaded = 0;
 
 	/* First try to load from forced base dir (testing mode) */
-	if (ucbase != NULL && ucbase->basedir_set) {
-		snprintf(uadeconfname, maxlen, "%s/uade.conf",
-			 ucbase->basedir.name);
-		loaded = uade_load_config(uc, uadeconfname);
+	if (bdir != NULL) {
+		snprintf(uadeconfname, maxlen, "%s/uade.conf", bdir);
+		loaded = uade_load_config(&state->permconfig, uadeconfname);
 	}
-
-	home = uade_open_create_home();
+	
 
 	/* Second, try to load config from ~/.uade2/uade.conf */
+	home = uade_open_create_home();
 	if (loaded == 0 && home != NULL) {
 		snprintf(uadeconfname, maxlen, "%s/.uade2/uade.conf", home);
-		loaded = uade_load_config(uc, uadeconfname);
+		loaded = uade_load_config(&state->permconfig, uadeconfname);
 	}
 
 	/* Third, try to load from install path */
 	if (loaded == 0) {
-		snprintf(uadeconfname, maxlen, "%s/uade.conf",
-			 uc->basedir.name);
-		loaded = uade_load_config(uc, uadeconfname);
+		snprintf(uadeconfname, maxlen, "%s/uade.conf", state->permconfig.basedir.name);
+		loaded = uade_load_config(&state->permconfig, uadeconfname);
 	}
+	state->config = state->permconfig;
 
 	return loaded;
 }

@@ -117,7 +117,6 @@ static struct uade_state state;
 
 static char configname[PATH_MAX];
 static pthread_t decode_thread;
-static struct uade_config config_backup;
 static char gui_filename[PATH_MAX];
 static char gui_formatname[256];
 static int gui_info_set;
@@ -167,7 +166,7 @@ static void test_uade_conf(void)
 
   config_load_time = st.st_mtime;
 
-  uade_load_config(&config_backup, configname);
+  uade_load_config(&state.permconfig, configname);
 }
 
 
@@ -308,26 +307,21 @@ InputPlugin *get_iplugin_info(void)
 static void uade_init(void)
 {
   char *home;
-  int config_loaded;
 
   config_load_time = time(NULL);
 
-  config_loaded = uade_load_initial_config(configname, sizeof configname, &config_backup, NULL);
+  if (!uade_load_initial_config(&state, configname, sizeof configname, NULL))
+  		__android_log_print(ANDROID_LOG_VERBOSE, "No config file found for UADE. Will try to load config from $HOME/.uade2/uade.conf in the future.\n");
 
   load_content_db();
 
-  uade_load_initial_song_conf(songconfname, sizeof songconfname, &config_backup, NULL, &state);
+  uade_load_initial_song_conf(songconfname, sizeof songconfname, &state_permconfig, NULL, &state);
 
   home = uade_open_create_home();
 
   if (home != NULL) {
     /* If config exists in home, ignore global uade.conf. */
     snprintf(configname, sizeof configname, "%s/.uade2/uade.conf", home);
-  }
-
-  if (config_loaded == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No config file found for UADE XMMS plugin. Will try to load config from\n");
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "$HOME/.uade2/uade.conf in the future.\n");
   }
 }
 
@@ -357,7 +351,7 @@ static int uadeaudacious_is_our_file(char *filename)
      * when state.config hasn't yet been read. uade_is_our_file() needs the
      * config */
     if (!state.validconfig) {
-      state.config = config_backup;
+      state.config = state.permconfig;
       state.validconfig = 1;
 
       /* Verify that this condition is true at most once */
@@ -387,7 +381,7 @@ static int initialize_song(char *filename)
 
   uade_lock();
 
-  state.config = config_backup;
+  state.config = state.permconfig;
   state.validconfig = 1;
 
   state.ep = NULL;
@@ -805,7 +799,7 @@ static void uade_play_file(char *filename)
     uade_spawn(&state, UADE_CONFIG_UADE_CORE, configname);
   }
 
-  if (!playhandle->output->open_audio(sample_format, config_backup.frequency, UADE_CHANNELS)) {
+  if (!playhandle->output->open_audio(sample_format, state.permconfig.frequency, UADE_CHANNELS)) {
     abort_playing = 1;
     return;
   }

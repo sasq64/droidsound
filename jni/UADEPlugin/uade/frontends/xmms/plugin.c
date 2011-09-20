@@ -90,7 +90,6 @@ static struct uade_state state;
 
 static char configname[PATH_MAX];
 static pthread_t decode_thread;
-static struct uade_config config_backup;
 static char gui_filename[PATH_MAX];
 static char gui_formatname[256];
 static int gui_info_set;
@@ -115,35 +114,21 @@ int uade_thread_running;      /* Trigger type */
 int uade_seek_forward;        /* Lock before use */
 int uade_select_sub;          /* Lock before use */
 
-
-static int uade_config_optimization;
-
-
 static pthread_mutex_t vlock = PTHREAD_MUTEX_INITIALIZER;
-
-
-static void test_uade_conf(void)
-{
-  struct stat st;
-
-  if (stat(configname, &st))
-    return;
-
-  /* Read only newer files */
-  if (st.st_mtime <= config_load_time)
-    return;
-
-  config_load_time = st.st_mtime;
-
-  uade_load_config(&config_backup, configname);
-}
 
 
 static void load_config(void)
 {
-  test_uade_conf();
-}
+  struct stat st;
 
+  /* Read only newer files */
+  if (stat(configname, &st) != 0 || st.st_mtime <= config_load_time)
+    return;
+
+  config_load_time = st.st_mtime;
+
+  uade_load_config(&state.permconfig, configname);
+}
 
 static void load_content_db(void)
 {
@@ -176,7 +161,7 @@ static void load_content_db(void)
 		}
 	}
 
-	snprintf(name, sizeof name, "%s/contentdb.conf", config_backup.basedir.name);
+	snprintf(name, sizeof name, "%s/contentdb.conf", state.permconfig.basedir.name);
 	if (stat(name, &st) == 0 && content_mtime < st.st_mtime) {
 		uade_read_content_db(name);
 		if (stat(name, &st) == 0)
@@ -280,16 +265,15 @@ InputPlugin *get_iplugin_info(void)
 static void uade_init(void)
 {
   char *home;
-  int config_loaded;
 
   config_load_time = time(NULL);
 
-  config_loaded = uade_load_initial_config(configname, sizeof configname,
-					   &config_backup, NULL);
+ if (!uade_load_initial_config(&state, configname, sizeof configname, NULL))
+ 	__android_log_print(ANDROID_LOG_VERBOSE, "No config file found for UADE XMMS plugin. Will try to load config from $HOME/.uade2/uade.conf in the future.\n");
 
   load_content_db();
 
-  uade_load_initial_song_conf(songconfname, sizeof songconfname, &config_backup, NULL, &state);
+  uade_load_initial_song_conf(songconfname, sizeof songconfname, &state.permconfig, NULL, &state);
  
 
   home = uade_open_create_home();
@@ -297,11 +281,6 @@ static void uade_init(void)
   if (home != NULL) {
     /* If config exists in home, ignore global uade.conf. */
     snprintf(configname, sizeof configname, "%s/.uade2/uade.conf", home);
-  }
-
-  if (config_loaded == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No config file found for UADE XMMS plugin. Will try to load config from\n");
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "$HOME/.uade2/uade.conf in the future.\n");
   }
 }
 
@@ -321,12 +300,8 @@ static int uadexmms_is_our_file(char *filename)
    * when state.config hasn't yet been read. uade_is_our_file() needs the
    * config. */
   if (!state.validconfig) {
-    state.config = config_backup;
+    state.config = state.permconfig;
     state.validconfig = 1;
-
-    /* Verify that this condition is true at most once */
-    assert(!uade_config_optimization);
-    uade_config_optimization = 1;
   }
 
   ret = uade_is_our_file(filename, 1, &state) ? TRUE : FALSE;
@@ -347,7 +322,7 @@ static int initialize_song(char *filename)
 
   uade_lock();
 
-  state.config = config_backup;
+  state.config = state.permconfig;
   state.validconfig = 1;
 
   state.ep = NULL;
@@ -755,11 +730,11 @@ static void uade_play_file(char *filename)
 
   if (!state.pid) {
     char configname[PATH_MAX];
-    snprintf(configname, sizeof configname, "%s/uaerc", config_backup.basedir.name);
+    snprintf(configname, sizeof configname, "%s/uaerc", state.permconfig.basedir.name);
     uade_spawn(&state, UADE_CONFIG_UADE_CORE, configname);
   }
 
-  if (!uade_ip.output->open_audio(sample_format, config_backup.frequency, UADE_CHANNELS)) {
+  if (!uade_ip.output->open_audio(sample_format, state.permconfig.frequency, UADE_CHANNELS)) {
     abort_playing = 1;
     return;
   }

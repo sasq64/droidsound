@@ -7,9 +7,7 @@ void uade_config_set_defaults(struct uade_config *uc);
 double uade_convert_to_double(const char *value, double def,
 			      double low, double high, const char *type);
 int uade_load_config(struct uade_config *uc, const char *filename);
-int uade_load_initial_config(char *uadeconfname, size_t maxlen,
-			     struct uade_config *uc,
-			     struct uade_config *ucbase);
+int uade_load_initial_config(struct uade_state *state, char *uadeconfname, size_t maxlen, const char *bdir);
 int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 				struct uade_config *uc,
 				struct uade_config *ucbase,

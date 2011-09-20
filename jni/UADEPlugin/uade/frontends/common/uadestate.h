@@ -18,6 +18,7 @@ struct uade_state {
 
 	/* Permanent members */
 	int validconfig;
+	struct uade_config permconfig;
 	struct eagleplayerstore *playerstore;
 	struct uade_ipc ipc;
 	pid_t pid;

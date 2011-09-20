@@ -1295,8 +1295,7 @@ static void init_uade(void)
 {
     char uadeconfname[4096];
 
-    (void) uade_load_initial_config(uadeconfname, sizeof uadeconfname,
-				    &uadestate.config, NULL);
+    uade_load_initial_config(&uadestate, uadeconfname, sizeof uadeconfname, NULL);
 
     load_content_db();
 }
