@@ -11,7 +11,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  Andreas Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -319,8 +319,6 @@ int vdrive_dir_first_directory(vdrive_t *vdrive, const char *name,
                                int length, int filetype, bufferinfo_t *p)
 {
     BYTE *l;
-    int blocks, i;
-    int status;
 
     if (length) {
         if (*name == '$') {
