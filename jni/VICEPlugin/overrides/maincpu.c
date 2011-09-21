@@ -1,4 +1,4 @@
-/*..
+/*
  * maincpu.c - Emulation of the main 6510 processor.
  *
  * Written by

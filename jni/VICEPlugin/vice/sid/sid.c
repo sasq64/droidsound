@@ -1,7 +1,7 @@
 /*
  * sid.c - MOS6581 (SID) emulation, hooks to actual implementation.
  *
- * Written by//
+ * Written by
  *  Teemu Rantanen <tvr@cs.hut.fi>
  *  Michael Schwendt <sidplay@geocities.com>
  *  Ettore Perazzoli <ettore@comm2000.it>

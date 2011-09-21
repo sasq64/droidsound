@@ -2,7 +2,7 @@
  * petsound.c - implementation of PET sound code
  *
  * Written by
- *  Teemu Rantanen <tvr@cs.hut.fi>//
+ *  Teemu Rantanen <tvr@cs.hut.fi>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.

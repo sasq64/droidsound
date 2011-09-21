@@ -1,4 +1,4 @@
-/*//
+/*
  * userport_dac.c - Generic userport 8bit DAC emulation.
  *
  * Written by

@@ -1,4 +1,4 @@
-/*//
+/*
  * ted-sound.c
  *
  * Written by
