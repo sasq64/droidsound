@@ -629,7 +629,7 @@ static void pc8477_reset(pc8477_t *drv, int is8477)
     drv->rate = 250;
     pc8477_software_reset(drv);
 }
-
+//
 /*-----------------------------------------------------------------------*/
 
 int pc8477_attach_image(disk_image_t *image, unsigned int unit)

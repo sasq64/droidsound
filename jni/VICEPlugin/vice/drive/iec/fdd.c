@@ -266,7 +266,7 @@ void fdd_set_motor(fd_drive_t *drv, int motor)
         return;
     }
     drv->motor = motor & 1;
-}
+}//
 
 void fdd_set_rate(fd_drive_t *drv, int rate)
 {

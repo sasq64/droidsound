@@ -1,5 +1,5 @@
 /*
- * plus4speech.c - v364 speech support
+ * plus4speech.c - v364 speech support//
  *
  * Written by
  *  groepaz <groepaz@gmx.net>

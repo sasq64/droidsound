@@ -1,7 +1,7 @@
 /*
  * sfx_soundexpander.c - SFX soundexpander cartridge emulation.
  *
- * Written by
+ * Written by//
  *  Marco van den Heuvel <blackystardust68@yahoo.com>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.

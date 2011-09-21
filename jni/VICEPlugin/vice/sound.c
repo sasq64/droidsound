@@ -1,4 +1,4 @@
-/*
+/*//
  * sound.c - General code for the sound interface.
  *
  * Written by

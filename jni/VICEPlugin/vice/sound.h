@@ -1,4 +1,4 @@
-/*
+/*//
  * sound.h - General code for the sound interface
  *
  * Written by

@@ -1,7 +1,7 @@
 /*
  * sfx_soundsampler.c - SFX Sound Sampler cartridge emulation.
  *
- * Written by
+ * Written by//
  *  Marco van den Heuvel <blackystardust68@yahoo.com>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
