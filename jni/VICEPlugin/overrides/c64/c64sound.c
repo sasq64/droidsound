@@ -30,7 +30,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "c64io.h"
+#include "cartio.h"
+#include "cartridge.h"
 #include "machine.h"
 #include "sid.h"
 #include "sid-resources.h"
@@ -62,12 +63,32 @@ static io_source_t stereo_sid_device = {
     NULL, /* TODO: dump */
     0,
     0,
+    0
 };
 
 static io_source_list_t *stereo_sid_list_item = NULL;
 
-/* current config, NULL if not in the range of $de00-$dfff */
-static io_source_t *current_device = NULL;
+
+/* ---------------------------------------------------------------------*/
+static sound_chip_t sid_sound_chip = {
+    sid_sound_machine_open,
+    sid_sound_machine_init,
+    sid_sound_machine_close,
+    sid_sound_machine_calculate_samples,
+    sid_sound_machine_store,
+    sid_sound_machine_read,
+    sid_sound_machine_reset,
+    sid_sound_machine_cycle_based,
+    sid_sound_machine_channels,
+    1 /* chip enabled */
+};
+
+static WORD sid_sound_chip_offset = 0;
+
+void sid_sound_chip_init(void)
+{
+    sid_sound_chip_offset = sound_chip_register(&sid_sound_chip);
+}
 
 /* ---------------------------------------------------------------------*/
 
@@ -117,16 +138,6 @@ void machine_sid2_enable(int val)
     }
 }
 
-sound_t *sound_machine_open(int chipno)
-{
-    return sid_sound_machine_open(chipno);
-}
-
-int sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
-{
-    return sid_sound_machine_init(psid, speed, cycles_per_sec);
-}
-
 void sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub)
 {
     sid_sound_machine_prevent_clk_overflow(psid, sub);
@@ -137,30 +148,6 @@ char *sound_machine_dump_state(sound_t *psid)
     return sid_sound_machine_dump_state(psid);
 }
 
-static sound_chip_t sid_sound_chip = {
-	sid_sound_machine_open,
-	sid_sound_machine_init,
-	sid_sound_machine_close,
-	sid_sound_machine_calculate_samples,
- 	sid_sound_machine_store,
-    sid_sound_machine_read,
-	sid_sound_machine_reset,
-	sid_sound_machine_cycle_based,
-	sid_sound_machine_channels,
-	 	     1 /* chip enabled */
-};
-	 	 
-
-static WORD sid_sound_chip_offset = 0;
-
-void sid_sound_chip_init(void)
-{
-    sid_sound_chip_offset = sound_chip_register(&sid_sound_chip);
-}
-
-/*void cartridge_sound_chip_init(void)
-{
-}*/
 
 void sound_machine_enable(int enable)
 {

@@ -98,12 +98,12 @@ int psid_sound_max;
 
 #ifndef STORE_ZERO
 #define STORE_ZERO(addr, value) \
-    zero_store((WORD)(addr), (BYTE)(value))
+    (*_mem_write_tab_ptr[0])((WORD)(addr), (BYTE)(value))
 #endif
 
 #ifndef LOAD_ZERO
 #define LOAD_ZERO(addr) \
-    zero_read((WORD)(addr))
+    (*_mem_read_tab_ptr[0])((WORD)(addr))
 #endif
 
 #ifdef FEATURE_CPUMEMHISTORY
@@ -111,12 +111,12 @@ int psid_sound_max;
 
 /* HACK this is C64 specific */
 
-void REGPARM2 memmap_mem_store(unsigned int addr, unsigned int value)
+void memmap_mem_store(unsigned int addr, unsigned int value)
 {
     (*_mem_write_tab_ptr[(addr) >> 8])((WORD)(addr), (BYTE)(value));
 }
 
-BYTE REGPARM1 memmap_mem_read(unsigned int addr)
+BYTE memmap_mem_read(unsigned int addr)
 {
     memmap_state &= ~(MEMMAP_STATE_OPCODE);
     return (*_mem_read_tab_ptr[(addr) >> 8])((WORD)(addr));
@@ -346,7 +346,6 @@ static void cpu_reset(void)
 
 void maincpu_reset(void)
 {
-    mem_set_bank_pointer(&bank_base, &bank_limit);
     cpu_reset();
 }
 
@@ -406,6 +405,7 @@ void psid_play(short *buf, int n)
 #define CLK maincpu_clk
 #define RMW_FLAG maincpu_rmw_flag
 #define LAST_OPCODE_INFO last_opcode_info
+#define LAST_OPCODE_ADDR last_opcode_addr
 #define TRACEFLG debug.maincpu_traceflg
 
 #define CPU_INT_STATUS maincpu_int_status
@@ -449,7 +449,6 @@ void psid_play(short *buf, int n)
     } while (0)
 
 #define CALLER e_comp_space
-#define LAST_OPCODE_ADDR last_opcode_addr
 #define ROM_TRAP_ALLOWED() mem_rom_trap_allowed((WORD)reg_pc)
 
 #define GLOBAL_REGS maincpu_regs
