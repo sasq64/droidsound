@@ -312,6 +312,7 @@ final class HttpSongSource {
 			 
 			Intent intent = new Intent("com.sddb.droidsound.REQUERY");
 			context.sendBroadcast(intent);
+			
 		}
 	}
 

@@ -52,18 +52,40 @@ public final class SidPlugin extends DroidSoundPlugin {
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);
 		src.order(ByteOrder.BIG_ENDIAN);
 
+		
+		/**Magic (PSID or RSID)*/
 		byte[] id = new byte[4];
 		src.get(id);
+		
+		/**0x0001, 0x0002 or 0x0003*/
 		int version = src.getShort();
 		src.position(8);
+		
+		/**16-bit C64 address to load file to*/
 		short loadAdress = src.getShort();
+		
+		/**16-bit C64 address of init subroutine*/
 		short initAdress = src.getShort();
+		
+		/**16-bit C64 address of play subroutine*/
 		short playAdress = src.getShort();
+		
+		/**Number of songs*/
 		short songs = src.getShort();
+		
+		/**Start song out of [1..256]*/
 		short startSong = src.getShort();
+		
+		/**
+		 * 32-bit speed info:
+		 * 
+		 * bit: 0=50 Hz, 1=CIA 1 Timer A (default: 60 Hz)*/
 		int speedBits = src.getInt();
 		src.position(0x76);
+		
+		/**only version 0x0002+*/
 		int flags = src.getShort();
+		
 
 		int offset = 120;
 		if (version == 2) {
