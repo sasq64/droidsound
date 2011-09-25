@@ -35,8 +35,8 @@ public final class CSDBParser implements DataSource {
 		pathName = p;
 	}
 
-	private boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, ScanCallback scanCallback) {
-
+	boolean parseCSDB(InputStream is, int fileSize, SQLiteDatabase db, ScanCallback scanCallback) {
+		
 		try {
 			db.execSQL("DELETE FROM RELEASES;");
 			db.execSQL("DELETE FROM GROUPS;");

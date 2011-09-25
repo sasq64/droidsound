@@ -18,6 +18,7 @@ import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
 
+/**The implementation of UADE within Droidsound*/
 public final class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
 
@@ -232,7 +233,6 @@ public final class UADEPlugin extends DroidSoundPlugin {
 	public final boolean load(File file) {
 
 		init();
-
 		currentSong = N_loadFile(file.getPath());
 		return currentSong != 0;
 	}
