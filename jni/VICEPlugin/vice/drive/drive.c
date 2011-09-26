@@ -7,7 +7,7 @@
  * Based on old code by
  *  Daniel Sladic <sladic@eecg.toronto.edu>
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Teemu Rantanen <tvr@cs.hut.fi>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -223,7 +223,7 @@ int drive_init(void)
 
     for (dnr = 0; dnr < DRIVE_NUM; dnr++) {
         drive = drive_context[dnr]->drive;
-        driverom_initialize_traps(drive);
+        driverom_initialize_traps(drive, 1);
 
         drivesync_clock_frequency(drive->type, drive);
 
@@ -759,8 +759,6 @@ void drive_vsync_hook(void)
             && drive->enable)
             drivecpu_execute(drive_context[dnr], maincpu_clk);
     }
-
-    machine_drive_vsync_hook();
 }
 
 /* ------------------------------------------------------------------------- */
