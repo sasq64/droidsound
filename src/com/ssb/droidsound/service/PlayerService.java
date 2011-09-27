@@ -530,7 +530,7 @@ public final class PlayerService extends Service {
     private final Object[] mStartForegroundArgs = new Object[2];
     private final Object[] mStopForegroundArgs = new Object[1];
 
-	//private PowerManager.WakeLock wakeLock;
+	private PowerManager.WakeLock wakeLock;
 
 	private Notification notification;
 
@@ -802,9 +802,13 @@ public final class PlayerService extends Service {
 		Intent notificationIntent = new Intent(this, PlayerActivity.class);
 		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
 	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
-	    //PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-	    //wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Droidsound");
-	    //wakeLock.acquire();
+	    PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+	    
+	    /*Wakelock that keeps the CPU of a device awake so that the 
+	     * audio can continue to play, and not cut out when the screen 
+	     * is turned off.*/
+	    wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Droidsound");
+	    wakeLock.acquire();
 	}
      //void beforePlay(String name) { Below code is a weaker type.
 	final void beforePlay(CharSequence name) {
