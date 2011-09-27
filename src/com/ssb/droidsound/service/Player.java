@@ -21,6 +21,7 @@ import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
+
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.SongFile;
@@ -342,7 +343,7 @@ public final class Player implements Runnable {
 	 * @param skipStart
 	 */
 	private void startSong(SongFile song, boolean skipStart) {
-
+		
 		if (currentPlugin != null) {
 			currentPlugin.unload();
 		}
@@ -536,7 +537,6 @@ public final class Player implements Runnable {
 				Log.d(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
 
 				Log.d(TAG, "'%s' by '%s'", song.getTitle(), song.getComposer());
-
 				synchronized (this) {
 					currentSong.md5 = currentPlugin.getMD5();
 					currentSong.fileName = song.getPath(); // songName;
@@ -646,7 +646,7 @@ public final class Player implements Runnable {
 						Log.d(TAG, "MP3 SOURCE IS " + currentSong.source);
 
 						mHandler.sendMessage(msg);
-
+						
 						mp.start();
 						return;
 					}
