@@ -2,7 +2,7 @@
  * cbm2-resources.c
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -271,6 +271,8 @@ static const resource_int_t resources_int[] = {
 #endif
     { "SidStereoAddressStart", 0xda20, RES_EVENT_SAME, NULL,
       (int *)&sid_stereo_address_start, sid_set_sid_stereo_address, NULL },
+    { "SidTripleAddressStart", 0xda40, RES_EVENT_SAME, NULL,
+      (int *)&sid_triple_address_start, sid_set_sid_triple_address, NULL },
     { NULL }
 };
 
@@ -310,4 +312,3 @@ void cbm2_resources_shutdown(void)
     lib_free(machine_keymap_file_list[4]);
     lib_free(machine_keymap_file_list[5]);
 }
-
