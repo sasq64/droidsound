@@ -1,5 +1,5 @@
 /*
- * cbm2mem.c - CBM-II memory handling.
+ * cbm2mem.c - CBM-6x0/7x0 memory handling.
  *
  * Written by
  *  André Fachat <fachat@physik.tu-chemnitz.de>
@@ -37,6 +37,7 @@
 #include "cbm2acia.h"
 #include "cbm2cia.h"
 #include "cbm2mem.h"
+#include "cbm2model.h"
 #include "cbm2tpi.h"
 #include "cia.h"
 #include "crtc-mem.h"
@@ -53,24 +54,6 @@
 #include "tpi.h"
 #include "types.h"
 #include "vsync.h"
-#include "vicii-mem.h"
-#include "vicii-phi1.h"
-#include "vicii.h"
-
-/* Expansion port signals. */
-export_t export = { 0, 0};
-
-static BYTE romh_banks[1]; /* dummy */
-
-BYTE *ultimax_romh_phi1_ptr(WORD addr)
-{
-    return romh_banks;
-}
-
-BYTE *ultimax_romh_phi2_ptr(WORD addr)
-{
-    return romh_banks;
-}
 
 void cia1_set_extended_keyboard_rows_mask(BYTE foo)
 {
@@ -84,10 +67,6 @@ BYTE mem_ram[CBM2_RAM_SIZE];            /* 1M, banks 0-14 plus extension RAM
                                            in bank 15 */
 BYTE mem_rom[CBM2_ROM_SIZE];            /* complete bank 15 ROM + video RAM */
 BYTE mem_chargen_rom[CBM2_CHARGEN_ROM_SIZE];
-
-/* Internal color memory.  */
-static BYTE mem_color_ram[0x400];
-BYTE *mem_color_ram_cpu, *mem_color_ram_vicii;
 
 /* Pointer to the chargen ROM.  */
 BYTE *mem_chargen_rom_ptr;
@@ -128,153 +107,17 @@ int cbm2_init_ok = 0;
 
 /* ------------------------------------------------------------------------- */
 
-/* state of tpi pc6/7 */
-static int c500_vbank = 0;
-
-/* 1= static video matrix RAM (phi2); 0= bank 0 */
-static int c500_statvid = 1;
-
-/* 1= character ROM in bank 15 (phi1); 0= bank 0 */
-static int c500_vicdotsel = 1;
-
-void c500_set_phi2_bank(int b) {
-    if (b == c500_statvid)
-        return;
-
-    if (b) {    /* bank 15 */
-        /* video memory at $c000/d000 depending on d818 */
-        vicii_set_phi2_addr_options(0x13ff, 0xc000);
-        /* no chargen mapping */
-        vicii_set_phi2_chargen_addr_options(0, 1);
-        /* memory mapping */
-        vicii_set_phi2_vbank(3);       /* necessary? */
-        vicii_set_phi2_ram_base(mem_rom);
-    } else {
-        /* video memory in bank 0 */
-        vicii_set_phi2_addr_options(0xffff, 0x0000);
-        /* no chargen mapping */
-        vicii_set_phi2_chargen_addr_options(0, 1);
-        /* memory mapping */
-        vicii_set_phi2_vbank(c500_vbank);
-        vicii_set_phi2_ram_base(mem_ram);
-    }
-
-    c500_statvid = b;
-}
-
-void c500_set_phi1_bank(int b) {
-    if (b == c500_vicdotsel)
-        return;
-
-    if (b) {    /* bank 15 */
-        /* video memory at $c000/c800 depending on d818 */
-        vicii_set_phi1_addr_options(0x0fff, 0xc000);
-        /* no chargen mapping */
-        vicii_set_phi1_chargen_addr_options(0xc000, 0xc000);
-        /* memory mapping */
-        vicii_set_phi1_vbank(3);       /* necessary? */
-        vicii_set_phi1_ram_base(mem_rom);
-    } else {
-        /* video memory in bank 0 */
-        vicii_set_phi1_addr_options(0xffff, 0x0000);
-        /* no chargen mapping */
-        vicii_set_phi1_chargen_addr_options(0, 1);
-        /* memory mapping */
-        vicii_set_phi1_vbank(c500_vbank);
-        vicii_set_phi1_ram_base(mem_ram);
-    }
-
-    c500_vicdotsel = b;
-}
-
-void cbm2_set_tpi2pc(BYTE b) {
-    int vbank = (b & 0xc0) >> 6;
-    c500_vbank = vbank;
-
-    if (cbm2_isC500) {
-        if (!c500_vicdotsel) {
-            vicii_set_phi1_vbank(vbank);
-        }
-        if (!c500_statvid) {
-            vicii_set_phi2_vbank(vbank);
-        }
-    }
-}
-
-void cbm2_set_tpi1ca(int a) {
-    if (cbm2_isC500) {
-        c500_set_phi2_bank(a);
-    } else {
-        crtc_set_chargen_offset((a) ? 256 : 0);
-    }
-}
-
-void cbm2_set_tpi1cb(int a) {
-    if (cbm2_isC500) {
-        c500_set_phi1_bank(a);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-
-struct modtab_s {
-    const char *model;
-    int usevicii;
-    int ramsize;
-    const char *basic;
-    const char *charrom;
-    const char *kernal;
-    int line; /* 0=7x0 (50 Hz), 1=6x0 60Hz, 2=6x0 50Hz */
-};
-typedef struct modtab_s modtab_t;
-
-static modtab_t modtab[] = {
-    { "510",  1, 64,   CBM2_BASIC500, CBM2_CHARGEN500, CBM2_KERNAL500, 2  },
-    { "610",  0, 128,  CBM2_BASIC128, CBM2_CHARGEN600, CBM2_KERNAL, 2  },
-    { "620",  0, 256,  CBM2_BASIC256, CBM2_CHARGEN600, CBM2_KERNAL, 2  },
-    { "620+", 0, 1024, CBM2_BASIC256, CBM2_CHARGEN600, CBM2_KERNAL, 2  },
-    { "710",  0, 128,  CBM2_BASIC128, CBM2_CHARGEN700, CBM2_KERNAL, 0  },
-    { "720",  0, 256,  CBM2_BASIC256, CBM2_CHARGEN700, CBM2_KERNAL, 0  },
-    { "720+", 0, 1024, CBM2_BASIC256, CBM2_CHARGEN700, CBM2_KERNAL, 0  },
-    { NULL }
-};
-
-static int cbm2_model = 1;
-
-int cbm2_set_model(const char *model, void *extra)
+void cbm2_set_tpi2pc(BYTE b)
 {
-    int i;
-
-    vsync_suspend_speed_eval();
-
-    for (i = 0; modtab[i].model; i++) {
-        if (strcmp(modtab[i].model, model))
-            continue;
-
-        resources_set_int("UseVicII", modtab[i].usevicii);
-        resources_set_int("RamSize", modtab[i].ramsize);
-        resources_set_string("BasicName", modtab[i].basic);
-        resources_set_string("ChargenName", modtab[i].charrom);
-        resources_set_string("KernalName", modtab[i].kernal);
-        resources_set_int("ModelLine", modtab[i].line);
-
-        cbm2_model = i;
-
-        /* we have to wait until we did enough initialization */
-        if (!cbm2_init_ok)
-            return 0; 
-
-        mem_powerup();
-        mem_load();
-        machine_trigger_reset(MACHINE_RESET_MODE_SOFT);
-        return 0;
-    }
-    return -1;
 }
 
-const char *cbm2_get_model()
+void cbm2_set_tpi1ca(int a)
 {
-    return modtab[cbm2_model].model;
+    crtc_set_chargen_offset((a) ? 256 : 0);
+}
+
+void cbm2_set_tpi1cb(int a)
+{
 }
 
 /* ------------------------------------------------------------------------- */
@@ -569,26 +412,16 @@ void store_io(WORD addr, BYTE value)
     switch (addr & 0xf800) {
       case 0xd000:
         rom_store(addr, value);         /* video RAM mapped here... */
-        if (cbm2_isC500 && (addr >= 0xd400)) {
-            colorram_store(addr, value);
-        }
         return;
       case 0xd800:
         switch(addr & 0xff00) {
           case 0xd800:
-            if (cbm2_isC500) {
-                vicii_store(addr, value);
-            } else {
-                crtc_store(addr, value);
-            }
+            crtc_store(addr, value);
             return;
           case 0xd900:
             return;                     /* disk units */
           case 0xda00:
-            if (sid_stereo && addr >= sid_stereo_address_start && addr < sid_stereo_address_end)
-              sid2_store(addr, value);
-            else
-              sid_store((WORD)(addr & 0xff), value);
+            sid_store((WORD)(addr & 0xff), value);
             return;
           case 0xdb00:
             return;                     /* coprocessor */
@@ -616,40 +449,19 @@ BYTE read_io(WORD addr)
       case 0xd800:
         switch (addr & 0xff00) {
           case 0xd800:
-            if (cbm2_isC500) {
-                return vicii_read(addr);
-            } else {
-                return crtc_read(addr);
-            }
+            return crtc_read(addr);
           case 0xd900:
             return read_unused(addr);
           case 0xda00:
-            if (sid_stereo && addr >= sid_stereo_address_start && addr < sid_stereo_address_end)
-            {
-              if (cbm2_isC500)
-              {
-                return sid2_read(addr);
-              }
-              else
-              {
-                return 0xff;            /* 2 MHz too fast for SID */
-              }
-            }
-            if (cbm2_isC500) {
-                return sid_read(addr);
-            } else {
-                return 0xff;            /* 2 MHz too fast for SID */
-            }
+            return 0xff;
+            return sid_read(addr);
           case 0xdb00:
             return read_unused(addr);
           case 0xdc00:
-            return cia1_read(addr);
+            return cia1_read((WORD)(addr & 0x0f));
           case 0xdd00:
-            return acia1_read(addr);
+            return acia1_read((WORD)(addr & 0x03));
           case 0xde00:
-            /* FIXME: VIC-II irq? */
-            /* if (cbm2_isC500 && ((addr & 7) == 2)) {
-                   return tpi1_read(addr&7)|1; }   */
             return tpi1_read((WORD)(addr & 0x07));
           case 0xdf00:
             return tpi2_read((WORD)(addr & 0x07));
@@ -676,26 +488,10 @@ void mem_toggle_watchpoints(int flag, void *context)
 /* ------------------------------------------------------------------------- */
 /* handle CPU reset */
 
-void mem_reset(void) {
+void mem_reset(void)
+{
     cbm2mem_set_bank_exec(15);
     cbm2mem_set_bank_ind(15);
-
-    if (cbm2_isC500) {
-        c500_set_phi1_bank(15);
-        c500_set_phi2_bank(15);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-
-void colorram_store(WORD addr, BYTE value)
-{
-    mem_color_ram[addr & 0x3ff] = value & 0xf;
-}
-
-BYTE colorram_read(WORD addr)
-{
-    return mem_color_ram[addr & 0x3ff] | (vicii_read_phi1() & 0xf0);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -705,8 +501,6 @@ void mem_initialize_memory(void)
     int i;
 
     mem_chargen_rom_ptr = mem_chargen_rom;
-    mem_color_ram_cpu = mem_color_ram;
-    mem_color_ram_vicii = mem_color_ram;
 
     /* first the tables that hold the predefined bank mappings */
     for (i = 0; i < 16; i++) {          /* 16 banks possible */
@@ -743,11 +537,7 @@ void mem_initialize_memory(void)
             mem_read_limit_tab[1][i] = 0xbffd;
         } else
         if (i <0xd0) {  /* C000-CFFF */
-            if (cbm2_isC500) { /* charrom */
-                mem_read_limit_tab[1][i] = 0xcffd;
-            } else {    /* open(?) */
-                mem_read_limit_tab[1][i] = 0;
-            }
+            mem_read_limit_tab[1][i] = 0;
         } else
         if (i < 0xe0) { /* I/O D000-DFFF */
             mem_read_limit_tab[1][i] = 0;
@@ -763,8 +553,6 @@ void mem_initialize_memory(void)
         _mem_write_tab_watch[i] = store_watch;
         _mem_write_ind_tab_watch[i] = store_ind_watch;
     }
-
-    vicii_set_chargen_addr_options(0x7000, 0x1000);
 }
 
 void mem_initialize_memory_bank(int i)
@@ -773,7 +561,7 @@ void mem_initialize_memory_bank(int i)
 
     switch (i) {
       case 0:
-        if (cbm2_isC500 || ramsize >= 512) {
+        if (ramsize >= 512) {
             for (j = 255; j >= 0; j--) {
                 _mem_read_tab[i][j] = read_ram_tab[i];
                 _mem_write_tab[i][j] = store_ram_tab[i];
@@ -872,15 +660,9 @@ void mem_initialize_memory_bank(int i)
             _mem_read_base_tab[i][j] = mem_rom + (j << 8);
         }
         for (; j < 0xd0; j++) { /* C000-CFFF */
-            if (!cbm2_isC500) {
-                _mem_read_tab[i][j] = read_unused;
-                _mem_write_tab[i][j] = store_dummy;
-                _mem_read_base_tab[i][j] = NULL;
-            } else {
-                _mem_read_tab[i][j] = read_chargen;
-                _mem_write_tab[i][j] = store_dummy;
-                _mem_read_base_tab[i][j] = mem_chargen_rom + ((j << 8) & 0x0f);
-            }
+            _mem_read_tab[i][j] = read_unused;
+            _mem_write_tab[i][j] = store_dummy;
+            _mem_read_base_tab[i][j] = NULL;
         }
         for (; j < 0xe0; j++) { /* D000-DFFF */
             _mem_read_tab[i][j] = read_io;
@@ -1020,11 +802,7 @@ static BYTE peek_bank_io(WORD addr)
       case 0xd800:
         switch (addr & 0xff00) {
           case 0xd800:
-            if (cbm2_isC500) {
-                return vicii_peek(addr);
-            } else {
-                return crtc_read(addr);
-            }
+            return crtc_read(addr);
           case 0xd900:
             return read_unused(addr);
           case 0xda00:
@@ -1130,11 +908,7 @@ void mem_bank_write(int bank, WORD addr, BYTE byte, void *context)
 static int mem_dump_io(WORD addr)
 {
     if ((addr >= 0xd800) && (addr <= 0xd82e)) {
-        if (cbm2_isC500) {
-            return vicii_dump();
-        } else {
-            return crtc_dump(&crtc);
-        }
+        return crtc_dump(&crtc);
     } else if ((addr >= 0xda00) && (addr <= 0xda1f)) {
         /* return sidcore_dump(machine_context.sid); */ /* FIXME */
     } else if ((addr >= 0xdc00) && (addr <= 0xdc0f)) {
@@ -1153,11 +927,7 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
 {
     mem_ioreg_list_t *mem_ioreg_list = NULL;
 
-    if (cbm2_isC500) {
-        mon_ioreg_add_list(&mem_ioreg_list, "VIC-II", 0xd800, 0xd82e, mem_dump_io);
-    } else {
-        mon_ioreg_add_list(&mem_ioreg_list, "CRTC", 0xd800, 0xd80f, mem_dump_io);
-    }
+    mon_ioreg_add_list(&mem_ioreg_list, "CRTC", 0xd800, 0xd80f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "SID", 0xda00, 0xda1f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "CIA1", 0xdc00, 0xdc0f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "ACIA1", 0xdd00, 0xdd03, mem_dump_io);
@@ -1171,17 +941,6 @@ void mem_get_screen_parameter(WORD *base, BYTE *rows, BYTE *columns, int *bank)
 {
     *base = 0xd000;
     *rows = 25;
-    *columns = (cbm2_isC500) ? 40 : 80;
+    *columns = 80;
     *bank = 16;
 }
-
-void mem_color_ram_to_snapshot(BYTE *color_ram)
-{
-    memcpy(color_ram, mem_color_ram, 0x400);
-}
-
-void mem_color_ram_from_snapshot(BYTE *color_ram)
-{
-    memcpy(mem_color_ram, color_ram, 0x400);
-}
-

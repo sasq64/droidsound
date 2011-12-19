@@ -34,13 +34,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "freezeframe.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* #define FFDEBUG */
 
@@ -126,8 +127,11 @@ static io_source_t freezeframe_io1_device = {
     freezeframe_io1_read,
     freezeframe_io1_peek,
     NULL,
-    CARTRIDGE_FREEZE_FRAME
+    CARTRIDGE_FREEZE_FRAME,
+    0,
+    0
 };
+
 static io_source_t freezeframe_io2_device = {
     CARTRIDGE_NAME_FREEZE_FRAME,
     IO_DETACH_CART,
@@ -138,7 +142,9 @@ static io_source_t freezeframe_io2_device = {
     freezeframe_io2_read,
     freezeframe_io2_peek,
     NULL,
-    CARTRIDGE_FREEZE_FRAME
+    CARTRIDGE_FREEZE_FRAME,
+    0,
+    0
 };
 
 static io_source_list_t *freezeframe_io1_list_item = NULL;
@@ -176,8 +182,8 @@ static int freezeframe_common_attach(void)
         return -1;
     }
 
-    freezeframe_io1_list_item = c64io_register(&freezeframe_io1_device);
-    freezeframe_io2_list_item = c64io_register(&freezeframe_io2_device);
+    freezeframe_io1_list_item = io_source_register(&freezeframe_io1_device);
+    freezeframe_io2_list_item = io_source_register(&freezeframe_io2_device);
 
     return 0;
 }
@@ -194,17 +200,17 @@ int freezeframe_bin_attach(const char *filename, BYTE *rawcart)
 
 int freezeframe_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (chipheader[0xb] > 0) {
+    if (chip.bank > 0 || chip.size != FREEZE_FRAME_CART_SIZE) {
         return -1;
     }
 
-    if (fread(rawcart, FREEZE_FRAME_CART_SIZE, 1, fd) < 1) {
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -214,8 +220,8 @@ int freezeframe_crt_attach(FILE *fd, BYTE *rawcart)
 void freezeframe_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(freezeframe_io1_list_item);
-    c64io_unregister(freezeframe_io2_list_item);
+    io_source_unregister(freezeframe_io1_list_item);
+    io_source_unregister(freezeframe_io2_list_item);
     freezeframe_io1_list_item = NULL;
     freezeframe_io2_list_item = NULL;
 }

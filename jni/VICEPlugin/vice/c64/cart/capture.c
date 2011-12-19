@@ -33,15 +33,16 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
 #include "c64meminit.h"
 #include "c64memrom.h"
 #include "capture.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     Jason Ranheim "Capture" Cartridge
@@ -263,13 +264,17 @@ int capture_bin_attach(const char *filename, BYTE *rawcart)
 
 int capture_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (fread(rawcart, 0x2000, 1, fd) < 1) {
+    if (chip.size != 0x2000) {
+        return -1;
+    }
+
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 

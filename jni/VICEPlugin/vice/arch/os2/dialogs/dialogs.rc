@@ -1,0 +1,164 @@
+/*
+ * dialogs.rc - Resource script file
+ *
+ * Written by
+ *  Thomas Bretz <tbretz@gsi.de>
+ *
+ * This file is part of VICE, the Versatile Commodore Emulator.
+ * See README for copyright notice.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+ *  02111-1307  USA.
+ *
+ */
+
+#include "../../../version.h"
+
+#include "dialogs.h"
+#include "platform.h"
+
+#ifdef WATCOM_COMPILE
+#include <pmwin.h>
+#endif
+
+#ifdef WATCOM_COMPILE
+POINTER PTR_DRAGOK "..\\icons\\check.ico"
+ICON    PTR_INFO   "..\\icons\\info.ico"
+ICON    PTR_SKULL  "..\\icons\\skull.ico"
+ICON    PTR_NOTE   "..\\icons\\note.ico"
+#else
+POINTER PTR_DRAGOK "..\\..\\icons\\check.ico"
+ICON    PTR_INFO   "..\\..\\icons\\info.ico"
+ICON    PTR_SKULL  "..\\..\\icons\\skull.ico"
+ICON    PTR_NOTE   "..\\..\\icons\\note.ico"
+#endif
+
+#if defined __X64__ || defined __X64DTV__
+#ifdef WATCOM_COMPILE
+ICON    IDM_VICE2  "..\\icons\\x64.ico"
+ICON    DLG_VSID   "..\\icons\\vsid.ico"
+#else
+ICON    IDM_VICE2  "..\\..\\icons\\x64.ico"
+ICON    DLG_VSID   "..\\..\\icons\\vsid.ico"
+#endif
+#endif
+
+#ifdef __XPET__
+#ifdef WATCOM_COMPILE
+ICON    IDM_VICE2 "..\\icons\\xpet.ico"
+#else
+ICON    IDM_VICE2 "..\\..\\icons\\xpet.ico"
+#endif
+#endif
+
+#ifdef __XCBM__
+#ifdef WATCOM_COMPILE
+ICON    IDM_VICE2 "..\\icons\\xcbm2.ico"
+#else
+ICON    IDM_VICE2 "..\\..\\icons\\xcbm2.ico"
+#endif
+#endif
+
+#ifdef __X128__
+#ifdef WATCOM_COMPILE
+ICON    IDM_VICE2 "..\\icons\\x128.ico"
+#else
+ICON    IDM_VICE2 "..\\..\\icons\\x128.ico"
+#endif
+#endif
+
+#ifdef __XVIC__
+#ifdef WATCOM_COMPILE
+ICON    IDM_VICE2 "..\\icons\\xvic.ico"
+#else
+ICON    IDM_VICE2 "..\\..\\icons\\xvic.ico"
+#endif
+#endif
+
+#ifdef __XPLUS4__
+#ifdef WATCOM_COMPILE
+ICON    IDM_VICE2 "..\\icons\\xplus4.ico"
+#else
+ICON    IDM_VICE2 "..\\..\\icons\\xplus4.ico"
+#endif
+#endif
+
+DLGTEMPLATE DLG_ABOUT 850 MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG "About Vice...", DLG_ABOUT, 162, 122, 246, 227, STY_DIALOG | FCF_CLOSEBUTTON
+    PRESPARAMS PP_FONTNAMESIZE, "11.System VIO" //9.Warp Sans Bold"
+    BEGIN
+        CONTROL "OK", DID_CLOSE, 86, 5, 38, 12, STY_CLOSEBUTTON
+        PRESPARAMS PP_FONTNAMESIZE, "9.Warp Sans Bold"
+        CONTROL "", ID_NONE, 7, 22, 196, 188, STY_GROUPBOX
+        ICON IDM_VICE2, ID_NONE, 27, 184, 0, 0
+        TEXT("V I C E", 15, 244, 180, 7)
+        TEXT("the Versatile Commodore Emulator", 15, 237, 180, 7)
+        TEXT("Version ", 65, 223,  35, 7)
+        TEXT(VERSION " (" PLATFORM_CPU " " PLATFORM_OS " " PLATFORM_COMPILER ")", 100, 223,  25, 7)
+        TEXT("Copyright (c) 2011      Kajtar Zsolt", 15, 195, 180, 7)
+        TEXT("Copyright (c) 2011      Thomas Giesel", 15, 188, 180, 7)
+        TEXT("Copyright (c) 2011      Stefan Haubenthal", 15, 181, 180, 7)
+        TEXT("Copyright (c) 2011      Ulrich Schulz", 15, 174, 180, 7)
+        TEXT("Copyright (c) 2011      Marcus Sutton", 15, 167, 180, 7)
+        TEXT("Copyright (c) 2010-2011 Olaf Seibert", 15, 160, 180, 7)
+        TEXT("Copyright (c) 2009-2011 Errol Smith", 15, 153, 180, 7)
+        TEXT("Copyright (c) 2009-2011 Ingo Korb", 15, 146, 180, 7)
+        TEXT("Copyright (c) 2009-2011 Groepaz", 15, 139, 180, 7)
+        TEXT("Copyright (c) 2008-2011 Antti S. Lankila", 15, 132, 180, 7)
+        TEXT("Copyright (c) 2007-2011 Daniel Kahlin", 15, 125, 180, 7)
+        TEXT("Copyright (c) 2007-2011 Fabrizio Gennari", 15, 118, 180, 7)
+        TEXT("Copyright (c) 2006-2011 Christian Vogelgsang", 15, 111, 180, 7)
+        TEXT("Copyright (c) 2005-2011 Marco van den Heuvel", 15, 104, 180, 7)
+        TEXT("Copyright (c) 2000-2010 Spiro Trikaliotis", 15, 97, 180, 7)
+        TEXT("Copyright (c) 1999-2011 Martin Pottendorfer", 15, 90, 180, 7)
+        TEXT("Copyright (c) 1999-2011 Andreas Matthies", 15, 83, 180, 7)
+        TEXT("Copyright (c) 1998-2011 Dag Lem", 15, 75, 180, 7)
+        TEXT("Vice/2 - Vice for OS/2", 15, 66, 180, 7)
+        TEXT("Copyright (c) 1999-2005 Thomas Bretz", 15, 59, 180, 7)
+        TEXT("Copyright (c) 2006-2011 Marco van den Heuvel", 15, 52, 180, 7)
+        TEXT("reSID engine", 15, 42, 180, 7)
+        TEXT("Copyright (c) 1998-2011 Dag Lem", 15, 35, 180, 7)
+        TEXT("Official VICE homepage:", 15, 25, 180, 7)
+        TEXT("http://vice-emu.sourceforge.net/", 15, 18, 180, 7)
+    END
+END
+
+DLGTEMPLATE DLG_CMDOPT 850 MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG "Commandline Options", DLG_CMDOPT, 141, 95, 152 + 150, 88 + 200, FS_SIZEBORDER | FS_TASKLIST | STY_DIALOG | FCF_MAXBUTTON | FCF_CLOSEBUTTON
+    BEGIN
+        LISTBOX LB_CMDOPT, 0, 0, 152 + 150, 87 + 200, LS_NOADJUSTPOS | LS_HORZSCROLL
+        PRESPARAMS PP_FONTNAMESIZE, "11.System VIO"
+    END
+END
+
+DLGTEMPLATE DLG_FSMODES 850 MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG  "Available Video Modes", DLG_FSMODES, 141, 95, 152 + 150, 88 + 200, FS_SIZEBORDER | FS_TASKLIST | STY_DIALOG | FCF_MAXBUTTON | FCF_CLOSEBUTTON
+    BEGIN
+        LISTBOX LB_FSMODES, 0, 0, 152 + 150, 87 + 200, LS_NOADJUSTPOS | LS_HORZSCROLL
+        PRESPARAMS PP_FONTNAMESIZE, "11.System VIO"
+    END
+END
+
+DLGTEMPLATE DLG_LOGGING 850 MOVEABLE DISCARDABLE
+BEGIN
+    DIALOG "Vice/2 Logging", DLG_LOGGING, 141, 95, 152 + 150, 48, FS_SIZEBORDER | FS_NOBYTEALIGN | FS_SCREENALIGN | FS_DLGBORDER | WS_CLIPSIBLINGS | WS_SAVEBITS | WS_ANIMATE, FCF_TITLEBAR | FCF_MINMAX
+    BEGIN
+        LISTBOX LB_LOG, 0, 0, 152 + 150, 47, LS_NOADJUSTPOS | LS_HORZSCROLL
+        PRESPARAMS PP_FONTNAMESIZE, "11.System VIO"
+    END
+END

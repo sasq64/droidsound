@@ -33,13 +33,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "funplay.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 
 /*
@@ -72,6 +74,7 @@
 */
 
 static int currbank = 0;
+static BYTE regval = 0;
 
 static void funplay_io1_store(WORD addr, BYTE value)
 {
@@ -87,7 +90,13 @@ static void funplay_io1_store(WORD addr, BYTE value)
 
 static BYTE funplay_io1_peek(WORD addr)
 {
-    return currbank;
+    return regval;
+}
+
+static int funplay_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -101,8 +110,10 @@ static io_source_t funplay_device = {
     funplay_io1_store,
     NULL,
     funplay_io1_peek,
-    NULL, /* dump */
-    CARTRIDGE_FUNPLAY
+    funplay_dump,
+    CARTRIDGE_FUNPLAY,
+    0,
+    0
 };
 
 static io_source_list_t *funplay_list_item = NULL;
@@ -134,7 +145,7 @@ static int funplay_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    funplay_list_item = c64io_register(&funplay_device);
+    funplay_list_item = io_source_register(&funplay_device);
     return 0;
 }
 
@@ -148,16 +159,16 @@ int funplay_bin_attach(const char *filename, BYTE *rawcart)
 
 int funplay_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
-        if (chipheader[0xc] != 0x80 && chipheader[0xc] != 0xa0) {
+        if ((chip.start != 0x8000 && chip.start != 0xa000) || chip.size != 0x2000) {
             return -1;
         }
-        if (fread(&rawcart[(((chipheader[0xb] >> 3) & 7) | ((chipheader[0xb] & 1) << 3)) << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, (((chip.bank >> 3) & 7) | ((chip.bank & 1) << 3)) << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -166,7 +177,7 @@ int funplay_crt_attach(FILE *fd, BYTE *rawcart)
 
 void funplay_detach(void)
 {
-    c64io_unregister(funplay_list_item);
+    io_source_unregister(funplay_list_item);
     funplay_list_item = NULL;
     c64export_remove(&export_res);
 }

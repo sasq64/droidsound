@@ -1,0 +1,4 @@
+#!/bin/sh
+
+./x64dtv >vice_log.txt 2>&1
+sync

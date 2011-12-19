@@ -34,12 +34,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "mach5.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     This cart has 8Kb ROM mapped at $8000-$9FFF.
@@ -90,9 +91,11 @@ static io_source_t mach5_io1_device = {
     1, /* read is always valid */
     mach5_io1_store,
     mach5_io1_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MACH5
+    mach5_io1_read,
+    NULL,
+    CARTRIDGE_MACH5,
+    0,
+    0
 };
 
 static io_source_t mach5_io2_device = {
@@ -103,9 +106,11 @@ static io_source_t mach5_io2_device = {
     1, /* read is always valid */
     mach5_io2_store,
     mach5_io2_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MACH5
+    mach5_io2_read,
+    NULL,
+    CARTRIDGE_MACH5,
+    0,
+    0
 };
 
 static io_source_list_t *mach5_io1_list_item = NULL;
@@ -135,8 +140,8 @@ static int mach5_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    mach5_io1_list_item = c64io_register(&mach5_io1_device);
-    mach5_io2_list_item = c64io_register(&mach5_io2_device);
+    mach5_io1_list_item = io_source_register(&mach5_io1_device);
+    mach5_io2_list_item = io_source_register(&mach5_io2_device);
     return 0;
 }
 
@@ -154,21 +159,23 @@ int mach5_bin_attach(const char *filename, BYTE *rawcart)
 
 int mach5_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (chipheader[6] == 0x10) {
-        if (fread(rawcart, 0x1000, 1, fd) < 1) {
+    if (chip.size == 0x1000) {
+        if (crt_read_chip(rawcart, 0, &chip, fd)) {
             return -1;
         }
         memcpy(&rawcart[0x1000], rawcart, 0x1000);
-    } else {
-        if (fread(rawcart, 0x2000, 1, fd) < 1) {
+    } else if (chip.size == 0x2000) {
+        if (crt_read_chip(rawcart, 0, &chip, fd)) {
             return -1;
         }
+    } else {
+        return -1;
     }
 
     return mach5_common_attach();
@@ -177,8 +184,8 @@ int mach5_crt_attach(FILE *fd, BYTE *rawcart)
 void mach5_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(mach5_io1_list_item);
-    c64io_unregister(mach5_io2_list_item);
+    io_source_unregister(mach5_io1_list_item);
+    io_source_unregister(mach5_io2_list_item);
     mach5_io1_list_item = NULL;
     mach5_io2_list_item = NULL;
 }

@@ -3,8 +3,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := resid
 LOCAL_ARM_MODE := arm
 LOCAL_CFLAGS := -O3 -ffast-math -fno-exceptions
-LOCAL_CPP_EXTENSION := cc
-MY_RESID_FILES = $(wildcard $(LOCAL_PATH)/vice/resid/*.cc)
+MY_RESID_FILES = $(wildcard $(LOCAL_PATH)/vice/resid/*.cpp)
 LOCAL_SRC_FILES := $(MY_RESID_FILES:$(LOCAL_PATH)%=%)
 include $(BUILD_STATIC_LIBRARY)
 
@@ -12,9 +11,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := vice
 LOCAL_ARM_MODE := arm
 LOCAL_CFLAGS = -O3
-LOCAL_CPP_EXTENSION := cc
 LOCAL_SRC_FILES := \
-	VICEPlugin.cc \
+	VICEPlugin.cpp \
 	android/archdep.c \
 	android/console.c \
 	android/joy.c \
@@ -92,6 +90,7 @@ LOCAL_SRC_FILES := \
 	vice/c64/c64rom.c \
 	vice/c64/c64romset.c \
 	vice/c64/c64rsuser.c \
+	vice/c64/c64sound.c \
 	vice/c64/c64video.c \
 	vice/c64/patchrom.c \
 	vice/c64/plus256k.c \
@@ -100,6 +99,7 @@ LOCAL_SRC_FILES := \
 	vice/c64/reloc65.c \
 	vice/core/ciacore.c \
 	vice/core/ciatimer.c \
+        vice/core/viacore.c \
 	vice/raster/raster.c \
 	vice/raster/raster-cache.c \
 	vice/raster/raster-canvas.c \
@@ -120,7 +120,7 @@ LOCAL_SRC_FILES := \
 	vice/sid/sid-cmdline-options.c \
 	vice/sid/sid-resources.c \
 	vice/sid/sid-snapshot.c \
-	vice/sid/resid.cc \
+	vice/sid/resid.cpp \
 	vice/sounddrv/soundaiff.c \
 	vice/sounddrv/sounddump.c \
 	vice/sounddrv/soundfs.c \
@@ -149,7 +149,7 @@ LOCAL_SRC_FILES := \
 	overrides/serial.c \
 	overrides/c64/c64drive.c \
 	overrides/c64/c64parallel.c \
-	overrides/c64/c64sound.c \
+	overrides/c64/cart/c64-generic.c \
 	overrides/c64/cart/c64cart.c \
 	overrides/c64/cart/c64carthooks.c \
 	overrides/c64/cart/c64cartmem.c \
@@ -161,6 +161,7 @@ LOCAL_SRC_FILES := \
 	overrides/drive/drive-cmdline-options.c \
 	overrides/drive/drive-resources.c \
 	overrides/drive/drive-snapshot.c \
+	overrides/drive/drive-sound.c \
 	overrides/drive/drivecpu.c \
 	overrides/drive/driveimage.c \
 	overrides/fsdevice/fsdevice.c \
@@ -193,6 +194,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH) \
 	$(LOCAL_PATH)/vice/rs232drv \
 	$(LOCAL_PATH)/vice/sid \
 	$(LOCAL_PATH)/vice/tape \
+	$(LOCAL_PATH)/vice/userport \
 	$(LOCAL_PATH)/vice/vdrive \
 	$(LOCAL_PATH)/vice/vicii \
 #terminator for last backslash

@@ -44,7 +44,7 @@
 static log_t plus4rom_log = LOG_ERR;
 
 /* Flag: nonzero if the Kernal and BASIC ROMs have been loaded.  */
-static int plus4_rom_loaded = 0;
+int plus4_rom_loaded = 0;
 
 
 int plus4rom_load_kernal(const char *rom_name)
@@ -93,42 +93,6 @@ int plus4rom_load_basic(const char *rom_name)
     return 0;
 }
 
-int plus4rom_load_3plus1lo(const char *rom_name)
-{
-    if (!plus4_rom_loaded)
-        return 0;
-
-    /* Load 3plus1 low ROM.  */
-    if (*rom_name != 0) {
-        if (sysfile_load(rom_name,
-            extromlo1, PLUS4_CART16K_SIZE, PLUS4_CART16K_SIZE) < 0) {
-            log_error(plus4rom_log,
-                      "Couldn't load 3plus1 low ROM `%s'.",
-                      rom_name);
-            return -1;
-        }
-    }
-    return 0;
-}
-
-int plus4rom_load_3plus1hi(const char *rom_name)
-{
-    if (!plus4_rom_loaded)
-        return 0;
-
-    /* Load 3plus1 high ROM.  */
-    if (*rom_name != 0) {
-        if (sysfile_load(rom_name,
-            extromhi1, PLUS4_CART16K_SIZE, PLUS4_CART16K_SIZE) < 0) {
-            log_error(plus4rom_log,
-                      "Couldn't load 3plus1 high ROM `%s'.",
-                      rom_name);
-            return -1;
-        }
-    }
-    return 0;
-}
-
 int mem_load(void)
 {
 
@@ -153,12 +117,12 @@ int mem_load(void)
 
     if (resources_get_string("FunctionLowName", &rom_name) < 0)
         return -1;
-    if (plus4rom_load_3plus1lo(rom_name) < 0)
+    if (plus4cart_load_func_lo(rom_name) < 0)
         return -1;
 
     if (resources_get_string("FunctionHighName", &rom_name) < 0)
         return -1;
-    if (plus4rom_load_3plus1hi(rom_name) < 0)
+    if (plus4cart_load_func_hi(rom_name) < 0)
         return -1;
 
     if (resources_get_string("c1loName", &rom_name) < 0)

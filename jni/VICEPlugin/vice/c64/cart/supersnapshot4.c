@@ -35,12 +35,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "supersnapshot4.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     Super Snapshot v4
@@ -113,7 +114,9 @@ static io_source_t ss4_io1_device = {
     supersnapshot_v4_io1_read,
     NULL,
     NULL,
-    CARTRIDGE_SUPER_SNAPSHOT
+    CARTRIDGE_SUPER_SNAPSHOT,
+    0,
+    0
 };
 
 static io_source_t ss4_io2_device = {
@@ -126,7 +129,9 @@ static io_source_t ss4_io2_device = {
     supersnapshot_v4_io2_read,
     NULL,
     NULL,
-    CARTRIDGE_SUPER_SNAPSHOT
+    CARTRIDGE_SUPER_SNAPSHOT,
+    0,
+    0
 };
 
 static io_source_list_t *ss4_io1_list_item = NULL;
@@ -284,8 +289,8 @@ static int supersnapshot_v4_common_attach(void)
     if (c64export_add(&export_res_v4) < 0) {
         return -1;
     }
-    ss4_io1_list_item = c64io_register(&ss4_io1_device);
-    ss4_io2_list_item = c64io_register(&ss4_io2_device);
+    ss4_io1_list_item = io_source_register(&ss4_io1_device);
+    ss4_io2_list_item = io_source_register(&ss4_io2_device);
     return 0;
 }
 
@@ -299,19 +304,19 @@ int supersnapshot_v4_bin_attach(const char *filename, BYTE *rawcart)
 
 int supersnapshot_v4_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    int i = 4;
-    BYTE chipheader[0x10];
+    int i;
+    crt_chip_header_t chip;
 
-    while (i--) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+    for (i = 0; i < 4; i++) {
+        if (crt_read_chip_header(&chip, fd)) {
             return -1;
         }
 
-        if (chipheader[0xb] > 3) {
+        if (chip.bank > 3 || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -322,8 +327,8 @@ int supersnapshot_v4_crt_attach(FILE *fd, BYTE *rawcart)
 void supersnapshot_v4_detach(void)
 {
     c64export_remove(&export_res_v4);
-    c64io_unregister(ss4_io1_list_item);
-    c64io_unregister(ss4_io2_list_item);
+    io_source_unregister(ss4_io1_list_item);
+    io_source_unregister(ss4_io2_list_item);
     ss4_io1_list_item = NULL;
     ss4_io2_list_item = NULL;
 }

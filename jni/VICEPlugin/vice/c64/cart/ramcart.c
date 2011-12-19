@@ -34,14 +34,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOT1_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "lib.h"
 #include "log.h"
 #include "machine.h"
 #include "mem.h"
+#include "monitor.h"
 #include "resources.h"
 #include "snapshot.h"
 #include "translate.h"
@@ -133,10 +134,12 @@ static int ramcart_write_image = 0;
 
 /* ------------------------------------------------------------------------- */
 
+static BYTE ramcart_io1_peek(WORD addr);
 static BYTE ramcart_io1_read(WORD addr);
 static void ramcart_io1_store(WORD addr, BYTE byte);
 static BYTE ramcart_io2_read(WORD addr);
 static void ramcart_io2_store(WORD addr, BYTE byte);
+static int ramcart_dump(void);
 
 static io_source_t ramcart_io1_device = {
     CARTRIDGE_NAME_RAMCART,
@@ -146,9 +149,11 @@ static io_source_t ramcart_io1_device = {
     1, /* read is always valid */
     ramcart_io1_store,
     ramcart_io1_read,
-    NULL, /* peek */
-    NULL, /* dump */
-    CARTRIDGE_RAMCART
+    ramcart_io1_peek,
+    ramcart_dump,
+    CARTRIDGE_RAMCART,
+    0,
+    0
 };
 
 static io_source_t ramcart_io2_device = {
@@ -159,9 +164,11 @@ static io_source_t ramcart_io2_device = {
     1, /* read is always valid */
     ramcart_io2_store,
     ramcart_io2_read,
-    NULL, /* peek */
-    NULL, /* dump */
-    CARTRIDGE_RAMCART
+    ramcart_io2_read,
+    ramcart_dump,
+    CARTRIDGE_RAMCART,
+    0,
+    0
 };
 
 static io_source_list_t *ramcart_io1_list_item = NULL;
@@ -172,9 +179,15 @@ static const c64export_resource_t export_res = {
 };
 
 /* ------------------------------------------------------------------------- */
+
 int ramcart_cart_enabled(void)
 {
     return ramcart_enabled;
+}
+
+static BYTE ramcart_io1_peek(WORD addr)
+{
+    return ramcart[addr];
 }
 
 static BYTE ramcart_io1_read(WORD addr)
@@ -213,6 +226,26 @@ static BYTE ramcart_io2_read(WORD addr)
 static void ramcart_io2_store(WORD addr, BYTE byte)
 {
     ramcart_ram[((ramcart[1] & 1) * 65536) + (ramcart[0] * 256) + (addr & 0xff)] = byte;
+}
+
+static int ramcart_dump(void)
+{
+    int bank = 0;
+    int mirrored = 0;
+
+    if (ramcart_size_kb == 128) {
+        bank = (ramcart[1] & 1) << 8;
+        if ((ramcart[1] & 0x80) && ramcart_readonly) {
+            mirrored = 1;
+        }
+    }
+    bank += ramcart[0];
+
+    mon_out("RAM size: %s, bank: %d, status: %s\n",
+            (ramcart_size_kb == 128) ? "128Kb" : "64Kb",
+            bank,
+            (ramcart_readonly) ? ((mirrored) ? "read-only and mirrored at $8000-$80FF" : "read-only") : "read/write");
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -286,8 +319,8 @@ static int set_ramcart_enabled(int val, void *param)
         if (c64export_add(&export_res) < 0) {
             return -1;
         }
-        ramcart_io1_list_item = c64io_register(&ramcart_io1_device);
-        ramcart_io2_list_item = c64io_register(&ramcart_io2_device);
+        ramcart_io1_list_item = io_source_register(&ramcart_io1_device);
+        ramcart_io2_list_item = io_source_register(&ramcart_io2_device);
         ramcart_enabled = 1;
         cart_set_port_exrom_slot1(1);
         cart_port_config_changed_slot1();
@@ -296,8 +329,8 @@ static int set_ramcart_enabled(int val, void *param)
         if (ramcart_deactivate() < 0) {
             return -1;
         }
-        c64io_unregister(ramcart_io1_list_item);
-        c64io_unregister(ramcart_io2_list_item);
+        io_source_unregister(ramcart_io1_list_item);
+        io_source_unregister(ramcart_io2_list_item);
         ramcart_io1_list_item = NULL;
         ramcart_io2_list_item = NULL;
         c64export_remove(&export_res);
@@ -634,14 +667,14 @@ int ramcart_snapshot_read_module(snapshot_t *s)
     ramcart_enabled = 1;
 
     /* FIXME: ugly code duplication to avoid cart_config_changed calls */
-    ramcart_io1_list_item = c64io_register(&ramcart_io1_device);
-    ramcart_io2_list_item = c64io_register(&ramcart_io2_device);
+    ramcart_io1_list_item = io_source_register(&ramcart_io1_device);
+    ramcart_io2_list_item = io_source_register(&ramcart_io2_device);
 
     if (c64export_add(&export_res) < 0) {
         lib_free(ramcart_ram);
         ramcart_ram = NULL;
-        c64io_unregister(ramcart_io1_list_item);
-        c64io_unregister(ramcart_io2_list_item);
+        io_source_unregister(ramcart_io1_list_item);
+        io_source_unregister(ramcart_io2_list_item);
         ramcart_io1_list_item = NULL;
         ramcart_io2_list_item = NULL;
         ramcart_enabled = 0;

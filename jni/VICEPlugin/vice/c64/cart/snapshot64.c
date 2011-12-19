@@ -1,5 +1,5 @@
 /*
- * snapshot64.c - Cartridge handling, Super Snapshot cart.
+ * snapshot64.c - Cartridge handling, Snapshot64 cart.
  *
  * Written by
  *  Groepaz <groepaz@gmx.net>
@@ -33,13 +33,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "snapshot64.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     Snapshot 64 (LMS Technologies)
@@ -97,7 +98,9 @@ static io_source_t ss64_io2_device = {
     snapshot64_io2_read,
     snapshot64_io2_peek,
     NULL, /* TODO: dump */
-    CARTRIDGE_SNAPSHOT64
+    CARTRIDGE_SNAPSHOT64,
+    0,
+    0
 };
 
 static io_source_list_t *ss64_io2_list_item = NULL;
@@ -176,7 +179,7 @@ static int snapshot64_common_attach(void)
         return -1;
     }
 
-    ss64_io2_list_item = c64io_register(&ss64_io2_device);
+    ss64_io2_list_item = io_source_register(&ss64_io2_device);
     return 0;
 }
 
@@ -190,17 +193,17 @@ int snapshot64_bin_attach(const char *filename, BYTE *rawcart)
 
 int snapshot64_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (chipheader[0xb] > 0) {
+    if (chip.bank > 0 || chip.size != 0x1000) {
         return -1;
     }
 
-    if (fread(rawcart, 0x1000, 1, fd) < 1) {
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -210,7 +213,7 @@ int snapshot64_crt_attach(FILE *fd, BYTE *rawcart)
 void snapshot64_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(ss64_io2_list_item);
+    io_source_unregister(ss64_io2_list_item);
     ss64_io2_list_item = NULL;
 }
 

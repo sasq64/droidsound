@@ -119,8 +119,8 @@ CB2            - enable Cartridge (?)
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "maincpu.h"
 #include "machine.h"
@@ -128,6 +128,7 @@ CB2            - enable Cartridge (?)
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* ---------------------------------------------------------------------*/
 
@@ -149,7 +150,9 @@ static io_source_t magicformel_io1_device = {
     magicformel_io1_read,
     magicformel_io1_peek,
     NULL, /* dump */
-    CARTRIDGE_MAGIC_FORMEL
+    CARTRIDGE_MAGIC_FORMEL,
+    0,
+    0
 };
 
 static io_source_t magicformel_io2_device = {
@@ -162,7 +165,9 @@ static io_source_t magicformel_io2_device = {
     magicformel_io2_read,
     magicformel_io2_peek,
     NULL, /* dump */
-    CARTRIDGE_MAGIC_FORMEL
+    CARTRIDGE_MAGIC_FORMEL,
+    0,
+    0
 };
 
 static io_source_list_t *magicformel_io1_list_item = NULL;
@@ -706,8 +711,8 @@ static int magicformel_common_attach(void)
         return -1;
     }
 
-    magicformel_io1_list_item = c64io_register(&magicformel_io1_device);
-    magicformel_io2_list_item = c64io_register(&magicformel_io2_device);
+    magicformel_io1_list_item = io_source_register(&magicformel_io1_device);
+    magicformel_io2_list_item = io_source_register(&magicformel_io2_device);
     return 0;
 }
 
@@ -733,19 +738,19 @@ int magicformel_bin_attach(const char *filename, BYTE *rawcart)
 
 int magicformel_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i, cnt = 0;
 
     for (i = 0; i <= 15; i++) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        if (chipheader[0xb] > 15) {
+        if (chip.bank > 15 || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
         cnt++;
@@ -770,8 +775,8 @@ int magicformel_crt_attach(FILE *fd, BYTE *rawcart)
 void magicformel_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(magicformel_io1_list_item);
-    c64io_unregister(magicformel_io2_list_item);
+    io_source_unregister(magicformel_io1_list_item);
+    io_source_unregister(magicformel_io2_list_item);
     magicformel_io1_list_item = NULL;
     magicformel_io2_list_item = NULL;
 }

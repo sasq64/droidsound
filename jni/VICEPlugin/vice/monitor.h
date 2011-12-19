@@ -71,6 +71,7 @@ struct monitor_cpu_type_s {
     unsigned int (*mon_register_get_val)(int mem, int reg_id);
     void (*mon_register_set_val)(int mem, int reg_id, WORD val);
     void (*mon_register_print)(int mem);
+    const char* (*mon_register_print_ex)(int mem);
     struct mon_reg_list_s *(*mon_register_list_get)(int mem);
     void (*mon_register_list_set)(struct mon_reg_list_s *mon_reg_list, int mem);
 };
@@ -137,7 +138,7 @@ extern void monitor_abort(void);
 extern int monitor_force_import(MEMSPACE mem);
 extern void monitor_check_icount(WORD a);
 extern void monitor_check_icount_interrupt(void);
-extern void monitor_check_watchpoints(WORD a);
+extern void monitor_check_watchpoints(unsigned int lastpc, unsigned int pc);
 
 extern void monitor_cpu_type_set(const char *cpu_type);
 

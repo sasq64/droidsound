@@ -37,13 +37,13 @@
 #include "c64_256k.h"
 #include "c64cart.h"
 #include "c64cia.h"
-#include "c64io.h"
 #include "c64mem.h"
 #include "c64meminit.h"
 #include "c64memlimit.h"
 #include "c64memrom.h"
 #include "c64pla.h"
 #include "c64cartmem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cia.h"
 #include "clkguard.h"
@@ -498,12 +498,6 @@ void plus256k_init_config(void)
                             mem_write_tab[k][i][j] = plus256k_ram_high_store;
                         }
                     }
-                    if (mem_write_tab[k][i][j] == vicii_store && j == 0xd1) {
-                        mem_write_tab[k][i][j] = plus256k_vicii_store;
-                    }
-                    if (mem_write_tab[k][i][j] == vicii_store && j > 0xd1) {
-                        mem_write_tab[k][i][j] = plus256k_vicii_store0;
-                    }
                 }
                 if (mem_read_tab[i][j] == ram_read) {
                     if (j < 0x10) {
@@ -511,12 +505,6 @@ void plus256k_init_config(void)
                     } else {
                         mem_read_tab[i][j] = plus256k_ram_high_read;
                     }
-                }
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd1) {
-                    mem_read_tab[i][j] = plus256k_vicii_read;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j > 0xd1) {
-                    mem_read_tab[i][j] = plus256k_vicii_read0;
                 }
             }
         }
@@ -546,36 +534,12 @@ static void plus60k_init_config(void)
                     if (mem_write_tab[k][i][j] == ram_hi_store) {
                         mem_write_tab[k][i][j] = plus60k_ram_hi_store;
                     }
-                    if (mem_write_tab[k][i][j] == vicii_store && j == 0xd0 && plus60k_base == 0xd040) {
-                        mem_write_tab[k][i][j] = plus60k_vicii_store_old;
-                    }
-                    if (mem_write_tab[k][i][j] == vicii_store && j == 0xd1 && plus60k_base == 0xd100) {
-                        mem_write_tab[k][i][j] = plus60k_vicii_store;
-                    }
-                    if (mem_write_tab[k][i][j] == vicii_store && j == 0xd1 && plus60k_base == 0xd040) {
-                        mem_write_tab[k][i][j] = plus60k_vicii_store0;
-                    }
-                    if (mem_write_tab[k][i][j] == vicii_store && j > 0xd1) {
-                        mem_write_tab[k][i][j] = plus60k_vicii_store0;
-                    }
                     if (mem_write_tab[k][i][j] == ram_store) {
                         mem_write_tab[k][i][j] = plus60k_ram_store;
                     }
                     if (mem_write_tab[k][i][j] == raml_no_ultimax_store) {
                         mem_write_tab[k][i][j] = plus60k_ram_store; /* possibly breaks mmc64 and expert */
                     }
-                }
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd0 && plus60k_base == 0xd040) {
-                    mem_read_tab[i][j] = plus60k_vicii_read_old;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd1 && plus60k_base == 0xd100) {
-                    mem_read_tab[i][j] = plus60k_vicii_read;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd1 && plus60k_base == 0xd040) {
-                    mem_read_tab[i][j] = plus60k_vicii_read0;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j > 0xd1) {
-                    mem_read_tab[i][j] = plus60k_vicii_read0;
                 }
                 if (mem_read_tab[i][j] == ram_read) {
                     mem_read_tab[i][j] = plus60k_ram_read;
@@ -808,16 +772,28 @@ void store_bank_io(WORD addr, BYTE byte)
 {
     switch (addr & 0xff00) {
         case 0xd000:
+            c64io_d000_store(addr, byte);
+            break;
         case 0xd100:
+            c64io_d100_store(addr, byte);
+            break;
         case 0xd200:
+            c64io_d200_store(addr, byte);
+            break;
         case 0xd300:
-            vicii_store(addr, byte);
+            c64io_d300_store(addr, byte);
             break;
         case 0xd400:
+            c64io_d400_store(addr, byte);
+            break;
         case 0xd500:
+            c64io_d500_store(addr, byte);
+            break;
         case 0xd600:
+            c64io_d600_store(addr, byte);
+            break;
         case 0xd700:
-            sid_store(addr, byte);
+            c64io_d700_store(addr, byte);
             break;
         case 0xd800:
         case 0xd900:
@@ -832,10 +808,10 @@ void store_bank_io(WORD addr, BYTE byte)
             cia2_store(addr, byte);
             break;
         case 0xde00:
-            c64io1_store(addr, byte);
+            c64io_de00_store(addr, byte);
             break;
         case 0xdf00:
-            c64io2_store(addr, byte);
+            c64io_df00_store(addr, byte);
             break;
     }
     return;
@@ -845,15 +821,21 @@ BYTE read_bank_io(WORD addr)
 {
     switch (addr & 0xff00) {
         case 0xd000:
+            return c64io_d000_read(addr);
         case 0xd100:
+            return c64io_d100_read(addr);
         case 0xd200:
+            return c64io_d200_read(addr);
         case 0xd300:
-            return vicii_read(addr);
+            return c64io_d300_read(addr);
         case 0xd400:
+            return c64io_d400_read(addr);
         case 0xd500:
+            return c64io_d500_read(addr);
         case 0xd600:
+            return c64io_d600_read(addr);
         case 0xd700:
-            return sid_read(addr);
+            return c64io_d700_read(addr);
         case 0xd800:
         case 0xd900:
         case 0xda00:
@@ -864,9 +846,9 @@ BYTE read_bank_io(WORD addr)
         case 0xdd00:
             return cia2_read(addr);
         case 0xde00:
-            return c64io1_read(addr);
+            return c64io_de00_read(addr);
         case 0xdf00:
-            return c64io2_read(addr);
+            return c64io_df00_read(addr);
     }
     return 0xff;
 }
@@ -875,15 +857,21 @@ static BYTE peek_bank_io(WORD addr)
 {
     switch (addr & 0xff00) {
         case 0xd000:
+            return c64io_d000_peek(addr);
         case 0xd100:
+            return c64io_d100_peek(addr);
         case 0xd200:
+            return c64io_d200_peek(addr);
         case 0xd300:
-            return vicii_peek(addr);
+            return c64io_d300_peek(addr);
         case 0xd400:
+            return c64io_d400_peek(addr);
         case 0xd500:
+            return c64io_d500_peek(addr);
         case 0xd600:
+            return c64io_d600_peek(addr);
         case 0xd700:
-            return sid_peek(addr);
+            return c64io_d700_peek(addr);
         case 0xd800:
         case 0xd900:
         case 0xda00:
@@ -894,9 +882,9 @@ static BYTE peek_bank_io(WORD addr)
         case 0xdd00:
             return cia2_peek(addr);
         case 0xde00:
-            return c64io1_peek(addr);
+            return c64io_de00_peek(addr);
         case 0xdf00:
-            return c64io2_peek(addr);
+            return c64io_df00_peek(addr);
     }
     return 0xff;
 }
@@ -1018,11 +1006,7 @@ void mem_bank_write(int bank, WORD addr, BYTE byte, void *context)
 
 static int mem_dump_io(WORD addr)
 {
-    if ((addr >= 0xd000) && (addr <= 0xd03f)) {
-        return vicii_dump();
-    } else if ((addr >= 0xd400) && (addr <= 0xd43f)) {
-        /* return sidcore_dump(machine_context.sid); */ /* FIXME */
-    } else if ((addr >= 0xdc00) && (addr <= 0xdc3f)) {
+    if ((addr >= 0xdc00) && (addr <= 0xdc3f)) {
         return ciacore_dump(machine_context.cia1);
     } else if ((addr >= 0xdd00) && (addr <= 0xdd3f)) {
         return ciacore_dump(machine_context.cia2);
@@ -1034,12 +1018,10 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
 {
     mem_ioreg_list_t *mem_ioreg_list = NULL;
 
-    mon_ioreg_add_list(&mem_ioreg_list, "VIC-II", 0xd000, 0xd02e, mem_dump_io);
-    mon_ioreg_add_list(&mem_ioreg_list, "SID", 0xd400, 0xd41f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "CIA1", 0xdc00, 0xdc0f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "CIA2", 0xdd00, 0xdd0f, mem_dump_io);
 
-    c64io_ioreg_add_list(&mem_ioreg_list);
+    io_source_ioreg_add_list(&mem_ioreg_list);
 
     return mem_ioreg_list;
 }

@@ -145,3 +145,4 @@ int cartridge_snapshot_read_modules(struct snapshot_s *s)
     return 0;
 }
 
+void cartridge_sound_chip_init(void) {}

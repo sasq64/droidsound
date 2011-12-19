@@ -58,6 +58,8 @@ static unsigned int drive_check_iec(unsigned int type)
       case DRIVE_TYPE_1571:
       case DRIVE_TYPE_1571CR:
       case DRIVE_TYPE_1581:
+      case DRIVE_TYPE_2000:
+      case DRIVE_TYPE_4000:
         return 1;
     }
 
@@ -103,7 +105,7 @@ static unsigned int drive_check_tcbm(unsigned int type)
     return 0;
 }
 
-unsigned int drive_check_bus(unsigned int drive_type, unsigned int dnr,
+unsigned int drive_check_bus(unsigned int drive_type,
                              unsigned int bus_map)
 {
     if (drive_type == DRIVE_TYPE_NONE)
@@ -123,7 +125,7 @@ unsigned int drive_check_bus(unsigned int drive_type, unsigned int dnr,
 
 int drive_check_type(unsigned int drive_type, unsigned int dnr)
 {
-    if (!drive_check_bus(drive_type, dnr, iec_available_busses()))
+    if (!drive_check_bus(drive_type, iec_available_busses()))
         return 0;
 
     if (drive_check_dual(drive_type)) {
@@ -232,7 +234,14 @@ int drive_check_idle_method(int drive_type)
 {
     if (drive_type == DRIVE_TYPE_1541
         || drive_type == DRIVE_TYPE_1541II
-        || drive_type == DRIVE_TYPE_1551)
+        || drive_type == DRIVE_TYPE_1570
+        || drive_type == DRIVE_TYPE_1571
+        || drive_type == DRIVE_TYPE_1571CR
+        || drive_type == DRIVE_TYPE_1551
+        || drive_type == DRIVE_TYPE_1581
+        || drive_type == DRIVE_TYPE_2000
+        || drive_type == DRIVE_TYPE_4000
+        || drive_type == DRIVE_TYPE_2031)
         return 1;
     return 0;
 }

@@ -26,6 +26,7 @@
 
 #include "vice.h"
 
+#include <stdio.h>
 #include "crt.h"
 #include "types.h"
 

@@ -44,5 +44,8 @@ extern int acia_resources_init(void);
 extern int acia_snapshot_read_module(struct snapshot_s *);
 extern int acia_snapshot_write_module(struct snapshot_s *);
 
+extern int acia_enabled(void);
+extern int acia_dump(void *ctx);
+
 #endif
 

@@ -38,13 +38,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "epyxfastload.h"
 #include "maincpu.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     "Epyx Fastload"
@@ -117,8 +118,10 @@ static io_source_t epyxfastload_io1_device = {
     NULL,
     epyxfastload_io1_read,
     epyxfastload_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_EPYX_FASTLOAD
+    NULL,
+    CARTRIDGE_EPYX_FASTLOAD,
+    0,
+    0
 };
 
 static io_source_t epyxfastload_io2_device = {
@@ -129,9 +132,11 @@ static io_source_t epyxfastload_io2_device = {
     1, /* read is always valid */
     NULL,
     epyxfastload_io2_read,
-    NULL, /* peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_EPYX_FASTLOAD
+    epyxfastload_io2_read,
+    NULL,
+    CARTRIDGE_EPYX_FASTLOAD,
+    0,
+    0
 };
 
 static io_source_list_t *epyxfastload_io1_list_item = NULL;
@@ -181,8 +186,8 @@ static int epyxfastload_common_attach(void)
     epyxrom_alarm = alarm_new(maincpu_alarm_context, "EPYXCartRomAlarm", epyxfastload_alarm_handler, NULL);
     epyxrom_alarm_time = CLOCK_MAX;
 
-    epyxfastload_io1_list_item = c64io_register(&epyxfastload_io1_device);
-    epyxfastload_io2_list_item = c64io_register(&epyxfastload_io2_device);
+    epyxfastload_io1_list_item = io_source_register(&epyxfastload_io1_device);
+    epyxfastload_io2_list_item = io_source_register(&epyxfastload_io2_device);
 
     return 0;
 }
@@ -197,13 +202,17 @@ int epyxfastload_bin_attach(const char *filename, BYTE *rawcart)
 
 int epyxfastload_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (fread(rawcart, 0x2000, 1, fd) < 1) {
+    if (chip.size != 0x2000) {
+        return -1;
+    }
+
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -214,8 +223,8 @@ void epyxfastload_detach(void)
 {
     alarm_destroy(epyxrom_alarm);
     c64export_remove(&export_res_epyx);
-    c64io_unregister(epyxfastload_io1_list_item);
-    c64io_unregister(epyxfastload_io2_list_item);
+    io_source_unregister(epyxfastload_io1_list_item);
+    io_source_unregister(epyxfastload_io2_list_item);
     epyxfastload_io1_list_item = NULL;
     epyxfastload_io2_list_item = NULL;
 }

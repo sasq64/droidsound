@@ -84,6 +84,7 @@
 #include "vicii.h"
 #include "video.h"
 #include "vsync.h"
+#include "drive-sound.h"
 
 #ifdef HAVE_MOUSE
 #include "mouse.h"
@@ -308,6 +309,8 @@ void machine_setup_context(void)
 /* C64-specific initialization.  */
 int machine_specific_init(void)
 {
+    int delay;
+
     c64_log = log_open("C64");
 
     if (mem_load() < 0)
@@ -338,7 +341,11 @@ int machine_specific_init(void)
     drive_init();
 
     /* Initialize autostart.  */
-    autostart_init((CLOCK)(3 * C64_PAL_RFSH_PER_SEC
+    resources_get_int("AutostartDelay", &delay);
+    if (delay == 0) {
+        delay = 3; /* default */
+    }
+    autostart_init((CLOCK)(delay * C64_PAL_RFSH_PER_SEC
 		     * C64_PAL_CYCLES_PER_RFSH),
                      1, 0xcc, 0xd1, 0xd3, 0xd5);
 
@@ -362,6 +369,11 @@ int machine_specific_init(void)
     vsync_init(machine_vsync_hook);
     vsync_set_machine_parameter(machine_timing.rfsh_per_sec,
                                 machine_timing.cycles_per_sec);
+
+    /* Initialize native sound chip */
+    sid_sound_chip_init();
+
+    drive_sound_init();
 
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */

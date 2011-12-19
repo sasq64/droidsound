@@ -34,12 +34,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     FIXME: everything here is purely guesswork and doesnt quite work like it should
@@ -301,7 +302,9 @@ static io_source_t actionreplay2_io1_device = {
     actionreplay2_io1_read,
     actionreplay2_io1_peek,
     NULL, /* TODO: dump */
-    CARTRIDGE_ACTION_REPLAY2
+    CARTRIDGE_ACTION_REPLAY2,
+    0,
+    0
 };
 
 static io_source_t actionreplay2_io2_device = {
@@ -314,7 +317,9 @@ static io_source_t actionreplay2_io2_device = {
     actionreplay2_io2_read,
     actionreplay2_io2_peek,
     NULL, /* TODO: dump */
-    CARTRIDGE_ACTION_REPLAY2
+    CARTRIDGE_ACTION_REPLAY2,
+    0,
+    0
 };
 
 static io_source_list_t *actionreplay2_io1_list_item = NULL;
@@ -373,11 +378,16 @@ static BYTE actionreplay2_io1_peek(WORD addr)
     return 0;
 }
 
+static BYTE actionreplay2_io2_peek(WORD addr)
+{
+    addr |= 0xdf00;
+    return roml_banks[(addr & 0x1fff) + (1 << 13)];
+}
+
 static BYTE actionreplay2_io2_read(WORD addr)
 {
     cap_charge();
-    addr |= 0xdf00;
-    return roml_banks[(addr & 0x1fff) + (1 << 13)];
+    return actionreplay2_io2_peek(addr);
 }
 
 static void actionreplay2_io2_store(WORD addr, BYTE value)
@@ -385,11 +395,6 @@ static void actionreplay2_io2_store(WORD addr, BYTE value)
     cap_charge();
 }
 
-static BYTE actionreplay2_io2_peek(WORD addr)
-{
-    addr |= 0xdf00;
-    return roml_banks[(addr & 0x1fff) + (1 << 13)];
-}
 
 /* ---------------------------------------------------------------------*/
 
@@ -452,8 +457,8 @@ static int actionreplay2_common_attach(void)
         return -1;
     }
 
-    actionreplay2_io1_list_item = c64io_register(&actionreplay2_io1_device);
-    actionreplay2_io2_list_item = c64io_register(&actionreplay2_io2_device);
+    actionreplay2_io1_list_item = io_source_register(&actionreplay2_io1_device);
+    actionreplay2_io2_list_item = io_source_register(&actionreplay2_io2_device);
 
     return 0;
 }
@@ -469,19 +474,19 @@ int actionreplay2_bin_attach(const char *filename, BYTE *rawcart)
 
 int actionreplay2_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i;
 
     for (i = 0; i <= 1; i++) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             return -1;
         }
 
-        if (chipheader[0xb] > 1) {
+        if (chip.bank > 1 || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -492,8 +497,8 @@ int actionreplay2_crt_attach(FILE *fd, BYTE *rawcart)
 void actionreplay2_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(actionreplay2_io1_list_item);
-    c64io_unregister(actionreplay2_io2_list_item);
+    io_source_unregister(actionreplay2_io1_list_item);
+    io_source_unregister(actionreplay2_io2_list_item);
     actionreplay2_io1_list_item = NULL;
     actionreplay2_io2_list_item = NULL;
 }

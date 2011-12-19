@@ -43,6 +43,7 @@
 #include "log.h"
 #include "maincpu.h"
 #include "types.h"
+#include "userport_joystick.h"
 #include "vicii.h"
 
 #ifdef HAVE_RS232
@@ -190,8 +191,8 @@ static BYTE read_ciapa(cia_context_t *cia_context)
     if (_mouse_enabled && (mouse_type == MOUSE_TYPE_NEOS) && (mouse_port == 2)) {
         byte &= neos_mouse_read();
     }
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_AMIGA) && (mouse_port == 2)) {
-        byte &= amiga_mouse_read();
+    if (_mouse_enabled && (mouse_kind == MOUSE_KIND_POLLED) && (mouse_port == 2)) {
+        byte &= mouse_poll();
     }
 #endif
 
@@ -237,8 +238,8 @@ static BYTE read_ciapb(cia_context_t *cia_context)
     if (_mouse_enabled && (mouse_type == MOUSE_TYPE_NEOS) && (mouse_port == 1)) {
         byte &= neos_mouse_read();
     }
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_AMIGA) && (mouse_port == 1)) {
-        byte &= amiga_mouse_read();
+    if (_mouse_enabled && (mouse_kind == MOUSE_KIND_POLLED) && (mouse_port == 1)) {
+        byte &= mouse_poll();
     }
 #endif
 
@@ -263,9 +264,8 @@ static void store_sdr(cia_context_t *cia_context, BYTE byte)
         rsuser_tx_byte((BYTE)byte);
     }
 #endif
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_HIT) {
-        extra_joystick_hit_store(byte);
-    }
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_sdr(byte);
 }
 
 void cia1_init(cia_context_t *cia_context)

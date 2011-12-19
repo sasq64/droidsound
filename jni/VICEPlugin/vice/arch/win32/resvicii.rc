@@ -1,0 +1,290 @@
+// VICII specific resources.
+//
+
+#include "vice.h"
+
+#include "res.h"
+#include "rescommon.h"
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+// template of dialog for all languages
+
+IDD_VICII_DIALOG DIALOG DISCARDABLE 0, 0, 145, 145
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    GROUPBOX        "", IDC_VICII_BORDERSGROUP,
+                    10, 5, 125, 55
+    AUTORADIOBUTTON "", IDC_TOGGLE_VICII_NORMALBORDERS,
+                    15, 15, 115, 10, BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP
+    AUTORADIOBUTTON "", IDC_TOGGLE_VICII_FULLBORDERS,
+                    15, 30, 115, 10, BS_AUTORADIOBUTTON | WS_TABSTOP
+    AUTORADIOBUTTON "", IDC_TOGGLE_VICII_DEBUGBORDERS,
+                    15, 45, 115, 10, BS_AUTORADIOBUTTON | WS_TABSTOP
+    GROUPBOX        "", IDC_VICII_SPRITEGROUP, 10, 65, 125, 40
+    AUTOCHECKBOX    "", IDC_TOGGLE_VICII_SSC,
+                    15, 75, 115, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_TOGGLE_VICII_SBC,
+                    15, 90, 115, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_TOGGLE_VICII_NEWLUM,
+                    15, 110, 115, 10, BS_AUTOCHECKBOX | WS_TABSTOP
+
+    DEFPUSHBUTTON   "", IDOK, 15, 125, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDCANCEL, 70, 125, 50, 14, WS_TABSTOP
+END
+
+
+// original and default ENGLISH text
+
+STRINGTABLE
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II settings"
+    IDS_VICII_BORDERSGROUP  "Border mode"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Full"
+    IDS_VICII_DEBUGBORDERS  "Debug"
+    IDS_VICII_SPRITEGROUP   "Sprite Collisions"
+    IDS_VICII_SPRITECOLL    "Sprite-sprite collisions"
+    IDS_VICII_BACKCOLL      "Sprite-background collisions"
+    IDS_VICII_LUMINANCE     "New luminances"
+END
+
+
+// DANISH text
+
+STRINGTABLE
+LANGUAGE LANG_DANISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II-indstillinger"
+    IDS_VICII_BORDERSGROUP  "Ramme-tilstand"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Fuld"
+    IDS_VICII_DEBUGBORDERS  "Debug"
+    IDS_VICII_SPRITEGROUP   "Spritekollisioner"
+    IDS_VICII_SPRITECOLL    "Sprite-til-sprite-kollision"
+    IDS_VICII_BACKCOLL      "Sprite-til-baggrunds-kollision"
+    IDS_VICII_LUMINANCE     "Nye lysstyrker"
+END
+
+
+// GERMAN text
+
+STRINGTABLE
+LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II Einstellungen"
+    IDS_VICII_BORDERSGROUP  "Rahmen Modus"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Full"
+    IDS_VICII_DEBUGBORDERS  "Debug"
+    IDS_VICII_SPRITEGROUP   "Sprite Kollisionen"
+    IDS_VICII_SPRITECOLL    "Sprite-sprite Kollisionen"
+    IDS_VICII_BACKCOLL      "Sprite-Hintergrund Kollisionen"
+    IDS_VICII_LUMINANCE     "Neue Helligkeitsemulation"
+END
+
+
+// SPANISH text
+
+STRINGTABLE
+LANGUAGE LANG_SPANISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "Ajuester VIC-II"
+    IDS_VICII_BORDERSGROUP  "Modo del borde"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Completo"
+    IDS_VICII_DEBUGBORDERS  "Depurar"
+    IDS_VICII_SPRITEGROUP   "Colisión de Sprites"
+    IDS_VICII_SPRITECOLL    "Colisiones sprite-sprite"
+    IDS_VICII_BACKCOLL      "Colisiones sprite-fondo"
+    IDS_VICII_LUMINANCE     "Nuevas luminancias"
+END
+
+
+// FRENCH text
+
+STRINGTABLE
+LANGUAGE LANG_FRENCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "Paramètres VIC-II"
+    IDS_VICII_BORDERSGROUP  "Border mode"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Full"
+    IDS_VICII_DEBUGBORDERS  "Débug"
+    IDS_VICII_SPRITEGROUP   "Collisions de Sprites"
+    IDS_VICII_SPRITECOLL    "Sprite-sprite collisions"
+    IDS_VICII_BACKCOLL      "Sprite-background collisions"
+    IDS_VICII_LUMINANCE     "New luminances"
+END
+
+
+// HUNGARIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_HUNGARIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II beállításai"
+    IDS_VICII_BORDERSGROUP  "Keret mód"
+    IDS_VICII_NORMALBORDERS "Normál"
+    IDS_VICII_FULLBORDERS   "Teljes"
+    IDS_VICII_DEBUGBORDERS  "Nyomkövetés"
+    IDS_VICII_SPRITEGROUP   "Sprite ütközések"
+    IDS_VICII_SPRITECOLL    "Sprite-sprite collisions"
+    IDS_VICII_BACKCOLL      "Sprite-background collisions"
+    IDS_VICII_LUMINANCE     "New luminances"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// ITALIAN text
+
+STRINGTABLE
+LANGUAGE LANG_ITALIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "Impostazioni VIC-II"
+    IDS_VICII_BORDERSGROUP  "Modalità del bordo"
+    IDS_VICII_NORMALBORDERS "Normale"
+    IDS_VICII_FULLBORDERS   "Intero"
+    IDS_VICII_DEBUGBORDERS  "Debug"
+    IDS_VICII_SPRITEGROUP   "Collisioni sprite"
+    IDS_VICII_SPRITECOLL    "Collisioni sprite-sprite"
+    IDS_VICII_BACKCOLL      "Collisioni sprite-sfondo"
+    IDS_VICII_LUMINANCE     "Nuove luminanze"
+END
+
+
+// KOREAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(949)
+#endif
+STRINGTABLE
+LANGUAGE LANG_KOREAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II ¼³Á¤"
+    IDS_VICII_BORDERSGROUP  "º¸´õ ¸ðµå"
+    IDS_VICII_NORMALBORDERS "º¸Åë"
+    IDS_VICII_FULLBORDERS   "°¡µæ"
+    IDS_VICII_DEBUGBORDERS  "µð¹÷"
+    IDS_VICII_SPRITEGROUP   "Sprite Collisions"
+    IDS_VICII_SPRITECOLL    "½ºÇÁ¶óÀÌÆ®-½ºÇÁ¶óÀÌÆ® Ãæµ¹"
+    IDS_VICII_BACKCOLL      "½ºÇÁ¶óÀÌÆ®-¹è°æ Ãæµ¹"
+    IDS_VICII_LUMINANCE     "¼¼·Î¿î ¹à±â"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// DUTCH text
+
+STRINGTABLE
+LANGUAGE LANG_DUTCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II instellingen"
+    IDS_VICII_BORDERSGROUP  "Bordermodus"
+    IDS_VICII_NORMALBORDERS "Normaal"
+    IDS_VICII_FULLBORDERS   "Volledig"
+    IDS_VICII_DEBUGBORDERS  "Debug"
+    IDS_VICII_SPRITEGROUP   "Sprite Botsingen"
+    IDS_VICII_SPRITECOLL    "Sprite-sprite botsingen"
+    IDS_VICII_BACKCOLL      "Sprite-achtergrond botsingen"
+    IDS_VICII_LUMINANCE     "Nieuwe kleuren"
+END
+
+
+// POLISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_POLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "Ustawienia VIC-II"
+    IDS_VICII_BORDERSGROUP  "Tryb ramki"
+    IDS_VICII_NORMALBORDERS "Zwyk³y"
+    IDS_VICII_FULLBORDERS   "Pe³ny"
+    IDS_VICII_DEBUGBORDERS  "Debug"
+    IDS_VICII_SPRITEGROUP   "Kolizje duszków"
+    IDS_VICII_SPRITECOLL    "Kolizje duszków"
+    IDS_VICII_BACKCOLL      "Kolizje duszków z t³em"
+    IDS_VICII_LUMINANCE     "Nowy typ jaskrawo¶ci"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// RUSSIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28595)
+#endif
+STRINGTABLE
+LANGUAGE LANG_RUSSIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "½ÐáâàÞÙÚØ VIC-II"
+    IDS_VICII_BORDERSGROUP  "Border mode"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Full"
+    IDS_VICII_DEBUGBORDERS  "Debug"
+    IDS_VICII_SPRITEGROUP   "Sprite Collisions"
+    IDS_VICII_SPRITECOLL    "Sprite-sprite collisions"
+    IDS_VICII_BACKCOLL      "Sprite-background collisions"
+    IDS_VICII_LUMINANCE     "New luminances"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// SWEDISH text
+
+STRINGTABLE
+LANGUAGE LANG_SWEDISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II-inställningar"
+    IDS_VICII_BORDERSGROUP  "Ramläge"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Full"
+    IDS_VICII_DEBUGBORDERS  "Felsök"
+    IDS_VICII_SPRITEGROUP   "Spritekollisioner"
+    IDS_VICII_SPRITECOLL    "Sprite-till-sprite-kollision"
+    IDS_VICII_BACKCOLL      "Sprite-till-bakgrund-kollision"
+    IDS_VICII_LUMINANCE     "Nya ljusstyrkor"
+END
+
+
+// TURKISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28599)
+#endif
+STRINGTABLE
+LANGUAGE LANG_TURKISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_VICII_CAPTION       "VIC-II ayarlarý"
+    IDS_VICII_BORDERSGROUP  "Çerçeve modu"
+    IDS_VICII_NORMALBORDERS "Normal"
+    IDS_VICII_FULLBORDERS   "Tam"
+    IDS_VICII_DEBUGBORDERS  "Hata Ayýklama"
+    IDS_VICII_SPRITEGROUP   "Yaratýk Çarpýþmalarý"
+    IDS_VICII_SPRITECOLL    "Yartýk-yaratýk çarpýþmalarý"
+    IDS_VICII_BACKCOLL      "Yaratýk-arkaplan çarpýþmalarý"
+    IDS_VICII_LUMINANCE     "Yeni parlaklýklar"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+

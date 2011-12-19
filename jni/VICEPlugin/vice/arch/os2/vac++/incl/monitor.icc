@@ -1,0 +1,26 @@
+source type(c)
+    "asm6502.c",
+    "asm6502dtv.c",
+    "monitor.c",
+    "mon_assemble6502.c",
+    "mon_breakpoint.c",
+    "mon_command.c",
+    "mon_disassemble.c",
+    "mon_drive.c",
+    "mon_file.c",
+    "mon_memory.c",
+    "mon_register6502.c",
+    "mon_register6502dtv.c",
+    "mon_ui.c",
+    "mon_util.c",
+    "monitor_network.c"
+
+option Monitor = define("__GNUC__", ), define("__TURBOC__",)
+{
+   source type(c) "mon_lex.c"
+
+   option MonitorParse = lang(level, "ANSI")
+   {
+      source type(c) "mon_parse.c"
+   }
+}

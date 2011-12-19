@@ -35,8 +35,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOT1_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -44,6 +44,7 @@
 #include "log.h"
 #include "machine.h"
 #include "mem.h"
+#include "monitor.h"
 #include "resources.h"
 #include "snapshot.h"
 #include "translate.h"
@@ -125,7 +126,9 @@ static BYTE isepic_io1_read(WORD addr);
 static BYTE isepic_io1_peek(WORD addr);
 static void isepic_io1_store(WORD addr, BYTE byte);
 static BYTE isepic_io2_read(WORD addr);
+static BYTE isepic_io2_peek(WORD addr);
 static void isepic_io2_store(WORD addr, BYTE byte);
+static int isepic_dump(void);
 
 static io_source_t isepic_io1_device = {
     CARTRIDGE_NAME_ISEPIC,
@@ -136,8 +139,10 @@ static io_source_t isepic_io1_device = {
     isepic_io1_store,
     isepic_io1_read,
     isepic_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_ISEPIC
+    isepic_dump,
+    CARTRIDGE_ISEPIC,
+    0,
+    0
 };
 
 static io_source_t isepic_io2_device = {
@@ -148,9 +153,11 @@ static io_source_t isepic_io2_device = {
     0,
     isepic_io2_store,
     isepic_io2_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_ISEPIC
+    isepic_io2_peek,
+    isepic_dump,
+    CARTRIDGE_ISEPIC,
+    0,
+    0
 };
 
 static const c64export_resource_t export_res = {
@@ -243,8 +250,8 @@ static int set_isepic_enabled(int val, void *param)
             lib_free(isepic_filename);
             isepic_filename = NULL;
         }
-        c64io_unregister(isepic_io1_list_item);
-        c64io_unregister(isepic_io2_list_item);
+        io_source_unregister(isepic_io1_list_item);
+        io_source_unregister(isepic_io2_list_item);
         isepic_io1_list_item = NULL;
         isepic_io2_list_item = NULL;
         c64export_remove(&export_res);
@@ -255,13 +262,13 @@ static int set_isepic_enabled(int val, void *param)
     } else if (!isepic_enabled && val) {
         cart_power_off();
         isepic_ram = lib_malloc(ISEPIC_RAM_SIZE);
-        isepic_io1_list_item = c64io_register(&isepic_io1_device);
-        isepic_io2_list_item = c64io_register(&isepic_io2_device);
+        isepic_io1_list_item = io_source_register(&isepic_io1_device);
+        isepic_io2_list_item = io_source_register(&isepic_io2_device);
         if (c64export_add(&export_res) < 0) {
             lib_free(isepic_ram);
             isepic_ram = NULL;
-            c64io_unregister(isepic_io1_list_item);
-            c64io_unregister(isepic_io2_list_item);
+            io_source_unregister(isepic_io1_list_item);
+            io_source_unregister(isepic_io2_list_item);
             isepic_io1_list_item = NULL;
             isepic_io2_list_item = NULL;
             return -1;
@@ -408,7 +415,7 @@ int isepic_cmdline_options_init(void)
 
 /* ------------------------------------------------------------------------- */
 
-BYTE isepic_io1_read(WORD addr)
+static BYTE isepic_io1_read(WORD addr)
 {
     DBG(("io1 r %04x (sw:%d)\n", addr, isepic_switch));
 
@@ -418,12 +425,12 @@ BYTE isepic_io1_read(WORD addr)
     return 0;
 }
 
-BYTE isepic_io1_peek(WORD addr)
+static BYTE isepic_io1_peek(WORD addr)
 {
-    return isepic_page;
+    return 0;
 }
 
-void isepic_io1_store(WORD addr, BYTE byte)
+static void isepic_io1_store(WORD addr, BYTE byte)
 {
     DBG(("io1 w %04x %02x (sw:%d)\n", addr, byte, isepic_switch));
 
@@ -432,7 +439,18 @@ void isepic_io1_store(WORD addr, BYTE byte)
     }
 }
 
-BYTE isepic_io2_read(WORD addr)
+static BYTE isepic_io2_peek(WORD addr)
+{
+    BYTE retval = 0;
+
+    if (isepic_switch) {
+        retval = isepic_ram[(isepic_page * 256) + (addr & 0xff)];
+    }
+
+    return retval;
+}
+
+static BYTE isepic_io2_read(WORD addr)
 {
     BYTE retval = 0;
 
@@ -448,13 +466,19 @@ BYTE isepic_io2_read(WORD addr)
     return retval;
 }
 
-void isepic_io2_store(WORD addr, BYTE byte)
+static void isepic_io2_store(WORD addr, BYTE byte)
 {
     DBG(("io2 w %04x %02x (sw:%d)\n", addr, byte, isepic_switch));
 
     if (isepic_switch) {
         isepic_ram[(isepic_page * 256) + (addr & 0xff)] = byte;
     }
+}
+
+static int isepic_dump(void)
+{
+    mon_out("Page: %d, Switch: %d\n", isepic_page, isepic_switch);
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -618,13 +642,17 @@ int isepic_bin_save(const char *filename)
 
 static int isepic_crt_load(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (fread(rawcart, ISEPIC_RAM_SIZE, 1, fd) < 1) {
+    if (chip.size != ISEPIC_RAM_SIZE) {
+        return -1;
+    }
+
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -647,117 +675,21 @@ int isepic_crt_attach(FILE *fd, BYTE *rawcart, const char *filename)
 int isepic_crt_save(const char *filename)
 {
     FILE *fd;
-    BYTE header[0x40], chipheader[0x10];
+    crt_chip_header_t chip;
 
-    fd = fopen(filename, MODE_WRITE);
+    fd = crt_create(filename, CARTRIDGE_ISEPIC, 1, 1, STRING_ISEPIC);
 
     if (fd == NULL) {
         return -1;
     }
 
-    /*
-     * Initialize headers to zero.
-     */
-    memset(header, 0x0, 0x40);
-    memset(chipheader, 0x0, 0x10);
+    chip.type = 2;               /* Chip type. (= FlashROM?) */
+    chip.bank = 0;               /* Bank nr. (= 0) */
+    chip.start = 0x8000;         /* Address. (= 0x8000) */
+    chip.size = ISEPIC_RAM_SIZE; /* Length. (= 0x0800) */
 
-    /*
-     * Construct CRT header.
-     */
-    strcpy((char *)header, CRT_HEADER);
-
-    /*
-     * fileheader-length (= 0x0040)
-     */
-    header[0x10] = 0x00;
-    header[0x11] = 0x00;
-    header[0x12] = 0x00;
-    header[0x13] = 0x40;
-
-    /*
-     * Version (= 0x0100)
-     */
-    header[0x14] = 0x01;
-    header[0x15] = 0x00;
-
-    /*
-     * Hardware type (= CARTRIDGE_ISEPIC)
-     */
-    header[0x16] = 0x00;
-    header[0x17] = CARTRIDGE_ISEPIC;
-
-    /*
-     * Exrom line
-     */
-    header[0x18] = 0x01;            /* ? */
-
-    /*
-     * Game line
-     */
-    header[0x19] = 0x01;            /* ? */
-
-    /*
-     * Set name.
-     */
-    strcpy((char *)&header[0x20], STRING_ISEPIC);
-
-    /*
-     * Write CRT header.
-     */
-    if (fwrite(header, sizeof(BYTE), 0x40, fd) != 0x40) {
-        fclose(fd);
-        return -1;
-    }
-
-    /*
-     * Construct chip packet.
-     */
-    strcpy((char *)chipheader, CHIP_HEADER);
-
-    /*
-     * Packet length. (= 0x0810; 0x10 + 0x0800)
-     */
-    chipheader[0x04] = 0x00;
-    chipheader[0x05] = 0x00;
-    chipheader[0x06] = 0x08;
-    chipheader[0x07] = 0x10;
-
-    /*
-     * Chip type. (= FlashROM?)
-     */
-    chipheader[0x08] = 0x00;
-    chipheader[0x09] = 0x02;
-
-    /*
-     * Bank nr. (= 0)
-     */
-    chipheader[0x0a] = 0x00;
-    chipheader[0x0b] = 0x00;
-
-    /*
-     * Address. (= 0x8000)
-     */
-    chipheader[0x0c] = 0x80;
-    chipheader[0x0d] = 0x00;
-
-    /*
-     * Length. (= 0x0800)
-     */
-    chipheader[0x0e] = 0x08;
-    chipheader[0x0f] = 0x00;
-
-    /*
-     * Write CHIP header.
-     */
-    if (fwrite(chipheader, sizeof(BYTE), 0x10, fd) != 0x10) {
-        fclose(fd);
-        return -1;
-    }
-
-    /*
-     * Write CHIP packet data.
-     */
-    if (fwrite(isepic_ram, sizeof(char), ISEPIC_RAM_SIZE, fd) != ISEPIC_RAM_SIZE) {
+    /* Write CHIP packet data. */
+    if (crt_write_chip(isepic_ram, &chip, fd)) {
         fclose(fd);
         return -1;
     }
@@ -861,14 +793,14 @@ int isepic_snapshot_read_module(snapshot_t *s)
     isepic_enabled = 1;
 
     /* FIXME: ugly code duplication to avoid cart_config_changed calls */
-    isepic_io1_list_item = c64io_register(&isepic_io1_device);
-    isepic_io2_list_item = c64io_register(&isepic_io2_device);
+    isepic_io1_list_item = io_source_register(&isepic_io1_device);
+    isepic_io2_list_item = io_source_register(&isepic_io2_device);
 
     if (c64export_add(&export_res) < 0) {
         lib_free(isepic_ram);
         isepic_ram = NULL;
-        c64io_unregister(isepic_io1_list_item);
-        c64io_unregister(isepic_io2_list_item);
+        io_source_unregister(isepic_io1_list_item);
+        io_source_unregister(isepic_io2_list_item);
         isepic_io1_list_item = NULL;
         isepic_io2_list_item = NULL;
         isepic_enabled = 0;

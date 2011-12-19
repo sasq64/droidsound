@@ -80,12 +80,12 @@
 
 #ifndef STORE_ZERO
 #define STORE_ZERO(addr, value) \
-    zero_store((WORD)(addr), (BYTE)(value))
+    (*_mem_write_tab_ptr[0])((WORD)(addr), (BYTE)(value))
 #endif
 
 #ifndef LOAD_ZERO
 #define LOAD_ZERO(addr) \
-    zero_read((WORD)(addr))
+    (*_mem_read_tab_ptr[0])((WORD)(addr))
 #endif
 
 #ifdef FEATURE_CPUMEMHISTORY
@@ -236,6 +236,9 @@ int maincpu_rmw_flag = 0;
    by one more cycle if necessary, as happens with conditional branch opcodes
    when the branch is taken.  */
 unsigned int last_opcode_info;
+
+/* Address of the last executed opcode. This is used by watchpoints. */
+unsigned int last_opcode_addr;
 
 /* Number of write cycles for each 6510 opcode.  */
 const CLOCK maincpu_opcode_write_cycles[] = {
@@ -443,6 +446,7 @@ void maincpu_mainloop(void)
 #define CLK maincpu_clk
 #define RMW_FLAG maincpu_rmw_flag
 #define LAST_OPCODE_INFO last_opcode_info
+#define LAST_OPCODE_ADDR last_opcode_addr
 #define TRACEFLG debug.maincpu_traceflg
 
 #define CPU_INT_STATUS maincpu_int_status

@@ -34,9 +34,9 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
 #include "c64pla.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -289,7 +289,9 @@ static io_source_t mmcreplay_io1_device = {
     mmcreplay_io1_read,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_MMC_REPLAY
+    CARTRIDGE_MMC_REPLAY,
+    0,
+    0
 };
 
 static io_source_t mmcreplay_io2_device = {
@@ -302,7 +304,9 @@ static io_source_t mmcreplay_io2_device = {
     mmcreplay_io2_read,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_MMC_REPLAY
+    CARTRIDGE_MMC_REPLAY,
+    0,
+    0
 };
 
 static io_source_list_t *mmcreplay_io1_list_item = NULL;
@@ -2459,8 +2463,8 @@ static int mmcreplay_common_attach(const char *filename)
         return -1;
     }
 
-    mmcreplay_io1_list_item = c64io_register(&mmcreplay_io1_device);
-    mmcreplay_io2_list_item = c64io_register(&mmcreplay_io2_device);
+    mmcreplay_io1_list_item = io_source_register(&mmcreplay_io1_device);
+    mmcreplay_io2_list_item = io_source_register(&mmcreplay_io2_device);
 
     mmcr_enabled = 1;
 
@@ -2501,7 +2505,7 @@ int mmcreplay_bin_attach(const char *filename, BYTE *rawcart)
 
 int mmcreplay_crt_attach(FILE *fd, BYTE *rawcart, const char *filename)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i;
 
     mmcr_filetype = 0;
@@ -2510,15 +2514,15 @@ int mmcreplay_crt_attach(FILE *fd, BYTE *rawcart, const char *filename)
     memset(rawcart, 0xff, 0x80000);
 
     for (i = 0; i <= 63; i++) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        if (chipheader[0xb] > 63) {
+        if (chip.bank > 63) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -2586,32 +2590,13 @@ int mmcreplay_bin_save(const char *filename)
 int mmcreplay_crt_save(const char *filename)
 {
     FILE *fd;
-    BYTE header[0x40], chipheader[0x10];
+    crt_chip_header_t chip;
     BYTE *data;
     int i, n = 0;
 
-    if (filename == NULL) {
-        return -1;
-    }
-
-    fd = fopen(filename, MODE_WRITE);
+    fd = crt_create(filename, CARTRIDGE_MMC_REPLAY, 1, 0, STRING_MMC_REPLAY);
 
     if (fd == NULL) {
-        return -1;
-    }
-
-    memset(header, 0x0, 0x40);
-    memset(chipheader, 0x0, 0x10);
-
-    strcpy((char *)header, CRT_HEADER);
-
-    header[0x13] = 0x40;
-    header[0x14] = 0x01;
-    header[0x17] = CARTRIDGE_MMC_REPLAY;
-    header[0x18] = 0x01;
-    strcpy((char *)&header[0x20], STRING_MMC_REPLAY);
-    if (fwrite(header, 1, 0x40, fd) != 0x40) {
-        fclose(fd);
         return -1;
     }
 
@@ -2621,25 +2606,17 @@ int mmcreplay_crt_save(const char *filename)
         }
     }
 
+    chip.type = 2;
+    chip.size = 0x2000;
+    chip.start = 0x8000;
+
     if ((!checkempty(7)) && (n == 7)) {
         data = &roml_banks[0x70000];
 
-        strcpy((char *)chipheader, CHIP_HEADER);
-        chipheader[0x06] = 0x20;
-        chipheader[0x07] = 0x10;
-        chipheader[0x09] = 0x02;
-        chipheader[0x0e] = 0x20;
-
         for (i = 0; i < 8; i++) {
-            chipheader[0x0c] = 0x80;
-            chipheader[0x0b] = i + (7 * 8); /* bank */
+            chip.bank = i + (7 * 8); /* bank */
 
-            if (fwrite(chipheader, 1, 0x10, fd) != 0x10) {
-                fclose(fd);
-                return -1;
-            }
-
-            if (fwrite(data, 1, 0x2000, fd) != 0x2000) {
+            if (crt_write_chip(data, &chip, fd)) {
                 fclose(fd);
                 return -1;
             }
@@ -2648,22 +2625,10 @@ int mmcreplay_crt_save(const char *filename)
     } else {
         data = &roml_banks[0x00000];
 
-        strcpy((char *)chipheader, CHIP_HEADER);
-        chipheader[0x06] = 0x20;
-        chipheader[0x07] = 0x10;
-        chipheader[0x09] = 0x02;
-        chipheader[0x0e] = 0x20;
-
         for (i = 0; i < (8 * 8); i++) {
-            chipheader[0x0c] = 0x80;
-            chipheader[0x0b] = i; /* bank */
+            chip.bank = i; /* bank */
 
-            if (fwrite(chipheader, 1, 0x10, fd) != 0x10) {
-                fclose(fd);
-                return -1;
-            }
-
-            if (fwrite(data, 1, 0x2000, fd) != 0x2000) {
+            if (crt_write_chip(data, &chip, fd)) {
                 fclose(fd);
                 return -1;
             }
@@ -2700,8 +2665,8 @@ void mmcreplay_detach(void)
     mmc_close_card_image();
     eeprom_close_image(mmcr_eeprom_rw);
     c64export_remove(&export_res);
-    c64io_unregister(mmcreplay_io1_list_item);
-    c64io_unregister(mmcreplay_io2_list_item);
+    io_source_unregister(mmcreplay_io1_list_item);
+    io_source_unregister(mmcreplay_io2_list_item);
     mmcreplay_io1_list_item = NULL;
     mmcreplay_io2_list_item = NULL;
     mmcr_enabled = 0;

@@ -1,0 +1,389 @@
+// IDE64 specific resources.
+//
+
+#include "vice.h"
+
+#include "res.h"
+#include "rescommon.h"
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+// template of dialog for all languages
+
+IDD_IDE64_V4_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 180, 80
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    AUTOCHECKBOX    "", IDC_IDE64_V4,
+                    10, 14, 90, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+
+END
+
+// -----------------------------------------------------------------------------
+
+// template of dialog for all languages
+
+IDD_IDE64_SETTINGS_DIALOG DIALOG DISCARDABLE 0, 0, 180, 160
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT           "", IDC_IDE64_FILE_LABEL,
+                    9, 14, 50, 8
+    PUSHBUTTON      "", IDC_IDE64_HDIMAGE_BROWSE,
+                    60, 12, 50, 14, 0
+    EDITTEXT        IDC_IDE64_HDIMAGE_FILE,
+                    9, 28, 160, 12, WS_TABSTOP
+
+    GROUPBOX        "", IDC_IDE64_GEOMETRY,
+                    5, 58, 120, 95
+    AUTOCHECKBOX    "", IDC_TOGGLE_IDE64_SIZEAUTODETECT,
+                    10, 70, 90, 10, BS_AUTOCHECKBOX | WS_GROUP | WS_TABSTOP
+    LTEXT           "", IDC_IDE64_CYLINDERS_LABEL,
+                    10, 85, 50, 8
+    COMBOBOX        IDC_IDE64_CYLINDERS,
+                    55, 83, 60, 50, CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP | WS_VSCROLL
+    LTEXT           "", IDC_IDE64_HEADS_LABEL,
+                    10, 105, 55, 8
+    COMBOBOX        IDC_IDE64_HEADS,
+                    55, 103, 60, 50, CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP | WS_VSCROLL
+    LTEXT           "", IDC_IDE64_SECTORS_LABEL,
+                    10, 125, 50, 8
+    COMBOBOX        IDC_IDE64_SECTORS,
+                    55, 123, 60, 50, CBS_DROPDOWNLIST | WS_GROUP | WS_TABSTOP | WS_VSCROLL
+    LTEXT           "", IDC_IDE64_SIZE,
+                    10, 140, 100, 8
+END
+
+// -----------------------------------------------------------------------------
+
+// original and default ENGLISH text
+
+STRINGTABLE
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64 settings"
+    IDS_IDE64_V4                    "Enable IDE64 V4"
+    IDS_IDE64_IMAGE                 "HD image file"
+    IDS_IDE64_GEOMETRY              "Geometry"
+    IDS_IDE64_AUTODETECT            "Autodetect image size"
+    IDS_IDE64_CYLINDERS             "Cylinders"
+    IDS_IDE64_HEADS                 "Heads"
+    IDS_IDE64_SECTORS               "Sectors"
+    IDS_IDE64_TOTAL_SIZE            "Total size: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Select HD image file"
+END
+
+
+// DANISH text
+
+STRINGTABLE
+LANGUAGE LANG_DANISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64-indstillinger"
+    IDS_IDE64_V4                    "Aktivér IDE64 V4"
+    IDS_IDE64_IMAGE                 "HD image file"
+    IDS_IDE64_GEOMETRY              "Geometri"
+    IDS_IDE64_AUTODETECT            "Autodetektér størrelse på image"
+    IDS_IDE64_CYLINDERS             "Cylindrer"
+    IDS_IDE64_HEADS                 "Hoveder"
+    IDS_IDE64_SECTORS               "Sektorer"
+    IDS_IDE64_TOTAL_SIZE            "Total størrelse: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Angiv HD-imagefil"
+END
+
+
+// GERMAN text
+
+STRINGTABLE
+LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 Einstellungen"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD Image #1 Einstellungen"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD Image #2 Einstellungen"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD Image #3 Einstellungen"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD Image #4 Einstellungen"
+    IDS_IDE64_SETTINGS              "IDE64 Einstellungen"
+    IDS_IDE64_V4                    "IDE64 V4 aktivieren"
+    IDS_IDE64_IMAGE                 "HD Image Name"
+    IDS_IDE64_GEOMETRY              "Geometrie"
+    IDS_IDE64_AUTODETECT            "Image Größe automatisch erkennen"
+    IDS_IDE64_CYLINDERS             "Zylinder"
+    IDS_IDE64_HEADS                 "Köpfe"
+    IDS_IDE64_SECTORS               "Sektoren"
+    IDS_IDE64_TOTAL_SIZE            "Gesamtgröße: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "HD Image Datei auswählen"
+END
+
+
+// SPANISH text
+
+STRINGTABLE
+LANGUAGE LANG_SPANISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "Ajustes IDE64 V4"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "Ajustes imagen IDE64 HD #1"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "Ajustes imagen IDE64 HD #2"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "Ajustes imagen IDE64 HD #3"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "Ajustes imagen IDE64 HD #4"
+    IDS_IDE64_SETTINGS              "Ajustes IDE64"
+    IDS_IDE64_V4                    "Permitir IDE64 V4"
+    IDS_IDE64_IMAGE                 "Fichero imagen HD"
+    IDS_IDE64_GEOMETRY              "Geometria"
+    IDS_IDE64_AUTODETECT            "Autodetección del tamaño de la imagen"
+    IDS_IDE64_CYLINDERS             "Cilindros"
+    IDS_IDE64_HEADS                 "Cabezas"
+    IDS_IDE64_SECTORS               "Sectores"
+    IDS_IDE64_TOTAL_SIZE            "Tamaño total: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Seleccionar fichero imagen HD"
+END
+
+
+// FRENCH text
+
+STRINGTABLE
+LANGUAGE LANG_FRENCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64 settings"
+    IDS_IDE64_V4                    "Enable IDE64 V4"
+    IDS_IDE64_IMAGE                 "HD image file"
+    IDS_IDE64_GEOMETRY              "Géométrie"
+    IDS_IDE64_AUTODETECT            "Autodetect image size"
+    IDS_IDE64_CYLINDERS             "Cylindres"
+    IDS_IDE64_HEADS                 "Têtes"
+    IDS_IDE64_SECTORS               "Secteurs"
+    IDS_IDE64_TOTAL_SIZE            "Taille totale: %iKo"
+    IDS_IDE64_SELECT_IMAGE          "Sélectionnez le fichier image du D.D."
+END
+
+
+// HUNGARIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_HUNGARIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64 beállításai"
+    IDS_IDE64_V4                    "Enable IDE64 V4"
+    IDS_IDE64_IMAGE                 "Merevlemez képmás fájl"
+    IDS_IDE64_GEOMETRY              "Geometry"
+    IDS_IDE64_AUTODETECT            "Autodetect image size"
+    IDS_IDE64_CYLINDERS             "Sávok"
+    IDS_IDE64_HEADS                 "Fejek"
+    IDS_IDE64_SECTORS               "Szektorok"
+    IDS_IDE64_TOTAL_SIZE            "Teljes méret: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Válassza ki a merevlemez képmás fájlt"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// ITALIAN text
+
+STRINGTABLE
+LANGUAGE LANG_ITALIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "Impostazioni IDE64"
+    IDS_IDE64_V4                    "Attiva IDE64 V4"
+    IDS_IDE64_IMAGE                 "File immagine HD"
+    IDS_IDE64_GEOMETRY              "Geometria"
+    IDS_IDE64_AUTODETECT            "Rileva automaticamente immagine"
+    IDS_IDE64_CYLINDERS             "Cilindri"
+    IDS_IDE64_HEADS                 "Testine"
+    IDS_IDE64_SECTORS               "Settori"
+    IDS_IDE64_TOTAL_SIZE            "Dimensione totale: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Seleziona il file immagine HD"
+END
+
+
+// KOREAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(949)
+#endif
+STRINGTABLE
+LANGUAGE LANG_KOREAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64 settings"
+    IDS_IDE64_V4                    "Enable IDE64 V4"
+    IDS_IDE64_IMAGE                 "HD image file"
+    IDS_IDE64_GEOMETRY              "Áö¿À¸ÞÆ®¸®"
+    IDS_IDE64_AUTODETECT            "ÀÌ¹ÌÁö Å©±â ÀÚµ¿À¸·Î Ã£±â"
+    IDS_IDE64_CYLINDERS             "½Ç¸°´õ"
+    IDS_IDE64_HEADS                 "Çìµå"
+    IDS_IDE64_SECTORS               "¼½ÅÍ"
+    IDS_IDE64_TOTAL_SIZE            "Total size"
+    IDS_IDE64_SELECT_IMAGE          "Select HD image file"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// DUTCH text
+
+STRINGTABLE
+LANGUAGE LANG_DUTCH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 instellingen"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD bestand #1 instellingen"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD bestand #2 instellingen"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD bestand #3 instellingen"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD bestand #4 instellingen"
+    IDS_IDE64_SETTINGS              "IDE64 instellingen"
+    IDS_IDE64_V4                    "Activeer IDE64 V4"
+    IDS_IDE64_IMAGE                 "HD bestand"
+    IDS_IDE64_GEOMETRY              "Geometrie"
+    IDS_IDE64_AUTODETECT            "Automatisch detecteren bestandsgrootte"
+    IDS_IDE64_CYLINDERS             "Cylinders"
+    IDS_IDE64_HEADS                 "Koppen"
+    IDS_IDE64_SECTORS               "Sectors"
+    IDS_IDE64_TOTAL_SIZE            "Totale grootte: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Selecteer HD bestand"
+END
+
+
+// POLISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28592)
+#endif
+STRINGTABLE
+LANGUAGE LANG_POLISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "Ustawienia IDE64 V4"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "Ustawienia obrazu #1 IDE64 HD"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "Ustawienia obrazu #2 IDE64 HD"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "Ustawienia obrazu #3 IDE64 HD"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "Ustawienia obrazu #4 IDE64 HD"
+    IDS_IDE64_SETTINGS              "Ustawienia IDE64"
+    IDS_IDE64_V4                    "W³±cz IDE64 V4"
+    IDS_IDE64_IMAGE                 "Plik obrazu HD"
+    IDS_IDE64_GEOMETRY              "Geometria"
+    IDS_IDE64_AUTODETECT            "Automatycznie wykrywaj rozmiar obrazu"
+    IDS_IDE64_CYLINDERS             "Cylindry"
+    IDS_IDE64_HEADS                 "G³owice"
+    IDS_IDE64_SECTORS               "Sektory"
+    IDS_IDE64_TOTAL_SIZE            "Ca³kowity rozmiar: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Wybierz plik obrazu HD"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// RUSSIAN text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28595)
+#endif
+STRINGTABLE
+LANGUAGE LANG_RUSSIAN, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64 settings"
+    IDS_IDE64_V4                    "Enable IDE64 V4"
+    IDS_IDE64_IMAGE                 "HD image file"
+    IDS_IDE64_GEOMETRY              "Geometry"
+    IDS_IDE64_AUTODETECT            "Autodetect image size"
+    IDS_IDE64_CYLINDERS             "Cylinders"
+    IDS_IDE64_HEADS                 "Heads"
+    IDS_IDE64_SECTORS               "Sectors"
+    IDS_IDE64_TOTAL_SIZE            "Total size"
+    IDS_IDE64_SELECT_IMAGE          "Select HD image file"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+
+// SWEDISH text
+
+STRINGTABLE
+LANGUAGE LANG_SWEDISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64-inställningar"
+    IDS_IDE64_V4                    "Aktivera IDE64 V4"
+    IDS_IDE64_IMAGE                 "HD-avbildningsfil"
+    IDS_IDE64_GEOMETRY              "Geometri"
+    IDS_IDE64_AUTODETECT            "Autodetektera storlek på avbildning"
+    IDS_IDE64_CYLINDERS             "Cylindrar"
+    IDS_IDE64_HEADS                 "Huvuden"
+    IDS_IDE64_SECTORS               "Sektorer"
+    IDS_IDE64_TOTAL_SIZE            "Total storlek: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "Ange HD-avbildningsfil"
+END
+
+
+// TURKISH text
+
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28599)
+#endif
+STRINGTABLE
+LANGUAGE LANG_TURKISH, SUBLANG_NEUTRAL
+BEGIN
+    IDS_IDE64_V4_SETTINGS           "IDE64 V4 settings"
+    IDS_IDE64_HD_IMAGE_1_SETTINGS   "IDE64 HD image #1 settings"
+    IDS_IDE64_HD_IMAGE_2_SETTINGS   "IDE64 HD image #2 settings"
+    IDS_IDE64_HD_IMAGE_3_SETTINGS   "IDE64 HD image #3 settings"
+    IDS_IDE64_HD_IMAGE_4_SETTINGS   "IDE64 HD image #4 settings"
+    IDS_IDE64_SETTINGS              "IDE64 ayarlarý"
+    IDS_IDE64_V4                    "IDE64 V4'ü aktif et"
+    IDS_IDE64_IMAGE                 "HD imaj dosyasý"
+    IDS_IDE64_GEOMETRY              "Geometri"
+    IDS_IDE64_AUTODETECT            "Imaj boyutunu otomatik algýla"
+    IDS_IDE64_CYLINDERS             "Silindirler"
+    IDS_IDE64_HEADS                 "Kafalar"
+    IDS_IDE64_SECTORS               "Sektörler"
+    IDS_IDE64_TOTAL_SIZE            "Toplam boyut: %iKB"
+    IDS_IDE64_SELECT_IMAGE          "HD imaj dosyasý seç"
+END
+#ifndef WINDRES_CP_IGNORE
+#pragma code_page(28591)
+#endif
+
+

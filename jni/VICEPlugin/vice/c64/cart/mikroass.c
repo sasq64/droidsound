@@ -34,12 +34,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "mikroass.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     "Mikro Assembler" Cartridge
@@ -72,9 +73,11 @@ static io_source_t mikroass_io1_device = {
     1, /* read is always valid */
     NULL,
     mikroass_io1_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MIKRO_ASSEMBLER
+    mikroass_io1_read,
+    NULL,
+    CARTRIDGE_MIKRO_ASSEMBLER,
+    0,
+    0
 };
 
 static io_source_t mikroass_io2_device = {
@@ -85,9 +88,11 @@ static io_source_t mikroass_io2_device = {
     1, /* read is always valid */
     NULL,
     mikroass_io2_read,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_MIKRO_ASSEMBLER
+    mikroass_io2_read,
+    NULL,
+    CARTRIDGE_MIKRO_ASSEMBLER,
+    0,
+    0
 };
 
 static io_source_list_t *mikroass_io1_list_item = NULL;
@@ -117,8 +122,8 @@ static int mikroass_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    mikroass_io1_list_item = c64io_register(&mikroass_io1_device);
-    mikroass_io2_list_item = c64io_register(&mikroass_io2_device);
+    mikroass_io1_list_item = io_source_register(&mikroass_io1_device);
+    mikroass_io2_list_item = io_source_register(&mikroass_io2_device);
     return 0;
 }
 
@@ -132,13 +137,17 @@ int mikroass_bin_attach(const char *filename, BYTE *rawcart)
 
 int mikroass_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (fread(rawcart, 0x2000, 1, fd) < 1) {
+    if (chip.size != 0x2000) {
+        return -1;
+    }
+
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -148,8 +157,8 @@ int mikroass_crt_attach(FILE *fd, BYTE *rawcart)
 void mikroass_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(mikroass_io1_list_item);
-    c64io_unregister(mikroass_io2_list_item);
+    io_source_unregister(mikroass_io1_list_item);
+    io_source_unregister(mikroass_io2_list_item);
     mikroass_io1_list_item = NULL;
     mikroass_io2_list_item = NULL;
 }

@@ -225,7 +225,6 @@ static int set_cartridge_reset(int val, void *param)
     if (c64cartridge_reset != val) {
         DBG(("c64cartridge_reset changed: %d\n", val));
         c64cartridge_reset = val; /* resource value modified */
-        return try_cartridge_attach(cartridge_type, cartridge_file);
     }
     return 0;
 }
@@ -574,14 +573,18 @@ void cartridge_set_default(void)
 {
     int type = CARTRIDGE_NONE;
 
-    if (util_file_exists(cartfile)) {
-        if (crt_getid(cartfile) > 0) {
-            type = CARTRIDGE_CRT;
+    if (cartfile != NULL) {
+        if (util_file_exists(cartfile)) {
+            if (crt_getid(cartfile) > 0) {
+                type = CARTRIDGE_CRT;
+            } else {
+                type = c64cart_type;
+            }
         } else {
-            type = c64cart_type;
+            DBG(("cartridge_set_default: file does not exist: '%s'\n", cartfile));
         }
     } else {
-        DBG(("cartridge_set_default: file does not exist: '%s'\n", cartfile));
+        DBG(("cartridge_set_default: no filename\n"));
     }
     DBG(("cartridge_set_default: id %d '%s'\n", type, cartfile));
 
@@ -596,7 +599,7 @@ void cartridge_set_default(void)
 int cartridge_save_image(int type, const char *filename)
 {
     char *ext = util_get_extension((char *)filename);
-    if (!strcmp(ext, "crt")) {
+    if (ext != NULL && !strcmp(ext, "crt")) {
         return cartridge_crt_save(type, filename);
     }
     return cartridge_bin_save(type, filename);

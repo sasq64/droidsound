@@ -1,0 +1,7 @@
+source type(c)
+    "bmpdrv.c",
+    "doodledrv.c",
+    "gfxoutput.c",
+    "iffdrv.c",
+    "pcxdrv.c",
+    "ppmdrv.c"

@@ -84,6 +84,9 @@ typedef struct drivecpu_context_s {
     /* Information about the last executed opcode.  */
     unsigned int last_opcode_info;
 
+    /* Address of the last executed opcode. This is used by watchpoints. */
+    unsigned int last_opcode_addr;
+
     /* Public copy of the registers.  */
     mos6510_regs_t cpu_regs;
 
@@ -140,6 +143,8 @@ struct cia_context_s;
 struct riot_context_s;
 struct tpi_context_s;
 struct via_context_s;
+struct pc8477_s;
+struct wd1770_s;
 
 typedef struct drive_context_s {
     int mynumber;         /* init to [01] */
@@ -154,9 +159,12 @@ typedef struct drive_context_s {
     struct via_context_s *via2;
     struct cia_context_s *cia1571;
     struct cia_context_s *cia1581;
+    struct via_context_s *via4000;
     struct riot_context_s *riot1;
     struct riot_context_s *riot2;
     struct tpi_context_s *tpid;
+    struct pc8477_s *pc8477;
+    struct wd1770_s *wd1770;
 } drive_context_t;
 
 #endif

@@ -35,7 +35,7 @@
 
 #include "c64-midi.h"
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "machine.h"
@@ -82,7 +82,9 @@ static io_source_t midi_device = {
     c64midi_read,
     c64midi_peek,
     NULL, /* TODO: dump */
-    CARTRIDGE_MIDI_SEQUENTIAL
+    CARTRIDGE_MIDI_SEQUENTIAL,
+    0,
+    0
 };
 
 static c64export_resource_t export_res = {
@@ -133,11 +135,11 @@ static int set_midi_enabled(int val, void *param)
         if (c64export_add(&export_res) < 0) {
             return -1;
         }
-        midi_list_item = c64io_register(&midi_device);
+        midi_list_item = io_source_register(&midi_device);
         midi_enabled = 1;
     } else if (midi_enabled && !val) {
         c64export_remove(&export_res);
-        c64io_unregister(midi_list_item);
+        io_source_unregister(midi_list_item);
         midi_list_item = NULL;
         midi_enabled = 0;
     }

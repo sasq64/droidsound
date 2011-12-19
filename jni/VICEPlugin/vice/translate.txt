@@ -205,6 +205,15 @@ IDCLS_SET_AUTOSTART_MODE_FOR_PRG
 /* autostart.c */
 IDCLS_SET_DISK_IMAGE_FOR_AUTOSTART_PRG
 
+/* autostart.c */
+IDCLS_SET_AUTOSTART_DELAY
+
+/* autostart.c */
+IDCLS_ENABLE_AUTOSTART_RANDOM_DELAY
+
+/* autostart.c */
+IDCLS_DISABLE_AUTOSTART_RANDOM_DELAY
+
 /* c128/c128-cmdline-options.c, c64/c64-cmdline-options.c,
    c64/psid.c, plus4/plus4-cmdline-options.c,
    vic20/vic20-cmdline-options.c */
@@ -302,6 +311,12 @@ IDCLS_ENABLE_DEXX_ACIA_RS232_EMU
 IDCLS_DISABLE_DEXX_ACIA_RS232_EMU
 #endif   /* HAVE_RS232 */
 
+/* plus4/plus4acia.c */
+IDCLS_ENABLE_ACIA_EMU
+
+/* plus4/plus4acia.c */
+IDCLS_DISABLE_ACIA_EMU
+
 /* c128/c128-cmdline-options.c, c64/c64-cmdline-options.c,
    c64/psid.c, cbm2/cbm2-cmdline-options.c,
    pet/pet-cmdline-options.c, plus4/plus4-cmdline-options.c,
@@ -370,8 +385,17 @@ IDCLS_SET_CIA2_MODEL
 /* c64/c64-cmdline-options.c */
 IDCLS_SET_C64_MODEL
 
+/* plus4/plus4-cmdline-options.c */
+IDCLS_SET_PLUS4_MODEL
+
+/* c64dtv/c64dtv-cmdline-options.c */
+IDCLS_SET_DTV_MODEL
+
 /* c64/c64-cmdline-options.c */
 IDCLS_USE_PALN_SYNC_FACTOR
+
+/* c64/c64-cmdline-options.c */
+IDCLS_SET_BURST_MOD
 
 /* c64/c64-cmdline-options.c, cbm2/cbm2-cmdline-options.c,
    pet/pet-cmdline-options.c, plus4/plus4-cmdline-options.c,
@@ -713,6 +737,9 @@ IDCLS_ATTACH_RAW_ISEPIC_CART
 IDCLS_ATTACH_RAW_KCS_CART
 
 /* c64/cart/c64cart.c */
+IDCLS_ATTACH_RAW_KINGSOFT_CART
+
+/* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_MACH5_CART
 
 /* c64/cart/c64cart.c */
@@ -761,6 +788,9 @@ IDCLS_ALLOW_WRITING_TO_EXPERT_IMAGE
 IDCLS_DO_NOT_WRITE_TO_EXPERT_IMAGE
 
 /* c64/cart/c64cart.c */
+IDCLS_ATTACH_RAW_PAGEFOX_CART
+
+/* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_P64_CART
 
 /* c64/cart/c64cart.c */
@@ -786,6 +816,9 @@ IDCLS_ATTACH_RAW_GAME_SYSTEM_CART
 
 /* c64/cart/c64cart.c */
 IDCLS_DISABLE_CART
+
+/* plus4/plus4cart.c */
+IDCLS_SMART_ATTACH_CART
 
 /* c64/cart/ide64.c */
 IDCLS_SPECIFY_IDE64_NAME
@@ -916,6 +949,12 @@ IDCLS_ENABLE_TRUE_DRIVE
 /* drive/drive-cmdline-options.c */
 IDCLS_DISABLE_TRUE_DRIVE
 
+/* drive/drive-cmdline-options.c */
+IDCLS_ENABLE_DRIVE_SOUND
+
+/* drive/drive-cmdline-options.c */
+IDCLS_DISABLE_DRIVE_SOUND
+
 /* drive/drive-cmdline-options.c, printerdrv/interface-serial.c,
    attach.c, drive/iec/iec-cmdline-options.c */
 IDCLS_P_TYPE
@@ -961,6 +1000,12 @@ IDCLS_SPECIFY_1571_DOS_ROM_NAME
 
 /* drive/iec/iec-cmdline-options.c */
 IDCLS_SPECIFY_1581_DOS_ROM_NAME
+
+/* drive/iec/iec-cmdline-options.c */
+IDCLS_SPECIFY_2000_DOS_ROM_NAME
+
+/* drive/iec/iec-cmdline-options.c */
+IDCLS_SPECIFY_4000_DOS_ROM_NAME
 
 /* drive/iec/iec-cmdline-options.c */
 IDCLS_SET_IDLE_METHOD
@@ -1307,9 +1352,6 @@ IDCLS_RESIDFP_ENGINE_MODEL
 #endif
 
 /* sid/sid-cmdline-options.c */
-IDCLS_ENABLE_SECOND_SID
-
-/* sid/sid-cmdline-options.c */
 IDCLS_ENABLE_SIDCART
 
 /* sid/sid-cmdline-options.c */
@@ -1320,6 +1362,9 @@ IDCLS_P_BASE_ADDRESS
 
 /* sid/sid-cmdline-options.c */
 IDCLS_SPECIFY_SID_2_ADDRESS
+
+/* sid/sid-cmdline-options.c */
+IDCLS_SPECIFY_SID_3_ADDRESS
 
 /* sid/sid-cmdline-options.c */
 IDCLS_ENABLE_SID_FILTERS
@@ -1340,6 +1385,12 @@ IDCLS_P_PERCENT
 IDCLS_PASSBAND_PERCENTAGE
 IDCLS_RESID_FILTER_BIAS
 #endif   /* HAVE_RESID */
+
+/* vdc/vdc-cmdline-options.c, crtc/crtc-cmdline-options.c */
+IDCLS_ENABLE_STRETCH_VERTICAL
+
+/* vdc/vdc-cmdline-options.c, crtc/crtc-cmdline-options.c */
+IDCLS_DISABLE_STRETCH_VERTICAL
 
 /* vdc/vdc-cmdline-options.c */
 IDCLS_SET_VDC_MEMORY_16KB
@@ -1450,10 +1501,7 @@ IDCLS_ENABLE_HARDWARE_SCALING
 IDCLS_DISABLE_HARDWARE_SCALING
 
 /* video/video-cmdline-options.c */
-IDCLS_ENABLE_SCALE2X
-
-/* video/video-cmdline-options.c */
-IDCLS_DISABLE_SCALE2X
+IDCLS_SET_VIDEO_FILTER
 
 /* video/video-cmdline-options.c */
 IDCLS_USE_INTERNAL_CALC_PALETTE
@@ -1770,6 +1818,9 @@ IDCLS_ATTACH_RAW_SUPER_GAMES_CART
 
 /* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_SIMONS_BASIC_CART
+
+/* c64/cart/c64cart.c */
+IDCLS_ATTACH_RAW_SILVERROCK_128_CART
 
 /* c64/plus60k.c */
 IDCLS_PLUS60K_BASE

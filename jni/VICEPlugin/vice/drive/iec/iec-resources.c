@@ -31,6 +31,7 @@
 #include "drive.h"
 #include "drivemem.h"
 #include "drivetypes.h"
+#include "driverom.h"
 #include "iec-resources.h"
 #include "iecrom.h"
 #include "lib.h"
@@ -39,13 +40,15 @@
 #include "util.h"
 
 
-static int romset_firmware[5];
+static int romset_firmware[6];
 
 static char *dos_rom_name_1541 = NULL;
 static char *dos_rom_name_1541ii = NULL;
 static char *dos_rom_name_1570 = NULL;
 static char *dos_rom_name_1571 = NULL;
 static char *dos_rom_name_1581 = NULL;
+static char *dos_rom_name_2000 = NULL;
+static char *dos_rom_name_4000 = NULL;
 
 
 static void set_drive_ram(unsigned int dnr)
@@ -76,41 +79,11 @@ static int set_drive_idling_method(int val, void *param)
 
     drive->idling_method = val;
 
-    /* FIXME: These traps are duplicated in driverom.c */
-    if (rom_loaded &&
-        ((drive->type == DRIVE_TYPE_1541) ||
-         (drive->type == DRIVE_TYPE_1541II))) {
-        if (drive->idling_method == DRIVE_IDLE_TRAP_IDLE) {
-            drive->rom[0xeae4 - 0x8000] = 0xea;
-            drive->rom[0xeae5 - 0x8000] = 0xea;
-            drive->rom[0xeae8 - 0x8000] = 0xea;
-            drive->rom[0xeae9 - 0x8000] = 0xea;
-            drive->rom[0xec9b - 0x8000] = TRAP_OPCODE;
-        } else {
-            drive->rom[0xeae4 - 0x8000] = drive->rom_checksum[0];
-            drive->rom[0xeae5 - 0x8000] = drive->rom_checksum[1];
-            drive->rom[0xeae8 - 0x8000] = drive->rom_checksum[2];
-            drive->rom[0xeae9 - 0x8000] = drive->rom_checksum[3];
-            drive->rom[0xec9b - 0x8000] = drive->rom_idle_trap[0];
-        }
+    if (!rom_loaded) {
+        return 0;
     }
-    if (rom_loaded && drive->type == DRIVE_TYPE_1551) {
-        if (drive->idling_method == DRIVE_IDLE_TRAP_IDLE) {
-            drive->rom[0xe9f4 - 0x8000] = 0xea;
-            drive->rom[0xe9f5 - 0x8000] = 0xea;
-            drive->rom[0xeabf - 0x8000] = 0xea;
-            drive->rom[0xeac0 - 0x8000] = 0xea;
-            drive->rom[0xead0 - 0x8000] = 0x08;
-            drive->rom[0xead9 - 0x8000] = TRAP_OPCODE;
-        } else {
-            drive->rom[0xe9f4 - 0x8000] = drive->rom_checksum[0];
-            drive->rom[0xe9f5 - 0x8000] = drive->rom_checksum[1];
-            drive->rom[0xeabf - 0x8000] = drive->rom_idle_trap[0];
-            drive->rom[0xeac0 - 0x8000] = drive->rom_idle_trap[1];
-            drive->rom[0xead0 - 0x8000] = drive->rom_idle_trap[2];
-            drive->rom[0xead9 - 0x8000] = drive->rom_idle_trap[3];
-        }
-    }
+
+    driverom_initialize_traps(drive, 0);
     return 0;
 }
 
@@ -152,6 +125,22 @@ static int set_dos_rom_name_1581(const char *val, void *param)
         return 0;
 
     return iecrom_load_1581();
+}
+
+static int set_dos_rom_name_2000(const char *val, void *param)
+{
+    if (util_string_set(&dos_rom_name_2000, val))
+        return 0;
+
+    return iecrom_load_2000();
+}
+
+static int set_dos_rom_name_4000(const char *val, void *param)
+{
+    if (util_string_set(&dos_rom_name_4000, val))
+        return 0;
+
+    return iecrom_load_4000();
 }
 
 static int set_drive_ram2(int val, void *param)
@@ -220,6 +209,10 @@ static const resource_string_t resources_string[] = {
       &dos_rom_name_1571, set_dos_rom_name_1571, NULL },
     { "DosName1581", "dos1581", RES_EVENT_NO, NULL,
       &dos_rom_name_1581, set_dos_rom_name_1581, NULL },
+    { "DosName2000", "dos2000", RES_EVENT_NO, NULL,
+      &dos_rom_name_2000, set_dos_rom_name_2000, NULL },
+    { "DosName4000", "dos4000", RES_EVENT_NO, NULL,
+      &dos_rom_name_4000, set_dos_rom_name_4000, NULL },
     { NULL }
 };
 
@@ -234,6 +227,10 @@ static const resource_int_t resources_int[] = {
       &romset_firmware[3], set_romset_firmware, (void *)3 },
     { "RomsetDosName1581", 0, RES_EVENT_NO, NULL,
       &romset_firmware[4], set_romset_firmware, (void *)4 },
+    { "RomsetDosName2000", 0, RES_EVENT_NO, NULL,
+      &romset_firmware[5], set_romset_firmware, (void *)5 },
+    { "RomsetDosName4000", 0, RES_EVENT_NO, NULL,
+      &romset_firmware[5], set_romset_firmware, (void *)5 },
     { NULL }
 };
 
@@ -304,5 +301,7 @@ void iec_resources_shutdown(void)
     lib_free(dos_rom_name_1570);
     lib_free(dos_rom_name_1571);
     lib_free(dos_rom_name_1581);
+    lib_free(dos_rom_name_2000);
+    lib_free(dos_rom_name_4000);
 }
 

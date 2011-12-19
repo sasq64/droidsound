@@ -32,14 +32,15 @@
 
 #include "c64_256k.h"
 #include "c64cart.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "lib.h"
 #include "log.h"
 #include "machine.h"
 #include "mem.h"
+#include "monitor.h"
 #include "plus256k.h"
 #include "plus60k.h"
 #include "resources.h"
@@ -152,6 +153,15 @@ static void c64_256k_store(WORD addr, BYTE byte)
     }
 }
 
+static int c64_256k_dump(void)
+{
+    mon_out("$0000-$3FFF segment: %d\n", c64_256k_segment0);
+    mon_out("$4000-$7FFF segment: %d\n", c64_256k_segment1);
+    mon_out("$8000-$BFFF segment: %d\n", c64_256k_segment2);
+    mon_out("$C000-$FFFF segment: %d\n", c64_256k_segment3);
+    return 0;
+}
+
 /* ---------------------------------------------------------------------*/
 
 static io_source_t c64_256k_device = {
@@ -161,7 +171,12 @@ static io_source_t c64_256k_device = {
     0xdf80, 0xdfff, 0x7f,
     1, /* read is always valid */
     c64_256k_store,
-    c64_256k_read
+    c64_256k_read,
+    c64_256k_read,
+    c64_256k_dump,
+    CARTRIDGE_C64_256K,
+    0,
+    0
 };
 
 static io_source_list_t *c64_256k_list_item = NULL;
@@ -179,7 +194,7 @@ static int set_c64_256k_enabled(int val, void *param)
             return -1;
         }
         machine_trigger_reset(MACHINE_RESET_MODE_HARD);
-        c64io_unregister(c64_256k_list_item);
+        io_source_unregister(c64_256k_list_item);
         c64_256k_list_item = NULL;
         c64_256k_enabled = 0;
         return 0;
@@ -193,7 +208,7 @@ static int set_c64_256k_enabled(int val, void *param)
             }
         }
         machine_trigger_reset(MACHINE_RESET_MODE_HARD);
-        c64_256k_list_item = c64io_register(&c64_256k_device);
+        c64_256k_list_item = io_source_register(&c64_256k_device);
         c64_256k_enabled = 1;
         return 0;
     }
@@ -242,8 +257,8 @@ static int set_c64_256k_base(int val, void *param)
     }
 
     if (c64_256k_enabled) {
-        c64io_unregister(c64_256k_list_item);
-        c64_256k_list_item = c64io_register(&c64_256k_device);
+        io_source_unregister(c64_256k_list_item);
+        c64_256k_list_item = io_source_register(&c64_256k_device);
     }
     c64_256k_start = val;
 

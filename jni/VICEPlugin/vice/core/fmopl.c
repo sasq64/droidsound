@@ -1426,6 +1426,7 @@ static void OPLResetChip(FM_OPL *OPL)
             CH->SLOT[s].wavetable = 0;
             CH->SLOT[s].state = EG_OFF;
             CH->SLOT[s].volume = MAX_ATT_INDEX;
+            CH->SLOT[s].connect1 = &output[0];
         }
     }
 }
@@ -1537,6 +1538,23 @@ FM_OPL *ym3812_init(UINT32 clock, UINT32 rate)
         ym3812_reset_chip(YM3812);
     }
     return YM3812;
+}
+
+int connect1_is_output0(int *connect)
+{
+    if (connect == &output[0]) {
+        return 1;
+    }
+    return 0;
+}
+
+void set_connect1(int *connect, int output0)
+{
+    if (output0) {
+        connect = &output[0];
+    } else {
+        connect = &phase_modulation;
+    }
 }
 
 void ym3812_shutdown(FM_OPL *chip)

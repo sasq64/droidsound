@@ -30,11 +30,13 @@
 
 #include <stdio.h>
 
+#include "c64fastiec.h"
 #include "c64-resources.h"
 #include "c64.h"
 #include "c64cia.h"
 #include "cia.h"
 #include "interrupt.h"
+#include "drivecpu.h"
 #include "joystick.h"
 #include "keyboard.h"
 #include "lib.h"
@@ -42,6 +44,7 @@
 #include "machine.h"
 #include "maincpu.h"
 #include "types.h"
+#include "userport_joystick.h"
 #include "vicii.h"
 
 #ifdef HAVE_RS232
@@ -192,8 +195,8 @@ static BYTE read_ciapa(cia_context_t *cia_context)
     if (_mouse_enabled && (mouse_type == MOUSE_TYPE_NEOS) && (mouse_port == 2)) {
         byte &= neos_mouse_read();
     }
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_AMIGA) && (mouse_port == 2)) {
-        byte &= amiga_mouse_read();
+    if (_mouse_enabled && (mouse_kind == MOUSE_KIND_POLLED) && (mouse_port == 2)) {
+        byte &= mouse_poll();
     }
 #endif
 
@@ -240,8 +243,8 @@ static BYTE read_ciapb(cia_context_t *cia_context)
     if (_mouse_enabled && (mouse_type == MOUSE_TYPE_NEOS) && (mouse_port == 1)) {
         byte &= neos_mouse_read();
     }
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_AMIGA) && (mouse_port == 1)) {
-        byte &= amiga_mouse_read();
+    if (_mouse_enabled && (mouse_kind == MOUSE_KIND_POLLED) && (mouse_port == 1)) {
+        byte &= mouse_poll();
     }
 #endif
 
@@ -250,22 +253,30 @@ static BYTE read_ciapb(cia_context_t *cia_context)
 
 static void read_ciaicr(cia_context_t *cia_context)
 {
+    if (burst_mod == BURST_MOD_CIA1) {
+        drivecpu_execute_all(maincpu_clk);
+    }
 }
 
 static void read_sdr(cia_context_t *cia_context)
 {
+    if (burst_mod == BURST_MOD_CIA1) {
+        drivecpu_execute_all(maincpu_clk);
+    }
 }
 
 static void store_sdr(cia_context_t *cia_context, BYTE byte)
 {
+    if (burst_mod == BURST_MOD_CIA1) {
+        c64fastiec_fast_cpu_write((BYTE)byte);
+    }
 #ifdef HAVE_RS232
     if (rsuser_enabled) {
         rsuser_tx_byte(byte);
     }
 #endif
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_HIT) {
-        extra_joystick_hit_store(byte);
-    }
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_sdr(byte);
 }
 
 void cia1_init(cia_context_t *cia_context)

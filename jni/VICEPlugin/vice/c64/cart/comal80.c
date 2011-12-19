@@ -34,13 +34,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "comal80.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     Comal80 Cartridge
@@ -72,6 +74,12 @@ static BYTE comal80_io1_peek(WORD addr)
     return currbank;
 }
 
+static int comal80_dump(void)
+{
+    mon_out("bank: %d\n", currbank);
+    return 0;
+}
+
 /* ---------------------------------------------------------------------*/
 
 static io_source_t comal80_device = {
@@ -83,8 +91,10 @@ static io_source_t comal80_device = {
     comal80_io1_store,
     NULL,
     comal80_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_COMAL80
+    comal80_dump,
+    CARTRIDGE_COMAL80,
+    0,
+    0
 };
 
 static io_source_list_t *comal80_list_item = NULL;
@@ -119,7 +129,7 @@ static int comal80_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    comal80_list_item = c64io_register(&comal80_device);
+    comal80_list_item = io_source_register(&comal80_device);
     return 0;
 }
 
@@ -133,18 +143,18 @@ int comal80_bin_attach(const char *filename, BYTE *rawcart)
 
 int comal80_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        if (chipheader[0xc] != 0x80 && chipheader[0xe] != 0x40 && chipheader[0xb] > 3) {
+        if (chip.start != 0x8000 || chip.size != 0x4000 || chip.bank > 3) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 14], 0x4000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 14, &chip, fd)) {
             return -1;
         }
     }
@@ -154,7 +164,7 @@ int comal80_crt_attach(FILE *fd, BYTE *rawcart)
 void comal80_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(comal80_list_item);
+    io_source_unregister(comal80_list_item);
     comal80_list_item = NULL;
 }
 

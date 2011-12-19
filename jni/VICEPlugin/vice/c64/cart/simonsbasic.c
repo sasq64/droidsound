@@ -34,12 +34,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "simonsbasic.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     Simon's Basic Cartridge
@@ -78,7 +79,8 @@ static io_source_t simon_device = {
     simon_io1_read,
     simon_io1_peek,
     NULL, /* TODO: dump */
-    CARTRIDGE_SIMONS_BASIC
+    CARTRIDGE_SIMONS_BASIC,
+    0
 };
 
 static io_source_list_t *simon_list_item = NULL;
@@ -106,7 +108,7 @@ static int simon_common_attach(void)
     if (c64export_add(&export_res_simon) < 0) {
         return -1;
     }
-    simon_list_item = c64io_register(&simon_device);
+    simon_list_item = io_source_register(&simon_device);
     return 0;
 }
 
@@ -120,19 +122,19 @@ int simon_bin_attach(const char *filename, BYTE *rawcart)
 
 int simon_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i;
 
     for (i = 0; i <= 1; i++) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             return -1;
         }
 
-        if (chipheader[0xc] != 0x80 && chipheader[0xc] != 0xa0) {
+        if ((chip.start != 0x8000 && chip.start != 0xa000) || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[(chipheader[0xc] << 8) - 0x8000], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.start - 0x8000, &chip, fd)) {
             return -1;
         }
     }
@@ -143,7 +145,7 @@ int simon_crt_attach(FILE *fd, BYTE *rawcart)
 void simon_detach(void)
 {
     c64export_remove(&export_res_simon);
-    c64io_unregister(simon_list_item);
+    io_source_unregister(simon_list_item);
     simon_list_item = NULL;
 }
 

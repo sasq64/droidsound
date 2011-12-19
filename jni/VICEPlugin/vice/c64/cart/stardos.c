@@ -33,11 +33,11 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
 #include "c64memrom.h"
 #include "c64pla.h"
 #include "c64rom.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "machine.h"
 #include "maincpu.h"
@@ -46,6 +46,7 @@
 #include "stardos.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*  the stardos hardware is kindof perverted. it has two "registers", which
     are nothing more than the IO1 and/or IO2 line connected to a capacitor.
@@ -184,7 +185,7 @@ static void stardos_io1_store(WORD addr, BYTE value)
     cap_charge();
 }
 
-static BYTE stardos_io1_peek(WORD addr)
+static BYTE stardos_io_peek(WORD addr)
 {
     return roml_enable;
 }
@@ -200,11 +201,6 @@ static void stardos_io2_store(WORD addr, BYTE value)
     cap_discharge();
 }
 
-static BYTE stardos_io2_peek(WORD addr)
-{
-    return roml_enable;
-}
-
 /* ---------------------------------------------------------------------*/
 
 static io_source_t stardos_io1_device = {
@@ -216,9 +212,11 @@ static io_source_t stardos_io1_device = {
     0, /* read is never valid */
     stardos_io1_store,
     stardos_io1_read,
-    stardos_io1_peek,
+    stardos_io_peek,
     NULL,
-    CARTRIDGE_STARDOS
+    CARTRIDGE_STARDOS,
+    0,
+    0
 };
 
 static io_source_t stardos_io2_device = {
@@ -230,9 +228,11 @@ static io_source_t stardos_io2_device = {
     0, /* read is never valid */
     stardos_io2_store,
     stardos_io2_read,
-    stardos_io2_peek,
+    stardos_io_peek,
     NULL,
-    CARTRIDGE_STARDOS
+    CARTRIDGE_STARDOS,
+    0,
+    0
 };
 
 static io_source_list_t *stardos_io1_list_item = NULL;
@@ -324,8 +324,8 @@ static int stardos_common_attach(void)
     stardos_alarm = alarm_new(maincpu_alarm_context, "StardosRomAlarm", stardos_alarm_handler, NULL);
     stardos_alarm_time = CLOCK_MAX;
 
-    stardos_io1_list_item = c64io_register(&stardos_io1_device);
-    stardos_io2_list_item = c64io_register(&stardos_io2_device);
+    stardos_io1_list_item = io_source_register(&stardos_io1_device);
+    stardos_io2_list_item = io_source_register(&stardos_io2_device);
 
     return 0;
 }
@@ -341,22 +341,21 @@ int stardos_bin_attach(const char *filename, BYTE *rawcart)
 
 int stardos_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
+    int i;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
-        return -1;
-    }
+    for (i = 0; i < 2; i++) {
+        if (crt_read_chip_header(&chip, fd)) {
+            return -1;
+        }
 
-    if (fread(&rawcart[0x0000], 0x2000, 1, fd) < 1) {
-        return -1;
-    }
+        if (chip.size != 0x2000 || (chip.start != 0x8000 && chip.start != 0xe000)) {
+            return -1;
+        }
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
-        return -1;
-    }
-
-    if (fread(&rawcart[0x2000], 0x2000, 1, fd) < 1) {
-        return -1;
+        if (crt_read_chip(rawcart, chip.start & 0x2000, &chip, fd)) {
+            return -1;
+        }
     }
 
     return stardos_common_attach();
@@ -366,8 +365,8 @@ void stardos_detach(void)
 {
     alarm_destroy(stardos_alarm);
     c64export_remove(&export_res);
-    c64io_unregister(stardos_io1_list_item);
-    c64io_unregister(stardos_io2_list_item);
+    io_source_unregister(stardos_io1_list_item);
+    io_source_unregister(stardos_io2_list_item);
     stardos_io1_list_item = NULL;
     stardos_io2_list_item = NULL;
 }

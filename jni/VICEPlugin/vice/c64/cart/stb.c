@@ -34,12 +34,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "stb.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* Structured Basic IO1 logic for the roml range $8000-$9fff
 *
@@ -64,7 +65,9 @@ static io_source_t stb_device = {
     stb_io1_read,
     stb_io1_peek,
     NULL, /* dump */
-    CARTRIDGE_STRUCTURED_BASIC
+    CARTRIDGE_STRUCTURED_BASIC,
+    0,
+    0
 };
 
 static io_source_list_t *stb_list_item = NULL;
@@ -138,7 +141,7 @@ static int stb_common_attach(void)
         return -1;
     }
 
-    stb_list_item = c64io_register(&stb_device);
+    stb_list_item = io_source_register(&stb_device);
 
     return 0;
 }
@@ -155,18 +158,18 @@ int stb_bin_attach(const char *filename, BYTE *rawcart)
 
 int stb_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        if (chipheader[0xc] != 0x80 && chipheader[0xe] != 0x20 && chipheader[0xb] > 1) {
+        if (chip.start != 0x8000 || chip.size != 0x2000 || chip.bank > 1) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -177,7 +180,7 @@ int stb_crt_attach(FILE *fd, BYTE *rawcart)
 void stb_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(stb_list_item);
+    io_source_unregister(stb_list_item);
     stb_list_item = NULL;
 }
 

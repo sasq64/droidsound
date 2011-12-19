@@ -34,13 +34,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "superexplode5.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     FIXME: this one has been implemented purely based on guesswork and by
@@ -122,7 +123,9 @@ static io_source_t se5_io2_device = {
     se5_io2_read,
     NULL,
     NULL,
-    CARTRIDGE_SUPER_EXPLODE_V5
+    CARTRIDGE_SUPER_EXPLODE_V5,
+    0,
+    0
 };
 
 static io_source_list_t *se5_io2_list_item = NULL;
@@ -166,7 +169,7 @@ static int se5_common_attach(void)
         return -1;
     }
 
-    se5_io2_list_item = c64io_register(&se5_io2_device);
+    se5_io2_list_item = io_source_register(&se5_io2_device);
 
     return 0;
 }
@@ -182,20 +185,20 @@ int se5_bin_attach(const char *filename, BYTE *rawcart)
 
 int se5_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i, cnt = 0;
 
     for (i = 0; i <= 0x01; i++) {
 
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        if (chipheader[0xb] > 0x1f) {
+        if (chip.bank > 0x1f || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
         cnt++;
@@ -207,7 +210,7 @@ int se5_crt_attach(FILE *fd, BYTE *rawcart)
 void se5_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(se5_io2_list_item);
+    io_source_unregister(se5_io2_list_item);
     se5_io2_list_item = NULL;
 }
 

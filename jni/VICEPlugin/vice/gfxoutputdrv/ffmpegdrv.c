@@ -342,7 +342,7 @@ static int ffmpegmovie_init_audio(int speed, int channels,
 
     c = st->codec;
     c->codec_id = ffmpegdrv_fmt->audio_codec;
-    c->codec_type = CODEC_TYPE_AUDIO;
+    c->codec_type = AVMEDIA_TYPE_AUDIO;
     c->sample_fmt = SAMPLE_FMT_S16;
 
     /* put sample parameters */
@@ -370,7 +370,7 @@ static int ffmpegmovie_encode_audio(soundmovie_buffer_t *audio_in)
         pkt.size = (*ffmpeglib.p_avcodec_encode_audio)(c, 
                         audio_outbuf, audio_outbuf_size, audio_in->buffer);
         pkt.pts = c->coded_frame->pts;
-        pkt.flags |= PKT_FLAG_KEY;
+        pkt.flags |= AV_PKT_FLAG_KEY;
         pkt.stream_index = audio_st->index;
         pkt.data = audio_outbuf;
 
@@ -559,7 +559,7 @@ static void ffmpegdrv_init_video(screenshot_t *screenshot)
 
     c = st->codec;
     c->codec_id = ffmpegdrv_fmt->video_codec;
-    c->codec_type = CODEC_TYPE_VIDEO;
+    c->codec_type = AVMEDIA_TYPE_VIDEO;
 
     /* put sample parameters */
     c->bit_rate = video_bitrate;
@@ -661,10 +661,10 @@ static int ffmpegdrv_save(screenshot_t *screenshot, const char *filename)
     video_init_done = 0;
     file_init_done = 0;
 
-    ffmpegdrv_fmt = (*ffmpeglib.p_guess_format)(ffmpeg_format, NULL, NULL);
+    ffmpegdrv_fmt = (*ffmpeglib.p_av_guess_format)(ffmpeg_format, NULL, NULL);
 
     if (!ffmpegdrv_fmt)
-        ffmpegdrv_fmt = (*ffmpeglib.p_guess_format)("mpeg", NULL, NULL);
+        ffmpegdrv_fmt = (*ffmpeglib.p_av_guess_format)("mpeg", NULL, NULL);
 
     if (!ffmpegdrv_fmt) {
         log_debug("ffmpegdrv: Cannot find suitable output format");
@@ -819,7 +819,7 @@ static int ffmpegdrv_record(screenshot_t *screenshot)
     if (ffmpegdrv_oc->oformat->flags & AVFMT_RAWPICTURE) {
         AVPacket pkt;
         (*ffmpeglib.p_av_init_packet)(&pkt);
-        pkt.flags |= PKT_FLAG_KEY;
+        pkt.flags |= AV_PKT_FLAG_KEY;
         pkt.stream_index = video_st->index;
         pkt.data = (uint8_t*)picture;
         pkt.size = sizeof(AVPicture);
@@ -840,7 +840,7 @@ static int ffmpegdrv_record(screenshot_t *screenshot)
             (*ffmpeglib.p_av_init_packet)(&pkt);
             pkt.pts = c->coded_frame->pts;
             if (c->coded_frame->key_frame)
-                pkt.flags |= PKT_FLAG_KEY;
+                pkt.flags |= AV_PKT_FLAG_KEY;
             pkt.stream_index = video_st->index;
             pkt.data = video_outbuf;
             pkt.size = out_size;

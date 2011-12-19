@@ -61,7 +61,6 @@
 #include "pet-resources.h"
 #include "pet-snapshot.h"
 #include "pet.h"
-#include "pet_userport_dac.h"
 #include "petiec.h"
 #include "petmem.h"
 #include "petreu.h"
@@ -79,14 +78,17 @@
 #include "sid.h"
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
+#include "sidcart.h"
 #include "sound.h"
 #include "tape.h"
 #include "traps.h"
 #include "types.h"
+#include "userport_dac.h"
 #include "util.h"
 #include "via.h"
 #include "video.h"
 #include "vsync.h"
+#include "drive-sound.h"
 
 machine_context_t machine_context;
 
@@ -139,7 +141,7 @@ int machine_resources_init(void)
         || petdww_resources_init() < 0
         || sound_resources_init() < 0
         || sidcart_resources_init() < 0
-        || pet_userport_dac_resources_init() < 0
+        || userport_dac_resources_init() < 0
         || drive_resources_init() < 0
         || datasette_resources_init() < 0
         || acia1_resources_init() < 0
@@ -184,7 +186,7 @@ int machine_cmdline_options_init(void)
         || pia1_init_cmdline_options() < 0
         || sound_cmdline_options_init() < 0
         || sidcart_cmdline_options_init() < 0
-        || pet_userport_dac_cmdline_options_init() < 0
+        || userport_dac_cmdline_options_init() < 0
         || drive_cmdline_options_init() < 0
         || datasette_cmdline_options_init() < 0
         || acia1_cmdline_options_init() < 0
@@ -302,6 +304,17 @@ int machine_specific_init(void)
     vsync_set_machine_parameter(machine_timing.rfsh_per_sec,
                                 machine_timing.cycles_per_sec);
 
+    /* Initialize the sidcart first */
+    sidcart_sound_chip_init();
+
+    /* Initialize native sound chip */
+    pet_sound_chip_init();
+
+    /* Initialize cartridge based sound chips */
+    userport_dac_sound_chip_init();
+
+    drive_sound_init();
+
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
@@ -345,7 +358,6 @@ void machine_specific_reset(void)
     viacore_reset(machine_context.via);
     acia1_reset();
     crtc_reset();
-    petsound_reset();
     sid_reset();
     petmem_reset();
     rs232drv_reset();

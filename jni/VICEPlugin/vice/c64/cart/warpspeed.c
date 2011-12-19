@@ -34,13 +34,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
 #include "warpspeed.h"
+#include "crt.h"
 
 /*
     Warpspeed
@@ -71,9 +72,11 @@ static io_source_t warpspeed_io1_device = {
     1, /* read is always valid */
     warpspeed_io1_store,
     warpspeed_io1_read,
-    NULL, /* no side effects when reading */
-    NULL, /* TODO: dump */
-    CARTRIDGE_WARPSPEED
+    warpspeed_io1_read,
+    NULL,
+    CARTRIDGE_WARPSPEED,
+    0,
+    0
 };
 
 static io_source_t warpspeed_io2_device = {
@@ -84,9 +87,11 @@ static io_source_t warpspeed_io2_device = {
     1, /* read is always valid */
     warpspeed_io2_store,
     warpspeed_io2_read,
-    NULL, /* no side effects when reading */
-    NULL, /* TODO: dump */
-    CARTRIDGE_WARPSPEED
+    warpspeed_io2_read,
+    NULL,
+    CARTRIDGE_WARPSPEED,
+    0,
+    0
 };
 
 static io_source_list_t *warpspeed_io1_list_item = NULL;
@@ -140,8 +145,8 @@ static int warpspeed_common_attach(void)
         return -1;
     }
 
-    warpspeed_io1_list_item = c64io_register(&warpspeed_io1_device);
-    warpspeed_io2_list_item = c64io_register(&warpspeed_io2_device);
+    warpspeed_io1_list_item = io_source_register(&warpspeed_io1_device);
+    warpspeed_io2_list_item = io_source_register(&warpspeed_io2_device);
 
     return 0;
 }
@@ -156,17 +161,17 @@ int warpspeed_bin_attach(const char *filename, BYTE *rawcart)
 
 int warpspeed_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (chipheader[0xc] != 0x80 || chipheader[0xe] != 0x40) {
+    if (chip.start != 0x8000 || chip.size != 0x4000) {
         return -1;
     }
 
-    if (fread(rawcart, chipheader[0xe] << 8, 1, fd) < 1) {
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -176,8 +181,8 @@ int warpspeed_crt_attach(FILE *fd, BYTE *rawcart)
 void warpspeed_detach(void)
 {
     c64export_remove(&export_res_warpspeed);
-    c64io_unregister(warpspeed_io1_list_item);
-    c64io_unregister(warpspeed_io2_list_item);
+    io_source_unregister(warpspeed_io1_list_item);
+    io_source_unregister(warpspeed_io2_list_item);
     warpspeed_io1_list_item = NULL;
     warpspeed_io2_list_item = NULL;
 }

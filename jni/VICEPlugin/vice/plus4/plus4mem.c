@@ -51,7 +51,7 @@
 #include "resources.h"
 #include "sid-resources.h"
 #include "sid.h"
-#include "sidcartjoy.h"
+#include "sidcart.h"
 #include "ted.h"
 #include "ted-mem.h"
 #include "types.h"
@@ -418,11 +418,11 @@ static BYTE fdxx_read(WORD addr)
         return pio2_read(addr);
     }
 
-    if (sidcart_enabled && sidcart_address == 0 && addr >= 0xfd40 && addr <= 0xfd5f) {
+    if (sidcart_enabled() && sidcart_address == 0 && addr >= 0xfd40 && addr <= 0xfd5f) {
         return sid_read(addr);
     }
 
-    if (sidcart_enabled && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
+    if (sidcart_enabled() && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
         return sidcartjoy_read(addr);
     }
 
@@ -461,15 +461,15 @@ static void fdxx_store(WORD addr, BYTE value)
         pio2_store(addr, value);
         return;
     }
-    if (sidcart_enabled && sidcart_address==0 && addr >= 0xfd40 && addr <= 0xfd5d) {
+    if (sidcart_enabled() && sidcart_address==0 && addr >= 0xfd40 && addr <= 0xfd5d) {
         sid_store(addr, value);
         return;
     }
-    if (sidcart_enabled && digiblaster_enabled && sidcart_address==0 && addr == 0xfd5e) {
+    if (sidcart_enabled() && digiblaster_enabled() && sidcart_address==0 && addr == 0xfd5e) {
         digiblaster_store(addr, value);
         return;
     }
-    if (sidcart_enabled && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
+    if (sidcart_enabled() && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
         sidcartjoy_store(addr, value);
         return;
     }
@@ -489,7 +489,7 @@ static BYTE fexx_read(WORD addr)
         return plus4tcbm1_read(addr);
     }
 
-    if (sidcart_enabled && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9f) {
+    if (sidcart_enabled() && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9f) {
         return sid_read(addr);
     }
 
@@ -506,11 +506,11 @@ static void fexx_store(WORD addr, BYTE value)
         plus4tcbm1_store(addr, value);
         return;
     }
-    if (sidcart_enabled && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9d) {
+    if (sidcart_enabled() && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9d) {
         sid_store(addr, value);
         return;
     }
-    if (sidcart_enabled && digiblaster_enabled && sidcart_address==1 && addr == 0xfe9e) {
+    if (sidcart_enabled() && digiblaster_enabled() && sidcart_address==1 && addr == 0xfe9e) {
         digiblaster_store(addr, value);
         return;
     }
@@ -1011,7 +1011,7 @@ int mem_bank_from_name(const char *name)
 
 void store_bank_io(WORD addr, BYTE byte)
 {
-    if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
+    if (acia_enabled() && (addr >= 0xfd00) && (addr <= 0xfd0f)) {
         acia_store(addr, byte);
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         pio1_store(addr, byte);
@@ -1033,7 +1033,7 @@ void store_bank_io(WORD addr, BYTE byte)
 /* read i/o without side-effects */
 static BYTE peek_bank_io(WORD addr)
 {
-    if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
+    if (acia_enabled() && (addr >= 0xfd00) && (addr <= 0xfd0f)) {
         return acia_read(addr); /* FIXME */
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         return pio1_read(addr); /* FIXME */
@@ -1054,7 +1054,7 @@ static BYTE peek_bank_io(WORD addr)
 /* read i/o with side-effects */
 static BYTE read_bank_io(WORD addr)
 {
-    if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
+    if (acia_enabled() && (addr >= 0xfd00) && (addr <= 0xfd0f)) {
         return acia_read(addr);
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         return pio1_read(addr);
@@ -1195,7 +1195,9 @@ void mem_bank_write(int bank, WORD addr, BYTE byte, void *context)
 
 static int mem_dump_io(WORD addr) {
     if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
-        /* return acia_dump(machine_context.acia1); */ /* FIXME */
+        if(acia_enabled()) {
+            /* return acia_dump(machine_context.acia1); */ /* FIXME */
+        }
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         /* return pio_dump(machine_context.pio1); */ /* FIXME */
     } else if ((addr >= 0xfd20) && (addr <= 0xfd2f)) {
@@ -1218,7 +1220,10 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
 {
     mem_ioreg_list_t *mem_ioreg_list = NULL;
 
-    mon_ioreg_add_list(&mem_ioreg_list, "ACIA", 0xfd00, 0xfd0f, mem_dump_io);
+    /* no ACIA in C16/C116 */
+    if (acia_enabled()) {
+        mon_ioreg_add_list(&mem_ioreg_list, "ACIA", 0xfd00, 0xfd0f, mem_dump_io);
+    }
     mon_ioreg_add_list(&mem_ioreg_list, "PIO1", 0xfd10, 0xfd1f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "PIO2", 0xfd30, 0xfd3f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "TIA1", 0xfec0, 0xfedf, mem_dump_io);

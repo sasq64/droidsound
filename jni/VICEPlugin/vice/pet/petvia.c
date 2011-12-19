@@ -40,11 +40,12 @@
 #include "maincpu.h"
 #include "parallel.h"
 #include "pet.h"
-#include "pet_userport_dac.h"
 #include "petsound.h"
 #include "petvia.h"
 #include "printer.h"
 #include "types.h"
+#include "userport_dac.h"
+#include "userport_joystick.h"
 #include "via.h"
 
 
@@ -64,13 +65,13 @@ BYTE via_peek(WORD addr)
 }
 
 /* switching PET charrom with CA2 */
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
     crtc_set_chargen_offset(state ? 256 : 0);
 }
 
 /* switching userport strobe with CB2 */
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
     printer_userport_write_strobe(state);
 }
@@ -90,30 +91,28 @@ static void restore_int(via_context_t *via_context, unsigned int int_num,
 static void undump_pra(via_context_t *via_context, BYTE byte)
 {
     printer_userport_write_data(byte);
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA) {
-        extra_joystick_cga_store(byte);
-    }
-    if (pet_userport_dac_enabled) {
-        pet_userport_dac_store(byte);
-    }
+
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_pbx(byte);
+
+    userport_dac_store(byte);
 }
 
 static void store_pra(via_context_t *via_context, BYTE byte, BYTE myoldpa,
                       WORD addr)
 {
     printer_userport_write_data(byte);
-    if (pet_userport_dac_enabled) {
-        pet_userport_dac_store(byte);
-    }
+
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_pbx(byte);
+
+    userport_dac_store(byte);
 }
 
 static void undump_prb(via_context_t *via_context, BYTE byte)
 {
     parallel_cpu_set_nrfd((BYTE)(!(byte & 0x02)));
     parallel_cpu_restore_atn((BYTE)(!(byte & 0x04)));
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA) {
-        extra_joystick_cga_store(byte);
-    }
 }
 
 static void store_prb(via_context_t *via_context, BYTE byte, BYTE myoldpb,
@@ -128,9 +127,6 @@ static void store_prb(via_context_t *via_context, BYTE byte, BYTE myoldpb,
     if ((byte ^ myoldpb) & 0x8)
         datasette_toggle_write_bit((~(via_context->via[VIA_DDRB]) | byte)
                                    & 0x8);
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA) {
-        extra_joystick_cga_store(byte);
-    }
 }
 
 static void undump_pcr(via_context_t *via_context, BYTE byte)
@@ -209,22 +205,8 @@ inline static BYTE read_pra(via_context_t *via_context, WORD addr)
 {
     BYTE byte = 0xff;
 
-    if (extra_joystick_enable) {
-        switch (extra_joystick_type) {
-            case EXTRA_JOYSTICK_CGA:
-                byte = extra_joystick_cga_read();
-                break;
-            case EXTRA_JOYSTICK_PET:
-                byte = extra_joystick_pet_read();
-                break;
-            case EXTRA_JOYSTICK_HUMMER:
-                byte = extra_joystick_hummer_read();
-                break;
-            case EXTRA_JOYSTICK_OEM:
-                byte = extra_joystick_oem_read();
-                break;
-        }
-    }
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_read_pbx(byte);
 
     /* joystick always pulls low, even if high output, so no
        masking with DDRA */
@@ -297,4 +279,3 @@ void petvia_setup_context(machine_context_t *machine_context)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-

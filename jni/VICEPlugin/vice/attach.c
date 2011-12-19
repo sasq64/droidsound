@@ -342,11 +342,16 @@ static int set_attach_device_readonly(int val, void *param)
 static int set_file_system_device(int val, void *param)
 {
     vdrive_t *vdrive;
-    unsigned int unit;
+    unsigned int unit, idx;
     int old_device_enabled;
 
     unit = vice_ptr_to_uint(param);
-    old_device_enabled = file_system_device_enabled[unit - 8];
+    if ((unit < 8) || (unit > 11)) {
+        DBG(("set_file_system_device invalid dev #%d\n", unit));
+        return -1;
+    }
+    idx = unit - 8;
+    old_device_enabled = file_system_device_enabled[idx];
 
     vdrive = file_system_get_vdrive(unit);
 
@@ -391,7 +396,7 @@ static int set_file_system_device(int val, void *param)
 
         if (vdrive != NULL && vdrive->image != NULL) {
             detach_disk_image_and_free(vdrive->image, vdrive, unit);
-            ui_display_drive_current_image(unit - 8, "");
+            ui_display_drive_current_image(idx, "");
         }
         if (vdrive != NULL && vdrive->image == NULL) {
             vdrive_device_setup(vdrive, unit);
@@ -410,7 +415,7 @@ static int set_file_system_device(int val, void *param)
         }
         if (vdrive != NULL && vdrive->image != NULL) {
             detach_disk_image_and_free(vdrive->image, vdrive, unit);
-            ui_display_drive_current_image(unit - 8, "");
+            ui_display_drive_current_image(idx, "");
             vdrive_device_setup(vdrive, unit);
         }
         serial_device_type_set(SERIAL_DEVICE_REAL, unit);
@@ -423,7 +428,7 @@ static int set_file_system_device(int val, void *param)
         }
         if (vdrive != NULL && vdrive->image != NULL) {
             detach_disk_image_and_free(vdrive->image, vdrive, unit);
-            ui_display_drive_current_image(unit - 8, "");
+            ui_display_drive_current_image(idx, "");
             vdrive_device_setup(vdrive, unit);
         }
         attach_disk_image(&(vdrive->image), vdrive, "DUMMY", unit,
@@ -436,7 +441,7 @@ static int set_file_system_device(int val, void *param)
         return -1;
     }
 
-    file_system_device_enabled[unit - 8] = val;
+    file_system_device_enabled[idx] = val;
 
     return 0;
 }
@@ -546,24 +551,12 @@ static int attach_disk_image(disk_image_t **imgptr, vdrive_t *floppy,
 
     switch (unit) {
       case 8:
-        err = drive_image_attach(image, 8);
-        err &= vdrive_attach_image(image, 8, floppy);
-        err &= machine_drive_image_attach(image, 8);
-        break;
       case 9:
-        err = drive_image_attach(image, 9);
-        err &= vdrive_attach_image(image, 9, floppy);
-        err &= machine_drive_image_attach(image, 9);
-        break;
       case 10:
-        err = drive_image_attach(image, 10);
-        err &= vdrive_attach_image(image, 10, floppy);
-        err &= machine_drive_image_attach(image, 10);
-        break;
       case 11:
-        err = drive_image_attach(image, 11);
-        err &= vdrive_attach_image(image, 11, floppy);
-        err &= machine_drive_image_attach(image, 11);
+        err = drive_image_attach(image, unit);
+        err &= vdrive_attach_image(image, unit, floppy);
+        err &= machine_drive_image_attach(image, unit);
         break;
     }
     if (err) {

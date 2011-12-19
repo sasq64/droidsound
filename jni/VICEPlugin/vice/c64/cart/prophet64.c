@@ -34,13 +34,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
+#include "monitor.h"
 #include "prophet64.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     32 banks, 8k each == 256kb
@@ -57,8 +59,13 @@
 
 /* ---------------------------------------------------------------------*/
 
+static int currbank = 0;
+static BYTE regval = 0;
+
 static void p64_io2_store(WORD addr, BYTE value)
 {
+    regval = value;
+
     /* confirmation needed: register mirrored in entire io2 ? */
     if ((value >> 5) & 1) {
         /* cartridge off */
@@ -67,7 +74,19 @@ static void p64_io2_store(WORD addr, BYTE value)
         /* cartridge on */
         cart_config_changed_slotmain(0, 0, CMODE_READ);
     }
+    currbank = value & 0x1f;
     cart_romlbank_set_slotmain(value & 0x1f);
+}
+
+static BYTE p64_io2_peek(WORD addr)
+{
+    return regval;
+}
+
+static int p64_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -80,9 +99,11 @@ static io_source_t p64_device = {
     0, /* read is never valid */
     p64_io2_store,
     NULL,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_P64
+    p64_io2_peek,
+    p64_dump,
+    CARTRIDGE_P64,
+    0,
+    0
 };
 
 static io_source_list_t *p64_list_item = NULL;
@@ -114,7 +135,7 @@ static int p64_common_attach(void)
         return -1;
     }
 
-    p64_list_item = c64io_register(&p64_device);
+    p64_list_item = io_source_register(&p64_device);
 
     return 0;
 }
@@ -130,20 +151,20 @@ int p64_bin_attach(const char *filename, BYTE *rawcart)
 
 int p64_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i, cnt = 0;
 
     for (i = 0; i <= 0x1f; i++) {
 
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        if (chipheader[0xb] > 0x1f) {
+        if (chip.bank > 0x1f || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
         cnt++;
@@ -155,7 +176,7 @@ int p64_crt_attach(FILE *fd, BYTE *rawcart)
 void p64_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(p64_list_item);
+    io_source_unregister(p64_list_item);
     p64_list_item = NULL;
 }
 

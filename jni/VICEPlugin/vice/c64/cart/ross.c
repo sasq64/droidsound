@@ -34,13 +34,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
+#include "monitor.h"
 #include "ross.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     "Ross" Cartridge
@@ -56,17 +58,21 @@
 
 static int currbank = 0;
 
+static int ross_is_32k = 0;
+
 static BYTE ross_io1_read(WORD addr)
 {
-    cart_romhbank_set_slotmain(1);
-    cart_romlbank_set_slotmain(1);
-    currbank = 1;
+    if (ross_is_32k) {
+        cart_romhbank_set_slotmain(1);
+        cart_romlbank_set_slotmain(1);
+        currbank = 1;
+    }
     return 0;
 }
 
-static BYTE ross_io1_peek(WORD addr)
+static BYTE ross_io_peek(WORD addr)
 {
-    return currbank;
+    return 0;
 }
 
 static BYTE ross_io2_read(WORD addr)
@@ -77,8 +83,11 @@ static BYTE ross_io2_read(WORD addr)
     return 0;
 }
 
-static BYTE ross_io2_peek(WORD addr)
+static int ross_dump(void)
 {
+    mon_out("Size: %s, bank: %d\n",
+            (ross_is_32k) ? "32Kb" : "16Kb",
+             currbank);
     return 0;
 }
 
@@ -92,9 +101,11 @@ static io_source_t ross_io1_device = {
     0, /* read is never valid */
     NULL,
     ross_io1_read,
-    ross_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_ROSS
+    ross_io_peek,
+    ross_dump,
+    CARTRIDGE_ROSS,
+    0,
+    0
 };
 
 static io_source_t ross_io2_device = {
@@ -105,9 +116,11 @@ static io_source_t ross_io2_device = {
     0, /* read is never valid */
     NULL,
     ross_io2_read,
-    ross_io2_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_ROSS
+    ross_io_peek,
+    ross_dump,
+    CARTRIDGE_ROSS,
+    0,
+    0
 };
 
 static io_source_list_t *ross_io1_list_item = NULL;
@@ -131,6 +144,7 @@ void ross_config_setup(BYTE *rawcart)
     memcpy(&roml_banks[0x2000], &rawcart[0x4000], 0x2000);
     memcpy(&romh_banks[0x2000], &rawcart[0x6000], 0x2000);
     cart_config_changed_slotmain(0, 0, CMODE_READ);
+    currbank = 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -140,8 +154,8 @@ static int ross_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    ross_io1_list_item = c64io_register(&ross_io1_device);
-    ross_io2_list_item = c64io_register(&ross_io2_device);
+    ross_io1_list_item = io_source_register(&ross_io1_device);
+    ross_io2_list_item = io_source_register(&ross_io2_device);
     return 0;
 }
 
@@ -151,34 +165,38 @@ int ross_bin_attach(const char *filename, BYTE *rawcart)
         if (util_file_load(filename, rawcart, 0x4000, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
             return -1;
         }
-        memcpy(&rawcart[0x4000], &rawcart[0x0000], 0x4000);
+        ross_is_32k = 0;
+    } else {
+        ross_is_32k = 1;
     }
     return ross_common_attach();
 }
 
 int ross_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
-    int amount=0;
+    crt_chip_header_t chip;
+    int amount = 0;
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
         amount++;
 
-        if (chipheader[0xc] != 0x80 && chipheader[0xe] != 0x40 && chipheader[0xb] > 1) {
+        if (chip.start != 0x8000 || chip.size != 0x4000 || chip.bank > 1) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 14], 0x4000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 14, &chip, fd)) {
             return -1;
         }
     }
 
     if (amount == 1) {
-        memcpy(&rawcart[0x4000], &rawcart[0x0000], 0x4000);
+        ross_is_32k = 0;
+    } else {
+        ross_is_32k = 1;
     }
     return ross_common_attach();
 }
@@ -186,8 +204,8 @@ int ross_crt_attach(FILE *fd, BYTE *rawcart)
 void ross_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(ross_io1_list_item);
-    c64io_unregister(ross_io2_list_item);
+    io_source_unregister(ross_io1_list_item);
+    io_source_unregister(ross_io2_list_item);
     ross_io1_list_item = NULL;
     ross_io2_list_item = NULL;
 }

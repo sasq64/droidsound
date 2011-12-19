@@ -1,3 +1,6 @@
+
+/*! \file sid/sid.h */
+
 /*
  * sid.h - MOS6581 (SID) emulation, hooks to actual implementation.
  *
@@ -29,6 +32,10 @@
 
 #include "types.h"
 #include "sound.h"
+
+#if (defined(WIN32) || defined(MACOSX_COCOA) || defined(WATCOM_COMPILE) || defined(__BEOS__)) && !defined(USE_SDLUI)
+#define SID_SETTINGS_DIALOG
+#endif
 
 struct sound_s;
 struct sid_snapshot_state_s;
@@ -90,8 +97,10 @@ extern void machine_sid2_enable(int val);
 extern BYTE sid_read(WORD address);
 extern BYTE sid_peek(WORD address);
 extern BYTE sid2_read(WORD address);
+extern BYTE sid3_read(WORD address);
 extern void sid_store(WORD address, BYTE byte);
 extern void sid2_store(WORD address, BYTE byte);
+extern void sid3_store(WORD address, BYTE byte);
 extern void sid_reset(void);
 
 extern void sid_set_machine_parameter(long clock_rate);
@@ -120,19 +129,26 @@ struct sid_engine_s {
 };
 typedef struct sid_engine_s sid_engine_t;
 
+struct sid_engine_model_s {
+    char *name;
+    int value;
+};
+typedef struct sid_engine_model_s sid_engine_model_t;
+
 extern sound_t *sid_sound_machine_open(int chipno);
 extern int sid_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
 extern void sid_sound_machine_close(sound_t *psid);
 extern BYTE sid_sound_machine_read(sound_t *psid, WORD addr);
 extern void sid_sound_machine_store(sound_t *psid, WORD addr, BYTE byte);
 extern void sid_sound_machine_reset(sound_t *psid, CLOCK cpu_clk);
-extern int sid_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, 
-int nr, int interleave, int *delta_t);
+extern int sid_sound_machine_calculate_samples(sound_t **psid, SWORD *pbuf, int nr, int sound_output_channels, int sound_chip_channels, int *delta_t);
 extern void sid_sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub);
 extern char *sid_sound_machine_dump_state(sound_t *psid);
 extern int sid_sound_machine_cycle_based(void);
 extern int sid_sound_machine_channels(void);
 extern void sid_sound_machine_enable(int enable);
+extern sid_engine_model_t **sid_get_engine_model_list(void);
 extern int sid_set_engine_model(int engine, int model);
+extern void sid_sound_chip_init(void);
 
 #endif

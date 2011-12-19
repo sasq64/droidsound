@@ -1,0 +1,11 @@
+option ProjectOptions =
+   link(linkwithmultithreadlib, "yes"),
+   link(pmtype, "novio"),
+   res_rc_options("-i ..\\fonts -x1")
+{
+   target type(dll) "..\\..\\..\\..\\data\\vice2.dll"
+   {
+      source "..\\..\\..\\..\\src\\info.c"
+      source "..\\fonts\\vice2.rc"
+   }
+}

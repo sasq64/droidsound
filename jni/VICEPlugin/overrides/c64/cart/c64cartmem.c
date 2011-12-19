@@ -11,8 +11,8 @@
 #define CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
-#include "c64io.h"
 #include "cartridge.h"
+#include "cartio.h"
 #include "crt.h"
 #include "log.h"
 #include "machine.h"

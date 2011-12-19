@@ -41,9 +41,6 @@ extern BYTE finalexpansion_blk3_read(WORD addr);
 extern void finalexpansion_blk3_store(WORD addr, BYTE value);
 extern BYTE finalexpansion_blk5_read(WORD addr);
 extern void finalexpansion_blk5_store(WORD addr, BYTE value);
-extern BYTE finalexpansion_io3_read(WORD addr);
-extern BYTE finalexpansion_io3_peek(WORD addr);
-extern void finalexpansion_io3_store(WORD addr, BYTE value);
 
 extern void finalexpansion_init(void);
 extern void finalexpansion_reset(void);
@@ -62,8 +59,5 @@ struct snapshot_s;
 
 extern int finalexpansion_snapshot_write_module(struct snapshot_s *s);
 extern int finalexpansion_snapshot_read_module(struct snapshot_s *s);
-
-struct mem_ioreg_list_s;
-extern void finalexpansion_ioreg_add_list(struct mem_ioreg_list_s **mem_ioreg_list);
 
 #endif

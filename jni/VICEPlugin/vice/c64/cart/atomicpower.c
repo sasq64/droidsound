@@ -35,12 +35,13 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* #define DEBUGAP */
 
@@ -106,7 +107,9 @@ static io_source_t atomicpower_io1_device = {
     NULL,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_ATOMIC_POWER
+    CARTRIDGE_ATOMIC_POWER,
+    0,
+    0
 };
 
 static io_source_t atomicpower_io2_device = {
@@ -119,7 +122,9 @@ static io_source_t atomicpower_io2_device = {
     atomicpower_io2_read,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_ATOMIC_POWER
+    CARTRIDGE_ATOMIC_POWER,
+    0,
+    0
 };
 
 static io_source_list_t *atomicpower_io1_list_item = NULL;
@@ -267,8 +272,8 @@ static int atomicpower_common_attach(void)
         return -1;
     }
 
-    atomicpower_io1_list_item = c64io_register(&atomicpower_io1_device);
-    atomicpower_io2_list_item = c64io_register(&atomicpower_io2_device);
+    atomicpower_io1_list_item = io_source_register(&atomicpower_io1_device);
+    atomicpower_io2_list_item = io_source_register(&atomicpower_io2_device);
 
     return 0;
 }
@@ -284,19 +289,19 @@ int atomicpower_bin_attach(const char *filename, BYTE *rawcart)
 
 int atomicpower_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i;
 
     for (i = 0; i <= 3; i++) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             return -1;
         }
 
-        if (chipheader[0xb] > 3) {
+        if (chip.bank > 3 || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -307,8 +312,8 @@ int atomicpower_crt_attach(FILE *fd, BYTE *rawcart)
 void atomicpower_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(atomicpower_io1_list_item);
-    c64io_unregister(atomicpower_io2_list_item);
+    io_source_unregister(atomicpower_io1_list_item);
+    io_source_unregister(atomicpower_io2_list_item);
     atomicpower_io1_list_item = NULL;
     atomicpower_io2_list_item = NULL;
 }
