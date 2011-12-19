@@ -34,7 +34,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		protected String format;
 	};
 
-	final byte [] header = new byte [128];
+	final byte[] header = new byte [128];
 	private byte[] mainHash;
 	private short[] extraLengths;
 	private int hashLen;

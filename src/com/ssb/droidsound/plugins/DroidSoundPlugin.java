@@ -37,7 +37,6 @@ public abstract class DroidSoundPlugin {
 
 	public static final int INFO_DETAILS_CHANGED = 15;
 
-
 	public static final int OPT_FILTER = 1;
 	public static final int OPT_RESAMPLING = 2;
 	public static final int OPT_NTSC = 3;

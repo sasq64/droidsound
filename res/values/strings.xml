@@ -91,11 +91,11 @@ to download more music from the web.</string>
 </string-array>
 
 <string-array name="panning_opts">
-	<item>Mono</item>
-	<item>Some</item>
-	<item>50/50</item>
-	<item>Lots</item>
-	<item>Full Stereo</item>
+	<item>0 % (mono)</item>
+	<item>25 %</item>
+	<item>50 %</item>
+	<item>75 %</item>
+	<item>100 % (stereo)</item>
 </string-array>
 
 

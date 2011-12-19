@@ -1,232 +1,145 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-        android:key="main_prefs">
+    android:key="main_prefs" >
+
     <CheckBoxPreference
-            android:key="extensions"
-            android:title="Unknown extensions"
-            android:defaultValue="false"
-            android:summary="Index files with unknown extensions"
-            />
-    <!--  CheckBoxPreference
-            android:key="silence"
-            android:title="Silence detection"
-            android:defaultValue="true"
-            android:summaryOff="Silence will not trigger a song change"
-            android:summaryOn="Silence will trigger a song change"
-            / -->
+        android:defaultValue="false"
+        android:key="extensions"
+        android:summary="Index files with unknown extensions"
+        android:title="Unknown extensions" />
+
     <CheckBoxPreference
-            android:key="speech"
-            android:title="Speech"
-            android:defaultValue="false"
-            android:summary="Use text to speech to speak titles of songs"
-            />
-            
-	<EditTextPreference
-			android:numeric="integer"
-            android:key="default_length"
-            android:title="Default song length"
-            android:dialogTitle="Length (in seconds)"
-            android:defaultValue="900"
-            android:summary="Length to use when real length is unknown."
-	/>
+        android:defaultValue="false"
+        android:key="speech"
+        android:summary="Use text to speech to speak titles of songs"
+        android:title="Speech" />
+
+    <EditTextPreference
+        android:defaultValue="900"
+        android:dialogTitle="Length (in seconds)"
+        android:key="default_length"
+        android:numeric="integer"
+        android:summary="Length to use when real length is unknown."
+        android:title="Default song length" />
 
     <ListPreference
-            android:key="buffer"
-            android:title="Buffer Size"
-            android:summary="Sound buffer size. Increase to avoid skipping."
-            android:defaultValue="Long"
-            android:entries="@array/buffer_opts"
-			android:entryValues="@array/buffer_opts"
-            android:summaryOn="Audio buffer size"
-            />
+        android:defaultValue="Long"
+        android:entries="@array/buffer_opts"
+        android:entryValues="@array/buffer_opts"
+        android:key="buffer"
+        android:summary="Sound buffer size. Increase to avoid skipping."
+        android:summaryOn="Audio buffer size"
+        android:title="Buffer Size" />
 
-	<PreferenceScreen
-            android:key="audio_prefs"
-            android:title="Audio"
-            android:summary="Plugin Audio Settings"
-	>
-	
-		<PreferenceCategory
-			android:title="MP3"
-			android:key="MP3Plugin"
-		>
-		<CheckBoxPreference
-	            android:key="MP3Plugin.simplestream"
-	            android:title="Simple MP3 streaming"
-	            android:defaultValue="false"
-	            android:summary="Use simple Android streaming. More limited but possibly more stable."
-	            />
-		</PreferenceCategory>
-		<PreferenceCategory
-			android:title="SID"
-			android:key="SidPlugin"
-		>
-		<CheckBoxPreference
-	            android:key="SidPlugin.filter"
-	            android:title="SID Filter"
-	            android:defaultValue="true"
-	            android:summary="Emulate the SID filter"
-	            />
-		<ListPreference
-	            android:key="SidPlugin.filter_bias"
-	            android:title="Filter Bias"
-	            android:defaultValue="0"
-                    android:entries="@array/filter_bias_opts"
-                    android:entryValues="@array/filter_bias_vals"
-	            />
-		<ListPreference
-	            android:key="SidPlugin.sid_model"
-	            android:title="Preferred SID Model"
-	            android:defaultValue="1"
-                    android:entries="@array/sid_model_opts"
-                    android:entryValues="@array/sid_model_vals"
-	            />
-		<ListPreference
-	            android:key="SidPlugin.ntsc"
-	            android:title="Video Mode"
-	            android:defaultValue="0"
+    <PreferenceScreen
+        android:key="audio_prefs"
+        android:summary="Plugin Audio Settings"
+        android:title="Audio" >
+
+        <PreferenceCategory
+            android:key="MP3Plugin"
+            android:title="MP3" >
+
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="MP3Plugin.simplestream"
+                android:summary="Use simple Android streaming. More limited but possibly more stable."
+                android:title="Simple MP3 streaming" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
+            android:key="VICEPlugin"
+            android:title="VICE" >
+
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="VICEPlugin.filter"
+                android:summary="Emulate the SID filter"
+                android:title="SID Filter" />
+
+            <ListPreference
+                android:defaultValue="0"
+                android:entries="@array/filter_bias_opts"
+                android:entryValues="@array/filter_bias_vals"
+                android:key="VICEPlugin.filter_bias"
+                android:title="Filter Bias" />
+
+            <ListPreference
+                android:defaultValue="1"
+                android:entries="@array/sid_model_opts"
+                android:entryValues="@array/sid_model_vals"
+                android:key="VICEPlugin.sid_model"
+                android:title="Preferred SID Model" />
+
+            <ListPreference
+                android:defaultValue="0"
                 android:entries="@array/videomode_opts"
                 android:entryValues="@array/videomode_vals"
-	            />
-		<ListPreference
-	            android:key="SidPlugin.resampling"
-	            android:title="Resampling Mode"
-	            android:defaultValue="1"
-                    android:entries="@array/resampling_opts"
-                    android:entryValues="@array/resampling_vals"
-	            />
-	    </PreferenceCategory>
-		<!-- 
-		<PreferenceCategory
-			android:title="VICE"
-			android:key="VICEPlugin"
-		>
-		
-		<CheckBoxPreference
-	            android:key="VICEPlugin.active"
-	            android:title="Active"
-	            android:defaultValue="false"
-	            android:summaryOff="This plugin is not active"
-	            android:summaryOn="This plugin is active"
-	            />
-		<CheckBoxPreference
-	            android:key="VICEPlugin.filter"
-	            android:title="SID Filter"
-	            android:defaultValue="true"
-	            android:summaryOff="Filter not emulated"
-	            android:summaryOn="Filter emulated"
-	            />
-		<ListPreference
-	            android:key="VICEPlugin.ntsc"
-	            android:title="Video Mode"
-	            android:defaultValue="0"
-                android:entries="@array/videomode_opts"
-                android:entryValues="@array/videomode_vals"
-	            />
-		<ListPreference
-	            android:key="VICEPlugin.resampling"
-	            android:title="Resampling Mode"
-	            android:defaultValue="0"
-                    android:entries="@array/resampling_opts"
-                    android:entryValues="@array/resampling_vals"
-	            />
-	    </PreferenceCategory>
-		<PreferenceCategory
-			android:title="Sidplay"
-			android:key="SidplayPlugin"
-		>
-		<CheckBoxPreference
-           android:key="SidplayPlugin.active"
-           android:title="Active"
-           android:defaultValue="false"
-           android:summaryOff="This plugin is not active"
-           android:summaryOn="This plugin is active"
-           />		
-		<CheckBoxPreference
-	            android:key="SidplayPlugin.filter"
-	            android:title="SID Filter"
-	            android:defaultValue="true"
-	            android:summaryOff="Filter not emulated"
-	            android:summaryOn="Filter emulated"
-	            />
-		<CheckBoxPreference
-	            android:key="SidplayPlugin.ntsc"
-	            android:title="NTSC Mode"
-	            android:defaultValue="false"
-	            android:summaryOff="Emulating PAL mode"
-	            android:summaryOn="Emulating NTSC mode"
-	            />
-		</PreferenceCategory>  -->
-		<PreferenceCategory
-			android:title="UADE"
-			android:key="UADEPlugin"
-		>
+                android:key="VICEPlugin.ntsc"
+                android:title="Video Mode" />
 
-		<CheckBoxPreference
-	            android:key="UADEPlugin.filter"
-	            android:title="Amiga Filter"
-	            android:defaultValue="true"
-	            android:summary="Emulate the Paula filter"
-	            />
-		<ListPreference
-	            android:key="UADEPlugin.panning"
-	            android:title="Panning"
-	            android:defaultValue="Full Stereo"
+            <ListPreference
+                android:defaultValue="1"
+                android:entries="@array/resampling_opts"
+                android:entryValues="@array/resampling_vals"
+                android:key="VICEPlugin.resampling"
+                android:title="Resampling Mode" />
+        </PreferenceCategory>
+
+        <PreferenceCategory
+            android:key="UADEPlugin"
+            android:title="UADE" >
+
+            <CheckBoxPreference
+                android:defaultValue="true"
+                android:key="UADEPlugin.filter"
+                android:summary="Emulate the Paula filter"
+                android:title="Amiga Filter" />
+
+            <ListPreference
+                android:defaultValue="100 % (stereo)"
                 android:entries="@array/panning_opts"
                 android:entryValues="@array/panning_opts"
-	            />
-		<!--   CheckBoxPreference
-	            android:key="UADEPlugin.speedhack"
-	            android:title="Speed Hack"
-	            android:defaultValue="true"
-	            android:summaryOff="Speed Hack Off"
-	            android:summaryOn="Speed Hack On"
-	            / -->
-		<CheckBoxPreference
-	            android:key="UADEPlugin.ntsc"
-	            android:title="NTSC Mode"
-	            android:defaultValue="false"
-	            android:summary="Emulate NTSC mode"
-	            />
-		</PreferenceCategory>
-	</PreferenceScreen>
-            
-    <PreferenceScreen
-            android:key="database_prefs"
-            android:title="Database"
-            android:summary="Database options"
-            >
-        <ListPreference
-                android:key="indexing"
-                android:title="Indexing"
-                android:summary="Database index level. Don't change unless you know you need to"
-                android:defaultValue="Basic"
-                android:entries="@array/indexing_opts"
-                android:entryValues="@array/indexing_opts"
-		/>
-		<Preference android:key="rescan_pref"
-		android:title="Rescan database"
-		android:summary="Scan sdcard for changes and update database."
-		/>
-		<!-- 
-		<Preference android:key="backup_pref"
-		android:title="Backup database"
-		android:summary="Copy the database to sdcard"
-		/>
-		<Preference android:key="restore_pref"
-		android:title="Restore database"
-		android:summary="Restore database from file on sdcard"
-		/>  -->
-    </PreferenceScreen>
-    
-    <Preference
-    	android:key="download_link"
-		android:title="Download"
-		android:summary="Go to web page for quick downloading of music and databases."
-   	/>
+                android:key="UADEPlugin.panning"
+                android:title="Panning" />
 
-    <Preference android:key="help_pref"
-		android:title="Droidsound Help"
-		/>
-    <PreferenceScreen android:key="about_prefs" android:title="About Droidsound" />
-    
-</PreferenceScreen> 
+            <CheckBoxPreference
+                android:defaultValue="false"
+                android:key="UADEPlugin.ntsc"
+                android:summary="Emulate NTSC mode"
+                android:title="NTSC Mode" />
+        </PreferenceCategory>
+    </PreferenceScreen>
+
+    <PreferenceScreen
+        android:key="database_prefs"
+        android:summary="Database options"
+        android:title="Database" >
+
+        <ListPreference
+            android:defaultValue="Basic"
+            android:entries="@array/indexing_opts"
+            android:entryValues="@array/indexing_opts"
+            android:key="indexing"
+            android:summary="Database index level. Don&apos;t change unless you know you need to"
+            android:title="Indexing" />
+
+        <Preference
+            android:key="rescan_pref"
+            android:summary="Scan sdcard for changes and update database."
+            android:title="Rescan database" />
+    </PreferenceScreen>
+
+    <Preference
+        android:key="download_link"
+        android:summary="Go to web page for quick downloading of music and databases."
+        android:title="Download" />
+
+    <Preference
+        android:key="help_pref"
+        android:title="Droidsound Help" />
+
+    <PreferenceScreen
+        android:key="about_prefs"
+        android:title="About Droidsound" />
+
+</PreferenceScreen>

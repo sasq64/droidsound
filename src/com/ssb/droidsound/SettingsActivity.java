@@ -70,8 +70,6 @@ public class SettingsActivity extends PreferenceActivity {
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
 
-		Preference p = findPreference("SidPlugin.resampling");
-
 		Preference pref = findPreference("rescan_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
@@ -122,30 +120,23 @@ public class SettingsActivity extends PreferenceActivity {
 
 		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");
 
-		for(int i=0; i<aScreen.getPreferenceCount(); i++) {
-			p = aScreen.getPreference(i);
+		for (int i = 0; i < aScreen.getPreferenceCount(); i++) {
+			Preference p = aScreen.getPreference(i);
 			Log.d(TAG, "Pref '%s'", p.getKey());
-			if(p instanceof PreferenceGroup) {
+			if (p instanceof PreferenceGroup) {
 				PreferenceGroup pg = (PreferenceGroup) p;
 
 				DroidSoundPlugin plugin = null;
-				for(DroidSoundPlugin pl : list) {
-					if(pl.getClass().getSimpleName().equals(pg.getKey())) {
+				for (DroidSoundPlugin pl : list) {
+					if (pl.getClass().getSimpleName().equals(pg.getKey())) {
 						plugin = pl;
 						break;
 					}
 				}
-				if(plugin != null) {
-
-					//String plname = plugin.getClass().getSimpleName();
-
-					for(int j=0; j<pg.getPreferenceCount(); j++) {
+				if (plugin != null) {
+					for (int j=0; j<pg.getPreferenceCount(); j++) {
 						p = pg.getPreference(j);
-
-						//p.setKey(plname + "." + p.getKey());
-
 						Log.d(TAG, "Pref %s for %s", p.getKey(), plugin.getClass().getName());
-
 						p.setOnPreferenceChangeListener(new AudiopPrefsListener(plugin));
 					}
 				}
@@ -159,7 +150,7 @@ public class SettingsActivity extends PreferenceActivity {
 			pc.setTitle("Droidsound");
 			abScreen.addPreference(pc);
 
-			p = new Preference(this);
+			Preference p = new Preference(this);
 			p.setTitle("Application");
 			p.setSummary(String.format("%s v%s\n(C) 2010,2011 by Jonas Minnberg (Sasq)", appName, pinfo.versionName));
 			abScreen.addPreference(p);
@@ -188,16 +179,6 @@ public class SettingsActivity extends PreferenceActivity {
 	}
 
 	@Override
-	protected void onPause() {
-		super.onPause();
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-	}
-
-	@Override
 	protected Dialog onCreateDialog(int id) {
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -219,6 +200,7 @@ public class SettingsActivity extends PreferenceActivity {
 				}
 			});
 			break;
+
 		case R.string.scan_db:
 			doFullScan = false;
 			builder.setTitle(id);
@@ -248,25 +230,7 @@ public class SettingsActivity extends PreferenceActivity {
 				}
 			});
 			break;
-/*
-		case R.string.about_droidsound:
-			String fullName = "<ERROR>";
-			try {
-				PackageInfo pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
 
-				String appName = getString(pinfo.applicationInfo.labelRes);
-				fullName = String.format("%s %s (vc%d)\n%s", appName, pinfo.versionName, pinfo.versionCode, getString(R.string.about_droidsound));
-			} catch (NameNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			builder.setMessage(fullName);
-			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int id) {
-					dialog.cancel();
-				}
-			});
-			break; */
 		default:
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
