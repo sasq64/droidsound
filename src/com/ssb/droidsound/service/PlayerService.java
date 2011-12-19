@@ -433,14 +433,13 @@ public class PlayerService extends Service {
 
 
     void createThread() {
-
-    	if(playerThread != null) {
-			if(!playerThread.isAlive()) {
-				playerThread = null;
-			}
+    	if (playerThread != null) {
+    		if (! playerThread.isAlive()) {
+    			playerThread = null;
+    		}
     	}
 
-    	if(playerThread == null) {
+    	if (playerThread == null) {
 			Log.d(TAG, "Creating thread");
 			player.setBufSize(bufSize);
 		    playerThread = new Thread(player);
@@ -528,8 +527,8 @@ public class PlayerService extends Service {
 		return false;
     }
 
-    private static final Class[] mStartForegroundSignature = new Class[] { int.class, Notification.class};
-    private static final Class[] mStopForegroundSignature = new Class[] { boolean.class};
+    private static final Class<?>[] mStartForegroundSignature = new Class<?>[] { int.class, Notification.class};
+    private static final Class<?>[] mStopForegroundSignature = new Class<?>[] { boolean.class};
 
     private NotificationManager mNM;
     private Method mStartForeground;

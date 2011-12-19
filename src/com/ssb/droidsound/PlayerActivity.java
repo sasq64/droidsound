@@ -257,7 +257,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	protected int toneLength = 2;
 
 	private TextView toneNameText;
-	private static final Class[] startTrackingSignature = new Class[] {};
+	private static final Class<?>[] startTrackingSignature = new Class<?>[] {};
 
 	@Override
 	protected void finalize() throws Throwable {
@@ -1332,9 +1332,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Log.d(TAG, "#### KEY EVENT %s", event.toString());
 		return super.dispatchKeyEvent(event);
 	}
-
-	private static final Class[] mStartTracking = new Class[] {};
-
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {

@@ -1,14 +1,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tlv="http://schemas.android.com/apk/res/com.ssb.droidsound"
-	android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
+	android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent">
 
 	<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
-		android:orientation="horizontal" android:layout_alignParentTop="true"
+		android:orientation="horizontal"
 		android:background="#000080"
 		android:id="@+id/title_bar" >
 		
 		<LinearLayout android:orientation="vertical" android:layout_weight="1.0"		
-		android:layout_width="wrap_content" android:layout_height="wrap_content" >		
+		android:layout_width="0dp" android:layout_height="wrap_content" >		
 			<TextView android:id="@+id/list_title"
 				android:layout_width="wrap_content"
 			    android:layout_height="wrap_content"
@@ -20,11 +20,10 @@
 			    android:singleLine="true" />
 			<TextView android:id="@+id/list_subtitle"
 				android:layout_width="wrap_content"
-			    android:layout_height="wrap_content"
+			    android:layout_height="0dp"
 			    android:textSize="15dp"
 			    android:layout_marginLeft="4dp"
 			    android:textColor="#FFFFFFFF"			    
-			    android:layout_weight="1.0"
 			    android:ellipsize="start"
 			    android:singleLine="true" />
 		</LinearLayout>

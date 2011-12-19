@@ -17,8 +17,8 @@
 	<item android:id="@+id/add_to_plist" android:title="@string/add_to_plist" />
 
 	<group android:id="@+id/in_playlist">
-		<item android:id="@+id/go_dir" android:title="@string/go_to_dir" />
-		<item android:id="@+id/make_wav" android:title="@string/make_wav" />
+		<item android:id="@id/go_dir" android:title="@string/go_to_dir" />
+		<item android:id="@id/make_wav" android:title="@string/make_wav" />
 		<item android:id="@+id/cut" android:title="@string/cut" />
 		<item android:id="@+id/paste" android:title="@string/paste" />
 		<item android:id="@+id/remove_all" android:title="@string/remove_all" />
