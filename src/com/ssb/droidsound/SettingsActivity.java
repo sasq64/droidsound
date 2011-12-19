@@ -22,8 +22,6 @@ import android.preference.PreferenceScreen;
 
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.plugins.SidPlugin;
-import com.ssb.droidsound.plugins.VICEPlugin;
 import com.ssb.droidsound.utils.Log;
 
 public class SettingsActivity extends PreferenceActivity {
@@ -46,17 +44,7 @@ public class SettingsActivity extends PreferenceActivity {
 		public boolean onPreferenceChange(Preference preference, Object newValue) {
 			String k = preference.getKey();
 			String k2 = k.substring(k.indexOf('.')+1);
-
-			Log.d(TAG, "CHANGED " + k);
-
-			if(k.equals("SidPlugin.engine")) {
-				boolean isVice = ((String) newValue).startsWith("VICE");
-				/* FIXME: Both sid model and resampling actually could be done
-				 * also in sidplayplugin, but it's not currently supported. */
-				findPreference("SidPlugin.filter_bias").setEnabled(isVice);
-				findPreference("SidPlugin.sid_model").setEnabled(isVice);
-				findPreference("SidPlugin.resampling").setEnabled(isVice);
-			}
+			Log.d(TAG, "CHANGED %s=%s", k, k2);
 
 			if(newValue instanceof String) {
 				try {
@@ -82,13 +70,7 @@ public class SettingsActivity extends PreferenceActivity {
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
 
-		String s = prefs.getString("SidPlugin.engine", null);
 		Preference p = findPreference("SidPlugin.resampling");
-		if(s.startsWith("VICE")) {
-			p.setEnabled(true);
-		} else {
-			p.setEnabled(false);
-		}
 
 		Preference pref = findPreference("rescan_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -170,8 +152,6 @@ public class SettingsActivity extends PreferenceActivity {
 			}
 		}
 
-		list.add(new VICEPlugin());
-
 		PreferenceScreen abScreen = (PreferenceScreen) findPreference("about_prefs");
 
 		if(abScreen != null) {
@@ -188,14 +168,11 @@ public class SettingsActivity extends PreferenceActivity {
 			pc.setTitle("Plugins");
 			abScreen.addPreference(pc);
 
-			for(DroidSoundPlugin pl : list) {
-				if(pl instanceof SidPlugin) {
-				} else {
-					p = new Preference(this);
-					p.setTitle(pl.getClass().getSimpleName());
-					p.setSummary(pl.getVersion());
-					abScreen.addPreference(p);
-				}
+			for (DroidSoundPlugin pl : list) {
+				p = new Preference(this);
+				p.setTitle(pl.getClass().getSimpleName());
+				p.setSummary(pl.getVersion());
+				abScreen.addPreference(p);
 			}
 
 			pc = new PreferenceCategory(this);

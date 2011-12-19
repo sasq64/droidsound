@@ -7,7 +7,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 public interface DataSource {
-
 	boolean parseDump(InputStream is, int size, SQLiteDatabase scanDb, ScanCallback scanCallback);
 	String getTitle();
 	Cursor getCursorFromPath(File file, SQLiteDatabase db, int sorting);

@@ -2,24 +2,20 @@ package com.ssb.droidsound.database;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.MediaStore;
 
-import com.ssb.droidsound.utils.Log;
-
 import com.ssb.droidsound.utils.CursorTransform;
 import com.ssb.droidsound.utils.DBFileSystem;
+import com.ssb.droidsound.utils.Log;
 
 public class MediaSource implements DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();
-	
+
 	private static String[] albumsFields = { MediaStore.Audio.Albums._ID,
 			  MediaStore.Audio.Albums.ALBUM,
 			  MediaStore.Audio.Albums.ARTIST,
@@ -27,9 +23,6 @@ public class MediaSource implements DataSource  {
 			  MediaStore.Audio.Albums.LAST_YEAR,
 			  MediaStore.Audio.Albums.NUMBER_OF_SONGS
 			  };
-	private static String[] artistFields = { MediaStore.Audio.Albums._ID,
-		  MediaStore.Audio.Artists.ARTIST
-		  };
 	private static String[] fields = { MediaStore.Audio.Media._ID,
 			  MediaStore.Audio.Media.DISPLAY_NAME,
 			  MediaStore.Audio.Media.YEAR,
@@ -40,21 +33,21 @@ public class MediaSource implements DataSource  {
 			  MediaStore.Audio.Media.ALBUM,
 			  };
 
-	
+
 		public static final String NAME = "mediastore.source";
 
 	private Context context;
 
 	private DBFileSystem dbfs;
 	private String displayTitle;
-	
-	private static final String sortOrder [] = new String[] { 
+
+	private static final String sortOrder [] = new String[] {
 		String.format("%s, %s",  MediaStore.Audio.Media.TRACK, MediaStore.Audio.Media.TITLE),
 		String.format("%s, %s",  MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.TITLE),
 		String.format("%s, %s",  MediaStore.Audio.Media.YEAR, MediaStore.Audio.Media.TITLE)
 	};
-	
-	private static final String albumSortOrder [] = new String[] { 
+
+	private static final String albumSortOrder [] = new String[] {
 		String.format("%s, %s", MediaStore.Audio.Albums.ALBUM, MediaStore.Audio.Albums.LAST_YEAR),
 		String.format("%s, %s", MediaStore.Audio.Albums.ARTIST, MediaStore.Audio.Albums.LAST_YEAR),
 		String.format("%s, %s", MediaStore.Audio.Albums.LAST_YEAR, MediaStore.Audio.Albums.ALBUM)
@@ -63,16 +56,16 @@ public class MediaSource implements DataSource  {
 	public MediaSource(Context ctx) {
 		context = ctx;
 		dbfs = new DBFileSystem(NAME);
-		
+
 		//dbfs.addPath("", new String[] { "Albums", "Artists", "Genres" });
-		
+
 		dbfs.addPath("", new DBFileSystem.CursorFactory() {
 			@Override
 			public Cursor getCursor(String[] parts, int sorting) {
 				ContentResolver cr = context.getContentResolver();
-				Cursor cursor = cr.query(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, albumsFields, null, null, 
+				Cursor cursor = cr.query(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, albumsFields, null, null,
 						albumSortOrder[sorting]);
-				
+
 				CursorTransform ct = new CursorTransform();
 				ct.addTransform("TITLE", String.format("${%s}", MediaStore.Audio.Albums.ALBUM));
 				ct.addTransform("SUBTITLE", String.format("${%s}", MediaStore.Audio.Albums.ARTIST));
@@ -82,20 +75,20 @@ public class MediaSource implements DataSource  {
 				return ct.transformCursor(cursor);
 			}
 		});
-		
+
 		dbfs.addPath("*", new DBFileSystem.CursorFactory() {
 
 			@Override
 			public Cursor getCursor(String[] parts, int sorting) {
 				ContentResolver cr = context.getContentResolver();
-				Cursor cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields, 
-						String.format("%s = ?", MediaStore.Audio.Media.ALBUM_ID), new String[] { parts[0] }, 
+				Cursor cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields,
+						String.format("%s = ?", MediaStore.Audio.Media.ALBUM_ID), new String[] { parts[0] },
 						sortOrder[sorting]);
-				
+
 				cursor.moveToFirst();
 				displayTitle = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
 				cursor.moveToPosition(-1);
-				
+
 				CursorTransform ct = new CursorTransform();
 				ct.addTransform("TITLE", String.format("${%s}", MediaStore.Audio.Media.TITLE));
 				ct.addTransform("SUBTITLE", String.format("${%s}", MediaStore.Audio.Media.ARTIST));
@@ -104,18 +97,18 @@ public class MediaSource implements DataSource  {
 				ct.addTransform("FILENAME", String.format("${%s}", MediaStore.Audio.Media.DATA));
 				ct.addTransform("TYPE", SongDatabase.TYPE_FILE);
 				return ct.transformCursor(cursor);
-				
+
 			}
 		});
 
 	/*
-	
+
 		dbfs.addPath("Artists", new DBFileSystem.CursorFactory() {
 			@Override
 			public Cursor getCursor(String[] parts, int sorting) {
 				ContentResolver cr = context.getContentResolver();
 				Cursor cursor = cr.query(MediaStore.Audio.Artists.EXTERNAL_CONTENT_URI, artistFields, null, null, null);
-				
+
 				CursorTransform ct = new CursorTransform();
 				ct.addTransform("TITLE", String.format("${%s}", MediaStore.Audio.Artists.ARTIST));
 				ct.addTransform("FILENAME", String.format("${%s}", MediaStore.Audio.Artists._ID));
@@ -123,15 +116,15 @@ public class MediaSource implements DataSource  {
 				return ct.transformCursor(cursor);
 			}
 		});
-		
+
 		dbfs.addPath("Artists/*", new DBFileSystem.CursorFactory() {
 			@Override
 			public Cursor getCursor(String[] parts, int sorting) {
 				ContentResolver cr = context.getContentResolver();
-				Cursor cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields, 
-						String.format("%s = ?", MediaStore.Audio.Media.ARTIST_ID), new String[] { parts[1] }, 
+				Cursor cursor = cr.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, fields,
+						String.format("%s = ?", MediaStore.Audio.Media.ARTIST_ID), new String[] { parts[1] },
 						null);
-				
+
 				cursor.moveToFirst();
 				displayTitle = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
 				cursor.moveToPosition(-1);
@@ -143,7 +136,7 @@ public class MediaSource implements DataSource  {
 				ct.addTransform("FILENAME", String.format("${%s}", MediaStore.Audio.Media.DATA));
 				ct.addTransform("TYPE", SongDatabase.TYPE_FILE);
 				return ct.transformCursor(cursor);
-				
+
 			}
 		});
 */
@@ -152,7 +145,7 @@ public class MediaSource implements DataSource  {
 	@Override
 	public void createIndex(int mode, SQLiteDatabase db) {
 	}
-	
+
 	@Override
 	public Cursor getCursorFromPath(File file, SQLiteDatabase db, int sorting) {
 		Log.d(TAG, "FILE '%s'", file.getPath());

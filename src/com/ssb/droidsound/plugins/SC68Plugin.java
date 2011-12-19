@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 
 import android.os.Environment;
-import com.ssb.droidsound.utils.Log;
 
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class SC68Plugin extends DroidSoundPlugin {
@@ -16,8 +16,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private long currentSong;
 	private static Object lock = new Object();
 	private static boolean inited = false;
-	
-	private File sc68Dir;
+
+	private final File sc68Dir;
 	private long pluginRef;
 
 	private String title = null;
@@ -30,7 +30,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 		sc68Dir = new File(droidDir, "sc68data");
-		synchronized (lock) {					
+		synchronized (lock) {
 			if(!sc68Dir.exists()) {
 				droidDir.mkdir();
 				unzipper = Unzipper.getInstance();
@@ -42,24 +42,24 @@ public class SC68Plugin extends DroidSoundPlugin {
 			}
 		}
 	}
-	
+
 	@Override
 	public boolean canHandle(String name) {
 		String ext = name.substring(name.indexOf('.')+1).toLowerCase();
 		return(ext.equals("sndh") || ext.equals("sc68") || ext.equals("snd"));
 	}
-	
+
 	@Override
 	public void unload() {
 		Log.d(TAG, "Unloading");
 		if(currentSong != 0)
-			N_unload(currentSong);		
+			N_unload(currentSong);
 	}
 
 	@Override
 	public boolean load(String name, byte[] module, int size) {
-		
-		
+
+
 		if(unzipper != null) {
 			while(!unzipper.checkJob("sc68data.zip")) {
 				try {
@@ -71,16 +71,16 @@ public class SC68Plugin extends DroidSoundPlugin {
 			}
 			unzipper = null;
 		}
-		
+
 		Log.d(TAG, "Trying to load '%s'", name);
 		currentSong = N_load(module, size);
 		Log.d(TAG, "Trying to load '%s' -> %d", name, currentSong);
 		return (currentSong != 0);
 	}
-	
+
 	private static byte[] targetBuffer;
-	
-	
+
+
 	private static String fromData(byte [] data, int start, int len) throws UnsupportedEncodingException {
 		int i = start;
 		for(; i<start+len; i++) {
@@ -91,20 +91,20 @@ public class SC68Plugin extends DroidSoundPlugin {
 		}
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
-	
-	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
-	
+
+	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" };
+
 	@Override
 	public String[] getDetailedInfo() {
-		
+
 		String [] info = new String [4];
-		
+
 		String replay = getStringInfo(52);
 		String hwname = getStringInfo(51);
 		int hwbits = getIntInfo(50);
 		if(replay == null) replay = "?";
 		if(hwname == null) hwname = "?";
-		
+
 		info[0] = "Format";
 		info[1] = String.format("SC68: %s", replay);
 		info[2] = "Hardware";
@@ -124,9 +124,9 @@ public class SC68Plugin extends DroidSoundPlugin {
 		byte data [] = module;
 		String head = new String(module, 0, 4);
 		if(head.equals("ICE!")) {
-			
+
 			Log.d(TAG, "Unicing");
-			
+
 			if(targetBuffer == null) {
 				targetBuffer = new byte [1024*1024];
 			}
@@ -136,16 +136,15 @@ public class SC68Plugin extends DroidSoundPlugin {
 			size = rc;
 			data = targetBuffer;
 		}
-		
+
 		String header = new String(data, 12, 4);
 		String header2 = new String(data, 0, 16);
 		if(header.equals("SNDH")) {
 			Log.d(TAG, "Found SNDH");
 			type = "SNDH";
 			int offset = 16;
-			boolean done = false;
-			
-			while(offset < 1024) {
+
+			while (offset < 1024) {
 				String tag = new String(data, offset, 4);
 				//Log.d(TAG, "TAG: %s", tag);
 				try {
@@ -170,8 +169,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 					e.printStackTrace();
 				}
 				while(data[offset] == 0) offset++;
-			}			
-			
+			}
+
 			return true;
 		} else if(header2.equals("SC68 Music-file ")) {
 			int offset = 56;
@@ -200,23 +199,23 @@ public class SC68Plugin extends DroidSoundPlugin {
 					} else if(tag.equals("SCEF") || tag.equals("SCDA")) {
 						Log.d(TAG, "END");
 						break;
-					} else {			
+					} else {
 					}
 				} catch (UnsupportedEncodingException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				offset += tsize;
-			}			
-			
+			}
+
 			return true;
-			
-			
+
+
 		}
 
 		return false;
 	}
-	
+
 
 	@Override
 	public int getSoundData(short[] dest, int size) {
@@ -235,7 +234,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 				return year;
 			case INFO_TYPE:
 				return type;
-			}			
+			}
 			return null;
 		}
 		return N_getStringInfo(currentSong, what);
@@ -246,26 +245,26 @@ public class SC68Plugin extends DroidSoundPlugin {
 		if(currentSong == 0) {
 			return -1;
 		}
-		
+
 		int rc = N_getIntInfo(currentSong, what);
 		if(what == INFO_LENGTH && rc == 0)
 			rc = -1;
 		return rc;
 	}
-	
+
 	@Override
 	public boolean setTune(int tune) {
-		
+
 		Log.d(TAG, "Set tune %d", tune);
-		
+
 		return N_setTune(currentSong, tune);
 	}
-	
+
 	@Override
 	public boolean seekTo(int msec) {
 		return N_seekTo(currentSong, msec);
 	}
-	
+
 	@Override
 	public String getVersion() {
 		return "Version 3.0.0\nCopyright (C) 2009 Benjamin Gerard";
@@ -274,14 +273,14 @@ public class SC68Plugin extends DroidSoundPlugin {
 	native public long N_load(byte [] module, int size);
 	native public long N_loadInfo(byte [] module, int size);
 	native public void N_unload(long song);
-	
+
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);	
+	native public int N_getSoundData(long song, short [] dest, int size);
 	native public boolean N_seekTo(long song, int seconds);
 	native public boolean N_setTune(long song, int tune);
 	native public String N_getStringInfo(long song, int what);
 	native public int N_getIntInfo(long song, int what);
-	
+
 	native public void N_setDataDir(String dataDir);
 	native public int N_unice(byte [] data, byte [] target);
 }

@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
@@ -224,8 +222,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private File moveFileHere;
 
-	private int operationTune;
-
 	private String operationTitle;
 
 	private int operationTuneCount;
@@ -235,8 +231,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int foundVersion;
 
 	protected boolean dialogShowing;
-
-	private TextView lowText;
 
 	private Method startTrackingMethod;
 
@@ -285,7 +279,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		Cursor cursor = songDatabase.getFilesInPath(path, sortOrder);
-		// Cursor cursor = songDatabase.getFilesInPath("http://swimmer.se/mp3/", sortOrder);
 		plv.setCursor(cursor, path);
 
 		File f = new File(path);
@@ -336,43 +329,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		String p = plv.getPath();
 		if(p != null) {
-
-			if(p.startsWith("http://")) {
-				URL url;
-				try {
-					url = new URL(p);
-				} catch (MalformedURLException e) {
-					return;
-				}
-
-				Log.d(TAG, "Parent from URL %s", p);
-
-				File f = new File(url.getPath());
-				String newPath = f.getParent();
-
-				Log.d(TAG, "Parent path %s", newPath == null ? "null" : newPath);
-
-
-				if(newPath == null) {
-					newPath = modsDir.getPath();
-				} else
-					newPath = "http://" + url.getHost() + newPath;
-
-				Log.d(TAG, "NewPath %s", newPath);
-
-				setDirectory(newPath, plv);
-				//currentPlaylistView.setScrollPosition( "http://" + url.getHost() + url.getPath());
-				currentPlaylistView.setScrollPosition(p);
-
-			} else {
-				File f = new File(plv.getPath());
-				setDirectory(f.getParentFile(), plv);
-				currentPlaylistView.setScrollPosition(f.getPath());
-				if(plv == searchListView) {
-					searchDirDepth--;
-				}
+			File f = new File(plv.getPath());
+			setDirectory(f.getParentFile(), plv);
+			currentPlaylistView.setScrollPosition(f.getPath());
+			if(plv == searchListView) {
+				searchDirDepth--;
 			}
-		} else {
 		}
 	}
 
@@ -625,8 +587,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		repeatText = (TextView) findViewById(R.id.repeat_text);
 		plusText = (TextView) findViewById(R.id.plus_text);
 		wakeText = (TextView) findViewById(R.id.wake_text);
-
-		lowText = (TextView) findViewById(R.id.low_text);
 
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 
@@ -989,7 +949,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					operationSong = new SongFile(songFile);
 					//operationSong.setSubTune(subTune);
 
-					operationTune = subTune;
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
 					Log.d(TAG, "%s - %s ADD", songTitle != null ? songTitle : "null", subtuneTitle != null ? subtuneTitle : "null");
@@ -1447,7 +1406,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(songFile != null) {
 				//operationFile = songFile.getFile();
 				operationSong = new SongFile(songFile);
-				operationTune = subTune;
 				operationTitle = null;
 				operationTuneCount = subTuneCount;
 				if(songTitle != null && subtuneTitle != null) {
@@ -1946,19 +1904,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-
-		MenuItem m = menu.getItem(0);
-		//if(songDatabase.getCurrentPlaylist() != null) {
-		//	m.setTitle("Edit");
-		//} else {
-		//	m.setTitle("New");
-		//}
-
-		return super.onPrepareOptionsMenu(menu);
-	}
-
-	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int choice = item.getItemId();
 		switch(choice) {
@@ -2222,39 +2167,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			});
 			break;
-		case R.string.name_link:
-			final EditText input3 = new EditText(this);
-			input3.setHint("http://");
-			input3.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-			// builder.setTitle(id);
-			builder.setView(input3);
-			builder.setMessage(id);
-			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					String s = input3.getText().toString();
-					if(!s.startsWith("http://"))
-						s = "http://" + s;
-					try {
-						URL url = new URL(s);
-						Log.d(TAG, "'%s', '%s', '%s'",url.toString(), url.getProtocol(), url.getFile());
-						File file = new File(currentPath, url.getHost() + ".lnk");
-						if(!file.exists()) {
-							songDatabase.createLink(file, url.toString());
-							playListView.rescan();
-						}
-					} catch (MalformedURLException e) {
-						e.printStackTrace();
-					}
-				}
-			});
-			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					dialog.cancel();
-				}
-			});
-			break;
 		case R.string.name_folder:
 			final EditText input2 = new EditText(this);
 			input2.setInputType(InputType.TYPE_CLASS_TEXT);
@@ -2382,8 +2294,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		if(t >= 0) {
 			type = cursor.getInt(t);
 		}
-
-		File file = currentPlaylistView.getFile(info.position);
 
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.songmenu, menu);
