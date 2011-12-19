@@ -7,11 +7,11 @@ import java.util.List;
 
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
-import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.MediaStreamer;
 import com.ssb.droidsound.utils.CueFile;
 import com.ssb.droidsound.utils.ID3Tag;
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.M3UParser;
 import com.ssb.droidsound.utils.PLSParser;
 import com.ssb.droidsound.utils.PlaylistParser;
@@ -27,7 +27,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private MediaStreamer streamer;
 
 	// Details
-	
+
 	private String songTitle;
 	private String songComposer;
 	private int songLength;
@@ -38,7 +38,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private String songComment;
 	private String songCopyright;
 	private String songYear;
-	
+
 	private ID3Tag id3Tag;
 	private CueFile cueFile;
 	private int currentSong;
@@ -52,25 +52,25 @@ public class MP3Plugin extends DroidSoundPlugin {
 	public static boolean simpleStream = false;
 
 	@Override
-	public boolean canHandleExt(String ext) {		
+	public boolean canHandleExt(String ext) {
 		ext = ext.toUpperCase();
 		Log.d(TAG, "Checking ext '%s'", ext);
 		return ext.equals(".MP3") || ext.equals(".M3U") || ext.equals(".PLS");
 	}
-	
+
 	@Override
 	public String[] getDetailedInfo() {
-		
+
 		if(streamer != null) {
 			return streamer.getDetailedInfo();
 		}
 
 		Log.d(TAG, "getDetailedInfo");
 		List<String> info = new ArrayList<String>();
-		
+
 		info.add("Format");
 		info.add("MP3");
-		
+
 		if(songAlbum != null && songAlbum.length() > 0) {
 			info.add("Album");
 			info.add(songAlbum);
@@ -87,9 +87,9 @@ public class MP3Plugin extends DroidSoundPlugin {
 			info.add("Comment");
 			info.add(songComment);
 		}
-		
+
 		if(info.size() == 0) return null;
-		
+
 		String[] strArray = new String[info.size()];
 		info.toArray(strArray);
 		return strArray;
@@ -136,7 +136,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 				return cueFile.getTrackCount();
 			}
 			break;
-		case INFO_SUBTUNE_NO:			
+		case INFO_SUBTUNE_NO:
 			int pos = 0;
 			if(started)
 				pos = mediaPlayer.getCurrentPosition();
@@ -172,7 +172,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		case INFO_TITLE:
 			return songTitle;
 		case INFO_COPYRIGHT:
-			return songCopyright;			
+			return songCopyright;
 		case INFO_TYPE:
 			return type;
 		case 102:
@@ -225,8 +225,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 		currentSong = -1;
 		return false;
 	}
-	
-	
+
+
 	void clearInfo() {
 		songAlbum = null;
 		songComment = null;
@@ -238,7 +238,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		songTrack = null;
 		songYear = null;
 	}
-	
+
 	@Override
 	public boolean loadStream(String songName) throws IOException {
 
@@ -249,7 +249,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		prepared = false;
 		started = false;
 		loaded = false;
-			
+
 		if(simpleStream) {
 			Log.d(TAG, "LOAD %s", songName);
 			mediaPlayer = new MediaPlayer();
@@ -298,7 +298,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			pls = new PLSParser(file);
 			type = "PLS";
 		}
-		
+
 		if(pls != null) {
 			if(pls.getMediaCount() > 0) {
 
@@ -340,7 +340,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 				}
 				return true;
 			}
-		}	
+		}
 
 		try {
 			Log.d(TAG, "LOAD %s", file.getPath());
@@ -348,12 +348,12 @@ public class MP3Plugin extends DroidSoundPlugin {
 			mediaPlayer.setDataSource(file.getPath());
 			loaded = true;
 			mediaPlayer.prepare();
-			prepared = true;			
+			prepared = true;
 			mediaPlayer.start();
 			started = true;
-			
+
 			id3Tag = new ID3Tag(file);
-			
+
 			songAlbum = id3Tag.getStringInfo(ID3Tag.ID3INFO_ALBUM);
 			songTrack = id3Tag.getStringInfo(ID3Tag.ID3INFO_TRACK);
 			songGenre = id3Tag.getStringInfo(ID3Tag.ID3INFO_GENRE);
@@ -379,6 +379,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		return true;
 	}
 
+	@Override
 	public boolean loadInfo(File file) throws IOException {
 
 		Log.d(TAG, "LoadInfo %s", file.getPath());
@@ -429,10 +430,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 		id3Tag = null;
 		cueFile = null;
 	}
-	
+
 	@Override
 	public void unload() {
-		
+
 		Log.d(TAG, "UNLOAD MP3");
 
 		started = false;
@@ -471,7 +472,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	public MediaPlayer getMediaPlayer() {
 		return mediaPlayer;
 	}
-	
+
 	@Override
 	public boolean delayedInfo() {
 		return (!started);

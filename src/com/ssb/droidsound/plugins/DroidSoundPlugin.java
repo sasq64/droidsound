@@ -130,7 +130,6 @@ public abstract class DroidSoundPlugin {
 	
 				// URLUtil.guessFileName(songName, );
 	
-				int dot = songName.lastIndexOf('.');
 				String ext = DroidSoundPlugin.getExt(songName);
 				File f = File.createTempFile("music", ext);
 				FileOutputStream fos = new FileOutputStream(f);

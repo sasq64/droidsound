@@ -23,7 +23,6 @@ import android.preference.PreferenceScreen;
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.SidPlugin;
-import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.VICEPlugin;
 import com.ssb.droidsound.utils.Log;
 
@@ -34,22 +33,22 @@ public class SettingsActivity extends PreferenceActivity {
 	private boolean doFullScan;
 	private SharedPreferences prefs;
 	private String modsDir;
-	
+
 	class AudiopPrefsListener implements OnPreferenceChangeListener {
-		
-		private DroidSoundPlugin plugin;
+
+		private final DroidSoundPlugin plugin;
 
 		AudiopPrefsListener(DroidSoundPlugin pi) {
 			plugin = pi;
 		}
-		
+
 		@Override
 		public boolean onPreferenceChange(Preference preference, Object newValue) {
 			String k = preference.getKey();
 			String k2 = k.substring(k.indexOf('.')+1);
-			
+
 			Log.d(TAG, "CHANGED " + k);
-			
+
 			if(k.equals("SidPlugin.engine")) {
 				boolean isVice = ((String) newValue).startsWith("VICE");
 				/* FIXME: Both sid model and resampling actually could be done
@@ -58,7 +57,7 @@ public class SettingsActivity extends PreferenceActivity {
 				findPreference("SidPlugin.sid_model").setEnabled(isVice);
 				findPreference("SidPlugin.resampling").setEnabled(isVice);
 			}
-			
+
 			if(newValue instanceof String) {
 				try {
 					int i = Integer.parseInt((String) newValue);
@@ -66,23 +65,23 @@ public class SettingsActivity extends PreferenceActivity {
 				} catch (NumberFormatException e) {
 				}
 			}
-			
+
 			plugin.setOption(k2, newValue);
 			return true;
 		}
 	};
-	
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);		
+		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.layout.preferences);
-		
+
 		songDatabase = PlayerActivity.songDatabase;
 
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
-		
+
 		String s = prefs.getString("SidPlugin.engine", null);
 		Preference p = findPreference("SidPlugin.resampling");
 		if(s.startsWith("VICE")) {
@@ -90,7 +89,7 @@ public class SettingsActivity extends PreferenceActivity {
 		} else {
 			p.setEnabled(false);
 		}
-		
+
 		Preference pref = findPreference("rescan_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
@@ -100,7 +99,7 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});
-		
+
 		pref = findPreference("help_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
@@ -114,7 +113,7 @@ public class SettingsActivity extends PreferenceActivity {
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				
+
 				PackageInfo pinfo = null;
 				try {
 					pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
@@ -128,9 +127,9 @@ public class SettingsActivity extends PreferenceActivity {
 				startActivity(intent);
 				return true;
 			}
-		});	
+		});
 
-		
+
 		PackageInfo pinfo = null;
 		try {
 			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
@@ -138,15 +137,15 @@ public class SettingsActivity extends PreferenceActivity {
 
 		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
 		String appName = getString(pinfo.applicationInfo.labelRes);
-			
+
 		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");
-		
+
 		for(int i=0; i<aScreen.getPreferenceCount(); i++) {
 			p = aScreen.getPreference(i);
 			Log.d(TAG, "Pref '%s'", p.getKey());
 			if(p instanceof PreferenceGroup) {
 				PreferenceGroup pg = (PreferenceGroup) p;
-				
+
 				DroidSoundPlugin plugin = null;
 				for(DroidSoundPlugin pl : list) {
 					if(pl.getClass().getSimpleName().equals(pg.getKey())) {
@@ -155,79 +154,78 @@ public class SettingsActivity extends PreferenceActivity {
 					}
 				}
 				if(plugin != null) {
-					
+
 					//String plname = plugin.getClass().getSimpleName();
-					
+
 					for(int j=0; j<pg.getPreferenceCount(); j++) {
 						p = pg.getPreference(j);
-						
+
 						//p.setKey(plname + "." + p.getKey());
-						
+
 						Log.d(TAG, "Pref %s for %s", p.getKey(), plugin.getClass().getName());
-						
+
 						p.setOnPreferenceChangeListener(new AudiopPrefsListener(plugin));
 					}
 				}
 			}
 		}
-		
-		list.add(new SidplayPlugin());
+
 		list.add(new VICEPlugin());
-				
+
 		PreferenceScreen abScreen = (PreferenceScreen) findPreference("about_prefs");
 
 		if(abScreen != null) {
 			PreferenceCategory pc = new PreferenceCategory(this);
 			pc.setTitle("Droidsound");
 			abScreen.addPreference(pc);
-	
+
 			p = new Preference(this);
 			p.setTitle("Application");
-			p.setSummary(String.format("%s v%s\n(C) 2010,2011 by Jonas Minnberg (Sasq)", appName, pinfo.versionName));		
+			p.setSummary(String.format("%s v%s\n(C) 2010,2011 by Jonas Minnberg (Sasq)", appName, pinfo.versionName));
 			abScreen.addPreference(p);
-	
+
 			pc = new PreferenceCategory(this);
 			pc.setTitle("Plugins");
 			abScreen.addPreference(pc);
-	
+
 			for(DroidSoundPlugin pl : list) {
-				if(pl instanceof SidPlugin) {					
+				if(pl instanceof SidPlugin) {
 				} else {
 					p = new Preference(this);
 					p.setTitle(pl.getClass().getSimpleName());
-					p.setSummary(pl.getVersion());		
+					p.setSummary(pl.getVersion());
 					abScreen.addPreference(p);
 				}
 			}
-			
+
 			pc = new PreferenceCategory(this);
 			pc.setTitle("Other");
 			abScreen.addPreference(pc);
 
 			p = new Preference(this);
 			p.setTitle("Icons");
-			p.setSummary("G-Flat SVG by poptones");		
+			p.setSummary("G-Flat SVG by poptones");
 			abScreen.addPreference(p);
 		}
 
 	}
-	
+
 	@Override
 	protected void onPause() {
 		super.onPause();
 	}
-	
+
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 	}
-	
+
 	@Override
 	protected Dialog onCreateDialog(int id) {
-		
+
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		
-		switch(id) {		
+
+		switch(id) {
 		case R.string.recreate_confirm:
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -241,13 +239,13 @@ public class SettingsActivity extends PreferenceActivity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
-				}				
+				}
 			});
 			break;
 		case R.string.scan_db:
 			doFullScan = false;
 			builder.setTitle(id);
-			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {				
+			builder.setMultiChoiceItems(R.array.scan_opts, null, new OnMultiChoiceClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
 					Log.d(TAG, "%d %s", which, String.valueOf(isChecked));
@@ -258,9 +256,10 @@ public class SettingsActivity extends PreferenceActivity {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					dialog.cancel();
-				}				
+				}
 			});
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
 				public void onClick(DialogInterface dialog, int id) {
 					dialog.cancel();
 					if(doFullScan) {
@@ -277,9 +276,9 @@ public class SettingsActivity extends PreferenceActivity {
 			String fullName = "<ERROR>";
 			try {
 				PackageInfo pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-				
+
 				String appName = getString(pinfo.applicationInfo.labelRes);
-				fullName = String.format("%s %s (vc%d)\n%s", appName, pinfo.versionName, pinfo.versionCode, getString(R.string.about_droidsound)); 					
+				fullName = String.format("%s %s (vc%d)\n%s", appName, pinfo.versionName, pinfo.versionCode, getString(R.string.about_droidsound));
 			} catch (NameNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -294,6 +293,7 @@ public class SettingsActivity extends PreferenceActivity {
 		default:
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
 				public void onClick(DialogInterface dialog, int id) {
 					dialog.cancel();
 				}
@@ -305,5 +305,5 @@ public class SettingsActivity extends PreferenceActivity {
 		return alert;
 	}
 
-	
+
 }

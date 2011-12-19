@@ -72,8 +72,8 @@ import android.widget.ViewFlipper;
 import com.ssb.droidsound.database.CSDBParser;
 import com.ssb.droidsound.database.MediaSource;
 import com.ssb.droidsound.database.SongDatabase;
-import com.ssb.droidsound.playlistview.PlayListView;
 import com.ssb.droidsound.playlistview.FileInfo;
+import com.ssb.droidsound.playlistview.PlayListView;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
@@ -115,7 +115,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	public static final int NEXT_VIEW = 3;
 	public static final int PREV_VIEW = 4;
 	public static final int SAME_VIEW = 5;
-	
+
 	private static String[] repnames = { "CONT", "----", "REPT", "CS", "RS" };
 
 
@@ -147,7 +147,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private OnItemClickListener listClickListener;
 
 	private int sortOrder;
-	
+
 	private PlayListView playListView;
 	private PlayListView searchListView;
 
@@ -195,7 +195,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private Config lastConfig;
 
-	private Map<Integer, Runnable> confirmables = new HashMap<Integer, Runnable>();
+	private final Map<Integer, Runnable> confirmables = new HashMap<Integer, Runnable>();
 
 	private int songState;
 
@@ -259,6 +259,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private TextView toneNameText;
 	private static final Class[] startTrackingSignature = new Class[] {};
 
+	@Override
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "########## Activity finalize");
 	};
@@ -307,7 +308,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 	}
-	
+
 	private void setDirectory(File path, PlayListView plv) {
 		setDirectory(path.getPath(), plv);
 	}
@@ -335,7 +336,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		String p = plv.getPath();
 		if(p != null) {
-			
+
 			if(p.startsWith("http://")) {
 				URL url;
 				try {
@@ -343,26 +344,26 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				} catch (MalformedURLException e) {
 					return;
 				}
-				
+
 				Log.d(TAG, "Parent from URL %s", p);
-				
+
 				File f = new File(url.getPath());
 				String newPath = f.getParent();
 
 				Log.d(TAG, "Parent path %s", newPath == null ? "null" : newPath);
 
-				
+
 				if(newPath == null) {
 					newPath = modsDir.getPath();
 				} else
 					newPath = "http://" + url.getHost() + newPath;
 
 				Log.d(TAG, "NewPath %s", newPath);
-				
+
 				setDirectory(newPath, plv);
-				//currentPlaylistView.setScrollPosition( "http://" + url.getHost() + url.getPath());				
+				//currentPlaylistView.setScrollPosition( "http://" + url.getHost() + url.getPath());
 				currentPlaylistView.setScrollPosition(p);
-				
+
 			} else {
 				File f = new File(plv.getPath());
 				setDirectory(f.getParentFile(), plv);
@@ -394,12 +395,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				startService(newIntent);
 			}
 		} else if(Intent.ACTION_SEND.equals(intent.getAction())) {
-			Log.d(TAG, "<<NEW INTENT>> Want to share '%s'", intent.getDataString());			
+			Log.d(TAG, "<<NEW INTENT>> Want to share '%s'", intent.getDataString());
 			Intent newIntent = new Intent(intent);
 			intent.setAction(Intent.ACTION_VIEW);
 			newIntent.setClass(this, PlayerService.class);
 			startService(newIntent);
-			
+
 		} else if(Intent.ACTION_SEARCH.equals(intent.getAction())) {
 			String query = intent.getStringExtra(SearchManager.QUERY);
 			Log.d(TAG, "QUERY " + query);
@@ -497,7 +498,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 	}
-	
+
 	private void flipTo(int what) {
 		flipTo(what, true);
 	}
@@ -554,7 +555,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 				if(f.exists()) {
 					moveFileHere = f;
-				}			
+				}
 			} else {
 				Intent newIntent = new Intent(intent);
 				newIntent.setClass(this, PlayerService.class);
@@ -564,30 +565,30 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		} else if(Intent.ACTION_SEND.equals(intent.getAction())) {
 			Log.d(TAG, ">> Want to share '%s'", intent.getStringExtra(Intent.EXTRA_TEXT));
-			
+
 			Bundle bundle = intent.getExtras();
 			for(String s : bundle.keySet()) {
 				Log.d(TAG, s);
 			}
-			
+
 			Intent newIntent = new Intent(intent);
 			newIntent.setAction(Intent.ACTION_VIEW);
-			
-			Uri uri = Uri.parse(intent.getStringExtra(Intent.EXTRA_TEXT));			
+
+			Uri uri = Uri.parse(intent.getStringExtra(Intent.EXTRA_TEXT));
 			newIntent.setData(uri);
 			newIntent.setClass(this, PlayerService.class);
 			startService(newIntent);
 			finish();
 			return;
 		}
-		
-		
+
+
 		try {
 			startTrackingMethod = KeyEvent.class.getMethod("startTracking", startTrackingSignature);
 		} catch (NoSuchMethodException e) {
 			startTrackingMethod = null;
 		}
-		
+
 
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
@@ -599,7 +600,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		searchButton = (ImageButton) findViewById(R.id.search_button);
 		titleBar = (LinearLayout) findViewById(R.id.title_bar);
 
-		
+
 		playButton = (ImageButton) findViewById(R.id.play_button);
 		backButton = (ImageButton) findViewById(R.id.back_button);
 		fwdButton = (ImageButton) findViewById(R.id.fwd_button);
@@ -615,11 +616,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		playListView = (PlayListView) findViewById(R.id.play_list);
 		searchListView = (PlayListView) findViewById(R.id.search_list);
 		titleText = (TextView) findViewById(R.id.list_title);
-		
+
 		subtitleText = (TextView) findViewById(R.id.list_subtitle);
 
 		songSeeker = (SeekBar) findViewById(R.id.song_seek);
-	
+
 		shuffleText = (TextView) findViewById(R.id.shuffle_text);
 		repeatText = (TextView) findViewById(R.id.repeat_text);
 		plusText = (TextView) findViewById(R.id.plus_text);
@@ -629,8 +630,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 
-		
-		
+
+
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
 		boolean indexUnknown = prefs.getBoolean("extensions", false);
@@ -640,11 +641,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		currentPlaylistView = playListView;
 
-		
+
 		modsDir = null; //new File("/XXX");
-		
+
 		setupModsDir();
-		
+
 		String cp = prefs.getString("currentPath", null);
 		if(cp == null) {
 			currentPath = modsDir.getPath();
@@ -652,10 +653,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			currentPath = cp;
 		}
 		atTop = currentPath.equals(modsDir);
-		
 
-		Log.d(TAG, "MODS at %s", modsDir);		
-		
+
+		Log.d(TAG, "MODS at %s", modsDir);
+
 		receiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -821,7 +822,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				PlayListView plv = (PlayListView) parent;
 
 				FileInfo fi = (FileInfo) plv.getItemAtPosition(position);
-				
+
 				Log.d(TAG, "Clicked %s got file %s", plv, fi);
 
 				if(fi != null) {
@@ -842,10 +843,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						if(currentPlaylistView == playListView) {
 							Playlist plist = songDatabase.getCurrentPlaylist();
 							if(plist != null) {
-								
+
 								// TODO: Check if this shorcut works;
 								index = position;
-								
+
 								/*for(int i = 0; i < files.length; i++) {
 									if(files[i].equals(fi)) {
 										index = i;
@@ -987,7 +988,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					//operationFile = songFile.getFile();
 					operationSong = new SongFile(songFile);
 					//operationSong.setSubTune(subTune);
-					
+
 					operationTune = subTune;
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
@@ -1014,9 +1015,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			}
 		});
-		
+
 		titleBar.setOnClickListener(new OnClickListener() {
-			
+
 			final int [] sortNames = new int [] { R.string.sort_name, R.string.sort_date, R.string.sort_author };
 
 			@Override
@@ -1024,10 +1025,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				//flipTo(SAME_VIEW);
 				if(currentPlaylistView == playListView) {
 					sortOrder = (sortOrder + 1) % 3;
-					
+
 					Toast toast = Toast.makeText(PlayerActivity.this, sortNames[sortOrder], Toast.LENGTH_SHORT);
-					toast.show();					
-					
+					toast.show();
+
 					String p = currentPlaylistView.getPath();
 					Cursor cursor = songDatabase.getFilesInPath(p, sortOrder);
 					currentPlaylistView.setCursor(cursor, p);
@@ -1050,11 +1051,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		/*
 		 * songSecondsText.setOnClickListener(new OnClickListener() {
-		 * 
+		 *
 		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
-		 * 
+		 *
 		 * seekFlipper.setOnClickListener(new OnClickListener() {
-		 * 
+		 *
 		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
 		 */
 
@@ -1088,20 +1089,20 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		/*
 		 * shuffleButton.setOnCheckedChangeListener(new
 		 * OnCheckedChangeListener() {
-		 * 
+		 *
 		 * @Override public void onCheckedChanged(CompoundButton buttonView,
 		 * boolean isChecked) { shuffleSongs = isChecked;
 		 * player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, isChecked ? "R"
 		 * : "S" ); } });
 		 */
-		
+
 		Log.d(TAG, "ON CREATE DONE");
 	}
 
 	private void setupModsDir() {
-		
+
 		String md = prefs.getString("modsDir", null);
-		
+
 		if(md == null) {
 			File extFile = Environment.getExternalStorageDirectory();
 			if(extFile != null) {
@@ -1113,12 +1114,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		} else {
 			modsDir = new File(md);
 		}
-		
+
 		if(modsDir == null) {
 			modsDir = new File("/MODS");
-			return;			
+			return;
 		}
-	
+
 		if(!modsDir.exists()) {
 			modsDir.mkdirs();
 		}
@@ -1176,7 +1177,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				foundVersion = 0;
 			}
 		}
-	
+
 		Editor e = prefs.edit();
 		e.putInt("version", VERSION);
 		e.commit();
@@ -1202,18 +1203,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				e2.printStackTrace();
 			}
 		}
-		
+
 		mf = new File(modsDir, "Streaming");
 		if(mf.exists()) {
 			deleteAll(mf);
 		}
-		
+
 		mf = new File(modsDir, "Network");
-		if(!mf.exists()) {			
+		if(!mf.exists()) {
 			Unzipper.unzipAsset(this, "Network.zip", modsDir);
 		}
 
-		
+
 		mf = new File(modsDir, "Favorites.plist");
 		if(!mf.exists()) {
 			try {
@@ -1228,7 +1229,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		new File(modsDir, "Favorites.lnk").delete();
-		
+
 	}
 
 	private void deleteAll(File mf) {
@@ -1333,8 +1334,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	private static final Class[] mStartTracking = new Class[] {};
-    
-	
+
+
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		Log.d(TAG, "%%%% DOWN %d", keyCode);
@@ -1462,7 +1463,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		case KeyEvent.KEYCODE_BACK:
 		case KeyEvent.KEYCODE_DEL:
 			Log.d(TAG, ">>>>>>>>>>>>> BACK PRESSED");
-			
+
 			backPressed = true;
 			if(startTrackingMethod != null) {
 				try {
@@ -1480,10 +1481,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		return super.onKeyDown(keyCode, event);
 	}
 
-	
+
 	//@Override
+	@Override
 	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-	
+
 		if(keyCode == KeyEvent.KEYCODE_BACK) {
 			backPressed = false;
 			Log.d(TAG, ">>>>>>>>>>>>> BACK LONG PRESSED");
@@ -1499,15 +1501,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		return false;
 		////  return super.onKeyLongPress(keyCode, event);
-	} 
-	
+	}
+
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		
+
 		if(keyCode == KeyEvent.KEYCODE_BACK ) {
 			Log.d(TAG, ">>>>>>>>>>>>> BACK RELEASED");
 			if(backPressed) {
-				backPressed = false;			
+				backPressed = false;
 				if(currentPlaylistView != playListView) {
 					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 						flipTo(FILE_VIEW);
@@ -1517,7 +1519,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						return true;
 					}
 				}
-		
+
 				if(atTop) {
 					finish();
 				} else {
@@ -1526,8 +1528,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			return true;
 		}
-		
-		
+
+
 		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
 		// Log.d(TAG, String.format("MEDIA BUTTON UP %d",
 		// event.getRepeatCount()));
@@ -1722,7 +1724,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			songLength = value / 1000;
 			Log.d(TAG, "Songlength %02d:%02d", songLength / 60, songLength % 60);
-			songTotalText.setText(String.format("%02d:%02d", songLength / 60, songLength % 60));			
+			songTotalText.setText(String.format("%02d:%02d", songLength / 60, songLength % 60));
 			//songSeeker.setProgress(0);
 			break;
 		case PlayerService.SONG_POS:
@@ -1784,7 +1786,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			Log.d(TAG, "SOURCE IS " + value);
 			if(value != null && value.length() > 0) {
 				plinfoText.setText(value);
-			} else 
+			} else
 				plinfoText.setText("");
 			break;
 /*		case PlayerService.SONG_PLAYLIST:
@@ -1808,14 +1810,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			break; */
 		case PlayerService.SONG_FILENAME:
-			
+
 			Log.d(TAG, "DW %d, value '%s'", dumpingWav, value);
 			if(dumpingWav > 0) { //&& value.endsWith("RINGTONE.WAV")) {
-				
+
 				File f = new File(value);
-				
+
 				Log.d(TAG, "SETTING RINGTONE %s %d", value, f.length());
-				
+
 				ContentValues values = new ContentValues();
 				values.put(MediaStore.MediaColumns.DATA, value);
 				values.put(MediaStore.MediaColumns.TITLE, toneName);
@@ -1852,7 +1854,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 				Toast toast;
 				if(toneSet) {
-					RingtoneManager.setActualDefaultRingtoneUri(PlayerActivity.this, RingtoneManager.TYPE_RINGTONE, newUri);				
+					RingtoneManager.setActualDefaultRingtoneUri(PlayerActivity.this, RingtoneManager.TYPE_RINGTONE, newUri);
 					toast = Toast.makeText(this, R.string.ringtone_set, Toast.LENGTH_LONG);
 				} else {
 					toast = Toast.makeText(this, R.string.ringtone_created, Toast.LENGTH_LONG);
@@ -1860,18 +1862,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				toast.show();
 				dumpingWav = 0;
 				break;
-				
+
 			}
 			dumpingWav = 0;
-			
+
 			songFile = new SongFile(value);
 			String path = songFile.getFile().getPath();
 			playListView.setHilighted(value);
 			searchListView.setHilighted(value);
 			// songName = value;
-			
+
 			Log.d(TAG, "############################## Song file is %s (%s)", value, path);
-			
+
 			break;
 		case PlayerService.SONG_SUBTUNE_TITLE:
 			Log.d(TAG, "############################## Subtunetitle is %s", value);
@@ -1945,17 +1947,17 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		inflater.inflate(R.menu.optionsmenu, menu);
 		return true;
 	}
-	
+
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
-		
+
 		MenuItem m = menu.getItem(0);
 		//if(songDatabase.getCurrentPlaylist() != null) {
 		//	m.setTitle("Edit");
 		//} else {
 		//	m.setTitle("New");
 		//}
-		
+
 		return super.onPrepareOptionsMenu(menu);
 	}
 
@@ -2032,7 +2034,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	/*
-	 * 
+	 *
 	 * I/EventHub( 2621): New keyboard: device->id=0x10004 devname='Broadcom
 	 * Bluetooth HID' propName='hw.keyboards.65540.devname'
 	 * keylayout='/system/usr/keylayout/qwerty.kl' I/EventHub( 2621): New
@@ -2041,8 +2043,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	 * id=0x10004, name=Broadcom Bluetooth HID, classes=3 I/ActivityManager(
 	 * 2621): Config changed: { scale=1.0 imsi=240/1 loc=en_GB touch=3
 	 * keys=2/1/2 nav=1/1 orien=1 layout=34 uiMode=17 seq=30 FlipFont=0}
-	 * 
-	 * 
+	 *
+	 *
 	 * W/KeyCharacterMap( 4666): Can't open keycharmap file W/KeyCharacterMap(
 	 * 4666): Error loading keycharmap file
 	 * '/system/usr/keychars/Broadcom_Bluetooth_HID.kcm.bin'.
@@ -2082,12 +2084,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			final String [] progressNames = new String [] { "0:10", "0:20", "0:30", "1:00", "5:00", "10:00" };
 			LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
 			View dialog = inflater.inflate(R.layout.ringtone_dialog, (ViewGroup) findViewById(R.layout.player));
-			builder.setView(dialog);			
+			builder.setView(dialog);
 			builder.setTitle(id);
-			
+
 			toneNameText = (TextView) dialog.findViewById(R.id.tone_name);
 			toneNameText.setText(toneName);
-			
+
 			CheckBox hqCheck = (CheckBox) dialog.findViewById(R.id.tone_hq);
 			hqCheck.setChecked(toneHQ);
 			hqCheck.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
@@ -2104,7 +2106,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					toneSet = isChecked;
 				}
 			});
-			
+
 			toneLenText =  (TextView) dialog.findViewById(R.id.tone_lentext);
 			toneLenText.setText(progressNames[toneLength]);
 			SeekBar seekBar = (SeekBar) dialog.findViewById(R.id.tone_length);
@@ -2113,15 +2115,15 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				@Override
 				public void onStopTrackingTouch(SeekBar seekBar) {
 				}
-				
+
 				@Override
 				public void onStartTrackingTouch(SeekBar seekBar) {
 				}
-				
+
 				@Override
 				public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 					Log.d(TAG, "SEEK " + progress);
-					toneLenText.setText(progressNames[progress]);	
+					toneLenText.setText(progressNames[progress]);
 					toneLength = progress;
 				}
 			});
@@ -2136,9 +2138,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					else if(tl == 5) tl = 6*10;
 					else tl += 1;
 					dumpingWav = tl * 10000;//30000;
-					toneName = (String) toneNameText.getText().toString();
-					file = new File(file, toneName + ".wav"); 
-					
+					toneName = toneNameText.getText().toString();
+					file = new File(file, toneName + ".wav");
+
 					int flags = 0;
 					if(toneHQ) flags |= 2;
 					player.dumpWav(operationSong.getPath(), file.getPath(), dumpingWav, flags);
@@ -2152,7 +2154,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			});
 			/*
 			Button okButton = (Button) dialog.findViewById(R.id.ok_button);
-			okButton.setOnClickListener(new OnClickListener() {				
+			okButton.setOnClickListener(new OnClickListener() {
 				@Override
 				public void onClick(View v) {
 					File file = new File("/sdcard/droidsound/RINGTONE.WAV");
@@ -2169,8 +2171,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			}); */
 			break;
-			//return dialog;			
-		}	
+			//return dialog;
+		}
 		case R.string.new_:
 			builder.setTitle(id);
 			builder.setSingleChoiceItems(R.array.new_opts, -1, new DialogInterface.OnClickListener() {
@@ -2240,7 +2242,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						URL url = new URL(s);
 						Log.d(TAG, "'%s', '%s', '%s'",url.toString(), url.getProtocol(), url.getFile());
 						File file = new File(currentPath, url.getHost() + ".lnk");
-						if(!file.exists()) {							
+						if(!file.exists()) {
 							songDatabase.createLink(file, url.toString());
 							playListView.rescan();
 						}
@@ -2356,6 +2358,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		default:
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				@Override
 				public void onClick(DialogInterface dialog, int id) {
 					dialog.cancel();
 				}
@@ -2394,7 +2397,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			String s = aitem.getTitle().toString();
 			aitem.setTitle(s.replace("[playlist]", pl.getTitle()));
 		}
-		
+
 		//menu.getItem(R.id.paste).setVisible(clipBoardFile != null);
 
 
@@ -2447,11 +2450,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// }
 		Playlist pl = songDatabase.getCurrentPlaylist();
 		Playlist al = songDatabase.getActivePlaylist();
-		
+
 		SongFile song = pl != null ? pl.getSong(info.position) : null;
-		
+
 		if(song != null) operationSong = song;
-		
+
 		if(song != null) {
 			Log.d(TAG, "Operating on %s by %s", song.getTitle(), song.getComposer());
 		}
@@ -2494,7 +2497,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				setDirectory(null);
 			}
 			break;
-			
+
 
 		case R.id.del_dir:
 			//operationFile = file;
@@ -2525,7 +2528,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 
 		case R.id.make_wav:
-			showDialog(R.string.make_wav);			
+			showDialog(R.string.make_wav);
 			break;
 
 		case R.id.del_plist:

@@ -106,12 +106,6 @@ to download more music from the web.</string>
 	<item>Very long</item>
 </string-array>
 
-<string-array name="engine_opts">
-<item>Sidplay2</item>
-<item>VICE</item>
-</string-array>
-
-
 <string-array name="videomode_opts">
 <item>PAL</item>
 <item>NTSC</item>

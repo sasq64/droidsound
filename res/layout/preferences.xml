@@ -60,13 +60,6 @@
 			android:title="SID"
 			android:key="SidPlugin"
 		>
-		<ListPreference
-	            android:key="SidPlugin.engine"
-	            android:title="SID Engine"
-	            android:defaultValue="VICE"
-				android:entries="@array/engine_opts"
-				android:entryValues="@array/engine_opts"
-	            />
 		<CheckBoxPreference
 	            android:key="SidPlugin.filter"
 	            android:title="SID Filter"
