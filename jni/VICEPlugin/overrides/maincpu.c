@@ -416,32 +416,32 @@ short *psid_sound_buf;
 int psid_sound_idx;
 int psid_sound_max;
 
-void psid_play(short *buf, int n)
-{
 #ifndef C64DTV
     /* Notice that using a struct for these would make it a lot slower (at
        least, on gcc 2.7.2.x).  */
-    BYTE reg_a = 0;
-    BYTE reg_x = 0;
-    BYTE reg_y = 0;
+    static BYTE reg_a = 0;
+    static BYTE reg_x = 0;
+    static BYTE reg_y = 0;
 #else
-    int reg_a_read_idx = 0;
-    int reg_a_write_idx = 0;
-    int reg_x_idx = 2;
-    int reg_y_idx = 1;
+    static int reg_a_read_idx = 0;
+    static int reg_a_write_idx = 0;
+    static int reg_x_idx = 2;
+    static int reg_y_idx = 1;
 #define reg_a_write dtv_registers[reg_a_write_idx]
 #define reg_a_read dtv_registers[reg_a_read_idx]
 #define reg_x dtv_registers[reg_x_idx]
 #define reg_y dtv_registers[reg_y_idx]
 #endif
-    BYTE reg_p = 0;
-    BYTE reg_sp = 0;
-    BYTE flag_n = 0;
-    BYTE flag_z = 0;
+    static BYTE reg_p = 0;
+    static BYTE reg_sp = 0;
+    static BYTE flag_n = 0;
+    static BYTE flag_z = 0;
 #ifndef NEED_REG_PC
-    unsigned int reg_pc;
+    static unsigned int reg_pc;
 #endif
 
+void psid_play(short *buf, int n)
+{
     psid_sound_buf = buf;
     psid_sound_idx = 0;
     psid_sound_max = n;
