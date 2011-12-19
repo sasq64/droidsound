@@ -383,16 +383,11 @@ public class Player implements Runnable {
 				zr.close();
 			} else {
 				songFile = song.getFile();
-
-				Log.d(TAG, "Trying to read normal file " + songFile.getPath());
-
 				fileSize = songFile.length();
-				System.gc();
 
-				if(!songFile.exists())
+				if(!songFile.exists()) {
 					songFile = null;
-				else {
-
+				} else {
 					String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
 					if(fname2 != null) {
 						File f2 = new File(fname2);
@@ -410,17 +405,16 @@ public class Player implements Runnable {
 
 		if(songBuffer != null || songFile != null) {
 			boolean songLoaded = false;
-			for(DroidSoundPlugin plugin : list) {
-				Log.d(TAG, "Trying " + plugin.getClass().getName());
-				if(songFile != null) {
+			for (DroidSoundPlugin plugin : list) {
+				if (songFile != null) {
 					try {
 						songLoaded = plugin.load(songFile);
 					} catch (IOException e) {
 					}
 				} else if (songBuffer != null) {
-					songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
-					if(songLoaded)
-						plugin.calcMD5(songBuffer, (int) fileSize);
+					songLoaded = plugin.load(baseName, songBuffer);
+					if (songLoaded)
+						plugin.calcMD5(songBuffer);
 				}
 				if(songLoaded) {
 					if(currentPlugin != null && currentPlugin != plugin) {
@@ -440,9 +434,9 @@ public class Player implements Runnable {
 							} catch (IOException e) {
 							}
 						} else if(songBuffer != null) {
-							songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
+							songLoaded = plugin.load(baseName, songBuffer);
 							if(songLoaded)
-								plugin.calcMD5(songBuffer, (int) fileSize);
+								plugin.calcMD5(songBuffer);
 
 						}
 						Log.d(TAG, "%s gave Songref %s", plugin.getClass().getName(), songLoaded ? "TRUE" : "FALSE");

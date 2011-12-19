@@ -2219,39 +2219,34 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 					Log.d(TAG, "Clicked " + favSelection);
 					Playlist al = songDatabase.getActivePlaylist();
-					// File file = new File(songName);
 					dialog.dismiss();
 					if(al == null || operationSong == null) {
 						return;
 					}
-					// if(currentPath.equals(al.getFile().getPath())) {
-					// return;
-					// }
 
 					Log.d(TAG, "Adding '%s' to playlist '%s'", operationSong.getPath(), al.getFile().getPath());
 
-					switch(favSelection) {
-					case 0:
-						songDatabase.addToPlaylist(al, operationSong);
-						break;
-					case 1:
-						operationSong.setSubTune(subTune);
-						operationSong.setTitle(operationTitle);
-						songDatabase.addToPlaylist(al, operationSong);
-						break;
-					case 2:
-						for(int i = 0; i < operationTuneCount; i++) {
-							operationSong.setSubTune(i);
+					try {
+						switch (favSelection) {
+						case 0:
 							songDatabase.addToPlaylist(al, operationSong);
+							break;
+						case 1:
+							operationSong.setSubTune(subTune);
+							operationSong.setTitle(operationTitle);
+							songDatabase.addToPlaylist(al, operationSong);
+							break;
+						case 2:
+							for(int i = 0; i < operationTuneCount; i++) {
+								operationSong.setSubTune(i);
+								songDatabase.addToPlaylist(al, operationSong);
+							}
+							break;
 						}
-						break;
 					}
-
-					// Playlist cpl = songDatabase.getCurrentPlaylist();
-					// if(cpl != null && cpl.equals(al)) {
-					// setDirectory(null, null);
-					// }
-
+					catch (IOException ioe) {
+						Toast.makeText(PlayerActivity.this, "" + ioe, Toast.LENGTH_LONG).show();
+					}
 				}
 			});
 
@@ -2342,19 +2337,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
-		// SQLiteDatabase db;
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-		// PlayListView.FileInfo finfo = (PlayListView.FileInfo)
-		// playListView.getItemAtPosition(info.position);
-		// Cursor cursor = playListView.getCursor(info.position);
 		File file = currentPlaylistView.getFile(info.position);
 		operationSong = new SongFile(currentPlaylistView.getPath(info.position));
 		Log.d(TAG, "%d %s %d %d", item.getItemId(), item.getTitle(), info.position, info.id);
-		// int pi = cursor.getColumnIndex("PATH");
-		// String path = playListView.getDirectory();
-		// if(pi >= 0) {
-		// path = cursor.getString(pi);
-		// }
 		Playlist pl = songDatabase.getCurrentPlaylist();
 		Playlist al = songDatabase.getActivePlaylist();
 
@@ -2379,15 +2365,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case R.id.add_to_plist:
 			if(al != null) {
-				if(!currentPath.equals(al.getFile().getPath())) {
-					// al.add(file);
-					songDatabase.addToPlaylist(al, operationSong);
+				if (!currentPath.equals(al.getFile().getPath())) {
+					try {
+						songDatabase.addToPlaylist(al, operationSong);
+					}
+					catch (IOException ioe) {
+						Toast.makeText(this, "" + ioe, Toast.LENGTH_LONG).show();
+					}
 				}
 			}
 			break;
-		// case R.id.favorite:
-		// songDatabase.addFavorite(file);
-		// break;
 		case R.id.cut:
 			if(pl != null) {
 				//pl.remove(file);
@@ -2397,9 +2384,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			break;
 		case R.id.paste:
-			if(pl != null && clipBoardFile != null) {
-				//pl.remove(file);
-				pl.insert(info.position, clipBoardFile);
+			if (pl != null && clipBoardFile != null) {
+				try {
+					pl.insert(info.position, clipBoardFile);
+				} catch (IOException ioe) {
+					Toast.makeText(this, ""+ioe, Toast.LENGTH_LONG).show();
+				}
 				clipBoardFile = null;
 				setDirectory(null);
 			}
@@ -2407,12 +2397,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 
 		case R.id.del_dir:
-			//operationFile = file;
 			operationSong = new SongFile(file);
 			runConfirmable(R.string.do_del_dir, new Runnable() {
 				@Override
 				public void run() {
-					if(songDatabase.deleteDir(operationSong.getFile())) {
+					if (songDatabase.deleteDir(operationSong.getFile())) {
 						delDir(operationSong.getFile());
 						setDirectory(null);
 					}
@@ -2421,7 +2410,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 
 		case R.id.del_file:
-			//operationFile = file;
 			operationSong = new SongFile(file);
 			runConfirmable(R.string.do_del_file, new Runnable() {
 				@Override

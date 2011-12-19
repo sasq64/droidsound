@@ -1,6 +1,7 @@
 package com.ssb.droidsound.database;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -9,7 +10,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,7 +18,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import android.content.ContentValues;
@@ -148,23 +147,21 @@ public class SongDatabase implements Runnable {
 	        	Log.d(TAG, "Got msg %d with arg %d", msg.what, msg.arg1);
 	            switch (msg.what) {
 	            case MSG_SCAN:
-	            	if(msg.arg1 == 2) {
-	            		doOpen(true);
-	            		doScan((String)msg.obj, false);
-	            	} else {
-	            		doScan((String)msg.obj, msg.arg1 != 0);
+	            	try {
+	            		if(msg.arg1 == 2) {
+	            			doOpen(true);
+	            			doScan((String) msg.obj, false);
+	            		} else {
+	            			doScan((String) msg.obj, msg.arg1 != 0);
+	            		}
+	            	}
+	            	catch (IOException ioe) {
+	            		throw new RuntimeException(ioe);
 	            	}
 	            	break;
-	            //case MSG_INDEXMODE:
-	            //	createIndex(msg.arg1);
-	            //	break;
 	            case MSG_QUIT:
-	            	Log.d(TAG, "Telling looper to quit");
 	            	Looper.myLooper().quit();
 	            	break;
-	          /*  case MSG_DOWNLOAD:
-	            	doDownload();
-	            	break; */
 	            }
 			}
 		};
@@ -367,7 +364,7 @@ public class SongDatabase implements Runnable {
 			if(fileName.equals("")) {
 				pathSet.add(path);
 			} else {
-				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, zis);
+				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, readFully(zis, ze.getSize()));
 				if (info != null) {
 					values.put("TITLE", info.title);
 					values.put("COMPOSER", info.composer);
@@ -406,7 +403,7 @@ public class SongDatabase implements Runnable {
 
 	}
 
-	private void scanFiles(File parentDir, boolean alwaysScan, long lastScan) {
+	private void scanFiles(File parentDir, boolean alwaysScan, long lastScan) throws IOException {
 
 		String parent = parentDir.getPath();
 		String[] parentArray = new String[] { parent };
@@ -587,7 +584,7 @@ public class SongDatabase implements Runnable {
 								//InputStream is = new BufferedInputStream(new FileInputStream(f), 256);
 								//FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), is);
 								//is.close();
-								FileIdentifier.MusicInfo info = FileIdentifier.identify(f);
+								FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), readFully(new FileInputStream(f), f.length()));
 								boolean ok = false;
 								if(info != null) {
 									values.put("TITLE", info.title);
@@ -671,20 +668,17 @@ public class SongDatabase implements Runnable {
 
 				InputStream is = null;
 				int size = -1;
-				ZipFile zf = null;
-				if(dump.getName().toUpperCase().endsWith(".ZIP")) {
+				if (dump.getName().toUpperCase().endsWith(".ZIP")) {
 					try {
-						zf = new ZipFile(dump);
-						Enumeration<? extends ZipEntry> entries = zf.entries();
-						while(entries.hasMoreElements()) {
-							ZipEntry ze = entries.nextElement();
-							if(!ze.isDirectory()) {
-								is = zf.getInputStream(ze);
+						ZipInputStream zis = new ZipInputStream(new FileInputStream(dump));
+						ZipEntry ze;
+						while (null != (ze = zis.getNextEntry())) {
+							if(! ze.isDirectory()) {
+								is = zis;
 								size = (int) ze.getSize();
 								break;
 							}
 						}
-					} catch (ZipException e) {
 					} catch (IOException e) {
 					}
 				} else {
@@ -697,7 +691,7 @@ public class SongDatabase implements Runnable {
 
 				try {
 					if(is != null) {
-						if(ds.parseDump(is, size, scanDb, scanCallback)) {
+						if (ds.parseDump(is, size, scanDb, scanCallback)) {
 							ContentValues values = new ContentValues();
 							values.put("PATH", dump.getParentFile().getPath());
 							values.put("FILENAME", dump.getName());
@@ -709,9 +703,6 @@ public class SongDatabase implements Runnable {
 							//Log.d(TAG, "ZIP TRANSATION SUCCESSFUL");
 						}
 						is.close();
-					}
-					if(zf != null) {
-						zf.close();
 					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
@@ -768,6 +759,12 @@ public class SongDatabase implements Runnable {
 		}
 	}
 
+	private byte[] readFully(InputStream is, long length) throws IOException {
+		byte[] data = new byte[(int) length];
+		new DataInputStream(is).readFully(data);
+		return data;
+	}
+
 	public void scan(boolean full, String mdir) {
 		Message msg = mHandler.obtainMessage(MSG_SCAN, full ? 1 : 0, 0, mdir);
 		mHandler.sendMessage(msg);
@@ -787,8 +784,7 @@ public class SongDatabase implements Runnable {
 		 indexMode = mode;
 	}
 
-	private void doScan(String modsDir, boolean full) {
-
+	private void doScan(String modsDir, boolean full) throws IOException {
 		scanDb = getWritableDatabase();
 
 		if(scanDb == null) {
@@ -890,8 +886,6 @@ public class SongDatabase implements Runnable {
 				}
 			}
 		}
-
-
 
 		scanFiles(parentDir, full, lastScan);
 
@@ -1123,7 +1117,7 @@ public class SongDatabase implements Runnable {
 		return scanning;
 	}
 
-	public void addToPlaylist(Playlist pl, SongFile songFile) {
+	public void addToPlaylist(Playlist pl, SongFile songFile) throws IOException {
 		if (pl.contains(songFile)) {
 			Log.d(TAG, "Song exists, ignoring");
 			return;

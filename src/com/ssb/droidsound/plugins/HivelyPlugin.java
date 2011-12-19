@@ -10,14 +10,14 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	public String getVersion() {
 		return "HVL Replay v1.6";
 	}
-	
+
 	private long songRef;
 	@Override
 	public boolean canHandle(String name) {
 		return name.toUpperCase().endsWith(".HVL") || name.toUpperCase().endsWith(".AHX");
 	}
-	
-	
+
+
 	@Override
 	public String[] getDetailedInfo() {
 		String[] info = new String[2];
@@ -25,7 +25,7 @@ public class HivelyPlugin extends DroidSoundPlugin {
 		info[1] = "Hively/AHX";
 		return info;
 	}
-	
+
 	@Override
 	public int getIntInfo(int what) {
 		return 0;
@@ -42,8 +42,8 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
-		songRef = N_load(module, size);
+	public boolean load(String name, byte[] module) {
+		songRef = N_load(module, module.length);
 		return songRef != 0;
 	}
 
@@ -54,5 +54,5 @@ public class HivelyPlugin extends DroidSoundPlugin {
 
 	native public long N_load(byte [] module, int size);
 	native public void N_unload(long song);
-	native public int N_getSoundData(long song, short [] dest, int size);	
+	native public int N_getSoundData(long song, short [] dest, int size);
 }

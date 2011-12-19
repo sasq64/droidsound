@@ -27,16 +27,15 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private Unzipper unzipper = null;
 
 	public SC68Plugin() {
-
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 		sc68Dir = new File(droidDir, "sc68data");
 		synchronized (lock) {
-			if(!sc68Dir.exists()) {
+			if(! sc68Dir.exists()) {
 				droidDir.mkdir();
 				unzipper = Unzipper.getInstance();
 				unzipper.unzipAssetAsync(getContext(), "sc68data.zip", droidDir);
 			}
-			if(!inited) {
+			if(! inited) {
 				N_setDataDir(sc68Dir.getPath());
 				inited = true;
 			}
@@ -57,10 +56,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
-
-
-		if(unzipper != null) {
+	public boolean load(String name, byte[] module) {
+		if (unzipper != null) {
 			while(!unzipper.checkJob("sc68data.zip")) {
 				try {
 					Thread.sleep(500);
@@ -73,7 +70,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		}
 
 		Log.d(TAG, "Trying to load '%s'", name);
-		currentSong = N_load(module, size);
+		currentSong = N_load(module, module.length);
 		Log.d(TAG, "Trying to load '%s' -> %d", name, currentSong);
 		return (currentSong != 0);
 	}
@@ -113,24 +110,23 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean loadInfo(String name, byte[] module, int size) {
-
+	public boolean loadInfo(String name, byte[] data) {
 		currentSong = 0;
 		title = null;
 		composer = null;
 		year = null;
 		type = null;
 
-		byte data [] = module;
-		String head = new String(module, 0, 4);
-		if(head.equals("ICE!")) {
+		int size = data.length;
+		String head = new String(data, 0, 4);
+		if (head.equals("ICE!")) {
 
 			Log.d(TAG, "Unicing");
 
 			if(targetBuffer == null) {
 				targetBuffer = new byte [1024*1024];
 			}
-			int rc = N_unice(module, targetBuffer);
+			int rc = N_unice(data, targetBuffer);
 			if(rc < 0)
 				return false;
 			size = rc;

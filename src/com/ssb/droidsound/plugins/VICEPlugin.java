@@ -1,6 +1,5 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -8,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -21,6 +21,7 @@ import com.ssb.droidsound.utils.Unzipper;
 
 public class VICEPlugin extends DroidSoundPlugin {
 	private static final String TAG = VICEPlugin.class.getSimpleName();
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 
 	private static class Info {
 		protected String name = "Unknown";
@@ -209,8 +210,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 		return true;
 	}
 
-	private byte[] calculateMD5(byte[] module, int size) {
-		ByteBuffer src = ByteBuffer.wrap(module, 0, size);
+	private byte[] calculateMD5(byte[] module) {
+		ByteBuffer src = ByteBuffer.wrap(module);
 		src.order(ByteOrder.BIG_ENDIAN);
 
 		byte[] id = new byte[4];
@@ -234,12 +235,12 @@ public class VICEPlugin extends DroidSoundPlugin {
 			speed = 60;
 		}
 
-		Log.d(TAG, "speed %08x, flags %04x left %d songs %d init %x", speed, flags, size - offset, songs, initAdress);
+		Log.d(TAG, "speed %08x, flags %04x left %d songs %d init %x", speed, flags, module.length - offset, songs, initAdress);
 
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");
 
-			md.update(module, offset, size - offset);
+			md.update(module, offset, module.length - offset);
 
 			ByteBuffer dest = ByteBuffer.allocate(32768 + 128);
 			dest.order(ByteOrder.LITTLE_ENDIAN);
@@ -272,7 +273,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 
-	private void findLength(byte [] module, int size) {
+	private void findLength(byte[] module) {
 
 		for (int i=0; i < 256; i++) {
 			songLengths[i] = 60*60*1000;
@@ -303,7 +304,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		}
 
 		if (mainHash != null) {
-			byte[] md5 = calculateMD5(module, size);
+			byte[] md5 = calculateMD5(module);
 			int first = 0;
 			int upto = hashLen;
 
@@ -353,31 +354,25 @@ public class VICEPlugin extends DroidSoundPlugin {
 		}
 	}
 
-
 	@Override
-	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
-		final byte[] header = new byte[128];
-
+	public boolean loadInfo(String name, byte[] header) {
 		songInfo = new Info();
-		if(name.toLowerCase().endsWith(".prg")) {
+		if (name.toLowerCase().endsWith(".prg")) {
 			songInfo.name = name;
-			Log.d(TAG, "######################## PRG LOAD OK");
 			songInfo.format = "PRG";
 			return true;
 		}
 
-		is.read(header);
-
-		String s = new String(header, 0, 4, "ISO-8859-1");
+		String s = new String(header, 0, 4, ISO88591);
 		if (! (s.equals("PSID") || s.equals("RSID"))) {
 			return false;
 		}
 
 		songInfo.format = s;
 
-		songInfo.name = new String(header, 0x16, 0x20, "ISO-8859-1").replaceAll("\0", "");
-		songInfo.composer = new String(header, 0x36, 0x20, "ISO-8859-1").replaceAll("\0", "");
-		songInfo.copyright = new String(header, 0x56, 0x20, "ISO-8859-1").replaceAll("\0", "");
+		songInfo.name = new String(header, 0x16, 0x20, ISO88591).replaceAll("\0", "");
+		songInfo.composer = new String(header, 0x36, 0x20, ISO88591).replaceAll("\0", "");
+		songInfo.copyright = new String(header, 0x56, 0x20, ISO88591).replaceAll("\0", "");
 
 		songInfo.videoMode = (header[0x77] >> 2) & 3;
 		songInfo.sidModel = (header[0x77] >> 4) & 3;
@@ -455,7 +450,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
+	public boolean load(String name, byte[] module) {
 		currentTune = 0;
 		songInfo = null;
 		int type = -1;
@@ -487,21 +482,14 @@ public class VICEPlugin extends DroidSoundPlugin {
 			module[0x77] = 2;
 
 			System.arraycopy(oldm, 0, module, 0x7c, oldm.length);
-			size += 0x7c;
 		}
 
-		try {
-			loadInfo(name, new ByteArrayInputStream(module), size);
-		} catch (IOException e) {
-			/* Should never actually throw. */
-			throw new RuntimeException(e);
-		}
-
+		loadInfo(name, module);
 		currentTune = songInfo.startSong;
 
-		boolean rc =  nativeLoad(name, module, size);
+		boolean rc =  nativeLoad(name, module, module.length);
 		if (rc) {
-			findLength(module, size);
+			findLength(module);
 		}
 
 		return rc;

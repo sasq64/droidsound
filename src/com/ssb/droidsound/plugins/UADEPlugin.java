@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.Set;
@@ -134,7 +133,6 @@ public class UADEPlugin extends DroidSoundPlugin {
 			x = name.indexOf('.', slash+1);
 			if(x < 0) return false;
 			ext = name.substring(slash+1, x).toUpperCase();
-			Log.d(TAG, "Checking prefix " + ext);
 			return extensions.contains(ext);
 		}
 		return true;
@@ -203,8 +201,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
-
+	public boolean load(String name, byte[] module) {
 		try {
 			File file;
 			int dot = name.indexOf('.');
@@ -219,6 +216,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 			FileOutputStream fo = new FileOutputStream(file);
 			fo.write(module);
 			fo.close();
+
 			boolean rc = load(file);
 			file.delete();
 			return rc;
@@ -259,20 +257,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean loadInfo(File file) throws IOException {
-		currentSong = 0;
-		return true;
-		//return load(file);
-	}
-
-	@Override
-	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
-		currentSong = 0;
-		return true;
-	}
-
-	@Override
-	public boolean loadInfo(String name, byte[] module, int size) {
+	public boolean loadInfo(String name, byte[] module) {
 		currentSong = 0;
 		return true;
 	}

@@ -1,7 +1,9 @@
 package com.ssb.droidsound;
 
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -252,10 +254,13 @@ public class Playlist {
 
 
 
-	private String fileToLine(SongFile songFile) {
-
+	private String fileToLine(SongFile songFile) throws IOException {
+		File f = songFile.getFile();
+		byte[] module = new byte[(int) f.length()];
+		DataInputStream dis = new DataInputStream(new FileInputStream(f));
+		dis.readFully(module);
 		String s = songFile.getPath();
-		FileIdentifier.MusicInfo minfo = FileIdentifier.identify(songFile.getFile());
+		FileIdentifier.MusicInfo minfo = FileIdentifier.identify(f.getName(), module);
 
 		String title = songFile.getTitle();
 		if(title == null && minfo != null)
@@ -275,7 +280,7 @@ public class Playlist {
 		return s;
 	}
 
-	synchronized public void add(SongFile songFile) {
+	synchronized public void add(SongFile songFile) throws IOException {
 		if(songFile.isDirectory()) {
 			SongFile [] files = songFile.listSongFiles();
 			for(SongFile f : files) {
@@ -289,12 +294,11 @@ public class Playlist {
 		changed = true;
 	}
 
-	public void insert(int position, SongFile songFile) {
+	public void insert(int position, SongFile songFile) throws IOException {
 		lines.add(position, fileToLine(songFile));
 		changed = true;
 		cursor = null;
 	}
-
 
 	synchronized public void add(Cursor c, int subtune, String tuneTitle) {
 

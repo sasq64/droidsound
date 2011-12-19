@@ -60,14 +60,9 @@ public abstract class DroidSoundPlugin {
 
 	private byte[] md5;
 
-	private int streamSize;
-
-
-
 	// Called when player thread exits due to inactivty
 	public void exit() {
-	};
-
+	}
 
 	public static List<DroidSoundPlugin> createPluginList() {
 
@@ -88,31 +83,26 @@ public abstract class DroidSoundPlugin {
 		return pluginList;
 	}
 
-
-
-	public boolean loadInfo(String name, byte [] module, int size) {
-		return load(name, module, size);
+	public boolean loadInfo(String name, byte[] module) {
+		return load(name, module);
 	}
-
-	public int getStreamSize() { return streamSize; }
 
 	public boolean load(String name, InputStream is, int size) throws IOException {
 		Log.d(TAG, "PLUGIN LOAD STREAM");
 		boolean rc = false;
 		try {
-			byte [] songBuffer = new byte [size];
+			byte [] songBuffer = new byte[size];
 			is.read(songBuffer);
 			calcMD5(songBuffer);
 
-			rc = load(name, songBuffer, songBuffer.length);
+			rc = load(name, songBuffer);
 		} catch (OutOfMemoryError e) {
 			e.printStackTrace();
 		}
 		return rc;
 	}
 
-	public void calcMD5(byte[] songBuffer, int size) {
-
+	public void calcMD5(byte[] songBuffer) {
 		MessageDigest md = null;
 		Log.d(TAG, "MD5 CALCING TIME");
 		try {
@@ -123,23 +113,8 @@ public abstract class DroidSoundPlugin {
 			return;
 		}
 
-		md.update(songBuffer, 0, size);
+		md.update(songBuffer, 0, songBuffer.length);
 		md5 = md.digest();
-	}
-	public void calcMD5(byte[] songBuffer) {
-		calcMD5(songBuffer, songBuffer.length);
-	}
-
-	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
-		boolean rc = false;
-		try {
-			byte [] songBuffer = new byte [size];
-			is.read(songBuffer);
-			rc = loadInfo(name, songBuffer, songBuffer.length);
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		return rc;
 	}
 
 	public boolean load(File file) throws IOException {
@@ -149,31 +124,16 @@ public abstract class DroidSoundPlugin {
 		FileInputStream fs = new FileInputStream(file);
 		fs.read(songBuffer);
 		calcMD5(songBuffer);
-		return load(file.getName(), songBuffer, songBuffer.length);
-	}
-
-	public boolean loadInfo(File file) throws IOException {
-		int l = (int)file.length();
-		byte [] songBuffer = null;
-		try {
-			songBuffer = new byte [l];
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
-		return loadInfo(file.getName(), songBuffer, songBuffer.length);
+		return load(file.getName(), songBuffer);
 	}
 
 	public abstract void unload();
-
 
 	public static String getExt(String name) {
 		String ext = "";
 		int dot = name.lastIndexOf('.');
 		if(dot > 0) {
 			ext = name.substring(dot);
-			Log.d(TAG, "EXT: " + ext);
 			char c = 'X';
 			int e = 0;
 			while(e < ext.length() && Character.isLetterOrDigit(c)) {
@@ -183,7 +143,6 @@ public abstract class DroidSoundPlugin {
 				c = ext.charAt(e);
 			}
 			ext = ext.substring(0,e);
-			Log.d(TAG, "EXT NOW: " + ext);
 		}
 		return ext;
 	}
@@ -195,7 +154,7 @@ public abstract class DroidSoundPlugin {
 
 	public boolean canHandleExt(String ext) { return false; }
 
-	public abstract boolean load(String name, byte[] module, int size);
+	public abstract boolean load(String name, byte[] module);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	public abstract int getSoundData(short [] dest, int size);

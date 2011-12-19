@@ -1,12 +1,11 @@
 package com.ssb.droidsound.utils;
 
 public class Log {
-	
 	public static final void d(String tag, String fmt, Object...args) {
 		String line = tag + ": " + String.format(fmt, args);
 		android.util.Log.d("Droidsound", line);
 	}
-	
+
 	public static final void d(String tag, String line) {
 		android.util.Log.d("Droidsound", tag + ": " + line);
 	}
