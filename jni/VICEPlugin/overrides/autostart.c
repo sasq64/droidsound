@@ -1,6 +1,8 @@
 #include "autostart.h"
 #include "snapshot.h"
 
+int autostart_ignore_reset = 0;
+
 int autostart_resources_init(void)
 {
     return 0;

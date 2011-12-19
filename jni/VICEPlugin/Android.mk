@@ -32,6 +32,7 @@ LOCAL_SRC_FILES := \
 	vice/cmdline.c \
 	vice/crc32.c \
 	vice/debug.c \
+	vice/datasette.c \
 	vice/dma.c \
 	vice/event.c \
 	vice/findpath.c \
@@ -63,40 +64,33 @@ LOCAL_SRC_FILES := \
 	vice/vsync.c \
 	vice/zfile.c \
 	vice/zipcode.c \
-	vice/c64/c64.c \
-	vice/c64/c64_256k.c \
-	vice/c64/c64-cmdline-options.c \
-	vice/c64/c64-resources.c \
-	vice/c64/c64-snapshot.c \
-	vice/c64/c64bus.c \
-	vice/c64/c64cia1.c \
-	vice/c64/c64cia2.c \
-	vice/c64/c64datasette.c \
-	vice/c64/c64embedded.c \
-	vice/c64/c64export.c \
-	vice/c64/c64fastiec.c \
-	vice/c64/c64gluelogic.c \
-	vice/c64/c64iec.c \
-	vice/c64/c64io.c \
-	vice/c64/c64keyboard.c \
-	vice/c64/c64mem.c \
-	vice/c64/c64meminit.c \
-	vice/c64/c64memlimit.c \
-	vice/c64/c64memrom.c \
-	vice/c64/c64memsnapshot.c \
-	vice/c64/c64model.c \
-	vice/c64/c64pla.c \
-	vice/c64/c64printer.c \
-	vice/c64/c64rom.c \
-	vice/c64/c64romset.c \
-	vice/c64/c64rsuser.c \
-	vice/c64/c64sound.c \
-	vice/c64/c64video.c \
-	vice/c64/patchrom.c \
-	vice/c64/plus256k.c \
-	vice/c64/plus60k.c \
-	vice/c64/psid.c \
-	vice/c64/reloc65.c \
+        vice/c64/c64-cmdline-options.c \
+        vice/c64/c64embedded.c \
+        vice/c64/c64export.c \
+        vice/c64/c64gluelogic.c \
+        vice/c64/c64io.c \
+        vice/c64/c64keyboard.c \
+        vice/c64/c64meminit.c \
+        vice/c64/c64memlimit.c \
+        vice/c64/c64memrom.c \
+        vice/c64/c64memsnapshot.c \
+        vice/c64/c64model.c \
+        vice/c64/c64pla.c \
+        vice/c64/c64rom.c \
+        vice/c64/c64romset.c \
+        vice/c64/c64rsuser.c \
+        vice/c64/c64sound.c \
+        vice/c64/c64video.c \
+        vice/c64/patchrom.c \
+        vice/c64/psid.c \
+        vice/c64/reloc65.c \
+        vice/c64/vsid.c \
+        vice/c64/vsid-resources.c \
+        vice/c64/vsid-snapshot.c \
+        vice/c64/vsidcia1.c \
+        vice/c64/vsidcia2.c \
+        vice/c64/vsidmem.c \
+        vice/c64/vsidstubs.c \
 	vice/core/ciacore.c \
 	vice/core/ciatimer.c \
         vice/core/viacore.c \
@@ -143,40 +137,13 @@ LOCAL_SRC_FILES := \
 	vice/vicii/vicii-timing.c \
 	overrides/attach.c \
 	overrides/autostart.c \
-	overrides/datasette.c \
 	overrides/maincpu.c \
 	overrides/mouse.c \
-	overrides/serial.c \
-	overrides/c64/c64drive.c \
-	overrides/c64/c64parallel.c \
-	overrides/c64/cart/c64-generic.c \
-	overrides/c64/cart/c64cart.c \
-	overrides/c64/cart/c64carthooks.c \
-	overrides/c64/cart/c64cartmem.c \
-	overrides/c64/cart/crt.c \
-	overrides/c64/cart/digimax.c \
-	overrides/c64/cart/reu.c \
-	overrides/diskimage/diskimage.c \
-	overrides/drive/drive.c \
-	overrides/drive/drive-cmdline-options.c \
-	overrides/drive/drive-resources.c \
-	overrides/drive/drive-snapshot.c \
-	overrides/drive/drive-sound.c \
-	overrides/drive/drivecpu.c \
-	overrides/drive/driveimage.c \
-	overrides/fsdevice/fsdevice.c \
-	overrides/gfxoutputdrv/gfxoutput.c \
-	overrides/iecbus/iecbus.c \
-	overrides/imagecontents/imagecontents.c \
 	overrides/monitor/monitor.c \
-	overrides/parallel/parallel.c \
-	overrides/printer/printer.c \
+        overrides/serial.c \
 	overrides/sounddrv/sounddummy.c \
-	overrides/tape/tape.c \
-	overrides/tape/tape-snapshot.c \
-	overrides/vdrive/vdrive.c \
 	overrides/vicii/vicii-draw.c \
-	overrides/video/video.c \
+        overrides/video/video.c \
 #terminator for last backslash
 
 LOCAL_CFLAGS := -DHAVE_CONFIG_H

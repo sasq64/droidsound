@@ -3,6 +3,8 @@
 	package="com.ssb.droidsound" android:installLocation="auto"
 	android:versionName="1.2beta3" android:versionCode="12">
 
+    <uses-sdk android:minSdkVersion="14" />
+    
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.WAKE_LOCK" />
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -77,7 +79,5 @@
 		
 		<meta-data android:name="android.app.default_searchable" android:value=".PlayerActivity" />
 	</application>
-	<uses-sdk android:minSdkVersion="4" />
-
 
 </manifest> 
