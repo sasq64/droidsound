@@ -158,6 +158,9 @@ BYTE memmap_mem_read(unsigned int addr)
 #define LOAD_ZERO_ADDR(addr) \
     ((LOAD_ZERO((addr) + 1) << 8) | LOAD_ZERO(addr))
 
+static BYTE *bank_base;
+static int bank_limit;
+
 inline static BYTE *mem_read_base(int addr)
 {
     BYTE *p = _mem_read_base_tab_ptr[addr >> 8];
@@ -353,6 +356,7 @@ static void cpu_reset(void)
 
 void maincpu_reset(void)
 {
+    mem_set_bank_pointer(&bank_base, &bank_limit);
     cpu_reset();
 }
 
@@ -438,14 +442,10 @@ void psid_play(short *buf, int n)
     unsigned int reg_pc;
 #endif
 
-    BYTE *bank_base;
-    int bank_limit;
-    mem_set_bank_pointer(&bank_base, &bank_limit);
-
     psid_sound_buf = buf;
     psid_sound_idx = 0;
     psid_sound_max = n;
-    while (psid_sound_idx < psid_sound_max) {
+    while (psid_sound_idx != psid_sound_max) {
 
 #define CLK maincpu_clk
 #define RMW_FLAG maincpu_rmw_flag

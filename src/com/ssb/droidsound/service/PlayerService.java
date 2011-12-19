@@ -832,6 +832,9 @@ public class PlayerService extends Service {
 	public void onStart(Intent intent, int startId) {
 		super.onStart(intent, startId);
 		Log.d(TAG, "Service started");
+		if (intent == null) {
+			return;
+		}
 		Log.d(TAG, "Intent %s / %s", intent.getAction(), intent.getDataString());
         if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
 			Uri uri = intent.getData();
