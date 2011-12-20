@@ -52,7 +52,6 @@ public class PlayerService extends Service {
 	public static final int SONG_TITLE = 1;
 	public static final int SONG_AUTHOR = 2;
 	public static final int SONG_COPYRIGHT = 3;
-	public static final int SONG_CPULOAD = 4;
 	public static final int SONG_FORMAT = 5;
 
 	public static final int SONG_POS = 6;

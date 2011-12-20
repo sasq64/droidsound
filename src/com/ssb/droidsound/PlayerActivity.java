@@ -6,8 +6,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +40,6 @@ import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -75,12 +72,9 @@ import com.ssb.droidsound.playlistview.PlayListView;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
-import com.ssb.droidsound.utils.Unzipper;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
-
-	//public static final String DROIDSOUND_VERSION = "1.1beta3";
 	public static final int VERSION = 17;
 
 	private static class Config {
@@ -156,13 +150,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private SearchCursor searchCursor;
 	private SharedPreferences prefs;
 
-	private int searchDirDepth;
-
 	private int songPos;
 	private int subTune;
 	private int subTuneCount;
 	private int songLength;
-	// private String songName;
 	private SongFile songFile;
 
 	private File modsDir;
@@ -172,9 +163,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private SQLiteDatabase db;
 
-	//private int backDown;
-	private boolean atTop = true;
-
 	private String songTitle;
 	private String songComposer;
 
@@ -182,7 +170,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private String dirTitle;
 	private String dirSubTitle;
 	private String[] songDetails;
-	//private String indexSetting;
 
 	private static final int TTS_UNCHECKED = -1000;
 	private static final int TTS_OK = 2;
@@ -197,7 +184,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private int songState;
 
-	//private File operationFile;
 	private SongFile operationSong;
 
 	private TextView shuffleText;
@@ -230,13 +216,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	protected boolean dialogShowing;
 
-	private Method startTrackingMethod;
-
 	private byte[] md5;
 
 	private SongFile clipBoardFile;
-
-	private boolean backPressed;
 
 	private int dumpingWav = 0;
 
@@ -249,16 +231,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	protected int toneLength = 2;
 
 	private TextView toneNameText;
-	private static final Class<?>[] startTrackingSignature = new Class<?>[] {};
-
-	@Override
-	protected void finalize() throws Throwable {
-		Log.d(TAG, "########## Activity finalize");
-	};
 
 	private void setDirectory(String path, PlayListView plv) {
-
-		if(plv == null) {
+		if (plv == null) {
 			plv = currentPlaylistView;
 		}
 
@@ -281,11 +256,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		File f = new File(path);
 
-		if(f.equals(modsDir)) {
-			atTop = true;
-		} else {
-			atTop = false;
-		}
 		if(plv == playListView) {
 			dirTitle = songDatabase.getPathTitle();
 			if(dirTitle == null) {
@@ -300,40 +270,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	}
 
-	private void setDirectory(File path, PlayListView plv) {
-		setDirectory(path.getPath(), plv);
-	}
 	private void setDirectory(PlayListView plv) {
 		setDirectory((String)null, plv);
-	}
-
-
-	private void gotoParent(PlayListView plv) {
-
-		if(plv == null) {
-			plv = currentPlaylistView;
-		}
-
-		if(plv == searchListView && searchDirDepth <= 1) {
-			searchListView.setCursor(searchCursor, null);
-			searchDirDepth = 0;
-			flipTo(SEARCH_VIEW);
-			return;
-		}
-
-		if(atTop) {
-			return;
-		}
-
-		String p = plv.getPath();
-		if(p != null) {
-			File f = new File(plv.getPath());
-			setDirectory(f.getParentFile(), plv);
-			currentPlaylistView.setScrollPosition(f.getPath());
-			if(plv == searchListView) {
-				searchDirDepth--;
-			}
-		}
 	}
 
 	@Override
@@ -369,7 +307,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			searchCursor = new SearchCursor(songDatabase.search(query, currentPath, sortOrder));
 			searchQuery = query;
-			searchDirDepth = 0;
 			if(searchCursor != null) {
 				searchListView.setCursor(searchCursor, null);
 				currentPlaylistView = searchListView;
@@ -488,11 +425,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-
-		// final UncaughtExceptionHandler oldHandler =
-		// Thread.getDefaultUncaughtExceptionHandler();
-		// Thread.setDefaultUncaughtExceptionHandler()
-
 		super.onCreate(savedInstanceState);
 		Log.d(TAG, "#### onCreate()");
 
@@ -541,14 +473,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			finish();
 			return;
 		}
-
-
-		try {
-			startTrackingMethod = KeyEvent.class.getMethod("startTracking", startTrackingSignature);
-		} catch (NoSuchMethodException e) {
-			startTrackingMethod = null;
-		}
-
 
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
@@ -610,8 +534,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		} else {
 			currentPath = cp;
 		}
-		atTop = currentPath.equals(modsDir);
-
 
 		Log.d(TAG, "MODS at %s", modsDir);
 
@@ -768,10 +690,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		}
 
-		// if(mf.exists()) {
-		// songDatabase.setActivePlaylist(mf);
-		// }
-
 		listClickListener = new OnItemClickListener() {
 
 			@Override
@@ -788,9 +706,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
 						setDirectory(fi.getPath(), plv);
 						plv.setScrollPosition(null);
-						if(plv == searchListView) {
-							searchDirDepth++;
-						}
 
 					} else {
 						int index = 0;
@@ -801,15 +716,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						if(currentPlaylistView == playListView) {
 							Playlist plist = songDatabase.getCurrentPlaylist();
 							if(plist != null) {
-
-								// TODO: Check if this shorcut works;
 								index = position;
-
-								/*for(int i = 0; i < files.length; i++) {
-									if(files[i].equals(fi)) {
-										index = i;
-									}
-								} */
 								Log.d(TAG, "Playing Playlist %s %s", plist.getFile().getPath(), plist.toString());
 								player.playPlaylist(plist.getFile().getPath(), index);
 								return;
@@ -824,8 +731,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 							names[i] = files[i].getPath();
 						}
 						player.playList(names, index);
-						// adapter.notifyDataSetChanged();
-						// adapter.setSelectedPosition(position);
 					}
 				}
 			}
@@ -1006,16 +911,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 
-		/*
-		 * songSecondsText.setOnClickListener(new OnClickListener() {
-		 *
-		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
-		 *
-		 * seekFlipper.setOnClickListener(new OnClickListener() {
-		 *
-		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
-		 */
-
 		songSeeker.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 			@Override
 			public void onStopTrackingTouch(SeekBar seekBar) {
@@ -1042,18 +937,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				}
 			}
 		});
-
-		/*
-		 * shuffleButton.setOnCheckedChangeListener(new
-		 * OnCheckedChangeListener() {
-		 *
-		 * @Override public void onCheckedChanged(CompoundButton buttonView,
-		 * boolean isChecked) { shuffleSongs = isChecked;
-		 * player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, isChecked ? "R"
-		 * : "S" ); } });
-		 */
-
-		Log.d(TAG, "ON CREATE DONE");
 	}
 
 	private void setupModsDir() {
@@ -1166,12 +1049,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			deleteAll(mf);
 		}
 
-		mf = new File(modsDir, "Network");
-		if(!mf.exists()) {
-			Unzipper.unzipAsset(this, "Network.zip", modsDir);
-		}
-
-
 		mf = new File(modsDir, "Favorites.plist");
 		if(!mf.exists()) {
 			try {
@@ -1276,241 +1153,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			} else {
 				ttsStatus = TTS_UNINSTALLED;
 				player.setOption(PlayerService.OPTION_SPEECH, "none");
-				// missing data, install it
-				// Intent installIntent = new Intent();
-				// installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-				// startActivity(installIntent);
 			}
 		}
-	}
-
-	@Override
-	public boolean dispatchKeyEvent(KeyEvent event) {
-		Log.d(TAG, "#### KEY EVENT %s", event.toString());
-		return super.dispatchKeyEvent(event);
-	}
-
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		Log.d(TAG, "%%%% DOWN %d", keyCode);
-		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
-		// Log.d(TAG, String.format("MEDIA BUTTON DOWN %d",
-		// event.getRepeatCount()));
-		// return true;
-		// }
-
-		if(keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
-
-			int t = (keyCode - KeyEvent.KEYCODE_0) - 1;
-			if(t == -1)
-				t = 10;
-			if(t < subTuneCount) {
-				subTune = t;
-				player.setSubSong(subTune);
-			}
-		}
-
-		AudioManager amg = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-
-		switch(keyCode) {
-		case KeyEvent.KEYCODE_F:
-			onSearchRequested();
-			break;
-		case KeyEvent.KEYCODE_Z:
-			player.playPrev();
-			break;
-		case KeyEvent.KEYCODE_B:
-			player.playNext();
-			break;
-		case KeyEvent.KEYCODE_N:
-			if(subTune != 0 && subTuneCount != 0) {
-				subTune -= 1;
-				player.setSubSong(subTune);
-			}
-			break;
-		case KeyEvent.KEYCODE_M:
-			if((subTune + 1) < subTuneCount) {
-				subTune += 1;
-				player.setSubSong(subTune);
-			}
-			break;
-		case KeyEvent.KEYCODE_V:
-			player.stop();
-			break;
-		case KeyEvent.KEYCODE_X:
-			player.stop();
-			player.playPause(true);
-			break;
-		case KeyEvent.KEYCODE_C:
-			if(songState == 1) {
-				player.playPause(false);
-			} else {
-				player.playPause(true);
-			}
-			break;
-		case KeyEvent.KEYCODE_PLUS:
-		case KeyEvent.KEYCODE_PERIOD:
-			amg.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0);
-			break;
-		case KeyEvent.KEYCODE_MINUS:
-		case KeyEvent.KEYCODE_COMMA:
-			amg.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0);
-			break;
-		case KeyEvent.KEYCODE_TAB:
-			flipTo(NEXT_VIEW);
-			break;
-		case KeyEvent.KEYCODE_S:
-			shuffleSongs = !shuffleSongs;
-			player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, shuffleSongs ? "R" : "S");
-			shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
-			break;
-		case KeyEvent.KEYCODE_R:
-			if(songRepeat == 0) {
-				songRepeat = 1;
-			} else {
-				songRepeat = 0;
-			}
-			player.setOption(PlayerService.OPTION_REPEATMODE, Integer.toString(songRepeat));
-			break;
-		// case KeyEvent.M:
-		// player.setOption(PlayerService.OPTION_SPEECH, useSpeech ? "on" :
-		// "off");
-		// break;
-		case KeyEvent.KEYCODE_Q:
-			player.stop();
-			songDatabase.quit();
-			songDatabase = null;
-			finish();
-			break;
-		case KeyEvent.KEYCODE_A:
-
-			break;
-		case KeyEvent.KEYCODE_D:
-			break;
-
-		case KeyEvent.KEYCODE_P:
-			startActivity(new Intent(this, SettingsActivity.class));
-			break;
-
-		case KeyEvent.KEYCODE_I:
-			openContextMenu(currentPlaylistView);
-			break;
-
-		case KeyEvent.KEYCODE_O:
-			openOptionsMenu();
-			break;
-
-		case KeyEvent.KEYCODE_U:
-			if(songFile != null) {
-				//operationFile = songFile.getFile();
-				operationSong = new SongFile(songFile);
-				operationTitle = null;
-				operationTuneCount = subTuneCount;
-				if(songTitle != null && subtuneTitle != null) {
-					// operationTitle = songTitle + " - " + subtuneTitle;
-					operationTitle = subtuneTitle + " (" + songTitle + ")";
-				}
-				showDialog(R.string.add_to_plist);
-			}
-			break;
-		case KeyEvent.KEYCODE_BACK:
-		case KeyEvent.KEYCODE_DEL:
-			Log.d(TAG, ">>>>>>>>>>>>> BACK PRESSED");
-
-			backPressed = true;
-			if(startTrackingMethod != null) {
-				try {
-					Log.d(TAG, "############### START TRACKING");
-					startTrackingMethod.invoke(event);
-				} catch (IllegalArgumentException e) {
-				} catch (IllegalAccessException e) {
-				} catch (InvocationTargetException e) {
-				}
-			}
-			 return true;
-		}
-
-		//backDown = 0;
-		return super.onKeyDown(keyCode, event);
-	}
-
-
-	//@Override
-	@Override
-	public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-
-		if(keyCode == KeyEvent.KEYCODE_BACK) {
-			backPressed = false;
-			Log.d(TAG, ">>>>>>>>>>>>> BACK LONG PRESSED");
-			if(currentPlaylistView == searchListView) {
-				searchDirDepth = 0;
-				searchListView.setCursor(searchCursor, null);
-				flipTo(SEARCH_VIEW);
-			} else {
-				setDirectory(modsDir, playListView);
-				currentPlaylistView.setScrollPosition(null);
-			}
-			return true;
-		}
-		return false;
-		////  return super.onKeyLongPress(keyCode, event);
-	}
-
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-
-		if(keyCode == KeyEvent.KEYCODE_BACK ) {
-			Log.d(TAG, ">>>>>>>>>>>>> BACK RELEASED");
-			if(backPressed) {
-				backPressed = false;
-				if(currentPlaylistView != playListView) {
-					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
-						flipTo(FILE_VIEW);
-						if(songFile != null) {
-							playListView.setScrollPosition(songFile.getPath());
-						}
-						return true;
-					}
-				}
-
-				if(atTop) {
-					finish();
-				} else {
-					gotoParent(null);
-				}
-			}
-			return true;
-		}
-
-
-		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
-		// Log.d(TAG, String.format("MEDIA BUTTON UP %d",
-		// event.getRepeatCount()));
-		// return true;
-		// }
-		/* if(keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_DEL) {
-			if(backDown > 0 && backDown < 3) {
-				backDown = 0;
-				if(currentPlaylistView != playListView) {
-					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
-						flipTo(FILE_VIEW);
-						if(songFile != null) {
-							playListView.setScrollPosition(songFile.getFile());
-						}
-						return true;
-					}
-				}
-
-				if(atTop) {
-					finish();
-				} else {
-					gotoParent(null);
-				}
-			}
-			backDown = 0;
-			return true;
-		} */
-		return super.onKeyUp(keyCode, event);
 	}
 
 	@Override
@@ -1567,9 +1211,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onPause() {
 		super.onPause();
-		Log.d(TAG, "#### onPause()");
-
-		//indexSetting = prefs.getString("indexing", "Basic");
 
 		Editor editor = prefs.edit();
 		editor.putString("currentPath", currentPath);
@@ -1593,7 +1234,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		Log.d(TAG, "#### onDestroy()");
 
 		if(receiver != null) {
 			unregisterReceiver(receiver);
@@ -1601,8 +1241,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		if(playListView != null) {
 			playListView.close();
-			// SharedPreferences prefs = getSharedPreferences("songdb",
-			// Context.MODE_PRIVATE);
 		}
 
 		if(searchCursor != null) {
@@ -1644,8 +1282,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			sb.append(String.format("%02x ", data[i]));
 		}
-		Log.d(TAG, sb.toString());
 	}
+
 	@Override
 	public void intChanged(int what, int value) {
 		switch(what) {
@@ -1668,8 +1306,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 			break;
 		case PlayerService.SONG_LENGTH:
-			if(value < 0) {
-				// TODO: Hide length
+			if (value < 0) {
 				value = 0;
 				songTotalText.setVisibility(View.GONE);
 			} else {
@@ -1678,7 +1315,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			songLength = value / 1000;
 			Log.d(TAG, "Songlength %02d:%02d", songLength / 60, songLength % 60);
 			songTotalText.setText(String.format("%02d:%02d", songLength / 60, songLength % 60));
-			//songSeeker.setProgress(0);
 			break;
 		case PlayerService.SONG_POS:
 			if(seekingSong == 0) {
@@ -1694,12 +1330,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			} else
 				seekingSong--;
 
-			break;
-		case PlayerService.SONG_CPULOAD:
-			// if (lowText != null) {
-			// aTime = aTime * 0.7F + value * 0.3F;
-			// lowText.setText(String.format("CPU %d%%", (int) aTime));
-			// }
 			break;
 		case PlayerService.SONG_SUBSONG:
 			if(value >= 0) {
@@ -1718,14 +1348,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				playButton.setBackgroundResource(R.drawable.pause_button);
 			} else {
 				playButton.setBackgroundResource(R.drawable.play_button);
-				if(value == 0) {
-					// songTitleText.setText("");
-					// songComposerText.setText("");
-					// songCopyrightText.setText("");
-					// songSubtunesText.setText("[00/00]");
-					// songTotalText.setText("00:00");
-					// songSecondsText.setText("00:00");
-				}
 			}
 			break;
 		}
@@ -1742,26 +1364,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			} else
 				plinfoText.setText("");
 			break;
-/*		case PlayerService.SONG_PLAYLIST:
-			if(value != null && value.length() > 0) {
-				String n = new File(value).getName();
-				int dot = n.lastIndexOf('.');
-				if(dot > 0) {
-					n = n.substring(0, dot);
-				}
-				plinfoText.setText(n);
-			} else if(songFile != null) {
-				String n = songFile.getFile().getParent();
-				if(n != null) {
-					n = n.replace(modsDir.getPath(), "");
-				} else {
-					n = "";
-				}
-				plinfoText.setText(n);
-			} else {
-				plinfoText.setText("");
-			}
-			break; */
 		case PlayerService.SONG_FILENAME:
 
 			Log.d(TAG, "DW %d, value '%s'", dumpingWav, value);
@@ -1883,13 +1485,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			flipTo(SAME_VIEW);
 			break;
 		case PlayerService.SONG_COPYRIGHT:
-			// songCopyrightText.setText(value);
 			break;
-		// case PlayerService.SONG_GAMENAME :
-		// if(value != null && value.length() > 0) {
-		// songCopyrightText.setText(value);
-		// }
-		// break;
 		}
 	}
 
@@ -1973,30 +1569,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 	}
 
-	/*
-	 *
-	 * I/EventHub( 2621): New keyboard: device->id=0x10004 devname='Broadcom
-	 * Bluetooth HID' propName='hw.keyboards.65540.devname'
-	 * keylayout='/system/usr/keylayout/qwerty.kl' I/EventHub( 2621): New
-	 * device: path=/dev/input/event4 name=Broadcom Bluetooth HID id=0x10004 (of
-	 * 0x5) index=5 fd=134 classes=0x3 I/KeyInputQueue( 2621): Device added:
-	 * id=0x10004, name=Broadcom Bluetooth HID, classes=3 I/ActivityManager(
-	 * 2621): Config changed: { scale=1.0 imsi=240/1 loc=en_GB touch=3
-	 * keys=2/1/2 nav=1/1 orien=1 layout=34 uiMode=17 seq=30 FlipFont=0}
-	 *
-	 *
-	 * W/KeyCharacterMap( 4666): Can't open keycharmap file W/KeyCharacterMap(
-	 * 4666): Error loading keycharmap file
-	 * '/system/usr/keychars/Broadcom_Bluetooth_HID.kcm.bin'.
-	 * hw.keyboards.65540.devname='Broadcom Bluetooth HID' W/KeyCharacterMap(
-	 * 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.bin
-	 */
 	@Override
 	protected Dialog onCreateDialog(int id) {
-
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-		if(confirmables.containsKey(id)) {
+		if (confirmables.containsKey(id)) {
 			final Runnable runnable = confirmables.get(id);
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -2016,11 +1593,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		switch(id) {
-		case R.string.make_wav:
-		{
-			//Dialog dialog = new Dialog(this);
-			//dialog.setContentView(R.layout.ringtone_dialog);
-			//dialog.setTitle(id);
+		case R.string.make_wav: {
 			final String [] progressNames = new String [] { "0:10", "0:20", "0:30", "1:00", "5:00", "10:00" };
 			LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
 			View dialog = inflater.inflate(R.layout.ringtone_dialog, (ViewGroup) findViewById(R.layout.player));
@@ -2092,26 +1665,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					dialog.cancel();
 				}
 			});
-			/*
-			Button okButton = (Button) dialog.findViewById(R.id.ok_button);
-			okButton.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					File file = new File("/sdcard/droidsound/RINGTONE.WAV");
-					dumpingWav = 10000 + toneLength * 1000;//30000;
-					int flags = 0;
-					if(toneHQ) flags |= 2;
-					player.dumpWav(operationSong.getPath(), file.getPath(), dumpingWav, flags);
-				}
-			});
-			Button cancelButton = (Button) dialog.findViewById(R.id.cancel_button);
-			cancelButton.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-				}
-			}); */
 			break;
-			//return dialog;
 		}
 		case R.string.new_:
 			builder.setTitle(id);
@@ -2294,9 +1848,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			aitem.setTitle(s.replace("[playlist]", pl.getTitle()));
 		}
 
-		//menu.getItem(R.id.paste).setVisible(clipBoardFile != null);
-
-
 		if(songDatabase.getCurrentPlaylist() != null) {
 			menu.setGroupVisible(R.id.in_playlist, true);
 			menu.setGroupVisible(R.id.on_file, false);
@@ -2469,7 +2020,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	private void delDir(File dd) {
-
 		if(dd.isDirectory()) {
 			File[] files = dd.listFiles();
 			for(File f : files) {
