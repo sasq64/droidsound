@@ -589,6 +589,7 @@ public class PlayerService extends Service {
 			return false;
 		}
 	}
+
 	private final LocalBinder mBinder = new LocalBinder();
 
     @Override

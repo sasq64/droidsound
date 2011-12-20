@@ -62,7 +62,6 @@ import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 import com.ssb.droidsound.database.CSDBParser;
-import com.ssb.droidsound.database.MediaSource;
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.playlistview.FileInfo;
 import com.ssb.droidsound.playlistview.PlayListView;
@@ -83,7 +82,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 	}
 
 	private static class SearchCursor extends CursorWrapper {
-
 		public SearchCursor(Cursor cursor) {
 			super(cursor);
 		}
@@ -106,8 +104,7 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 
 	private static String[] repnames = { "CONT", "----", "REPT", "CS", "RS" };
 
-
-	static SongDatabase songDatabase = null;
+	protected static SongDatabase songDatabase = null;
 	private static Thread dbThread = null;
 
 	private PlayerServiceConnection player;
@@ -187,15 +184,11 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 	private String subtuneTitle;
 	private String subtuneAuthor;
 
-	private File moveFileHere;
-
 	private String operationTitle;
 
 	private int operationTuneCount;
 
 	private TextView plinfoText;
-
-	private int foundVersion;
 
 	protected boolean dialogShowing;
 
@@ -221,7 +214,7 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		if(path == null) {
 			String p = plv.getPath();
 			if(p != null) {
-				path = p; //f = new File(p);
+				path = p;
 			} else if(currentPlaylistView == searchListView) {
 				searchCursor.requery();
 				searchListView.setCursor(searchCursor, null);
@@ -253,6 +246,21 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 
 	private void setDirectory(PlayListView plv) {
 		setDirectory((String)null, plv);
+	}
+
+	@Override
+	public void onBackPressed() {
+		if (flipper.getDisplayedChild() != FILE_VIEW) {
+			return;
+		}
+
+		File f = new File(playListView.getPath());
+		if (! f.equals(modsDir)) {
+			setDirectory(f.getParent(), playListView);
+			currentPlaylistView.setScrollPosition(f.getPath());
+		} else {
+			super.onBackPressed();
+		}
 	}
 
 	@Override
@@ -332,7 +340,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		case INFO_VIEW:
 			currentPlaylistView = null;
 			searchButton.setVisibility(View.GONE);
-			// shuffleButton.setVisibility(View.VISIBLE);
 			if(subtuneTitle != null && subtuneTitle.length() > 0) {
 				titleText.setText(subtuneTitle + " (" + songTitle + ")");
 			} else {
@@ -348,7 +355,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		case SEARCH_VIEW:
 			currentPlaylistView = searchListView;
 			searchButton.setVisibility(View.VISIBLE);
-			// shuffleButton.setVisibility(View.GONE);
 			titleBar.setBackgroundColor(0xff800000);
 
 			if(searchQuery != null) {
@@ -367,7 +373,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		case FILE_VIEW:
 			currentPlaylistView = playListView;
 			searchButton.setVisibility(View.GONE);
-			// shuffleButton.setVisibility(View.GONE);
 			titleText.setText(dirTitle);
 			subtitleText.setText(dirSubTitle);
 			titleBar.setBackgroundColor(0xff000080);
@@ -528,7 +533,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 
 					Log.d(TAG, "Scan done!");
 					setDirectory(playListView);
-					// playListView.rescan();
 				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_UPDATE")) {
 					Log.d(TAG, "Scan update!");
 					checkProgressDialog();
@@ -556,16 +560,11 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		boolean created = false;
 
 		if (songDatabase == null) {
-			Log.d(TAG, "############ CREATING static SongDatabase object ##############");
-
 			songDatabase = new SongDatabase(getApplicationContext());
 
 			CSDBParser csdb = new CSDBParser();
 			songDatabase.registerDataSource(CSDBParser.DUMP_NAME, csdb);
 			songDatabase.registerDataSource(CSDBParser.DUMP_NAME + ".ZIP", csdb);
-
-			MediaSource ms = new MediaSource(this);
-			songDatabase.registerDataSource(MediaSource.NAME, ms);
 
 			dbThread = new Thread(songDatabase);
 			dbThread.start();
@@ -583,11 +582,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		}
 
 		setDirectory(currentPath, null);
-
-		if(foundVersion == -1) {
-			dialogShowing = true;
-			showDialog(R.string.unpack_examples);
-		}
 
 		checkProgressDialog();
 
@@ -845,143 +839,58 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 	}
 
 	private void setupModsDir() {
-		String md = prefs.getString("modsDir", null);
-
-		if(md == null) {
-			File extFile = Environment.getExternalStorageDirectory();
-			if (extFile != null) {
-				modsDir = new File(extFile, "MODS");
-			} else {
-				showDialog(R.string.sdcard_not_found);
+		modsDir = new File(prefs.getString("modsDir", new File(Environment.getExternalStorageDirectory(), "MODS").getPath()));
+		if (! modsDir.exists()) {
+			if (! modsDir.mkdirs()) {
+				showDialog(R.string.create_moddir_failed);
 				dialogShowing = true;
+				return;
 			}
-		} else {
-			modsDir = new File(md);
-		}
 
-		if(modsDir == null) {
-			modsDir = new File("/MODS");
-			return;
-		}
-
-		if(!modsDir.exists()) {
-			modsDir.mkdirs();
-		}
-
-		if(!modsDir.exists()) {
-			showDialog(R.string.create_moddir_failed);
-			dialogShowing = true;
-		} else {
 			Editor editor = prefs.edit();
 			editor.putString("modsDir", modsDir.getPath());
 			editor.commit();
-			// showDialog(12);
-		}
 
-		File[] files = modsDir.listFiles();
-		if(files != null) {
-			for(File f : files) {
-				if(f.getName().endsWith(".temp")) {
-					f.delete();
-				}
-			}
-		}
-
-		if(moveFileHere != null) {
-			moveFileHere(moveFileHere);
-		}
-
-		foundVersion = prefs.getInt("version", -1);
-		if(foundVersion == -1) {
 			File tempFile = new File(modsDir, "Examples.zip");
-			if(!tempFile.exists()) {
+			if (! tempFile.exists()) {
 				try {
 					InputStream is = getAssets().open("Examples.zip");
-					if(is != null) {
+					FileOutputStream os = new FileOutputStream(tempFile);
+					byte[] buffer = new byte[1024];
 
-						FileOutputStream os = new FileOutputStream(tempFile);
+					int length;
+					while (0 != (length = is.read(buffer))) {
+						os.write(buffer, 0, length);
+					}
+					os.close();
+					is.close();
 
-						byte[] buffer = new byte[1024 * 64];
-
-						int rc = 0;
-						while(rc >= 0) {
-							rc = is.read(buffer);
-							if(rc > 0) {
-								os.write(buffer, 0, rc);
-							}
+					File ns = new File(modsDir, ".nomedia");
+					if (!ns.exists()) {
+						FileWriter fw;
+						try {
+							fw = new FileWriter(ns);
+							fw.close();
+						} catch (IOException e1) {
 						}
-						os.close();
-						is.close();
 					}
 
+					File mf = new File(modsDir, "Favorites.plist");
+					if(!mf.exists()) {
+						try {
+							FileWriter fw = new FileWriter(mf);
+							fw.close();
+						} catch (IOException e2) {
+						}
+					}
+
+					showDialog(R.string.unpack_examples);
+					dialogShowing = true;
 				} catch (IOException e) {
-					e.printStackTrace();
+					Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
 				}
-			} else {
-				foundVersion = 0;
 			}
 		}
-
-		Editor e = prefs.edit();
-		e.putInt("version", VERSION);
-		e.commit();
-
-		File ns = new File(modsDir, ".nomedia");
-		if(!ns.exists()) {
-			FileWriter fw;
-			try {
-				fw = new FileWriter(ns);
-				fw.close();
-			} catch (IOException e1) {
-			}
-		}
-
-		File mf = new File(modsDir, MediaSource.NAME);
-		if(!mf.exists()) {
-			try {
-				FileWriter fw = new FileWriter(mf);
-				fw.close();
-				Log.d(TAG, "Done");
-			} catch (IOException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			}
-		}
-
-		mf = new File(modsDir, "Streaming");
-		if(mf.exists()) {
-			deleteAll(mf);
-		}
-
-		mf = new File(modsDir, "Favorites.plist");
-		if(!mf.exists()) {
-			try {
-				Log.d(TAG, "Trying to write Favorites");
-				FileWriter fw = new FileWriter(mf);
-				fw.close();
-				Log.d(TAG, "Done");
-			} catch (IOException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			}
-		}
-
-		new File(modsDir, "Favorites.lnk").delete();
-
-	}
-
-	private void deleteAll(File mf) {
-		File [] files = mf.listFiles();
-		if(files != null) {
-			for(File f: files) {
-				Log.d(TAG, f.getPath());
-				if(f.isDirectory()) {
-					deleteAll(f);
-				}
-				f.delete();
-			}
-		}
-		mf.delete();
 	}
 
 	private void checkProgressDialog() {
@@ -1025,7 +934,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 
 		if(t.exists()) {
 			showDialog(R.string.zip_import_replace);
-			moveFileHere = null;
 			return;
 		}
 
@@ -1042,7 +950,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		} else {
 			showDialog(R.string.zip_import_failed);
 		}
-		moveFileHere = null;
 	}
 
 	@Override
@@ -1744,7 +1651,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		case R.id.go_dir:
 			setDirectory(operationSong.getParent(), playListView);
 			currentPlaylistView.setScrollPosition(file.getPath());
-			// flipper.setDisplayedChild(0);
 			flipTo(FILE_VIEW);
 			break;
 		case R.id.set_plist:

@@ -55,7 +55,6 @@ public class PlayListView extends ListView { //extends TouchListView {
     }
 
 	public void rescan() {
-		//adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
 		if(adapter.getCursor() != null) {
 			adapter.getCursor().requery();
 		}
@@ -64,13 +63,8 @@ public class PlayListView extends ListView { //extends TouchListView {
 	}
 
 	public void setHilighted(String name) {
-
-		Log.d(TAG, "SET_HILIGHT %s", name);
 		adapter.setHilightedFile(new File(name));
-		//hilightedName = name;
 		adapter.notifyDataSetChanged();
-		//adapter.setSelectedPosition(position);
-		//setSelectionFromTop(position, getHeight()/4);
 	}
 
 	public void setScrollPosition(String name) {
@@ -79,7 +73,6 @@ public class PlayListView extends ListView { //extends TouchListView {
 		} else {
 			FileInfo [] files = adapter.getFiles(false);
 			for(int i=0; i<files.length; i++) {
-				//Log.d(TAG, "%s vs %s", files[i].getPath(), name);
 				if(name.equals(files[i].getPath())) {
 					Log.d(TAG, "Scrolling to %s", name);
 					setSelectionFromTop(i, 0);
@@ -101,13 +94,6 @@ public class PlayListView extends ListView { //extends TouchListView {
 	public Cursor getCursor(int position) {
 		return adapter.getCursor(position);
 	}
-
-	/*
-	public Cursor obtainCursor() {
-		Cursor c = adapter.getCursor();
-		adapter.mCursor = null;
-		return c;
-	} */
 
 	public String getPath() {
 		return adapter.getPathName();
