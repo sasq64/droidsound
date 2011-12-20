@@ -1,5 +1,5 @@
 <LinearLayout android:orientation="vertical" xmlns:android="http://schemas.android.com/apk/res/android" 
-	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
+	android:layout_width="fill_parent" android:layout_height="fill_parent">
 
 	<TextView style="@style/InfoTitle"
 		android:id="@+id/plinfo_text"
@@ -11,7 +11,7 @@
 		android:scrollbars="vertical"
 		android:maxLines="100"
 		android:autoLink="web|email"
-		android:layout_width="fill_parent" android:layout_height="fill_parent"
+		android:layout_width="fill_parent" android:layout_height="0dp"
 		android:layout_weight="1.0"
 	/>
 	<TextView style="@style/InfoTitle" android:id="@+id/low_text"/>

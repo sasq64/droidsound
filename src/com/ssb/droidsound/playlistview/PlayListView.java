@@ -10,25 +10,25 @@ import android.widget.ListView;
 import com.ssb.droidsound.utils.Log;
 
 /**
- * A ListView that lists songfiles. 
- * 
- * 
+ * A ListView that lists songfiles.
+ *
+ *
  *
  */
 public class PlayListView extends ListView { //extends TouchListView {
 	private static final String TAG = "PlayListView";
 
-	private PlayListAdapter adapter;
-	
+	private final PlayListAdapter adapter;
+
     public PlayListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		
+
 		int itemColor = 0xFFA0A0FF;
 		int subitemColor = 0xFFA0A0FF;
 		int archiveColor = 0xFFFFA080;
 		int dirColor = 0xFFA0A080;
 
-		
+
 		for(int i=0; i<attrs.getAttributeCount(); i++) {
 			String name = attrs.getAttributeName(i);
 			if(name.equals("dirColor")) {
@@ -44,43 +44,14 @@ public class PlayListView extends ListView { //extends TouchListView {
 				subitemColor = attrs.getAttributeIntValue(i, -1);
 			}
 		}
-				
+
 		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
 	}
-    
+
     public boolean editMode() { return adapter.isEditMode(); }
-    
+
     public void setEditMode(boolean on) {
-    	/*
-    	adapter.editMode = on;
-    	if(on) {
-    		setDropListener(new DropListener() {
-    			@Override
-    			public void drop(int from, int to) {
-    				Log.d(TAG, "X");
-    				EditableCursor ec = (EditableCursor) adapter.mCursor;
-    				ec.moveRow(from, to);
-    				adapter.notifyDataSetChanged();
-    			}
-    		});
-    		
-    		setRemoveListener(new RemoveListener() {
-    			@Override
-    			public void remove(int which) {
-    				Log.d(TAG, "Y");
-    				EditableCursor ec = (EditableCursor) adapter.mCursor;
-    				ec.removeRow(which);
-    				adapter.notifyDataSetChanged();
-    			}
-    		});
-    	} else {
-    		setDropListener(null);
-    		setRemoveListener(null);
-    	}
-    	//redraw();
-    	adapter.notifyDataSetChanged(); */
-    	
     }
 
 	public void rescan() {
@@ -91,9 +62,9 @@ public class PlayListView extends ListView { //extends TouchListView {
 		adapter.notifyDataSetChanged();
 		adapter.setHilightedFile(null);
 	}
-	
+
 	public void setHilighted(String name) {
-		
+
 		Log.d(TAG, "SET_HILIGHT %s", name);
 		adapter.setHilightedFile(new File(name));
 		//hilightedName = name;
@@ -101,7 +72,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 		//adapter.setSelectedPosition(position);
 		//setSelectionFromTop(position, getHeight()/4);
 	}
-	
+
 	public void setScrollPosition(String name) {
 		if(name == null) {
 			setSelectionFromTop(0, 0);
@@ -128,24 +99,24 @@ public class PlayListView extends ListView { //extends TouchListView {
 	}
 
 	public Cursor getCursor(int position) {
-		return adapter.getCursor(position);		
+		return adapter.getCursor(position);
 	}
-	
+
 	/*
 	public Cursor obtainCursor() {
 		Cursor c = adapter.getCursor();
 		adapter.mCursor = null;
 		return c;
 	} */
-	
+
 	public String getPath() {
 		return adapter.getPathName();
 	}
-	
+
 	public File getFile(int position) {
 		return adapter.getFile(position);
 	}
-	
+
 	public void setCursor(Cursor cursor, String dirName) {
 		adapter.setCursor(cursor, dirName);
 	}
@@ -158,5 +129,5 @@ public class PlayListView extends ListView { //extends TouchListView {
 		return adapter.getPath(position);
 	}
 
-	
+
 }

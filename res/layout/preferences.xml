@@ -36,17 +36,6 @@
         android:title="Audio" >
 
         <PreferenceCategory
-            android:key="MP3Plugin"
-            android:title="MP3" >
-
-            <CheckBoxPreference
-                android:defaultValue="false"
-                android:key="MP3Plugin.simplestream"
-                android:summary="Use simple Android streaming. More limited but possibly more stable."
-                android:title="Simple MP3 streaming" />
-        </PreferenceCategory>
-
-        <PreferenceCategory
             android:key="VICEPlugin"
             android:title="VICE" >
 
@@ -64,11 +53,11 @@
                 android:title="Filter Bias" />
 
             <ListPreference
-                android:defaultValue="1"
+                android:defaultValue="0"
                 android:entries="@array/sid_model_opts"
                 android:entryValues="@array/sid_model_vals"
                 android:key="VICEPlugin.sid_model"
-                android:title="Preferred SID Model" />
+                android:title="SID Model" />
 
             <ListPreference
                 android:defaultValue="0"

@@ -215,8 +215,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private PowerManager.WakeLock wakeLock;
 
-	// protected int favSelection;
-
 	private String subtuneTitle;
 	private String subtuneAuthor;
 
@@ -2129,9 +2127,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					case 1:
 						showDialog(R.string.name_playlist);
 						break;
-					case 2:
-						showDialog(R.string.name_link);
-						break;
 					}
 				}
 			});
@@ -2197,7 +2192,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			builder.setSingleChoiceItems(R.array.fav_opts, -1, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					// favSelection = which;
 					Button b = ((AlertDialog) dialog).getButton(DialogInterface.BUTTON_POSITIVE);
 
 					if(operationTuneCount < 2) {
