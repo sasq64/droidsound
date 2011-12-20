@@ -49,11 +49,6 @@ public class PlayListView extends ListView { //extends TouchListView {
 		setAdapter(adapter);
 	}
 
-    public boolean editMode() { return adapter.isEditMode(); }
-
-    public void setEditMode(boolean on) {
-    }
-
 	public void rescan() {
 		if(adapter.getCursor() != null) {
 			adapter.getCursor().requery();

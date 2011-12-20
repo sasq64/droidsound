@@ -16,7 +16,6 @@ import java.util.Map;
 import android.database.AbstractCursor;
 import android.database.Cursor;
 
-import com.ssb.droidsound.database.EditableCursor;
 import com.ssb.droidsound.utils.Log;
 
 public class Playlist {
@@ -104,13 +103,12 @@ public class Playlist {
 		}
 	 }
 
-	 private class MyCursor extends AbstractCursor implements EditableCursor {
+	 private class MyCursor extends AbstractCursor {
 		private final List<SongFile> songs;
 		private int position;
 		private final String[] columnNames;
 		private final String[] currentRow;
 		private SongFile currentSong;
-		private final Playlist playlist;
 
 		private static final int COL_PATH = 0;
 		private static final int COL_FILENAME = 1;
@@ -118,7 +116,6 @@ public class Playlist {
 		private static final int COL_SUBTITLE = 3;
 
 		public MyCursor(Playlist pl) {
-			playlist = pl;
 			songs = pl.getSongs();
 			columnNames = new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" };
 			currentRow = new String [4];
@@ -143,42 +140,6 @@ public class Playlist {
 			currentRow[COL_SUBTITLE] = currentSong.getComposer();
 			return true;
 			//super.onMove(oldPosition, newPosition);
-		}
-
-		@Override
-		public boolean moveRow(int from, int to) {
-			// TODO Auto-generated method stub
-			int i = 0;
-			for(SongFile s : songs) {
-				Log.d(TAG, "%02d  %s", i++, s.getTitle());
-			}
-
-			Log.d(TAG, "Move %02d -> %02d", from, to);
-
-			playlist.move(from, to);
-
-			SongFile fromSong = songs.get(from);
-			songs.add(to, fromSong);
-			if(to < from) from++;
-			songs.remove(from);
-
-			i = 0;
-			for(SongFile s : songs) {
-				Log.d(TAG, "%02d  %s", i++, s.getTitle());
-			}
-
-
-
-
-			return true;
-		}
-
-		@Override
-		public boolean removeRow(int row) {
-			// TODO Auto-generated method stub
-			songs.remove(row);
-			playlist.remove(row);
-			return true;
 		}
 
 		@Override

@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
@@ -76,27 +75,6 @@ public class SettingsActivity extends PreferenceActivity {
 				return true;
 			}
 		});
-
-		pref = findPreference("download_link");
-		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-
-				PackageInfo pinfo = null;
-				try {
-					pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-				} catch (NameNotFoundException e) {}
-				Intent intent;
-				if(pinfo != null && pinfo.versionName.contains("beta")) {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/beta.html"));
-				} else {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
-				}
-				startActivity(intent);
-				return true;
-			}
-		});
-
 
 		PackageInfo pinfo = null;
 		try {

@@ -55,7 +55,6 @@ to download more music from the web.</string>
 <string-array name="new_opts">
 	<item>Folder</item>
 	<item>Playlist</item>
-	<item>HTTP Link</item>
 </string-array>
 
 <string-array name="indexing_opts">

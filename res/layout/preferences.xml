@@ -113,11 +113,6 @@
     </PreferenceScreen>
 
     <Preference
-        android:key="download_link"
-        android:summary="Go to web page for quick downloading of music and databases."
-        android:title="Download" />
-
-    <Preference
         android:key="help_pref"
         android:title="Droidsound Help" />
 

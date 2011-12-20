@@ -621,7 +621,7 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 
 				if(fi != null) {
 
-					if(fi.type == SongDatabase.TYPE_DIR || fi.type == SongDatabase.TYPE_ARCHIVE || fi.type == SongDatabase.TYPE_PLIST) {
+					if(fi.getType() == SongDatabase.TYPE_DIR || fi.getType() == SongDatabase.TYPE_ARCHIVE || fi.getType() == SongDatabase.TYPE_PLIST) {
 						setDirectory(fi.getPath(), plv);
 						plv.setScrollPosition(null);
 

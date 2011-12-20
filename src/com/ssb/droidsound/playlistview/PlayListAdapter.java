@@ -42,11 +42,6 @@ class PlayListAdapter extends BaseAdapter {
 	private float subtitleHeight;
 	private boolean subDate;
 	private File hilightedFile;
-	private int mSideTitleIndex;
-	private int mDateIndex;
-
-	private boolean editMode;
-
 
 	PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
 		mContext = context;
@@ -83,8 +78,6 @@ class PlayListAdapter extends BaseAdapter {
 				subDate = true;
 			}
 		}
-		mSideTitleIndex = mCursor.getColumnIndex("SIDETITLE");
-		mDateIndex = mCursor.getColumnIndex("DATE");
 
 		//Log.d(TAG, "%% SIDETITLE %d", mSideTitleIndex);
 
@@ -115,28 +108,12 @@ class PlayListAdapter extends BaseAdapter {
 	}
 
 	@Override
-	public int getViewTypeCount() { return 2; }
-
-	@Override
-	public int getItemViewType(int position) {
-		if(isEditMode()) {
-			return 1;
-		} else {
-			return 0;
-		}
-	}
-
-	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 
 		LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
 
 		if(convertView == null) {
-			if(isEditMode()) {
-				convertView = inflater.inflate(R.layout.editsong_item, parent, false);
-			} else {
-				convertView = inflater.inflate(R.layout.songlist_item, parent, false);
-			}
+			convertView = inflater.inflate(R.layout.songlist_item, parent, false);
 			ViewGroup vg = (ViewGroup)convertView;
 			TextView tv0 = (TextView)vg.getChildAt(1);
 			TextView tv1 = (TextView)vg.getChildAt(2);
@@ -152,8 +129,6 @@ class PlayListAdapter extends BaseAdapter {
 		ImageView iv = (ImageView)vg.getChildAt(0);
 		TextView tv0 = (TextView)vg.getChildAt(1);
 		TextView tv1 = (TextView)vg.getChildAt(2);
-		TextView tv2 = (TextView)vg.getChildAt(3);
-
 
 		mCursor.moveToPosition(position);
 		int type = SongDatabase.TYPE_FILE;
@@ -163,23 +138,8 @@ class PlayListAdapter extends BaseAdapter {
 
 		String title = null;
 		String sub = null;
-		String side = null;
-
-		//Log.d(TAG, "DATEINDEX " + mDateIndex);
-
-		if(mSideTitleIndex >= 0) {
-			side = mCursor.getString(mSideTitleIndex);
-		} else if(mDateIndex >= 0) {
-			int date = mCursor.getInt(mDateIndex);
-			if(date > 0) {
-				//Log.d(TAG, "DATE " + date);
-				side = String.format("(%04d)", date / 10000);
-			}
-		}
 
 		String filename = mCursor.getString(mFileIndex);
-
-
 		if(mTitleIndex >= 0) {
 			title = mCursor.getString(mTitleIndex);
 		}
@@ -214,9 +174,6 @@ class PlayListAdapter extends BaseAdapter {
 				sub = mCursor.getString(mSubIndex);
 			}
 		}
-
-		if(!isEditMode())
-			tv2.setText(side != null ? side : "");
 
 		if(sub == null && type == SongDatabase.TYPE_FILE) {
 			sub = "Unknown";
@@ -266,11 +223,6 @@ class PlayListAdapter extends BaseAdapter {
 
 		if(position == hilightedPosition) {
 			tv0.setTextColor(0xffffa000);
-		}
-
-		if(isEditMode()) {
-			//iv.setImageResource(R.drawable.gflat_hand);
-			iv.setVisibility(View.VISIBLE);
 		}
 
 		return convertView;
@@ -408,9 +360,4 @@ class PlayListAdapter extends BaseAdapter {
 	public String getPathName() {
 		return pathName;
 	}
-
-	public boolean isEditMode() {
-		return editMode;
-	}
-
 }

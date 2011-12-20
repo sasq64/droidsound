@@ -20,7 +20,7 @@ import android.provider.BaseColumns;
 import com.ssb.droidsound.utils.Log;
 
 
-public class CSDBParser implements DataSource {
+public class CSDBParser implements IDataSource {
 	private static final String TAG = CSDBParser.class.getSimpleName();
 
 	public static final String DUMP_NAME = "CSDBDUMP";

@@ -57,7 +57,7 @@ public class SongDatabase implements Runnable {
 
 	private ScanCallback scanCallback;
 
-	private final Map<String, DataSource> dbsources = new HashMap<String, DataSource>();
+	private final Map<String, IDataSource> dbsources = new HashMap<String, IDataSource>();
 
 	private SQLiteDatabase scanDb;
 	private SQLiteDatabase rdb;
@@ -131,7 +131,7 @@ public class SongDatabase implements Runnable {
 		return dbrc;
 	}
 
-	public void registerDataSource(String dumpname, DataSource ds) {
+	public void registerDataSource(String dumpname, IDataSource ds) {
 		String s = dumpname.toUpperCase();
 		dbsources.put(s, ds);
 	}
@@ -320,7 +320,7 @@ public class SongDatabase implements Runnable {
 			break;
 		}
 
-		for(Entry<String, DataSource> ds : dbsources.entrySet()) {
+		for(Entry<String, IDataSource> ds : dbsources.entrySet()) {
 			ds.getValue().createIndex(indexMode, db);
 		}
 	}
@@ -660,7 +660,7 @@ public class SongDatabase implements Runnable {
 			}
 
 			for(File dump : foundDumps) {
-				DataSource ds = dbsources.get(dump.getName().toUpperCase());
+				IDataSource ds = dbsources.get(dump.getName().toUpperCase());
 				isReady = false;
 				if(scanCallback != null) {
 					scanCallback.notifyScan(dump.getPath(), 0);
@@ -928,7 +928,7 @@ public class SongDatabase implements Runnable {
 		}
 
 
-		for(Entry<String, DataSource> ds : dbsources.entrySet()) {
+		for(Entry<String, IDataSource> ds : dbsources.entrySet()) {
 			if(fromPath.toUpperCase().contains("/" + ds.getKey())) {
 				Cursor cursor = ds.getValue().search(query, fromPath, rdb);
 				if(cursor != null) {
@@ -1071,7 +1071,7 @@ public class SongDatabase implements Runnable {
 			return null;
 		}
 
-		for(Entry<String, DataSource> db : dbsources.entrySet()) {
+		for(Entry<String, IDataSource> db : dbsources.entrySet()) {
 			if(upath.contains("/" + db.getKey())) {
 				Cursor cursor = db.getValue().getCursorFromPath(file, rdb, sorting);
 				if(cursor != null) {
