@@ -27,12 +27,6 @@
 			android:textSize="40dp"
 			android:textColor="#ff6060" android:gravity="center"
 			android:text="+" android:layout_gravity="center_vertical" />
-		<TextView android:id="@+id/wake_text" style="@style/LEDText"
-			android:layout_width="wrap_content" android:layout_height="wrap_content"
-			android:paddingLeft="10dp" android:paddingRight="10dp"
-			android:textSize="24dp"
-			android:textColor="#606060" android:gravity="center"
-			android:text="w" android:layout_gravity="center_vertical" />
 	</LinearLayout>
 	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="horizontal"
 	    android:layout_width="wrap_content" android:layout_height="fill_parent"

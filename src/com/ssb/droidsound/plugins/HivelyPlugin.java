@@ -1,9 +1,15 @@
 package com.ssb.droidsound.plugins;
 
 public class HivelyPlugin extends DroidSoundPlugin {
-
 	static {
 		System.loadLibrary("hively");
+	}
+
+	private long songRef;
+
+	@Override
+	public void setOption(String string, String val) {
+		/* no options */
 	}
 
 	@Override
@@ -11,7 +17,6 @@ public class HivelyPlugin extends DroidSoundPlugin {
 		return "HVL Replay v1.6";
 	}
 
-	private long songRef;
 	@Override
 	public boolean canHandle(String name) {
 		return name.toUpperCase().endsWith(".HVL") || name.toUpperCase().endsWith(".AHX");
@@ -52,7 +57,7 @@ public class HivelyPlugin extends DroidSoundPlugin {
 		N_unload(songRef);
 	}
 
-	native public long N_load(byte [] module, int size);
-	native public void N_unload(long song);
-	native public int N_getSoundData(long song, short [] dest, int size);
+	native private long N_load(byte [] module, int size);
+	native private void N_unload(long song);
+	native private int N_getSoundData(long song, short [] dest, int size);
 }

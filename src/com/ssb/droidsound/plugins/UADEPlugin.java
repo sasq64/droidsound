@@ -10,19 +10,17 @@ import java.util.Set;
 
 import android.os.Environment;
 
-import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
 	private static final Set<String> extensions = new HashSet<String>();
-
 	private static boolean inited;
-	private static boolean libLoaded;
+	static {
+		System.loadLibrary("uade");
+	}
 
 	private long currentSong = 0;
-
-	private Unzipper unzipper;
 
 	public UADEPlugin() {
 		synchronized (extensions) {
@@ -31,61 +29,44 @@ public class UADEPlugin extends DroidSoundPlugin {
 			File confFile = new File(droidDir, "eagleplayer.conf");
 
 			if (! (eagleDir.exists() && confFile.exists())) {
-				droidDir.mkdir();
-				unzipper = Unzipper.getInstance();
-				unzipper.unzipAssetAsync(getContext(), "eagleplayers.zip", droidDir);
+				Unzipper.unzipAsset(getContext(), "eagleplayers.zip", droidDir);
 			}
-		}
-	}
 
-	private void indexExtensions() {
-		if (unzipper != null) {
-			while (!unzipper.checkJob("eagleplayers.zip")) {
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					return;
-				}
-			}
-			unzipper = null;
-		}
+			if (! inited) {
+				N_init(droidDir.getPath());
 
-		synchronized (extensions) {
-			if (extensions.size() == 0) {
-				extensions.add("CUST");
-				extensions.add("CUS");
-				extensions.add("CUSTOM");
-				extensions.add("DM");
-				extensions.add("TFX");
-				File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-				File confFile = new File(droidDir, "eagleplayer.conf");
+				if (extensions.size() == 0) {
+					extensions.add("CUST");
+					extensions.add("CUS");
+					extensions.add("CUSTOM");
+					extensions.add("DM");
+					extensions.add("TFX");
 
-				BufferedReader reader;
-				try {
-					reader = new BufferedReader(new FileReader(confFile));
-					String line = reader.readLine();
-					while(line != null) {
-						int x = line.indexOf("prefixes=");
-						if(x >= 0) {
+					try {
+						BufferedReader reader = new BufferedReader(new FileReader(confFile));
+						String line;
+						while (null != (line = reader.readLine())) {
+							int x = line.indexOf("prefixes=");
+							if (x == -1) {
+								continue;
+							}
+
 							String[] exts = line.substring(x+9).split(",");
-							for(String ex : exts) {
+							for (String ex : exts) {
 								int sp = ex.indexOf('\t');
 								if(sp >= 0) {
 									ex = ex.substring(0, sp);
 								}
-								//Log.d(TAG, "Ext " + ex);
 								extensions.add(ex.toUpperCase());
 							}
 						}
-						line = reader.readLine();
+						reader.close();
+					} catch (IOException e) {
+						throw new RuntimeException(e);
 					}
-					reader.close();
-
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
+
+				inited = true;
 			}
 		}
 	}
@@ -190,31 +171,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean load(File file) throws IOException {
-		init();
 		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
-	}
-
-	private void init() {
-		if(!inited) {
-			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-
-			if(! libLoaded) {
-				Log.d(TAG, "Loading library");
-				System.loadLibrary("uade");
-				libLoaded = true;
-			}
-
-			indexExtensions();
-
-			N_init(droidDir.getPath());
-			try {
-				Thread.sleep(800);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			inited = true;
-		}
+		return currentSong != 0;
 	}
 
 	@Override
@@ -249,28 +207,18 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void exit() {
-		if (inited) {
-			N_exit();
-		}
-		inited = false;
-	}
-
-	@Override
-	public void setOption(String o, Object val) {
-		init();
-
+	public void setOption(String o, String val) {
 		final int k;
 		final int v;
 		if (o.equals("filter")) {
 			k = OPT_FILTER;
-			v = (Boolean) val ? 1 : 0;
+			v = Boolean.valueOf(val) ? 1 : 0;
 		} else if (o.equals("panning")) {
 			k = OPT_PANNING;
-			v = Integer.valueOf(((String) val).split(" ")[0]) / 25;
+			v = Integer.valueOf(val.split(" ")[0]) / 25;
 		} else if (o.equals("ntsc")) {
 			k = OPT_NTSC;
-			v = (Boolean) val ? 1 : 0;
+			v = Boolean.valueOf(val) ? 1 : 0;
 		} else {
 			throw new RuntimeException("Unknown option: " + o);
 		}
@@ -283,23 +231,19 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return "UADE - Unix Amiga Delitracker Emulator\nversion 2.13\nCopyright 2000-2006, Heikki Orsila";
 	}
 
-	native public void N_init(String baseDir);
+	native private void N_init(String baseDir);
+	native private void N_exit();
+	native private static void N_setOption(int what, int val);
 
-	native public void N_exit();
-
-	native public static void N_setOption(int what, int val);
-
-	native public boolean N_canHandle(String name);
-	native public long N_load(byte [] module, int size);
-	native public long N_loadFile(String name);
-	native public void N_unload(long song);
+	native private boolean N_canHandle(String name);
+	native private long N_load(byte [] module, int size);
+	native private long N_loadFile(String name);
+	native private void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);
-	native public boolean N_seekTo(long song, int seconds);
-	native public boolean N_setTune(long song, int tune);
-	native public String N_getStringInfo(long song, int what);
-	native public int N_getIntInfo(long song, int what);
-
-
+	native private int N_getSoundData(long song, short [] dest, int size);
+	native private boolean N_seekTo(long song, int seconds);
+	native private boolean N_setTune(long song, int tune);
+	native private String N_getStringInfo(long song, int what);
+	native private int N_getIntInfo(long song, int what);
 }

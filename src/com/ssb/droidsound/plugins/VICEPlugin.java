@@ -8,10 +8,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map.Entry;
 
 import android.content.Context;
 import android.os.Environment;
@@ -34,18 +30,19 @@ public class VICEPlugin extends DroidSoundPlugin {
 		protected String format;
 	};
 
-	final byte[] header = new byte [128];
+	private static final Object LOCK = new Object();
+	private final byte[] header = new byte[128];
 	private byte[] mainHash;
 	private short[] extraLengths;
 	private int hashLen;
 
-	private final int songLengths[] = new int [256];
+	private final int songLengths[] = new int[256];
 	private int currentTune;
 
-	static class Option {
-		String name;
-		String description;
-		Object defaultValue;
+	protected static class Option {
+		protected String name;
+		protected String description;
+		protected Object defaultValue;
 	}
 
 	private Info songInfo;
@@ -92,66 +89,55 @@ public class VICEPlugin extends DroidSoundPlugin {
 	 */
 	native private static void N_setDataDir(String path);
 
-	private final HashMap<Integer, Integer> optMap = new HashMap<Integer, Integer>();
-
-	private Unzipper unzipper = null;
-
-	private static File dataDir;
-
 	private static boolean isActive = false;
 
 	private static boolean initialized = false;
 
 	public VICEPlugin() {
-		if (! initialized) {
-			/* Store basic, kernal & chargen for C++ code to find. */
-			dataDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-			if (!dataDir.exists()) {
-				dataDir.mkdir();
-			}
-
-			File viceDir = new File(dataDir, "VICE");
-			synchronized (lock) {
-				if(!viceDir.exists()) {
-					unzipper = Unzipper.getInstance();
-					unzipper.unzipAssetAsync(getContext(), "vice.zip", dataDir);
+		synchronized (LOCK) {
+			if (! initialized) {
+				/* Store basic, kernal & chargen for C++ code to find. */
+				File dataDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+				if (!dataDir.exists()) {
+					dataDir.mkdir();
 				}
+
+				File viceDir = new File(dataDir, "VICE");
+				if (! viceDir.exists()) {
+					Unzipper.unzipAsset(getContext(), "vice.zip", dataDir);
+				}
+
+				System.loadLibrary("vice");
+				N_setDataDir(new File(dataDir, "VICE").getAbsolutePath());
+
+				initialized = true;
 			}
-			initialized = true;
 		}
 	}
 
 	@Override
-	public void setOption(String opt, Object val) {
+	public void setOption(String opt, String val) {
 		final int k, v;
-		if (opt.equals("active")) {
-			isActive = (Boolean)val;
-			Log.d(TAG, ">>>>>>>>>> VICEPLUGIN IS " + (isActive ? "ACTIVE" : "NOT ACTIVE"));
-			return;
-		} else if (opt.equals("filter")) {
+		if (opt.equals("filter")) {
 			k = OPT_FILTER;
-			v = (Boolean) val ? 1 : 0;
+			v = Boolean.valueOf(val) ? 1 : 0;
 		} else if (opt.equals("ntsc")) {
 			k = OPT_NTSC;
-			v = (Integer) val;
+			v = Integer.valueOf(val);
 		} else if (opt.equals("resampling")) {
 			k = OPT_RESAMPLING;
-			v = (Integer) val;
+			v = Integer.valueOf(val);
 		} else if (opt.equals("filter_bias")) {
 			k = OPT_FILTER_BIAS;
-			v = (Integer) val;
+			v = Integer.valueOf(val);
 		} else if (opt.equals("sid_model")) {
 			k = OPT_SID_MODEL;
-			v = (Integer) val;
+			v = Integer.valueOf(val);
 		} else {
-			return;
+			throw new RuntimeException("Unknown option: " + opt);
 		}
 
-		if(!libraryLoaded) {
-			optMap.put(k, v);
-		} else {
-			N_setOption(k, v);
-		}
+		N_setOption(k, v);
 	}
 
 	@Override
@@ -165,30 +151,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	private boolean nativeLoad(String name, byte [] module, int size) {
-		if (!libraryLoaded) {
-			System.loadLibrary("vice");
-
-			if (unzipper != null) {
-				while (!unzipper.checkJob("vice.zip")) {
-					try {
-						Thread.sleep(500);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-						return false;
-					}
-				}
-				unzipper = null;
-			}
-
-			N_setDataDir(new File(dataDir, "VICE").getAbsolutePath());
-
-			for(Entry<Integer, Integer> e : optMap.entrySet()) {
-				N_setOption(e.getKey(), e.getValue());
-			}
-			optMap.clear();
-			libraryLoaded = true;
-		}
-
 		final String error;
 		try {
 			File file = File.createTempFile("tmp-XXXXX", "sid");
@@ -235,71 +197,53 @@ public class VICEPlugin extends DroidSoundPlugin {
 			speed = 60;
 		}
 
-		Log.d(TAG, "speed %08x, flags %04x left %d songs %d init %x", speed, flags, module.length - offset, songs, initAdress);
+		ByteBuffer dest = ByteBuffer.allocate(65536 + 128);
+		dest.order(ByteOrder.LITTLE_ENDIAN);
 
-		try {
-			MessageDigest md = MessageDigest.getInstance("MD5");
+		dest.put(module, offset, module.length - offset);
+		dest.putShort(initAdress);
+		dest.putShort(playAdress);
+		dest.putShort(songs);
 
-			md.update(module, offset, module.length - offset);
-
-			ByteBuffer dest = ByteBuffer.allocate(32768 + 128);
-			dest.order(ByteOrder.LITTLE_ENDIAN);
-
-			dest.putShort(initAdress);
-			dest.putShort(playAdress);
-			dest.putShort(songs);
-
-			for (int i = 0; i < songs; i ++) {
-				if ((speedBits & (1 << i)) != 0) {
-					dest.put((byte) 60);
-				} else {
-					dest.put((byte) speed);
-				}
+		for (int i = 0; i < songs; i ++) {
+			if ((speedBits & (1 << i)) != 0) {
+				dest.put((byte) 60);
+			} else {
+				dest.put((byte) speed);
 			}
-
-			if ((flags & 0x8) != 0) {
-				dest.put((byte) 2);
-			}
-
-			byte[] d = dest.array();
-			md.update(d, 0, dest.position());
-
-			byte[] md5 = md.digest();
-			Log.d(TAG, "%d %02x %02x DIGEST %02x %02x %02x %02x", d.length, d[0], d[1], md5[0], md5[1], md5[2], md5[3]);
-			return md5;
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
 		}
+
+		if ((flags & 0x8) != 0) {
+			dest.put((byte) 2);
+		}
+
+		return calcMD5(ByteBuffer.wrap(dest.array(), 0, dest.position()).array());
 	}
 
-
 	private void findLength(byte[] module) {
-
-		for (int i=0; i < 256; i++) {
+		for (int i = 0; i < 256; i++) {
 			songLengths[i] = 60*60*1000;
 		}
 
 		Context context = getContext();
-		if (context != null) {
-			if (mainHash == null) {
-				try {
-					InputStream is = context.getAssets().open("songlengths.dat");
-					if(is != null) {
-						DataInputStream dis = new DataInputStream(is);
-						hashLen = dis.readInt();
-						mainHash = new byte [hashLen * 6];
-						dis.read(mainHash);
-						int l = is.available()/2;
-						Log.d(TAG, "We have %d lengths and %d hashes", l, hashLen);
-						extraLengths = new short [l];
-						for(int i=0; i<l; i++) {
-							extraLengths[i] = dis.readShort();
-						}
-						is.close();
-
+		if (mainHash == null) {
+			try {
+				InputStream is = context.getAssets().open("songlengths.dat");
+				if(is != null) {
+					DataInputStream dis = new DataInputStream(is);
+					hashLen = dis.readInt();
+					mainHash = new byte [hashLen * 6];
+					dis.read(mainHash);
+					int l = is.available()/2;
+					Log.d(TAG, "We have %d lengths and %d hashes", l, hashLen);
+					extraLengths = new short [l];
+					for(int i=0; i<l; i++) {
+						extraLengths[i] = dis.readShort();
 					}
-				} catch (IOException e) {
+					is.close();
+
 				}
+			} catch (IOException e) {
 			}
 		}
 
@@ -455,19 +399,19 @@ public class VICEPlugin extends DroidSoundPlugin {
 		songInfo = null;
 		int type = -1;
 
-		String s = new String(module, 0, 4);
-		if((s.equals("PSID") || s.equals("RSID"))) {
+		String s = new String(module, 0, 4, ISO88591);
+		if ((s.equals("PSID") || s.equals("RSID"))) {
 			type = 0;
 		} else
-		if(name.toLowerCase().endsWith(".prg")) {
+		if (name.toLowerCase().endsWith(".prg")) {
 			type = 1;
-		} else if(module[0] == 0x01 && module[1] == 0x08) {
+		} else if (module[0] == 0x01 && module[1] == 0x08) {
 			type = 1;
 		}
 
-		if (type < 0)
+		if (type < 0) {
 			return false;
-
+		}
 		if (type == 1) {
 			byte rsid[] = new byte [] {
 					0x52, 0x53, 0x49, 0x44, 0x00, 0x02, 0x00, 0x7c,
@@ -475,7 +419,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 					0x00, 0x01, 0x00, 0x00, 0x00, 0x00
 			};
 
-			byte [] oldm = module;
+			byte[] oldm = module;
 			module = new byte [oldm.length + 0x7c];
 			System.arraycopy(rsid, 0, module, 0, rsid.length);
 

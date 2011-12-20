@@ -8,18 +8,34 @@ import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.media.MediaPlayer;
 
 import com.ssb.droidsound.utils.Log;
 
 public abstract class DroidSoundPlugin {
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
+	private static final MessageDigest MD5;
+	private static final Map<String, String> MAIN_TO_AUX = new HashMap<String, String>();
+	static {
+		try {
+			MD5 = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			throw new ExceptionInInitializerError(e);
+		}
+
+		MAIN_TO_AUX.put("MDAT", "SMPL");
+		MAIN_TO_AUX.put("TFX", "SAM");
+		MAIN_TO_AUX.put("SNG", "INS");
+		MAIN_TO_AUX.put("RJP", "SMP");
+		MAIN_TO_AUX.put("JPN", "SMP");
+		MAIN_TO_AUX.put("DUM", "INS");
+	}
 
 	public static final int INFO_TITLE = 0;
 	public static final int INFO_AUTHOR = 1;
@@ -32,9 +48,6 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_SUBTUNE_TITLE = 8;
 	public static final int INFO_SUBTUNE_AUTHOR = 9;
 	public static final int INFO_SUBTUNE_NO = 10;
-
-	//public static final int SIZEOF_INFO = 11;
-
 	public static final int INFO_DETAILS_CHANGED = 15;
 
 	public static final int OPT_FILTER = 1;
@@ -45,37 +58,26 @@ public abstract class DroidSoundPlugin {
 	public static final int OPT_FILTER_BIAS = 6;
 	public static final int OPT_SID_MODEL = 7;
 
-
+	private static Object lock = new Object();
 
 	private static Context context;
 
-	static Object lock = new Object();
-
+	public static Context getContext() {
+		return context;
+	}
 	public static void setContext(Context ctx) {
 		context = ctx;
 	}
 
-	public static Context getContext() { return context; }
-
-	private byte[] md5;
-
-	// Called when player thread exits due to inactivty
-	public void exit() {
-	}
-
 	public static List<DroidSoundPlugin> createPluginList() {
-
 		List<DroidSoundPlugin> pluginList;
 		synchronized (lock) {
 			pluginList = new ArrayList<DroidSoundPlugin>();
-			//pluginList.add(new VICEPlugin());
-			//pluginList.add(new SidplayPlugin());
 			pluginList.add(new VICEPlugin());
 			pluginList.add(new ModPlugin());
 			pluginList.add(new GMEPlugin());
 			pluginList.add(new HivelyPlugin());
 			pluginList.add(new SC68Plugin());
-
 			// Keep last
 			pluginList.add(new UADEPlugin());
 		}
@@ -87,33 +89,13 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public boolean load(String name, InputStream is, int size) throws IOException {
-		Log.d(TAG, "PLUGIN LOAD STREAM");
-		boolean rc = false;
-		try {
-			byte [] songBuffer = new byte[size];
-			is.read(songBuffer);
-			calcMD5(songBuffer);
-
-			rc = load(name, songBuffer);
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		return rc;
+		byte[] songBuffer = new byte[size];
+		is.read(songBuffer);
+		return load(name, songBuffer);
 	}
 
-	public void calcMD5(byte[] songBuffer) {
-		MessageDigest md = null;
-		Log.d(TAG, "MD5 CALCING TIME");
-		try {
-			md = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		}
-
-		md.update(songBuffer, 0, songBuffer.length);
-		md5 = md.digest();
+	public synchronized static byte[] calcMD5(byte[] songBuffer) {
+		return MD5.digest(songBuffer);
 	}
 
 	public boolean load(File file) throws IOException {
@@ -204,52 +186,33 @@ public abstract class DroidSoundPlugin {
 		return fname;
 	}
 
-	//public String[] getOptions() {
-	//	return null;
-	//}
-
-	public void setOption(String string, Object val) {
-	}
-
-
+	public abstract void setOption(String string, String val);
 
 	public static void setOptions(SharedPreferences prefs) {
 		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
 		Map<String, ?> prefsMap = prefs.getAll();
 
-		for(DroidSoundPlugin plugin : list) {
-
-			String plname = plugin.getClass().getSimpleName();
-
-			for(Entry<String, ?> entry  : prefsMap.entrySet()) {
+		for (DroidSoundPlugin plugin : list) {
+			String pluginClass = plugin.getClass().getSimpleName();
+			for (Entry<String, ?> entry : prefsMap.entrySet()) {
 				String k = entry.getKey();
 				int dot = k.indexOf('.');
-				if(dot >= 0) {
-					if(k.substring(0, dot).equals(plname)) {
-						Object val = entry.getValue();
-						if(val instanceof String) {
-							try {
-								int i = Integer.parseInt((String) val);
-								val = new Integer(i);
-							} catch (NumberFormatException e) {
-							}
-						}
-						plugin.setOption(k.substring(dot+1), val);
-					}
+				if (dot == -1) {
+					continue;
+				}
+
+				if (k.substring(0, dot).equals(pluginClass)) {
+					Object val = entry.getValue();
+					plugin.setOption(k.substring(dot+1), String.valueOf(val));
 				}
 			}
 		}
-
 	}
-
-	static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
-	static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
 
 	public static String getSecondaryFile(String path) {
 		int dot = path.lastIndexOf('.');
 		int slash = path.lastIndexOf('/');
-
-		if(dot <= slash) {
+		if (dot <= slash) {
 			return null;
 		}
 
@@ -257,27 +220,17 @@ public abstract class DroidSoundPlugin {
 		String ext = path.substring(dot+1).toUpperCase();
 		String pref = path.substring(slash+1, firstDot).toUpperCase();
 
-		for(int i=0; i<pref0.length; i++) {
-			if(pref.equals(pref0[i])) {
-				return path.substring(0, slash+1) + pref1[i] + path.substring(firstDot);
-			} else
-			if(ext.equals(pref0[i])) {
-				return path.substring(0, dot+1) + pref1[i];
-			}
+		if (MAIN_TO_AUX.containsKey(pref)) {
+			return path.substring(0, slash+1) + MAIN_TO_AUX.get(pref) + path.substring(firstDot);
+		} else if (MAIN_TO_AUX.containsKey(ext)) {
+			return path.substring(0, dot+1) + MAIN_TO_AUX.get(ext);
 		}
 
 		return null;
 	}
 
-	public MediaPlayer getMediaPlayer() { return null; }
-
 	public boolean canSeek() {
 		return false;
-	}
-
-	public byte[] getMD5() {
-
-		return md5;
 	}
 
 	public String getVersion() {

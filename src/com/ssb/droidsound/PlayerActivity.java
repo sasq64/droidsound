@@ -25,16 +25,13 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
 import android.database.CursorWrapper;
-import android.database.sqlite.SQLiteDatabase;
 import android.media.AudioManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
-import android.speech.tts.TextToSpeech;
 import android.text.Html;
 import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
@@ -73,12 +70,11 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
 
-public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
+public class PlayerActivity extends Activity implements PlayerService.IPlayerServiceCallback {
 	private static final String TAG = "PlayerActivity";
 	public static final int VERSION = 17;
 
 	private static class Config {
-		int ttsStatus;
 		SearchCursor searchCursor;
 		String activePlaylist;
 		String query;
@@ -133,7 +129,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private int seekingSong;
 
-	// private ViewFlipper seekFlipper;
 	private SeekBar songSeeker;
 
 	private OnItemClickListener listClickListener;
@@ -161,8 +156,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private BroadcastReceiver receiver;
 
-	private SQLiteDatabase db;
-
 	private String songTitle;
 	private String songComposer;
 
@@ -170,13 +163,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private String dirTitle;
 	private String dirSubTitle;
 	private String[] songDetails;
-
-	private static final int TTS_UNCHECKED = -1000;
-	private static final int TTS_OK = 2;
-	private static final int TTS_UNINSTALLED = 0;
-	private static final int TTS_UNINSTALLED_ASK = 1;
-
-	private int ttsStatus = TTS_UNCHECKED;
 
 	private Config lastConfig;
 
@@ -197,9 +183,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int songRepeat;
 
 	private TextView plusText;
-	private TextView wakeText;
-
-	private PowerManager.WakeLock wakeLock;
 
 	private String subtuneTitle;
 	private String subtuneAuthor;
@@ -215,8 +198,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private int foundVersion;
 
 	protected boolean dialogShowing;
-
-	private byte[] md5;
 
 	private SongFile clipBoardFile;
 
@@ -426,43 +407,18 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Log.d(TAG, "#### onCreate()");
-
 		PreferenceManager.setDefaultValues(this, R.layout.preferences, false);
-
 		DroidSoundPlugin.setContext(getApplicationContext());
 
 		Intent intent = getIntent();
-		Log.d(TAG, "Intent %s / %s", intent.getAction(), intent.getDataString());
-		if(Intent.ACTION_VIEW.equals(intent.getAction())) {
-			String music = intent.getDataString();
-
-			if(music.toUpperCase().endsWith(".ZIP")) {
-
-				if(music.startsWith("file:/")) {
-					music = music.substring(6);
-				}
-
-				File f = new File(music);
-
-				if(f.exists()) {
-					moveFileHere = f;
-				}
-			} else {
-				Intent newIntent = new Intent(intent);
-				newIntent.setClass(this, PlayerService.class);
-				startService(newIntent);
-				finish();
-				return;
-			}
-		} else if(Intent.ACTION_SEND.equals(intent.getAction())) {
-			Log.d(TAG, ">> Want to share '%s'", intent.getStringExtra(Intent.EXTRA_TEXT));
-
-			Bundle bundle = intent.getExtras();
-			for(String s : bundle.keySet()) {
-				Log.d(TAG, s);
-			}
-
+		Log.i(TAG, "PlayerActivity launched to handle: %s (data=%s)", intent.getAction(), intent.getDataString());
+		if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+			Intent newIntent = new Intent(intent);
+			newIntent.setClass(this, PlayerService.class);
+			startService(newIntent);
+			finish();
+			return;
+		} else if (Intent.ACTION_SEND.equals(intent.getAction())) {
 			Intent newIntent = new Intent(intent);
 			newIntent.setAction(Intent.ACTION_VIEW);
 
@@ -477,6 +433,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
 		player = new PlayerServiceConnection();
+		player.bindService(this, this);
 
 		setContentView(R.layout.player);
 		flipper = (ViewFlipper) findViewById(R.id.flipper);
@@ -508,14 +465,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		shuffleText = (TextView) findViewById(R.id.shuffle_text);
 		repeatText = (TextView) findViewById(R.id.repeat_text);
 		plusText = (TextView) findViewById(R.id.plus_text);
-		wakeText = (TextView) findViewById(R.id.wake_text);
 
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 
-
-
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
 		boolean indexUnknown = prefs.getBoolean("extensions", false);
 		FileIdentifier.setIndexUnknown(indexUnknown);
 
@@ -523,8 +476,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		currentPlaylistView = playListView;
 
-
-		modsDir = null; //new File("/XXX");
+		modsDir = null;
 
 		setupModsDir();
 
@@ -567,12 +519,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 						songDatabase.scan(false, modsDir.getPath());
 					}
 
-					// playListView.rescan();
 					setDirectory(playListView);
-
-					// songDatabase.scan(false, modsDir);
 				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_DONE")) {
-
 					if(progressDialog != null) {
 						progressDialog.cancel();
 						progressDialog = null;
@@ -603,13 +551,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		filter.addAction("com.sddb.droidsound.OPEN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_DONE");
 		filter.addAction("com.sddb.droidsound.SCAN_UPDATE");
-		// filter.addAction("com.sddb.droidsound.DOWNLOAD_DONE");
 		registerReceiver(receiver, filter);
-
 
 		boolean created = false;
 
-		if(songDatabase == null) {
+		if (songDatabase == null) {
 			Log.d(TAG, "############ CREATING static SongDatabase object ##############");
 
 			songDatabase = new SongDatabase(getApplicationContext());
@@ -624,7 +570,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			dbThread = new Thread(songDatabase);
 			dbThread.start();
 
-			while(!songDatabase.isReady()) {
+			while (!songDatabase.isReady()) {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e1) {
@@ -646,9 +592,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		checkProgressDialog();
 
 		lastConfig = (Config) getLastNonConfigurationInstance();
-		if(lastConfig != null) {
+		if (lastConfig != null) {
 			// textToSpeech = lastConfig.textToSpeech;
-			ttsStatus = lastConfig.ttsStatus;
 			searchCursor = lastConfig.searchCursor;
 			searchListView.setCursor(searchCursor, null);
 			songDatabase.setActivePlaylist(new File(lastConfig.activePlaylist));
@@ -666,37 +611,16 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		}
 		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
-		// repeatText.setText("CONT");
 
-		String b = prefs.getString("buffer", "Long");
-		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
-
-
-		if(!created && lastConfig == null) {
-			Log.d(TAG, "OPEN DB");
+		if (!created && lastConfig == null) {
 			songDatabase.open();
 			songDatabase.scan(false, modsDir.getPath());
-			Log.d(TAG, "DONE");
-		}
-
-		if(ttsStatus == TTS_UNCHECKED) {
-			try {
-				Intent checkIntent = new Intent();
-				checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
-				startActivityForResult(checkIntent, 1234);
-			} catch (RuntimeException exc) {
-				exc.printStackTrace();
-				ttsStatus = TTS_UNINSTALLED;
-			}
 		}
 
 		listClickListener = new OnItemClickListener() {
-
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
 				PlayListView plv = (PlayListView) parent;
-
 				FileInfo fi = (FileInfo) plv.getItemAtPosition(position);
 
 				Log.d(TAG, "Clicked %s got file %s", plv, fi);
@@ -709,8 +633,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 					} else {
 						int index = 0;
-						// File [] files = adapter.getFiles(true);
-
 						FileInfo[] files = plv.getFiles(true);
 
 						if(currentPlaylistView == playListView) {
@@ -730,14 +652,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 							}
 							names[i] = files[i].getPath();
 						}
+
 						player.playList(names, index);
 					}
 				}
 			}
 		};
-
-		PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-		wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "Droidsound");
 
 		playListView.setOnItemClickListener(listClickListener);
 		searchListView.setOnItemClickListener(listClickListener);
@@ -819,8 +739,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});
 
-		player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, shuffleSongs ? "R" : "S");
-
 		shuffleText.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -861,19 +779,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					}
 					//operationSong.setTitle(operationTitle);
 					showDialog(R.string.add_to_plist);
-				}
-			}
-		});
-
-		wakeText.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				if(wakeLock.isHeld()) {
-					wakeLock.release();
-					wakeText.setTextColor(0xff404060);
-				} else {
-					wakeLock.acquire();
-					wakeText.setTextColor(0xffb0b0ff);
 				}
 			}
 		});
@@ -940,12 +845,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	private void setupModsDir() {
-
 		String md = prefs.getString("modsDir", null);
 
 		if(md == null) {
 			File extFile = Environment.getExternalStorageDirectory();
-			if(extFile != null) {
+			if (extFile != null) {
 				modsDir = new File(extFile, "MODS");
 			} else {
 				showDialog(R.string.sdcard_not_found);
@@ -1142,27 +1046,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	}
 
 	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		Log.d(TAG, "Got speech result %d", resultCode);
-		if(requestCode == 1234) {
-			Log.d(TAG, "Got speech result %d", 12345);
-			if(resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-				ttsStatus = TTS_OK;
-				boolean useSpeech = prefs.getBoolean("speech", false);
-				player.setOption(PlayerService.OPTION_SPEECH, useSpeech ? "on" : "off");
-			} else {
-				ttsStatus = TTS_UNINSTALLED;
-				player.setOption(PlayerService.OPTION_SPEECH, "none");
-			}
-		}
-	}
-
-	@Override
 	protected void onResume() {
 		super.onResume();
 		Log.d(TAG, "#### onResume()");
-
-		player.bindService(this, this);
 
 		if(!songDatabase.isScanning() && progressDialog != null) {
 			progressDialog.cancel();
@@ -1170,30 +1056,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			// playListView.rescan();
 			setDirectory(playListView);
 		}
-
-		boolean speech = prefs.getBoolean("speech", false);
-
-		if(speech && ttsStatus == TTS_UNINSTALLED) {
-			// missing data, install it
-			ttsStatus = TTS_UNINSTALLED_ASK;
-
-			runConfirmable(R.string.ask_speech, new Runnable() {
-				@Override
-				public void run() {
-					Intent installIntent = new Intent();
-					installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-					startActivity(installIntent);
-				}
-			});
-
-		} else {
-			player.setOption(PlayerService.OPTION_SPEECH, speech ? "on" : "off");
-		}
-		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
-		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));
-
-		String b = prefs.getString("buffer", "Long");
-		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
 
 		String s = prefs.getString("indexing", "Basic");
 		int imode = SongDatabase.INDEX_BASIC;
@@ -1216,19 +1078,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		editor.putString("currentPath", currentPath);
 		editor.putBoolean("shuffle", shuffleSongs);
 		editor.commit();
-
 		Playlist.flushAll();
-
-		if(wakeLock.isHeld()) {
-			wakeLock.release();
-		}
-
-		player.unbindService(this);
-
-		if(db != null) {
-			db.close();
-			db = null;
-		}
 	}
 
 	@Override
@@ -1251,15 +1101,13 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			progressDialog.dismiss();
 		}
 
+		player.unbindService(this);
 		player = null;
-
 	}
 
 	@Override
 	public Object onRetainNonConfigurationInstance() {
 		Config c = new Config();
-
-		c.ttsStatus = ttsStatus;
 		c.searchCursor = searchCursor;
 		c.query = searchQuery;
 		c.shuffleSongs = shuffleSongs;
@@ -1272,16 +1120,14 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		return c;
 	}
 
-	private void hexdump(byte [] data) {
-		StringBuilder sb = new StringBuilder();
-		if(md5 == null) sb.append("NULL HEX");
-		else
-		for(int i=0; i<data.length; i++) {
-			if(i % 8 == 0) {
-				sb.append(String.format("\n%04x:  ", i));
-			}
-			sb.append(String.format("%02x ", data[i]));
-		}
+
+	@Override
+	public void setInitialConfig() {
+		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
+		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));
+		player.setOption(PlayerService.OPTION_PLAYBACK_ORDER, shuffleSongs ? "R" : "S");
+		String b = prefs.getString("buffer", "Long");
+		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
 	}
 
 	@Override
@@ -1355,7 +1201,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	@Override
 	public void stringChanged(int what, String value) {
-
 		switch(what) {
 		case PlayerService.SONG_SOURCE:
 			Log.d(TAG, "SOURCE IS " + value);
@@ -1449,8 +1294,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			// NOTE: Intentonal fall-through
 		case PlayerService.SONG_DETAILS:
 			songDetails = player.getSongInfo();
-			md5 = player.getSongMD5();
-			hexdump(md5);
 			Log.d(TAG, "#### Got %d details", songDetails != null ? songDetails.length : -1);
 			if(songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
@@ -1491,7 +1334,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.optionsmenu, menu);
 		return true;

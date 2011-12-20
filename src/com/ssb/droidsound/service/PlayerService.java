@@ -1,34 +1,24 @@
 package com.ssb.droidsound.service;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.RemoteException;
-import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
-import android.view.KeyEvent;
 
 import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
@@ -41,13 +31,11 @@ import com.ssb.droidsound.utils.Log;
 public class PlayerService extends Service {
 	private static final String TAG = PlayerService.class.getSimpleName();
 
-	// Flags
-
-	// public static final int FLAG_CONTINUOUS = 1;
-	// public static final int FLAG_SHUFFLE = 2;
-	// public static final int FLAG_REPEAT = 4;
-
-	// Information
+	public interface IPlayerServiceCallback {
+		void setInitialConfig();
+		void stringChanged(int what, String string);
+		void intChanged(int what, int value);
+	}
 
 	public static final int SONG_TITLE = 1;
 	public static final int SONG_AUTHOR = 2;
@@ -73,7 +61,6 @@ public class PlayerService extends Service {
 	public static final int SONG_BUFFERING = 19;
 	public static final int SONG_SIZEOF = 20;
 
-	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
 	public static final int OPTION_RESPECT_LENGTH = 2;
 	public static final int OPTION_PLAYBACK_ORDER = 3;
@@ -81,19 +68,16 @@ public class PlayerService extends Service {
 	public static final int OPTION_BUFFERSIZE = 5;
 	public static final int OPTION_DEFAULT_LENGTH = 6;
 
-
 	public static final int RM_CONTINUE = 0;
 	public static final int RM_KEEP_PLAYING = 1;
 	public static final int RM_REPEAT = 2;
 	public static final int RM_CONTINUE_SUBSONGS = 3;
 	public static final int RM_REPEAT_SUBSONG = 4;
-	//private short[] shuffleArray;
 
 	private Object info[];
 
 	private Player player;
 	private Thread playerThread;
-	private List<IPlayerServiceCallback> callbacks;
 
 	private final SongInfo currentSongInfo = new SongInfo();
 
@@ -102,185 +86,15 @@ public class PlayerService extends Service {
 	private boolean shuffleSongs;
 
 	private PhoneStateListener phoneStateListener;
-	private BroadcastReceiver mediaReceiver;
 
 	private final int defaultRepeatMode = RM_CONTINUE;
 
-	protected String saySomething;
-
-
 	PlayQueue playQueue;
-
-	private TextToSpeech textToSpeech;
-	private int ttsStatus = -1;
-
-	private void performCallback(int...what) {
-		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
-		while(it.hasNext()) {
-			IPlayerServiceCallback cb = it.next();
-			for(int i : what) {
-				try {
-					if(info[i] instanceof String) {
-						cb.stringChanged(i, (String)info[i]);
-					} else if(info[i] == null) {
-						cb.stringChanged(i, null);
-					} else {
-						cb.intChanged(i, (Integer)info[i]);
-					}
-				} catch (RemoteException e) {
-					Log.d(TAG, "Removing callback because peer is gone");
-					it.remove();
-				}
-			}
-		}
-	}
 
 	final static String stripChars = "[]!<>?#${}";
 	final static String blankChars = ".-^,";
 
-	final static Map<String, String> composerTranslation = new HashMap<String, String>();
-
-
-	static {
-
-		Map<String, String> ct = composerTranslation;
-
-		ct.put("GOTO80", "Go to 80");
-		ct.put("RAVEGURU", "Rave guru");
-		ct.put("A MAN", "A.Man");
-		ct.put("LMAN", "L.Man");
-		ct.put("LFT", "LFT");
-		ct.put("GREGFEEL", "Greg feel");
-		ct.put("CUBEHEAD", "Cube head");
-		ct.put("LFT", "LFT");
-		ct.put("XINY6581", "Xiny 6 5 8 1");
-		ct.put("V0YAGER", "Voyager");
-		ct.put("SOUNDEMON", "Sound demon");
-		ct.put("SILVERFOX", "Silver fox");
-		ct.put("PUTERMAN", "Puter man");
-		ct.put("SANDMAN", "Sand man");
-		ct.put("LITTLE SID", "Little Sid");
-		ct.put("LORD SID", "Lord Sid");
-		ct.put("NOISE OF SID", "Noise of Sid");
-		ct.put("SMALLTOWN BOY", "Small town boy");
-		ct.put("PVCF", "P V C F");
-		ct.put("AGEMIXER", "Age mixer");
-		ct.put("RADIANTX", "Radiant X");
-		ct.put("TWOFLOWER", "Two flower");
-		ct.put("NECROPOLO", "Necro Polo");
-		ct.put("MINDFLOW", "Mind flow");
-		ct.put("MAKTONE", "Mact1");
-		ct.put("NE7", "N E 7");
-		ct.put("CYCLEBURNER", "Cycle burner");
-		ct.put("GLENN RUNE GALLEFOSS", "Glen Runay Gallefoss");
-	}
-
-
-	private String fixSpeech(String s, boolean composer) {
-
-		if(s == null) return s;
-
-		StringBuilder sb = new StringBuilder();
-
-		if(s.equals("<?>")) {
-			return "Unnamed";
-		}
-
-		for(int i=0; i<s.length(); i++) {
-			char c = s.charAt(i);
-			if(stripChars.indexOf(c) == -1) {
-				if(blankChars.indexOf(c) != -1) {
-					c = ' ';
-				}
-
-				switch(c) {
-				case '&':
-					sb.append(" and ");
-					break;
-				case '/':
-					if(composer) {
-						sb.append(" of ");
-					} else {
-						sb.append(' ');
-					}
-					break;
-				default:
-					sb.append(c);
-					break;
-				}
-			}
-		}
-
-		if(composer) {
-			String a = sb.toString().toUpperCase();
-			String x = composerTranslation.get(a);
-			Log.d(TAG, "Checked %s became %s", a, x == null ? "NULL" : x);
-			if(x != null) {
-				return x;
-			}
-		}
-
-		return sb.toString();
-	}
-
-	private void speakTitle() {
-		String text = "Unnamed song.";
-
-		if(info[SONG_TITLE] == null) return;
-
-		String songComposer = (String) info[SONG_AUTHOR];
-
-		String s = (String) info[SONG_SUBTUNE_AUTHOR];
-		if(s != null && s.length()> 0) {
-			songComposer = s;
-		}
-
-
-
-
-		if(songComposer != null && songComposer.endsWith(")")) {
-			int lpara = songComposer.lastIndexOf("(");
-			int rpara = songComposer.lastIndexOf(")");
-			if(lpara > 0) {
-				songComposer = songComposer.substring(lpara+1, rpara);
-			}
-		}
-
-		String songTitle = (String) info[SONG_TITLE];
-		s = (String) info[SONG_SUBTUNE_TITLE];
-		if(s != null && s.length()> 0) {
-			songTitle = s;
-		}
-
-		songTitle = fixSpeech(songTitle, false);
-
-
-		songComposer = fixSpeech(songComposer, true);
-		/*
-		String subtuneTitle = (String) info[SONG_SUBTUNE_TITLE];
-
-		if(subtuneTitle != null) {
-			subtuneTitle = fixSpeech(subtuneTitle, false);
-			songTitle += (" " + subtuneTitle);
-		} */
-
-		if(songComposer != null & songComposer.length() > 1) {
-			text = songTitle + ". By " + songComposer + ".";
-		} else {
-			text = songTitle + ".";
-		}
-		Log.d(TAG, "Saying '%s'", text);
-		if(ttsStatus >=0 && textToSpeech != null) {
-			textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null);
-		} else {
-			saySomething = text;
-		}
-
-	}
-
-
     private final Handler mHandler = new Handler() {
-
 		@Override
         public void handleMessage(Message msg) {
         	//Log.d(TAG, "Got msg %d with arg %s", msg.what, (String)msg.obj);
@@ -302,7 +116,6 @@ public class PlayerService extends Service {
         			sa = (String [])msg.obj;
         			info[SONG_TITLE] = sa[0];
         			info[SONG_AUTHOR] = sa[1];
-        			speakTitle();
         			performCallback(SONG_TITLE, SONG_AUTHOR);
         			break;
             	case Player.MSG_SUBTUNE:
@@ -319,22 +132,13 @@ public class PlayerService extends Service {
             			info[SONG_SUBTUNE_TITLE] = sa[0];
             			info[SONG_SUBTUNE_AUTHOR] = sa[1];
 
-            			if(msg.arg1 < 0) {
-            				speakTitle();
-            			}
-
                 		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_STATE);
                 		break;
             		}
             		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_STATE);
             		break;
                 case Player.MSG_NEWSONG:
-
-
-                	String lastFileName = currentSongInfo.fileName;
-
                 	player.getSongInfo(currentSongInfo);
-
                 	info[SONG_TITLE] = currentSongInfo.title;
 					info[SONG_AUTHOR] = currentSongInfo.author;
 					info[SONG_COPYRIGHT] = currentSongInfo.copyright;
@@ -361,12 +165,6 @@ public class PlayerService extends Service {
 					}
 
 					Log.d(TAG, "SOURCE IS " + currentSongInfo.source);
-
-					if(lastFileName == null || !lastFileName.equals(currentSongInfo.fileName)) {
-						if(ttsStatus >= 0) {
-							speakTitle();
-						}
-					}
 
 					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
                 	break;
@@ -414,24 +212,13 @@ public class PlayerService extends Service {
                 		performCallback(SONG_STATE);
                 	}
                 	break;
-                /*case Player.MSG_SILENT:
-                	if(silenceDetect) {
-	                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-	                		playNextSong();
-	                	} else {
-	                		Log.d(TAG, "User has interferred, not switching");
-	                	}
-                	}
-                	break;*/
                 default:
                     super.handleMessage(msg);
             }
         }
-
     };
 
-
-    void createThread() {
+    private void createThread() {
     	if (playerThread != null) {
     		if (! playerThread.isAlive()) {
     			playerThread = null;
@@ -447,56 +234,11 @@ public class PlayerService extends Service {
     	}
     }
 
-
-    void updatePlaylist() {
-    /*	if(currentPlaylist != null) {
-    		int hash = currentPlaylist.hashCode();
-    		if(hash != oldPlaylistHash) {
-    			Log.d(TAG, "Current playlist has changed!");
-    			List<File> files = currentPlaylist.getFiles();
-
-    			String current =  musicList[shuffleArray[musicListPos]];
-
-    			for(int i=0; i<files.size(); i++) {
-    				if(files.get(i).getPath().equals(current)) {
-    					break;
-    				}
-    			}
-
-
-    			musicList = new String [files.size()];
-    			int i = 0;
-    			for(File f : files) {
-    				musicList[i++] = f.getPath();
-    			}
-
-
-    		}
-    		oldPlaylistHash = hash;
-    	} */
-    }
-
-    boolean playNextSong() {
+    private boolean playNextSong() {
     	if(playQueue == null) {
     		return false;
     	}
     	SongFile song = playQueue.next();
-    	/*
-    	int sc = song.indexOf(';');
-		if(sc > 0) {
-			int subtune = -2;
-			try {
-				subtune = Integer.parseInt(song.substring(sc+1));
-			} catch (NumberFormatException e) {
-			}
-			if((Integer)info[SONG_SUBSONG] + 1 == subtune && currentSongInfo.fileName.equals(song.substring(0, sc))) {
-				createThread();
-				player.setSubSong(subtune);
-				info[SONG_SUBSONG] = (Integer)subtune;
-				return true;
-			}
-		} */
-
 
 		if(song != null) {
        		song = playQueue.current();
@@ -510,7 +252,7 @@ public class PlayerService extends Service {
 		return false;
     }
 
-    boolean playPrevSong() {
+    private boolean playPrevSong() {
     	if(playQueue == null) {
     		return false;
     	}
@@ -526,17 +268,6 @@ public class PlayerService extends Service {
 		return false;
     }
 
-    private static final Class<?>[] mStartForegroundSignature = new Class<?>[] { int.class, Notification.class};
-    private static final Class<?>[] mStopForegroundSignature = new Class<?>[] { boolean.class};
-
-    private NotificationManager mNM;
-    private Method mStartForeground;
-    private Method mStopForeground;
-    private final Object[] mStartForegroundArgs = new Object[2];
-    private final Object[] mStopForegroundArgs = new Object[1];
-
-	//private PowerManager.WakeLock wakeLock;
-
 	private Notification notification;
 
 	private PendingIntent contentIntent;
@@ -549,63 +280,6 @@ public class PlayerService extends Service {
 
 	protected int callState = TelephonyManager.CALL_STATE_IDLE;
 
-	//private boolean foreground;
-
-    /**
-     * This is a wrapper around the new startForeground method, using the older
-     * APIs if it is not available.
-     */
-    void startForegroundCompat(int id, Notification notification) {
-        // If we have the new startForeground API, then use it.
-        if (mStartForeground != null) {
-            mStartForegroundArgs[0] = Integer.valueOf(id);
-            mStartForegroundArgs[1] = notification;
-            try {
-                mStartForeground.invoke(this, mStartForegroundArgs);
-            } catch (InvocationTargetException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke startForeground", e);
-            } catch (IllegalAccessException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke startForeground", e);
-            }
-            //foreground = true;
-            return;
-        }
-
-        // Fall back on the old API.
-        mNM.notify(id, notification);
-        //foreground = true;
-    }
-
-    /**
-     * This is a wrapper around the new stopForeground method, using the older
-     * APIs if it is not available.
-     */
-    void stopForegroundCompat(int id) {
-        // If we have the new stopForeground API, then use it.
-        if (mStopForeground != null) {
-            mStopForegroundArgs[0] = Boolean.TRUE;
-            try {
-                mStopForeground.invoke(this, mStopForegroundArgs);
-            } catch (InvocationTargetException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke stopForeground", e);
-            } catch (IllegalAccessException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke stopForeground", e);
-            }
-            //foreground = false;
-            return;
-        }
-
-        // Fall back on the old API.  Note to cancel BEFORE changing the
-        // foreground state, since we could be killed at that point.
-        mNM.cancel(id);
-        //foreground = false;
-    }
-
-
 	@Override
 	public void onCreate() {
 		super.onCreate();
@@ -614,19 +288,13 @@ public class PlayerService extends Service {
 
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 		player = new Player(audioManager, mHandler, getApplicationContext());
-		callbacks = new ArrayList<IPlayerServiceCallback>();
-		info = new Object [20];
-		for(int i=0; i<20; i++)
-			info[i] = null;
-
+		info = new Object[20];
 
 		phoneStateListener = new PhoneStateListener() {
-
 			boolean didPause = false;
 
 			@Override
 			public void onCallStateChanged(int state, String incomingNumber) {
-
 				callState  = state;
 				switch(state) {
 				case TelephonyManager.CALL_STATE_RINGING:
@@ -637,7 +305,7 @@ public class PlayerService extends Service {
 					}
 					break;
 				case TelephonyManager.CALL_STATE_IDLE:
-					if(didPause && player != null && !player.isPlaying()) {
+					if (didPause && player != null && !player.isPlaying()) {
 						player.paused(false);
 					}
 					didPause = false;
@@ -645,185 +313,28 @@ public class PlayerService extends Service {
 				}
 
 				Log.d(TAG, "CALL STATE %d %s", state, incomingNumber);
-				//super.onCallStateChanged(state, incomingNumber);
 			}
 		};
 
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
-        mediaReceiver = new BroadcastReceiver() {
-
-        	//boolean actionHandled = false;
-			private long downTime;
-			private long unpluggedTime = -1;
-			private int lastState = -1;
-			//MediaPlayer mp;
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				Log.d(TAG, "##### GOT INTENT %s", intent.getAction());
-
-				if(intent.getAction().equals(Intent.ACTION_MEDIA_BUTTON)) {
-					Log.d(TAG, "MEDIA BUTTON");
-
-					Bundle b = intent.getExtras();
-					KeyEvent evt = (KeyEvent)b.get("android.intent.extra.KEY_EVENT");
-
-					if(player.isActive()) {
-						if(evt != null) {
-							if(evt.getAction() == KeyEvent.ACTION_DOWN) {
-
-								downTime = evt.getDownTime();
-								Log.d(TAG, "TIME %d %d", downTime, evt.getEventTime());
-
-								/*if(!actionHandled) {
-									if(evt.getRepeatCount() > 2) {
-										playNextSong();
-										actionHandled = true;
-									}
-								} */
-							} else if(evt.getAction() == KeyEvent.ACTION_UP) {
-
-								int keycode = evt.getKeyCode();
-								long t = 0;
-								if(downTime > 0) {
-									t = evt.getEventTime() - downTime;
-								}
-								downTime = -1;
-								Log.d(TAG, "DOWN TIME %d", t);
-
-								switch (keycode) {
-				                case KeyEvent.KEYCODE_MEDIA_STOP:
-				                	player.stop();
-				                	whenStopped();
-				        			info[SONG_REPEAT] = defaultRepeatMode;
-				        			performCallback(SONG_REPEAT);
-				                    break;
-				                case KeyEvent.KEYCODE_MEDIA_NEXT:
-				                	playNextSong();
-				                    break;
-				                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
-				                	playPrevSong();
-				                    break;
-				                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-				                	if(player.isPlaying()) {
-
-										player.paused(true);
-									} else {
-										player.paused(false);
-									}
-				                	break;
-				                default:
-				                case KeyEvent.KEYCODE_HEADSETHOOK:
-
-				                	// Dont read headset button if call is in progress
-				                	if(callState != TelephonyManager.CALL_STATE_IDLE)
-				                		return;
-
-									if(t > 2000) {
-										if(textToSpeech == null) {
-											speakTitle();
-											//saySomething = "Speech on.";
-											activateSpeech(true);
-										} else {
-											textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
-											try {
-												Thread.sleep(1000);
-											} catch (InterruptedException e) {
-												e.printStackTrace();
-											}
-											activateSpeech(false);
-										}
-									} else
-									if(t > 300) {
-										playNextSong();
-									} else  {
-										if(player.isPlaying()) {
-											player.paused(true);
-										} else {
-											player.paused(false);
-										}
-									}
-									//actionHandled = false;
-									break;
-					            }
-							}
-						} else {
-
-							if(player.isPlaying()) {
-								player.paused(true);
-							} else {
-								player.paused(false);
-							}
-						}
-
-						abortBroadcast();
-					}
-				} else if(intent.getAction().equals(Intent.ACTION_HEADSET_PLUG)) {
-					int state = intent.getIntExtra("state", -1);
-
-					if(lastState  != -1 && lastState != state) {
-						Log.d(TAG, "HEADSET PLUG " + state);
-						if(state == 0) {
-							if(player.isPlaying()) {
-								unpluggedTime = System.currentTimeMillis();
-								player.paused(true);
-							}
-						} else if(state == 1) {
-							if(unpluggedTime > 0 && (System.currentTimeMillis() - unpluggedTime) < 5000) {
-								if(!player.isPlaying()) {
-									player.paused(false);
-								}
-							}
-							unpluggedTime = -1;
-						}
-					}
-					lastState = state;
-				}
-
-				//for(String s : b.keySet()) {
-				//	Log.d(TAG, "EXTRA %s -> %s", s, b.get(s).toString());
-				//}
-			}
-		};
-
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(Intent.ACTION_MEDIA_BUTTON);
-		filter.addAction(Intent.ACTION_HEADSET_PLUG);
-		filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY - 1);
-		registerReceiver(mediaReceiver, filter);
-
-		Log.d(TAG, "PlayerService created");
-
-		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-		try {
-			mStartForeground = getClass().getMethod("startForeground", mStartForegroundSignature);
-			mStopForeground = getClass().getMethod("stopForeground", mStopForegroundSignature);
-		} catch (NoSuchMethodException e) {
-			// Running on an older platform.
-			mStartForeground = mStopForeground = null;
-		}
-
 		notification = new Notification(R.drawable.droidsound64x64, "Droidsound", System.currentTimeMillis());
 		Intent notificationIntent = new Intent(this, PlayerActivity.class);
+		notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
 		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
 	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
-	    //PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-	    //wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Droidsound");
-	    //wakeLock.acquire();
 	}
 
-	void beforePlay(String name) {
+	protected void beforePlay(String name) {
 		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
-		//if(!foreground)
-			startForegroundCompat(R.string.notification, notification);
-
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		nm.notify(0x123456, notification);
 	}
 
-	void whenStopped() {
-		//if(foreground)
-			stopForegroundCompat(R.string.notification);
+	protected void afterPlay() {
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		nm.cancel(0x123456);
 	}
 
 	@Override
@@ -883,27 +394,31 @@ public class PlayerService extends Service {
 
 		super.onDestroy();
 
-		//wakeLock.release();
-
-		//stopForegroundCompat(R.string.notification);
-
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, 0);
 
-		unregisterReceiver(mediaReceiver);
-
 		player.stop();
-		whenStopped();
 		player = null;
 		playerThread = null;
 	}
 
-	private final IPlayerService.Stub mBinder = new IPlayerService.Stub() {
+	protected Set<IPlayerServiceCallback> callbacks = new HashSet<IPlayerServiceCallback>();
 
-		@Override
-		public boolean playMod(String name) throws RemoteException {
-			Log.d(TAG, "Playmod called " + name);
+	private void performCallback(int...what) {
+		for (IPlayerServiceCallback cb : callbacks) {
+			for (int i : what) {
+				Object v = info[i];
+				if (v == null || (v instanceof String)) {
+					cb.stringChanged(i, (String) v);
+				} else {
+					cb.intChanged(i, (Integer) v);
+				}
+			}
+		}
+	}
 
+	public class LocalBinder extends Binder {
+		public boolean playMod(String name) {
 			createThread();
 			info[SONG_FILENAME] = name;
 			SongFile song = new SongFile(name);
@@ -912,40 +427,24 @@ public class PlayerService extends Service {
 			return true;
 		}
 
-		@Override
-		public void registerCallback(IPlayerServiceCallback cb, int flags) throws RemoteException {
-
-			if(cb != null) {
-				for(int i=1; i<SONG_SIZEOF; i++) {
-					try {
-						if(info[i] != null) {
-							if(info[i] instanceof String) {
-								cb.stringChanged(i, (String)info[i]);
-							} else {
-								cb.intChanged(i, (Integer)info[i]);
-							}
-						}
-					} catch (RemoteException e) {
-						Log.d(TAG, "Ignoring callback because peer is gone");
-						return;
+		public void registerCallback(IPlayerServiceCallback cb, int flags) {
+			for (int i = 1; i < SONG_SIZEOF; i++) {
+				if(info[i] != null) {
+					if(info[i] instanceof String) {
+						cb.stringChanged(i, (String)info[i]);
+					} else {
+						cb.intChanged(i, (Integer)info[i]);
 					}
 				}
 			}
-			Log.d(TAG, "Adding %s", cb.toString());
 			callbacks.add(cb);
 		}
 
-		@Override
-		public void unRegisterCallback(IPlayerServiceCallback cb)
-				throws RemoteException {
-
-			Log.d(TAG, "Removing %s", cb.toString());
+		public void unRegisterCallback(IPlayerServiceCallback cb) {
 			callbacks.remove(cb);
 		}
 
-
-		@Override
-		public boolean playPause(boolean play) throws RemoteException {
+		public boolean playPause(boolean play) {
 			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
 				SongFile s = playQueue.current();
 				if(s != null) {
@@ -958,62 +457,26 @@ public class PlayerService extends Service {
 			}
 			player.paused(!play);
 			return true;
-			//}
-			//return false;
 		}
 
-		@Override
-		public void stop() throws RemoteException {
+		public void stop()  {
 			player.stop();
-			whenStopped();
-	    	//userInterferred = false;
+			afterPlay();
 			info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 		}
 
-
-		@Override
-		public boolean seekTo(int msec) throws RemoteException {
+		public boolean seekTo(int msec) {
 			player.seekTo(msec);
 			info[SONG_POS] = msec;
 			performCallback(SONG_POS);
-
-			/*if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-				info[SONG_REPEAT] = RM_KEEP_PLAYING;
-				performCallback(SONG_REPEAT);
-			} */
 			return true;
 		}
 
-		@Override
-		public boolean setSubSong(int song) throws RemoteException {
-
-	    	if(playQueue == null) {
+		public boolean setSubSong(int song) {
+	    	if (playQueue == null) {
 	    		return false;
 	    	}
-
-			// TODO : Check if next song is the same file and the same sub song
-			/* boolean ok = false;
-			Log.d(TAG, "Current song is " + currentSongInfo.fileName);
-			SongFile nextSong = playQueue.getNextSong();
-			if(nextSong != null) {
-				Log.d(TAG, "Next song is " + nextSong.getName());
-				if(song == nextSong.startSong && currentSongInfo.fileName.equals(nextSong.filename)) {
-					playQueue.next();
-					ok = true;
-				}
-			}
-			if(!ok) {
-				nextSong = playQueue.getPrevSong();
-				if(nextSong != null) {
-					Log.d(TAG, "Prev song is " + nextSong.filename);
-					if(song == nextSong.startSong && currentSongInfo.fileName.equals(nextSong.filename)) {
-						playQueue.prev();
-						ok = true;
-					}
-				}
-			} */
-
 
  			player.setSubSong(song);
 			info[SONG_SUBSONG] = song;
@@ -1022,92 +485,48 @@ public class PlayerService extends Service {
 				performCallback(SONG_REPEAT);
 			}
 
-			//if(ok) {
-			//	info[SONG_FILENAME] = nextSong.filename + ";" + song;
-			//	performCallback(SONG_FILENAME);
-			//}
-
 			return true;
-
 		}
 
-		@Override
-		public void setOption(int opt, String arg) throws RemoteException {
-
-			boolean on = arg.equals("on");
-
-			try {
-				switch(opt) {
-				case OPTION_DEFAULT_LENGTH:
-					defaultLength  = Integer.parseInt(arg) * 1000;
-					Log.d(TAG, "Default length set to " + defaultLength);
-					break;
-				case OPTION_REPEATMODE:
-					info[SONG_REPEAT] = Integer.parseInt(arg);
-					performCallback(SONG_REPEAT);
-					break;
-				//case OPTION_SILENCE_DETECT:
-				//	Log.d(TAG, "Silence detection " + arg);
-				//	silenceDetect = on;
-				//	break;
-				case OPTION_PLAYBACK_ORDER:
-					if(arg.charAt(0) == 'R') {
-						shuffleSongs = true;
-					} else if(arg.charAt(0) == 'S') {
-						shuffleSongs = false;
-					}
-					if(playQueue != null) {
-						playQueue.setShuffle(shuffleSongs);
-					}
-					break;
-				case OPTION_RESPECT_LENGTH:
-					Log.d(TAG, "Respect length " + arg);
-					respectLength = on;
-					break;
-				case OPTION_SPEECH:
-					activateSpeech(on);
-					break;
-				case OPTION_BUFFERSIZE:
-			 		bufSize = 176384; // 2s
-			 		if(arg.equals("Short")) {
-			 			bufSize = 66144; // 0.75s
-			 		} else
-			 		if(arg.equals("Medium")) {
-			 			bufSize = 132288; // 1.5s
-			 		} else
-			 		if(arg.equals("Very Long")) {
-			 			bufSize = 352768; // 4s
-			 		}
-					player.setBufSize(bufSize);
-					break;
+		public void setOption(int opt, String arg) {
+			switch(opt) {
+			case OPTION_DEFAULT_LENGTH:
+				defaultLength  = Integer.parseInt(arg) * 1000;
+				Log.d(TAG, "Default length set to " + defaultLength);
+				break;
+			case OPTION_REPEATMODE:
+				info[SONG_REPEAT] = Integer.parseInt(arg);
+				performCallback(SONG_REPEAT);
+				break;
+			case OPTION_PLAYBACK_ORDER:
+				if(arg.charAt(0) == 'R') {
+					shuffleSongs = true;
+				} else if(arg.charAt(0) == 'S') {
+					shuffleSongs = false;
 				}
-			} catch (NumberFormatException e) {
+				if(playQueue != null) {
+					playQueue.setShuffle(shuffleSongs);
+				}
+				break;
+			case OPTION_RESPECT_LENGTH:
+				Log.d(TAG, "Respect length " + arg);
+				respectLength = arg.equals("on");
+				break;
+			case OPTION_BUFFERSIZE:
+				bufSize = 176384; // 2s
+				if(arg.equals("Short")) {
+					bufSize = 66144; // 0.75s
+				} else if(arg.equals("Medium")) {
+						bufSize = 132288; // 1.5s
+				} else if(arg.equals("Very Long")) {
+					bufSize = 352768; // 4s
+				}
+				player.setBufSize(bufSize);
+				break;
 			}
 		}
 
-/*
-		private void shuffle() {
-			String t;
-			int sz = musicList.size();
-			for (int i=musicListPos+1; i<sz; i++) {
-			    int randomPosition = rgen.nextInt(sz-1) + 1;
-			    t = musicList.get(i);
-			    musicList.set(i, musicList.get(randomPosition));
-			    musicList.set(randomPosition, t);
-			}
-		}
-
-		private void unshuffle() {
-
-			musicList.clear();
-			for(int i=0; i<musicNames.length; i++) {
-				musicList.add(musicNames[i]);
-			}
-		}
-*/
-		@Override
-		public boolean playPlaylist(String name, int startIndex) throws RemoteException {
-
+		public boolean playPlaylist(String name, int startIndex) {
 			File pf = new File(name);
 			Playlist pl = Playlist.getPlaylist(pf);
 			playQueue = new PlayQueue(pl, startIndex, shuffleSongs);
@@ -1127,42 +546,11 @@ public class PlayerService extends Service {
 			beforePlay(mod.getName());
 			player.playMod(mod, playQueue.getNextSong());
 	    	info[SONG_REPEAT] = defaultRepeatMode;
-			//performCallback(SONG_SOURCE, SONG_REPEAT);
-
 	    	return true;
-
-			/*
-			File pf = new File(name);
-			currentPlaylist = Playlist.getPlaylist(pf);
-			Log.d(TAG, "File %s is playlist %s", name, currentPlaylist.toString());
-			List<File> files = currentPlaylist.getFiles();
-			int i = 0;
-			for(File f : files) {
-				musicNames[i] = f.getPath();
-			}
-
-			return playList(null, startIndex); */
 		}
 
-		@Override
-		public boolean playList(String[] names, int startIndex) throws RemoteException {
-
-
+		public boolean playList(String[] names, int startIndex) {
 			playQueue = new PlayQueue(names, startIndex, shuffleSongs);
-			/*
-			if(names != null) {
-				musicNames = names;
-			}
-			musicList = new ArrayList<String>();
-
-			for(int i=0; i<names.length; i++) {
-				musicList.add(names[i]);
-			}
-			musicListPos = startIndex;
-			String name = musicList.get(startIndex);
-			if(shuffleSongs) {
-				shuffle();
-			} */
 			SongFile song = playQueue.current();
 			Log.d(TAG, "PlayList called " + song.getPath());
 			createThread();
@@ -1172,41 +560,26 @@ public class PlayerService extends Service {
 			player.playMod(song);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
-
-
 			return false;
 		}
 
-		@Override
-		public void playNext() throws RemoteException {
+		public void playNext() {
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 			playNextSong();
 		}
 
-		@Override
-		public void playPrev() throws RemoteException {
+		public void playPrev() {
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 			playPrevSong();
 		}
 
-		@Override
-		public String[] getSongInfo() throws RemoteException {
-
+		public String[] getSongInfo() {
 			return currentSongInfo.details;
 		}
 
-		@Override
-		public byte[] getSongMD5() throws RemoteException {
-
-			return currentSongInfo.md5;
-		}
-
-		@Override
-		public boolean dumpWav(String modName, String destFile, int length, int flags) throws RemoteException {
-			// TODO Auto-generated method stub
-
+		public boolean dumpWav(String modName, String destFile, int length, int flags) {
 			createThread();
 			info[SONG_FILENAME] = modName;
 			SongFile song = new SongFile(modName);
@@ -1215,46 +588,11 @@ public class PlayerService extends Service {
 
 			return false;
 		}
-
-		};
-
+	}
+	private final LocalBinder mBinder = new LocalBinder();
 
     @Override
     public IBinder onBind(Intent intent) {
-    	Log.d(TAG, "BOUND");
     	return mBinder;
-    }
-
-    protected void activateSpeech(boolean on) {
-    	if(on) {
-			if(textToSpeech == null) {
-				Log.d(TAG, "Turning on speech");
-				textToSpeech = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
-					@Override
-					public void onInit(int status) {
-						ttsStatus = status;
-						textToSpeech.setLanguage(Locale.US);
-						if(saySomething != null) {
-							textToSpeech.speak(saySomething, TextToSpeech.QUEUE_FLUSH, null);
-							saySomething = null;
-						}
-
-					}
-				});
-			}
-		} else {
-			if(textToSpeech != null) {
-				textToSpeech.shutdown();
-				textToSpeech = null;
-				ttsStatus = -1;
-				Log.d(TAG, "Turning off speech");
-			}
-		}
-    }
-
-	@Override
-    public boolean onUnbind(Intent intent) {
-    	Log.d(TAG, "UNBOUND");
-    	return super.onUnbind(intent);
     }
 }

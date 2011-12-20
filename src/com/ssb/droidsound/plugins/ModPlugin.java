@@ -1,5 +1,6 @@
 package com.ssb.droidsound.plugins;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -8,26 +9,16 @@ import com.ssb.droidsound.utils.Log;
 
 public class ModPlugin extends DroidSoundPlugin {
 	private static final String TAG = ModPlugin.class.getSimpleName();
-
 	static {
 		System.loadLibrary("modplug");
 	}
-	private final Set<String> extensions;
-	private String author;
-
-	public ModPlugin() {
-		extensions = new HashSet<String>();
-		extensions.add("MOD");
-		extensions.add("XM");
-		extensions.add("S3M");
-		extensions.add("IT");
-		extensions.add("UMX");
-		extensions.add("ULT");
-		extensions.add("669");
-		extensions.add("STM");
-	}
+	private static final Set<String> extensions = new HashSet<String>(Arrays.asList(
+			"MOD", "XM", "S3M", "IT", "UMX", "ULT", "669", "STM"
+	));
 
 	long currentSong = 0;
+
+	private String author;
 
 	@Override
 	public boolean canHandle(String name) {
@@ -40,28 +31,25 @@ public class ModPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean load(String name, byte[] module) {
 		currentSong = N_load(module, module.length);
-		if(currentSong != 0) {
+		if (currentSong != 0) {
 			author = guessAuthor(N_getStringInfo(currentSong, 100));
 		}
-		return (currentSong != 0);
+		return currentSong != 0;
 	}
 
-	static String t [] = new String [256];
-
-
 	private String guessAuthor(String instr) {
-
-		String s [] = instr.split("\\n");
+		String[] t = new String[256];
+		String[] s = instr.split("\\n");
 
 		int n = 0;
 
-		for(int k=0; k<s.length; k++) {
-			String d [] = s[k].split("\\s+");
+		for (int k = 0; k < s.length; k++) {
+			String d[] = s[k].split("\\s+");
 
-			for(int i=0; i<d.length; i++) {
+			for (int i=0; i<d.length; i++) {
 				//Log.d(TAG, d[i]);
 
-				if(n >= t.length - 6)
+				if (n >= t.length - 6)
 					break;
 
 				String x = "";
@@ -81,7 +69,6 @@ public class ModPlugin extends DroidSoundPlugin {
 					} else {
 						x = d[i].replaceAll("^[^\\w]*", "").replaceAll("[^\\w]*$", "");
 					}
-					//Log.d(TAG, "'%s' '%s'", t[i], x);
 				}
 
 				if(x.length() > 0) {
@@ -117,13 +104,11 @@ public class ModPlugin extends DroidSoundPlugin {
 
 		}
 
-
-		String author [] = new String [4];
+		String author[] = new String[4];
 
 		String lastWord = "";
 		String lastLastWord = "";
-		for(int i=0; i<n; i++) {
-
+		for (int i=0; i<n; i++) {
 			if(t[i].length() > 0 && !t[i].equals("EOL")) {
 				// Log.d(TAG, "'%s'", t[i]);
 
@@ -259,7 +244,6 @@ public class ModPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String[] getDetailedInfo() {
-
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
 		//Log.d(TAG, "INSTRUMENTS: " + instruments);
@@ -281,22 +265,24 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
+	public void setOption(String string, String val) {
+		/* No options */
+	}
+
+	@Override
 	public String getVersion() {
 		return "libmodplug v0.8.?";
 	}
 
-	// --- Native functions
-
-	native public boolean N_canHandle(String name);
-	native public long N_load(byte [] module, int size);
-	native public long N_loadInfo(byte [] module, int size);
-	native public void N_unload(long song);
+	native private boolean N_canHandle(String name);
+	native private long N_load(byte [] module, int size);
+	native private long N_loadInfo(byte [] module, int size);
+	native private void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);
-	native public boolean N_seekTo(long song, int seconds);
-	native public boolean N_setTune(long song, int tune);
-	native public String N_getStringInfo(long song, int what);
-	native public int N_getIntInfo(long song, int what);
-
+	native private int N_getSoundData(long song, short [] dest, int size);
+	native private boolean N_seekTo(long song, int seconds);
+	native private boolean N_setTune(long song, int tune);
+	native private String N_getStringInfo(long song, int what);
+	native private int N_getIntInfo(long song, int what);
 }

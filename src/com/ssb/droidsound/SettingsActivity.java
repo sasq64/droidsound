@@ -25,18 +25,16 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
 
 public class SettingsActivity extends PreferenceActivity {
-
 	protected static final String TAG = SettingsActivity.class.getSimpleName();
 	private SongDatabase songDatabase;
 	private boolean doFullScan;
 	private SharedPreferences prefs;
 	private String modsDir;
 
-	class AudiopPrefsListener implements OnPreferenceChangeListener {
-
+	protected static class AudiopPrefsListener implements OnPreferenceChangeListener {
 		private final DroidSoundPlugin plugin;
 
-		AudiopPrefsListener(DroidSoundPlugin pi) {
+		protected AudiopPrefsListener(DroidSoundPlugin pi) {
 			plugin = pi;
 		}
 
@@ -44,17 +42,7 @@ public class SettingsActivity extends PreferenceActivity {
 		public boolean onPreferenceChange(Preference preference, Object newValue) {
 			String k = preference.getKey();
 			String k2 = k.substring(k.indexOf('.')+1);
-			Log.d(TAG, "CHANGED %s=%s", k, k2);
-
-			if(newValue instanceof String) {
-				try {
-					int i = Integer.parseInt((String) newValue);
-					newValue = new Integer(i);
-				} catch (NumberFormatException e) {
-				}
-			}
-
-			plugin.setOption(k2, newValue);
+			plugin.setOption(k2, String.valueOf(newValue));
 			return true;
 		}
 	};
@@ -134,7 +122,7 @@ public class SettingsActivity extends PreferenceActivity {
 					}
 				}
 				if (plugin != null) {
-					for (int j=0; j<pg.getPreferenceCount(); j++) {
+					for (int j = 0; j < pg.getPreferenceCount(); j++) {
 						p = pg.getPreference(j);
 						Log.d(TAG, "Pref %s for %s", p.getKey(), plugin.getClass().getName());
 						p.setOnPreferenceChangeListener(new AudiopPrefsListener(plugin));

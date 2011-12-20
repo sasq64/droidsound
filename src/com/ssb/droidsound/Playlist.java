@@ -366,8 +366,7 @@ public class Playlist {
 		}
 	}
 
-	synchronized void flush() {
-
+	public synchronized void flush() {
 		if(!changed) {
 			//Log.d(TAG, "Not flushing unchanged " + plistFile.getPath());
 			return;
@@ -380,7 +379,6 @@ public class Playlist {
 
 		try {
 			FileWriter writer = new FileWriter(plistFile);
-
 			for(String line : lines) {
 				writer.write(line + "\n");
 			}
@@ -392,7 +390,7 @@ public class Playlist {
 		}
 	}
 
-	synchronized public void clear() {
+	public  synchronized void clear() {
 		Log.d(TAG, "Clearing playlist %s with %d entries", plistFile.getPath(), lines.size());
 		lines = new ArrayList<String>();
 		cursor = null;
