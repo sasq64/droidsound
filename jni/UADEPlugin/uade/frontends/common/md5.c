@@ -18,8 +18,6 @@
 #include <string.h>		/* for memcpy() */
 #include "md5.h"
 
-static void MD5Transform(uint32_t buf[4], uint32_t const in[16]);
-
 #if __BYTE_ORDER == 1234
 #define byteReverse(buf, len)	/* Nothing */
 #else
@@ -44,7 +42,7 @@ static void byteReverse(unsigned char *buf, unsigned longs)
  * Start MD5 accumulation.  Set bit count to 0 and buffer to mysterious
  * initialization constants.
  */
-void uade_MD5Init(uade_MD5_CTX *ctx)
+void MD5Init(MD5_CTX *ctx)
 {
     ctx->buf[0] = 0x67452301;
     ctx->buf[1] = 0xefcdab89;
@@ -59,7 +57,7 @@ void uade_MD5Init(uade_MD5_CTX *ctx)
  * Update context to reflect the concatenation of another buffer full
  * of bytes.
  */
-void uade_MD5Update(uade_MD5_CTX *ctx, unsigned char const *buf, unsigned len)
+void MD5Update(MD5_CTX *ctx, unsigned char const *buf, unsigned len)
 {
     uint32_t t;
 
@@ -107,7 +105,7 @@ void uade_MD5Update(uade_MD5_CTX *ctx, unsigned char const *buf, unsigned len)
  * Final wrapup - pad to 64-byte boundary with the bit pattern 
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-void uade_MD5Final(unsigned char digest[16], uade_MD5_CTX *ctx)
+void MD5Final(unsigned char digest[16], MD5_CTX *ctx)
 {
     unsigned count;
     unsigned char *p;
@@ -165,7 +163,7 @@ void uade_MD5Final(unsigned char digest[16], uade_MD5_CTX *ctx)
  * reflect the addition of 16 longwords of new data.  MD5Update blocks
  * the data and converts bytes into longwords for this routine.
  */
-static void MD5Transform(uint32_t buf[4], uint32_t const in[16])
+void MD5Transform(uint32_t buf[4], uint32_t const in[16])
 {
     uint32_t a, b, c, d;
 

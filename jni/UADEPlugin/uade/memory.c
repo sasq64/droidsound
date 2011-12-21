@@ -8,12 +8,12 @@
 
 #include "sysconfig.h"
 #include "sysdeps.h"
-
+#include <android/log.h>
 #include "options.h"
 #include "uae.h"
-#include "uadememory.h"
+#include "include/uadememory.h"
 
-#include "uadectl.h"
+#include "uade.h"
 
 #ifdef USE_MAPPED_MEMORY
 #include <sys/mman.h>
@@ -493,7 +493,7 @@ int REGPARAM2 default_check (uaecptr a, uae_u32 b)
 
 uae_u8 REGPARAM2 *default_xlate (uaecptr a)
 {
-    uadecore_song_end("the amiga player did something terribly stupid", 1);
+    uade_song_end("the amiga player did something terribly stupid", 1);
     return kickmem_xlate (get_long (0xF80000)); /* So we don't crash. */
 }
 
@@ -598,7 +598,7 @@ void memory_init (void)
 	allocated_chipmem >>= 1;
 	chipmemory = (uae_u8 *) calloc (1, allocated_chipmem);
 	if (chipmemory)
-	    fprintf (stderr, "Reducing chipmem size to %dkb\n", allocated_chipmem >> 10);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Reducing chipmem size to %dkb\n", allocated_chipmem >> 10);
     }
     if (! chipmemory) {
 	write_log ("virtual memory exhausted (chipmemory)!\n");

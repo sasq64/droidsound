@@ -3,45 +3,13 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
-
+#include <android/log.h>
 #include "support.h"
-#include <uade/ossupport.h>
-
-/*
- * Skip whitespace characters in string starting from offset i. Returns offset
- * j >= i as the next non-whitespace character offset, or -1 if non-whitespace
- * are not found.
- */
-static int skipws(const char *s, int i)
-{
-	while (isspace(s[i]))
-		i++;
-
-	if (s[i] == 0)
-		return -1;
-
-	return i;
-}
-
-/*
- * Skip non-whitespace characters in string starting from offset i. Returns
- * offset j >= i as the next whitespace character offset, or -1 if no
- * whitespace if found.
- */
-static int skipnws(const char *s, int i)
-{
-	while (!isspace(s[i]) && s[i] != 0)
-		i++;
-
-	if (s[i] == 0)
-		return -1;
-
-	return i;
-}
+#include "ossupport.h"
 
 /* Zero terminate the current word. Returns -1 is *s == 0 or the next word
    does not exist. Otherwise returns offset to the beginning of next word. */
-int uade_skip_and_terminate_word(char *s, int i)
+int skip_and_terminate_word(char *s, int i)
 {
 	i = skipnws(s, i);
 	if (i < 0)
@@ -57,7 +25,7 @@ int uade_skip_and_terminate_word(char *s, int i)
 	return i;
 }
 
-char *uade_xbasename(const char *s)
+char *xbasename(const char *s)
 {
   char *t = strrchr(s, (int) '/');
   if (t == NULL) {
@@ -81,7 +49,7 @@ char *uade_xbasename(const char *s)
  *  - 1 if only "key" is found
  *  - 2 if both "key" and "value" are found
  */
-int uade_get_two_ws_separated_fields(char **key, char **value, char *s)
+int get_two_ws_separated_fields(char **key, char **value, char *s)
 {
 	int i;
 
@@ -95,21 +63,54 @@ int uade_get_two_ws_separated_fields(char **key, char **value, char *s)
 
 	*key = s + i;
 
-	i = uade_skip_and_terminate_word(s, i);
+	i = skip_and_terminate_word(s, i);
 
 	if (i < 0)
 		return 1;   /* We got a "key", but not a "value" */
 
 	*value = s + i;
 
-	uade_skip_and_terminate_word(s, i);
+	skip_and_terminate_word(s, i);
 
 	return 2;           /* We got both a "key" and a "value" */
 }
 
+/*
+ * Skip whitespace characters in string starting from offset i. Returns offset
+ * j >= i as the next non-whitespace character offset, or -1 if non-whitespace
+ * are not found.
+ */
+int skipws(const char *s, int i)
+{
+	while (isspace(s[i]))
+		i++;
+
+	if (s[i] == 0)
+		return -1;
+
+	return i;
+}
+
+/*
+ * Skip non-whitespace characters in string starting from offset i. Returns
+ * offset j >= i as the next whitespace character offset, or -1 if no
+ * whitespace if found.
+ */
+int skipnws(const char *s, int i)
+{
+	while (!isspace(s[i]) && s[i] != 0)
+		i++;
+
+	if (s[i] == 0)
+		return -1;
+
+	return i;
+}
+
+
 /* Split line with respect to white space. */
-char **uade_read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f,
-				 const char *delim)
+char **read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f,
+			    const char *delim)
 {
 	char line[UADE_LINESIZE], templine[UADE_LINESIZE];
 	char **items = NULL;
@@ -118,7 +119,7 @@ char **uade_read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f,
 
 	*nitems = 0;
 
-	while (uade_xfgets(line, sizeof line, f) != NULL) {
+	while (xfgets(line, sizeof line, f) != NULL) {
 
 		if (lineno != NULL)
 			(*lineno)++;
@@ -145,7 +146,7 @@ char **uade_read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f,
 		return NULL;
 
 	if ((items = malloc(sizeof(items[0]) * (*nitems + 1))) == NULL)
-		uade_error("No memory for nws items.\n");
+		uadeerror("No memory for nws items.\n");
 
 	sp = line;
 	pos = 0;
@@ -154,7 +155,7 @@ char **uade_read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f,
 			continue;
 
 		if ((items[pos] = strdup(s)) == NULL)
-			uade_error("No memory for an nws item.\n");
+			uadeerror("No memory for an nws item.\n");
 
 		pos++;
 	}
@@ -165,17 +166,18 @@ char **uade_read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f,
 }
 
 
-char *uade_xfgets(char *s, int size, FILE *stream)
+char *xfgets(char *s, int size, FILE *stream)
 {
 	char *ret;
+
 	while (1) {
 		ret = fgets(s, size, stream);
-		/*
-		 * Believe it or not, but it is possible that ret == NULL but
-		 * EOF did not happened.
-		 */
-		if (ret != NULL || feof(stream))
+		if (ret != NULL)
+			break;
+
+		if (feof(stream))
 			break;
 	}
+
 	return ret;
 }

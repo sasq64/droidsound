@@ -6,7 +6,7 @@
   * Copyright 1996 Bernd Schmidt
   */
 
-extern int uadecore_main (int argc, char **argv);
+extern int uade_main (int argc, char **argv);
 extern void uae_quit (void);
 
 extern int quit_program;

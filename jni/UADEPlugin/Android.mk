@@ -6,50 +6,15 @@ LOCAL_MODULE    := uade
 
 FE=uade/frontends/common
 
-LOCAL_SRC_FILES := \
-	UADEPlugin.cpp \
-        bencode-tools/bencode.c \
-	uade/audio.c \
-	uade/cia.c \
-	uade/cfgfile.c \
-	uade/compiler.c \
-	uade/custom.c \
-	uade/cpudefs.c \
-	uade/cpuemu.c \
-	uade/cpustbl.c \
-	uade/debug.c \
-	uade/fpp.c \
-	uade/main.c \
-	uade/memory.c \
-	uade/newcpu.c \
-	uade/md-support.c \
-	uade/missing.c \
-	uade/sd-sound.c \
-	uade/readcpu.c \
-	uade/sinctable.c \
-	uade/text_scope.c \
-	uade/uade.c \
-	uade/uademain.c \
-	$(FE)/amifilemagic.c \
-	$(FE)/eagleplayer.c \
-	$(FE)/effects.c \
-	$(FE)/md5.c \
-	$(FE)/rmc.c \
-	$(FE)/songdb.c \
-	$(FE)/support.c \
-	$(FE)/uadeconf.c \
-	$(FE)/uadecontrol.c \
-	$(FE)/uadeipc.c \
-	$(FE)/uadestate.c \
-	$(FE)/uadeutils.c \
-	$(FE)/unixatomic.c \
-	$(FE)/unixsupport.c \
-# terminator
+LOCAL_SRC_FILES :=  UADEPlugin.cpp $(FE)/uadecontrol.c $(FE)/effects.c $(FE)/support.c $(FE)/md5.c $(FE)/songdb.c $(FE)/uadeconf.c $(FE)/eagleplayer.c  $(FE)/amifilemagic.c $(FE)/vplist.c uade/unixatomic.c
 
-# just to avoid using F_LOCK
-LOCAL_CFLAGS := -DUADE_HAVE_CYGWIN
+LOCAL_SRC_FILES += uade/main.c uade/newcpu.c uade/memory.c uade/custom.c uade/cia.c uade/audio.c uade/compiler.c uade/cpustbl.c \
+       uade/missing.c uade/sd-sound.c uade/md-support.c uade/cfgfile.c uade/fpp.c uade/debug.c \
+       uade/readcpu.c uade/cpudefs.c uade/cpuemu.c \
+       uade/uade.c uade/uadeipc.c \
+       uade/uademain.c uade/sinctable.c uade/text_scope.c uade/simpleipc.c uade/simplesupport.c
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/uade $(LOCAL_PATH)/uade/include $(LOCAL_PATH)/uade/frontends/include $(LOCAL_PATH)/$(FE) $(LOCAL_PATH)/bencode-tools/include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/uade $(LOCAL_PATH)/uade/include $(LOCAL_PATH)/$(FE)
 
 LOCAL_LDLIBS := -llog
 

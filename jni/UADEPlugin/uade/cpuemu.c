@@ -1,7 +1,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "options.h"
-#include "uadememory.h"
+#include "include/uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"

@@ -4,14 +4,18 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-typedef struct uade_MD5Context {
+#define MD5_HASHBYTES 16
+
+typedef struct MD5Context {
         uint32_t buf[4];
 	uint32_t bits[2];
 	unsigned char in[64];
-} uade_MD5_CTX;
+} MD5_CTX;
 
-void uade_MD5Init(uade_MD5_CTX *context);
-void uade_MD5Update(uade_MD5_CTX *context, unsigned char const *buf, unsigned len);
-void uade_MD5Final(unsigned char digest[16], uade_MD5_CTX *context);
+void   MD5Init(MD5_CTX *context);
+void   MD5Update(MD5_CTX *context, unsigned char const *buf,
+	       unsigned len);
+void   MD5Final(unsigned char digest[MD5_HASHBYTES], MD5_CTX *context);
+void   MD5Transform(uint32_t buf[4], uint32_t const in[16]);
 
 #endif /* !_UADE_MD5_H_ */

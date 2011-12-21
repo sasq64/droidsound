@@ -1,57 +1,48 @@
 COMMONMODULES = unixatomic.o uadeipc.o amifilemagic.o \
 	eagleplayer.o unixwalkdir.o effects.o \
-	uadecontrol.o uadeconf.o uadestate.o uadeutils.o md5.o \
-	ossupport.o rmc.o songdb.o songinfo.o vparray.o support.o
+	uadecontrol.o uadeconf.o md5.o \
+	ossupport.o songdb.o songinfo.o vplist.o support.o
 
-PLAYERHEADERS = ../include/uade/eagleplayer.h ../include/uade/uadeconf.h ../include/uade/uadeconfstructure.h ../include/uade/uadestate.h ../common/support.h ../include/uade/uadeoptions.h ../include/uade/uadeutils.h ../include/uade/unixatomic.h ../include/uade/ossupport.h ../include/uade/unixsupport.h ../include/uade/uadeipc.h
+PLAYERHEADERS = ../common/eagleplayer.h ../common/uadeconf.h ../common/uadeconfstructure.h ../common/uadestate.h ../common/support.h ../../include/uadeconfig.h ../../include/uadeutils.h ../../include/unixatomic.h ../../include/ossupport.h ../../include/unixsupport.h ../../include/uadeipc.h
 
-amifilemagic.o:	../common/amifilemagic.c ../include/uade/amifilemagic.h $(PLAYERHEADERS)
+amifilemagic.o:	../common/amifilemagic.c ../common/amifilemagic.h $(PLAYERHEADERS)
 	$(CC) $(CFLAGS) -c $<
 
-eagleplayer.o:	../common/eagleplayer.c ../include/uade/amifilemagic.h ../include/uade/songdb.h $(PLAYERHEADERS)
+eagleplayer.o:	../common/eagleplayer.c ../common/amifilemagic.h ../common/songdb.h $(PLAYERHEADERS)
 	$(CC) $(CFLAGS) -c $<
 
-effects.o:	../common/effects.c ../include/uade/effects.h
+effects.o:	../common/effects.c ../common/effects.h
 	$(CC) $(CFLAGS) -c $<
 
 md5.o:	../common/md5.c ../common/md5.h
 	$(CC) $(CFLAGS) -c $<
 
-ossupport.o:	../common/ossupport.c ../include/uade/ossupport.h ../include/uade/unixsupport.h ../include/uade/uadeipc.h
+ossupport.o:	../../ossupport.c ../../include/ossupport.h ../../include/unixsupport.h ../../include/uadeipc.h
 	$(CC) $(CFLAGS) -c $<
 
-rmc.o:	../common/rmc.c ../include/uade/rmc.h
+songdb.o:	../common/songdb.c ../common/songdb.h ../common/md5.h $(PLAYERHEADERS)
 	$(CC) $(CFLAGS) -c $<
 
-songdb.o:	../common/songdb.c ../include/uade/songdb.h ../common/md5.h $(PLAYERHEADERS)
-	$(CC) $(CFLAGS) -c $<
-
-songinfo.o:	../common/songinfo.c ../include/uade/songinfo.h ../include/uade/amifilemagic.h $(PLAYERHEADERS)
+songinfo.o:	../common/songinfo.c ../common/songinfo.h ../common/amifilemagic.h $(PLAYERHEADERS)
 	$(CC) $(CFLAGS) -c $<
 
 uadeconf.o:	../common/uadeconf.c $(PLAYERHEADERS)
 	$(CC) $(CFLAGS) -c $<
 
-uadecontrol.o:	../common/uadecontrol.c ../include/uade/uadecontrol.h $(PLAYERHEADERS)
+uadecontrol.o:	../common/uadecontrol.c ../common/uadecontrol.h $(PLAYERHEADERS)
 	$(CC) $(CFLAGS) -c $<
 
-uadestate.o:  ../common/uadestate.c $(PLAYERHEADERS)
+uadeipc.o:	../../uadeipc.c ../../include/uadeipc.h ../../include/uadeutils.h
 	$(CC) $(CFLAGS) -c $<
 
-uadeipc.o:	../common/uadeipc.c ../include/uade/uadeipc.h ../include/uade/uadeutils.h
-	$(CC) $(CFLAGS) -c $<
-
-uadeutils.o:  ../common/uadeutils.c ../include/uade/uadeutils.h
-	$(CC) $(CFLAGS) -c $<
-
-unixatomic.o:	../common/unixatomic.c ../include/uade/unixatomic.h
+unixatomic.o:	../../unixatomic.c ../../include/unixatomic.h
 	$(CC) $(CFLAGS) -c $<
 
 unixwalkdir.o:	../common/unixwalkdir.c ../common/unixwalkdir.h
 	$(CC) $(CFLAGS) -c $<
 
-vparray.o:	../common/vparray.c ../include/uade/vparray.h
+vplist.o:	../common/vplist.c ../common/vplist.h
 	$(CC) $(CFLAGS) -c $<
 
-support.o:	../common/support.c ../common/support.h ../include/uade/ossupport.h ../include/uade/unixsupport.h
+support.o:	../common/support.c ../common/support.h ../../include/ossupport.h ../../include/unixsupport.h
 	$(CC) $(CFLAGS) -c $<

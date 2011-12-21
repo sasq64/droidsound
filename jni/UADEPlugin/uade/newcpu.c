@@ -7,14 +7,14 @@
   */
 
 #include <time.h>
-
+#include <android/log.h>
 #include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
 #include "events.h"
 #include "uae.h"
-#include "uadememory.h"
+#include "include/uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"
@@ -23,8 +23,8 @@
 
 #include "cia.h"
 
-#include "uadectl.h"
-#include <uade/uadeipc.h>
+#include "uade.h"
+#include "uadeipc.h"
 
 
 #define EXCEPTION_COUNT 0
@@ -672,7 +672,7 @@ void Exception(int nr, uaecptr oldpc)
 {
     /* trap #5 indicates sound core is sending message for uade */
     if(nr == (32+5)) {
-      uadecore_get_amiga_message();
+      uade_get_amiga_message();
     }
 #if EXCEPTION_COUNT
     exception_freq[nr]++;
@@ -1090,8 +1090,8 @@ unsigned long REGPARAM2 op_illg (uae_u32 opcode)
 {
     uaecptr pc = m68k_getpc ();
 
-    if (uadecore_debug) {
-      fprintf(stderr, "op_illg(): going into debug\n");
+    if (uade_debug) {
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "op_illg(): going into debug\n");
       activate_debugger();
     }
 
@@ -1201,7 +1201,7 @@ static void do_trace (void)
 static int do_specialties (void)
 {
     while (regs.spcflags & SPCFLAG_STOP) {
-        if (uadecore_reboot)
+        if (uade_reboot)
 	    return 1;
 	do_cycles (4);
 	if (regs.spcflags & (SPCFLAG_INT | SPCFLAG_DOINT)){
@@ -1258,7 +1258,7 @@ void m68k_run_1 (void)
     
     cycles = (*cpufunctbl[opcode])(opcode);
 
-    if (uadecore_time_critical)
+    if (uade_time_critical)
       cycles = 1;
 
     /*n_insns++;*/
@@ -1271,7 +1271,7 @@ void m68k_run_1 (void)
 	break;
     }
 
-    if (uadecore_reboot)
+    if (uade_reboot)
       break;
 
 #if EXCEPTION_COUNT
@@ -1283,14 +1283,14 @@ void m68k_run_1 (void)
       i = time(0);
       if ((i - uade_otime) > 0) {
 	uade_otime = i;
-	/* fprintf(stderr, "insts: %d\n", uade_insts); */
+	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "insts: %d\n", uade_insts); */
 	uade_insts = 0;
-	fprintf(stderr, "exceptions: ");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "exceptions: ");
 	for (i=1; i<64; i++) {
 	  if (exception_freq[i])
-	    fprintf(stderr, "%.3x: %.8d ", i*4, exception_freq[i]);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%.3x: %.8d ", i*4, exception_freq[i]);
 	}
-	fprintf(stderr, "\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\n");
       }
     }
 #endif
@@ -1303,15 +1303,16 @@ void m68k_go (void)
 {
   reset_frame_rate_hack ();
   update_68k_cycles ();
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "y");
 
   while (quit_program == 0) {
-    uadecore_reset ();
+    uade_reset ();
     m68k_reset ();
     customreset ();
 
-    uadecore_handle_r_state();
+    uade_handle_r_state();
 
-    while (uadecore_reboot == 0 && quit_program == 0) {
+    while (uade_reboot == 0 && quit_program == 0) {
       if (debugging)
 	debug ();
       if (quit_program != 0)
@@ -1319,10 +1320,10 @@ void m68k_go (void)
       m68k_run_1 ();
     }
 
-    if (uadecore_reboot) {
-      if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadecore_ipc) < 0) {
-	fprintf(stderr, "can not send reboot ack token\n");
-	exit(1);
+    if (uade_reboot) {
+      if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc) < 0) {
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not send reboot ack token\n");
+	exit(-1);
       }
     }
   }

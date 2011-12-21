@@ -9,21 +9,21 @@
   */
 
 #include <math.h>
-
+#include <android/log.h>
 #include "sysconfig.h"
 #include "sysdeps.h"
 
 #include "options.h"
-#include "uadememory.h"
+#include "include/uadememory.h"
 #include "custom.h"
 #include "gensound.h"
 #include "sd-sound.h"
 #include "events.h"
 #include "cia.h"
 #include "audio.h"
-#include <uade/amigafilter.h>
-#include "uadectl.h"
-#include <uade/compilersupport.h>
+#include "amigafilter.h"
+#include "uade.h"
+#include "compilersupport.h"
 
 #include "sinctable.h"
 
@@ -119,8 +119,8 @@ static int filter(int input, struct filter_state *fs)
         break;
 
     default:
-	fprintf(stderr, "Unknown filter mode\n");
-	exit(1);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter mode\n");
+	exit(-1);
     }
 
     return clamp_sample(gui_ledstate ? led_output : normal_output);
@@ -131,25 +131,25 @@ static void check_sound_buffers (void)
 {
     intptr_t bytes;
 
-    if (uadecore_reboot)
+    if (uade_reboot)
 	return;
 
-    assert(uadecore_read_size > 0);
+    assert(uade_read_size > 0);
 
     bytes = ((intptr_t) sndbufpt) - ((intptr_t) sndbuffer);
 
-    if (uadecore_audio_output) {
-	if (bytes == uadecore_read_size) {
-	    uadecore_check_sound_buffers(uadecore_read_size);
+    if (uade_audio_output) {
+	if (bytes == uade_read_size) {
+	    uade_check_sound_buffers(uade_read_size);
 	    sndbufpt = sndbuffer;
 	}
     } else {
-	uadecore_audio_skip += bytes;
+	uade_audio_skip += bytes;
 	/* if sound core doesn't report audio output start in 3 seconds from
 	   the reboot, begin audio output anyway */
-	if (uadecore_audio_skip >= (sound_bytes_per_second * 3)) {
-	    fprintf(stderr, "involuntary audio output start\n");
-	    uadecore_audio_output = 1;
+	if (uade_audio_skip >= (sound_bytes_per_second * 3)) {
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "involuntary audio output start\n");
+	    uade_audio_output = 1;
 	}
 	sndbufpt = sndbuffer;
     }
@@ -163,7 +163,7 @@ static inline void sample_backend(int left, int right)
     for (nr = 0; nr < 4; nr++) {
 	struct audio_channel_data *cdp = audio_channel + nr;
 	if (cdp->state != 0 && cdp->datpt != 0 && (dmacon & (1 << nr)) && cdp->datpt >= cdp->datptend) {
-	    fprintf(stderr, "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
+	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
 	}
     }
 #endif
@@ -301,7 +301,7 @@ static void audio_handler (int nr)
 
     switch (cdp->state) {
      case 0:
-	fprintf(stderr, "Bug in sound code\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bug in sound code\n");
 	break;
 
      case 1:
@@ -463,8 +463,8 @@ void audio_set_filter(int filter_type, int filter_force)
   /* If filter_type is zero, filtering is disabled, but if it's
      non-zero, it contains the filter type (a500 or a1200) */
   if (filter_type < 0 || filter_type >= FILTER_MODEL_UPPER_BOUND) {
-    fprintf(stderr, "Invalid filter number: %d\n", filter_type);
-    exit(1);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid filter number: %d\n", filter_type);
+    exit(-1);
   }
   sound_use_filter = filter_type;
 
@@ -509,7 +509,7 @@ void audio_set_resampler(char *name)
 	sample_handler = sample16s_handler;
 	sample_prehandler = NULL;
     } else {
-	fprintf(stderr, "\nUnknown resampling method: %s. Using the default.\n", name);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nUnknown resampling method: %s. Using the default.\n", name);
     }
 }
 
@@ -637,7 +637,7 @@ void AUDxPER (int nr, uae_u16 v)
 	   machines. robocop customs use low values for example. */
 	if (!audperhack) {
 	    audperhack = 1;
-	    uadecore_send_debug("Eagleplayer inserted %d into aud%dper.", v, nr);
+	    uade_send_debug("Eagleplayer inserted %d into aud%dper.", v, nr);
 	}
 	v = 16;
     }
