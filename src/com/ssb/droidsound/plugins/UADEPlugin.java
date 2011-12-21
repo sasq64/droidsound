@@ -66,6 +66,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 					}
 				}
 
+				setOption("resampling", "2");
 				inited = true;
 			}
 		}
@@ -219,6 +220,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 		} else if (o.equals("ntsc")) {
 			k = OPT_NTSC;
 			v = Boolean.valueOf(val) ? 1 : 0;
+		} else if (o.equals("resampling")) {
+			k = OPT_RESAMPLING;
+			v = Integer.valueOf(val);
 		} else {
 			throw new RuntimeException("Unknown option: " + o);
 		}
