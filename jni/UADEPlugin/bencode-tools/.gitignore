@@ -1,0 +1,7 @@
+*~
+*.pyc
+Makefile
+*.so
+*.o
+bencat
+bencodetest

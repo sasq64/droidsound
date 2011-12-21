@@ -11,7 +11,7 @@
 
 #include "options.h"
 #include "events.h"
-#include "include/uadememory.h"
+#include "uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"
@@ -204,7 +204,7 @@ static void forget_block(struct hash_block *hb)
     freelist_block = hb;
 
     if (hb->cpage != NULL)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Discarding block with code. Tsk.\n");
+	fprintf(stderr, "Discarding block with code. Tsk.\n");
 
     do {
 	struct hash_entry *next = h->next_same_block;
@@ -265,7 +265,7 @@ uae_u32 flush_icache(void)
 
 void possible_loadseg(void)
 {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Possible LoadSeg() detected\n");
+    fprintf(stderr, "Possible LoadSeg() detected\n");
     flush_icache();
 }
 
@@ -612,7 +612,7 @@ static int bcc_compfn(const void *a, const void *b)
     uaecptr *a1 = (uaecptr *)a, *b1 = (uaecptr *)b;
 
     if (*a1 == *b1)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","BUG!!\n");
+	fprintf(stderr,"BUG!!\n");
 
     if (*a1 < *b1)
 	return 1;
@@ -624,7 +624,7 @@ static int bb_compfn(const void *a, const void *b)
     struct bb_info *a1 = (struct bb_info *)a, *b1 = (struct bb_info *)b;
 
     if (a1->h->addr == b1->h->addr)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","BUG!!\n");
+	fprintf(stderr,"BUG!!\n");
 
     if (a1->h->addr < b1->h->addr)
 	return -1;
@@ -722,18 +722,18 @@ static int m68k_scan_func(struct hash_entry *h)
 	if (h->block != NULL && h->block != found_block) {
 	    if (found_block == NULL) {
 		if (h->block->cpage != NULL)
-		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Found compiled code\n");
+		    fprintf(stderr, "Found compiled code\n");
 		else
 		    found_block = h->block;
 	    } else {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Multiple blocks found.\n");
+		fprintf(stderr, "Multiple blocks found.\n");
 		if (h->block->cpage == NULL)
 		    forget_block(h->block);
 		else if (found_block->cpage == NULL) {
 		    forget_block(found_block);
 		    found_block = h->block;
 		} else
-		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bad case.\n");
+		    fprintf(stderr, "Bad case.\n");
 	    }
 	}
 #endif
@@ -818,7 +818,7 @@ static void analyze_ea_for_insn(amodes mode, int reg, wordsizes size,
      case Areg:
 	eai->ea_type = eat_reg;
 	if (size != sz_long && (ea_purpose & EA_STORE))
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Areg != long\n");
+	    fprintf(stderr,"Areg != long\n");
 	if (ea_purpose & EA_LOAD)
 	    eai->regs_used |= 1 << (8+reg);
 	if (ea_purpose & EA_STORE)
@@ -920,13 +920,13 @@ static struct bb_info *find_bb(struct hash_entry *h)
     int i;
 
     if (h == NULL)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Bug...\n");
+	fprintf(stderr,"Bug...\n");
 
     for (i = 0; i < top_bb; i++)
 	if (bb_stack[i].h == h)
 	    return bb_stack + i;
     if (!quiet_compile)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "BB not found!\n");
+	fprintf(stderr, "BB not found!\n");
     return NULL;
 }
 
@@ -1104,7 +1104,7 @@ static int m68k_scan_block(struct hash_block *hb, int *movem_count)
 		    current_live |= bb->bb_next2->flags_live_at_start;
 	    } else {
 		if (bb->bb_next1 == NULL && bb->bb_next2 == NULL)
-		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can't happen\n");
+		    fprintf(stderr, "Can't happen\n");
 		current_live = 0;
 		if (bb->bb_next1 != NULL)
 		    current_live |= bb->bb_next1->flags_live_at_start;
@@ -1119,7 +1119,7 @@ static int m68k_scan_block(struct hash_block *hb, int *movem_count)
 	    } while (iip-- != bb->first_iip);
 
 	    if (bb->flags_live_at_start != current_live && !quiet_compile)
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Fascinating %d!\n", round), changed = 1;
+		fprintf(stderr, "Fascinating %d!\n", round), changed = 1;
 	    bb->flags_live_at_start = current_live;
 	}
 	round++;
@@ -1287,7 +1287,7 @@ static void compile_move_reg_reg(int dstreg, int srcreg, wordsizes size)
 	&& (((1 << dstreg) & DATA_X86_REGS) == 0
 	    || ((1 << srcreg) & DATA_X86_REGS) == 0))
     {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Moving wrong register types!\n");
+	fprintf(stderr, "Moving wrong register types!\n");
     }
     if (size == sz_word)
 	assemble(0x66);
@@ -1308,7 +1308,7 @@ static void compile_move_between_reg_mem_regoffs(int dstreg, int srcreg,
 	      && ((1 << dstreg) & DATA_X86_REGS) == 0)
 	     || (size != sz_byte && (dstreg & 0x80) != 0))
     {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Moving wrong register types!\n");
+	fprintf(stderr, "Moving wrong register types!\n");
     }
     if (size == sz_word)
 	assemble(0x66);
@@ -1532,7 +1532,7 @@ static int get_free_x86_register(struct register_mapping *map,
 	map->x86_byteorder[x86r] = BO_NORMAL;
 	return x86r;
     }
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Out of registers!\n");
+    fprintf(stderr,"Out of registers!\n");
     return -1;
 }
 
@@ -1560,7 +1560,7 @@ static int get_typed_x86_register(struct register_mapping *map,
 	map->x86_byteorder[x86r] = BO_NORMAL;
 	return x86r;
     }
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Out of type registers!\n");
+    fprintf(stderr,"Out of type registers!\n");
     return -1;
 }
 
@@ -1579,17 +1579,17 @@ static void lock_reg(struct register_mapping *map, int x86r, int lock_type)
     switch (map->x86_locked[x86r]) {
      case 0:
 	if (map->x86_users[x86r] != 0)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Users for an unlocked reg!\n");
+	    fprintf(stderr,"Users for an unlocked reg!\n");
 	break;
      case 1:
 	if (lock_type == 2)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Locking shared reg for exclusive use!\n");
+	    fprintf(stderr,"Locking shared reg for exclusive use!\n");
 	break;
      case 2:
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Locking exclusive reg!\n");
+	fprintf(stderr,"Locking exclusive reg!\n");
 	break;
      default:
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Unknown lock?\n");
+	fprintf(stderr,"Unknown lock?\n");
 	break;
     }
 #endif
@@ -1606,7 +1606,7 @@ static int get_and_lock_68k_reg(struct register_mapping *map, int reg, int is_dr
     uae_u32 const_off = 0;
 
     if (reg < 0 || reg > 7) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Mad compiler disease\n");
+	fprintf(stderr,"Mad compiler disease\n");
 	return 0;
     }
 
@@ -1672,7 +1672,7 @@ static int get_and_lock_68k_reg(struct register_mapping *map, int reg, int is_dr
     }
     if (no_offset && const_off != 0) {
 	if (map->x86_locked[x86r] != 0)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","modifying locked reg\n");
+	    fprintf(stderr,"modifying locked reg\n");
 	compile_force_byteorder(map, x86r, BO_NORMAL, 1);
 	compile_lea_reg_with_offset(x86r, x86r, map->x86_const_offset[x86r]);
 	map->x86_const_offset[x86r] = 0;
@@ -1710,7 +1710,7 @@ static void compile_extend_long(struct register_mapping *map, int x86r,
 				wordsizes size)
 {
     if (x86r < 0) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Bad reg in extend_long\n");
+	fprintf(stderr,"Bad reg in extend_long\n");
 	return;
     }
 
@@ -2028,7 +2028,7 @@ static void compile_get_excl_lock(struct register_mapping *map, struct ea_info *
 static inline int rmop_long(struct ea_info *eai)
 {
     if (eai->data_reg == -2)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","rmop for const\n");
+	fprintf(stderr,"rmop for const\n");
     else if (eai->data_reg == -1) {
 	if (eai->address_reg == -2)
 	    return 5;
@@ -2047,9 +2047,9 @@ static inline int rmop_long(struct ea_info *eai)
 	return eai->address_reg | 0x80;
     } else {
 	if (eai->size == sz_byte && ((1 << eai->data_reg) & DATA_X86_REGS) == 0)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","wrong type reg in rmop\n");
+	    fprintf(stderr,"wrong type reg in rmop\n");
 	if (eai->data_const_off != 0)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","data_const_off in rmop\n");
+	    fprintf(stderr,"data_const_off in rmop\n");
 	return 0xC0 + eai->data_reg;
     }
     return 0;
@@ -2058,14 +2058,14 @@ static inline int rmop_long(struct ea_info *eai)
 static inline int rmop_short(struct ea_info *eai)
 {
     if (eai->data_reg == -2)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","rmop_short for const\n");
+	fprintf(stderr,"rmop_short for const\n");
     else if (eai->data_reg == -1) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","rmop_short for mem\n");
+	fprintf(stderr,"rmop_short for mem\n");
     } else {
 	if (eai->size == sz_byte && ((1 << eai->data_reg) & DATA_X86_REGS) == 0)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","wrong type reg in rmop_short\n");
+	    fprintf(stderr,"wrong type reg in rmop_short\n");
 	if (eai->data_const_off != 0)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","data_const_off in rmop_short\n");
+	    fprintf(stderr,"data_const_off in rmop_short\n");
 	return eai->data_reg*8;
     }
     return 0;
@@ -2299,7 +2299,7 @@ static void compile_loadeas(struct register_mapping *map, struct ea_info *eainf,
 		compile_fetchmem(map, eaid);
 	} else {
 	    if ((adst & 2) == 0) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Not loading memory operand. Prepare to die.\n");
+		fprintf(stderr,"Not loading memory operand. Prepare to die.\n");
 		if (eaid->size == sz_byte)
 		    eaid->data_reg = get_typed_x86_register(map, DATA_X86_REGS);
 		else
@@ -2461,7 +2461,7 @@ static void compile_note_modify(struct register_mapping *map, struct ea_info *ea
 	return;
     } else if (eai->mode == Areg) {
 	if (eai->size != sz_long)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Areg put != long\n");
+	    fprintf(stderr,"Areg put != long\n");
 
 	/* We only need to do something if we have the value in a register,
 	 * otherwise, the home location was modified already */
@@ -2526,14 +2526,14 @@ static void compile_storeea(struct register_mapping *map, struct ea_info *eainf,
 		}
 	    } else if (eais->data_reg == -1) {
 #if 0
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Shouldn't happen (mem-mem-move)\n");
+		fprintf(stderr,"Shouldn't happen (mem-mem-move)\n");
 #endif
 		/* This _can_ happen: move.l $4,d0, if d0 isn't in the
 		 * cache, will come here. But a reg will be allocated for
 		 * dest. We use this. This _really_ shouldn't happen if
 		 * the size isn't long. */
 		if (eaid->size != sz_long)
-		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","_Really_ shouldn't happen (Dreg case)\n");
+		    fprintf(stderr,"_Really_ shouldn't happen (Dreg case)\n");
 		map->x86_cache_reg[eaid->data_reg] = eaid->reg;
 		map->x86_cr_type[eaid->data_reg] = 1;
 		map->x86_const_offset[eaid->data_reg] = eaid->data_const_off;
@@ -2626,7 +2626,7 @@ static void compile_storeea(struct register_mapping *map, struct ea_info *eainf,
 	return;
     } else if (eaid->mode == Areg) {
 	if (eaid->size != sz_long)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Areg put != long\n");
+	    fprintf(stderr,"Areg put != long\n");
 
 	/* Is the reg to move from already the register cache reg for the
 	 * destination? */
@@ -2643,7 +2643,7 @@ static void compile_storeea(struct register_mapping *map, struct ea_info *eainf,
 		assemble_ulong(eais->data_const_off);
 	    } else if (eais->data_reg == -1) {
 #if 0 /* see above... */
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Shouldn't happen (mem-mem-move)\n");
+		fprintf(stderr,"Shouldn't happen (mem-mem-move)\n");
 #endif
 		map->x86_cache_reg[eaid->data_reg] = eaid->reg;
 		map->x86_cr_type[eaid->data_reg] = 0;
@@ -2713,7 +2713,7 @@ static void compile_storeea(struct register_mapping *map, struct ea_info *eainf,
     }
 
     if (eais->data_reg == -1)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Storing to mem, but not from reg\n");
+	fprintf(stderr,"Storing to mem, but not from reg\n");
     /* Correct the byteorder */
     if (eais->data_reg != -2) {
 	compile_offset_reg(map, eais->data_reg, eais->data_const_off);
@@ -2918,7 +2918,7 @@ static void compile_do_cc_test_reg(struct register_mapping *map)
 {
     compile_force_byteorder(map, cc_reg, BO_NORMAL, 1);
     if (cc_offset != 0)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Pull my finger\n");
+	fprintf(stderr,"Pull my finger\n");
     if (cc_size == sz_word) /* test ccreg */
 	assemble(0x66);
     if (cc_size == sz_byte)
@@ -3049,7 +3049,7 @@ static int compile_flush_cc_cache(struct register_mapping *map, int status,
 	    live_at_end &= ~CC68K_X;
 
 	if (status == CC_C_FROM_86C && (live_at_end & CC68K_C) != 0)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Shouldn't be needing C here!\n");
+	    fprintf(stderr, "Shouldn't be needing C here!\n");
 	else if (live_at_end) {
 	    if ((live_at_end & CC68K_X) == 0)
 		status &= ~CC_X_FROM_86C;
@@ -3134,7 +3134,7 @@ static char *compile_condbranch(struct register_mapping *map, int iip,
 	    /* Fake... */
 	    flagsneeded = new_cc_status = CC_C_FROM_86C;
 	} else if (cc != 0 && cc != 1)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Groan!\n");
+	    fprintf(stderr,"Groan!\n");
     }
 
     if (cc == 1)
@@ -3167,7 +3167,7 @@ static char *compile_condbranch(struct register_mapping *map, int iip,
 	assemble_ulong(0);
 	return result;
     }
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Uhhuh.\n");
+    fprintf(stderr,"Uhhuh.\n");
     return NULL;
 }
 
@@ -3251,7 +3251,7 @@ static void handle_bit_insns(struct register_mapping *map, struct ea_info *eainf
 	compile_force_byteorder(map, dstea->address_reg, BO_NORMAL, 0);
 	/* We have an address in memory */
 	if (dstea->data_reg != -1)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Things don't look good in handle_bit_insns\n");
+	    fprintf(stderr,"Things don't look good in handle_bit_insns\n");
 	if (srcea->data_reg == -2) {
 	    assemble(0x0F); assemble(0xBA);
 	    assemble(addr_code + 8*(4 + code));
@@ -3299,7 +3299,7 @@ static void handle_rotshi(struct register_mapping *map, int iip,
     if ((insn_info[iip].flags_live_at_end & CC68K_V) != 0) {
 	if (mnemo == i_ASL) {
 	    generate_exit(map, insn_info[iip].address);
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Can't handle this shift\n");
+	    fprintf(stderr,"Can't handle this shift\n");
 	    return;
 	} else if (mnemo == i_ASR || mnemo == i_LSR || mnemo == i_LSL) {
 	    remove_x86r_from_cache(map, r_EAX, 1);
@@ -3383,7 +3383,7 @@ static void handle_rotshi_variable(struct register_mapping *map, int iip,
     if ((insn_info[iip].flags_live_at_end & CC68K_V) != 0) {
 	if (mnemo == i_ASL) {
 	    generate_exit(map, insn_info[iip].address);
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Can't handle this shift (var)\n");
+	    fprintf(stderr,"Can't handle this shift (var)\n");
 	    return;
 	} else if (mnemo == i_ASR || mnemo == i_LSR || mnemo == i_LSL) {
 	    remove_x86r_from_cache(map, r_EAX, 1);
@@ -3483,7 +3483,7 @@ static int m68k_compile_block(struct hash_block *hb)
     if (n_compiled > n_max_comp)
 	return 1;
     else if (n_compiled++ == n_max_comp)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE","X\n");
+	fprintf(stderr,"X\n");
 
     cc_status = 0; compile_failure = 0;
 
@@ -3540,7 +3540,7 @@ static int m68k_compile_block(struct hash_block *hb)
 	if (iip == current_bb->first_iip) {
 	    sync_reg_cache(&map, 1);
 	    if (!quiet_compile)
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Compiling %08lx\n", current_bb->h->addr);
+		fprintf(stderr,"Compiling %08lx\n", current_bb->h->addr);
 
 	    realpc_start = get_real_address(current_bb->h->addr);
 	    current_bb->h->execute = (code_execfunc)compile_here();
@@ -3577,7 +3577,7 @@ static int m68k_compile_block(struct hash_block *hb)
 	 case i_NOP:
 	    cc_status = 0;
 	    if (!quiet_compile)
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Compiling a NOP\n");
+		fprintf(stderr,"Compiling a NOP\n");
 	    break;
 
 	 case i_RTS:
@@ -3634,7 +3634,7 @@ static int m68k_compile_block(struct hash_block *hb)
 		struct hash_entry *tmph;
 		if (eainfo[0].address_reg != -2 || (tmph = get_hash_for_func(eainfo[0].addr_const_off, 1)) == 0) {
 		    if (eainfo[0].address_reg != -2 && !quiet_compile)
-			__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Can't compile indirect JMP\n");
+			fprintf(stderr,"Can't compile indirect JMP\n");
 		    generate_exit(&map, insn_info[iip].address);
 		    break;
 		}
@@ -3666,7 +3666,7 @@ static int m68k_compile_block(struct hash_block *hb)
 		struct hash_entry *tmph;
 		if (eainfo[0].address_reg != -2 || (tmph = get_hash_for_func(eainfo[0].addr_const_off, 1)) == 0) {
 		    if (eainfo[0].address_reg != -2 && !quiet_compile)
-			__android_log_print(ANDROID_LOG_VERBOSE, "UADE","Can't compile indirect JSR\n");
+			fprintf(stderr,"Can't compile indirect JSR\n");
 		    generate_exit(&map, insn_info[iip].address);
 		    break;
 		}
@@ -3973,7 +3973,7 @@ static int m68k_compile_block(struct hash_block *hb)
 		cc_offset = eainfo[0].data_const_off;
 	    } else if (eainfo[0].data_reg == -1) {
 		if (eainfo[1].data_reg == -1)
-		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Don't know where to get flags from\n");
+		    fprintf(stderr,"Don't know where to get flags from\n");
 		cc_status = CC_TEST_REG;
 		cc_offset = 0;
 		cc_reg = eainfo[1].data_reg;
@@ -4512,7 +4512,7 @@ static int m68k_compile_block(struct hash_block *hb)
 	while ((allocmask & hb->page_allocmask) != allocmask)
 	    allocmask <<= 1;
 	if ((hb->page_allocmask & ~allocmask) != 0 && !quiet_compile)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Gaining some bits: %08lx\n", hb->page_allocmask & ~allocmask);
+	    fprintf(stderr, "Gaining some bits: %08lx\n", hb->page_allocmask & ~allocmask);
 	hb->cpage->allocmask &= ~hb->page_allocmask;
 	hb->page_allocmask = allocmask;
 	hb->cpage->allocmask |= allocmask;
@@ -4521,7 +4521,7 @@ static int m68k_compile_block(struct hash_block *hb)
 
     oops:
     if (1 || !quiet_compile)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Compile failed!\n");
+	fprintf(stderr, "Compile failed!\n");
     hb->cpage->allocmask &= ~hb->page_allocmask;
     hb->cpage = NULL;
     hb->untranslatable = 1;

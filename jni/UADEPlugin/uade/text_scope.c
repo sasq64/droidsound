@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <android/log.h>
+
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "custom.h"

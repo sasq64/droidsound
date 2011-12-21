@@ -10,13 +10,14 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include <assert.h>
-#include <android/log.h>
+#include <signal.h>
+
 #include "options.h"
 #include "uae.h"
 #include "gensound.h"
 #include "sd-sound.h"
 #include "events.h"
-#include "include/uadememory.h"
+#include "uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"
@@ -24,8 +25,10 @@
 #include "osemu.h"
 #include "compiler.h"
 
-#include "uade.h"
-#include "ossupport.h"
+#include "uadectl.h"
+#include <uade/ossupport.h>
+#include <uade/uadeconstants.h>
+
 
 struct uae_prefs currprefs, changed_prefs;
 
@@ -179,66 +182,66 @@ static void fix_options (void)
 	|| currprefs.chipmem_size > 0x800000)
     {
 	currprefs.chipmem_size = 0x200000;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unsupported chipmem size!\n");
+	fprintf (stderr, "Unsupported chipmem size!\n");
 	err = 1;
     }
     if ((currprefs.fastmem_size & (currprefs.fastmem_size - 1)) != 0
 	|| (currprefs.fastmem_size != 0 && (currprefs.fastmem_size < 0x100000 || currprefs.fastmem_size > 0x800000)))
     {
 	currprefs.fastmem_size = 0;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unsupported fastmem size!\n");
+	fprintf (stderr, "Unsupported fastmem size!\n");
 	err = 1;
     }
     if ((currprefs.gfxmem_size & (currprefs.gfxmem_size - 1)) != 0
 	|| (currprefs.gfxmem_size != 0 && (currprefs.gfxmem_size < 0x100000 || currprefs.gfxmem_size > 0x800000)))
     {
 	currprefs.gfxmem_size = 0;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unsupported graphics card memory size!\n");
+	fprintf (stderr, "Unsupported graphics card memory size!\n");
 	err = 1;
     }
     if ((currprefs.z3fastmem_size & (currprefs.z3fastmem_size - 1)) != 0
 	|| (currprefs.z3fastmem_size != 0 && (currprefs.z3fastmem_size < 0x100000 || currprefs.z3fastmem_size > 0x4000000)))
     {
 	currprefs.z3fastmem_size = 0;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unsupported Zorro III fastmem size!\n");
+	fprintf (stderr, "Unsupported Zorro III fastmem size!\n");
 	err = 1;
     }
     if (currprefs.address_space_24 && (currprefs.gfxmem_size != 0 || currprefs.z3fastmem_size != 0)) {
 	currprefs.z3fastmem_size = currprefs.gfxmem_size = 0;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can't use a graphics card or Zorro III fastmem when using a 24 bit\n"
+	fprintf (stderr, "Can't use a graphics card or Zorro III fastmem when using a 24 bit\n"
 		 "address space - sorry.\n");
     }
     if ((currprefs.bogomem_size & (currprefs.bogomem_size - 1)) != 0
 	|| (currprefs.bogomem_size != 0 && (currprefs.bogomem_size < 0x80000 || currprefs.bogomem_size > 0x100000)))
     {
 	currprefs.bogomem_size = 0;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unsupported bogomem size!\n");
+	fprintf (stderr, "Unsupported bogomem size!\n");
 	err = 1;
     }
 
     if (currprefs.chipmem_size > 0x200000 && currprefs.fastmem_size != 0) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "You can't use fastmem and more than 2MB chip at the same time!\n");
+	fprintf (stderr, "You can't use fastmem and more than 2MB chip at the same time!\n");
 	currprefs.fastmem_size = 0;
 	err = 1;
     }
     if (currprefs.m68k_speed < -1 || currprefs.m68k_speed > 20) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bad value for -w parameter: must be -1, 0, or within 1..20.\n");
+	fprintf (stderr, "Bad value for -w parameter: must be -1, 0, or within 1..20.\n");
 	currprefs.m68k_speed = 4;
 	err = 1;
     }
     if (currprefs.produce_sound < 0 || currprefs.produce_sound > 3) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bad value for -S parameter: enable value must be within 0..3\n");
+	fprintf (stderr, "Bad value for -S parameter: enable value must be within 0..3\n");
 	currprefs.produce_sound = 0;
 	err = 1;
     }
     if (currprefs.cpu_level < 2 && currprefs.z3fastmem_size > 0) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Z3 fast memory can't be used with a 68000/68010 emulation. It\n"
+	fprintf (stderr, "Z3 fast memory can't be used with a 68000/68010 emulation. It\n"
 		 "requires a 68020 emulation. Turning off Z3 fast memory.\n");
 	currprefs.z3fastmem_size = 0;
 	err = 1;
     }
     if (currprefs.gfxmem_size > 0 && (currprefs.cpu_level < 2 || currprefs.address_space_24)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Picasso96 can't be used with a 68000/68010 or 68EC020 emulation. It\n"
+	fprintf (stderr, "Picasso96 can't be used with a 68000/68010 or 68EC020 emulation. It\n"
 		 "requires a 68020 emulation. Turning off Picasso96.\n");
 	currprefs.gfxmem_size = 0;
 	err = 1;
@@ -247,7 +250,7 @@ static void fix_options (void)
     currprefs.socket_emu = 0;
 
     if (err)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Please use \"uae -h\" to get usage information.\n");
+	fprintf (stderr, "Please use \"uae -h\" to get usage information.\n");
 }
 
 int quit_program = 0;
@@ -261,9 +264,9 @@ void write_log_standard (const char *fmt, ...)
 {
     va_list ap;
     va_start (ap, fmt);
-//#ifdef HAVE_VFPRINTF
- //   v__android_log_print(ANDROID_LOG_VERBOSE, "UADE", fmt, ap);
-//#else
+#ifdef HAVE_VFPRINTF
+    vfprintf (stderr, fmt, ap);
+#else
     /* Technique stolen from GCC.  */
     {
 	int x1, x2, x3, x4, x5, x6, x7, x8;
@@ -275,26 +278,41 @@ void write_log_standard (const char *fmt, ...)
 	x6 = va_arg (ap, int);
 	x7 = va_arg (ap, int);
 	x8 = va_arg (ap, int);
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", fmt, x1, x2, x3, x4, x5, x6, x7, x8);
+	fprintf (stderr, fmt, x1, x2, x3, x4, x5, x6, x7, x8);
     }
-//#endif
+#endif
 }
 
-
-int uade_main (int argc, char **argv)
+static void uade_signal_initializations(void)
 {
-	quit_program = 0;
+#ifdef HAVE_SIGACTION
+	struct sigaction act = {.sa_handler = SIG_IGN};
+
+	while (1) {
+		if (sigaction(SIGINT, &act, NULL) < 0) {
+			if (errno == EINTR)
+				continue;
+			fprintf(stderr, "Can not ignore ctrl-c in uadecore; this prevents use of ctrl-C in UAE debugging mode. Error: %s\n", strerror(errno));
+		}
+		break;
+	}
+#endif
+}
+
+int uadecore_main (int argc, char **argv)
+{
+    uade_signal_initializations();
 
     default_prefs (&currprefs);
 
-    uade_option (argc, argv);
+    uadecore_option (argc, argv);
 
     machdep_init ();
 
     if (! setup_sound ()) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Sound driver unavailable: Sound output disabled\n");
+	fprintf (stderr, "Sound driver unavailable: Sound output disabled\n");
 	currprefs.produce_sound = 0;
-	exit(-1);
+	exit(1);
     }
 
     init_sound();

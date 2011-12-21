@@ -2,5 +2,5 @@
 
 int main(int argc, char **argv)
 {
-    return uade_main(argc, argv);
+    return uadecore_main(argc, argv);
 }

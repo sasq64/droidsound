@@ -36,7 +36,7 @@ void *uade_walk_directories(const char *dirname,
 
 		if (snprintf(dename, namelen, "%s/%s", dirname, de->d_name) >=
 		    namelen) {
-			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "interesting: too long a filename\n");
+			fprintf(stderr, "interesting: too long a filename\n");
 			continue;
 		}
 

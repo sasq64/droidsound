@@ -5,27 +5,13 @@
 
 #define UADE_LINESIZE 1024
 
-#define uadeerror(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: " fmt, ## args); exit(1); } while (0)
+char *uade_xbasename(const char *path);
+int uade_get_two_ws_separated_fields(char **key, char **value, char *s);
+char **uade_read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f, const char *delim);
+int uade_skip_and_terminate_word(char *s, int i);
 
-#define MAX(x, y) ((x) >= (y) ? (x) : (y))
-#define MIN(x, y) ((x) < (y) ? (x) : (y))
-
-
-char *xbasename(const char *path);
-
-int get_two_ws_separated_fields(char **key, char **value, char *s);
-
-int skipnws(const char *s, int i);
-
-int skip_and_terminate_word(char *s, int i);
-
-int skipws(const char *s, int i);
-
-char **read_and_split_lines(size_t *nitems, size_t *lineno, FILE *f,
-			    const char *delim);
-
-/* Same as fgets(), but guarantees that feof() or ferror() have happened
+/* Same as fgets(), but guarantees that feof() or ferror() has happened
    when xfgets() returns NULL */
-char *xfgets(char *s, int size, FILE *stream);
+char *uade_xfgets(char *s, int size, FILE *stream);
 
 #endif

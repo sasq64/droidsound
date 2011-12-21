@@ -10,10 +10,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "songinfo.h"
-#include "uadeutils.h"
-#include "ossupport.h"
-#include "amifilemagic.h"
+#include <uade/songinfo.h>
+#include <uade/uadeutils.h>
+#include <uade/ossupport.h>
+#include <uade/amifilemagic.h>
 #include "support.h"
 
 
@@ -31,7 +31,7 @@ static void asciiline(char *dst, unsigned char *buf)
 	dst[i] = 0;
 }
 
-static int hexdump(char *info, size_t maxlen, char *filename, size_t toread)
+static int hexdump(char *info, size_t maxlen, const char *filename, size_t toread)
 {
 	FILE *f;
 	size_t rb, ret;
@@ -431,7 +431,7 @@ static void process_dm2_mod(char *credits, size_t credits_len,
 	strlcat(credits, tmpstr, credits_len);
 }
 
-static int process_module(char *credits, size_t credits_len, char *filename)
+static int process_module(char *credits, size_t credits_len, const char *filename)
 {
 	FILE *modfile;
 	struct stat st;
@@ -450,7 +450,7 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	modfilelen = st.st_size;
 
 	if ((buf = malloc(modfilelen)) == NULL) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't allocate mem in process_module()");
+		fprintf(stderr, "uade: can't allocate mem in process_module()");
 		fclose(modfile);
 		return 0;
 	}
@@ -466,7 +466,7 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	fclose(modfile);
 
 	if (rb < modfilelen) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: song info could not read %s fully\n",
+		fprintf(stderr, "uade: song info could not read %s fully\n",
 			filename);
 		free(buf);
 		return 0;
@@ -559,153 +559,8 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	return 0;
 }
 
-int uade_generate_song_title(char *title, size_t dstlen,
-			     struct uade_state *state)
-{
-	size_t srcoffs;
-	size_t dstoffs;
-	size_t srclen;
-	char *format;
-	char *bname;
-	char p[64];
-	char *default_format = "%F %X [%P]";
-	struct uade_song *us = state->song;
-	struct uade_config *uc = &state->config;
-
-	/* %A min subsong
-	   %B cur subsong
-	   %C max subsong
-	   %F file base name (us->module_filename)
-	   %P player name
-	   %T title
-	   %X print subsong info if more than one subsong exist
-	 */
-
-	format = uc->song_title;
-
-	if (format == NULL)
-		format = default_format;
-
-	if (strcmp("default", format) == 0)
-		format = default_format;
-
-	if ((srclen = strlen(format)) == 0) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Warning: empty song_title format string.\n");
-		return 1;
-	}
-
-	if (dstlen == 0)
-		return 1;
-
-	if (strlen(us->module_filename) == 0)
-		return 1;
-
-	bname = xbasename(us->module_filename);
-
-	p[0] = 0;
-	if (us->formatname[0] == 0) {
-		if (us->playername[0] == 0) {
-			strlcpy(p, "Custom", sizeof p);
-		} else {
-			strlcpy(p, us->playername, sizeof p);
-		}
-	} else {
-		if (strncmp(us->formatname, "type: ", 6) == 0) {
-			strlcpy(p, us->formatname + 6, sizeof p);
-		} else {
-			strlcpy(p, us->formatname, sizeof p);
-		}
-	}
-
-	srcoffs = dstoffs = 0;
-
-	title[0] = 0;
-
-	while (dstoffs < dstlen) {
-		char c;
-		if (srcoffs >= srclen)
-			break;
-
-		if ((c = format[srcoffs]) == 0)
-			break;
-
-		if (c != '%') {
-			title[dstoffs++] = format[srcoffs++];
-		} else {
-			size_t inc;
-			char *dat = NULL;
-			char tmp[32];
-
-			if ((srcoffs + 1) >= srclen) {
-				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: no identifier given in song title format: %s\n", format);
-				title[dstoffs] = 0;
-				return 1;
-			}
-
-			c = format[srcoffs + 1];
-
-			switch (c) {
-			case 'A':
-				snprintf(tmp, sizeof tmp, "%d",
-					 us->min_subsong);
-				dat = tmp;
-				break;
-			case 'B':
-				snprintf(tmp, sizeof tmp, "%d",
-					 us->cur_subsong);
-				dat = tmp;
-				break;
-			case 'C':
-				snprintf(tmp, sizeof tmp, "%d",
-					 us->max_subsong);
-				dat = tmp;
-				break;
-			case 'F':
-				dat = bname;
-				break;
-			case 'P':
-				dat = p;
-				break;
-			case 'T':
-				dat = us->modulename;
-				if (strcmp("<no songtitle>", dat) == 0)
-					dat[0] = 0;
-				if (dat[0] == 0)
-					dat = bname;
-				break;
-			case 'X':
-				if (us->min_subsong == us->max_subsong) {
-					tmp[0] = 0;
-				} else {
-					snprintf(tmp, sizeof tmp, "(%d/%d)",
-						 us->cur_subsong,
-						 us->max_subsong);
-				}
-				dat = tmp;
-				break;
-			default:
-				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
-					"Unknown identifier %%%c in song_title format: %s\n",
-					c, format);
-				title[dstoffs] = 0;
-				return 1;
-			}
-			inc = strlcpy(&title[dstoffs], dat, dstlen - dstoffs);
-			srcoffs += 2;
-			dstoffs += inc;
-		}
-	}
-
-	if (dstoffs < dstlen)
-		title[dstoffs] = 0;
-	else
-		title[dstlen - 1] = 0;
-
-	return 0;
-}
-
 /* Returns zero on success, non-zero otherwise. */
-int uade_song_info(char *info, size_t maxlen, char *filename,
+int uade_song_info(char *info, size_t maxlen, const char *filename,
 		   enum song_info_type type)
 {
 	switch (type) {
@@ -714,8 +569,8 @@ int uade_song_info(char *info, size_t maxlen, char *filename,
 	case UADE_HEX_DUMP_INFO:
 		return hexdump(info, maxlen, filename, 2048);
 	default:
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Illegal info requested.\n");
-		exit(-1);
+		uade_warning("Illegal info requested\n");
+		return 1;
 	}
 	return 0;
 }

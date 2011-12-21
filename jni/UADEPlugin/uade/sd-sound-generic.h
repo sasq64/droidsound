@@ -11,9 +11,6 @@
 #include <errno.h>
 #include <string.h>
 
-#include "uade.h"
-#include "uadeconstants.h"
-
 #define MAX_SOUND_BUF_SIZE (65536)
 
 extern uae_u16 sndbuffer[];

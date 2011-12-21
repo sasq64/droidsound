@@ -11,8 +11,6 @@
 #include <sys/types.h>
 #include <time.h>
 #include <limits.h>
-#include <android/log.h>
-#include <pthread.h>
 
 #include "sysconfig.h"
 #include "sysdeps.h"
@@ -20,7 +18,7 @@
 #include "options.h"
 #include "events.h"
 #include "uae.h"
-#include "include/uadememory.h"
+#include "uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"
@@ -30,11 +28,14 @@
 #include "sd-sound.h"
 #include "audio.h"
 
-#include "uade.h"
+#include "uadectl.h"
 #include "amigamsg.h"
-#include "ossupport.h"
-#include "sysincludes.h"
+#include <uade/ossupport.h>
+#include <uade/sysincludes.h>
+#include <uade/uadeconstants.h>
+#include <uade/uadeutils.h>
 
+#define UADE_SAFE_BUFSIZE 4096
 
 enum print_help {
   OPTION_HELP = 1,
@@ -45,10 +46,8 @@ enum print_help {
 
 static void change_subsong(int subsong);
 
-static int uade_calc_reloc_size(uae_u32 *src, uae_u32 *end);
-static int uade_get_u32(int addr);
 static void uade_print_help(enum print_help problemcode, char *progname);
-static void uade_put_long(int addr,int val);
+static void uade_put_long(int addr, int val);
 static int uade_safe_load(int dst, FILE *file, int maxlen);
 static int uade_valid_string(uae_u32 address);
 
@@ -81,30 +80,31 @@ static const int SCORE_CUR_SUBSONG   = 0x20C;
 static const int SCORE_OUTPUT_MSG    = 0x300;
 
 
-struct uade_ipc uadeipc;
+struct uade_ipc uadecore_ipc;
 
+int uadecore_audio_skip;
+int uadecore_audio_output;
+int uadecore_debug;
+int uadecore_read_size;
+int uadecore_reboot;
+int uadecore_time_critical;
 
-int uade_audio_skip;
-int uade_audio_output;
-int uade_debug;
-int uade_read_size;
-int uade_reboot;
-int uade_time_critical;
 
 static int disable_modulechange;
 static int old_ledstate;
-static int uade_big_endian;
-static int uade_dmawait;
-static int uade_execdebugboolean;
-static int uade_highmem;
-static char uade_player_dir[PATH_MAX];
+static int big_endian;
+static int dmawait;
+static int execdebug;
+static int highmem;
 static struct uade_song song;
-static int uade_speed_hack;
+static int speed_hack;
 static int voltestboolean;
 
 static char epoptions[256];
 static size_t epoptionsize;
 
+static struct uade_file *cachedfile;
+static char cachedfilename[PATH_MAX];
 
 static void add_ep_option(const char *s)
 {
@@ -115,7 +115,7 @@ static void add_ep_option(const char *s)
   i = epoptionsize;
 
   if (strlcpy(&epoptions[i], s, bufsize - i) >= (bufsize - i)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Warning: uade eagleplayer option overflow: %s\n", s);
+    fprintf(stderr, "Warning: uade eagleplayer option overflow: %s\n", s);
     return;
   }
 
@@ -135,29 +135,40 @@ static int get_info_for_ep(char *dst, char *src, int maxlen)
 	ret = epoptionsize;
 	memcpy(dst, epoptions, ret);
       } else {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: too long options: %s maxlen = %d\n",
+	fprintf(stderr, "uadecore: too long options: %s maxlen = %d\n",
 		epoptions, maxlen);
       }
     } else {
       ret = 0;
     }
   } else {
-    uade_send_debug("Unknown eagleplayer attribute queried: %s\n", src);
+    uadecore_send_debug("Unknown eagleplayer attribute queried: %s", src);
   }
   return ret;
 }
 
+static int amiga_get_u32(int addr)
+{
+  uae_u32 *ptr;
+  int x;
+  if (!valid_address(addr, 4)) {
+    fprintf(stderr, "uadecore: Invalid amiga_get_u32 (0x%x).\n", addr);
+    return 0;
+  }
+  ptr = (uae_u32 *) get_real_address(addr);
+  return ntohl(*ptr);
+}
 
 static void change_subsong(int subsong)
 {
   song.cur_subsong = subsong;
   uade_put_long(SCORE_SUBSONG, subsong);
-  uade_send_amiga_message(AMIGAMSG_SETSUBSONG);
+  uadecore_send_amiga_message(AMIGAMSG_SETSUBSONG);
   flush_sound();
 }
 
 
-static int uade_calc_reloc_size(uae_u32 *src, uae_u32 *end)
+static int calc_reloc_size(uae_u32 *src, uae_u32 *end)
 {
   uae_u32 offset;
   int i, nhunks;
@@ -188,49 +199,47 @@ static int uade_calc_reloc_size(uae_u32 *src, uae_u32 *end)
     offset += 4 * (ntohl(*src) & 0x00FFFFFF);
     src++;
   }
-  if (((int) offset) <= 0 || ((int) offset) >= uade_highmem)
+  if (((int) offset) <= 0 || ((int) offset) >= highmem)
     return 0;
   return ((int) offset);
 }
 
 
 /* last part of the audio system pipeline */
-void uade_check_sound_buffers(int bytes)
+void uadecore_check_sound_buffers(int bytes)
 {
   uint8_t space[UADE_MAX_MESSAGE_SIZE];
   struct uade_msg *um = (struct uade_msg *) space;
 
   /* transmit in big endian format, so swap if little endian */
-  if (uade_big_endian == 0)
-    uade_swap_buffer_bytes(sndbuffer, bytes);
+  if (big_endian == 0)
+    uadecore_swap_buffer_bytes(sndbuffer, bytes);
 
   /* LED state changes are reported here because we are in send state and
      this place is heavily rate limited. */
   if (old_ledstate != gui_ledstate) {
     old_ledstate = gui_ledstate;
-    uade_send_debug("LED is %s", gui_ledstate ? "ON" : "OFF");
+    uadecore_send_debug("LED is %s", gui_ledstate ? "ON" : "OFF");
   }
 
   um->msgtype = UADE_REPLY_DATA;
   um->size = bytes;
   memcpy(um->data, sndbuffer, bytes);
-  if (uade_send_message(um, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Could not send sample data.\n");
-    //exit(-1);
-    pthread_exit("ERROR");
+  if (uade_send_message(um, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Could not send sample data.\n");
+    exit(1);
   }
 
-  uade_read_size -= bytes;
-  assert(uade_read_size >= 0);
+  uadecore_read_size -= bytes;
+  assert(uadecore_read_size >= 0);
 
-  if (uade_read_size == 0) {
+  if (uadecore_read_size == 0) {
     /* if all requested data has been sent, move to S state */
-    if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Could not send token (after samples).\n");
-      //exit(-1);
-      pthread_exit("ERROR");
+    if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadecore_ipc)) {
+      fprintf(stderr, "uadecore: Could not send token (after samples).\n");
+      exit(1);
     }
-    uade_handle_r_state();
+    uadecore_handle_r_state();
   }
 }
 
@@ -238,56 +247,95 @@ void uade_check_sound_buffers(int bytes)
 /* Send debug messages back to uade frontend, which either prints
    the message for user or not. "-v" option can be used in uade123 to see all
    these messages. */
-void uade_send_debug(const char *fmt, ...)
+void uadecore_send_debug(const char *fmt, ...)
 {
   char dmsg[256];
   va_list ap;
   va_start (ap, fmt);
   vsnprintf(dmsg, sizeof(dmsg), fmt, ap);
-  if (uade_send_string(UADE_REPLY_MSG, dmsg, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore %s:%d: Could not send debug message.\n", __FILE__, __LINE__);
+  if (uade_send_string(UADE_REPLY_MSG, dmsg, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore %s:%d: Could not send debug message.\n", __FILE__, __LINE__);
   }
 }
 
+static int uade_safe_copy(int dst, const void *buf, size_t buflen)
+{
+	int maxlen = highmem - dst;
+	if (maxlen <= 0)
+		return 0;
+	if (buflen > (size_t) maxlen) {
+		fprintf(stderr, "uadecore: Too long a copy: %zu\n", buflen);
+		return 0;
+	}
+	memcpy(get_real_address(dst), buf, buflen);
+	return (int) buflen;
+}
 
-void uade_get_amiga_message(void)
+static void invalidate_amiga_file_cache(void)
+{
+	uade_file_free(cachedfile);
+	cachedfile = NULL;
+	cachedfilename[0] = 0;
+}
+
+static struct uade_file *lookup_amiga_file_cache(const char *filename)
+{
+	struct uade_file *f;
+
+	/* Return cached file, if filename matches */
+	if (cachedfile != NULL && strcmp(filename, cachedfilename) == 0)
+		return cachedfile;
+
+	f = uade_request_amiga_file(filename, &uadecore_ipc);
+	if (f == NULL)
+		return NULL;
+
+	/* Free old cached file, if exists */
+	invalidate_amiga_file_cache();
+
+	/* Set the new file to be cached */
+	cachedfile = f;
+	strlcpy(cachedfilename, filename, sizeof cachedfilename);
+
+	return f;
+}
+
+void uadecore_get_amiga_message(void)
 {
   uae_u8 *ptr;
   uae_u8 *nameptr;
-  FILE *file;
   int x;
   unsigned int mins, maxs, curs;
   int status;
-  int src, dst, off, len;
+  int src, dst, len;
+  size_t off;
   char tmpstr[256];
   char *srcstr, *dststr;
-
+  struct uade_file *f;
   uint32_t *u32ptr;
   uint8_t space[256];
   struct uade_msg *um = (struct uade_msg *) space;
 
-  x = uade_get_u32(SCORE_INPUT_MSG);  /* message type from amiga */
-
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Message %d", x);
+  x = amiga_get_u32(SCORE_INPUT_MSG);  /* message type from amiga */
 
   switch (x) {
 
   case AMIGAMSG_SONG_END:
-    uade_song_end("player", 0);
+    uadecore_song_end("player", 0);
     break;
 
   case AMIGAMSG_SUBSINFO:
-    mins = uade_get_u32(SCORE_MIN_SUBSONG);
-    maxs = uade_get_u32(SCORE_MAX_SUBSONG);
-    curs = uade_get_u32(SCORE_CUR_SUBSONG);
+    mins = amiga_get_u32(SCORE_MIN_SUBSONG);
+    maxs = amiga_get_u32(SCORE_MAX_SUBSONG);
+    curs = amiga_get_u32(SCORE_CUR_SUBSONG);
     /* Brain damage in TFMX BC Kid Despair */
     if (maxs < mins) {
-      uade_send_debug("Odd subsongs. Eagleplayer reported (min, cur, max) == (%u, %u, %u)", mins, curs, maxs);
+      uadecore_send_debug("Odd subsongs. Eagleplayer reported (min, cur, max) == (%u, %u, %u)", mins, curs, maxs);
       maxs = mins;
     }
     /* Brain damage in Bubble bobble custom */
     if (curs > maxs) {
-      uade_send_debug("Odd subsongs. Eagleplayer reported (min, cur, max) == (%u, %u, %u)", mins, curs, maxs);
+      uadecore_send_debug("Odd subsongs. Eagleplayer reported (min, cur, max) == (%u, %u, %u)", mins, curs, maxs);
       maxs = curs;
     }
     um->msgtype = UADE_REPLY_SUBSONG_INFO;
@@ -296,158 +344,171 @@ void uade_get_amiga_message(void)
     u32ptr[0] = htonl(mins);
     u32ptr[1] = htonl(maxs);
     u32ptr[2] = htonl(curs);
-    if (uade_send_message(um, &uadeipc)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Could not send subsong info message.\n");
-      //exit(-1);
-      pthread_exit("ERROR");
+    if (uade_send_message(um, &uadecore_ipc)) {
+      fprintf(stderr, "uadecore: Could not send subsong info message.\n");
+      exit(1);
     }
     break;
 
   case AMIGAMSG_PLAYERNAME:
     strlcpy(tmpstr, (char *) get_real_address(0x204), sizeof tmpstr);
-    uade_send_string(UADE_REPLY_PLAYERNAME, tmpstr, &uadeipc);
+    uade_send_string(UADE_REPLY_PLAYERNAME, tmpstr, &uadecore_ipc);
     break;
 
   case AMIGAMSG_MODULENAME:
     strlcpy(tmpstr, (char *) get_real_address(0x204), sizeof tmpstr);
-    uade_send_string(UADE_REPLY_MODULENAME, tmpstr, &uadeipc);
+    uade_send_string(UADE_REPLY_MODULENAME, tmpstr, &uadecore_ipc);
     break;
 
   case AMIGAMSG_FORMATNAME:
     strlcpy(tmpstr, (char *) get_real_address(0x204), sizeof tmpstr);
-    uade_send_string(UADE_REPLY_FORMATNAME, tmpstr, &uadeipc);
+    uade_send_string(UADE_REPLY_FORMATNAME, tmpstr, &uadecore_ipc);
     break;
 
   case AMIGAMSG_GENERALMSG:
-    uade_send_debug((char *) get_real_address(0x204));
+    uadecore_send_debug((char *) get_real_address(0x204));
     break;
 
   case AMIGAMSG_CHECKERROR:
-    uade_song_end("module check failed", 1);
+    uadecore_song_end("module check failed", 1);
     break;
 
   case AMIGAMSG_SCORECRASH:
-    if (uade_debug) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Score crashed.\n");
+    if (uadecore_debug) {
+      fprintf(stderr, "uadecore: Score crashed.\n");
       activate_debugger();
       break;
     }
-    uade_song_end("score crashed", 1);
+    uadecore_song_end("score crashed", 1);
     break;
 
   case AMIGAMSG_SCOREDEAD:
-     if (uade_debug) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Score is dead.\n"); 
+     if (uadecore_debug) {
+      fprintf(stderr, "uadecore: Score is dead.\n"); 
       activate_debugger();
       break;
     }
-     uade_song_end("score died", 1);
+     uadecore_song_end("score died", 1);
     break;
 
   case AMIGAMSG_LOADFILE:
-    /* load a file named at 0x204 (name pointer) to address pointed by
-       0x208 and insert the length to 0x20C */
-
-    src = uade_get_u32(0x204);
+    /*
+     * Load a file named at 0x204 (name pointer) to address pointed by
+     * 0x208 and insert the length to 0x20C.
+     * For example, R-Type (TFMX format) uses this.
+     */
+    src = amiga_get_u32(0x204);
     if (!uade_valid_string(src)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Load name in invalid address range.\n");
-      break;
+	    fprintf(stderr, "uadecore: Load name in invalid address range.\n");
+	    break;
     }
     nameptr = get_real_address(src);
-
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Loading %s\n", nameptr);
-
-    if ((file = uade_open_amiga_file((char *) nameptr, uade_player_dir))) {
-      dst = uade_get_u32(0x208);
-      len = uade_safe_load(dst, file, uade_highmem - dst);
-      fclose(file); file = NULL;
-      uade_put_long(0x20C, len);
-      uade_send_debug("load success: %s ptr 0x%x size 0x%x", nameptr, dst, len);
-    } else {
-      uade_send_debug("load: file not found: %s", nameptr);
+    f = lookup_amiga_file_cache((const char *) nameptr);
+    if (f == NULL) {
+	    uadecore_send_debug("load: request error: %s", nameptr);
+	    exit(1);
     }
+    if (f->data == NULL) {
+	    /* File not found */
+	    uadecore_send_debug("load: file not found: %s", nameptr);
+	    break;
+    }
+    dst = amiga_get_u32(0x208);
+    len = uade_safe_copy(dst, f->data, f->size);
+    if (len == 0 && f->size > 0)
+	    uadecore_send_debug("load: too long a file to copy");
+    uade_put_long(0x20C, len);
+    uadecore_send_debug("load: %s ptr 0x%x size 0x%x", nameptr, dst, len);
     break;
 
   case AMIGAMSG_READ:
-    src = uade_get_u32(0x204);
+    /* Used by "mdat.Crystal_Palace-1", for example */
+    src = amiga_get_u32(0x204);
     if (!uade_valid_string(src)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Read name in invalid address range.\n");
-      break;
+	    fprintf(stderr, "uadecore: Read name in invalid address range.\n");
+	    break;
     }
-
     nameptr = get_real_address(src);
-    dst = uade_get_u32(0x208);
-    off = uade_get_u32(0x20C);
-    len = uade_get_u32(0x210);
-
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Reading %s\n", nameptr);
-
-    if ((file = uade_open_amiga_file((char *) nameptr, uade_player_dir))) {
-      if (fseek(file, off, SEEK_SET)) {
-	perror("can not fseek to position");
-	x = 0;
-      } else {
-	x = uade_safe_load(dst, file, len);
-	if (x > len)
-	  x = len;
-      }
-      fclose(file);
-      uade_send_debug("read %s dst 0x%x off 0x%x len 0x%x res 0x%x", nameptr, dst, off, len, x);
-      uade_put_long(0x214, x);
-    } else {
-      uade_send_debug("read: file not found: %s", nameptr);
-      uade_put_long(0x214, 0);
+    f = lookup_amiga_file_cache((const char *) nameptr);
+    if (f == NULL) {
+	    uadecore_send_debug("read: request error: %s", nameptr);
+	    exit(1);
     }
+    x = 0;
+    if (f->data != NULL) {
+	    dst = amiga_get_u32(0x208);
+	    off = amiga_get_u32(0x20C);
+	    len = amiga_get_u32(0x210);
+	    if (off >= f->size) {
+		    uadecore_send_debug("read: file offset over the file end");
+	    } else {
+		    size_t endpos = off + ((size_t) len);
+		    size_t tocopy = len;
+		    if (endpos > f->size)
+			    tocopy = f->size - off;
+		    x = uade_safe_copy(dst, f->data + off, tocopy);
+	    }
+	    uadecore_send_debug("read: %s dst 0x%x off 0x%x len 0x%x bytesread 0x%x", nameptr, dst, off, len, x);
+    } else {
+	    uadecore_send_debug("read: file not found: %s", nameptr);
+    }
+    uade_put_long(0x214, x);
     break;
 
   case AMIGAMSG_FILESIZE:
-    src = uade_get_u32(0x204);
+    /* Used by "mdat.Crystal_Palace-1", for example */
+    src = amiga_get_u32(0x204);
     if (!uade_valid_string(src)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Filesize name in invalid address range.\n");
+      fprintf(stderr, "uadecore: Filesize name in invalid address range.\n");
       break;
     }
     nameptr = get_real_address(src);
-    if ((file = uade_open_amiga_file((char *) nameptr, uade_player_dir))) {
-      fseek(file, 0, SEEK_END);
-      len = ftell(file);
-      fclose(file);
-      uade_put_long(0x208, len);
-      uade_put_long(0x20C, -1);
-      uade_send_debug("filesize: file %s res 0x%x", nameptr, len);
-    } else {
-      uade_put_long(0x208, 0);
-      uade_put_long(0x20C, 0);
-      uade_send_debug("filesize: file not found: %s", nameptr);
+    f = lookup_amiga_file_cache((const char *) nameptr);
+    if (f == NULL) {
+	    uadecore_send_debug("filesize: request error: %s", nameptr);
+	    exit(1);
     }
+    len = 0;
+    x = 0;
+    if (f->data != NULL) {
+	    len = f->size;
+	    x = -1;
+	    uadecore_send_debug("filesize: file %s res 0x%x", nameptr, len);
+    } else {
+	    /* Note, f->size == -1 if file does not exist */
+	    uadecore_send_debug("filesize: file not found: %s", nameptr);
+    }
+    uade_put_long(0x208, len);
+    uade_put_long(0x20C, x);
     break;
 
   case AMIGAMSG_TIME_CRITICAL:
-    uade_time_critical = uade_get_u32(0x204) ? 1 : 0;
-    if (uade_speed_hack < 0) {
+    uadecore_time_critical = amiga_get_u32(0x204) ? 1 : 0;
+    if (speed_hack < 0) {
       /* a negative value forbids use of speed hack */
-      uade_time_critical = 0;
+      uadecore_time_critical = 0;
     }
     break;
 
   case AMIGAMSG_GET_INFO:
-    src = uade_get_u32(0x204);
-    dst = uade_get_u32(0x208);
-    len = uade_get_u32(0x20C);
+    src = amiga_get_u32(0x204);
+    dst = amiga_get_u32(0x208);
+    len = amiga_get_u32(0x20C);
     if (!uade_valid_string(src)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: get info: Invalid src: 0x%x\n", src);
+      fprintf(stderr, "uadecore: get info: Invalid src: 0x%x\n", src);
       break;
     }
     if (len <= 0) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: get info: len = %d\n", len);
+      fprintf(stderr, "uadecore: get info: len = %d\n", len);
       break;
     }
     if (!valid_address(dst, len)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: get info: Invalid dst: 0x%x\n", dst);
+      fprintf(stderr, "uadecore: get info: Invalid dst: 0x%x\n", dst);
       break;
     }
     srcstr = (char *) get_real_address(src);
     dststr = (char *) get_real_address(dst);
-    uade_send_debug("score issued an info request: %s (maxlen %d)\n", srcstr, len);
+    uadecore_send_debug("score issued an info request: %s (maxlen %d)", srcstr, len);
     len = get_info_for_ep(dststr, srcstr, len);
     /* Send printable debug */
     do {
@@ -469,24 +530,23 @@ void uade_get_amiga_message(void)
       } else {
 	space[maxspace - 1] = 0;
       }
-      uade_send_debug("reply to score: %s (total len %d)\n", space, len);
+      uadecore_send_debug("reply to score: %s (total len %d)", space, len);
     } while (0);
     uade_put_long(0x20C, len);
     break;
 
   case AMIGAMSG_START_OUTPUT:
-    uade_audio_output = 1;
-    uade_send_debug("Starting audio output at %d", uade_audio_skip);
+    uadecore_audio_output = 1;
     break;
 
   default:
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","uadecore: Unknown message from score (%d)\n", x);
+    fprintf(stderr,"uadecore: Unknown message from score (%d)\n", x);
     break;
   }
 }
 
 
-void uade_handle_r_state(void)
+void uadecore_handle_r_state(void)
 {
   uint8_t space[UADE_MAX_MESSAGE_SIZE];
   struct uade_msg *um = (struct uade_msg *) space;
@@ -495,13 +555,12 @@ void uade_handle_r_state(void)
 
   while (1) {
 
-    ret = uade_receive_message(um, sizeof(space), &uadeipc);
+    ret = uade_receive_message(um, sizeof(space), &uadecore_ipc);
     if (ret == 0) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: No more input. Exiting succesfully.\n");
-      pthread_exit(NULL);
+      exit(0);
     } else if (ret < 0) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Error on input. Exiting with error.\n");
-      pthread_exit("Input Error");
+      fprintf(stderr, "uadecore: Error on input. Exiting with error.\n");
+      exit(1);
     }
 
     if (um->msgtype == UADE_COMMAND_TOKEN)
@@ -510,25 +569,23 @@ void uade_handle_r_state(void)
     switch (um->msgtype) {
 
     case UADE_COMMAND_ACTIVATE_DEBUGGER:
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Received activate debugger message.\n");
+      fprintf(stderr, "uadecore: Received activate debugger message.\n");
       activate_debugger();
-      uade_debug = 1;
+      uadecore_debug = 1;
       break;
 
     case UADE_COMMAND_CHANGE_SUBSONG:
       if (uade_parse_u32_message(&x, um)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid size with change subsong.\n");
-	//exit(-1);
-	pthread_exit("ERROR");
+	fprintf(stderr, "uadecore: Invalid size with change subsong.\n");
+	exit(1);
       }
       change_subsong(x);
       break;
 
     case UADE_COMMAND_FILTER:
       if (uade_parse_two_u32s_message(&x, &y, um)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid size with filter command\n");
-	//exit(-1);
-	pthread_exit("ERROR");
+	fprintf(stderr, "uadecore: Invalid size with filter command\n");
+	exit(1);
       }
       audio_set_filter(x, y);
       break;
@@ -540,9 +597,8 @@ void uade_handle_r_state(void)
 
     case UADE_COMMAND_SET_FREQUENCY:
       if (uade_parse_u32_message(&x, um)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid frequency message size: %u\n", um->size);
-	//exit(-1);
-	pthread_exit("ERROR");
+	fprintf(stderr, "Invalid frequency message size: %u\n", um->size);
+	exit(1);
       }
       set_sound_freq(x);
       break;
@@ -558,46 +614,42 @@ void uade_handle_r_state(void)
       break;
 
     case UADE_COMMAND_SPEED_HACK:
-      uade_time_critical = 1;
+      uadecore_time_critical = 1;
       break;
 
     case UADE_COMMAND_READ:
-      if (uade_read_size != 0) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Read not allowed when uade_read_size > 0.\n");
-	//exit(-1);
-	pthread_exit("ERROR");
+      if (uadecore_read_size != 0) {
+	fprintf(stderr, "uadecore: Read not allowed when uadecore_read_size > 0.\n");
+	exit(1);
       }
       if (uade_parse_u32_message(&x, um)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid size on read command.\n");
-	//exit(-1);
-	pthread_exit("ERROR");
+	fprintf(stderr, "uadecore: Invalid size on read command.\n");
+	exit(1);
       }
-      uade_read_size = x;
-      if (uade_read_size == 0 || uade_read_size > MAX_SOUND_BUF_SIZE || (uade_read_size & 3) != 0) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid read size: %d\n", uade_read_size);
-	//exit(-1);
-	pthread_exit("ERROR");
+      uadecore_read_size = x;
+      if (uadecore_read_size == 0 || uadecore_read_size > MAX_SOUND_BUF_SIZE || (uadecore_read_size & 3) != 0) {
+	fprintf(stderr, "uadecore: Invalid read size: %d\n", uadecore_read_size);
+	exit(1);
       }
       break;
 
     case UADE_COMMAND_REBOOT:
-      uade_reboot = 1;
+      uadecore_reboot = 1;
       break;
 
     case UADE_COMMAND_SET_NTSC:
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nuadecore: Changing to NTSC mode.\n");
-      uade_set_ntsc(1);
+      fprintf(stderr, "\nuadecore: Changing to NTSC mode.\n");
+      uadecore_set_ntsc(1);
       break;
 
     case UADE_COMMAND_SONG_END_NOT_POSSIBLE:
-      uade_set_automatic_song_end(0);
+      uadecore_set_automatic_song_end(0);
       break;
 
     case UADE_COMMAND_SET_SUBSONG:
       if (uade_parse_u32_message(&x, um)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid size on set subsong command.\n");
-	//exit(-1);
-	pthread_exit("ERROR");
+	fprintf(stderr, "uadecore: Invalid size on set subsong command.\n");
+	exit(1);
       }
       uade_put_long(SCORE_SET_SUBSONG, 1);
       uade_put_long(SCORE_SUBSONG, x);
@@ -608,15 +660,14 @@ void uade_handle_r_state(void)
       break;
 
     default:
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Received invalid command %d\n", um->msgtype);
-      //exit(-1);
-      pthread_exit("ERROR");
+      fprintf(stderr, "uadecore: Received invalid command %d\n", um->msgtype);
+      exit(1);
     }
   }
 }
 
 
-void uade_option(int argc, char **argv)
+void uadecore_option(int argc, char **argv)
 {
   int i, j, no_more_opts;
   char **s_argv;
@@ -628,7 +679,7 @@ void uade_option(int argc, char **argv)
   char *output = NULL;
 
   /* network byte order is the big endian order */
-  uade_big_endian = (htonl(0x1234) == 0x1234);
+  big_endian = (htonl(0x1234) == 0x1234);
 
   memset(&song, 0, sizeof(song));
 
@@ -636,9 +687,8 @@ void uade_option(int argc, char **argv)
 
   s_argv = malloc(sizeof(argv[0]) * (argc + 1));
   if (!s_argv) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Out of memory for command line parsing.\n");
-    //exit(-1);
-    pthread_exit("ERROR");
+    fprintf (stderr, "uadecore: Out of memory for command line parsing.\n");
+    exit(1);
   }
   s_argc = 0;
   s_argv[s_argc++] = argv[0];
@@ -654,25 +704,22 @@ void uade_option(int argc, char **argv)
 
       if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h") || !strcmp(argv[i], "-help")) {
 	uade_print_help(OPTION_HELP, argv[0]);
-	//exit(0);
-	pthread_exit(NULL);
+	exit(0);
 
       } else if (!strcmp(argv[i], "-i")) {
 	if ((i + 1) >= argc) {
-	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: %s parameter missing\n", argv[i]);
+	  fprintf(stderr, "uadecore: %s parameter missing\n", argv[i]);
 	  uade_print_help(OPTION_ILLEGAL_PARAMETERS, argv[0]);
-	  //exit(-1);
-	  pthread_exit("ERROR");
+	  exit(1);
 	}
 	input = argv[i + 1];
 	i += 2;
 
       } else if (!strcmp(argv[i], "-o")) {
 	if ((i + 1) >= argc) {
-	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: %s parameter missing\n", argv[i]);
+	  fprintf(stderr, "uadecore: %s parameter missing\n", argv[i]);
 	  uade_print_help(OPTION_ILLEGAL_PARAMETERS, argv[0]);
-	  //exit(-1);
-	  pthread_exit("ERROR");
+	  exit(1);
 	}
 	output = argv[i + 1];
 	i += 2;
@@ -691,34 +738,29 @@ void uade_option(int argc, char **argv)
   }
   s_argv[s_argc] = NULL;
 
-  uade_set_peer(&uadeipc, 0, input, output);
+  uade_set_peer(&uadecore_ipc, 0, input, output);
 
-  ret = uade_receive_string(optionsfile, UADE_COMMAND_CONFIG, sizeof(optionsfile), &uadeipc);
+  ret = uade_receive_string(optionsfile, UADE_COMMAND_CONFIG, sizeof(optionsfile), &uadecore_ipc);
   if (ret == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: No config file passed as a message.\n");
-    //exit(-1);
-    pthread_exit("ERROR");
+    fprintf(stderr, "uadecore: No config file passed as a message.\n");
+    exit(1);
   } else if (ret < 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid input. Expected a config file.\n");
-    //exit(-1);
-    pthread_exit("ERROR");
+    fprintf(stderr, "uadecore: Invalid input. Expected a config file.\n");
+    exit(1);
   }
 
   /* use the config file provided with a message, if '-config' option
      was not given */
   if (!cfg_loaded) {
     if (cfgfile_load (&currprefs, optionsfile) == 0) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Could not load uaerc (%s).\n", optionsfile);
-      //exit(-1);
-      pthread_exit("ERROR");
+      fprintf(stderr, "uadecore: Could not load uaerc (%s).\n", optionsfile);
+      exit(1);
     }
   }
 
   free(s_argv);
 
-  uade_portable_initializations();
-
-  uade_reboot = 1;
+  uadecore_reboot = 1;
 }
 
 
@@ -729,51 +771,29 @@ static void uade_print_help(enum print_help problemcode, char *progname)
     /* just for printing help */
     break;
   case OPTION_ILLEGAL_PARAMETERS:
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid parameters.\n\n");
+    fprintf(stderr, "uadecore: Invalid parameters.\n\n");
     break;
   case OPTION_NO_SONGS:
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: No songs given as parameters.\n\n");
+    fprintf(stderr, "uadecore: No songs given as parameters.\n\n");
     break;
   default:
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Unknown error.\n");
+    fprintf(stderr, "uadecore: Unknown error.\n");
     break;
   }
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE usage:\n");
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", " %s [OPTIONS]\n\n", progname);
+  fprintf(stderr, "UADE usage:\n");
+  fprintf(stderr, " %s [OPTIONS]\n\n", progname);
 
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", " options:\n");
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", " -h\t\tPrint help\n");
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", " -i file\tSet input source ('filename' or 'fd://number')\n");
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", " -o file\tSet output destination ('filename' or 'fd://number'\n");
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\n");
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "This tool should not be run from the command line. This is for internal use\n");
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "of other programs.\n");
+  fprintf(stderr, " options:\n");
+  fprintf(stderr, " -h\t\tPrint help\n");
+  fprintf(stderr, " -i file\tSet input source ('filename' or 'fd://number')\n");
+  fprintf(stderr, " -o file\tSet output destination ('filename' or 'fd://number'\n");
+  fprintf(stderr, "\n");
+  fprintf(stderr, "This tool should not be run from the command line. This is for internal use\n");
+  fprintf(stderr, "of other programs.\n");
 }
-
-
-static int uade_safe_load_name(int vaddr, char *name, const char *expl,
-			       int maxlen)
-{
-  int bytesread;
-  FILE *file;
-
-
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: safe_load %s to %08x", name, vaddr);
-
-
-  file = fopen(name, "rb");
-  if (!file) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Could not load %s %s.\n", expl, name);
-    return 0;
-  }
-  bytesread = uade_safe_load(vaddr, file, maxlen);
-  fclose(file);
-  return bytesread;
-}
-
 
 /* this is called for each played song from newcpu.c/m68k_reset() */
-void uade_reset(void)
+void uadecore_reset(void)
 {
   /* don't load anything under 0x1000 (execbase top at $1000) */
   const int modnameaddr = 0x00400;
@@ -786,11 +806,15 @@ void uade_reset(void)
   int len;
   FILE *file;
   int bytesread;
+  struct uade_file *player;
+  struct uade_file *module;
 
   uint8_t command[UADE_MAX_MESSAGE_SIZE];
   struct uade_msg *um = (struct uade_msg *) command;
 
   int ret;
+
+  invalidate_amiga_file_cache();
 
  nextsong:
 
@@ -798,89 +822,80 @@ void uade_reset(void)
      It seems that certain players don't work totally reliably if memory
      contains trash from previous songs. To be certain that each song is
      played from the same initial state of emulator we clear the memory
-     from 0x400 to 'uade_highmem' each time a new song is played */
-  uade_highmem = 0;
-  while (uade_highmem < 0x800000) {
-    if (!valid_address(0, uade_highmem + 0x10000))
+     from 0x400 to 'highmem' each time a new song is played */
+  highmem = 0;
+  while (highmem < 0x800000) {
+    if (!valid_address(0, highmem + 0x10000))
       break;
-    uade_highmem += 0x10000;
+    highmem += 0x10000;
   }
-  if (uade_highmem < 0x80000) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: There must be at least 512 KiB of amiga memory (%d bytes found).\n", uade_highmem);
-    pthread_exit("ERROR"); // exit(-1);
+  if (highmem < 0x80000) {
+    fprintf(stderr, "uadecore: There must be at least 512 KiB of amiga memory (%d bytes found).\n", highmem);
+    exit(1);
   }
-  if (uade_highmem < 0x200000) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Warning: highmem == 0x%x (< 0x200000)!\n", uade_highmem);
+  if (highmem < 0x200000) {
+    fprintf(stderr, "uadecore: Warning: highmem == 0x%x (< 0x200000)!\n", highmem);
   }
-  memset(get_real_address(0), 0, uade_highmem);
+  memset(get_real_address(0), 0, highmem);
 
   song.cur_subsong = song.min_subsong = song.max_subsong = 0;
 
-  ret = uade_receive_string(song.scorename, UADE_COMMAND_SCORE, sizeof(song.scorename), &uadeipc);
+  ret = uade_receive_string(song.scorename, UADE_COMMAND_SCORE, sizeof(song.scorename), &uadecore_ipc);
   if (ret == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: No more songs to play.\n");
     exit(0);
-    pthread_exit(NULL);
   } else if (ret < 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid input. Expected score name.\n");
-    pthread_exit("ERROR"); // exit(-1);
+    fprintf(stderr, "uadecore: Invalid input. Expected score name.\n");
+    exit(1);
   }
 
-  ret = uade_receive_string(song.playername, UADE_COMMAND_PLAYER, sizeof(song.playername), &uadeipc);
-  if (ret == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Expected player name. Got nothing.\n");
-    pthread_exit("ERROR"); // exit(-1);
-  } else if (ret < 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid input. Expected player name.\n");
-    pthread_exit("ERROR"); // exit(-1);
-  }
+  player = NULL;
+  module = NULL;
 
-  if (uade_dirname(uade_player_dir, song.playername, sizeof(uade_player_dir)) == NULL) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid dirname with player: %s\n", song.playername);
-    pthread_exit("ERROR"); // exit(-1);
+  /* Get eagleplayer from libuade */
+  player = uade_receive_file(&uadecore_ipc);
+  if (player == NULL || player->data == NULL) {
+	  fprintf(stderr, "uadecore: Invalid input. Expected player.\n");
+	  exit(1);
   }
-
-  ret = uade_receive_message(um, sizeof command, &uadeipc);
-  if (ret == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","uadecore: Expected module name. Got nothing.\n");
-    pthread_exit("ERROR"); // exit(-1);
-  } else if (ret < 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid input. Expected module name.\n");
-    pthread_exit("ERROR"); // exit(-1);
-  }
-  assert(um->msgtype == UADE_COMMAND_MODULE);
-  if (um->size == 0) {
-    song.modulename[0] = 0;
+  if (player->name == NULL) {
+	  strlcpy(song.playername, "no-player-name", sizeof song.playername);
   } else {
-    assert(um->size == (strlen((char *) um->data) + 1));
-    strlcpy(song.modulename, (char *) um->data, sizeof(song.modulename));
+	  strlcpy(song.playername, player->name, sizeof song.playername);
   }
 
-  uade_set_automatic_song_end(1);
+  /* Get module from libuade */
+  module = uade_receive_file(&uadecore_ipc);
+  if (module == NULL) {
+	  fprintf(stderr, "uadecore: Invalid input. Expected module.\n");
+	  exit(1);
+  }
+  if (module->name != NULL)
+	  strlcpy(song.modulename, module->name, sizeof song.modulename);
+  else
+	  strlcpy(song.modulename, "no-module-name", sizeof song.modulename);
 
-  uade_put_long(SCORE_EXEC_DEBUG, uade_execdebugboolean ? 0x12345678 : 0);
+  uadecore_set_automatic_song_end(1);
+
+  uade_put_long(SCORE_EXEC_DEBUG, execdebug ? 0x12345678 : 0);
   uade_put_long(SCORE_VOLUME_TEST, voltestboolean);
-  uade_put_long(SCORE_DMA_WAIT, uade_dmawait);
+  uade_put_long(SCORE_DMA_WAIT, dmawait);
   uade_put_long(SCORE_MODULECHANGE, disable_modulechange);
 
-  bytesread = uade_safe_load_name(playeraddr, song.playername, "player", uade_highmem - playeraddr);
-
-  if (bytesread > (uade_highmem - playeraddr)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Player %s too big a file (%d bytes).\n", song.playername, bytesread);
-    goto skiptonextsong;
-  }
+  bytesread = uade_safe_copy(playeraddr, player->data, player->size);
   if (bytesread == 0) {
-    goto skiptonextsong;
+	  fprintf(stderr, "uadecore: Can not do safe copy for player\n");
+	  goto skiptonextsong;
   }
 
-  /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: player '%s' (%d bytes)\n", song.playername, bytesread); */
+  uade_file_free(player);
+  player = NULL;
 
   /* set player executable address for relocator */
   uade_put_long(SCORE_PLAYER_ADDR, playeraddr);
-  len = uade_calc_reloc_size((uae_u32 *) get_real_address(playeraddr),
-			     (uae_u32 *) get_real_address(playeraddr + bytesread));
+  len = calc_reloc_size((uae_u32 *) get_real_address(playeraddr),
+			(uae_u32 *) get_real_address(playeraddr + bytesread));
   if (!len) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Problem with reloc calculation.\n");
+    fprintf(stderr, "uadecore: Problem with reloc calculation.\n");
     goto skiptonextsong;
   }
   relocaddr  = ((playeraddr + bytesread) & 0x7FFFF000) + 0x4000;
@@ -889,7 +904,7 @@ void uade_reset(void)
 
   if (modaddr <= relocaddr) {
     /* this is very bad because sound core memory allocation will fail */
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Warning: modaddr <= relocaddr: 0x%x <= 0x%x\n", modaddr, relocaddr);
+    fprintf(stderr, "uadecore: Warning: modaddr <= relocaddr: 0x%x <= 0x%x\n", modaddr, relocaddr);
   }
 
   uade_put_long(SCORE_RELOC_ADDR, relocaddr);  /*address for relocated player*/
@@ -897,46 +912,44 @@ void uade_reset(void)
   uade_put_long(SCORE_MODULE_LEN, 0);          /* set module size to zero */
   uade_put_long(SCORE_MODULE_NAME_ADDR, 0);    /* mod name address pointer */
 
-  /* load the module if available */
-  if (song.modulename[0]) {
-    bytesread = uade_safe_load_name(modaddr, song.modulename, "module", uade_highmem - modaddr);
-    if (bytesread > (uade_highmem - playeraddr)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Module %s too big a file (%d bytes).\n", song.modulename, bytesread);
-      goto skiptonextsong;
-    }
-    if (bytesread == 0) {
-      goto skiptonextsong;
-    }
+  /* Load the module, if available */
+  if (module->data != NULL) {
+	  bytesread = uade_safe_copy(modaddr, module->data, module->size);
+	  if (bytesread == 0) {
+		  fprintf(stderr, "uadecore: Module safe copy failed\n");
+		  goto skiptonextsong;
+	  }
 
-    uade_put_long(SCORE_MODULE_LEN, bytesread);
+	  uade_put_long(SCORE_MODULE_LEN, bytesread);
 
-    if (!valid_address(modnameaddr, strlen(song.modulename) + 1)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid address for modulename.\n");
-      goto skiptonextsong;
-    }
+	  if (!valid_address(modnameaddr, strlen(song.modulename) + 1)) {
+		  fprintf(stderr, "uadecore: Invalid address for modulename.\n");
+		  goto skiptonextsong;
+	  }
 
-    strlcpy((char *) get_real_address(modnameaddr), song.modulename, 1024);
-    uade_put_long(SCORE_MODULE_NAME_ADDR, modnameaddr);
-
+	  strlcpy((char *) get_real_address(modnameaddr), song.modulename, 1024);
+	  uade_put_long(SCORE_MODULE_NAME_ADDR, modnameaddr);
   } else {
+	  if (!valid_address(modnameaddr, strlen(song.playername) + 1)) {
+		  fprintf(stderr, "uadecore: Invalid address for playername.\n");
+		  goto skiptonextsong;
+	  }
 
-    if (!valid_address(modnameaddr, strlen(song.playername) + 1)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid address for playername.\n");
-      goto skiptonextsong;
-    }
+	  strlcpy((char *) get_real_address(modnameaddr), song.playername, 1024);
+	  uade_put_long(SCORE_MODULE_NAME_ADDR, modnameaddr);
 
-    strlcpy((char *) get_real_address(modnameaddr), song.playername, 1024);
-    uade_put_long(SCORE_MODULE_NAME_ADDR, modnameaddr);
-
-    bytesread = 0;
+	  bytesread = 0;
   }
+
+  uade_file_free(module);
+  module = NULL;
 
   /* load sound core (score) */
   if ((file = fopen(song.scorename, "rb"))) {
-    bytesread = uade_safe_load(scoreaddr, file, uade_highmem - scoreaddr);
+    bytesread = uade_safe_load(scoreaddr, file, highmem - scoreaddr);
     fclose(file);
   } else {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not load score (%s).\n", song.scorename);
+    fprintf (stderr, "uadecore: Can not load score (%s).\n", song.scorename);
     goto skiptonextsong;
   }
 
@@ -944,12 +957,12 @@ void uade_reset(void)
   m68k_setpc(scoreaddr);
 
   /* obey player format checking */
-  uade_put_long(SCORE_FORCE, 1);
+  uade_put_long(SCORE_FORCE, 0);
   /* set default subsong */
   uade_put_long(SCORE_SET_SUBSONG, 0);
   uade_put_long(SCORE_SUBSONG, 0);
   /* set PAL mode */
-  uade_set_ntsc(0);
+  uadecore_set_ntsc(0);
 
   /* pause bits (don't care!), for debugging purposes only */
   uade_put_long(SCORE_PREPAUSE, 0);
@@ -960,36 +973,36 @@ void uade_reset(void)
   /* no message for score */
   uade_put_long(SCORE_OUTPUT_MSG, 0);
   if ((userstack - (scoreaddr + bytesread)) < 0x1000)
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Amiga stack overrun warning.\n");
+    fprintf(stderr, "uadecore: Amiga stack overrun warning.\n");
 
   flush_sound();
 
-  /* note that uade_speed_hack can be negative (meaning that uade never uses
+  /* note that speed_hack can be negative (meaning that uade never uses
      speed hack, even if it's requested by the amiga player)! */
-  uade_time_critical = 0;
-  if (uade_speed_hack > 0) {
-    uade_time_critical = 1;
+  uadecore_time_critical = 0;
+  if (speed_hack > 0) {
+    uadecore_time_critical = 1;
   }
 
-  uade_reboot = 0;
+  uadecore_reboot = 0;
 
-  uade_audio_output = 0;
-  uade_audio_skip = 0;
+  uadecore_audio_output = 0;
+  uadecore_audio_skip = 0;
 
   old_ledstate = gui_ledstate;
 
-  if (uade_receive_short_message(UADE_COMMAND_TOKEN, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not receive token in uade_reset().\n");
-    pthread_exit("ERROR"); // exit(-1);
+  if (uade_receive_short_message(UADE_COMMAND_TOKEN, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Can not receive token in uade_reset().\n");
+    exit(1);
   }
 
-  if (uade_send_short_message(UADE_REPLY_CAN_PLAY, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not send 'CAN_PLAY' reply.\n");
-    pthread_exit("ERROR"); // exit(-1);
+  if (uade_send_short_message(UADE_REPLY_CAN_PLAY, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Can not send 'CAN_PLAY' reply.\n");
+    exit(1);
   }
-  if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not send token from uade_reset().\n");
-    pthread_exit("ERROR"); // exit(-1);
+  if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Can not send token from uade_reset().\n");
+    exit(1);
   }
 
   set_sound_freq(UADE_DEFAULT_FREQUENCY);
@@ -998,20 +1011,25 @@ void uade_reset(void)
   return;
 
  skiptonextsong:
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not play. Reboot.\n");
+  uade_file_free(player);
+  player = NULL;
+  uade_file_free(module);
+  module = NULL;
 
-  if (uade_receive_short_message(UADE_COMMAND_TOKEN, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not receive token in uade_reset().\n");
-    pthread_exit("ERROR"); // exit(-1);
+  fprintf(stderr, "uadecore: Can not play. Reboot.\n");
+
+  if (uade_receive_short_message(UADE_COMMAND_TOKEN, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Can not receive token in uade_reset().\n");
+    exit(1);
   }
 
-  if (uade_send_short_message(UADE_REPLY_CANT_PLAY, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not send 'CANT_PLAY' reply.\n");
-    pthread_exit("ERROR"); // exit(-1);
+  if (uade_send_short_message(UADE_REPLY_CANT_PLAY, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Can not send 'CANT_PLAY' reply.\n");
+    exit(1);
   }
-  if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Can not send token from uade_reset().\n");
-    pthread_exit("ERROR"); // exit(-1);
+  if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Can not send token from uade_reset().\n");
+    exit(1);
   }
   goto nextsong;
 }
@@ -1021,40 +1039,20 @@ static void uade_put_long(int addr, int val)
 {
   uae_u32 *p;
   if (!valid_address(addr, 4)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid uade_put_long (0x%x).\n", addr);
+    fprintf(stderr, "uadecore: Invalid uade_put_long (0x%x).\n", addr);
     return;
   }
   p = (uae_u32 *) get_real_address(addr);
   *p = htonl(val);
 }
 
-
-static int uade_get_u32(int addr)
-{
-  uae_u32 *ptr;
-  int x;
-  if (!valid_address(addr, 4)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid uade_get_u32 (0x%x).\n", addr);
-    return 0;
-  }
-  ptr = (uae_u32 *) get_real_address(addr);
-  return ntohl(*ptr);
-}
-
-
 static int uade_safe_load(int dst, FILE *file, int maxlen)
 {
-
-#define UADE_SAFE_BUFSIZE 4096
-
   char buf[UADE_SAFE_BUFSIZE];
   int nbytes, len, off;
 
   len = UADE_SAFE_BUFSIZE;
   off = 0;
-
-  if (maxlen <= 0)
-    return 0;
 
   while (maxlen > 0) {
 
@@ -1066,7 +1064,7 @@ static int uade_safe_load(int dst, FILE *file, int maxlen)
       break;
 
     if (!valid_address(dst + off, nbytes)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid load range [%x,%x).\n", dst + off, dst + off + nbytes);
+      fprintf(stderr, "uadecore: Invalid load range [%x,%x).\n", dst + off, dst + off + nbytes);
       break;
     }
 
@@ -1089,7 +1087,7 @@ static void uade_safe_get_string(char *dst, int src, int maxlen)
     if (i >= maxlen)
       break;
     if (!valid_address(src + i, 1)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid memory range in safe_get_string.\n");
+      fprintf(stderr, "uadecore: Invalid memory range in safe_get_string.\n");
       break;
     }
     dst[i] = * (char *) get_real_address(src + i);
@@ -1099,26 +1097,26 @@ static void uade_safe_get_string(char *dst, int src, int maxlen)
     if (i < maxlen) {
       dst[i] = 0;
     } else { 
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Warning: string truncated.\n");
+      fprintf(stderr, "uadecore: Warning: string truncated.\n");
       dst[maxlen - 1] = 0;
     }
   }
 }
 
 
-void uade_send_amiga_message(int msgtype)
+void uadecore_send_amiga_message(int msgtype)
 {
   uade_put_long(SCORE_OUTPUT_MSG, msgtype);
 }
 
 
-void uade_set_ntsc(int usentsc)
+void uadecore_set_ntsc(int usentsc)
 {
   uade_put_long(SCORE_NTSC, usentsc);
 }
 
 
-void uade_set_automatic_song_end(int song_end_possible)
+void uadecore_set_automatic_song_end(int song_end_possible)
 {
   uade_put_long(SCORE_HAVE_SONGEND, song_end_possible);
 }
@@ -1126,29 +1124,30 @@ void uade_set_automatic_song_end(int song_end_possible)
 
 /* if kill_it is zero, uade may switch to next subsong. if kill_it is non-zero
    uade will always switch to next song (if any) */
-void uade_song_end(char *reason, int kill_it)
+void uadecore_song_end(char *reason, int kill_it)
 {
   uint8_t space[sizeof(struct uade_msg) + 4 + 256];
   struct uade_msg *um = (struct uade_msg *) space;
+  int tailbytes = ((intptr_t) sndbufpt) - ((intptr_t) sndbuffer);
   um->msgtype = UADE_REPLY_SONG_END;
-  ((uint32_t *) um->data)[0] = htonl(((intptr_t) sndbufpt) - ((intptr_t) sndbuffer));
-  ((uint32_t *) um->data)[1] = htonl(kill_it);
+  write_be_u32(um->data, tailbytes);
+  write_be_u32(um->data + 4, kill_it);
   strlcpy((char *) um->data + 8, reason, 256);
   um->size = 8 + strlen(reason) + 1;
-  if (uade_send_message(um, &uadeipc)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Could not send song end message.\n");
-    pthread_exit("ERROR"); // exit(-1);
+  if (uade_send_message(um, &uadecore_ipc)) {
+    fprintf(stderr, "uadecore: Could not send song end message.\n");
+    exit(1);
   }
   /* if audio_output is zero (and thus the client is waiting for the first
      sound data block from this song), then start audio output so that the
      clients first sound finishes ASAP and we can go to the next (sub)song.
      uade must finish the pending sound data request (for the client) even if
      the sound core crashed */
-  uade_audio_output = 1;
+  uadecore_audio_output = 1;
 }
 
 
-void uade_swap_buffer_bytes(void *data, int bytes)
+void uadecore_swap_buffer_bytes(void *data, int bytes)
 {
   uae_u8 *buf = (uae_u8 *) data;
   uae_u8 sample;
@@ -1170,6 +1169,6 @@ static int uade_valid_string(uae_u32 address)
       return 1;
     address++;
   }
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uadecore: Invalid string at 0x%x.\n", address);
+  fprintf(stderr, "uadecore: Invalid string at 0x%x.\n", address);
   return 0;
 }

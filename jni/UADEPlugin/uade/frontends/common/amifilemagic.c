@@ -23,14 +23,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-#include <android/log.h>
-#include <uadeutils.h>
-#include <amifilemagic.h>
+
+#include <uade/uadeutils.h>
+#include <uade/amifilemagic.h>
 
 #define FILEMAGIC_DEBUG 0
 
 #if FILEMAGIC_DEBUG
-#define amifiledebug(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); } while(0)
+#define amifiledebug(fmt, args...) do { fprintf(stderr, "%s:%d: %s: " fmt, __FILE__, __LINE__, __func__, ## args); } while(0)
 #else
 #define amifiledebug(fmt, args...) 
 #endif
@@ -433,16 +433,15 @@ static int mod32check(unsigned char *buf, size_t bufsize, size_t realfilesize,
       /* only spam filesize message when it's a tracker module */
 
     if (calculated_size != realfilesize) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: file size is %zd but calculated size for a mod file is %zd (%s).\n", realfilesize, calculated_size, path);
+      fprintf(stderr, "uade: file size is %zd but calculated size for a mod file is %zd (%s).\n", realfilesize, calculated_size, path);
     }
 
     if (calculated_size > realfilesize) {
-        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: file is truncated and won't get played (%s)\n", path);
-      return MOD_UNDEFINED;
+        fprintf(stderr, "uade: file seems truncated and may get played badly (%s)\n", path);
     }
 
     if (calculated_size < realfilesize) {
-        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: file has trailing garbage behind the actual module data. Please fix it. (%s)\n", path);
+        fprintf(stderr, "uade: file has trailing garbage behind the actual module data. Please fix it. (%s)\n", path);
     }
 
     /* parse instruments */
@@ -451,7 +450,7 @@ static int mod32check(unsigned char *buf, size_t bufsize, size_t realfilesize,
       slen = ((buf[42 + i * 30] << 8) + buf[43 + i * 30]) * 2;
       srep = ((buf[46 + i * 30] << 8) + buf[47 + i * 30]) *2;
       sreplen = ((buf[48 + i * 30] << 8) + buf[49 + i * 30]) * 2;
-      /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol); */
+      /* fprintf (stderr, "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol); */
 
       if (vol > 64)
         return MOD_UNDEFINED;
@@ -619,7 +618,7 @@ static int mod15check(unsigned char *buf, size_t bufsize, size_t realfilesize,
     }
 
   if (calculated_size > realfilesize) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: file is truncated and won't get played (%s)\n", path);
+      fprintf(stderr, "uade: file is truncated and won't get played (%s)\n", path);
       return 0 ;
     }
 
@@ -642,7 +641,7 @@ static int mod15check(unsigned char *buf, size_t bufsize, size_t realfilesize,
     slen = ((buf[42 + i * 30] << 8) + buf[43 + i * 30]) * 2;
     srep = ((buf[46 + i * 30] << 8) + buf[47 + i * 30]);
     sreplen = ((buf[48 + i * 30] << 8) + buf[49 + i * 30]) * 2;
-    /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol); */
+    /* fprintf (stderr, "%d, slen: %d, %d (srep %d, sreplen %d), vol: %d\n",i, slen, srep+sreplen,srep, sreplen, vol); */
 
     if (vol > 64 && buf[44+i*30] != 0) return 0; /* vol and finetune */
 
@@ -1092,7 +1091,7 @@ void uade_filemagic(unsigned char *buf, size_t bufsize, char *pre,
   } else if (buf[0] == 'X' && buf[1] == 'P' && buf[2] == 'K' && buf[3] == 'F'&&
 	     read_be_u32(&buf[4]) + 8 == realfilesize &&
 	     buf[8] == 'S' && buf[9] == 'Q' && buf[10] == 'S' && buf[11] == 'H') {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: The file is SQSH packed. Please depack first.\n");
+    fprintf(stderr, "uade: The file is SQSH packed. Please depack first.\n");
     strcpy(pre, "packed");
 
   } else if ((modtype = mod15check(buf, bufsize, realfilesize, path)) != 0) {

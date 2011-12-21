@@ -10,9 +10,9 @@
 
 #include "sysconfig.h"
 #include "sysdeps.h"
-#include <android/log.h>
+
 #include "options.h"
-#include "include/uadememory.h"
+#include "uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"

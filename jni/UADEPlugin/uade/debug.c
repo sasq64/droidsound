@@ -11,10 +11,10 @@
 #include "sysdeps.h"
 
 #include <ctype.h>
-#include <android/log.h>
+
 #include "options.h"
 #include "uae.h"
-#include "include/uadememory.h"
+#include "uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"
@@ -157,7 +157,7 @@ static uae_u32 uade_debug_search (char *name) {
     }
   }
   if (!baseptr) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade debug info not found\n");
+    fprintf (stderr, "uade debug info not found\n");
     return 0;
   }
 

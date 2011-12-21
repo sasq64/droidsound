@@ -11,7 +11,7 @@
 #include "sysdeps.h"
 
 #include <ctype.h>
-#include <android/log.h>
+
 #include "options.h"
 #include "uae.h"
 #include "custom.h"
@@ -584,8 +584,8 @@ int cfgfile_get_description (const char *filename, char *description)
 void cfgfile_show_usage (void)
 {
     unsigned int i;
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UAE Configuration Help:\n" \
+    fprintf (stderr, "UAE Configuration Help:\n" \
 	       "=======================\n");
     for (i = 0; i < sizeof opttable / sizeof *opttable; i++)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s: %s\n", opttable[i].config_label, opttable[i].config_help);
+	fprintf (stderr, "%s: %s\n", opttable[i].config_label, opttable[i].config_help);
 }

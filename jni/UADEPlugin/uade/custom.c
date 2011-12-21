@@ -12,12 +12,12 @@
 
 #include <ctype.h>
 #include <assert.h>
-#include <android/log.h>
+
 #include "options.h"
 #include "uae.h"
 #include "gensound.h"
 #include "events.h"
-#include "include/uadememory.h"
+#include "uadememory.h"
 #include "custom.h"
 #include "readcpu.h"
 #include "newcpu.h"
@@ -25,7 +25,7 @@
 #include "audio.h"
 #include "osemu.h"
 
-#include "uade.h"
+#include "uadectl.h"
 
 static unsigned int n_consecutive_skipped = 0;
 static unsigned int total_skipped = 0;
@@ -456,7 +456,7 @@ static void DMACON (uae_u16 v)
 static inline void INTENA (uae_u16 v)
 {
 /*    if (trace_intena)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "INTENA: %04x\n", v);*/
+	fprintf (stderr, "INTENA: %04x\n", v);*/
     setclr(&intena,v); regs.spcflags |= SPCFLAG_INT;
 }
 void INTREQ (uae_u16 v)
@@ -586,17 +586,17 @@ static void BLTDPTL (uae_u16 v) {}
 
 static void BLTSIZE (uae_u16 v)
 {
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE","blitter stroken in BLTSIZE (custom.c)...\n");
+  fprintf(stderr,"blitter stroken in BLTSIZE (custom.c)...\n");
 }
 
 static void BLTSIZV (uae_u16 v)
 {
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE","blitter stroken in BLTSIZE (custom.c)...\n");
+  fprintf(stderr,"blitter stroken in BLTSIZE (custom.c)...\n");
 }
 
 static void BLTSIZH (uae_u16 v)
 {
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE","blitter stroken in BLTSIZE (custom.c)...\n");
+  fprintf(stderr,"blitter stroken in BLTSIZE (custom.c)...\n");
 }
 
 static inline void SPRxCTL_1 (uae_u16 v, int num)
@@ -639,18 +639,18 @@ static void DSKPTL (uae_u16 v) {}
 
 static void DSKLEN (uae_u16 v)
 {
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE","dsklen striken...\n");
+  fprintf(stderr,"dsklen striken...\n");
 }
 
 static uae_u16 DSKBYTR (void)
 {
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE","dksbytr striken...\n");
+  fprintf(stderr,"dksbytr striken...\n");
   return 0;
 }
 
 static uae_u16 DSKDATR (void)
 {
-  __android_log_print(ANDROID_LOG_VERBOSE, "UADE","dskdatr striken...\n");
+  fprintf(stderr,"dskdatr striken...\n");
   return 0;
 }
 
@@ -1099,7 +1099,7 @@ static void prepare_copper_1 (void)
 #if 0
 	    if (nexthpos != -1)
 		if (nexthpos != cst.count)
-		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","ERROR\n");
+		    fprintf (stderr,"ERROR\n");
 	    nexthpos = -1;
 #endif
 	    /* Now we know that the comparisons were successful.  */
@@ -1149,7 +1149,7 @@ static void adjust_array_sizes (void)
 	if (p1) sprite_positions[0] = p1;
 	if (p2) sprite_positions[1] = p2;
 	if (p1 && p2) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_sprite_draw=%d\n",mcc);
+	    fprintf (stderr, "new max_sprite_draw=%d\n",mcc);
 	    max_sprite_draw = mcc;
 	}
     }
@@ -1162,7 +1162,7 @@ static void adjust_array_sizes (void)
 	if (p1) color_changes[0] = p1;
 	if (p2) color_changes[1] = p2;
 	if (p1 && p2) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_color_change=%d\n",mcc);
+	    fprintf (stderr, "new max_color_change=%d\n",mcc);
 	    max_color_change = mcc;
 	}
     }
@@ -1172,7 +1172,7 @@ static void adjust_array_sizes (void)
 	delta_delay_change = 0;
 	p = realloc (delay_changes, mcc * sizeof (struct delay_change));
 	if (p) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_delay_change=%d\n",mcc);
+	    fprintf (stderr, "new max_delay_change=%d\n",mcc);
 	    delay_changes = p;
 	    max_delay_change = mcc;
 	}
@@ -1252,7 +1252,7 @@ static void hsync_handler (void)
 
 #if AUDIO_DEBUG	   
 	    if (cdp->state != 0 && cdp->pt >= cdp->ptend) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio DMA fetch overrun on channel %d: %.8x/%.8x\n", nr, cdp->pt, cdp->ptend);
+		fprintf(stderr, "Audio DMA fetch overrun on channel %d: %.8x/%.8x\n", nr, cdp->pt, cdp->ptend);
 	    }
 #endif
 
@@ -1438,7 +1438,7 @@ static uae_u32 REGPARAM2 custom_wget (uaecptr addr)
      case 0x01E: return INTREQR();
      case 0x07C: return DENISEID();
      default:
-       //        __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Non-read register read in custom chipset ($dff%x)",addr);
+       //        fprintf(stderr,"Non-read register read in custom chipset ($dff%x)",addr);
 	custom_wput(addr,0);
 	return 0xffff;
     }
@@ -1639,7 +1639,7 @@ static void REGPARAM2 custom_bput (uaecptr addr, uae_u32 value)
     custom_wput(addr, rval);
     if (!warned) {
         warned++;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Byte put to custom register (0x%x to $%x)\n", rval, addr);
+	fprintf(stderr, "uade: Byte put to custom register (0x%x to $%x)\n", rval, addr);
     }
 }
 

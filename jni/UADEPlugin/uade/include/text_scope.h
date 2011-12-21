@@ -1,7 +1,7 @@
 #ifndef _TEXT_SCOPE_H_
 #define _TEXT_SCOPE_H_
 
-#include "uadeconfig.h"
+#include <uade/uadeoptions.h>
 
 #ifdef UADE_CONFIG_TEXT_SCOPE
 #define TEXT_SCOPE(cycles, voice, e, value)      \
