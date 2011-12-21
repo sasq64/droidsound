@@ -47,35 +47,11 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init
 
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin
- * Method:    N_exit
- * Signature: ()V
- */
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit
-  (JNIEnv *, jobject);
-
-/*
- * Class:     com_ssb_droidsound_plugins_UADEPlugin
  * Method:    N_setOption
  * Signature: (II)V
  */
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption
   (JNIEnv *, jclass, jint, jint);
-
-/*
- * Class:     com_ssb_droidsound_plugins_UADEPlugin
- * Method:    N_canHandle
- * Signature: (Ljava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle
-  (JNIEnv *, jobject, jstring);
-
-/*
- * Class:     com_ssb_droidsound_plugins_UADEPlugin
- * Method:    N_load
- * Signature: ([BI)J
- */
-JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1load
-  (JNIEnv *, jobject, jbyteArray, jint);
 
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin
@@ -100,14 +76,6 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload
  */
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundData
   (JNIEnv *, jobject, jlong, jshortArray, jint);
-
-/*
- * Class:     com_ssb_droidsound_plugins_UADEPlugin
- * Method:    N_seekTo
- * Signature: (JI)Z
- */
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1seekTo
-  (JNIEnv *, jobject, jlong, jint);
 
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin

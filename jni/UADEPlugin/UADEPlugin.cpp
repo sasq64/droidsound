@@ -29,9 +29,11 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv
 	jboolean iscopy;
 	const char *s = env->GetStringUTFChars(basedir, &iscopy);
 	strcpy(baseDir, s);
+        __android_log_print(ANDROID_LOG_INFO, "UADEPlugin", "UADE base data should be at: %s", baseDir);
 	env->ReleaseStringUTFChars(basedir, s);
 
         uade_config_set_defaults(&config);
+        strcpy(config.basedir.name, baseDir);
 }
 
 static jstring NewString(JNIEnv *env, const char *str)
@@ -58,6 +60,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
                         return 0;
                 }
         }
+        uade_effect_enable(&state->effectstate, UADE_EFFECT_ALLOW);
+        uade_effect_enable(&state->effectstate, UADE_EFFECT_PAN);
 
         int rc;
 	if ((rc = uade_is_our_file(filename, state)) == 0) {
@@ -130,14 +134,12 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 	return rc;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1seekTo(JNIEnv *, jobject, jlong, jint)
-{
-	return false;
-}
-
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setTune(JNIEnv *env, jobject obj, jlong song, jint tune)
 {
-        uade_set_subsong(tune, state);
+        if (uade_set_subsong(tune, state)) {
+                __android_log_print(ANDROID_LOG_WARN, "UADEPlugin", "Bad subsong: %d", tune);
+                return false;
+        }
 	return true;
 }
 
@@ -178,11 +180,6 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(J
                 const char *options[] = { "0", "0.25", "0.5", "0.75", "1" };
                 if (val >= 0 && val <= 4) {
                     uade_config_set_option(&config, UC_PANNING_VALUE, options[val]);
-                    if (val == 4) {
-                        uade_effect_disable(&state->effectstate, UADE_EFFECT_PAN);
-                    } else {
-                        uade_effect_enable(&state->effectstate, UADE_EFFECT_PAN);
-                    }
                 }
 		break;
         }

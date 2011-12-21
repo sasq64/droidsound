@@ -13,7 +13,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		System.loadLibrary("modplug");
 	}
 	private static final Set<String> extensions = new HashSet<String>(Arrays.asList(
-			"MOD", "XM", "S3M", "IT", "UMX", "ULT", "669", "STM"
+			"XM", "S3M", "IT", "UMX", "ULT", "669", "STM"
 	));
 
 	long currentSong = 0;

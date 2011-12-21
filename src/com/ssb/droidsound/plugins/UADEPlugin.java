@@ -14,7 +14,7 @@ import com.ssb.droidsound.utils.Unzipper;
 
 public class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
-	private static final Set<String> extensions = new HashSet<String>();
+	private static final Set<String> EXTENSIONS = new HashSet<String>();
 	private static boolean inited;
 	static {
 		System.loadLibrary("uade");
@@ -23,7 +23,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	private long currentSong = 0;
 
 	public UADEPlugin() {
-		synchronized (extensions) {
+		synchronized (EXTENSIONS) {
 			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 			File eagleDir = new File(droidDir, "players");
 			File confFile = new File(droidDir, "eagleplayer.conf");
@@ -35,12 +35,12 @@ public class UADEPlugin extends DroidSoundPlugin {
 			if (! inited) {
 				N_init(droidDir.getPath());
 
-				if (extensions.size() == 0) {
-					extensions.add("CUST");
-					extensions.add("CUS");
-					extensions.add("CUSTOM");
-					extensions.add("DM");
-					extensions.add("TFX");
+				if (EXTENSIONS.size() == 0) {
+					EXTENSIONS.add("CUST");
+					EXTENSIONS.add("CUS");
+					EXTENSIONS.add("CUSTOM");
+					EXTENSIONS.add("DM");
+					EXTENSIONS.add("TFX");
 
 					try {
 						BufferedReader reader = new BufferedReader(new FileReader(confFile));
@@ -57,7 +57,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 								if(sp >= 0) {
 									ex = ex.substring(0, sp);
 								}
-								extensions.add(ex.toUpperCase());
+								EXTENSIONS.add(ex.toUpperCase());
 							}
 						}
 						reader.close();
@@ -77,12 +77,12 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 		if(x < 0) return false;
 		String ext = name.substring(x+1).toUpperCase();
-		if(!extensions.contains(ext)) {
+		if(!EXTENSIONS.contains(ext)) {
 			int slash = name.lastIndexOf('/');
 			x = name.indexOf('.', slash+1);
 			if(x < 0) return false;
 			ext = name.substring(slash+1, x).toUpperCase();
-			return extensions.contains(ext);
+			return EXTENSIONS.contains(ext);
 		}
 		return true;
 
@@ -96,11 +96,11 @@ public class UADEPlugin extends DroidSoundPlugin {
 		int x = name.lastIndexOf('.');
 		if (x >= 0) {
 			String ext = name.substring(x+1).toUpperCase();
-			if (! extensions.contains(ext)) {
+			if (! EXTENSIONS.contains(ext)) {
 				x = name.indexOf('.');
 				ext = name.substring(0, x).toUpperCase();
 
-				if (extensions.contains(ext)) {
+				if (EXTENSIONS.contains(ext)) {
 					return name.substring(x+1);
 				}
 			}
@@ -199,11 +199,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean seekTo( int msec) {
-		if (currentSong == 0) {
-			return false;
-		}
-		return N_seekTo(currentSong, msec);
+	public boolean seekTo(int msec) {
+		return false;
 	}
 
 	@Override
@@ -232,17 +229,13 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	native private void N_init(String baseDir);
-	native private void N_exit();
 	native private static void N_setOption(int what, int val);
 
-	native private boolean N_canHandle(String name);
-	native private long N_load(byte [] module, int size);
 	native private long N_loadFile(String name);
 	native private void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	native private int N_getSoundData(long song, short [] dest, int size);
-	native private boolean N_seekTo(long song, int seconds);
 	native private boolean N_setTune(long song, int tune);
 	native private String N_getStringInfo(long song, int what);
 	native private int N_getIntInfo(long song, int what);
