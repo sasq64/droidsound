@@ -104,12 +104,7 @@ public class Player implements Runnable {
 	private int silentPosition;
 
 	int FREQ = 44100;
-	private int aCount;
-	private long lastTime = -1;
-	private long frameTime;
-	// private int switchPos = -1;
 	private boolean songEnded = false;
-	private boolean reinitAudio;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -290,14 +285,11 @@ public class Player implements Runnable {
 
 		Log.d(TAG, "Wrote %d samples in %d bytes", numSamples, bytesWritten);
 
-		if(reinitAudio) {
-			audioTrack.release();
-			audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
-					AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize,
-					AudioTrack.MODE_STREAM);
-			samples = new short[bufSize / 2];
-			reinitAudio = false;
-		}
+		audioTrack.release();
+		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
+				AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize,
+				AudioTrack.MODE_STREAM);
+		samples = new short[bufSize / 2];
 
 		currentPlugin.unload();
 		currentPlugin = null;
@@ -309,7 +301,6 @@ public class Player implements Runnable {
 
 
 	private void startSong(SongFile song, boolean skipStart) {
-
 		if(currentPlugin != null) {
 			currentPlugin.unload();
 		}
@@ -539,13 +530,10 @@ public class Player implements Runnable {
 					Log.d(TAG, "START, pos " + audioTrack.getPlaybackHeadPosition());
 				}
 
-				if(reinitAudio) {
-					audioTrack.release();
-					audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO,
-							AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
-					samples = new short[bufSize / 2];
-					reinitAudio = false;
-				}
+				audioTrack.release();
+				audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO,
+						AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
+				samples = new short[bufSize / 2];
 
 				audioTrack.play();
 				currentState = State.PLAYING;
@@ -581,7 +569,7 @@ public class Player implements Runnable {
 
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_CONFIGURATION_STEREO,
 				AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
-		reinitAudio = false;
+
 		Log.d(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
 		int pos = 0;
@@ -623,14 +611,11 @@ public class Player implements Runnable {
 
 								audioTrack.stop();
 								audioTrack.flush();
-								if (reinitAudio) {
-									audioTrack.release();
-									audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
-											AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize,
-											AudioTrack.MODE_STREAM);
-									samples = new short[bufSize / 2];
-									reinitAudio = false;
-								}
+								audioTrack.release();
+								audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
+										AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize,
+										AudioTrack.MODE_STREAM);
+								samples = new short[bufSize / 2];
 
 								currentPlugin.unload();
 								currentPlugin = null;
@@ -661,20 +646,17 @@ public class Player implements Runnable {
 
 							case SET_TUNE:
 								Log.d(TAG, "Setting tune");
-								if(currentPlugin.setTune((Integer) argument)) {
+								if (currentPlugin.setTune((Integer) argument)) {
 									playPosOffset = 0;
 									lastPos = -1000;
 									audioTrack.pause();
 									audioTrack.flush();
 
-									if (reinitAudio) {
-										audioTrack.release();
-										audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
-												AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize,
-												AudioTrack.MODE_STREAM);
-										samples = new short[bufSize / 2];
-										reinitAudio = false;
-									}
+									audioTrack.release();
+									audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
+											AudioFormat.CHANNEL_CONFIGURATION_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufSize,
+											AudioTrack.MODE_STREAM);
+									samples = new short[bufSize / 2];
 
 									if (currentState == State.SWITCHING) {
 										currentState = State.PLAYING;
@@ -729,7 +711,6 @@ public class Player implements Runnable {
 					int p = audioTrack.getPlaybackHeadPosition();
 
 					if (songEnded && p == pos) {
-						lastTime = -1;
 						currentState = State.SWITCHING;
 						Message msg = mHandler.obtainMessage(MSG_DONE);
 						mHandler.sendMessage(msg);
@@ -739,10 +720,7 @@ public class Player implements Runnable {
 					int playPos = pos * 10 / (FREQ / 100);
 
 					if(pos >= lastPos + FREQ / 2) {
-						if(aCount == 0)
-							aCount = 1;
 						Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos + playPosOffset, -1);
-						aCount = 0;
 						mHandler.sendMessage(msg);
 						lastPos = pos;
 
@@ -770,17 +748,6 @@ public class Player implements Runnable {
 					}
 					if(len > 0) {
 						audioTrack.write(samples, 0, len);
-
-						long tt = System.currentTimeMillis();
-						if(lastTime > 0) {
-							frameTime = (tt - lastTime);
-							// Log.d(TAG, String.format("Frame %d, write %d",
-							// frameTime, d));
-							if(frameTime > 0) {
-								aCount++;
-							}
-						}
-						lastTime = tt;
 					}
 
 					// Log.d(TAG, "loop");
@@ -880,11 +847,7 @@ public class Player implements Runnable {
 
 	public void setBufSize(int bs) {
 		synchronized (cmdLock) {
-			if(bufSize != bs) {
-				bufSize = bs;
-				Log.d(TAG, "Buffersize now " + bs);
-				reinitAudio = true;
-			}
+			bufSize = bs;
 		}
 	}
 
