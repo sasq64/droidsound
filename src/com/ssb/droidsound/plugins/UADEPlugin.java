@@ -74,7 +74,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 		}
 
 		int slash = name.lastIndexOf('/');
-		if (slash < dot) {
+		dot = name.indexOf('.', slash+1);
+		if (dot > slash) {
 			String extStart = name.substring(slash+1, dot).toUpperCase();
 			if (extensions.contains(extStart)) {
 				return true;
