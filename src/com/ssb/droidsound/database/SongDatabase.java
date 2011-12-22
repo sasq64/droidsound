@@ -98,11 +98,7 @@ public class SongDatabase implements Runnable {
 	            switch (msg.what) {
 	            case MSG_SCAN:
 	            	try {
-	            		if (msg.arg1 == 2) {
-	            			doScan((String) msg.obj, false);
-	            		} else {
-	            			doScan((String) msg.obj, msg.arg1 != 0);
-	            		}
+	            		doScan((String) msg.obj, msg.arg1 != 0);
 	            	}
 	            	catch (IOException ioe) {
 	            		throw new RuntimeException(ioe);
@@ -178,7 +174,7 @@ public class SongDatabase implements Runnable {
 	 * @throws ZipException
 	 * @throws IOException
 	 */
-	private boolean scanZip(File zipFile) throws ZipException, IOException {
+	private void scanZip(File zipFile) throws ZipException, IOException {
 		SQLiteDatabase db = getDatabase();
 		db.beginTransactionNonExclusive();
 		Log.i(TAG, "Scanning ZIP %s for files...", zipFile.getPath());
@@ -248,7 +244,6 @@ public class SongDatabase implements Runnable {
 		db.setTransactionSuccessful();
 		db.endTransaction();
 		db.close();
-		return true;
 	}
 
 	private void scanFiles(File dir, long lastScan) throws IOException {
@@ -273,7 +268,7 @@ public class SongDatabase implements Runnable {
 			Log.d(TAG, "No change, scanning %d Datbase entries with %d dirs", fileCursor.getCount(), files.size());
 
 			fileCursor.close();
-			fileCursor = null;
+			db.close();
 
 			for (String f : files) {
 				scanFiles(new File(dir, f), lastScan);
@@ -283,10 +278,10 @@ public class SongDatabase implements Runnable {
 
 		notifyScan(dir.getPath(), 0);
 
-		// Directories to scan later
+		/** Going to recurse into these */
 		Set<String> foundDirs = new HashSet<String>();
+		/** Going to add directory entry, then recurse into these */
 		Set<String> foundDirsNew = new HashSet<String>();
-		Set<File> zipFiles = new HashSet<File>();
 
 		for (File f : dir.listFiles()) {
 			if (f.getName().charAt(0) != '.') {
@@ -299,8 +294,6 @@ public class SongDatabase implements Runnable {
 		Set<String> delDirs = new HashSet<String>();
 		Set<Long> delFiles = new HashSet<Long>();
 
-		Set<String> removes = new HashSet<String>();
-
 		Log.d(TAG, "Comparing DB to FS");
 
 		// Iterate over database result and compare to hash set
@@ -309,24 +302,18 @@ public class SongDatabase implements Runnable {
 			String fileName = fileCursor.getString(1);
 			int type = fileCursor.getInt(2);
 
-			if (removes.contains(fileName)) {
-				// Found duplicate in database
-				Log.d(TAG, "!! Found duplicate in database '%s', REMOVING !!", fileName);
-				delFiles.add(id);
-			}
-
 			if (files.contains(fileName)) {
 				File f = new File(dir, fileName);
 
-				if(f.isDirectory()) {
+				if (f.isDirectory()) {
 					foundDirs.add(fileName);
-					removes.add(fileName);
+					files.remove(fileName);
 				} else {
-					if(lastScan < f.lastModified()) {
-						Log.d(TAG, "!! FILE %s was modified", fileName);
+					if (lastScan < f.lastModified()) {
+						Log.i(TAG, "Change in file detected: %s", fileName);
 						delFiles.add(id);
 					} else {
-						removes.add(fileName);
+						files.remove(fileName);
 					}
 				}
 			} else {
@@ -340,22 +327,18 @@ public class SongDatabase implements Runnable {
 			}
 		}
 
-		files.removeAll(removes);
-
 		// Close cursor (important since we call ourselves recursively below)
 		fileCursor.close();
 		fileCursor = null;
 
 		for (String d : delDirs) {
 			String path = new File(dir, d).getPath();
-			Log.d(TAG, "Deleting PATH %s and subdirs", path);
-			db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { dir.getPath(), d} );
-			db.delete("FILES", "PATH LIKE ?", new String [] { path + "/%" } );
-			db.delete("FILES", "PATH=?", new String [] { path } );
+			Log.i(TAG, "Deleting PATH %s and subdirs", path);
+			db.delete("FILES", "(PATH=? AND FILENAME=?) OR PATH LIKE ? OR PATH=?", new String [] { dir.getPath(), d, path+"/%", path} );
 		}
 
 		for (long id : delFiles) {
-			Log.d(TAG, "Deleting FILE %d in %s", id, dir.getPath());
+			Log.i(TAG, "Deleting FILE %d in %s", id, dir.getPath());
 			db.delete("FILES", "_id=?", new String [] { String.valueOf(id) } );
 		}
 
@@ -365,16 +348,15 @@ public class SongDatabase implements Runnable {
 			values.put("FILENAME", fn);
 
 			File f = new File(dir, fn);
-			Log.d(TAG, "%s isfile %s", f.getPath(), String.valueOf(f.isFile()));
 			if (f.isFile()) {
-				int end = fn.length();
-
 				if (fn.toUpperCase().endsWith(".ZIP")) {
-					zipFiles.add(f);
-					values = null;
+					notifyScan(f.getPath(), 0);
+					scanZip(f);
+					values.put("TYPE", TYPE_ARCHIVE);
+					values.put("TITLE", f.getName().substring(0, fn.length() - 4));
 				} else if (fn.toUpperCase().endsWith(".PLIST")) {
 					values.put("TYPE", TYPE_PLIST);
-					values.put("TITLE", fn.substring(0, end - 6));
+					values.put("TITLE", fn.substring(0, fn.length() - 6));
 				} else {
 					values.put("TYPE", TYPE_FILE);
 					FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), readFully(new FileInputStream(f), f.length()));
@@ -399,23 +381,7 @@ public class SongDatabase implements Runnable {
 				db.insert("FILES", "PATH", values);
 			}
 		}
-
-		if (zipFiles.size() > 0) {
-			for (File f : zipFiles) {
-				notifyScan(f.getPath(), 0);
-
-				if (scanZip(f)) {
-					ContentValues values = new ContentValues();
-					values.put("PATH", f.getParentFile().getPath());
-					values.put("FILENAME", f.getName());
-					values.put("TYPE", TYPE_ARCHIVE);
-					int end = f.getName().length();
-					values.put("TITLE", f.getName().substring(0, end - 4));
-					Log.d(TAG, "Inserting FILE... (%s)", f.getName());
-					db.insert("FILES", "PATH", values);
-				}
-			}
-		}
+		db.close();
 
 		for (String s : foundDirs) {
 			File f = new File(dir, s);
@@ -441,11 +407,6 @@ public class SongDatabase implements Runnable {
 		mHandler.sendMessage(msg);
 	}
 
-	public void rescan(String mdir) {
-		Message msg = mHandler.obtainMessage(MSG_SCAN, 2, 0, mdir);
-		mHandler.sendMessage(msg);
-	}
-
 	private void doScan(String modsDir, boolean full) throws IOException {
 		SQLiteDatabase db = getDatabase();
 		scanning = true;
@@ -456,28 +417,27 @@ public class SongDatabase implements Runnable {
 		if (cursor.getCount() == 0) {
 			ContentValues values = new ContentValues();
 			values.put("VAR", "lastscan");
-			values.put("VALUE", "0");
+			values.put("VALUE", Long.toString(startTime));
 			db.insert("VARIABLES", "VAR", values);
 		} else {
 			cursor.moveToFirst();
 			lastScan = Long.parseLong(cursor.getString(1));
+			ContentValues values = new ContentValues();
+			values.put("VAR", "lastscan");
+			values.put("VALUE", Long.toString(startTime));
+			db.update("VARIABLES", values, "VAR='lastscan'", null);
 		}
 		cursor.close();
 
 		Log.d(TAG, "Last scan %d\n", lastScan);
 
 		File parentDir = new File(modsDir);
-
 		if (full) {
 			db.execSQL("DELETE FROM FILES;");
+			lastScan = 0;
 		}
 
 		scanFiles(parentDir, lastScan);
-
-		ContentValues values = new ContentValues();
-		values.put("VAR", "lastscan");
-		values.put("VALUE", Long.toString(startTime));
-		db.update("VARIABLES", values, "VAR='lastscan'", null);
 
 		db.close();
 		scanning = false;

@@ -281,35 +281,26 @@ extern "C" {
 int unice68_depacker(void * dest, const void * src);
 int unice68_get_depacked_size(const void * buffer, int * p_csize);
 }
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1unice(JNIEnv *env, jobject obj, jbyteArray src, jbyteArray dest)
+JNIEXPORT jbyteArray JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1unice(JNIEnv *env, jobject obj, jbyteArray src)
 {
 	jbyte *sptr = env->GetByteArrayElements(src, NULL);
-	jbyte *dptr = env->GetByteArrayElements(dest, NULL);
 	int rc = 0;
 	int ssize = env->GetArrayLength(src);
-	int dsize = env->GetArrayLength(dest);
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "Unpacking %d bytes (%s)", ssize, sptr);
 
 	int size = unice68_get_depacked_size(sptr, NULL);
+        if (size <= 0) {
+                return NULL;
+        }
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Plugin", "Dest size %d, Packed size %d", dsize, size);
-
-	if(dsize < size)
-		rc = -2;
-
-	if(size < 0)
-		rc = -1;
-
-	if(rc == 0) {
-		int res = unice68_depacker(dptr, sptr);
-		if(res != 0)
-			rc = -3;
-	}
-
+        jbyteArray dest = env->NewByteArray(size);
+        jbyte *dptr = env->GetByteArrayElements(dest, NULL);
+        int res = unice68_depacker(dptr, sptr);
 	env->ReleaseByteArrayElements(src, sptr, 0);
 	env->ReleaseByteArrayElements(dest, dptr, 0);
+        if (res != 0) {
+                dest = NULL;
+        }
 
-	return rc;
+	return dest;
 }
 

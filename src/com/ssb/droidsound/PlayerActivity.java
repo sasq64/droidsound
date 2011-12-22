@@ -472,8 +472,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		boolean indexUnknown = prefs.getBoolean("extensions", false);
-		FileIdentifier.setIndexUnknown(indexUnknown);
 
 		seekingSong = 0;
 
@@ -929,11 +927,8 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		if(!songDatabase.isScanning() && progressDialog != null) {
 			progressDialog.cancel();
 			progressDialog = null;
-			// playListView.rescan();
 			setDirectory(playListView);
 		}
-
-		FileIdentifier.setIndexUnknown(prefs.getBoolean("extensions", false));
 	}
 
 	@Override

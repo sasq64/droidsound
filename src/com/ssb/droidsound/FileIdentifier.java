@@ -2,7 +2,6 @@ package com.ssb.droidsound;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.HashSet;
 import java.util.List;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
@@ -12,10 +11,6 @@ public class FileIdentifier {
 
 	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 	private static final List<DroidSoundPlugin> plugins = DroidSoundPlugin.getPluginList();
-
-	private static HashSet<String> modMagic;
-
-	private static boolean indexUnknown;
 
 	public static class MusicInfo {
 		public String title;
@@ -27,20 +22,6 @@ public class FileIdentifier {
 		public Extension type;
 		public int date;
 	};
-
-	static {
-		modMagic = new HashSet<String>();
-		modMagic.add("M.K.");
-		modMagic.add("M!K!");
-		modMagic.add("M&K!");
-		modMagic.add("N.T.");
-		modMagic.add("M!K!");
-		modMagic.add("4CHN");
-		modMagic.add("6CHN");
-		modMagic.add("8CHN");
-		modMagic.add("FLT4");
-		modMagic.add("FLT8");
-	}
 
 	/**
 	 * NAME RULES:
@@ -129,9 +110,6 @@ public class FileIdentifier {
 			nameExt = Extension.valueOf(ext);
 		}
 		catch (IllegalArgumentException iae) {
-			if (! indexUnknown) {
-				return null;
-			}
 			for (DroidSoundPlugin plugin : plugins) {
 				if (plugin.canHandle(name)) {
 					MusicInfo info = tryLoad(plugin, name, module);
@@ -264,9 +242,4 @@ public class FileIdentifier {
 		fixName(name, info);
 		return info;
 	}
-
-	public static void setIndexUnknown(boolean idx) {
-		indexUnknown = idx;
-	}
-
 }

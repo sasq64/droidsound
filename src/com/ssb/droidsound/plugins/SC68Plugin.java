@@ -1,7 +1,7 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.utils.Log;
@@ -9,6 +9,7 @@ import com.ssb.droidsound.utils.Unzipper;
 
 public class SC68Plugin extends DroidSoundPlugin {
 	private static final String TAG = SC68Plugin.class.getSimpleName();
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 	static {
 		System.loadLibrary("sc68");
 		File pluginDir = Application.getPluginDataDirectory(SC68Plugin.class);
@@ -48,15 +49,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 		return currentSong != 0;
 	}
 
-	private static String fromData(byte [] data, int start, int len) throws UnsupportedEncodingException {
-		int i = start;
-		for(; i<start+len; i++) {
-			if(data[i] == 0) {
-				i++;
-				break;
-			}
-		}
-		return new String(data, start, i-start, "ISO-8859-1").trim();
+	private static String fromData(byte[] data, int start, int len) {
+		return new String(data, start, len, ISO88591).replaceAll("\u0000", "").trim();
 	}
 
 	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" };
@@ -87,92 +81,72 @@ public class SC68Plugin extends DroidSoundPlugin {
 		year = null;
 		type = null;
 
-		int size = data.length;
-		String head = new String(data, 0, 4);
+		String head = new String(data, 0, 4, ISO88591);
 		if (head.equals("ICE!")) {
-			/* FIXME: Now this is utter crap... 1M is enough for everybody??? */
-			byte[] targetBuffer = new byte[1024*1024];
-			int rc = N_unice(data, targetBuffer);
-			if (rc < 0)
+			data = N_unice(data);
+			if (data == null)
 				return false;
-			size = rc;
-			data = targetBuffer;
 		}
+		int size = data.length;
 
-		String header = new String(data, 12, 4);
-		String header2 = new String(data, 0, 16);
-		if(header.equals("SNDH")) {
-			Log.d(TAG, "Found SNDH");
+		String header = new String(data, 12, 4, ISO88591);
+		String header2 = new String(data, 0, 16, ISO88591);
+		if (header.equals("SNDH")) {
 			type = "SNDH";
-			int offset = 16;
 
+			int offset = 16;
 			while (offset < 1024) {
-				String tag = new String(data, offset, 4);
-				//Log.d(TAG, "TAG: %s", tag);
-				try {
-					if(tag.equals("TITL")) {
-						title = fromData(data, offset+4, 64);
-						Log.d(TAG, "TITLE: %s", title);
-						offset += (4+title.length());
-					} else if(tag.equals("COMM")) {
-						composer = fromData(data, offset+4, 64);
-						offset += (4+composer.length());
-					} else if(tag.equals("YEAR")) {
-						year = fromData(data, offset+4, 32);
-						offset += (4+year.length());
-					} else if(tag.equals("HDNS")) {
-						Log.d(TAG, "END");
-						break;
-					} else {
-						while(data[offset] != 0) offset++;
-					}
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				String tag = new String(data, offset, 4, ISO88591);
+				if(tag.equals("TITL")) {
+					title = fromData(data, offset+4, 64);
+					Log.d(TAG, "TITLE: %s", title);
+					offset += (4+title.length());
+				} else if (tag.equals("COMM")) {
+					composer = fromData(data, offset+4, 64);
+					offset += (4+composer.length());
+				} else if (tag.equals("YEAR")) {
+					year = fromData(data, offset+4, 32);
+					offset += (4+year.length());
+				} else if (tag.equals("HDNS")) {
+					Log.d(TAG, "END");
+					break;
+				} else {
+					while(data[offset] != 0) offset++;
 				}
-				while(data[offset] == 0) offset++;
+
+				offset ++;
 			}
 
 			return true;
-		} else if(header2.equals("SC68 Music-file ")) {
+		} else if (header2.equals("SC68 Music-file ")) {
 			int offset = 56;
 			type = "SC68";
 			while(offset < 1024) {
 				String tag = new String(data, offset, 4);
 				int tsize = data[offset+4] | (data[offset+5]<<8) | (data[offset+6]<<16) | (data[offset+7]<<24);
 				offset += 8;
-				Log.d(TAG, "TAG: %s, size %d", tag, tsize);
 				if(tsize < 0 || tsize > size) {
 					break;
 				}
-				try {
-					if(tag.equals("SCMN")) {
+
+				if(tag.equals("SCMN")) {
+					title = fromData(data, offset, tsize);
+				} else if (tag.equals("SCFN")) {
+					/* FIXME: WTF? why != null? */
+					if (title != null) {
 						title = fromData(data, offset, tsize);
-						Log.d(TAG, "TITLE: %s", title);
-					} else if(tag.equals("SCFN")) {
-						if(title != null) {
-							title = fromData(data, offset, tsize);
-							Log.d(TAG, "TITLE: %s", title);
-						}
-					} else if(tag.equals("SCAN")) {
-						composer = fromData(data, offset, tsize);
-					} else if(tag.equals("SC68")) {
-						tsize = 0;
-					} else if(tag.equals("SCEF") || tag.equals("SCDA")) {
-						Log.d(TAG, "END");
-						break;
-					} else {
 					}
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				} else if(tag.equals("SCAN")) {
+					composer = fromData(data, offset, tsize);
+				} else if(tag.equals("SC68")) {
+					tsize = 0;
+				} else if(tag.equals("SCEF") || tag.equals("SCDA")) {
+					break;
 				}
 				offset += tsize;
 			}
 
 			return true;
-
-
 		}
 
 		return false;
@@ -236,8 +210,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	native private static void N_setDataDir(String dataDir);
 
-	native private long N_load(byte [] module, int size);
-	native private long N_loadInfo(byte [] module, int size);
+	native private long N_load(byte[] module, int size);
+	native private long N_loadInfo(byte[] module, int size);
 	native private void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
@@ -247,5 +221,5 @@ public class SC68Plugin extends DroidSoundPlugin {
 	native private String N_getStringInfo(long song, int what);
 	native private int N_getIntInfo(long song, int what);
 
-	native private int N_unice(byte [] data, byte [] target);
+	native private byte[] N_unice(byte[] data);
 }

@@ -52,7 +52,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 				}
 				reader.close();
 			} catch (IOException e) {
-				throw new RuntimeException(e);
+				throw new ExceptionInInitializerError(e);
 			}
 		}
 
@@ -63,19 +63,25 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean canHandle(String name) {
-		int x = name.lastIndexOf('.');
-
-		if(x < 0) return false;
-		String ext = name.substring(x+1).toUpperCase();
-		if(!extensions.contains(ext)) {
-			int slash = name.lastIndexOf('/');
-			x = name.indexOf('.', slash+1);
-			if(x < 0) return false;
-			ext = name.substring(slash+1, x).toUpperCase();
-			return extensions.contains(ext);
+		int dot = name.lastIndexOf('.');
+		if (dot < 0) {
+			return false;
 		}
-		return true;
 
+		String extEnd = name.substring(dot+1).toUpperCase();
+		if (extensions.contains(extEnd)) {
+			return true;
+		}
+
+		int slash = name.lastIndexOf('/');
+		if (slash < dot) {
+			String extStart = name.substring(slash+1, dot).toUpperCase();
+			if (extensions.contains(extStart)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 

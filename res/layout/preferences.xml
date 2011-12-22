@@ -1,12 +1,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     android:key="main_prefs" >
 
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="extensions"
-        android:summary="Index files with unknown extensions"
-        android:title="Unknown extensions" />
-
     <EditTextPreference
         android:defaultValue="900"
         android:dialogTitle="Length (in seconds)"
@@ -97,14 +91,6 @@
         android:key="database_prefs"
         android:summary="Database options"
         android:title="Database" >
-
-        <ListPreference
-            android:defaultValue="Basic"
-            android:entries="@array/indexing_opts"
-            android:entryValues="@array/indexing_opts"
-            android:key="indexing"
-            android:summary="Database index level. Don&apos;t change unless you know you need to"
-            android:title="Indexing" />
 
         <Preference
             android:key="rescan_pref"

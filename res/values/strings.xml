@@ -5,7 +5,6 @@
 <string name="sdcard_not_found">Could not access sdcard!</string>
 <string name="search_hint">Search title</string>
 <string name="scan_db">Rescan database</string>
-<string name="recreate_confirm">This will recreate the entire database. It may take a long time. Are you absolutely sure?</string>
 <string-array name="scan_opts">
     <item>Full</item>
 </string-array>
@@ -34,7 +33,6 @@
 
 <string name="zip_import_failed">Failed to import zip file.</string>
 <string name="zip_import_replace">Will not replace existing zip file. Remove it first.</string>
-<string name="ask_speech">You do not have speech installed - install it from Market now?</string>
 <string name="notification">Droidsound playing</string>
 
 <string name="sort_name">Sorting on Title</string>
@@ -55,12 +53,6 @@ to download more music from the web.</string>
 <string-array name="new_opts">
 	<item>Folder</item>
 	<item>Playlist</item>
-</string-array>
-
-<string-array name="indexing_opts">
-	<item>None</item>
-	<item>Basic</item>
-	<item>Full</item>
 </string-array>
 
 <string-array name="panning_opts">
