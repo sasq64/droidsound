@@ -353,14 +353,9 @@ public class Player implements Runnable {
 			}
 		}
 
-		/* Now that we have loaded the files, delete them... */
-		songFile.delete();
-		if (songFile2 != null) {
-			songFile2.delete();
-		}
-
 		if (currentPlugin == null) {
 			currentState = State.STOPPED;
+			return;
 		}
 
 		Log.d(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
