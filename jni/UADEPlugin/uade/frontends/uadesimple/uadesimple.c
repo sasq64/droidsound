@@ -55,7 +55,9 @@ int main(int argc, char *argv[])
 
     memset(&state, 0, sizeof state);
 
-   uadeconf_loaded = uade_load_initial_config(&state, uadeconfname, sizeof uadeconfname, NULL);
+    uadeconf_loaded = uade_load_initial_config(uadeconfname,
+					       sizeof uadeconfname,
+					       &state.config, NULL);
 
     if (uadeconf_loaded == 0) {
 	debug(state.config.verbose,

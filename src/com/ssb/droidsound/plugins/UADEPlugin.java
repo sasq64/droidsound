@@ -16,8 +16,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	static {
 		System.loadLibrary("uade");
 		File pluginDir = Application.getPluginDataDirectory(UADEPlugin.class);
-		File eagleplayersDir = new File(pluginDir, "eagleplayers");
-		File confFile = new File(eagleplayersDir, "eagleplayer.conf");
+		File confFile = new File(pluginDir, "eagleplayer.conf");
 
 		if (! confFile.exists()) {
 			Unzipper.unzipAsset("eagleplayers.zip", pluginDir);

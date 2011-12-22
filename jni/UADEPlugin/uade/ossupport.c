@@ -20,6 +20,7 @@ size_t strlcpy(char *dst, const char *src, size_t size)
   return slen;
 }
 
+
 size_t strlcat(char *dst, const char *src, size_t size)
 {
   size_t slen = strlen(src);

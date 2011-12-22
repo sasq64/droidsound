@@ -61,6 +61,7 @@
 #define CACHE_BLOCK_SIZE (1 << CACHE_BLOCK_SHIFT)
 #define CACHE_LSB_MASK (CACHE_BLOCK_SIZE - 1)
 #define CACHE_SECONDS 512
+#define SND_PER_SECOND (44100 * 4)
 
 #define NSTASHES 4
 #define STASH_CACHE_BLOCKS 2
@@ -121,11 +122,6 @@ struct stash stashes[NSTASHES];
 
 
 static ssize_t get_file_size(const char *path);
-
-static size_t snd_per_second(void)
-{
-	return 4 * uadestate.permconfig.frequency;
-}
 
 /*
  * xread() is the same as the read(), but it automatically restarts read()
@@ -208,6 +204,8 @@ static int spawn_uade(struct sndctx *ctx)
 {
 	int fds[2];
 
+	LOG("Spawn UADE %s\n", ctx->fname);
+
 	if (pipe(fds)) {
 		LOG("Can not create a pipe\n");
 		return -errno;
@@ -287,7 +285,7 @@ static ssize_t cache_block_read(struct sndctx *ctx, char *buf, size_t offset,
 static void cache_init(struct sndctx *ctx)
 {
 	ctx->end_bi = 0;
-	ctx->nblocks = (snd_per_second() * CACHE_SECONDS + CACHE_BLOCK_SIZE - 1) >> CACHE_BLOCK_SHIFT;
+	ctx->nblocks = (SND_PER_SECOND * CACHE_SECONDS + CACHE_BLOCK_SIZE - 1) >> CACHE_BLOCK_SHIFT;
 	ctx->blocks = calloc(1, ctx->nblocks * sizeof(ctx->blocks[0]));
 	if (ctx->blocks == NULL)
 		LOGDIE("No memory for cache\n");
@@ -522,6 +520,7 @@ int warm_up_cache(struct sndctx *ctx)
 
 	for (i = 0; i < NSTASHES; i++) {
 		if (check_stash(ctx->fname, &stashes[i], created)) {
+			LOG("Found stash for %s\n", ctx->fname);
 			if (cache_prefill(ctx, stashes[i].data))
 				return -EIO;
 			break;
@@ -569,6 +568,8 @@ int warm_up_cache(struct sndctx *ctx)
 		stash->created = created;
 		strlcpy(stash->fname, ctx->fname, sizeof stash->fname);
 		memcpy(stash->data, crapbuf, sizeof stash->data);
+
+		LOG("Allocated stash for %s\n", ctx->fname);
 	}
 
 	return 0;
@@ -629,7 +630,7 @@ static void load_content_db(void)
 	if (name[0]) {
 		if (stat(name, &st) == 0) {
 			if (mtime < st.st_mtime) {
-				ret = uade_read_content_db(name, &uadestate);
+				ret = uade_read_content_db(name);
 				if (stat(name, &st) == 0)
 					mtime = st.st_mtime;
 				if (ret)
@@ -645,7 +646,7 @@ static void load_content_db(void)
 
 	snprintf(name, sizeof name, "%s/contentdb.conf", uadestate.config.basedir.name);
 	if (stat(name, &st) == 0 && mtime < st.st_mtime) {
-		uade_read_content_db(name, &uadestate);
+		uade_read_content_db(name);
 		if (stat(name, &st) == 0)
 			mtime = st.st_mtime;
 	}
@@ -679,7 +680,7 @@ static ssize_t get_file_size(const char *path)
 	if (msecs <= 0)
 		msecs = 1000 * CACHE_SECONDS;
 
-	return WAV_HEADER_LEN + (((msecs * snd_per_second()) / 1000) & ~0x3);
+	return WAV_HEADER_LEN + (((msecs * SND_PER_SECOND) / 1000) & ~0x3);
 }
 
 static int uadefs_getattr(const char *fpath, struct stat *stbuf)
@@ -1295,7 +1296,8 @@ static void init_uade(void)
 {
     char uadeconfname[4096];
 
-    uade_load_initial_config(&uadestate, uadeconfname, sizeof uadeconfname, NULL);
+    (void) uade_load_initial_config(uadeconfname, sizeof uadeconfname,
+				    &uadestate.config, NULL);
 
     load_content_db();
 }

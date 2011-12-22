@@ -73,7 +73,7 @@ int play_loop(struct uade_state *state)
   int jump_sub = 0;
   int have_subsong_info = 0;
 
-  const int framesize = UADE_BYTES_PER_FRAME
+  const int framesize = UADE_BYTES_PER_SAMPLE * UADE_CHANNELS;
   const int bytes_per_second = UADE_BYTES_PER_FRAME * state->config.frequency;
 
   enum uade_control_state controlstate = UADE_S_STATE;
@@ -133,11 +133,11 @@ int play_loop(struct uade_state *state)
 	    skip_bytes = bytes_per_second * 10;
 	  }
 	  break;
+	case ' ':
 	case 'b':
 	  subsong_end = 1;
 	  record_playtime = 0;
 	  break;
-	case ' ':
 	case 'c':
 	  pause_terminal();
 	  break;
@@ -420,7 +420,7 @@ int play_loop(struct uade_state *state)
       case UADE_REPLY_SONG_END:
 	if (um->size < 9) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nInvalid song end reply\n");
-	  exit(1);
+	  exit(-1);
 	}
 	tailbytes = ntohl(((uint32_t *) um->data)[0]);
 	/* next ntohl() is only there for a principle. it is not useful */
@@ -438,7 +438,7 @@ int play_loop(struct uade_state *state)
 	  i++;
 	if (reason[i] != 0 || (i != (um->size - 9))) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nbroken reason string with song end notice\n");
-	  exit(1);
+	  exit(-1);
 	}
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nSong end (%s)\n", reason);
 	break;
@@ -446,7 +446,7 @@ int play_loop(struct uade_state *state)
       case UADE_REPLY_SUBSONG_INFO:
 	if (um->size != 12) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nsubsong info: too short a message\n");
-	  exit(1);
+	  exit(-1);
 	}
 
 	u32ptr = (uint32_t *) um->data;
@@ -487,7 +487,7 @@ int play_loop(struct uade_state *state)
 
   if (record_playtime && us->md5[0] != 0) {
     uint32_t playtime = (us->out_bytes * 1000) / bytes_per_second;
-    uade_add_playtime(state, us->md5, playtime);
+    uade_add_playtime(us->md5, playtime);
   }
 
   do {

@@ -13,7 +13,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include <uadectl.h>
+#include <uade.h>
 #include <unixsupport.h>
 // #include <strlrep.h>
 #include <android/log.h>

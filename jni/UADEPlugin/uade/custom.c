@@ -25,7 +25,7 @@
 #include "audio.h"
 #include "osemu.h"
 
-#include "uadectl.h"
+#include "uade.h"
 
 static unsigned int n_consecutive_skipped = 0;
 static unsigned int total_skipped = 0;

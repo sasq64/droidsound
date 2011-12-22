@@ -117,6 +117,7 @@ static struct uade_state state;
 
 static char configname[PATH_MAX];
 static pthread_t decode_thread;
+static struct uade_config config_backup;
 static char gui_filename[PATH_MAX];
 static char gui_formatname[256];
 static int gui_info_set;
@@ -166,7 +167,7 @@ static void test_uade_conf(void)
 
   config_load_time = st.st_mtime;
 
-  uade_load_config(&state.permconfig, configname);
+  uade_load_config(&config_backup, configname);
 }
 
 
@@ -194,19 +195,19 @@ static void load_content_db(void)
   /* User database has priority over global database, so we read it first */
   if (md5name[0]) {
     if (stat(md5name, &st) == 0) {
-      if (uade_read_content_db(md5name, &state))
+      if (uade_read_content_db(md5name))
 	return;
     } else {
       FILE *f = fopen(md5name, "w");
       if (f)
 	fclose(f);
-      uade_read_content_db(md5name, &state);
+      uade_read_content_db(md5name);
     }
   }
 
   snprintf(name, sizeof name, "%s/contentdb.conf", UADE_CONFIG_BASE_DIR);
   if (stat(name, &st) == 0)
-    uade_read_content_db(name, &state);
+    uade_read_content_db(name);
 }
 
 
@@ -218,7 +219,7 @@ static void uade_cleanup(void)
   if (md5name[0]) {
     struct stat st;
     if (stat(md5name, &st) == 0 && md5_load_time >= st.st_mtime)
-      uade_save_content_db(md5name, &state);
+      uade_save_content_db(md5name);
   }
 }
 
@@ -280,7 +281,7 @@ void uade_lock(void)
 {
   if (pthread_mutex_lock(&vlock)) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 locking error.\n");
-    exit(1);
+    exit(-1);
   }
 }
 
@@ -289,7 +290,7 @@ void uade_unlock(void)
 {
   if (pthread_mutex_unlock(&vlock)) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 unlocking error.\n");
-    exit(1);
+    exit(-1);
   }
 }
 
@@ -307,21 +308,28 @@ InputPlugin *get_iplugin_info(void)
 static void uade_init(void)
 {
   char *home;
+  int config_loaded;
 
   config_load_time = time(NULL);
 
-  if (!uade_load_initial_config(&state, configname, sizeof configname, NULL))
-  		__android_log_print(ANDROID_LOG_VERBOSE, "No config file found for UADE. Will try to load config from $HOME/.uade2/uade.conf in the future.\n");
+  config_loaded = uade_load_initial_config(configname, sizeof configname,
+					   &config_backup, NULL);
 
   load_content_db();
 
-  uade_load_initial_song_conf(songconfname, sizeof songconfname, &state_permconfig, NULL, &state);
+  uade_load_initial_song_conf(songconfname, sizeof songconfname,
+			      &config_backup, NULL);
 
   home = uade_open_create_home();
 
   if (home != NULL) {
     /* If config exists in home, ignore global uade.conf. */
     snprintf(configname, sizeof configname, "%s/.uade2/uade.conf", home);
+  }
+
+  if (config_loaded == 0) {
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No config file found for UADE XMMS plugin. Will try to load config from\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "$HOME/.uade2/uade.conf in the future.\n");
   }
 }
 
@@ -351,7 +359,7 @@ static int uadeaudacious_is_our_file(char *filename)
      * when state.config hasn't yet been read. uade_is_our_file() needs the
      * config */
     if (!state.validconfig) {
-      state.config = state.permconfig;
+      state.config = config_backup;
       state.validconfig = 1;
 
       /* Verify that this condition is true at most once */
@@ -381,7 +389,7 @@ static int initialize_song(char *filename)
 
   uade_lock();
 
-  state.config = state.permconfig;
+  state.config = config_backup;
   state.validconfig = 1;
 
   state.ep = NULL;
@@ -553,7 +561,7 @@ static void *play_loop(void *arg)
 
       if (uade_receive_message(um, sizeof(space), &state.ipc) <= 0) {
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive events from uade\n");
-	exit(1);
+	exit(-1);
       }
 
       switch (um->msgtype) {
@@ -652,7 +660,7 @@ static void *play_loop(void *arg)
       case UADE_REPLY_SONG_END:
 	if (um->size < 9) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song end reply\n");
-	  exit(1);
+	  exit(-1);
 	}
 	tailbytes = ntohl(((uint32_t *) um->data)[0]);
 	/* next ntohl() is only there for a principle. it is not useful */
@@ -670,7 +678,7 @@ static void *play_loop(void *arg)
 	  i++;
 	if (reason[i] != 0 || (i != (um->size - 9))) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Broken reason string with song end notice\n");
-	  exit(1);
+	  exit(-1);
 	}
 	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song end (%s)\n", reason); */
 	break;
@@ -678,7 +686,7 @@ static void *play_loop(void *arg)
       case UADE_REPLY_SUBSONG_INFO:
 	if (um->size != 12) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "subsong info: too short a message\n");
-	  exit(1);
+	  exit(-1);
 	}
 	u32ptr = (uint32_t *) um->data;
 	uade_lock();
@@ -799,7 +807,7 @@ static void uade_play_file(char *filename)
     uade_spawn(&state, UADE_CONFIG_UADE_CORE, configname);
   }
 
-  if (!playhandle->output->open_audio(sample_format, state.permconfig.frequency, UADE_CHANNELS)) {
+  if (!playhandle->output->open_audio(sample_format, config_backup.frequency, UADE_CHANNELS)) {
     abort_playing = 1;
     return;
   }
@@ -821,7 +829,7 @@ static void uade_play_file(char *filename)
     /* Save current db if an hour has passed */
     curtime = time(NULL);
     if (curtime >= (md5_load_time + 3600)) {
-      uade_save_content_db(md5name, &state);
+      uade_save_content_db(md5name);
       md5_load_time = curtime;
     }
   } else {
@@ -894,7 +902,7 @@ static void uade_stop(void)
 	 record it into song length db */
       int play_time = (state.song->out_bytes * 1000) / (UADE_BYTES_PER_FRAME * state.config.frequency);
       if (state.song->md5[0] != 0)
-        uade_add_playtime(&state, state.song->md5, play_time);
+        uade_add_playtime(state.song->md5, play_time);
 
       state.song->playtime = play_time;
       state.song->cur_subsong = state.song->max_subsong;

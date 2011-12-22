@@ -290,7 +290,8 @@ int uade_load_config(struct uade_config *uc, const char *filename)
 	return 1;
 }
 
-int uade_load_initial_config(struct uade_state *state, char *uadeconfname, size_t maxlen, const char *bdir)
+int uade_load_initial_config(char *uadeconfname, size_t maxlen,
+			     struct uade_config *uc, struct uade_config *ucbase)
 {
 	int loaded;
 	char *home;
@@ -298,38 +299,38 @@ int uade_load_initial_config(struct uade_state *state, char *uadeconfname, size_
 	assert(maxlen > 0);
 	uadeconfname[0] = 0;
 
-	uade_config_set_defaults(&state->permconfig);
+	uade_config_set_defaults(uc);
 
 	loaded = 0;
 
 	/* First try to load from forced base dir (testing mode) */
-	if (bdir != NULL) {
-		snprintf(uadeconfname, maxlen, "%s/uade.conf", bdir);
-		loaded = uade_load_config(&state->permconfig, uadeconfname);
+	if (ucbase != NULL && ucbase->basedir_set) {
+		snprintf(uadeconfname, maxlen, "%s/uade.conf",
+			 ucbase->basedir.name);
+		loaded = uade_load_config(uc, uadeconfname);
 	}
-	
+
+	home = uade_open_create_home();
 
 	/* Second, try to load config from ~/.uade2/uade.conf */
-	home = uade_open_create_home();
 	if (loaded == 0 && home != NULL) {
 		snprintf(uadeconfname, maxlen, "%s/.uade2/uade.conf", home);
-		loaded = uade_load_config(&state->permconfig, uadeconfname);
+		loaded = uade_load_config(uc, uadeconfname);
 	}
 
 	/* Third, try to load from install path */
 	if (loaded == 0) {
-		snprintf(uadeconfname, maxlen, "%s/uade.conf", state->permconfig.basedir.name);
-		loaded = uade_load_config(&state->permconfig, uadeconfname);
+		snprintf(uadeconfname, maxlen, "%s/uade.conf",
+			 uc->basedir.name);
+		loaded = uade_load_config(uc, uadeconfname);
 	}
-	state->config = state->permconfig;
 
 	return loaded;
 }
 
 int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 				struct uade_config *uc,
-				struct uade_config *ucbase,
-				struct uade_state *state)
+				struct uade_config *ucbase)
 {
 	int loaded = 0;
 	char *home;
@@ -339,8 +340,9 @@ int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 
 	/* Used for testing */
 	if (ucbase != NULL && ucbase->basedir_set) {
-		snprintf(songconfname, maxlen, "%s/song.conf", ucbase->basedir.name);
-		loaded = uade_read_song_conf(songconfname, state);
+		snprintf(songconfname, maxlen, "%s/song.conf",
+			 ucbase->basedir.name);
+		loaded = uade_read_song_conf(songconfname);
 	}
 
 	/* Avoid unwanted home directory creation for test mode */
@@ -352,13 +354,14 @@ int uade_load_initial_song_conf(char *songconfname, size_t maxlen,
 	/* Try to load from home dir */
 	if (loaded == 0 && home != NULL) {
 		snprintf(songconfname, maxlen, "%s/.uade2/song.conf", home);
-		loaded = uade_read_song_conf(songconfname, state);
+		loaded = uade_read_song_conf(songconfname);
 	}
 
 	/* No? Try install path */
 	if (loaded == 0) {
-		snprintf(songconfname, maxlen, "%s/song.conf", uc->basedir.name);
-		loaded = uade_read_song_conf(songconfname, state);
+		snprintf(songconfname, maxlen, "%s/song.conf",
+			 uc->basedir.name);
+		loaded = uade_read_song_conf(songconfname);
 	}
 
 	return loaded;

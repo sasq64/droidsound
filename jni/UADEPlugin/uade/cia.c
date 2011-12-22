@@ -17,7 +17,7 @@
 #include "custom.h"
 #include "cia.h"
 
-#include "uadectl.h"
+#include "uade.h"
 
 #define DIV10 5 /* Yes, a bad identifier. */
 

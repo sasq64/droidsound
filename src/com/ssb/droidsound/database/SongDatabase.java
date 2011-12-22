@@ -176,6 +176,7 @@ public class SongDatabase implements Runnable {
 	 */
 	private void scanZip(File zipFile) throws ZipException, IOException {
 		SQLiteDatabase db = getDatabase();
+		db.beginTransactionNonExclusive();
 		Log.i(TAG, "Scanning ZIP %s for files...", zipFile.getPath());
 		db.delete("FILES", "PATH = ? OR PATH LIKE ?", new String [] { zipFile.getPath(), zipFile.getPath() + "/%" });
 
@@ -240,6 +241,8 @@ public class SongDatabase implements Runnable {
 			db.insert("FILES", "PATH", values);
 		}
 
+		db.setTransactionSuccessful();
+		db.endTransaction();
 		db.close();
 	}
 

@@ -23,7 +23,7 @@
 
 #include "cia.h"
 
-#include "uadectl.h"
+#include "uade.h"
 #include "uadeipc.h"
 
 
@@ -1323,7 +1323,7 @@ void m68k_go (void)
     if (uade_reboot) {
       if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc) < 0) {
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not send reboot ack token\n");
-	exit(1);
+	exit(-1);
       }
     }
   }

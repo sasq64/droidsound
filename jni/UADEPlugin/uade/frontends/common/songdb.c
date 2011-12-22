@@ -22,14 +22,31 @@
 #define NORM_ID "n="
 #define NORM_ID_LENGTH 2
 
-#define eserror(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "song.conf error on line %zd: " fmt "\n", lineno, ## args); exit(1); } while (0)
+#define eserror(fmt, args...) do { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "song.conf error on line %zd: " fmt "\n", lineno, ## args); exit(-1); } while (0)
 
+
+struct eaglesong {
+	int flags;
+	char md5[33];
+	struct uade_attribute *attributes;
+};
+
+struct persub {
+	int sub;
+	char *normalisation;
+};
+
+static struct uade_content *contentchecksums;
+static size_t nccused;		/* number of valid entries in content db */
+static size_t nccalloc;		/* number of allocated entries for content db */
+static int ccmodified;
+static int cccorrupted;
 
 static int nsongs;
 static struct eaglesong *songstore;
 
 static int escompare(const void *a, const void *b);
-static struct uade_content *get_content(const char *md5, struct uade_state *state);
+static struct uade_content *get_content(const char *md5);
 
 
 static void add_sub_normalisation(struct uade_content *n, char *normalisation)
@@ -68,46 +85,45 @@ static int escompare(const void *a, const void *b)
 			  ((struct eaglesong *)b)->md5);
 }
 
-static struct uade_content *get_content(const char *md5, struct uade_state *state)
+static struct uade_content *get_content(const char *md5)
 {
 	struct uade_content key;
-	struct uade_songdb *db = &state->songdb;
 
-	if (db->contentchecksums == NULL)
+	if (contentchecksums == NULL)
 		return NULL;
 
 	memset(&key, 0, sizeof key);
 	strlcpy(key.md5, md5, sizeof key.md5);
 
-	return bsearch(&key, db->contentchecksums, db->nccused,
-               sizeof db->contentchecksums[0], contentcompare);
+	return bsearch(&key, contentchecksums, nccused,
+		       sizeof contentchecksums[0], contentcompare);
 }
 
-static struct uade_content *create_content_checksum(struct uade_state *state, const char *md5, uint32_t playtime)
+static struct uade_content *create_content_checksum(const char *md5,
+						    uint32_t playtime)
 {
 	struct uade_content *n;
-	struct uade_songdb *db = &state->songdb;
 
-	if (db->nccused == db->nccalloc) {
-		db->nccalloc = MAX(db->nccalloc * 2, 16);
-		n = realloc(db->contentchecksums,
-			    db->nccalloc * sizeof(struct uade_content));
+	if (nccused == nccalloc) {
+		nccalloc = MAX(nccalloc * 2, 16);
+		n = realloc(contentchecksums,
+			    nccalloc * sizeof(struct uade_content));
 		if (n == NULL) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"uade: No memory for new content checksums.\n");
 			return NULL;
 		}
-		db->contentchecksums = n;
+		contentchecksums = n;
 	}
 
-	n = &db->contentchecksums[db->nccused];
+	n = &contentchecksums[nccused];
 
 	if (md5 == NULL)
 		return n;
 
-	db->nccused++;
+	nccused++;
 
-	db->ccmodified = 1;
+	ccmodified = 1;
 
 	memset(n, 0, sizeof(*n));
 	strlcpy(n->md5, md5, sizeof(n->md5));
@@ -139,31 +155,30 @@ static void md5_from_buffer(char *dest, size_t destlen,
 	}
 }
 
-static void update_playtime(struct uade_state *state, struct uade_content *n, uint32_t playtime)
+static void update_playtime(struct uade_content *n, uint32_t playtime)
 {
 	if (n->playtime != playtime) {
-		state->songdb.ccmodified = 1;
+		ccmodified = 1;
 		n->playtime = playtime;
 	}
 }
 
-static void sort_content_checksums(struct uade_state *state)
+static void sort_content_checksums(void)
 {
-	struct uade_songdb *db = &state->songdb;
-	
-	if (db->contentchecksums == NULL)
+	if (contentchecksums == NULL)
 		return;
 
-	qsort(db->contentchecksums, db->nccused, sizeof db->contentchecksums[0], contentcompare);
+	qsort(contentchecksums, nccused, sizeof contentchecksums[0],
+	      contentcompare);
 }
 
 /* replace must be zero if content db is unsorted */
-struct uade_content *uade_add_playtime(struct uade_state *state, const char *md5, uint32_t playtime)
+struct uade_content *uade_add_playtime(const char *md5, uint32_t playtime)
 {
 	struct uade_content *n;
 
 	/* If content db hasn't been read into memory already, it is not used */
-	if (state->songdb.contentchecksums == NULL)
+	if (contentchecksums == NULL)
 		return NULL;
 
 	/* Do not record song shorter than 3 secs */
@@ -173,15 +188,15 @@ struct uade_content *uade_add_playtime(struct uade_state *state, const char *md5
 	if (strlen(md5) != 32)
 		return NULL;
 
-	n = get_content(md5, state);
+	n = get_content(md5);
 	if (n != NULL) {
-		update_playtime(state, n, playtime);
+		update_playtime(n, playtime);
 		return n;
 	}
 
-	n = create_content_checksum(state, md5, playtime);
+	n = create_content_checksum(md5, playtime);
 
-	sort_content_checksums(state);
+	sort_content_checksums();
 
 	return n;
 }
@@ -192,7 +207,7 @@ void uade_lookup_volume_normalisation(struct uade_state *state)
 	struct uade_effect *ue = &state->effects;
 	struct uade_config *uc = &state->config;
 	struct uade_song *us = state->song;
-	struct uade_content *content = get_content(us->md5, state);
+	struct uade_content *content = get_content(us->md5);
 
 	if (content != NULL) {
 
@@ -214,16 +229,15 @@ void uade_lookup_volume_normalisation(struct uade_state *state)
 	}
 }
 
-static void get_song_flags_and_attributes_from_songstore(struct uade_song *us, struct uade_state *state)
+static void get_song_flags_and_attributes_from_songstore(struct uade_song *us)
 {
 	struct eaglesong key;
 	struct eaglesong *es;
-	struct uade_songdb *db = &state->songdb;
 
-	if (db->songstore != NULL) {
+	if (songstore != NULL) {
 		/* Lookup md5 from the songdb */
 		strlcpy(key.md5, us->md5, sizeof key.md5);
-		es = bsearch(&key, db->songstore, db->nsongs, sizeof db->songstore[0], escompare);
+		es = bsearch(&key, songstore, nsongs, sizeof songstore[0], escompare);
 
 		if (es != NULL) {
 			/* Found -> copy flags and attributes from database */
@@ -254,11 +268,11 @@ int uade_alloc_song(struct uade_state *state, const char *filename)
 	md5_from_buffer(us->md5, sizeof us->md5, us->buf, us->bufsize);
 
 	/* Needs us->md5 sum */
-	get_song_flags_and_attributes_from_songstore(us, state);
+	get_song_flags_and_attributes_from_songstore(us);
 
 	/* Lookup playtime from content database */
 	us->playtime = -1;
-	content = get_content(us->md5, state);
+	content = get_content(us->md5);
 	if (content != NULL && content->playtime > 0)
 		us->playtime = content->playtime;
 
@@ -308,11 +322,9 @@ static int uade_open_and_lock(const char *filename, int create)
 
 static struct uade_content *store_playtime(const char *md5, long playtime,
 					   int *newccmodified,
-					   size_t oldnccused,
-					   struct uade_state *state)
+					   size_t oldnccused)
 {
 	struct uade_content *n = NULL;
-	struct uade_songdb *db = &state->songdb;
 
 	if (oldnccused > 0) {
 		struct uade_content key;
@@ -321,7 +333,8 @@ static struct uade_content *store_playtime(const char *md5, long playtime,
 
 		/* We use "oldnccused" here as the length, while new entries
 		   are added in unsorted manner to the end of the array */
-		n = bsearch(&key, db->contentchecksums, oldnccused, sizeof db->contentchecksums[0], contentcompare);
+		n = bsearch(&key, contentchecksums, oldnccused,
+			    sizeof contentchecksums[0], contentcompare);
 		if (n == NULL)
 			/* new songs on disk db -> merge -> need saving */
 			*newccmodified = 1;
@@ -332,7 +345,7 @@ static struct uade_content *store_playtime(const char *md5, long playtime,
 	if (n == NULL) {
 		/* Note, create_content_checksum() makes "ccmodified"
 		   true, which we work-around later with the "newccmodified" */
-		n = create_content_checksum(state, md5, (uint32_t) playtime);
+		n = create_content_checksum(md5, (uint32_t) playtime);
 	}
 
 	if (n == NULL) {
@@ -340,7 +353,7 @@ static struct uade_content *store_playtime(const char *md5, long playtime,
 		   avoid losing data. */
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 			"uade: Warning, no memory for the song database\n");
-		db-> cccorrupted = 1;
+		cccorrupted = 1;
 	}
 
 	return n;
@@ -348,7 +361,7 @@ static struct uade_content *store_playtime(const char *md5, long playtime,
 
 
 
-int uade_read_content_db(const char *filename, struct uade_state *state)
+int uade_read_content_db(const char *filename)
 {
 	char line[1024];
 	FILE *f;
@@ -358,7 +371,6 @@ int uade_read_content_db(const char *filename, struct uade_state *state)
 	char *id, *eptr;
 	char numberstr[1024];
 	char *md5;
-	struct uade_songdb *db = &state->songdb;
 
 	/* We make backups of some variables because following loop will
 	   make it always true, which is not what we want. The end result should
@@ -366,14 +378,14 @@ int uade_read_content_db(const char *filename, struct uade_state *state)
 	   1. the in-memory db is already dirty
 	   2. the in-memory db gets new data from disk db (merge operation)
 	   Otherwise ccmodified should be false. */
-	int newccmodified = db->ccmodified;
-	size_t oldnccused = db->nccused;
+	int newccmodified = ccmodified;
+	size_t oldnccused = nccused;
 	int fd;
 	struct uade_content *n;
 
 	/* Try to create a database if it doesn't exist */
-	if (db->contentchecksums == NULL
-	    && create_content_checksum(state, NULL, 0) == NULL)
+	if (contentchecksums == NULL
+	    && create_content_checksum(NULL, 0) == NULL)
 		return 0;
 
 	fd = uade_open_and_lock(filename, 0);
@@ -415,7 +427,7 @@ int uade_read_content_db(const char *filename, struct uade_state *state)
 			continue;
 		}
 
-		n = store_playtime(md5, playtime, &newccmodified, oldnccused, state);
+		n = store_playtime(md5, playtime, &newccmodified, oldnccused);
 		if (n == NULL)
 			continue;
 
@@ -437,14 +449,14 @@ int uade_read_content_db(const char *filename, struct uade_state *state)
 	}
 	fclose(f);
 
-	db->ccmodified = newccmodified;
+	ccmodified = newccmodified;
 
-	sort_content_checksums(state);
+	sort_content_checksums();
 
 	return 1;
 }
 
-int uade_read_song_conf(const char *filename, struct uade_state *state)
+int uade_read_song_conf(const char *filename)
 {
 	FILE *f = NULL;
 	struct eaglesong *s;
@@ -452,7 +464,6 @@ int uade_read_song_conf(const char *filename, struct uade_state *state)
 	size_t lineno = 0;
 	size_t i;
 	int fd;
-	struct uade_songdb *db = &state->songdb;
 
 	fd = uade_open_and_lock(filename, 1);
 	/* open_and_lock() may fail without harm (it's actually supposed to
@@ -463,10 +474,10 @@ int uade_read_song_conf(const char *filename, struct uade_state *state)
 	if (f == NULL)
 		goto error;
 
-	db->nsongs = 0;
+	nsongs = 0;
 	allocated = 16;
-	db->songstore = calloc(allocated, sizeof db->songstore[0]);
-	if (db->songstore == NULL)
+	songstore = calloc(allocated, sizeof songstore[0]);
+	if (songstore == NULL)
 		eserror("No memory for song store.");
 
 	while (1) {
@@ -480,15 +491,15 @@ int uade_read_song_conf(const char *filename, struct uade_state *state)
 
 		assert(nitems > 0);
 
-		if (db->nsongs == allocated) {
+		if (nsongs == allocated) {
 			allocated *= 2;
-			db->songstore = realloc(db->songstore, allocated * sizeof(db->songstore[0]));
-			if (db->songstore == NULL)
+			songstore = realloc(songstore, allocated * sizeof(songstore[0]));
+			if (songstore == NULL)
 				eserror("No memory for players.");
 		}
 
-		s = &db->songstore[db->nsongs];
-		db->nsongs++;
+		s = &songstore[nsongs];
+		nsongs++;
 
 		memset(s, 0, sizeof s[0]);
 
@@ -528,7 +539,7 @@ int uade_read_song_conf(const char *filename, struct uade_state *state)
 		atomic_close(fd);	/* lock is closed too */
 
 	/* Sort MD5 sums for binary searching songs */
-	 qsort(db->songstore, db->nsongs, sizeof db->songstore[0], escompare);
+	qsort(songstore, nsongs, sizeof songstore[0], escompare);
 	return 1;
 
       error:
@@ -539,14 +550,13 @@ int uade_read_song_conf(const char *filename, struct uade_state *state)
 	return 0;
 }
 
-void uade_save_content_db(const char *filename, struct uade_state *state)
+void uade_save_content_db(const char *filename)
 {
 	int fd;
 	FILE *f;
 	size_t i;
-	struct uade_songdb *db = &state->songdb;
 
-	if (db->ccmodified == 0 || db->cccorrupted)
+	if (ccmodified == 0 || cccorrupted)
 		return;
 
 	fd = uade_open_and_lock(filename, 1);
@@ -565,11 +575,11 @@ void uade_save_content_db(const char *filename, struct uade_state *state)
 		return;
 	}
 
-	for (i = 0; i < db->nccused; i++) {
+	for (i = 0; i < nccused; i++) {
 		char str[1024];
 		size_t subi, nsubs;
 		size_t bindex, bleft;
-		struct uade_content *n = &db->contentchecksums[i];
+		struct uade_content *n = &contentchecksums[i];
 
 		str[0] = 0;
 
@@ -582,7 +592,8 @@ void uade_save_content_db(const char *filename, struct uade_state *state)
 			struct persub *sub = vplist_get(n->subs, subi);
 			int ret;
 			ret =
-			    snprintf(&str[bindex], bleft, NORM_ID "%s ", sub->normalisation);
+			    snprintf(&str[bindex], bleft, NORM_ID "%s ",
+				     sub->normalisation);
 			if (ret >= bleft) {
 				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 					"Too much subsong infos for %s\n",
@@ -597,10 +608,10 @@ void uade_save_content_db(const char *filename, struct uade_state *state)
 			str);
 	}
 
-	db->ccmodified = 0;
+	ccmodified = 0;
 
 	fclose(f);
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Saved %zd entries into content db.\n", db->nccused);
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Saved %zd entries into content db.\n", nccused);
 }
 
 int uade_test_silence(void *buf, size_t size, struct uade_state *state)

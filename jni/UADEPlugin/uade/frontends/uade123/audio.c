@@ -9,7 +9,7 @@
 #include "audio.h"
 #include "uade123.h"
 
-static ao_sample_format format;
+ao_sample_format format;
 
 static ao_device *libao_device = NULL;
 
@@ -27,7 +27,7 @@ void audio_close(void)
   }
 }
 
-static void process_config_options(const struct uade_config *uc)
+void process_config_options(const struct uade_config *uc)
 {
   char *s;
   char *key;

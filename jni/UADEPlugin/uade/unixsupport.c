@@ -20,7 +20,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <android/log.h>
-#include "uadectl.h"
+#include "uade.h"
 #include "unixatomic.h"
 
 
@@ -70,7 +70,7 @@ void *uade_ipc_set_input(const char *input)
   int fd;
   if ((fd = url_to_fd(input, O_RDONLY, 0)) < 0) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not open input file %s: %s\n", input, strerror(errno));
-    exit(1);
+    exit(-1);
   }
   return (void *) ((intptr_t) fd);
 }
@@ -81,7 +81,7 @@ void *uade_ipc_set_output(const char *output)
   int fd;
   if ((fd = url_to_fd(output, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not open output file %s: %s\n", output, strerror(errno));
-    exit(1);
+    exit(-1);
   }
   return (void *) ((intptr_t) fd);
 }
@@ -250,7 +250,7 @@ void uade_portable_initializations(void)
 	if (errno == EINTR)
 	  continue;
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not ignore signal %d: %s\n", *signum, strerror(errno));
-	exit(1);
+	exit(-1);
       }
       break;
     }
@@ -297,7 +297,7 @@ void uade_arch_spawn(struct uade_ipc *ipc, pid_t *uadepid,
     snprintf(output, sizeof(output), "fd://%d", fds[1]);
 
     execlp(uadename, uadename, "-i", input, "-o", output, (char *) NULL);
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade execlp failed: %s\n", uadename, strerror(errno));
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade execlp failed: %s\n", strerror(errno));
     abort();
   }
 
