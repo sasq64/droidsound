@@ -8,13 +8,12 @@ import java.util.List;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 
 public class FileIdentifier {
-	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
-
 	private static enum Extension { MOD, SID, XM, S3M, IT, NSF, SPC, PRG }
 
-	private static HashSet<String> modMagic;
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
+	private static final List<DroidSoundPlugin> plugins = DroidSoundPlugin.getPluginList();
 
-	private static List<DroidSoundPlugin> plugins;
+	private static HashSet<String> modMagic;
 
 	private static boolean indexUnknown;
 
@@ -83,16 +82,8 @@ public class FileIdentifier {
 	}
 
 	private static String fromData(byte[] module, int start, int len) {
-		int i;
-		for (i = start; i < start+len; i++) {
-			if (module[i] == 0) {
-				i++;
-				break;
-			}
-		}
-		return new String(module, start, i-start, ISO88591).trim();
+		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
 	}
-
 
 	private static MusicInfo tryLoad(DroidSoundPlugin plugin, String name, byte[] file) throws IOException {
 		if (plugin.loadInfo(name, file)) {
@@ -121,9 +112,6 @@ public class FileIdentifier {
 	}
 
 	public static String canHandle(String name) {
-		if (plugins == null) {
-			plugins = DroidSoundPlugin.getPluginList();
-		}
 		for (DroidSoundPlugin plugin : plugins) {
 			if(plugin.canHandle(name)) {
 				return plugin.getClass().getSimpleName();
@@ -134,22 +122,18 @@ public class FileIdentifier {
 
 
 	public static MusicInfo identify(String name, byte[] module) throws IOException {
-		if (plugins == null) {
-			plugins = DroidSoundPlugin.getPluginList();
-		}
-
 		int dot = name.lastIndexOf('.');
-		Extension nameExt = null;
+		final Extension nameExt;
 		try {
 			String ext = name.substring(dot + 1).toUpperCase();
 			nameExt = Extension.valueOf(ext);
 		}
-		catch (RuntimeException re) {
-		}
-
-		if (nameExt == null) {
+		catch (IllegalArgumentException iae) {
+			if (! indexUnknown) {
+				return null;
+			}
 			for (DroidSoundPlugin plugin : plugins) {
-				if (indexUnknown || plugin.canHandle(name)) {
+				if (plugin.canHandle(name)) {
 					MusicInfo info = tryLoad(plugin, name, module);
 					if (info != null) {
 						name = plugin.getBaseName(name);
@@ -158,7 +142,6 @@ public class FileIdentifier {
 					}
 				}
 			}
-
 			return null;
 		}
 
@@ -181,14 +164,13 @@ public class FileIdentifier {
 				info.composer = fromData(module, 0x36, 32);
 				info.copyright = fromData(module, 0x56, 32);
 				info.format = "SID";
-				int year = -1;
 				if (info.copyright.length() >= 4) {
 					try {
-						year = Integer.parseInt(info.copyright.substring(0,4));
+						int year = Integer.valueOf(info.copyright.substring(0,4));
+						if (year > 1900 && year < 2100) {
+							info.date = year * 10000;
+						}
 					} catch (NumberFormatException e) {
-					}
-					if (year > 1000 && year < 2100) {
-						info.date = year * 10000;
 					}
 				}
 				return info;

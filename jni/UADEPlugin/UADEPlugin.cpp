@@ -390,7 +390,7 @@ int init()
 	return 0;
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv *env, jobject obj, jstring basedir)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv *env, jclass klass, jstring basedir)
 {
 	jboolean iscopy;
 	const char *s = env->GetStringUTFChars(basedir, &iscopy);

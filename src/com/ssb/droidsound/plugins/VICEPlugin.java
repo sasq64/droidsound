@@ -10,8 +10,6 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import android.os.Environment;
-
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
@@ -19,6 +17,19 @@ import com.ssb.droidsound.utils.Unzipper;
 public class VICEPlugin extends DroidSoundPlugin {
 	private static final String TAG = VICEPlugin.class.getSimpleName();
 	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
+
+	static {
+		System.loadLibrary("vice");
+
+		/* Store basic, kernal & chargen for C++ code to find. */
+		File pluginDir = Application.getPluginDataDirectory(VICEPlugin.class);
+		File viceDir = new File(pluginDir, "VICE");
+		if (! viceDir.exists()) {
+			Unzipper.unzipAsset("vice.zip", pluginDir);
+		}
+
+		N_setDataDir(viceDir.getPath());
+	}
 
 	private static class Info {
 		protected String name = "Unknown";
@@ -47,9 +58,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	private Info songInfo;
-
-	private static boolean libraryLoaded = false;
-
 
 	/**
 	 * Load a song into memory.
@@ -89,32 +97,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 	 * @param path Where kernal, basic and chargen can be found.
 	 */
 	native private static void N_setDataDir(String path);
-
-	private static boolean isActive = false;
-
-	private static boolean initialized = false;
-
-	public VICEPlugin() {
-		synchronized (LOCK) {
-			if (! initialized) {
-				/* Store basic, kernal & chargen for C++ code to find. */
-				File dataDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-				if (!dataDir.exists()) {
-					dataDir.mkdir();
-				}
-
-				File viceDir = new File(dataDir, "VICE");
-				if (! viceDir.exists()) {
-					Unzipper.unzipAsset("vice.zip", dataDir);
-				}
-
-				System.loadLibrary("vice");
-				N_setDataDir(new File(dataDir, "VICE").getAbsolutePath());
-
-				initialized = true;
-			}
-		}
-	}
 
 	@Override
 	public void setOption(String opt, Object val) {

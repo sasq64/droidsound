@@ -14,6 +14,11 @@ public class Log {
 		android.util.Log.w("Droidsound", tag + ": " + line);
 	}
 
+	public static final void w(String tag, String fmt, Object...args) {
+		String line = tag + ": " + String.format(fmt, args);
+		android.util.Log.w("Droidsound", line);
+	}
+
 	public static final void w(String tag, String line, Throwable th) {
 		android.util.Log.w("Droidsound", tag + ": " + line, th);
 	}

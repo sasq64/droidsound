@@ -61,7 +61,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
-import com.ssb.droidsound.database.CSDBParser;
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.playlistview.FileInfo;
 import com.ssb.droidsound.playlistview.PlayListView;
@@ -506,16 +505,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 				else if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
 					Log.d(TAG, "Open done!");
 
-					String s = prefs.getString("indexing", "Basic");
-					int imode = SongDatabase.INDEX_BASIC;
-					if(s.equals("Full")) {
-						imode = SongDatabase.INDEX_FULL;
-					} else if(s.equals("None")) {
-						imode = SongDatabase.INDEX_NONE;
-					}
-					songDatabase.setIndexMode(imode);
-
-
 					if(lastConfig != null) {
 						Log.d(TAG, "CONFIG CHANGE");
 					} else {
@@ -530,16 +519,14 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 						progressDialog = null;
 					}
 
-					Log.d(TAG, "Scan done!");
 					setDirectory(playListView);
 				} else if(intent.getAction().equals("com.sddb.droidsound.SCAN_UPDATE")) {
-					Log.d(TAG, "Scan update!");
 					checkProgressDialog();
 					if(progressDialog != null) {
 						int percent = intent.getIntExtra("PERCENT", 0);
 						String path = intent.getStringExtra("PATH");
-						if(percent > 0) {
-							progressDialog.setMessage(String.format("Updating database...\n%s %02d%%", path, percent));
+						if(percent >= 0) {
+							progressDialog.setMessage(String.format("Updating database...\n%s (%d %%)", path, percent));
 						} else {
 							progressDialog.setMessage(String.format("Updating database...\n%s", path));
 						}
@@ -556,28 +543,18 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 		filter.addAction("com.sddb.droidsound.SCAN_UPDATE");
 		registerReceiver(receiver, filter);
 
-		boolean created = false;
-
 		if (songDatabase == null) {
 			songDatabase = new SongDatabase(getApplicationContext());
-
-			CSDBParser csdb = new CSDBParser();
-			songDatabase.registerDataSource(CSDBParser.DUMP_NAME, csdb);
-			songDatabase.registerDataSource(CSDBParser.DUMP_NAME + ".ZIP", csdb);
-
 			dbThread = new Thread(songDatabase);
 			dbThread.start();
 
-			while (!songDatabase.isReady()) {
+			while (!songDatabase.isReadyToServe()) {
 				try {
 					Thread.sleep(100);
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
 			}
-
-			created = true;
-			Log.d(TAG, "CREATED");
 		}
 
 		setDirectory(currentPath, null);
@@ -586,7 +563,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 
 		lastConfig = (Config) getLastNonConfigurationInstance();
 		if (lastConfig != null) {
-			// textToSpeech = lastConfig.textToSpeech;
 			searchCursor = lastConfig.searchCursor;
 			searchListView.setCursor(searchCursor, null);
 			songDatabase.setActivePlaylist(new File(lastConfig.activePlaylist));
@@ -594,21 +570,15 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 			shuffleSongs = lastConfig.shuffleSongs;
 			flipTo(lastConfig.flipper, false);
 		} else {
-			CSDBParser.init();
 			File mf = new File(modsDir, "Favorites.plist");
 			songDatabase.setActivePlaylist(mf);
 
 			DroidSoundPlugin.setOptions(prefs);
 
 			shuffleSongs = prefs.getBoolean("shuffle", false);
-
-		}
-		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
-
-		if (!created && lastConfig == null) {
-			songDatabase.open();
 			songDatabase.scan(false, modsDir.getPath());
 		}
+		shuffleText.setText(shuffleSongs ? "RND" : "SEQ");
 
 		listClickListener = new OnItemClickListener() {
 			@Override
@@ -962,16 +932,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 			// playListView.rescan();
 			setDirectory(playListView);
 		}
-
-		String s = prefs.getString("indexing", "Basic");
-		int imode = SongDatabase.INDEX_BASIC;
-		if(s.equals("Full")) {
-			imode = SongDatabase.INDEX_FULL;
-		} else if(s.equals("None")) {
-			imode = SongDatabase.INDEX_NONE;
-		}
-
-		songDatabase.setIndexMode(imode);
 
 		FileIdentifier.setIndexUnknown(prefs.getBoolean("extensions", false));
 	}
@@ -1450,8 +1410,14 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 				public void onClick(DialogInterface dialog, int which) {
 					String s = input.getText().toString();
 					File file = new File(currentPath, s + ".plist");
-					if(!file.exists() && !file.getName().equals("Favorites.plist")) {
-						songDatabase.createPlaylist(file);
+					if (!file.exists() && !file.getName().equals("Favorites.plist")) {
+						try {
+							songDatabase.createPlaylist(file);
+						}
+						catch (IOException ioe) {
+							Toast.makeText(PlayerActivity.this, ""+ioe, Toast.LENGTH_LONG).show();
+							return;
+						}
 						songDatabase.setActivePlaylist(file);
 						playListView.rescan();
 					}

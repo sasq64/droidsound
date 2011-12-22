@@ -8,69 +8,58 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-import android.os.Environment;
-
+import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
 	private static final Set<String> extensions = new HashSet<String>();
-	private static boolean inited;
 	static {
 		System.loadLibrary("uade");
+		File pluginDir = Application.getPluginDataDirectory(UADEPlugin.class);
+		File confFile = new File(pluginDir, "eagleplayer.conf");
+
+		if (! confFile.exists()) {
+			Unzipper.unzipAsset("eagleplayers.zip", pluginDir);
+		}
+
+		N_init(pluginDir.getPath());
+
+		if (extensions.size() == 0) {
+			extensions.add("CUST");
+			extensions.add("CUS");
+			extensions.add("CUSTOM");
+			extensions.add("DM");
+			extensions.add("TFX");
+
+			try {
+				BufferedReader reader = new BufferedReader(new FileReader(confFile));
+				String line;
+				while (null != (line = reader.readLine())) {
+					int x = line.indexOf("prefixes=");
+					if (x == -1) {
+						continue;
+					}
+
+					String[] exts = line.substring(x+9).split(",");
+					for (String ex : exts) {
+						int sp = ex.indexOf('\t');
+						if(sp >= 0) {
+							ex = ex.substring(0, sp);
+						}
+						extensions.add(ex.toUpperCase());
+					}
+				}
+				reader.close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		N_setOption(OPT_RESAMPLING, 2);
 	}
 
 	private long currentSong = 0;
-
-	public UADEPlugin() {
-		synchronized (extensions) {
-			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-			File eagleDir = new File(droidDir, "players");
-			File confFile = new File(droidDir, "eagleplayer.conf");
-
-			if (! (eagleDir.exists() && confFile.exists())) {
-				Unzipper.unzipAsset("eagleplayers.zip", droidDir);
-			}
-
-			if (! inited) {
-				N_init(droidDir.getPath());
-
-				if (extensions.size() == 0) {
-					extensions.add("CUST");
-					extensions.add("CUS");
-					extensions.add("CUSTOM");
-					extensions.add("DM");
-					extensions.add("TFX");
-
-					try {
-						BufferedReader reader = new BufferedReader(new FileReader(confFile));
-						String line;
-						while (null != (line = reader.readLine())) {
-							int x = line.indexOf("prefixes=");
-							if (x == -1) {
-								continue;
-							}
-
-							String[] exts = line.substring(x+9).split(",");
-							for (String ex : exts) {
-								int sp = ex.indexOf('\t');
-								if(sp >= 0) {
-									ex = ex.substring(0, sp);
-								}
-								extensions.add(ex.toUpperCase());
-							}
-						}
-						reader.close();
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
-				}
-
-				setOption("resampling", 2);
-				inited = true;
-			}
-		}
-	}
 
 	@Override
 	public boolean canHandle(String name) {
@@ -235,8 +224,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return "UADE - Unix Amiga Delitracker Emulator\nversion 2.13\nCopyright 2000-2006, Heikki Orsila";
 	}
 
-	native private void N_init(String baseDir);
-	native private void N_exit();
+	native private static void N_init(String baseDir);
+	native private static void N_exit();
 	native private static void N_setOption(int what, int val);
 
 	native private boolean N_canHandle(String name);

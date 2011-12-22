@@ -3,8 +3,7 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 
-import android.os.Environment;
-
+import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
@@ -12,9 +11,13 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private static final String TAG = SC68Plugin.class.getSimpleName();
 	static {
 		System.loadLibrary("sc68");
+		File pluginDir = Application.getPluginDataDirectory(SC68Plugin.class);
+		File sc68Dir = new File(pluginDir, "sc68data");
+		if (! sc68Dir.exists()) {
+			Unzipper.unzipAsset("sc68data.zip", pluginDir);
+		}
+		N_setDataDir(sc68Dir.getPath());
 	}
-	private static Object lock = new Object();
-	private static boolean inited = false;
 
 	private long currentSong;
 
@@ -25,21 +28,6 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private String year = null;
 	private String type = null;
 	private final Unzipper unzipper = null;
-
-	public SC68Plugin() {
-		synchronized (lock) {
-			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-			File sc68Dir = new File(droidDir, "sc68data");
-
-			if (! sc68Dir.exists()) {
-				Unzipper.unzipAsset("sc68data.zip", sc68Dir.getParentFile());
-			}
-			if (! inited) {
-				N_setDataDir(sc68Dir.getPath());
-				inited = true;
-			}
-		}
-	}
 
 	@Override
 	public boolean canHandle(String name) {
@@ -246,6 +234,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 		return "Version 3.0.0\nCopyright (C) 2009 Benjamin Gerard";
 	}
 
+	native private static void N_setDataDir(String dataDir);
+
 	native private long N_load(byte [] module, int size);
 	native private long N_loadInfo(byte [] module, int size);
 	native private void N_unload(long song);
@@ -257,6 +247,5 @@ public class SC68Plugin extends DroidSoundPlugin {
 	native private String N_getStringInfo(long song, int what);
 	native private int N_getIntInfo(long song, int what);
 
-	native private void N_setDataDir(String dataDir);
 	native private int N_unice(byte [] data, byte [] target);
 }

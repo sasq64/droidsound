@@ -266,13 +266,8 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getIntInfo(
 	return -1;
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1setDataDir(JNIEnv *env, jobject obj, jstring dataDir)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1setDataDir(JNIEnv *env, jclass klass, jstring dataDir)
 {
-
-	//jclass cl = env->GetObjectClass(obj);
-	//refField = env->GetFieldID(cl, "pluginRef", "J");
-	//env->SetLongField(obj, refField, (jlong)sc68);
-
 	jboolean iscopy;
 	const char *filename = env->GetStringUTFChars(dataDir, &iscopy);
 

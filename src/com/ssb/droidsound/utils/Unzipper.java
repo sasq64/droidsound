@@ -30,7 +30,7 @@ public class Unzipper {
 
 				OutputStream os = new FileOutputStream(out);
 				int data;
-				while (0 < (data = is.read(buffer))) {
+				while (0 < (data = zis.read(buffer))) {
 					os.write(buffer, 0, data);
 				}
 
