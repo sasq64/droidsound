@@ -24,8 +24,9 @@
 #include "osemu.h"
 #include "compiler.h"
 
-#include "uade.h"
+#include "uadectl.h"
 #include "ossupport.h"
+#include "uadeconstants.h"
 
 struct uae_prefs currprefs, changed_prefs;
 
@@ -294,7 +295,7 @@ int uade_main (int argc, char **argv)
     if (! setup_sound ()) {
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Sound driver unavailable: Sound output disabled\n");
 	currprefs.produce_sound = 0;
-	exit(-1);
+	exit(1);
     }
 
     init_sound();

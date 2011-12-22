@@ -22,7 +22,7 @@
 #include "cia.h"
 #include "audio.h"
 #include "amigafilter.h"
-#include "uade.h"
+#include "uadectl.h"
 #include "compilersupport.h"
 
 #include "sinctable.h"
@@ -120,7 +120,7 @@ static int filter(int input, struct filter_state *fs)
 
     default:
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter mode\n");
-	exit(-1);
+	exit(1);
     }
 
     return clamp_sample(gui_ledstate ? led_output : normal_output);
@@ -464,7 +464,7 @@ void audio_set_filter(int filter_type, int filter_force)
      non-zero, it contains the filter type (a500 or a1200) */
   if (filter_type < 0 || filter_type >= FILTER_MODEL_UPPER_BOUND) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid filter number: %d\n", filter_type);
-    exit(-1);
+    exit(1);
   }
   sound_use_filter = filter_type;
 

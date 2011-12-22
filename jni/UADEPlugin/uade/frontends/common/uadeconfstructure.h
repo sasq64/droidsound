@@ -57,9 +57,9 @@ struct uade_ao_options {
 	char o[256];
 };
 
-#define UADE_CHAR_CONFIG(x) char x; char x##_set;
-#define UADE_FLOAT_CONFIG(x) float x; char x##_set;
-#define UADE_INT_CONFIG(x) int x; char x##_set;
+#define UADE_CHAR_CONFIG(x) char x; char x##_set
+#define UADE_FLOAT_CONFIG(x) float x; char x##_set
+#define UADE_INT_CONFIG(x) int x; char x##_set
 
 /* All the options are put into an instance of this structure.
  * There can be many structures, one for uade.conf and the other for

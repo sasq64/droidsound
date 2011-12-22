@@ -62,7 +62,7 @@ static void copy_from_inputbuffer(void *dst, int bytes, struct uade_ipc *ipc)
 {
   if (ipc->inputbytes < bytes) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "not enough bytes in input buffer\n");
-    exit(-1);
+    exit(1);
   }
   memcpy(dst, ipc->inputbuffer, bytes);
   memmove(ipc->inputbuffer, &ipc->inputbuffer[bytes], ipc->inputbytes - bytes);

@@ -18,13 +18,10 @@
 
 #include "uadeipc.h"
 #include "eagleplayer.h"
-#include "uadeconfig.h"
 #include "uadecontrol.h"
 #include "uadeconstants.h"
-#include "ossupport.h"
 #include "uadeconf.h"
 #include "effects.h"
-#include "sysincludes.h"
 #include "songdb.h"
 #include "plugin.h"
 #include "subsongseek.h"
@@ -90,7 +87,6 @@ static struct uade_state state;
 
 static char configname[PATH_MAX];
 static pthread_t decode_thread;
-static struct uade_config config_backup;
 static char gui_filename[PATH_MAX];
 static char gui_formatname[256];
 static int gui_info_set;
@@ -115,35 +111,21 @@ int uade_thread_running;      /* Trigger type */
 int uade_seek_forward;        /* Lock before use */
 int uade_select_sub;          /* Lock before use */
 
-
-static int uade_config_optimization;
-
-
 static pthread_mutex_t vlock = PTHREAD_MUTEX_INITIALIZER;
-
-
-static void test_uade_conf(void)
-{
-  struct stat st;
-
-  if (stat(configname, &st))
-    return;
-
-  /* Read only newer files */
-  if (st.st_mtime <= config_load_time)
-    return;
-
-  config_load_time = st.st_mtime;
-
-  uade_load_config(&config_backup, configname);
-}
 
 
 static void load_config(void)
 {
-  test_uade_conf();
-}
+  struct stat st;
 
+  /* Read only newer files */
+  if (stat(configname, &st) != 0 || st.st_mtime <= config_load_time)
+    return;
+
+  config_load_time = st.st_mtime;
+
+  uade_load_config(&state.permconfig, configname);
+}
 
 static void load_content_db(void)
 {
@@ -162,7 +144,7 @@ static void load_content_db(void)
 	if (contentname[0]) {
 		if (stat(contentname, &st) == 0) {
 			if (content_mtime < st.st_mtime) {
-				ret = uade_read_content_db(contentname);
+				ret = uade_read_content_db(contentname, &state);
 				if (stat(contentname, &st) == 0)
 					content_mtime = st.st_mtime;
 				if (ret)
@@ -172,11 +154,11 @@ static void load_content_db(void)
 			FILE *f = fopen(contentname, "w");
 			if (f)
 				fclose(f);
-			uade_read_content_db(contentname);
+			uade_read_content_db(contentname, &state);
 		}
 	}
 
-	snprintf(name, sizeof name, "%s/contentdb.conf", config_backup.basedir.name);
+	snprintf(name, sizeof name, "%s/contentdb.conf", state.permconfig.basedir.name);
 	if (stat(name, &st) == 0 && content_mtime < st.st_mtime) {
 		uade_read_content_db(name);
 		if (stat(name, &st) == 0)
@@ -193,7 +175,7 @@ static void uade_cleanup(void)
   if (contentname[0]) {
     struct stat st;
     if (stat(contentname, &st) == 0 && content_mtime >= st.st_mtime)
-      uade_save_content_db(contentname);
+      uade_save_content_db(contentname, &state);
   }
 }
 
@@ -255,7 +237,7 @@ void uade_lock(void)
 {
   if (pthread_mutex_lock(&vlock)) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 locking error.\n");
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -264,7 +246,7 @@ void uade_unlock(void)
 {
   if (pthread_mutex_unlock(&vlock)) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 unlocking error.\n");
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -280,28 +262,22 @@ InputPlugin *get_iplugin_info(void)
 static void uade_init(void)
 {
   char *home;
-  int config_loaded;
 
   config_load_time = time(NULL);
 
-  config_loaded = uade_load_initial_config(configname, sizeof configname,
-					   &config_backup, NULL);
+ if (!uade_load_initial_config(&state, configname, sizeof configname, NULL))
+ 	__android_log_print(ANDROID_LOG_VERBOSE, "No config file found for UADE XMMS plugin. Will try to load config from $HOME/.uade2/uade.conf in the future.\n");
 
   load_content_db();
 
-  uade_load_initial_song_conf(songconfname, sizeof songconfname,
-			      &config_backup, NULL);
+  uade_load_initial_song_conf(songconfname, sizeof songconfname, &state.permconfig, NULL, &state);
+ 
 
   home = uade_open_create_home();
 
   if (home != NULL) {
     /* If config exists in home, ignore global uade.conf. */
     snprintf(configname, sizeof configname, "%s/.uade2/uade.conf", home);
-  }
-
-  if (config_loaded == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No config file found for UADE XMMS plugin. Will try to load config from\n");
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "$HOME/.uade2/uade.conf in the future.\n");
   }
 }
 
@@ -321,12 +297,8 @@ static int uadexmms_is_our_file(char *filename)
    * when state.config hasn't yet been read. uade_is_our_file() needs the
    * config. */
   if (!state.validconfig) {
-    state.config = config_backup;
+    state.config = state.permconfig;
     state.validconfig = 1;
-
-    /* Verify that this condition is true at most once */
-    assert(!uade_config_optimization);
-    uade_config_optimization = 1;
   }
 
   ret = uade_is_our_file(filename, 1, &state) ? TRUE : FALSE;
@@ -347,7 +319,7 @@ static int initialize_song(char *filename)
 
   uade_lock();
 
-  state.config = config_backup;
+  state.config = state.permconfig;
   state.validconfig = 1;
 
   state.ep = NULL;
@@ -517,7 +489,7 @@ static void *play_loop(void *arg)
 
       if (uade_receive_message(um, sizeof(space), &state.ipc) <= 0) {
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive events from uade\n");
-	exit(-1);
+	exit(1);
       }
 
       switch (um->msgtype) {
@@ -633,7 +605,7 @@ static void *play_loop(void *arg)
       case UADE_REPLY_SONG_END:
 	if (um->size < 9) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song end reply\n");
-	  exit(-1);
+	  exit(1);
 	}
 	tailbytes = ntohl(((uint32_t *) um->data)[0]);
 	/* next ntohl() is only there for a principle. it is not useful */
@@ -651,7 +623,7 @@ static void *play_loop(void *arg)
 	  i++;
 	if (reason[i] != 0 || (i != (um->size - 9))) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Broken reason string with song end notice\n");
-	  exit(-1);
+	  exit(1);
 	}
 	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song end (%s)\n", reason); */
 	break;
@@ -659,7 +631,7 @@ static void *play_loop(void *arg)
       case UADE_REPLY_SUBSONG_INFO:
 	if (um->size != 12) {
 	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "subsong info: too short a message\n");
-	  exit(-1);
+	  exit(1);
 	}
 	u32ptr = (uint32_t *) um->data;
 	uade_lock();
@@ -755,11 +727,11 @@ static void uade_play_file(char *filename)
 
   if (!state.pid) {
     char configname[PATH_MAX];
-    snprintf(configname, sizeof configname, "%s/uaerc", config_backup.basedir.name);
+    snprintf(configname, sizeof configname, "%s/uaerc", state.permconfig.basedir.name);
     uade_spawn(&state, UADE_CONFIG_UADE_CORE, configname);
   }
 
-  if (!uade_ip.output->open_audio(sample_format, config_backup.frequency, UADE_CHANNELS)) {
+  if (!uade_ip.output->open_audio(sample_format, state.permconfig.frequency, UADE_CHANNELS)) {
     abort_playing = 1;
     return;
   }
@@ -778,7 +750,7 @@ static void uade_play_file(char *filename)
     time_t curtime = time(NULL);
     if (curtime >= (content_mtime + 3600)) {
       struct stat st;
-      uade_save_content_db(contentname);
+      uade_save_content_db(contentname, &state);
       if (stat(contentname, &st) == 0)
 	content_mtime = st.st_mtime;
     }
@@ -828,7 +800,7 @@ static void uade_stop(void)
     if (record_playtime) {
       int play_time = (state.song->out_bytes * 1000) / (UADE_BYTES_PER_FRAME * state.config.frequency);
       if (state.song->md5[0] != 0)
-	uade_add_playtime(state.song->md5, play_time);
+	uade_add_playtime(&state, state.song->md5, play_time);
 
       state.song->playtime = play_time;
       state.song->cur_subsong = state.song->max_subsong;

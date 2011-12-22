@@ -83,7 +83,7 @@ void uade_send_filter_command(struct uade_state *state)
 	if (uade_send_two_u32s
 	    (UADE_COMMAND_FILTER, filter_type, filter_state, ipc)) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not setup filters.\n");
-		exit(-1);
+		exit(1);
 	}
 }
 
@@ -94,12 +94,12 @@ static void send_resampling_command(struct uade_ipc *ipc,
 	if (mode != NULL) {
 		if (strlen(mode) == 0) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Resampling mode may not be empty.\n");
-			exit(-1);
+			exit(1);
 		}
 		if (uade_send_string
 		    (UADE_COMMAND_SET_RESAMPLING_MODE, mode, ipc)) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not set resampling mode.\n");
-			exit(-1);
+			exit(1);
 		}
 	}
 }
@@ -109,7 +109,7 @@ static void subsong_control(int subsong, int command, struct uade_ipc *ipc)
 	assert(subsong >= 0 && subsong < 256);
 	if (uade_send_u32(command, (uint32_t) subsong, ipc) < 0) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not changet subsong\n");
-		exit(-1);
+		exit(1);
 	}
 }
 
@@ -158,7 +158,7 @@ int uade_song_initialization(const char *scorename,
 		if (uade_receive_short_message(UADE_COMMAND_TOKEN, ipc)) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
 				"Can not receive token in main loop.\n");
-			exit(-1);
+			exit(1);
 		}
 		return UADECORE_CANT_PLAY;
 	}

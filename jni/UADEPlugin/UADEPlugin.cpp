@@ -10,14 +10,15 @@
 #include "com_ssb_droidsound_plugins_UADEPlugin.h"
 
 extern "C" {
-#include "eagleplayer.h"
-#include "uadeipc.h"
-#include "uadecontrol.h"
-#include "uadeconf.h"
-#include "songdb.h"
+#include <eagleplayer.h>
+#include <uadeipc.h>
+#include <memory.h>
+#include <uadecontrol.h>
+#include <uadeconf.h>
+#include <songdb.h>
 
-int uade_main (int argc, char **argv);
-void uae_quit(void);
+	int uade_main (int argc, char **argv);
+	void uae_quit(void);
 }
 
 #define INFO_TITLE 0
@@ -29,14 +30,12 @@ void uae_quit(void);
 #define INFO_SUBTUNES 6
 #define INFO_STARTTUNE 7
 
-
 int eaglestore = 0;
 struct eagleplayer *lastplayer = NULL;
 char lastext[16] = "";
 char current_format[80] = "";
 
 static struct uade_ipc uadeipc;
-
 static struct uade_config uadeconf;
 
 static uint8_t space[UADE_MAX_MESSAGE_SIZE];
@@ -57,7 +56,6 @@ struct uade_config main_config;
 
 int uadeconf_loaded;
 char uadeconfname[256];
-
 char format[128];
 
 //enum uade_control_state state = UADE_S_STATE;
@@ -66,51 +64,10 @@ int new_subsong = -1;
 
 struct Player
 {
-
 };
 
 //int totalSongs = -1;
 int startSong = -1;
-
-/*
-struct eagleplayer *get_player(const char *name)
-{
-	const char *sext = strrchr(name, '.');
-	char prefix[128];
-	if(!sext)
-		sext = "";
-	else
-		sext++;
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "extcheck %s \n", sext);
-
-	//if(lastplayer && strcasecmp(sext, lastext) == 0)
-	//{
-		//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "=> %s\n", lastplayer->playername);
-		//return lastplayer;
-	//}
-	//else
-	//{
-		struct eagleplayer *plr = uade_get_eagleplayer(sext, eaglestore);
-		if(plr)
-		{
-			lastplayer = plr;
-			strcpy(lastext, sext);
-			//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "=> %s\n", lastplayer->playername);
-		}
-		return plr;
-	//}
-
-}
-*/
-
-//#if (defined _WIN32 || defined GP2X)
-//unsigned int htonl(unsigned int l)
-//{
-//	return ((l>>24) & 0xff) | ((l>>8) & 0xFF00) | ((l<<8) & 0xFF0000) | (l<<24);
-//}
-
-
 
 short *soundBuffer = NULL;
 short *soundPtr = NULL;
@@ -128,16 +85,6 @@ static int run_client()
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "song_end_trigger");
 			return -1;
 		}
-		/*if(uade_song_end_trigger)
-		{
-			next_song = 1;
-			if(uade_send_short_message(UADE_COMMAND_REBOOT, &uadeipc))
-			{
-				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send reboot\n");
-				return 0;
-			}
-		}
-		else */
 
 		if(new_subsong >= 0)
 		{
@@ -160,13 +107,8 @@ static int run_client()
 			state.config.panning_enable_set = 0;
 		}
 
-		//if(state.config.use_ntsc_set) {
-		//	uade_set_effects(&state);
-		//	state.config.use_ntsc_set = 0;
-		//}
-
-
-		left = uade_read_request(&uadeipc); /* Request another batch of sample data from uadecore */
+        /* Request another batch of sample data from uadecore */
+		left = uade_read_request(&uadeipc); 
 
 		if(uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc))
 		{
@@ -187,13 +129,10 @@ static int run_client()
 			return 0;
 		}
 
-		//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Got msg %d", um->msgtype);
-
 		switch (um->msgtype)
 		{
 		case UADE_COMMAND_TOKEN:
 			ctrlstate = UADE_S_STATE;
-			//__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Got token");
 			break;
 
 		case UADE_REPLY_DATA:
@@ -206,7 +145,8 @@ static int run_client()
 
 			if(subsong_end)
 			{
-				playbytes = tailbytes; /* Determined by UADE_REPLY_SONG_END */
+                /* Determined by UADE_REPLY_SONG_END */
+				playbytes = tailbytes; 
 				tailbytes = 0;
 			}
 			else
@@ -219,29 +159,23 @@ static int run_client()
 					soundPtr[i] = ntohs(sm[i]);
 
 				soundPtr += (playbytes/2);
-			}
-			else
-			if(0) // plugin.freq == 22050)
-			{
-				for (int i = 0; i < um->size/2; i+=4)
+			} 
+            else 
+				if(0) // plugin.freq == 22050)
 				{
-					soundPtr[i/2] = (ntohs(sm[i]) + ntohs(sm[i+2])) / 2;
-					soundPtr[i/2+1] = (ntohs(sm[i+1]) + ntohs(sm[i+3])) / 2;
+					for (int i = 0; i < um->size/2; i+=4)
+					{
+						soundPtr[i/2] = (ntohs(sm[i]) + ntohs(sm[i+2])) / 2;
+						soundPtr[i/2+1] = (ntohs(sm[i+1]) + ntohs(sm[i+3])) / 2;
+					}
+
+					soundPtr += (playbytes/4);
 				}
 
-				soundPtr += (playbytes/4);
-			}
+				left -= um->size;
 
-			//dbprintf("Got %d bytes sampledata\n", playbytes);
-			//__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Got %d bytes sampledata\n", playbytes);
-
-//			time_bytes += playbytes;
-			//assert(left >= um->size);
-			left -= um->size;
-
-			return 1;
-
-			break;
+				return 1;
+				break;
 
 		case UADE_REPLY_FORMATNAME:
 			uade_check_fix_string(um, 128);
@@ -269,7 +203,6 @@ static int run_client()
 			if (um->size < 9)
 			{
 				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song end reply\n");
-				//exit(-1);
 				return -1;
 			}
 
@@ -307,9 +240,6 @@ static int run_client()
 	return 0;
 }
 
-
-
-
 static void *threadProc(void *arg) {
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Starting thread");
 
@@ -332,9 +262,9 @@ void exit() {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Got msg %d", um->msgtype);
 	}
 
-	 if (uade_send_short_message(UADE_COMMAND_REBOOT, &state.ipc)) {
-		 __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Send reboot failed");
-	 }
+	if (uade_send_short_message(UADE_COMMAND_REBOOT, &state.ipc)) {
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Send reboot failed");
+	}
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Waiting for UAE to exit");
 	int rc = pthread_join(thread, NULL);
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Exit with %d", rc);
@@ -343,7 +273,6 @@ void exit() {
 	if(soundBuffer)
 		free(soundBuffer);
 	soundBuffer = 0;
-
 }
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit(JNIEnv *env, jobject obj)
@@ -353,12 +282,16 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit(JNIEnv
 
 int init()
 {
-        char temp[256];
-        if(eaglestore == 0) {
-                memset(&state, 0, sizeof state);
-                __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "baseDir os '%s'", baseDir);
+	char temp[256];
+	char *basedir;
 
-		uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof(uadeconfname), &main_config, NULL);
+	if(eaglestore == 0) {
+
+		basedir = NULL;
+		memset(&state, 0, sizeof state);
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "baseDir os '%s'", baseDir);
+
+		uadeconf_loaded = uade_load_initial_config(&state, uadeconfname, sizeof(uadeconfname), basedir);
 
 		strcpy(main_config.basedir.name, baseDir);
 
@@ -366,17 +299,14 @@ int init()
 
 		// state.config.no_filter = 1;
 
-
-
 		uade_set_peer(&uadeipc, 1, "client", "server");
 		state.ipc = uadeipc;
 		eaglestore = 1;
-
 	}
 
 	if(thread == 0) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating thread");
-	    pthread_create(&thread, NULL, threadProc, NULL);
+		pthread_create(&thread, NULL, threadProc, NULL);
 
 		sprintf(temp, "%s/uaerc", baseDir);
 		if(uade_send_string(UADE_COMMAND_CONFIG, temp, &uadeipc)) {
@@ -390,58 +320,54 @@ int init()
 	return 0;
 }
 
-JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv *env, jclass klass, jstring basedir)
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv *env, jclass obj, jstring basedir)
 {
 	jboolean iscopy;
 	const char *s = env->GetStringUTFChars(basedir, &iscopy);
 	strcpy(baseDir, s);
 	env->ReleaseStringUTFChars(basedir, s);
-
 	init();
 }
 
 extern "C" {
 
-void client_sleep(void)
-{
-	usleep(100);
-}
-
-int get_write_mutex(void **m)
-{
-	if(!*m) {
-		pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-		memset(mutex, 0, sizeof(pthread_mutex_t));
-		*m = (void*)mutex;
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating write mutex in ptr %p", m);
+	void client_sleep(void)
+	{
+		usleep(100);
 	}
-	return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
-}
 
-int release_write_mutex(void **m)
-{
-	return (pthread_mutex_unlock((pthread_mutex_t*)*m) == 0);
-}
-
-int get_read_mutex(void **m)
-{
-
-
-	if(!*m) {
-		pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-		//*mutex = PTHREAD_MUTEX_INITIALIZER;
-		memset(mutex, 0, sizeof(pthread_mutex_t));
-		*m = (void*)mutex;
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating read mutex in ptr %p", m);
+	int get_write_mutex(void **m)
+	{
+		if(!*m) {
+			pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+			memset(mutex, 0, sizeof(pthread_mutex_t));
+			*m = (void*)mutex;
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating write mutex in ptr %p", m);
+		}
+		return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
 	}
-	return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
-}
 
-int release_read_mutex(void **m)
-{
-	return (pthread_mutex_unlock((pthread_mutex_t*)*m) == 0);
-}
+	int release_write_mutex(void **m)
+	{
+		return (pthread_mutex_unlock((pthread_mutex_t*)*m) == 0);
+	}
 
+	int get_read_mutex(void **m)
+	{
+		if(!*m) {
+			pthread_mutex_t *mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+			//*mutex = PTHREAD_MUTEX_INITIALIZER;
+			memset(mutex, 0, sizeof(pthread_mutex_t));
+			*m = (void*)mutex;
+			__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Creating read mutex in ptr %p", m);
+		}
+		return (pthread_mutex_lock((pthread_mutex_t*)*m) == 0);
+	}
+
+	int release_read_mutex(void **m)
+	{
+		return (pthread_mutex_unlock((pthread_mutex_t*)*m) == 0);
+	}
 }
 
 static jstring NewString(JNIEnv *env, const char *str)
@@ -455,6 +381,7 @@ static jstring NewString(JNIEnv *env, const char *str)
 	jstring j = env->NewString(temp, ptr - temp);
 	return j;
 }
+
 
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
 {
@@ -490,11 +417,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 
 	char plname[256];
 	char score[256];
-
+    
+    int rc;
+    
 	sprintf(plname, "%s/players/%s", baseDir, player->playername);
 	sprintf(score, "%s/score", baseDir);
-
-	int rc;
 
 	strcpy(current_format, "");
 
@@ -510,19 +437,19 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 	}
 
 	if (state.ep != NULL)
-	    uade_set_ep_attributes(&state);
+		uade_set_ep_attributes(&state);
 
 	// Now we have the final configuration in "uc".
 	uade_set_effects(&state);
 
-
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "PLAYING '%s' with %s\n", filename, plname);
 
 	char *slash = strrchr(plname, '/');
-	if(slash)
+	if(slash) {
 		strcpy(current_format, slash+1);
-	else
+    } else {
 		strcpy(current_format, plname);
+    }
 
 	if(strcmp("custom", player->playername) == 0) {
 		rc = uade_song_initialization(score, filename, "", &state);
@@ -533,19 +460,17 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "RES %d", rc);
 
-
 	soundPtr = soundBuffer;
 
 	rc = 0;
 	while(rc <= 0) {
 		rc = run_client();
 	}
-
+    
 	env->ReleaseStringUTFChars(fname, filename);
 
 	return 1;
 }
-
 
 static int wait_token()
 {
@@ -571,8 +496,10 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 	Player *player = (Player*)song;
 	//delete player;
 
-	if(ctrlstate == UADE_R_STATE)
+	if(ctrlstate == UADE_R_STATE) 
+    {
 		wait_token();
+    }
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "close2\n");
 	if(uade_send_short_message(UADE_COMMAND_REBOOT, &uadeipc))
@@ -581,12 +508,13 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 		return;
 	}
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "close3\n");
-    if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc))
+    
+	if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc))
 	{
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send token\n");
 		return;
 	}
- 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "close4\n");
+	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "close4\n");
 
 	wait_token();
 
@@ -596,6 +524,7 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray sArray, jint size)
 {
 	Player *player = (Player*)song;
+
 	jshort *dest = env->GetShortArrayElements(sArray, NULL);
 
 	soundPtr = dest;
@@ -607,7 +536,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundDat
 			return -1;
 		}
 	}
-
+    
 	uade_effect_run(&state.effects, dest, (soundPtr - dest)/2);
 	env->ReleaseShortArrayElements(sArray, dest, 0);
 
@@ -626,6 +555,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setTune
 	uade_song_end_trigger = 0;
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "setTune %d", tune);
 	new_subsong = tune;
+
 	return true;
 }
 
@@ -634,8 +564,15 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getStrin
 	Player *player = (Player*)song;
 	switch(what)
 	{
+		// case INFO_TITLE:
+		// 	 return NewString(env, "");
+		// case INFO_AUTHOR:
+		//   return NewString(env, "");
+		// case INFO_COPYRIGHT:
+		//   return NewString(env, "");
 	case INFO_TYPE:
 		return NewString(env, current_format);
+		//return player->sidInfo.
 	}
 	return NewString(env, "");
 }
