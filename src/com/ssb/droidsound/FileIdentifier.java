@@ -122,7 +122,7 @@ public class FileIdentifier {
 
 	public static String canHandle(String name) {
 		if (plugins == null) {
-			plugins = DroidSoundPlugin.createPluginList();
+			plugins = DroidSoundPlugin.getPluginList();
 		}
 		for (DroidSoundPlugin plugin : plugins) {
 			if(plugin.canHandle(name)) {
@@ -135,7 +135,7 @@ public class FileIdentifier {
 
 	public static MusicInfo identify(String name, byte[] module) throws IOException {
 		if (plugins == null) {
-			plugins = DroidSoundPlugin.createPluginList();
+			plugins = DroidSoundPlugin.getPluginList();
 		}
 
 		int dot = name.lastIndexOf('.');

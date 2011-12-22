@@ -29,7 +29,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 			File confFile = new File(droidDir, "eagleplayer.conf");
 
 			if (! (eagleDir.exists() && confFile.exists())) {
-				Unzipper.unzipAsset(getContext(), "eagleplayers.zip", droidDir);
+				Unzipper.unzipAsset("eagleplayers.zip", droidDir);
 			}
 
 			if (! inited) {

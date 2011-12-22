@@ -8,12 +8,15 @@ import java.io.OutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import android.content.Context;
+import android.content.res.AssetManager;
+
+import com.ssb.droidsound.app.Application;
 
 public class Unzipper {
-	public static void unzipAsset(Context context, String assetName, File path) {
+	public static void unzipAsset(String assetName, File path) {
 		try {
-			InputStream is = context.getAssets().open(assetName);
+			AssetManager am = Application.getAssetManager();
+			InputStream is = am.open(assetName);
 			ZipInputStream zis = new ZipInputStream(is);
 			ZipEntry ze;
 			byte[] buffer = new byte[1024];

@@ -32,7 +32,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 			File sc68Dir = new File(droidDir, "sc68data");
 
 			if (! sc68Dir.exists()) {
-				Unzipper.unzipAsset(getContext(), "sc68data.zip", sc68Dir.getParentFile());
+				Unzipper.unzipAsset("sc68data.zip", sc68Dir.getParentFile());
 			}
 			if (! inited) {
 				N_setDataDir(sc68Dir.getPath());

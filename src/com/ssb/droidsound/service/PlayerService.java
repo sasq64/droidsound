@@ -24,7 +24,6 @@ import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.SongFile;
-import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player.SongInfo;
 import com.ssb.droidsound.utils.Log;
 
@@ -283,8 +282,6 @@ public class PlayerService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-
-		DroidSoundPlugin.setContext(getApplicationContext());
 
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 		player = new Player(audioManager, mHandler, getApplicationContext());

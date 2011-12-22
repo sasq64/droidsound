@@ -81,7 +81,7 @@ public class SettingsActivity extends PreferenceActivity {
 			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
 		} catch (NameNotFoundException e) {}
 
-		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
+		List<DroidSoundPlugin> list = DroidSoundPlugin.getPluginList();
 		String appName = getString(pinfo.applicationInfo.labelRes);
 
 		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");

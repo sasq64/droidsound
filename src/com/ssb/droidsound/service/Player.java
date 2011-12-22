@@ -109,7 +109,7 @@ public class Player implements Runnable {
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
 
-		plugins = DroidSoundPlugin.createPluginList();
+		plugins = DroidSoundPlugin.getPluginList();
 
 		silentPosition = -1;
 		// Enough for 3000ms
@@ -397,9 +397,6 @@ public class Player implements Runnable {
 					songLoaded = plugin.load(baseName, songBuffer);
 				}
 				if(songLoaded) {
-					if(currentPlugin != null && currentPlugin != plugin) {
-						currentPlugin.close();
-					}
 					currentPlugin = plugin;
 					break;
 				}
@@ -475,22 +472,15 @@ public class Player implements Runnable {
 
 				currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 
-				if(currentSong.title == null || currentSong.title.equals("")) {
-
-					if(currentPlugin.delayedInfo()) {
-						currentSong.title = null;
-					} else {
-						String basename = currentPlugin.getBaseName(currentSong.fileName);
-
-
-						int sep = basename.indexOf(" - ");
-						if(sep > 0) {
-							currentSong.author = basename.substring(0, sep);
-							currentSong.title = basename.substring(sep+3);
-						} else
-							currentSong.title = basename;
-						Log.d(TAG, "FN Title '%s'", currentSong.title);
-					}
+				if (currentSong.title == null || currentSong.title.equals("")) {
+					String basename = currentPlugin.getBaseName(currentSong.fileName);
+					int sep = basename.indexOf(" - ");
+					if(sep > 0) {
+						currentSong.author = basename.substring(0, sep);
+						currentSong.title = basename.substring(sep+3);
+					} else
+						currentSong.title = basename;
+					Log.d(TAG, "FN Title '%s'", currentSong.title);
 				}
 
 				currentSong.subtuneTitle = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);

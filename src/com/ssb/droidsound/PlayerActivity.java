@@ -413,7 +413,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		PreferenceManager.setDefaultValues(this, R.layout.preferences, false);
-		DroidSoundPlugin.setContext(getApplicationContext());
 
 		Intent intent = getIntent();
 		Log.i(TAG, "PlayerActivity launched to handle: %s (data=%s)", intent.getAction(), intent.getDataString());

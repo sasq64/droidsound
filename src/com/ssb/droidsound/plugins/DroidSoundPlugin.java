@@ -1,24 +1,21 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 
-import com.ssb.droidsound.utils.Log;
-
 public abstract class DroidSoundPlugin {
-	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
 	private static final MessageDigest MD5;
 	private static final Map<String, String> MAIN_TO_AUX = new HashMap<String, String>();
 	static {
@@ -35,6 +32,16 @@ public abstract class DroidSoundPlugin {
 		MAIN_TO_AUX.put("JPN", "SMP");
 		MAIN_TO_AUX.put("DUM", "INS");
 	}
+
+	private static final List<DroidSoundPlugin> PLUGINS = Arrays.asList(
+			new VICEPlugin(),
+			new ModPlugin(),
+			new GMEPlugin(),
+			new HivelyPlugin(),
+			new SC68Plugin(),
+			// Keep last
+			new UADEPlugin()
+	);
 
 	public static final int INFO_TITLE = 0;
 	public static final int INFO_AUTHOR = 1;
@@ -57,30 +64,12 @@ public abstract class DroidSoundPlugin {
 	public static final int OPT_FILTER_BIAS = 6;
 	public static final int OPT_SID_MODEL = 7;
 
-	private static Object lock = new Object();
-
-	private static Context context;
-
-	public static Context getContext() {
-		return context;
-	}
-	public static void setContext(Context ctx) {
-		context = ctx;
+	public synchronized static byte[] calcMD5(byte[] songBuffer) {
+		return MD5.digest(songBuffer);
 	}
 
-	public static List<DroidSoundPlugin> createPluginList() {
-		List<DroidSoundPlugin> pluginList;
-		synchronized (lock) {
-			pluginList = new ArrayList<DroidSoundPlugin>();
-			pluginList.add(new VICEPlugin());
-			pluginList.add(new ModPlugin());
-			pluginList.add(new GMEPlugin());
-			pluginList.add(new HivelyPlugin());
-			pluginList.add(new SC68Plugin());
-			// Keep last
-			pluginList.add(new UADEPlugin());
-		}
-		return pluginList;
+	public static List<DroidSoundPlugin> getPluginList() {
+		return PLUGINS;
 	}
 
 	public boolean loadInfo(String name, byte[] module) {
@@ -93,51 +82,22 @@ public abstract class DroidSoundPlugin {
 		return load(name, songBuffer);
 	}
 
-	public synchronized static byte[] calcMD5(byte[] songBuffer) {
-		return MD5.digest(songBuffer);
-	}
-
 	public boolean load(File file) throws IOException {
-		Log.d(TAG, "PLUGIN LOAD FILE");
-		int l = (int)file.length();
-		byte[] songBuffer = new byte[l];
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
+		byte[] songBuffer = new byte[(int) file.length()];
+		DataInputStream fs = new DataInputStream(new FileInputStream(file));
+		fs.readFully(songBuffer);
+		fs.close();
 		calcMD5(songBuffer);
 		return load(file.getName(), songBuffer);
 	}
 
 	public abstract void unload();
 
-	public static String getExt(String name) {
-		String ext = "";
-		int dot = name.lastIndexOf('.');
-		if(dot > 0) {
-			ext = name.substring(dot);
-			char c = 'X';
-			int e = 0;
-			while(e < ext.length() && Character.isLetterOrDigit(c)) {
-				e++;
-				if(e == ext.length())
-						break;
-				c = ext.charAt(e);
-			}
-			ext = ext.substring(0,e);
-		}
-		return ext;
-	}
-
-
-	public boolean canHandle(String name) {
-		return canHandleExt(getExt(name));
-	}
-
-	public boolean canHandleExt(String ext) { return false; }
+	public abstract boolean canHandle(String name);
 
 	public abstract boolean load(String name, byte[] module);
 
-	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	public abstract int getSoundData(short [] dest, int size);
+	public abstract int getSoundData(short[] dest, int size);
 
 	public boolean seekTo(int msec) {
 		return false;
@@ -182,7 +142,7 @@ public abstract class DroidSoundPlugin {
 	public abstract void setOption(String string, Object val);
 
 	public static void setOptions(SharedPreferences prefs) {
-		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
+		List<DroidSoundPlugin> list = DroidSoundPlugin.getPluginList();
 		Map<String, ?> prefsMap = prefs.getAll();
 
 		for (DroidSoundPlugin plugin : list) {
@@ -226,14 +186,5 @@ public abstract class DroidSoundPlugin {
 		return false;
 	}
 
-	public String getVersion() {
-		return "Unknown";
-	}
-
-	public boolean delayedInfo() {
-		return false;
-	}
-
-	public void close() {
-	}
+	public abstract String getVersion();
 }

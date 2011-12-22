@@ -8,10 +8,11 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
-import android.content.Context;
 import android.os.Environment;
 
+import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
@@ -104,7 +105,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 				File viceDir = new File(dataDir, "VICE");
 				if (! viceDir.exists()) {
-					Unzipper.unzipAsset(getContext(), "vice.zip", dataDir);
+					Unzipper.unzipAsset("vice.zip", dataDir);
 				}
 
 				System.loadLibrary("vice");
@@ -219,7 +220,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 			dest.put((byte) 2);
 		}
 
-		return calcMD5(ByteBuffer.wrap(dest.array(), 0, dest.position()).array());
+		return calcMD5(Arrays.copyOf(dest.array(), dest.position()));
 	}
 
 	private void findLength(byte[] module) {
@@ -227,14 +228,13 @@ public class VICEPlugin extends DroidSoundPlugin {
 			songLengths[i] = 60*60*1000;
 		}
 
-		Context context = getContext();
 		if (mainHash == null) {
 			try {
-				InputStream is = context.getAssets().open("songlengths.dat");
+				InputStream is = Application.getAssetManager().open("songlengths.dat");
 				if(is != null) {
 					DataInputStream dis = new DataInputStream(is);
 					hashLen = dis.readInt();
-					mainHash = new byte [hashLen * 6];
+					mainHash = new byte[hashLen * 6];
 					dis.read(mainHash);
 					int l = is.available()/2;
 					Log.d(TAG, "We have %d lengths and %d hashes", l, hashLen);
@@ -331,8 +331,9 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean canHandleExt(String ext) {
-		return ext.equals(".SID") || ext.equals(".PRG") || ext.equals(".PSID");
+	public boolean canHandle(String name) {
+		name = name.toUpperCase();
+		return name.endsWith(".SID") || name.endsWith(".PRG") || name.endsWith(".PSID");
 	}
 
 
