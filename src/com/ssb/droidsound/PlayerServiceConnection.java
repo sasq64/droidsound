@@ -76,7 +76,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 		return mService.getSongInfo();
 	}
 
-	public boolean dumpWav(String modName, String destFile, int length, int flags) {
-		return mService.dumpWav(modName, destFile, length, flags);
+	public boolean dumpWav(String modName, String destFile, int length) {
+		return mService.dumpWav(modName, destFile, length);
 	}
 }

@@ -10,7 +10,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Bundle;
@@ -283,8 +282,14 @@ public class PlayerService extends Service {
 	public void onCreate() {
 		super.onCreate();
 
-        AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-		player = new Player(audioManager, mHandler, getApplicationContext());
+		/* Acquire our temporary folder */
+		File tmpDir = getDir("tmp", Context.MODE_PRIVATE);
+		for (File f : tmpDir.listFiles()) {
+			if (! f.getName().startsWith(".")) {
+				f.delete();
+			}
+		}
+		player = new Player(tmpDir, mHandler, getApplicationContext());
 		info = new Object[20];
 
 		phoneStateListener = new PhoneStateListener() {
@@ -576,13 +581,11 @@ public class PlayerService extends Service {
 			return currentSongInfo.details;
 		}
 
-		public boolean dumpWav(String modName, String destFile, int length, int flags) {
+		public boolean dumpWav(String modName, String destFile, int length) {
 			createThread();
 			info[SONG_FILENAME] = modName;
 			SongFile song = new SongFile(modName);
-			//beforePlay(song.getName());
-			player.dumpWav(song, destFile, length, flags);
-
+			player.dumpWav(song, destFile, length);
 			return false;
 		}
 	}

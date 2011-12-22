@@ -2,7 +2,6 @@ package com.ssb.droidsound.plugins;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashSet;
@@ -86,7 +85,6 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return false;
 	}
 
-
 	@Override
 	public String getBaseName(String name) {
 		name = name.substring(name.lastIndexOf('/')+1);
@@ -104,6 +102,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 			}
 			return name.substring(0, x);
 		}
+
 		return name;
 	}
 
@@ -141,30 +140,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module) {
-		try {
-			File file;
-			int dot = name.indexOf('.');
-			int lastDot = name.lastIndexOf('.');
-			if(dot == -1) {
-				file = File.createTempFile(name, "");
-			}
-			else {
-				file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
-			}
-
-			FileOutputStream fo = new FileOutputStream(file);
-			fo.write(module);
-			fo.close();
-
-			boolean rc = load(file);
-			file.delete();
-			return rc;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+	protected boolean load(String name, byte[] module) {
+		throw new RuntimeException("This method should not be called. (See overridden load())");
 	}
 
 	@Override

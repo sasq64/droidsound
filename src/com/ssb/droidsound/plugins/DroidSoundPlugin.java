@@ -4,7 +4,6 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -76,12 +75,6 @@ public abstract class DroidSoundPlugin {
 		return load(name, module);
 	}
 
-	public boolean load(String name, InputStream is, int size) throws IOException {
-		byte[] songBuffer = new byte[size];
-		is.read(songBuffer);
-		return load(name, songBuffer);
-	}
-
 	public boolean load(File file) throws IOException {
 		byte[] songBuffer = new byte[(int) file.length()];
 		DataInputStream fs = new DataInputStream(new FileInputStream(file));
@@ -95,7 +88,7 @@ public abstract class DroidSoundPlugin {
 
 	public abstract boolean canHandle(String name);
 
-	public abstract boolean load(String name, byte[] module);
+	protected abstract boolean load(String name, byte[] module);
 
 	public abstract int getSoundData(short[] dest, int size);
 

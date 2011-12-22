@@ -379,7 +379,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module) {
+	protected boolean load(String name, byte[] module) {
 		currentTune = 0;
 		songInfo = null;
 		int type = -1;

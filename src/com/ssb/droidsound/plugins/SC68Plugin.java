@@ -44,7 +44,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module) {
+	protected boolean load(String name, byte[] module) {
 		currentSong = N_load(module, module.length);
 		return currentSong != 0;
 	}

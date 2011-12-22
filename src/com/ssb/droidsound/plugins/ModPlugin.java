@@ -29,7 +29,7 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module) {
+	protected boolean load(String name, byte[] module) {
 		currentSong = N_load(module, module.length);
 		if (currentSong != 0) {
 			author = guessAuthor(N_getStringInfo(currentSong, 100));

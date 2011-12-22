@@ -197,7 +197,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 
 	private TextView toneLenText;
 
-	protected boolean toneHQ = false;
 	protected String toneName = "Droidsound Ringtone";
 	protected boolean toneSet = true;
 
@@ -1306,14 +1305,6 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 			toneNameText = (TextView) dialog.findViewById(R.id.tone_name);
 			toneNameText.setText(toneName);
 
-			CheckBox hqCheck = (CheckBox) dialog.findViewById(R.id.tone_hq);
-			hqCheck.setChecked(toneHQ);
-			hqCheck.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					toneHQ = isChecked;
-				}
-			});
 			CheckBox setCheck = (CheckBox) dialog.findViewById(R.id.tone_set);
 			setCheck.setChecked(toneSet);
 			setCheck.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
@@ -1356,10 +1347,7 @@ public class PlayerActivity extends Activity implements PlayerService.IPlayerSer
 					dumpingWav = tl * 10000;//30000;
 					toneName = toneNameText.getText().toString();
 					file = new File(file, toneName + ".wav");
-
-					int flags = 0;
-					if(toneHQ) flags |= 2;
-					player.dumpWav(operationSong.getPath(), file.getPath(), dumpingWav, flags);
+					player.dumpWav(operationSong.getPath(), file.getPath(), dumpingWav);
 				}
 			});
 			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {

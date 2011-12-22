@@ -48,7 +48,7 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module) {
+	protected boolean load(String name, byte[] module) {
 		songRef = N_load(module, module.length);
 		return songRef != 0;
 	}

@@ -28,8 +28,6 @@
 		<LinearLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
 		 android:orientation="horizontal" >
 		 <CheckBox  android:layout_width="wrap_content" android:layout_height="fill_parent" android:layout_weight="1" 
-		 android:id="@+id/tone_hq" android:text="HQ"  android:gravity="left|center_vertical" />
-		 <CheckBox  android:layout_width="wrap_content" android:layout_height="fill_parent" android:layout_weight="1" 
 		 android:id="@+id/tone_set" android:text="Set Default" android:gravity="left|center_vertical" />
 		 </LinearLayout>
 	</LinearLayout>
