@@ -136,7 +136,7 @@ void UnpackMDLTrack(MODCOMMAND *pat, UINT nChannels, UINT nRows, UINT nTrack, co
 				cmd.instr = (xx & 0x02) ? lpTracks[pos++] : 0;
 				cmd.volcmd = cmd.vol = 0;
 				cmd.command = cmd.param = 0;
-				if ((cmd.note < 120-12) && (cmd.note)) cmd.note += 12;
+				if ((cmd.note < NOTE_MAX-12) && (cmd.note)) cmd.note += 12;
 				UINT volume = (xx & 0x04) ? lpTracks[pos++] : 0;
 				UINT commands = (xx & 0x08) ? lpTracks[pos++] : 0;
 				UINT command1 = commands & 0x0F;
@@ -181,8 +181,8 @@ BOOL CSoundFile::ReadMDL(const BYTE *lpStream, DWORD dwMemLength)
 {
 	DWORD dwMemPos, dwPos, blocklen, dwTrackPos;
 	const MDLSONGHEADER *pmsh = (const MDLSONGHEADER *)lpStream;
-	MDLINFOBLOCK *pmib;
-	MDLPATTERNDATA *pmpd;
+	const MDLINFOBLOCK *pmib;
+	const MDLPATTERNDATA *pmpd;
 	UINT i,j, norders = 0, npatterns = 0, ntracks = 0;
 	UINT ninstruments = 0, nsamples = 0;
 	WORD block;
@@ -242,7 +242,7 @@ BOOL CSoundFile::ReadMDL(const BYTE *lpStream, DWORD dwMemLength)
 		case 0x454D:
 			if (blocklen)
 			{
-				if (m_lpszSongComments) delete m_lpszSongComments;
+				if (m_lpszSongComments) delete [] m_lpszSongComments;
 				m_lpszSongComments = new char[blocklen];
 				if (m_lpszSongComments)
 				{
@@ -297,7 +297,7 @@ BOOL CSoundFile::ReadMDL(const BYTE *lpStream, DWORD dwMemLength)
 					for (j=0; j<lpStream[dwPos+1]; j++)
 					{
 						const BYTE *ps = lpStream+dwPos+34+14*j;
-						while ((note < (UINT)(ps[1]+12)) && (note < 120))
+						while ((note < (UINT)(ps[1]+12)) && (note < NOTE_MAX))
 						{
 							penv->NoteMap[note] = note+1;
 							if (ps[0] < MAX_SAMPLES)
@@ -395,7 +395,7 @@ BOOL CSoundFile::ReadMDL(const BYTE *lpStream, DWORD dwMemLength)
 				{
 					DWORD dwLen = *((DWORD *)(lpStream+dwPos));
 					dwPos += 4;
-					if ((dwPos+dwLen <= dwMemLength) && (dwLen > 4))
+					if ((dwLen < dwMemLength) && (dwLen <= dwMemLength - dwPos) && (dwLen > 4))
 					{
 						flags = (pins->uFlags & CHN_16BIT) ? RS_MDL16 : RS_MDL8;
 						ReadSample(pins, flags, (LPSTR)(lpStream+dwPos), dwLen);

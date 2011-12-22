@@ -7,13 +7,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*
- * Class:     com_ssb_droidsound_plugins_ModPlugin
- * Method:    N_canHandle
- * Signature: (Ljava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandle
-  (JNIEnv *, jobject, jstring);
 
 /*
  * Class:     com_ssb_droidsound_plugins_ModPlugin
@@ -21,14 +14,6 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandl
  * Signature: ([BI)J
  */
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load
-  (JNIEnv *, jobject, jbyteArray, jint);
-
-/*
- * Class:     com_ssb_droidsound_plugins_ModPlugin
- * Method:    N_loadInfo
- * Signature: ([BI)J
- */
-JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1loadInfo
   (JNIEnv *, jobject, jbyteArray, jint);
 
 /*

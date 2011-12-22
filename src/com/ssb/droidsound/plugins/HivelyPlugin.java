@@ -1,5 +1,6 @@
 package com.ssb.droidsound.plugins;
 
+
 public class HivelyPlugin extends DroidSoundPlugin {
 	static {
 		System.loadLibrary("hively");
@@ -8,7 +9,7 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	private long songRef;
 
 	@Override
-	public void setOption(String string, String val) {
+	public void setOption(String string, Object val) {
 		/* no options */
 	}
 

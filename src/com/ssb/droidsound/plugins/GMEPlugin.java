@@ -29,7 +29,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void setOption(String string, String val) {
+	public void setOption(String string, Object val) {
 		/* No options */
 	}
 

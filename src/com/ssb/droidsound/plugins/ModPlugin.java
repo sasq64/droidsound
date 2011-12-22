@@ -265,7 +265,7 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void setOption(String string, String val) {
+	public void setOption(String string, Object val) {
 		/* No options */
 	}
 
@@ -274,7 +274,6 @@ public class ModPlugin extends DroidSoundPlugin {
 		return "libmodplug v0.8.?";
 	}
 
-	native private boolean N_canHandle(String name);
 	native private long N_load(byte [] module, int size);
 	native private long N_loadInfo(byte [] module, int size);
 	native private void N_unload(long song);

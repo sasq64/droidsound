@@ -237,7 +237,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void setOption(String string, String val) {
+	public void setOption(String string, Object val) {
 		/* No options */
 	}
 

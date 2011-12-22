@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -169,12 +168,6 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public String getBaseName(String fname) {
-
-		if(fname.startsWith("http:/")) {
-			fname = URLDecoder.decode(fname);
-		}
-
-
 		int slash = fname.lastIndexOf('/');
 		if(slash >= 0) {
 			fname = fname.substring(slash+1);
@@ -186,7 +179,7 @@ public abstract class DroidSoundPlugin {
 		return fname;
 	}
 
-	public abstract void setOption(String string, String val);
+	public abstract void setOption(String string, Object val);
 
 	public static void setOptions(SharedPreferences prefs) {
 		List<DroidSoundPlugin> list = DroidSoundPlugin.createPluginList();
@@ -203,7 +196,7 @@ public abstract class DroidSoundPlugin {
 
 				if (k.substring(0, dot).equals(pluginClass)) {
 					Object val = entry.getValue();
-					plugin.setOption(k.substring(dot+1), String.valueOf(val));
+					plugin.setOption(k.substring(dot+1), val);
 				}
 			}
 		}

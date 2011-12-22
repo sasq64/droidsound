@@ -52,7 +52,7 @@ BOOL CSoundFile::ReadAMS(LPCBYTE lpStream, DWORD dwMemLength)
 	
 	if ((!lpStream) || (dwMemLength < 1024)) return FALSE;
 	if ((pfh->verhi != 0x01) || (strncmp(pfh->szHeader, "Extreme", 7))
-	 || (!pfh->patterns) || (!pfh->orders) || (!pfh->samples) || (pfh->samples > MAX_SAMPLES)
+	 || (!pfh->patterns) || (!pfh->orders) || (!pfh->samples) || (pfh->samples >= MAX_SAMPLES)
 	 || (pfh->patterns > MAX_PATTERNS) || (pfh->orders > MAX_ORDERS))
 	{
 		return ReadAMS2(lpStream, dwMemLength);
@@ -277,7 +277,7 @@ typedef struct AMS2SONGHEADER
 typedef struct AMS2INSTRUMENT
 {
 	BYTE samples;
-	BYTE notemap[120];
+	BYTE notemap[NOTE_MAX];
 } AMS2INSTRUMENT;
 
 typedef struct AMS2ENVELOPE
@@ -310,7 +310,7 @@ typedef struct AMS2SAMPLE
 BOOL CSoundFile::ReadAMS2(LPCBYTE lpStream, DWORD dwMemLength)
 //------------------------------------------------------------
 {
-	AMS2FILEHEADER *pfh = (AMS2FILEHEADER *)lpStream;
+	const AMS2FILEHEADER *pfh = (AMS2FILEHEADER *)lpStream;
 	AMS2SONGHEADER *psh;
 	DWORD dwMemPos;
 	BYTE smpmap[16];
@@ -321,7 +321,7 @@ BOOL CSoundFile::ReadAMS2(LPCBYTE lpStream, DWORD dwMemLength)
 	dwMemPos = pfh->titlelen + 8;
 	psh = (AMS2SONGHEADER *)(lpStream + dwMemPos);
 	if (((psh->version & 0xFF00) != 0x0200) || (!psh->instruments)
-	 || (psh->instruments > MAX_INSTRUMENTS) || (!psh->patterns) || (!psh->orders)) return FALSE;
+	 || (psh->instruments >= MAX_INSTRUMENTS) || (!psh->patterns) || (!psh->orders)) return FALSE;
 	dwMemPos += sizeof(AMS2SONGHEADER);
 	if (pfh->titlelen)
 	{
@@ -370,7 +370,7 @@ BOOL CSoundFile::ReadAMS2(LPCBYTE lpStream, DWORD dwMemLength)
 			memcpy(penv->name, pinsname, insnamelen);
 			penv->name[insnamelen] = 0;
 		}
-		for (UINT inotemap=0; inotemap<120; inotemap++)
+		for (UINT inotemap=0; inotemap<NOTE_MAX; inotemap++)
 		{
 			penv->NoteMap[inotemap] = inotemap+1;
 			penv->Keyboard[inotemap] = smpmap[pins->notemap[inotemap] & 0x0F];
@@ -623,6 +623,6 @@ void AMSUnpack(const char *psrc, UINT inputlen, char *pdest, UINT dmax, char pac
 			pdest[i] = old;
 		}
 	}
-	delete amstmp;
+	delete[] amstmp;
 }
 

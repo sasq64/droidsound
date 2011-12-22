@@ -66,7 +66,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 					}
 				}
 
-				setOption("resampling", "2");
+				setOption("resampling", 2);
 				inited = true;
 			}
 		}
@@ -208,21 +208,21 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void setOption(String o, String val) {
+	public void setOption(String o, Object val) {
 		final int k;
 		final int v;
 		if (o.equals("filter")) {
 			k = OPT_FILTER;
-			v = Boolean.valueOf(val) ? 1 : 0;
+			v = (Boolean) val ? 1 : 0;
 		} else if (o.equals("panning")) {
 			k = OPT_PANNING;
-			v = Integer.valueOf(val.split(" ")[0]) / 25;
+			v = Integer.valueOf(((String) val).split(" ")[0]) / 25;
 		} else if (o.equals("ntsc")) {
 			k = OPT_NTSC;
-			v = Boolean.valueOf(val) ? 1 : 0;
+			v = (Boolean) val ? 1 : 0;
 		} else if (o.equals("resampling")) {
 			k = OPT_RESAMPLING;
-			v = Integer.valueOf(val);
+			v = (Integer) val;
 		} else {
 			throw new RuntimeException("Unknown option: " + o);
 		}

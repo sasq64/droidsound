@@ -116,23 +116,25 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void setOption(String opt, String val) {
+	public void setOption(String opt, Object val) {
+		/* These X.valueOf(String.valueOf(...)) are kinda fucked up.
+		 * These are caused by android preferences giving us logically X-valued data in String form. */
 		final int k, v;
 		if (opt.equals("filter")) {
 			k = OPT_FILTER;
-			v = Boolean.valueOf(val) ? 1 : 0;
+			v = (Boolean) val ? 1 : 0;
 		} else if (opt.equals("ntsc")) {
 			k = OPT_NTSC;
-			v = Integer.valueOf(val);
+			v = Boolean.valueOf(String.valueOf(val)) ? 1 : 0;
 		} else if (opt.equals("resampling")) {
 			k = OPT_RESAMPLING;
-			v = Integer.valueOf(val);
+			v = Integer.valueOf(String.valueOf(val));
 		} else if (opt.equals("filter_bias")) {
 			k = OPT_FILTER_BIAS;
-			v = Integer.valueOf(val);
+			v = Integer.valueOf(String.valueOf(val));
 		} else if (opt.equals("sid_model")) {
 			k = OPT_SID_MODEL;
-			v = Integer.valueOf(val);
+			v = Integer.valueOf(String.valueOf(val));
 		} else {
 			throw new RuntimeException("Unknown option: " + opt);
 		}
