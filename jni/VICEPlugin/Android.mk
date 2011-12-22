@@ -78,7 +78,6 @@ LOCAL_SRC_FILES := \
         vice/c64/c64pla.c \
         vice/c64/c64rom.c \
         vice/c64/c64romset.c \
-        vice/c64/c64rsuser.c \
         vice/c64/c64sound.c \
         vice/c64/c64video.c \
         vice/c64/patchrom.c \
@@ -107,8 +106,6 @@ LOCAL_SRC_FILES := \
 	vice/raster/raster-sprite.c \
 	vice/raster/raster-sprite-cache.c \
 	vice/raster/raster-sprite-status.c \
-	vice/rs232drv/rs232drv.c \
-	vice/rs232drv/rsuser.c \
 	vice/sid/fastsid.c \
 	vice/sid/sid.c \
 	vice/sid/sid-cmdline-options.c \
