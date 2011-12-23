@@ -36,10 +36,9 @@ public abstract class DroidSoundPlugin {
 			new VICEPlugin(),
 			new ModPlugin(),
 			new GMEPlugin(),
-			new HivelyPlugin(),
 			new SC68Plugin(),
-			// Keep last
-			new UADEPlugin()
+			new UADEPlugin(),
+			new HivelyPlugin()
 	);
 
 	public static final int INFO_TITLE = 0;
