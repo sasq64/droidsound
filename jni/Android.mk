@@ -24,4 +24,3 @@ include $(X)/SC68Plugin/Android.mk
 include $(X)/VICEPlugin/Android.mk
 include $(X)/UADEPlugin/Android.mk
 include $(X)/HivelyPlugin/Android.mk
-include $(X)/ID3Tag/Android.mk
