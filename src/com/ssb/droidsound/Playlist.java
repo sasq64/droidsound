@@ -61,7 +61,7 @@ public class Playlist {
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(plistFile));
 			String line;
-			while (null == (line = reader.readLine())) {
+			while (null != (line = reader.readLine())) {
 				lines.add(line);
 			}
 			reader.close();

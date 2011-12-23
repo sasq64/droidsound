@@ -53,7 +53,6 @@ public abstract class DroidSoundPlugin {
 	public static final int INFO_SUBTUNE_TITLE = 8;
 	public static final int INFO_SUBTUNE_AUTHOR = 9;
 	public static final int INFO_SUBTUNE_NO = 10;
-	public static final int INFO_DETAILS_CHANGED = 15;
 
 	public static final int OPT_FILTER = 1;
 	public static final int OPT_RESAMPLING = 2;
@@ -109,11 +108,12 @@ public abstract class DroidSoundPlugin {
 	// "Channels" - Number of channels
 	// "Copyright" - Same as INFO_COPYRIGHT
 	// "Game" - Same as INFO_GAME
-	public String [] getDetailedInfo() {
+	public String[] getDetailedInfo() {
 		return null;
 	}
 
 	public abstract String getStringInfo(int what);
+
 	public abstract int getIntInfo( int what);
 
 	public boolean isSilent() {

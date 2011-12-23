@@ -28,8 +28,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 		int archiveColor = 0xFFFFA080;
 		int dirColor = 0xFFA0A080;
 
-
-		for(int i=0; i<attrs.getAttributeCount(); i++) {
+		for (int i=0; i<attrs.getAttributeCount(); i++) {
 			String name = attrs.getAttributeName(i);
 			if(name.equals("dirColor")) {
 				dirColor = attrs.getAttributeIntValue(i, -1);

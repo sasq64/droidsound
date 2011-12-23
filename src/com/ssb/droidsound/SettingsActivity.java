@@ -6,7 +6,6 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnMultiChoiceClickListener;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -63,15 +62,6 @@ public class SettingsActivity extends PreferenceActivity {
 			public boolean onPreferenceClick(Preference preference) {
 				Log.d(TAG, "Rescan database");
 				showDialog(R.string.scan_db);
-				return true;
-			}
-		});
-
-		pref = findPreference("help_pref");
-		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				startActivity(new Intent(SettingsActivity.this, HelpActivity.class));
 				return true;
 			}
 		});
