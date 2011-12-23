@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -20,55 +19,36 @@ import com.ssb.droidsound.utils.Log;
 
 public class Playlist {
 	private static final String TAG = Playlist.class.getSimpleName();
-
-
-	private static Map<File, Playlist> allPlaylists = new HashMap<File, Playlist>();
-
-	private static Object lock = new Object();
-
+	private static Map<File, Playlist> PLAY_LISTS = new HashMap<File, Playlist>();
 
 	private MyCursor cursor;
 	private final File plistFile;
-	private List<String> lines;
+	private final List<String> lines;
 
 	private boolean changed;
 
 	private String title;
-	private boolean written;
-	private long fileModified;
 
 	public static Playlist getPlaylist(File file) {
-
-		Playlist pl = null;
-		synchronized (lock) {
-			pl = allPlaylists.get(file);
-			if(pl == null) {
-				Log.d(TAG, "Creating new playlist " + file.getPath());
-				pl = new Playlist(file);
-				allPlaylists.put(file, pl);
-			} else {
-				Log.d(TAG, "Found playlist " + file.getPath());
+		synchronized (PLAY_LISTS) {
+			if (! PLAY_LISTS.containsKey(file)) {
+				PLAY_LISTS.put(file, new Playlist(file));
 			}
+			return PLAY_LISTS.get(file);
 		}
-		return pl;
 	}
 
 	public static void flushAll() {
-		synchronized (lock) {
-			for(File f : allPlaylists.keySet()) {
-				Playlist pl = allPlaylists.get(f);
+		synchronized (PLAY_LISTS) {
+			for (Playlist pl : PLAY_LISTS.values()) {
 				pl.flush();
 			}
 		}
 	}
 
-
-
-	 private Playlist(File file) {
-
+	private Playlist(File file) {
 		plistFile = file;
 		changed = false;
-		written = false;
 		Log.d(TAG, "Opening playlist " + file.getPath());
 
 		title = file.getName();
@@ -76,34 +56,21 @@ public class Playlist {
 		if(dot > 0) {
 			title = title.substring(0, dot);
 		}
-		readLines();
-	}
 
-	 private void readLines() {
-		BufferedReader reader;
 		lines = new ArrayList<String>();
 		try {
-			reader = new BufferedReader(new FileReader(plistFile));
-			String line = reader.readLine();
-			while(line != null) {
-				//Log.d(TAG, line);
+			BufferedReader reader = new BufferedReader(new FileReader(plistFile));
+			String line;
+			while (null == (line = reader.readLine())) {
 				lines.add(line);
-				line = reader.readLine();
 			}
 			reader.close();
-
-			fileModified = plistFile.lastModified();
-
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	 }
 
-	 private class MyCursor extends AbstractCursor {
+	 private static class MyCursor extends AbstractCursor {
 		private final List<SongFile> songs;
 		private int position;
 		private final String[] columnNames;
@@ -118,104 +85,85 @@ public class Playlist {
 		public MyCursor(Playlist pl) {
 			songs = pl.getSongs();
 			columnNames = new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" };
-			currentRow = new String [4];
+			currentRow = new String[4];
 		}
 
 		@Override
 		public boolean onMove(int oldPosition, int newPosition) {
-
 			position = newPosition;
 			currentSong = songs.get(position);
 
 			String path = currentSong.getPath();
 			int slash = path.lastIndexOf('/');
 			String fname = path.substring(slash+1);
-			if(slash < 0) path = "";
-			else
-			path = path.substring(0, slash);
+			if (slash < 0) {
+				path = "";
+			} else {
+				path = path.substring(0, slash);
+			}
 
 			currentRow[COL_FILENAME] = fname;
 			currentRow[COL_PATH] = path;
 			currentRow[COL_TITLE] = currentSong.getTitle();
 			currentRow[COL_SUBTITLE] = currentSong.getComposer();
 			return true;
-			//super.onMove(oldPosition, newPosition);
 		}
 
 		@Override
 		public String[] getColumnNames() {
-			// TODO Auto-generated method stub
 			return columnNames;
 		}
 
 		@Override
 		public int getCount() {
-			// TODO Auto-generated method stub
 			return songs.size();
 		}
 
 		@Override
 		public double getDouble(int column) {
-			// TODO Auto-generated method stub
-			return 0;
+			throw new RuntimeException("No double columns");
 		}
 
 		@Override
 		public float getFloat(int column) {
-			// TODO Auto-generated method stub
-			return 0;
+			throw new RuntimeException("No float columns");
 		}
 
 		@Override
 		public int getInt(int column) {
-			// TODO Auto-generated method stub
-			return 0;
+			throw new RuntimeException("No int columns");
 		}
 
 		@Override
 		public long getLong(int column) {
-			// TODO Auto-generated method stub
-			return 0;
+			throw new RuntimeException("No long columns");
 		}
 
 		@Override
 		public short getShort(int column) {
-			// TODO Auto-generated method stub
-			return 0;
+			throw new RuntimeException("No short columns");
 		}
 
 		@Override
 		public String getString(int column) {
-
 			return currentRow[column];
-
 		}
 
 		@Override
 		public boolean isNull(int column) {
-			// TODO Auto-generated method stub
-			return false;
+			return currentRow[column] == null;
 		}
 	 };
 
-
-
-	 synchronized public Cursor getCursor() {
-
-		if(cursor == null) {
-
-			Log.d(TAG, "Creating cursor for " + plistFile.getPath());
-
-			cursor  = new MyCursor(this); //new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" });
-
+	 public synchronized Cursor getCursor() {
+		if (cursor == null) {
+			cursor  = new MyCursor(this);
 		}
 		cursor.moveToPosition(-1);
 		return cursor;
 	}
 
-
-
-	private String fileToLine(SongFile songFile) throws IOException {
+	private String serialize(SongFile songFile) throws IOException {
 		File f = songFile.getFile();
 		byte[] module = new byte[(int) f.length()];
 		DataInputStream dis = new DataInputStream(new FileInputStream(f));
@@ -242,28 +190,25 @@ public class Playlist {
 	}
 
 	synchronized public void add(SongFile songFile) throws IOException {
-		if(songFile.isDirectory()) {
-			SongFile [] files = songFile.listSongFiles();
-			for(SongFile f : files) {
-				lines.add(fileToLine(f));
+		if (songFile.isDirectory()) {
+			for (SongFile f : songFile.listSongFiles()) {
+				lines.add(serialize(f));
 			}
 		} else {
-			Log.d(TAG, "Adding " + songFile.getPath());
-			lines.add(fileToLine(songFile));
+			lines.add(serialize(songFile));
 		}
 		cursor = null;
 		changed = true;
 	}
 
 	public void insert(int position, SongFile songFile) throws IOException {
-		lines.add(position, fileToLine(songFile));
+		lines.add(position, serialize(songFile));
 		changed = true;
 		cursor = null;
 	}
 
-	synchronized public void add(Cursor c, int subtune, String tuneTitle) {
-
-		while(true) {
+	public synchronized void add(Cursor c, int subtune, String tuneTitle) {
+		while (true) {
 			String title = c.getString(c.getColumnIndex("TITLE"));
 			String composer = c.getString(c.getColumnIndex("COMPOSER"));
 			String filename = c.getString(c.getColumnIndex("FILENAME"));
@@ -271,30 +216,26 @@ public class Playlist {
 
 			File f = new File(path, filename);
 			String line = f.getPath();
-			if(subtune >= 0) {
-
-				if(tuneTitle != null) {
+			if (subtune >= 0) {
+				if (tuneTitle != null) {
 					title = tuneTitle;
-				} else
-				if(title != null) {
+				} else if (title != null) {
 					title = String.format("%s #%02d", title, subtune+1);
 				}
 
-				line += (";" + subtune);
+				line += ";" + subtune;
 
 			}
 
-			if(title != null) {
+			if (title != null) {
 				line = line + "\t" + title;
-				if(composer != null) {
+				if (composer != null) {
 					line = line + "\t" + composer;
 				}
 			}
 
-			Log.d(TAG, "Adding ## " + line);
-
 			lines.add(line);
-			if(!c.moveToNext())
+			if (! c.moveToNext())
 				break;
 		}
 
@@ -302,58 +243,25 @@ public class Playlist {
 		cursor = null;
 	}
 
-
-	synchronized void remove(File file) {
-
-		String removeMe = null;
-		for(String line : lines) {
-			String cols [] = line.split("\t");
-			//int sc = cols[0].lastIndexOf(';');
-			//if(sc >= 0) {
-			//	cols[0] = cols[0].substring(0, sc);
-			//}
-			if(cols != null && cols[0] != null) {
-				if(file.getPath().equals(cols[0])) {
-					Log.d(TAG, "Removing %s", cols[0]);
-					removeMe = line;
-				}
-			}
-		}
-		if(removeMe != null) {
-			lines.remove(removeMe);
-			Log.d(TAG, "Removing " + removeMe);
-			cursor = null;
-			changed = true;
-		}
-	}
-
 	public synchronized void flush() {
-		if(!changed) {
-			//Log.d(TAG, "Not flushing unchanged " + plistFile.getPath());
+		if (! changed) {
 			return;
 		}
-
 		changed = false;
-		written = true;
-
-		Log.d(TAG, "Flushing " + plistFile.getPath());
 
 		try {
 			FileWriter writer = new FileWriter(plistFile);
-			for(String line : lines) {
+			for (String line : lines) {
 				writer.write(line + "\n");
 			}
 			writer.close();
-
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
 	}
 
-	public  synchronized void clear() {
-		Log.d(TAG, "Clearing playlist %s with %d entries", plistFile.getPath(), lines.size());
-		lines = new ArrayList<String>();
+	public synchronized void clear() {
+		lines.clear();
 		cursor = null;
 		changed = true;
 	}
@@ -365,43 +273,7 @@ public class Playlist {
 	synchronized public String getTitle() {
 		return title;
 	}
-	/*
-	public List<String> getLines() {
-		return lines;
-	}
 
-	public void addLine(String line) {
-		lines.add(line);
-		cursor = null;
-		changed = true;
-	}*/
-
-	/*
-	synchronized public List<File> getFiles() {
-		List<File> files = new ArrayList<File>();
-		for(String line : lines) {
-			if(line.length() > 0) {
-				int tab = line.indexOf('\t');
-				if(tab > 0) {
-					//int sc = line.indexOf(';');
-					//if(sc >= 0 && sc < tab) {
-					//	tab = sc;
-					//}
-					line = new File(line.substring(0, tab)).getPath();
-				}
-				if(line.charAt(0) == '$') {
-					int slash = line.indexOf('/');
-					String var =line.substring(1, slash);
-					line = "/sdcard/MODS/C64Music.zip/C64Music" + line.substring(slash);
-				}
-
-				files.add(new File(line));
-
-			}
-		}
-		return files;
-	}
-	*/
 	public boolean contains(SongFile songFile) {
 		for(String line : lines) {
 			if(line.length() > 0) {
@@ -417,33 +289,6 @@ public class Playlist {
 		return false;
 	}
 
-
-	@Override
-	public int hashCode() {
-
-		if(!written && plistFile.lastModified() > fileModified) {
-			// Changed in another process
-			Log.d(TAG, "Rereading Playlst");
-			readLines();
-		}
-
-		int hash = lines.size();
-		for(String line : lines) {
-			hash ^= line.hashCode();
-		}
-		return hash;
-	}
-
-	public void move(int from, int to) {
-
-		String fromLine = lines.get(from);
-		lines.add(to, fromLine);
-		if(to < from) from++;
-		lines.remove(from);
-		changed = true;
-		cursor = null;
-	}
-
 	public void remove(int location) {
 		lines.remove(location);
 		changed = true;
@@ -454,11 +299,10 @@ public class Playlist {
 		return new SongFile(lines.get(position));
 	}
 
-
 	public List<SongFile> getSongs() {
 		List<SongFile> songs = new ArrayList<SongFile>();
 
-		for(String line : lines) {
+		for (String line : lines) {
 			songs.add(new SongFile(line));
 		}
 

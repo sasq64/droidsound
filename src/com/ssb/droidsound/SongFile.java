@@ -9,13 +9,9 @@ public class SongFile {
 
 	private File file;
 	private String path;
-	private String prefix;
-	private String suffix;
-	private String midfix;
 	private String zipPath;
 	private String zipName;
 
-	//private String tuneString;
 	private String title;
 	private String composer;
 
@@ -25,9 +21,6 @@ public class SongFile {
 		fileName = s.fileName;
 		file = s.file;
 		path = s.path;
-		prefix = s.prefix;
-		suffix = s.suffix;
-		midfix = s.midfix;
 		zipPath = s.zipPath;
 		zipName = s.zipName;
 		title = s.title;
@@ -82,16 +75,6 @@ public class SongFile {
 			path = "";
 		}
 
-		midfix = fileName;
-		prefix = suffix = "";
-		int firstDot = fileName.indexOf('.');
-		int lastDot = fileName.lastIndexOf('.');
-		if(firstDot > 0) {
-			prefix = fileName.substring(0, firstDot);
-			suffix = fileName.substring(lastDot+1);
-			midfix = fileName.substring(firstDot, lastDot+1);
-		}
-
 		int zip = s[0].toUpperCase().indexOf(".ZIP/");
 		if(zip > 0) {
 			zipPath = s[0].substring(0, zip+4);
@@ -111,14 +94,6 @@ public class SongFile {
 		return composer;
 	}
 
-	public String getPrefix() {
-		return prefix;
-	}
-
-	public String getSuffix() {
-		return suffix;
-	}
-
 	public File getFile() {
 		return file;
 	}
@@ -131,19 +106,9 @@ public class SongFile {
 		return playtime;
 	}
 
-	public void changePrefix(String p) {
-		prefix = p;
-		fileName = prefix + midfix + "suffix";
-	}
-
-	public void changeSuffix(String s) {
-		suffix = s;
-		fileName = prefix + midfix + "suffix";
-	}
-
 	public SongFile(File f, int t, String title) {
 		init(f.getPath());
-		if(subtune < 0) {
+		if (subtune < 0) {
 			subtune = t;
 		}
 		this.title = title;
@@ -151,7 +116,7 @@ public class SongFile {
 
 	public SongFile(String song, int t) {
 		init(song);
-		if(t < 0) {
+		if (t < 0) {
 			subtune = t;
 		}
 	}
@@ -165,8 +130,8 @@ public class SongFile {
 	}
 
 	public String getPath() {
-		if(subtune >= 0) {
-			if(playtime >= 0) {
+		if (subtune >= 0) {
+			if (playtime >= 0) {
 				return path + "/" + fileName + ";" + subtune + ";" + playtime;
 			}
 			return path + "/" + fileName + ";" + subtune;
@@ -188,7 +153,6 @@ public class SongFile {
 	}
 
 	public String getName() {
-		//return file.getName();
 		return fileName;
 	}
 
@@ -209,9 +173,9 @@ public class SongFile {
 	}
 
 	public SongFile[] listSongFiles() {
-		File [] files = file.listFiles();
-		SongFile [] sfiles = new SongFile [files.length];
-		for(int i=0; i<files.length; i++) {
+		File[] files = file.listFiles();
+		SongFile[] sfiles = new SongFile[files.length];
+		for (int i = 0; i < files.length; i ++) {
 			sfiles[i] = new SongFile(files[i]);
 		}
 		return sfiles;
@@ -220,5 +184,4 @@ public class SongFile {
 	public boolean delete() {
 		return file.delete();
 	}
-
 }
