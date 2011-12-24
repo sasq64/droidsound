@@ -1,4 +1,4 @@
-package com.ssb.droidsound;
+package com.ssb.droidsound.utils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

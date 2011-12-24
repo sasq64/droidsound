@@ -9,6 +9,8 @@ import com.ssb.droidsound.utils.Unzipper;
 public class SC68Plugin extends DroidSoundPlugin {
 	private static final String TAG = SC68Plugin.class.getSimpleName();
 	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
+	private static final String[] HWS = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" };
+
 	static {
 		System.loadLibrary("sc68");
 		File pluginDir = Application.getPluginDataDirectory(SC68Plugin.class);
@@ -41,29 +43,20 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	protected boolean load(String name, byte[] module) {
+	public boolean load(String name, byte[] module) {
 		currentSong = N_load(module, module.length);
 		return currentSong != 0;
 	}
 
-	private static final String[] HWS = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" };
-
 	@Override
 	public String[] getDetailedInfo() {
-
-		String[] info = new String[4];
-
 		String replay = getStringInfo(52);
 		String hwname = getStringInfo(51);
 		int hwbits = getIntInfo(50);
-		if(replay == null) replay = "?";
-		if(hwname == null) hwname = "?";
-
-		info[0] = "Format";
-		info[1] = String.format("SC68: %s", replay);
-		info[2] = "Hardware";
-		info[3] = String.format("%s (%s)", hwname, HWS[hwbits]);
-		return info;
+		return new String[] {
+				"Format", String.format("SC68: %s", replay != null ? replay : "?"),
+				"Hardware", String.format("%s (%s)", hwname != null ? hwname : "?", HWS[hwbits])
+		};
 	}
 
 	@Override
@@ -154,8 +147,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public int getSoundData(short[] dest, int size) {
-		return N_getSoundData(currentSong, dest, size);
+	public int getSoundData(short[] dest) {
+		return N_getSoundData(currentSong, dest, dest.length);
 	}
 
 	@Override
@@ -178,7 +171,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	public int getIntInfo(int what) {
-		if(currentSong == 0) {
+		if (currentSong == 0) {
 			return -1;
 		}
 

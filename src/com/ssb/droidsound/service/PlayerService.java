@@ -1,8 +1,15 @@
 package com.ssb.droidsound.service;
 
+import java.io.DataInputStream;
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -10,273 +17,287 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.os.AsyncTask;
 import android.os.Binder;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 
-import com.ssb.droidsound.PlayerActivity;
-import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.R;
-import com.ssb.droidsound.SongFile;
-import com.ssb.droidsound.service.Player.SongInfo;
+import com.ssb.droidsound.activity.PlayerActivity;
+import com.ssb.droidsound.bo.Playlist;
+import com.ssb.droidsound.bo.SongFile;
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.utils.ZipReader;
 
+/**
+ * This service handles the background playback. It works by playlist and file-by-file basis.
+ *
+ * @author alankila
+ */
 public class PlayerService extends Service {
+	enum State { PLAY, PAUSE, STOP; }
+
+	public static final String PLAYBACK_ADVANCING = "com.ssb.droidsound.PLAYING";
 	private static final String TAG = PlayerService.class.getSimpleName();
 
-	public interface IPlayerServiceCallback {
-		void setInitialConfig();
-		void stringChanged(int what, String string);
-		void intChanged(int what, int value);
-	}
+	/**
+	 * This runnable is constructed for playback of one complete song.
+	 * It is expected to start from "blank" native state.
+	 *
+	 * @author alankila
+	 */
+	private class PlayerRunnable extends AsyncTask<Void, Float, Void> {
+		private static final int FREQUENCY = 44100;
+		private static final int BUFSIZE = FREQUENCY * 2;
 
-	public static final int SONG_TITLE = 1;
-	public static final int SONG_AUTHOR = 2;
-	public static final int SONG_COPYRIGHT = 3;
-	public static final int SONG_FORMAT = 5;
+		private final DroidSoundPlugin plugin;
+		private final String f1;
+		private final byte[] data1;
+		private final String f2;
+		private final byte[] data2;
 
-	public static final int SONG_POS = 6;
-	public static final int SONG_FILENAME = 7;
-	public static final int SONG_LENGTH = 8;
-	public static final int SONG_SUBSONG = 9;
-	public static final int SONG_TOTALSONGS = 10;
+		private State stateRequest = State.PAUSE;
+		private int seekRequest = -1;
+		private int subsongRequest = -1;
 
-	public static final int SONG_STATE = 11;
+		/**
+		 * Cosntruct a player that tries to load the file called f1 with content data1,
+		 * and also offers optional f2 and content data2 if the native code needs it.
+		 * <p>
+		 * Generalization to more than 2 files has not been done because no known
+		 * formats need such a capability, but if it ever happens, Map<String, byte[]> is probably good idea.
+		 *
+		 * @param plugin plugin to play file with
+		 * @param name1 name of file 1
+		 * @param data1 data of file 1
+		 * @param name2 name of file 2
+		 * @param data2 data of file 2
+		 */
+		protected PlayerRunnable(DroidSoundPlugin plugin, String name1, byte[] data1, String name2, byte[] data2) {
+			this.plugin = plugin;
+			this.f1 = name1;
+			this.data1 = data1;
+			this.f2 = name2;
+			this.data2 = data2;
+		}
 
-	public static final int SONG_DETAILS = 12;
-	public static final int SONG_REPEAT = 13;
+		/**
+		 * Get the name of file being played.
+		 *
+		 * @return file name
+		 */
+		public String getName() {
+			return f1;
+		}
 
-	public static final int SONG_SUBTUNE_TITLE = 14;
-	public static final int SONG_SUBTUNE_AUTHOR = 15;
-	public static final int SONG_PLAYLIST = 16;
-	public static final int SONG_FLAGS = 17;
-	public static final int SONG_SOURCE = 18;
-	public static final int SONG_BUFFERING = 19;
-	public static final int SONG_SIZEOF = 20;
+		/**
+		 * Tell native player to seek to the given msec point if it can.
+		 * (It may ignore the request.)
+		 *
+		 * @param msec
+		 */
+		public void setSeekRequest(int msec) {
+			synchronized (this) {
+				seekRequest = msec;
+			}
+		}
 
-	public static final int OPTION_SILENCE_DETECT = 1;
-	public static final int OPTION_RESPECT_LENGTH = 2;
-	public static final int OPTION_PLAYBACK_ORDER = 3;
-	public static final int OPTION_REPEATMODE = 4;
-	public static final int OPTION_BUFFERSIZE = 5;
-	public static final int OPTION_DEFAULT_LENGTH = 6;
+		/**
+		 * Get current playback state. Default state is PAUSE.
+		 *
+		 * @return current player thread state
+		 */
+		public State getStateRequest() {
+			synchronized (this) {
+				return stateRequest;
+			}
+		}
+		/**
+		 * Set change in playback state. STOP results in thread's exit,
+		 * PAUSE temporarily suspends playback. Default state is PAUSE.
+		 *
+		 * @param newState
+		 */
+		public void setStateRequest(State newState) {
+			synchronized (this) {
+				stateRequest = newState;
+			}
+		}
 
-	public static final int RM_CONTINUE = 0;
-	public static final int RM_KEEP_PLAYING = 1;
-	public static final int RM_REPEAT = 2;
-	public static final int RM_CONTINUE_SUBSONGS = 3;
-	public static final int RM_REPEAT_SUBSONG = 4;
+		/**
+		 * Tell native code to switch to a different subsong. The
+		 * subsong range is player and tune specific, but the value
+		 * -1 is reserved for internal use.
+		 *
+		 * @param song
+		 */
+		public void setSubSongRequest(int song) {
+			synchronized (this) {
+				subsongRequest = song;
+			}
+		}
 
-	private Object info[];
-
-	private Player player;
-	private Thread playerThread;
-
-	private final SongInfo currentSongInfo = new SongInfo();
-
-	//private boolean silenceDetect;
-	private boolean respectLength = true;
-	private boolean shuffleSongs;
-
-	private PhoneStateListener phoneStateListener;
-
-	private final int defaultRepeatMode = RM_CONTINUE;
-
-	PlayQueue playQueue;
-
-	final static String stripChars = "[]!<>?#${}";
-	final static String blankChars = ".-^,";
-
-    private final Handler mHandler = new Handler() {
+		/**
+		 * Send notification about subsong advancement.
+		 *
+		 * @param position
+		 */
 		@Override
-        public void handleMessage(Message msg) {
-        	//Log.d(TAG, "Got msg %d with arg %s", msg.what, (String)msg.obj);
-			String [] sa;
-            switch (msg.what) {
-            	case Player.MSG_WAVDUMPED:
-            		info[SONG_FILENAME] = msg.obj;
-            		performCallback(SONG_FILENAME);
-            		info[SONG_FILENAME] = null;
-            		break;
-            	case Player.MSG_DETAILS:
-            		sa = (String [])msg.obj;
-            		info[SONG_DETAILS] = "DETAILS";
-            		currentSongInfo.details = sa;
-            		performCallback(SONG_DETAILS);
-            		Log.d(TAG, "%%%%%%%% Sending %d details", sa.length);
-            		break;
-            	case Player.MSG_INFO:
-        			sa = (String [])msg.obj;
-        			info[SONG_TITLE] = sa[0];
-        			info[SONG_AUTHOR] = sa[1];
-        			performCallback(SONG_TITLE, SONG_AUTHOR);
-        			break;
-            	case Player.MSG_SUBTUNE:
-            		Log.d(TAG, "SUBTUNE %d, Length %d", msg.arg1, msg.arg2);
-            		info[SONG_SUBSONG] = msg.arg1;
-            		info[SONG_LENGTH] = msg.arg2;
+		protected void onProgressUpdate(Float... values) {
+			Intent i = new Intent(PLAYBACK_ADVANCING);
+			i.putExtra("name", f1);
+			i.putExtra("position", values[0]);
+			sendBroadcast(i);
+		}
 
-            		if(msg.arg2 == -1)
-            			info[SONG_LENGTH] = defaultLength;
+		@Override
+		protected Void doInBackground(Void... ignored) {
+			/* In theory we could ask plugin about desired frequency and other information. */
+			AudioTrack audioTrack = new AudioTrack(
+					AudioManager.STREAM_MUSIC,
+					FREQUENCY,
+					AudioFormat.CHANNEL_CONFIGURATION_STEREO,
+					AudioFormat.ENCODING_PCM_16BIT,
+					BUFSIZE,
+					AudioTrack.MODE_STREAM);
+			short[] samples = new short[BUFSIZE];
 
-            		info[SONG_STATE] = 1;
-            		if(msg.obj != null) {
-            			sa = (String [])msg.obj;
-            			info[SONG_SUBTUNE_TITLE] = sa[0];
-            			info[SONG_SUBTUNE_AUTHOR] = sa[1];
+			/* Note, this should not fail because it has already been executed once. */
+			plugin.load(f1, data1, f2, data2);
 
-                		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_STATE);
-                		break;
-            		}
-            		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_STATE);
-            		break;
-                case Player.MSG_NEWSONG:
-                	player.getSongInfo(currentSongInfo);
-                	info[SONG_TITLE] = currentSongInfo.title;
-					info[SONG_AUTHOR] = currentSongInfo.author;
-					info[SONG_COPYRIGHT] = currentSongInfo.copyright;
-					info[SONG_FORMAT] = currentSongInfo.type;
-					info[SONG_LENGTH] = currentSongInfo.length;
-					info[SONG_TOTALSONGS] = currentSongInfo.subTunes;
-					info[SONG_SUBSONG] = currentSongInfo.startTune;
-					info[SONG_REPEAT] = defaultRepeatMode;
-					info[SONG_SUBTUNE_TITLE] = currentSongInfo.subtuneTitle;
-					info[SONG_SUBTUNE_AUTHOR] = currentSongInfo.subtuneAuthor;
-					info[SONG_FLAGS] = currentSongInfo.canSeek ? 1 : 0;
-					info[SONG_STATE] = 1;
-					info[SONG_SOURCE] = "";
-					info[SONG_BUFFERING] = -1;
-
-            		if(currentSongInfo.length == -1)
-            			info[SONG_LENGTH] = defaultLength;
-
-
-					if(currentSongInfo.source != null && currentSongInfo.source.length() > 0)
-						info[SONG_SOURCE] = currentSongInfo.source;
-					else if(playListName != null) {
-						info[SONG_SOURCE] = playListName;
+			publishProgress(0f);
+			Log.i(TAG, "Entering audio playback loop.");
+			try { while (true) { synchronized (this) {
+				switch (stateRequest) {
+				case PLAY: {
+					if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_STOPPED) {
+						audioTrack.play();
 					}
 
-					Log.d(TAG, "SOURCE IS " + currentSongInfo.source);
+					if (subsongRequest != -1) {
+						plugin.setTune(subsongRequest);
+						subsongRequest = -1;
+					}
 
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
-                	break;
-                case Player.MSG_DONE:
-                	Log.d(TAG, "Music done");
-                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-                		playNextSong();
-                	} else {
-                		info[SONG_STATE] = 0;
-                		performCallback(SONG_STATE);
-                	}
-                    break;
-                case Player.MSG_PROGRESS:
-                	int l = (Integer)info[SONG_LENGTH];
-                	if(l < 0) {
-                		l = defaultLength;
-                	}
-                	//Log.d(TAG, "%d vs %d", msg.arg1, l);
-                	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE)) {
-                		playNextSong();
-                	} else {
-                    	int pos = msg.arg1;
-                    	int buffering = msg.arg2;
-                    	if(pos >= 0 && buffering >= 0) {
-	                    	info[SONG_BUFFERING] = buffering;
-	                    	info[SONG_POS] = pos;
-	                		performCallback(SONG_BUFFERING, SONG_POS);
-                    	} else if(pos >= 0) {
-	                    	info[SONG_POS] = pos;
-	                		performCallback(SONG_POS);
-                    	} else {
-	                    	info[SONG_BUFFERING] = buffering;
-	                		performCallback(SONG_BUFFERING);
-                    	}
-                	}
-    				break;
-                case Player.MSG_STATE:
-                	info[SONG_STATE] = msg.arg1;
+					if (seekRequest != -1) {
+						if (plugin.canSeek()) {
+							plugin.seekTo(seekRequest);
+						}
+						seekRequest = -1;
+					}
 
-                	if(msg.arg1 == 0) {
-                		info[SONG_POS] = info[SONG_SUBSONG] = info[SONG_TOTALSONGS] = info[SONG_LENGTH] = 0;
-                		currentSongInfo.fileName = null;
-                		performCallback(SONG_POS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_LENGTH, SONG_STATE);
-                	} else {
-                		performCallback(SONG_STATE);
-                	}
-                	break;
-                default:
-                    super.handleMessage(msg);
-            }
-        }
-    };
+					int sec1 = audioTrack.getPlaybackHeadPosition() / audioTrack.getPlaybackRate();
+					int len = plugin.getSoundData(samples);
+					/* If the length is not positive, it implies errors or song end. We terminate. */
+					if (len <= 0) {
+						break;
+					}
+					audioTrack.write(samples, 0, len);
+					float sec2 = audioTrack.getPlaybackHeadPosition() / audioTrack.getPlaybackRate();
+					if (sec1 != (int) sec2) {
+						publishProgress(sec2);
+					}
+				}
+				case PAUSE:
+					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_PAUSED) {
+						audioTrack.pause();
+					}
+					Thread.sleep(100);
 
-    private void createThread() {
-    	if (playerThread != null) {
-    		if (! playerThread.isAlive()) {
-    			playerThread = null;
-    		}
-    	}
+				case STOP:
+					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_STOPPED) {
+						audioTrack.stop();
+					}
+					break;
+				}
 
-    	if (playerThread == null) {
-			Log.d(TAG, "Creating thread");
-			player.setBufSize(bufSize);
-		    playerThread = new Thread(player);
-		    playerThread.setPriority(Thread.MAX_PRIORITY);
-		    playerThread.start();
-    	}
-    }
+			} } }
+			catch (Exception ise) {
+				Log.w(TAG, "Audio playback error: %s", ise);
+			}
+			Log.i(TAG, "Audio playback is terminating.");
+			publishProgress(-1f);
 
-    private boolean playNextSong() {
-    	if(playQueue == null) {
-    		return false;
-    	}
-    	SongFile song = playQueue.next();
+			plugin.unload();
 
-		if(song != null) {
-       		song = playQueue.current();
-       		info[SONG_FILENAME] = song.getPath();
-       		createThread();
+			audioTrack.release();
+			return null;
+		}
+	}
 
-       		beforePlay(song.getName());
-       		player.playMod(song);
-       		return true;
-    	}
-		return false;
-    }
+	/**
+	 * This executor is constructed to run a single runnable and then terminated.
+	 * This is a bit antipatternish, but I need a reliable way to wait for the player thread to shutdown.
+	 */
+	private ThreadPoolExecutor playerExecutor;
+	/**
+	 * This runnable represents one song being played back currently.
+	 */
+	private PlayerRunnable player;
 
-    private boolean playPrevSong() {
-    	if(playQueue == null) {
-    		return false;
-    	}
-    	SongFile song = playQueue.prev();
-		if(song != null) {
-       		song = playQueue.current();
-       		info[SONG_FILENAME] = song.getPath();
-       		createThread();
-       		beforePlay(song.getName());
-       		player.playMod(song);
-       		return true;
-    	}
-		return false;
-    }
-
+	/**
+	 * This notification holds the ongoing-notification in status bar.
+	 */
 	private Notification notification;
 
+	/**
+	 * This pending intent shows the UI when clicked.
+	 */
 	private PendingIntent contentIntent;
 
-	protected int bufSize = 0x40000;
+	/**
+	 * PhoneStateListener is used to shut down playback on incoming call and automatically resume afterwards.
+	 */
+	private PhoneStateListener phoneStateListener;
 
-	protected int defaultLength = 60*15*1000;
+	/**
+	 * This method starts a new playback thread capable of handling one file.
+	 * The default audio state is "PAUSE", so no playback happens until you
+	 * tell it to start playing.
+	 *
+	 * @param p1
+	 * @param n1
+	 * @param d1
+	 * @param n2
+	 * @param d2
+	 */
+	private void startPlayerThread(DroidSoundPlugin p1, String n1, byte[] d1, String n2, byte[] d2) {
+		if (player != null) {
+			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
+		}
 
-	protected String playListName;
+		player = new PlayerRunnable(p1, n1, d1, n2, d2);
+		playerExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(1));
+		player.executeOnExecutor(playerExecutor);
+		notification.setLatestEventInfo(this, "Droidsound", player.getName(), contentIntent);
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		nm.notify(0x123456, notification);
+	}
 
-	protected int callState = TelephonyManager.CALL_STATE_IDLE;
+	/**
+	 * This method returns only after it has guaranteed that the playerthread has exited,
+	 * or it gets interrupted.
+	 *
+	 * @throws InterruptedException
+	 */
+	private void stopPlayerThread() throws InterruptedException {
+		if (player == null) {
+			throw new RuntimeException("Playerthread was not running. Someone must call startPlayerThread() first.");
+		}
+
+		player.setStateRequest(State.STOP);
+		playerExecutor.shutdown();
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		nm.cancel(0x123456);
+
+		player = null;
+		playerExecutor = null;
+	}
 
 	@Override
 	public void onCreate() {
@@ -289,32 +310,27 @@ public class PlayerService extends Service {
 				f.delete();
 			}
 		}
-		player = new Player(tmpDir, mHandler, getApplicationContext());
-		info = new Object[20];
 
 		phoneStateListener = new PhoneStateListener() {
 			boolean didPause = false;
 
 			@Override
 			public void onCallStateChanged(int state, String incomingNumber) {
-				callState  = state;
 				switch(state) {
 				case TelephonyManager.CALL_STATE_RINGING:
 				case TelephonyManager.CALL_STATE_OFFHOOK:
-					if(player != null && player.isPlaying()) {
-						player.paused(true);
+					if (player != null && player.getStateRequest() == State.PLAY) {
+						player.setStateRequest(State.PAUSE);
 						didPause = true;
 					}
 					break;
 				case TelephonyManager.CALL_STATE_IDLE:
-					if (didPause && player != null && !player.isPlaying()) {
-						player.paused(false);
+					if (player != null && didPause) {
+						player.setStateRequest(State.PLAY);
 					}
 					didPause = false;
 					break;
 				}
-
-				Log.d(TAG, "CALL STATE %d %s", state, incomingNumber);
 			}
 		};
 
@@ -328,150 +344,166 @@ public class PlayerService extends Service {
 	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
 	}
 
-	protected void beforePlay(String name) {
-		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
-		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		nm.notify(0x123456, notification);
-	}
-
-	protected void afterPlay() {
-		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		nm.cancel(0x123456);
-	}
-
 	@Override
 	public void onStart(Intent intent, int startId) {
 		super.onStart(intent, startId);
-		Log.d(TAG, "Service started");
-		if (intent == null) {
-			return;
-		}
-		Log.d(TAG, "Intent %s / %s", intent.getAction(), intent.getDataString());
-        if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
-			Uri uri = intent.getData();
-			if(uri == null) {
-				Bundle b = intent.getExtras();
-				SongFile song = null;
-				String ff =  b.getString("musicFile");
-				if(ff != null) {
-					song = new SongFile(ff);
-				}
-				int index = b.getInt("musicPos");
-				String [] names = (String []) b.getSerializable("musicList");
-
-				playQueue = new PlayQueue(names, index, shuffleSongs);
-
-				if(song == null) {
-					song = playQueue.current();
-				}
-
-				createThread();
-				if(song == null) {
-					String modname = (String) info[SONG_FILENAME];
-					if(names != null && modname != null) {
-						Log.d(TAG, "Got playlist without song");
-					}
-				} else {
-					Log.d(TAG, "Want to play list with " + song.getPath());
-					info[SONG_FILENAME] = song.getPath();
-					playListName = "";
-					beforePlay(song.getName());
-					player.playMod(song);
-				}
-			} else {
-				Log.d(TAG, "Want to play " + intent.getDataString());
-				createThread();
-				playListName = "";
-				info[SONG_FILENAME] = uri.getLastPathSegment();
-				SongFile song = new SongFile(intent.getDataString());
-				beforePlay(song.getName());
-				player.playMod(song);
-			}
-		}
-
 	}
 
 	@Override
 	public void onDestroy() {
-
 		super.onDestroy();
 
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, 0);
 
-		player.stop();
-		player = null;
-		playerThread = null;
-	}
-
-	protected Set<IPlayerServiceCallback> callbacks = new HashSet<IPlayerServiceCallback>();
-
-	private void performCallback(int...what) {
-		for (IPlayerServiceCallback cb : callbacks) {
-			for (int i : what) {
-				Object v = info[i];
-				if (v == null || (v instanceof String)) {
-					cb.stringChanged(i, (String) v);
-				} else {
-					cb.intChanged(i, (Integer) v);
-				}
+		if (player != null) {
+			try {
+				stopPlayerThread();
+			} catch (InterruptedException e) {
 			}
+			playerExecutor.shutdown();
 		}
 	}
 
-	public class LocalBinder extends Binder {
-		public boolean playMod(String name) {
-			createThread();
-			info[SONG_FILENAME] = name;
-			SongFile song = new SongFile(name);
-			beforePlay(song.getName());
-			player.playMod(song);
+	private boolean startSong(SongFile song) throws IOException, InterruptedException {
+		final String name1;
+		final InputStream is1;
+		InputStream is2 = null;
+		final long size1;
+		long size2 = 0;
+
+		/* FIXME:
+		 *
+		 * Currently, UADE is the only plugin that needs the data as file.
+		 * Maybe we could use an API that allowed providing data via byte[]
+		 * for UADE also.
+		 *
+		 * If that is the case, we could get rid of writeTempFile, and
+		 * DroidSoundPlugin#load(File).
+		 */
+		String name2 = song.getSecondaryFileName();
+		if (song.getZipPath() != null) {
+			name1 = song.getZipName();
+
+			ZipFile zr = ZipReader.openZip(new File(song.getZipPath()));
+			ZipEntry ze = zr.getEntry(name1);
+			is1 = zr.getInputStream(ze);
+			size1 = ze.getSize();
+
+			/* If the name looks like there might be a secondary file, we extract that from zip also */
+			if (name2 != null) {
+				ZipEntry ze2 = zr.getEntry(name2);
+				if (ze2 != null) {
+					is2 = zr.getInputStream(ze2);
+					size2 = ze2.getSize();
+				}
+			}
+
+			zr.close();
+		} else {
+			name1 = song.getFileName();
+
+			File f1 = new File(name1);
+			is1 = new FileInputStream(f1);
+			size1 = f1.length();
+			if (name2 != null) {
+				File f2 = new File(song.getSecondaryFileName());
+				is2 = new FileInputStream(f2);
+				size2 = f2.length();
+			}
+		}
+
+		byte[] data1 = new byte[(int) size1];
+		new DataInputStream(is1).readFully(data1);
+		is1.close();
+
+		byte[] data2 = null;
+		if (is2 != null) {
+			data2 = new byte[(int) size2];
+			new DataInputStream(is2).readFully(data2);
+			is2.close();
+		}
+
+		if (player != null) {
+			stopPlayerThread();
+		}
+
+		DroidSoundPlugin currentPlugin = null;
+		/* First try plugins that report capability of handling file */
+		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
+			if (! plugin.canHandle(name1)) {
+				continue;
+			}
+			if (plugin.load(name1, data1)) {
+				currentPlugin = plugin;
+				break;
+			}
+		}
+
+		/* Then try the rest of the plugins. */
+		if (currentPlugin == null) {
+			for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
+				if (plugin.canHandle(name1)) {
+					continue;
+				}
+				if (plugin.load(name1, data1)) {
+					currentPlugin = plugin;
+					break;
+				}
+			}
+		}
+
+		if (currentPlugin != null) {
+			currentPlugin.unload();
+			startPlayerThread(currentPlugin, name1, data1, name2, data2);
+			player.setStateRequest(State.PLAY);
 			return true;
 		}
 
-		public void registerCallback(IPlayerServiceCallback cb, int flags) {
-			for (int i = 1; i < SONG_SIZEOF; i++) {
-				if(info[i] != null) {
-					if(info[i] instanceof String) {
-						cb.stringChanged(i, (String)info[i]);
-					} else {
-						cb.intChanged(i, (Integer)info[i]);
-					}
-				}
-			}
-			callbacks.add(cb);
-		}
+		return false;
+	}
 
-		public void unRegisterCallback(IPlayerServiceCallback cb) {
-			callbacks.remove(cb);
+	/**
+	 * This class represents a connection to this server.
+	 * Only local process usage is expected.
+	 *
+	 * @author alankila
+	 */
+	public class LocalBinder extends Binder {
+		private PlayQueue playQueue;
+
+		public boolean playMod(SongFile song) {
+			try {
+				return startSong(song);
+			}
+			catch (Exception e) {
+				Log.w(TAG, "Unable to start playing: %s", e);
+				return false;
+			}
 		}
 
 		public boolean playPause(boolean play) {
-			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
-				SongFile s = playQueue.current();
-				if(s != null) {
-	           		info[SONG_FILENAME] = s.getPath();
-	           		createThread();
-	    			beforePlay(s.getName());
-	           		player.playMod(s);
-	           		return true;
-	    		}
+			if (player != null) {
+				player.setStateRequest(play ? State.PLAY : State.PAUSE);
+				return true;
 			}
-			player.paused(!play);
-			return true;
+			return false;
 		}
 
-		public void stop()  {
-			player.stop();
-			afterPlay();
-			info[SONG_REPEAT] = defaultRepeatMode;
-			performCallback(SONG_REPEAT);
+		public boolean stop() {
+			if (player != null) {
+				try {
+					stopPlayerThread();
+					return true;
+				}
+				catch (InterruptedException e) {
+				}
+			}
+			return false;
 		}
 
 		public boolean seekTo(int msec) {
-			player.seekTo(msec);
-			info[SONG_POS] = msec;
-			performCallback(SONG_POS);
+			player.setSeekRequest(msec);
 			return true;
 		}
 
@@ -480,113 +512,38 @@ public class PlayerService extends Service {
 	    		return false;
 	    	}
 
- 			player.setSubSong(song);
-			info[SONG_SUBSONG] = song;
-			if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-				info[SONG_REPEAT] = RM_KEEP_PLAYING;
-				performCallback(SONG_REPEAT);
+	    	if (player != null) {
+	    		player.setSubSongRequest(song);
+	    		return true;
+	    	}
+
+	    	return false;
+		}
+
+		public boolean playPlaylist(Playlist name, int startIndex, boolean shuffle) throws IOException, InterruptedException {
+			playQueue = new PlayQueue(name, startIndex, shuffle);
+			return startSong(playQueue.getCurrent());
+		}
+
+		public boolean playPlaylist(String[] names, int startIndex, boolean shuffle) throws IOException, InterruptedException {
+			playQueue = new PlayQueue(names, startIndex, shuffle);
+			return startSong(playQueue.getCurrent());
+		}
+
+		public boolean playNext() throws IOException, InterruptedException {
+			if (playQueue == null) {
+				return false;
 			}
-
-			return true;
+			SongFile song = playQueue.next();
+			return startSong(song);
 		}
 
-		public void setOption(int opt, String arg) {
-			switch(opt) {
-			case OPTION_DEFAULT_LENGTH:
-				defaultLength  = Integer.parseInt(arg) * 1000;
-				Log.d(TAG, "Default length set to " + defaultLength);
-				break;
-			case OPTION_REPEATMODE:
-				info[SONG_REPEAT] = Integer.parseInt(arg);
-				performCallback(SONG_REPEAT);
-				break;
-			case OPTION_PLAYBACK_ORDER:
-				if(arg.charAt(0) == 'R') {
-					shuffleSongs = true;
-				} else if(arg.charAt(0) == 'S') {
-					shuffleSongs = false;
-				}
-				if(playQueue != null) {
-					playQueue.setShuffle(shuffleSongs);
-				}
-				break;
-			case OPTION_RESPECT_LENGTH:
-				Log.d(TAG, "Respect length " + arg);
-				respectLength = arg.equals("on");
-				break;
-			case OPTION_BUFFERSIZE:
-				bufSize = 176384; // 2s
-				if(arg.equals("Short")) {
-					bufSize = 66144; // 0.75s
-				} else if(arg.equals("Medium")) {
-						bufSize = 132288; // 1.5s
-				} else if(arg.equals("Very Long")) {
-					bufSize = 352768; // 4s
-				}
-				player.setBufSize(bufSize);
-				break;
-			}
-		}
-
-		public boolean playPlaylist(String name, int startIndex) {
-			File pf = new File(name);
-			Playlist pl = Playlist.getPlaylist(pf);
-			playQueue = new PlayQueue(pl, startIndex, shuffleSongs);
-
-			SongFile mod = playQueue.current();
-
-			createThread();
-			info[SONG_FILENAME] = mod.getPath();
-
-			int dot = name.lastIndexOf('.');
-			if(dot > 0) {
-				name = name.substring(0, dot);
-			}
-			playListName = name;
-
-
-			beforePlay(mod.getName());
-			player.playMod(mod, playQueue.getNextSong());
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-	    	return true;
-		}
-
-		public boolean playList(String[] names, int startIndex) {
-			playQueue = new PlayQueue(names, startIndex, shuffleSongs);
-			SongFile song = playQueue.current();
-			Log.d(TAG, "PlayList called " + song.getPath());
-			createThread();
-			info[SONG_FILENAME] = song.getPath();
-			playListName = "";
-			beforePlay(song.getName());
-			player.playMod(song);
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-			performCallback(SONG_REPEAT);
-			return false;
-		}
-
-		public void playNext() {
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-			performCallback(SONG_REPEAT);
-			playNextSong();
-		}
-
-		public void playPrev() {
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-			performCallback(SONG_REPEAT);
-			playPrevSong();
-		}
-
-		public String[] getSongInfo() {
-			return currentSongInfo.details;
-		}
-
-		public boolean dumpWav(String modName, String destFile, int length) {
-			createThread();
-			info[SONG_FILENAME] = modName;
-			SongFile song = new SongFile(modName);
-			player.dumpWav(song, destFile, length);
-			return false;
+		public boolean playPrev() throws IOException, InterruptedException {
+	    	if (playQueue == null) {
+	    		return false;
+	    	}
+	    	SongFile song = playQueue.prev();
+	    	return startSong(song);
 		}
 	}
 

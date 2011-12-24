@@ -62,19 +62,13 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(File file) throws IOException {
-		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
+	public boolean load(String name, byte[] data) {
+		currentSong = N_load(data, data.length);
+		return currentSong != 0;
 	}
 
 	public boolean loadInfo(File file) throws IOException {
 		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
-	}
-
-	@Override
-	public boolean load(String name, byte[] module) {
-		currentSong = N_load(module, module.length);
 		return (currentSong != 0);
 	}
 
@@ -91,8 +85,8 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(short[] dest, int size) {
-		return N_getSoundData(currentSong, dest, size);
+	public int getSoundData(short[] dest) {
+		return N_getSoundData(currentSong, dest, dest.length);
 	}
 
 	@Override
@@ -114,8 +108,6 @@ public class GMEPlugin extends DroidSoundPlugin {
 	public int getIntInfo(int what) {
 		return N_getIntInfo(currentSong, what);
 	}
-
-	native private boolean N_canHandle(String name);
 
 	native private long N_load(byte[] module, int size);
 

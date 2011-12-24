@@ -9,15 +9,6 @@
         android:summary="Length to use when real length is unknown."
         android:title="Default song length" />
 
-    <ListPreference
-        android:defaultValue="Long"
-        android:entries="@array/buffer_opts"
-        android:entryValues="@array/buffer_opts"
-        android:key="buffer"
-        android:summary="Sound buffer size. Increase to avoid skipping."
-        android:summaryOn="Audio buffer size"
-        android:title="Buffer Size" />
-
     <PreferenceScreen
         android:key="audio_prefs"
         android:summary="Plugin Audio Settings"
@@ -96,6 +87,12 @@
             android:key="rescan_pref"
             android:summary="Scan sdcard for changes and update database."
             android:title="Rescan database" />
+        
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="rescan_full"
+            android:title="Rebuild database"
+            android:summary="Clear database first, then do full scan."/>
     </PreferenceScreen>
 
     <PreferenceScreen

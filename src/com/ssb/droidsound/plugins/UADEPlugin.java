@@ -114,8 +114,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public int getSoundData(short [] dest, int size) {
-		return N_getSoundData(currentSong, dest, size);
+	public int getSoundData(short[] dest) {
+		return N_getSoundData(currentSong, dest, dest.length);
 	}
 
 	@Override
@@ -139,14 +139,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	protected boolean load(String name, byte[] module) {
+	public boolean load(String name, byte[] module) {
 		throw new RuntimeException("This method should not be called. (See overridden load())");
-	}
-
-	@Override
-	public boolean load(File file) throws IOException {
-		currentSong = N_loadFile(file.getPath());
-		return currentSong != 0;
 	}
 
 	@Override
@@ -212,7 +206,6 @@ public class UADEPlugin extends DroidSoundPlugin {
 	native private static void N_exit();
 	native private static void N_setOption(int what, int val);
 
-	native private boolean N_canHandle(String name);
 	native private long N_load(byte [] module, int size);
 	native private long N_loadFile(String name);
 	native private void N_unload(long song);

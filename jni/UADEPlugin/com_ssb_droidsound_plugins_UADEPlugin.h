@@ -63,14 +63,6 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption
 
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin
- * Method:    N_canHandle
- * Signature: (Ljava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle
-  (JNIEnv *, jobject, jstring);
-
-/*
- * Class:     com_ssb_droidsound_plugins_UADEPlugin
  * Method:    N_load
  * Signature: ([BI)J
  */

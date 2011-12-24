@@ -29,14 +29,6 @@ extern "C" {
 #define com_ssb_droidsound_plugins_GMEPlugin_SIZEOF_INFO 9L
 /*
  * Class:     com_ssb_droidsound_plugins_GMEPlugin
- * Method:    N_canHandle
- * Signature: (Ljava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1canHandle
-  (JNIEnv *, jobject, jstring);
-
-/*
- * Class:     com_ssb_droidsound_plugins_GMEPlugin
  * Method:    N_load
  * Signature: ([BI)J
  */

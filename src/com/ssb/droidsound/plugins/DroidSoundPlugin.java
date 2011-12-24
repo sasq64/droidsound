@@ -1,35 +1,18 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import android.content.SharedPreferences;
 
 public abstract class DroidSoundPlugin {
 	private static final MessageDigest MD5;
-	private static final Map<String, String> MAIN_TO_AUX = new HashMap<String, String>();
 	static {
 		try {
 			MD5 = MessageDigest.getInstance("MD5");
 		} catch (NoSuchAlgorithmException e) {
 			throw new ExceptionInInitializerError(e);
 		}
-
-		MAIN_TO_AUX.put("MDAT", "SMPL");
-		MAIN_TO_AUX.put("TFX", "SAM");
-		MAIN_TO_AUX.put("SNG", "INS");
-		MAIN_TO_AUX.put("RJP", "SMP");
-		MAIN_TO_AUX.put("JPN", "SMP");
-		MAIN_TO_AUX.put("DUM", "INS");
 	}
 
 	private static final List<DroidSoundPlugin> PLUGINS = Arrays.asList(
@@ -73,22 +56,19 @@ public abstract class DroidSoundPlugin {
 		return load(name, module);
 	}
 
-	public boolean load(File file) throws IOException {
-		byte[] songBuffer = new byte[(int) file.length()];
-		DataInputStream fs = new DataInputStream(new FileInputStream(file));
-		fs.readFully(songBuffer);
-		fs.close();
-		calcMD5(songBuffer);
-		return load(file.getName(), songBuffer);
-	}
-
 	public abstract void unload();
 
 	public abstract boolean canHandle(String name);
 
-	protected abstract boolean load(String name, byte[] module);
+	public abstract boolean load(String name, byte[] module);
 
-	public abstract int getSoundData(short[] dest, int size);
+	public void load(String f1, byte[] data1, String f2, byte[] data2) {
+		/* Currently ignoring the secondary file. Some plugins are expected to use it.
+		 * Some plugins (UADE, VICE) may be able to use it. */
+		load(f1, data1);
+	}
+
+	public abstract int getSoundData(short[] dest);
 
 	public boolean seekTo(int msec) {
 		return false;
@@ -132,47 +112,6 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public abstract void setOption(String string, Object val);
-
-	public static void setOptions(SharedPreferences prefs) {
-		List<DroidSoundPlugin> list = DroidSoundPlugin.getPluginList();
-		Map<String, ?> prefsMap = prefs.getAll();
-
-		for (DroidSoundPlugin plugin : list) {
-			String pluginClass = plugin.getClass().getSimpleName();
-			for (Entry<String, ?> entry : prefsMap.entrySet()) {
-				String k = entry.getKey();
-				int dot = k.indexOf('.');
-				if (dot == -1) {
-					continue;
-				}
-
-				if (k.substring(0, dot).equals(pluginClass)) {
-					Object val = entry.getValue();
-					plugin.setOption(k.substring(dot+1), val);
-				}
-			}
-		}
-	}
-
-	public static String getSecondaryFile(String path) {
-		int dot = path.lastIndexOf('.');
-		int slash = path.lastIndexOf('/');
-		if (dot <= slash) {
-			return null;
-		}
-
-		int firstDot = path.indexOf('.', slash+1);
-		String ext = path.substring(dot+1).toUpperCase();
-		String pref = path.substring(slash+1, firstDot).toUpperCase();
-
-		if (MAIN_TO_AUX.containsKey(pref)) {
-			return path.substring(0, slash+1) + MAIN_TO_AUX.get(pref) + path.substring(firstDot);
-		} else if (MAIN_TO_AUX.containsKey(ext)) {
-			return path.substring(0, dot+1) + MAIN_TO_AUX.get(ext);
-		}
-
-		return null;
-	}
 
 	public boolean canSeek() {
 		return false;

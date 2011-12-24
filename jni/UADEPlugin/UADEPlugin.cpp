@@ -456,11 +456,6 @@ static jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle(JNIEnv *, jobject, jstring)
-{
-	return true;
-}
-
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(JNIEnv *env, jobject obj, jstring fname)
 {
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "in load()");

@@ -1,4 +1,4 @@
-package com.ssb.droidsound.database;
+package com.ssb.droidsound.service;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -18,117 +17,94 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 
+import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
+import android.os.IBinder;
 import android.provider.BaseColumns;
 
-import com.ssb.droidsound.FileIdentifier;
-import com.ssb.droidsound.Playlist;
-import com.ssb.droidsound.SongFile;
+import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.bo.Playlist;
+import com.ssb.droidsound.bo.SongFile;
+import com.ssb.droidsound.utils.FileIdentifier;
 import com.ssb.droidsound.utils.Log;
 
-/**
- *
- * SCANNING:
- *
- * Enter only directories that have changed since last time Check all files and
- * dirs in directory against database entry. Remove missing, add new Enter new
- * directories regardless of modified.
- *
- */
+public class SongDatabaseService extends Service {
+	public static final String SCAN_NOTIFY_DONE = "com.sddb.droidsound.SCAN_NOTIFY_DONE";
+	public static final String SCAN_NOTIFY_UPDATE = "com.sddb.droidsound.SCAN_NOTIFY_UPDATE";
+	public static final String SCAN_START = "com.sddb.droidsound.SCAN_START";
 
-public class SongDatabase implements Runnable {
-	private static final String TAG = SongDatabase.class.getSimpleName();
+	private static final String TAG = SongDatabaseService.class.getSimpleName();
 	private static final String SEARCH_ORDER[] = new String[] { "TITLE", "COMPOSER", "DATE" };
 	public static final int DB_VERSION = 6;
-
-	private final Context context;
-
-	private volatile Handler mHandler;
-
-	private volatile boolean scanning;
 
 	public static final int TYPE_ARCHIVE = 0x100;
 	public static final int TYPE_DIR = 0x200;
 	public static final int TYPE_PLIST = 0x300;
 	public static final int TYPE_FILE = 0x400;
 
-	public static final int SORT_TITLE = 0;
-	public static final int SORT_AUHTOR = 1;
-	public static final int SORT_DATE = 2;
+	private final BroadcastReceiver scanStartReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context c, Intent i) {
+			final boolean full = i.getBooleanExtra("full", false);
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						doScan(Application.getModsDirectory().getPath(), full);
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			}).start();
+		}
+	};
 
-	protected static final int MSG_SCAN = 0;
-	protected static final int MSG_DOWNLOAD = 3;
-	protected static final int MSG_QUIT = 4;
-	protected static final int MSG_INDEXMODE = 5;
-
-	public boolean isReadyToServe() {
-		return mHandler != null;
+	@Override
+	public IBinder onBind(Intent arg0) {
+		return null;
 	}
 
-	public SongDatabase(Context ctx) {
-		context = ctx;
+	@Override
+	public void onCreate() {
+		super.onCreate();
 		checkVersion();
+
+		registerReceiver(scanStartReceiver, new IntentFilter(SCAN_START));
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+
+		unregisterReceiver(scanStartReceiver);
 	}
 
 	private SQLiteDatabase getDatabase() {
 		try {
-			File dbName = context.getDatabasePath("songs.db");
+			File dbName = getDatabasePath("songs.db");
 			return SQLiteDatabase.openOrCreateDatabase(dbName, null);
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	@Override
-	public void run() {
-		Looper.prepare();
-
-		mHandler = new Handler() {
-			@Override
-	        public void handleMessage(Message msg) {
-	        	Log.d(TAG, "Got msg %d with arg %d", msg.what, msg.arg1);
-	            switch (msg.what) {
-	            case MSG_SCAN:
-	            	try {
-	            		doScan((String) msg.obj, msg.arg1 != 0);
-	            	}
-	            	catch (IOException ioe) {
-	            		throw new RuntimeException(ioe);
-	            	}
-	            	break;
-	            case MSG_QUIT:
-	            	Looper.myLooper().quit();
-	            	break;
-	            }
-			}
-		};
-
-		Intent intent = new Intent("com.sddb.droidsound.OPEN_DONE");
-		context.sendBroadcast(intent);
-
-		Looper.loop();
-
-		Log.d(TAG, "Exiting songdatabase");
-	}
-
 	private void notifyScan(String path, int percent) {
-		Intent intent = new Intent("com.sddb.droidsound.SCAN_UPDATE");
+		Intent intent = new Intent(SCAN_NOTIFY_UPDATE);
 		intent.putExtra("PATH", path);
 		intent.putExtra("PERCENT", percent);
-		context.sendBroadcast(intent);
+		sendBroadcast(intent);
 	}
 
 	private void notifyScanComplete() {
-		Intent intent = new Intent("com.sddb.droidsound.SCAN_DONE");
-		context.sendBroadcast(intent);
+		Intent intent = new Intent(SCAN_NOTIFY_DONE);
+		sendBroadcast(intent);
 	}
 
 	private void checkVersion() {
@@ -402,14 +378,8 @@ public class SongDatabase implements Runnable {
 		return data;
 	}
 
-	public void scan(boolean full, String mdir) {
-		Message msg = mHandler.obtainMessage(MSG_SCAN, full ? 1 : 0, 0, mdir);
-		mHandler.sendMessage(msg);
-	}
-
 	private void doScan(String modsDir, boolean full) throws IOException {
 		SQLiteDatabase db = getDatabase();
-		scanning = true;
 
 		long startTime = System.currentTimeMillis();
 		long lastScan = -1;
@@ -441,8 +411,6 @@ public class SongDatabase implements Runnable {
 		scanFiles(parentDir, lastScan);
 
 		db.close();
-		scanning = false;
-
 		notifyScanComplete();
 	}
 
@@ -459,40 +427,12 @@ public class SongDatabase implements Runnable {
 		return c;
 	}
 
-	private Playlist currentPlaylist;
-	private Playlist activePlaylist;
-
-	private String pathTitle;
-
-	public Playlist getCurrentPlaylist() {
-		return currentPlaylist;
-	}
-
-	public Playlist getActivePlaylist() {
-		return activePlaylist;
-	}
-
-	public void setActivePlaylist(File file) {
-		activePlaylist = Playlist.getPlaylist(file);
-	}
-
-	public String getPathTitle() {
-		return pathTitle;
-	}
-
-	private static String sortOrder [] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
+	private static String SORT_ORDER[] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
 
 	private final Map<String, String> linkMap = new HashMap<String, String>();
 
 	public Cursor getFilesInPath(String pathName, int sorting) {
-		pathTitle = null;
-
 		String upath = pathName.toUpperCase();
-		int dot = pathName.lastIndexOf('.');
-		String ext = "";
-		if(dot > 0) {
-			ext = upath.substring(dot);
-		}
 
 		Log.d(TAG, "files in path '%s'", pathName);
 		//String name = new File(pathName).getName().toUpperCase();
@@ -524,24 +464,7 @@ public class SongDatabase implements Runnable {
 			Log.d(TAG, "Translated to '%s'", pathName);
 		}
 
-		currentPlaylist = null;
-
 		File file = new File(pathName);
-		if (ext.equals(".PLIST")) {
-			String name = file.getName();
-			dot = name.lastIndexOf('.');
-			if(dot > 0) {
-				pathTitle = name.substring(0, dot);
-			} else {
-				pathTitle = name;
-			}
-
-			currentPlaylist = Playlist.getPlaylist(file);
-			if(activePlaylist == null) {
-				activePlaylist = currentPlaylist;
-			}
-			return currentPlaylist.getCursor();
-		}
 
 		SQLiteDatabase db = getDatabase();
 		String path = file.getParent();
@@ -551,23 +474,10 @@ public class SongDatabase implements Runnable {
 			return null;
 		}
 
-		Log.d(TAG, "BEGIN");
-		Cursor c = db.query("FILES", new String[] { "TITLE", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { path, fname }, null, null, sortOrder[sorting], "5000");
-		if (c != null) {
-			if (c.moveToFirst()) {
-				pathTitle = c.getString(0);
-			}
-			c.close();
-		}
-
-		c = db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, sortOrder[sorting], "5000");
+		Cursor c = db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "TYPE", "DATE" }, "PATH=?", new String[] { pathName }, null, null, SORT_ORDER[sorting], "5000");
 		c.getCount(); // force to memory
 		db.close();
 		return c;
-	}
-
-	public boolean isScanning() {
-		return scanning;
 	}
 
 	public void addToPlaylist(Playlist pl, SongFile songFile) throws IOException {
@@ -576,107 +486,20 @@ public class SongDatabase implements Runnable {
 			return;
 		}
 
-		if (songFile.getName().toUpperCase().endsWith(".ZIP")) {
+		if (songFile.getZipName() != null) {
 			Log.d(TAG, "WONT add zip files");
 			return;
 		}
 
-		if (songFile.exists()) {
-			if (songFile.getName().toUpperCase().endsWith(".PLIST")) {
-				Playlist newpl = Playlist.getPlaylist(songFile.getFile());
-				List<SongFile> files = newpl.getSongs();
-				Log.d(TAG, "Adding %d files from playlist", files.size());
-				for (SongFile f2 : files) {
-					addToPlaylist(pl, f2);
-				}
-
-			} else {
-				pl.add(songFile);
+		if (songFile.getFileName().toUpperCase().endsWith(".PLIST")) {
+			Playlist newpl = Playlist.getPlaylist(new File(songFile.getFileName()));
+			List<SongFile> files = newpl.getSongs();
+			Log.d(TAG, "Adding %d files from playlist", files.size());
+			for (SongFile f2 : files) {
+				addToPlaylist(pl, f2);
 			}
 		} else {
-			SQLiteDatabase db = getDatabase();
-			Cursor cursor = db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=? AND FILENAME=?", new String[] { songFile.getParent(), songFile.getName() }, null, null, null);
-
-			if(cursor != null && cursor.moveToFirst()) {
-				int type = cursor.getInt(cursor.getColumnIndex("TYPE"));
-				if(type == SongDatabase.TYPE_DIR) {
-					cursor.close();
-					cursor = db.query("FILES", new String[] { "_id", "TITLE", "COMPOSER", "FILENAME", "PATH", "TYPE" }, "PATH=?", new String[] { songFile.getPath() }, null, null, "TITLE");
-					if(cursor.moveToFirst()) {
-						pl.add(cursor, -1, null);
-					}
-
-				} else if(type == SongDatabase.TYPE_FILE) {
-					pl.add(cursor, songFile.getSubtune(), songFile.getTitle());
-				}
-			}
-			cursor.close();
+			pl.add(songFile);
 		}
-	}
-
-	public boolean deleteFile(SongFile song) {
-		return deleteFile(song.getFile());
-	}
-
-	public boolean deleteFile(File f) {
-		SQLiteDatabase db = getDatabase();
-		if(db == null) {
-			return false;
-		}
-
-		db.delete("FILES", "PATH=? AND FILENAME=?", new String [] { f.getParent(), f.getName() });
-		db.close();
-		return true;
-
-	}
-
-	public boolean deleteDir(File f) {
-		SQLiteDatabase db = getDatabase();
-		String path = f.getPath();
-		db.delete("FILES", "(PATH=? AND FILENAME=?) OR PATH LIKE ? OR PATH = ?", new String [] { f.getParent(), f.getName(), path + "/%", path });
-		db.close();
-		return true;
-
-	}
-
-	public void createPlaylist(File file) throws IOException {
-		FileWriter writer = new FileWriter(file);
-		writer.close();
-		ContentValues values = new ContentValues();
-		values.put("PATH", file.getParent());
-		values.put("FILENAME", file.getName());
-		values.put("TYPE", TYPE_PLIST);
-		int dot = file.getName().indexOf('.');
-		if(dot > 0) {
-			values.put("TITLE", file.getName().substring(0, dot));
-		} else {
-			values.put("TITLE", file.getName());
-		}
-
-		SQLiteDatabase db = getDatabase();
-		db.insert("FILES", "PATH", values);
-		db.close();
-	}
-
-	public void createFolder(File file) {
-		if(file.mkdir()) {
-			String n = file.getName();
-			ContentValues values = new ContentValues();
-			values.put("PATH", file.getParent());
-			values.put("FILENAME", n);
-			values.put("TYPE", TYPE_DIR);
-			SQLiteDatabase db = getDatabase();
-			if(db != null) {
-				db.insert("FILES", "PATH", values);
-				db.close();
-			} else {
-				file.delete();
-			}
-		}
-	}
-
-	public void quit() {
-		Message msg = mHandler.obtainMessage(MSG_QUIT);
-		mHandler.sendMessage(msg);
 	}
 }

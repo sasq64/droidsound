@@ -38,8 +38,8 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public int getSoundData(short[] dest, int size) {
-		return N_getSoundData(songRef, dest, size);
+	public int getSoundData(short[] dest) {
+		return N_getSoundData(songRef, dest, dest.length);
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	protected boolean load(String name, byte[] module) {
+	public boolean load(String name, byte[] module) {
 		songRef = N_load(module, module.length);
 		return songRef != 0;
 	}

@@ -29,7 +29,7 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	protected boolean load(String name, byte[] module) {
+	public boolean load(String name, byte[] module) {
 		currentSong = N_load(module, module.length);
 		if (currentSong != 0) {
 			author = guessAuthor(N_getStringInfo(currentSong, 100));
@@ -144,14 +144,6 @@ public class ModPlugin extends DroidSoundPlugin {
 						ii++;
 					}
 
-					/*
-					if(nextWord.equals("OF") && i<n-2) {
-						a += (" of " + t[i+2]);
-						if(i<n-3 && t[i+2].toUpperCase().equals("THE")) {
-							a += (" " + t[i+2]);
-						}
-					} */
-
 					if(lastLastWord.equals("COMPOSED") || lastLastWord.equals("MADE")) {
 						author[0] = a;
 						break;
@@ -163,16 +155,8 @@ public class ModPlugin extends DroidSoundPlugin {
 							author[1] = a;
 						}
 					}
-				} else if(nextWord.equals("/") || nextWord.equals("OF")) {
-
-					//int x = 2;
-					//if(nextWord.equals("of")) {
-					//	x = 3;
-					//}
-					//Log.d(TAG, "OF AUTHOR '%s'", a);
-
+				} else if (nextWord.equals("/") || nextWord.equals("OF")) {
 					if(author[2] == null) {
-
 						if(lastWord.equals("AND")) {
 							if(t[i-2].length() > 0) {
 								a = t[i-2] + " and " + a;
@@ -211,7 +195,7 @@ public class ModPlugin extends DroidSoundPlugin {
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }
+	public int getSoundData(short[] dest) { return N_getSoundData(currentSong, dest, dest.length); }
 	@Override
 	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override

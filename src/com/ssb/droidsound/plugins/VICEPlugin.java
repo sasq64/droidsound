@@ -126,8 +126,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public int getSoundData(short[] dest, int size) {
-		return N_getSoundData(dest, size);
+	public int getSoundData(short[] dest) {
+		return N_getSoundData(dest, dest.length);
 	}
 
 	@Override
@@ -379,7 +379,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	protected boolean load(String name, byte[] module) {
+	public boolean load(String name, byte[] module) {
 		currentTune = 0;
 		songInfo = null;
 		int type = -1;

@@ -54,12 +54,6 @@ static jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
-{
-	return false;
-}
-
-
 struct ModInfo {
 	ModPlugFile *mod;
 	const char *modType;
