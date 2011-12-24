@@ -7,12 +7,12 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.ComponentName;
+import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
+import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
@@ -20,33 +20,50 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.ssb.droidsound.R;
-import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.service.SongDatabaseService;
 
 public class PlayerActivity extends Activity {
 	private static final String TAG = PlayerActivity.class.getSimpleName();
-
-	private PlayerService.LocalBinder player;
-	private final ServiceConnection playerConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName c, IBinder binder) {
-			player = (PlayerService.LocalBinder) binder;
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName c) {
-			player = null;
-		}
-	};
 
 	private ActionBar actionBar;
 	private ViewPager viewPager;
 	private MyAdapter viewPagerAdapter;
 
+	private final BroadcastReceiver searchReceiver = new BroadcastReceiver() {
+		private ProgressDialog pd;
+
+		@Override
+		public void onReceive(Context c, Intent i) {
+			String a = i.getAction();
+			if (a.equals(SongDatabaseService.SCAN_NOTIFY_BEGIN)) {
+				pd = new ProgressDialog(c);
+				pd.setCancelable(false);
+				pd.show();
+				return;
+			}
+			if (a.equals(SongDatabaseService.SCAN_NOTIFY_UPDATE)) {
+				String path = i.getStringExtra("path");
+				int progress = i.getIntExtra("progress", 0);
+				pd.setMessage(String.format("%s (%d %%)", path, progress));
+			}
+			if (a.equals(SongDatabaseService.SCAN_NOTIFY_DONE)) {
+				pd.dismiss();
+				pd = null;
+				return;
+			}
+		}
+	};
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		bindService(new Intent(this, PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 		setContentView(R.layout.top);
+
+		IntentFilter searchReceiverFilter = new IntentFilter();
+		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_BEGIN);
+		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_UPDATE);
+		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_DONE);
+		registerReceiver(searchReceiver, searchReceiverFilter);
 
 		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
@@ -102,7 +119,7 @@ public class PlayerActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		unbindService(playerConnection);
+		unregisterReceiver(searchReceiver);
 	}
 
 	@Override

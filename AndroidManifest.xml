@@ -46,7 +46,7 @@
 			</intent-filter>		
 		</activity>
 		
-		<activity android:name=".SettingsActivity"/>
+		<activity android:name=".activity.SettingsActivity"/>
 		
 		<service android:name=".service.SongDatabaseService"/>
 		<service android:name=".service.PlayerService"/>

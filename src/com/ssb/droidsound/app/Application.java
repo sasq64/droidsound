@@ -31,8 +31,11 @@ public class Application extends android.app.Application {
 	}
 
 	public static File getModsDirectory() {
-		File modsDir = new File(Environment.getExternalStorageDirectory(), "MODS");
-		return modsDir;
+		return new File(Environment.getExternalStorageDirectory(), "MODS");
+	}
+
+	public static SharedPreferences getAppPreferences() {
+		return PreferenceManager.getDefaultSharedPreferences(app);
 	}
 
 	@Override
@@ -43,7 +46,7 @@ public class Application extends android.app.Application {
 		setupModsDir();
 
 		PreferenceManager.setDefaultValues(this, R.layout.preferences, false);
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+		SharedPreferences prefs = getAppPreferences();
 		Map<String, ?> prefsMap = prefs.getAll();
 
 		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
