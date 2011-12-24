@@ -4,7 +4,6 @@ import java.io.File;
 import java.nio.charset.Charset;
 
 import com.ssb.droidsound.app.Application;
-import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class SC68Plugin extends DroidSoundPlugin {
@@ -28,18 +27,16 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private String composer = null;
 	private String year = null;
 	private String type = null;
-	private final Unzipper unzipper = null;
 
 	@Override
 	public boolean canHandle(String name) {
-		String ext = name.substring(name.indexOf('.')+1).toLowerCase();
-		return(ext.equals("sndh") || ext.equals("sc68") || ext.equals("snd"));
+		String ext = name.substring(name.indexOf('.') + 1).toLowerCase();
+		return ext.equals("sndh") || ext.equals("sc68") || ext.equals("snd");
 	}
 
 	@Override
 	public void unload() {
-		Log.d(TAG, "Unloading");
-		if(currentSong != 0)
+		if (currentSong != 0)
 			N_unload(currentSong);
 	}
 
@@ -49,16 +46,12 @@ public class SC68Plugin extends DroidSoundPlugin {
 		return currentSong != 0;
 	}
 
-	private static String fromData(byte[] data, int start, int len) {
-		return new String(data, start, len, ISO88591).replaceAll("\u0000", "").trim();
-	}
-
-	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" };
+	private static final String[] HWS = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" };
 
 	@Override
 	public String[] getDetailedInfo() {
 
-		String [] info = new String [4];
+		String[] info = new String[4];
 
 		String replay = getStringInfo(52);
 		String hwname = getStringInfo(51);
@@ -69,7 +62,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		info[0] = "Format";
 		info[1] = String.format("SC68: %s", replay);
 		info[2] = "Hardware";
-		info[3] = String.format("%s (%s)", hwname, hws[hwbits]);
+		info[3] = String.format("%s (%s)", hwname, HWS[hwbits]);
 		return info;
 	}
 
@@ -97,52 +90,52 @@ public class SC68Plugin extends DroidSoundPlugin {
 			int offset = 16;
 			while (offset < 1024) {
 				String tag = new String(data, offset, 4, ISO88591);
-				if(tag.equals("TITL")) {
-					title = fromData(data, offset+4, 64);
-					Log.d(TAG, "TITLE: %s", title);
-					offset += (4+title.length());
+				if (tag.equals("TITL")) {
+					title = readNullTerminated(data, offset + 4);
+					offset += 4 + title.length();
 				} else if (tag.equals("COMM")) {
-					composer = fromData(data, offset+4, 64);
-					offset += (4+composer.length());
+					composer = readNullTerminated(data, offset + 4);
+					offset += 4 + composer.length();
 				} else if (tag.equals("YEAR")) {
-					year = fromData(data, offset+4, 32);
-					offset += (4+year.length());
+					year = readNullTerminated(data, offset + 4);
+					offset += 4 + year.length();
 				} else if (tag.equals("HDNS")) {
-					Log.d(TAG, "END");
 					break;
-				} else {
-					while(data[offset] != 0) offset++;
 				}
 
 				offset ++;
 			}
 
 			return true;
-		} else if (header2.equals("SC68 Music-file ")) {
+		}
+		if (header2.equals("SC68 Music-file ")) {
 			int offset = 56;
 			type = "SC68";
-			while(offset < 1024) {
-				String tag = new String(data, offset, 4);
-				int tsize = data[offset+4] | (data[offset+5]<<8) | (data[offset+6]<<16) | (data[offset+7]<<24);
+			while (offset < 1024) {
+				String tag = new String(data, offset, 4, ISO88591);
+				int tsize = (data[offset+4] & 0xff)
+						| ((data[offset+5] & 0xff) << 8)
+						| ((data[offset+6] & 0xff) << 16)
+						| ((data[offset+7] & 0xff) << 24);
 				offset += 8;
-				if(tsize < 0 || tsize > size) {
+				if (tsize < 0 || tsize > size) {
 					break;
 				}
 
-				if(tag.equals("SCMN")) {
-					title = fromData(data, offset, tsize);
+				if (tag.equals("SCMN")) {
+					title = new String(data, offset, tsize, ISO88591);
 				} else if (tag.equals("SCFN")) {
-					/* FIXME: WTF? why != null? */
 					if (title != null) {
-						title = fromData(data, offset, tsize);
+						title = new String(data, offset, tsize, ISO88591);
 					}
-				} else if(tag.equals("SCAN")) {
-					composer = fromData(data, offset, tsize);
-				} else if(tag.equals("SC68")) {
+				} else if (tag.equals("SCAN")) {
+					composer = new String(data, offset, tsize, ISO88591);
+				} else if (tag.equals("SC68")) {
 					tsize = 0;
-				} else if(tag.equals("SCEF") || tag.equals("SCDA")) {
+				} else if (tag.equals("SCEF") || tag.equals("SCDA")) {
 					break;
 				}
+
 				offset += tsize;
 			}
 
@@ -152,6 +145,13 @@ public class SC68Plugin extends DroidSoundPlugin {
 		return false;
 	}
 
+	private String readNullTerminated(byte[] data, int i) {
+		int len = 0;
+		while (i + len < data.length && data[i + len] != 0) {
+			len ++;
+		}
+		return new String(data, i, len, ISO88591);
+	}
 
 	@Override
 	public int getSoundData(short[] dest, int size) {
@@ -160,8 +160,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	public String getStringInfo(int what) {
-		if(currentSong == 0) {
-			switch(what) {
+		if (currentSong == 0) {
+			switch (what) {
 			case INFO_TITLE:
 				return title;
 			case INFO_AUTHOR:

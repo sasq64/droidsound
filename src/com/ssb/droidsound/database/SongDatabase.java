@@ -433,6 +433,7 @@ public class SongDatabase implements Runnable {
 
 		File parentDir = new File(modsDir);
 		if (full) {
+			notifyScan(modsDir, 0);
 			db.execSQL("DELETE FROM FILES;");
 			lastScan = 0;
 		}
