@@ -142,13 +142,16 @@ class MyAdapter extends FragmentPagerAdapter {
 
 	@Override
 	public Fragment getItem(int position) {
+		final Fragment f;
 		if (position == 0) {
-			return new PlayListFragment();
-		}
-		if (position == 1) {
-			return new PlayingFragment();
+			f = new CollectionFragment();
+		} else  if (position == 1) {
+			f = new PlayingFragment();
+		} else {
+			throw new RuntimeException("No such fragment: " + position);
 		}
 
-		throw new RuntimeException("No such fragment: " + position);
+		f.setRetainInstance(true);
+		return f;
 	}
 }

@@ -4,12 +4,15 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ssb.droidsound.utils.Log;
+
 /**
  * This container represents a playable file.
  *
  * @author alankila
  */
 public class SongFile {
+	private static final String TAG = SongFile.class.getSimpleName();
 	private static final Map<String, String> MAIN_TO_AUX = new HashMap<String, String>();
 	static {
 		MAIN_TO_AUX.put("MDAT", "SMPL");
@@ -32,7 +35,23 @@ public class SongFile {
 
 	public static SongFile fromFileName(String fileName) {
 		File f = new File(fileName);
-		return new SongFile(0, 0, fileName, null, null, f.getName(), null);
+		/* Check that file exists, and isn't inside an archive... */
+		if (f.exists()) {
+			return new SongFile(0, 0, fileName, null, null, f.getName(), null);
+		} else {
+			File parent = f.getParentFile();
+			while (!parent.exists()) {
+				parent = parent.getParentFile();
+			}
+			if (parent.exists()) {
+				String parentPath = parent.getPath();
+				String childPath = f.getPath().substring(parentPath.length() + 1);
+				Log.i(TAG, "Archive decomposition for path %s => %s and %s", f.getPath(), parentPath, childPath);
+				return new SongFile(0, 0, fileName, parentPath, childPath, f.getName(), null);
+			} else {
+				throw new IllegalArgumentException("The input file name could not be converted into something inside collection.");
+			}
+		}
 	}
 
 	public SongFile(SongFile s) {

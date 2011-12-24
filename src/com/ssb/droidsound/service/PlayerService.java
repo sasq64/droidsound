@@ -1,6 +1,5 @@
 package com.ssb.droidsound.service;
 
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -28,10 +27,12 @@ import android.telephony.TelephonyManager;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.activity.PlayerActivity;
+import com.ssb.droidsound.bo.PlayQueue;
 import com.ssb.droidsound.bo.Playlist;
 import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.utils.StreamUtil;
 import com.ssb.droidsound.utils.ZipReader;
 
 /**
@@ -103,6 +104,7 @@ public class PlayerService extends Service {
 		 */
 		public void setSeekRequest(int msec) {
 			synchronized (this) {
+				Log.i(TAG, "Requesting new seek position", msec);
 				seekRequest = msec;
 			}
 		}
@@ -125,6 +127,7 @@ public class PlayerService extends Service {
 		 */
 		public void setStateRequest(State newState) {
 			synchronized (this) {
+				Log.i(TAG, "Requesting new state: %s", newState);
 				stateRequest = newState;
 			}
 		}
@@ -138,6 +141,7 @@ public class PlayerService extends Service {
 		 */
 		public void setSubSongRequest(int song) {
 			synchronized (this) {
+				Log.i(TAG, "Requesting subsong: %d", song);
 				subsongRequest = song;
 			}
 		}
@@ -165,20 +169,21 @@ public class PlayerService extends Service {
 					AudioFormat.ENCODING_PCM_16BIT,
 					BUFSIZE,
 					AudioTrack.MODE_STREAM);
-			short[] samples = new short[BUFSIZE];
+			/* The plugin audio buffer is smaller to not underrun (we try to keep 75+ % full). */
+			short[] samples = new short[BUFSIZE / 4];
 
 			/* Note, this should not fail because it has already been executed once. */
 			plugin.load(f1, data1, f2, data2);
 
 			publishProgress(0f);
 			Log.i(TAG, "Entering audio playback loop.");
-			try { while (true) { synchronized (this) {
-				switch (stateRequest) {
+			try { OUTER: while (true) {
+				final State loopState;
+				synchronized (this) {
+					loopState = stateRequest;
+				}
+				switch (loopState) {
 				case PLAY: {
-					if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_STOPPED) {
-						audioTrack.play();
-					}
-
 					if (subsongRequest != -1) {
 						plugin.setTune(subsongRequest);
 						subsongRequest = -1;
@@ -197,11 +202,18 @@ public class PlayerService extends Service {
 					if (len <= 0) {
 						break;
 					}
+
+					if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_STOPPED) {
+						audioTrack.play();
+					}
 					audioTrack.write(samples, 0, len);
+
 					float sec2 = audioTrack.getPlaybackHeadPosition() / audioTrack.getPlaybackRate();
 					if (sec1 != (int) sec2) {
 						publishProgress(sec2);
 					}
+
+					break;
 				}
 				case PAUSE:
 					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_PAUSED) {
@@ -213,10 +225,9 @@ public class PlayerService extends Service {
 					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_STOPPED) {
 						audioTrack.stop();
 					}
-					break;
+					break OUTER;
 				}
-
-			} } }
+			} }
 			catch (Exception ise) {
 				Log.w(TAG, "Audio playback error: %s", ise);
 			}
@@ -267,6 +278,7 @@ public class PlayerService extends Service {
 	 * @param d2
 	 */
 	private void startPlayerThread(DroidSoundPlugin p1, String n1, byte[] d1, String n2, byte[] d2) {
+		Log.i(TAG, "Requesting player thread to start");
 		if (player != null) {
 			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
 		}
@@ -286,11 +298,19 @@ public class PlayerService extends Service {
 	 * @throws InterruptedException
 	 */
 	private void stopPlayerThread() throws InterruptedException {
+		Log.i(TAG, "Requesting player thread to stop");
 		if (player == null) {
 			throw new RuntimeException("Playerthread was not running. Someone must call startPlayerThread() first.");
 		}
 
 		player.setStateRequest(State.STOP);
+		/* Android ExecutorService#shutdown() does not wait.
+		 * Also #awaitTermination does not wake when last task is gone.
+		 * So we poll. Hopefully this shit works.
+		 */
+		while (playerExecutor.getActiveCount() != 0) {
+			playerExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
+		}
 		playerExecutor.shutdown();
 		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 		nm.cancel(0x123456);
@@ -302,14 +322,6 @@ public class PlayerService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-
-		/* Acquire our temporary folder */
-		File tmpDir = getDir("tmp", Context.MODE_PRIVATE);
-		for (File f : tmpDir.listFiles()) {
-			if (! f.getName().startsWith(".")) {
-				f.delete();
-			}
-		}
 
 		phoneStateListener = new PhoneStateListener() {
 			boolean didPause = false;
@@ -361,16 +373,23 @@ public class PlayerService extends Service {
 				stopPlayerThread();
 			} catch (InterruptedException e) {
 			}
-			playerExecutor.shutdown();
 		}
 	}
 
+	/**
+	 * Start playing a song identified by SongFile parameter.
+	 *
+	 * @param song
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	private boolean startSong(SongFile song) throws IOException, InterruptedException {
 		final String name1;
-		final InputStream is1;
-		InputStream is2 = null;
-		final long size1;
-		long size2 = 0;
+		final byte[] data1;
+
+		final String name2 = song.getSecondaryFileName();
+		byte[] data2 = null;
 
 		/* FIXME:
 		 *
@@ -381,21 +400,22 @@ public class PlayerService extends Service {
 		 * If that is the case, we could get rid of writeTempFile, and
 		 * DroidSoundPlugin#load(File).
 		 */
-		String name2 = song.getSecondaryFileName();
 		if (song.getZipPath() != null) {
 			name1 = song.getZipName();
 
 			ZipFile zr = ZipReader.openZip(new File(song.getZipPath()));
 			ZipEntry ze = zr.getEntry(name1);
-			is1 = zr.getInputStream(ze);
-			size1 = ze.getSize();
+			InputStream is1 = zr.getInputStream(ze);
+			data1 = StreamUtil.readFully(is1, ze.getSize());
+			is1.close();
 
 			/* If the name looks like there might be a secondary file, we extract that from zip also */
 			if (name2 != null) {
 				ZipEntry ze2 = zr.getEntry(name2);
 				if (ze2 != null) {
-					is2 = zr.getInputStream(ze2);
-					size2 = ze2.getSize();
+					InputStream is2 = zr.getInputStream(ze2);
+					data2 = StreamUtil.readFully(is1, ze2.getSize());
+					is2.close();
 				}
 			}
 
@@ -404,25 +424,17 @@ public class PlayerService extends Service {
 			name1 = song.getFileName();
 
 			File f1 = new File(name1);
-			is1 = new FileInputStream(f1);
-			size1 = f1.length();
+			InputStream is1 = new FileInputStream(f1);
+			data1 = StreamUtil.readFully(is1, f1.length());
+			is1.close();
 			if (name2 != null) {
 				File f2 = new File(song.getSecondaryFileName());
-				is2 = new FileInputStream(f2);
-				size2 = f2.length();
+				InputStream is2 = new FileInputStream(f2);
+				data2 = StreamUtil.readFully(is2, f2.length());
+				is2.close();
 			}
 		}
 
-		byte[] data1 = new byte[(int) size1];
-		new DataInputStream(is1).readFully(data1);
-		is1.close();
-
-		byte[] data2 = null;
-		if (is2 != null) {
-			data2 = new byte[(int) size2];
-			new DataInputStream(is2).readFully(data2);
-			is2.close();
-		}
 
 		if (player != null) {
 			stopPlayerThread();
@@ -453,6 +465,7 @@ public class PlayerService extends Service {
 			}
 		}
 
+		/* Found plugin? Let's start playback thread. */
 		if (currentPlugin != null) {
 			currentPlugin.unload();
 			startPlayerThread(currentPlugin, name1, data1, name2, data2);
@@ -477,7 +490,7 @@ public class PlayerService extends Service {
 				return startSong(song);
 			}
 			catch (Exception e) {
-				Log.w(TAG, "Unable to start playing: %s", e);
+				Log.w(TAG, "Unable to start playing", e);
 				return false;
 			}
 		}

@@ -1,11 +1,9 @@
-package com.ssb.droidsound.service;
+package com.ssb.droidsound.bo;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.ssb.droidsound.bo.Playlist;
-import com.ssb.droidsound.bo.SongFile;
 
 public class PlayQueue {
 	private final List<SongFile> musicListInOriginalOrder = new ArrayList<SongFile>();

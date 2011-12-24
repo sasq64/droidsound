@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.Environment;
@@ -18,7 +17,6 @@ import android.widget.Toast;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.service.SongDatabaseService;
 import com.ssb.droidsound.utils.StreamUtil;
 
 public class Application extends android.app.Application {
@@ -41,8 +39,6 @@ public class Application extends android.app.Application {
 	public void onCreate() {
 		super.onCreate();
 		app = this;
-
-		startService(new Intent(this, SongDatabaseService.class));
 
 		setupModsDir();
 
