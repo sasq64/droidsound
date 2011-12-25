@@ -1,6 +1,5 @@
 package com.ssb.droidsound.activity;
 
-import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -102,15 +101,15 @@ public class PlayingFragment extends Fragment {
 	private ImageButton forwardButton;
 
 	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
-		activity.registerReceiver(playPositionReceiver, new IntentFilter(PlayerService.PLAYBACK_ADVANCING));
-		activity.bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
+	public void onStart() {
+		super.onStart();
+		getActivity().registerReceiver(playPositionReceiver, new IntentFilter(PlayerService.PLAYBACK_ADVANCING));
+		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
-	public void onDestroy() {
-		super.onDestroy();
+	public void onStop() {
+		super.onStop();
 		getActivity().unregisterReceiver(playPositionReceiver);
 		getActivity().unbindService(playerConnection);
 	}

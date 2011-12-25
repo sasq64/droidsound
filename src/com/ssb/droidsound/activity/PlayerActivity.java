@@ -9,10 +9,13 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
@@ -21,11 +24,30 @@ import android.view.MenuItem;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.service.SongDatabaseService;
+import com.ssb.droidsound.utils.Log;
 
 public class PlayerActivity extends Activity {
+	private static final String TAG = PlayerActivity.class.getSimpleName();
+
 	private ActionBar actionBar;
 	private ViewPager viewPager;
 	private MyAdapter viewPagerAdapter;
+
+	private SongDatabaseService.LocalBinder db;
+
+	private final ServiceConnection dbConnection = new ServiceConnection() {
+		@Override
+		public void onServiceConnected(ComponentName tag, IBinder binder) {
+			db = (SongDatabaseService.LocalBinder) binder;
+			Log.i(TAG, "Refreshing database.");
+			db.scan(false);
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName tag) {
+			db = null;
+		}
+	};
 
 	private final BroadcastReceiver searchReceiver = new BroadcastReceiver() {
 		private ProgressDialog pd;
@@ -56,6 +78,7 @@ public class PlayerActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.top);
+		bindService(new Intent(this, SongDatabaseService.class), dbConnection, Context.BIND_AUTO_CREATE);
 
 		IntentFilter searchReceiverFilter = new IntentFilter();
 		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_BEGIN);
@@ -117,6 +140,7 @@ public class PlayerActivity extends Activity {
 	protected void onDestroy() {
 		super.onDestroy();
 		unregisterReceiver(searchReceiver);
+		unbindService(dbConnection);
 	}
 
 	@Override
@@ -141,8 +165,13 @@ public class PlayerActivity extends Activity {
 class MyAdapter extends FragmentPagerAdapter {
 	private final String[] entries = { "collection", "playing" };
 
+	private final CollectionFragment collectionFragment = new CollectionFragment();
+	private final PlayingFragment playingFragment = new PlayingFragment();
+
 	public MyAdapter(FragmentManager fm) {
 		super(fm);
+		collectionFragment.setRetainInstance(true);
+		playingFragment.setRetainInstance(true);
 	}
 
 	public String[] getEntries() {
@@ -156,16 +185,12 @@ class MyAdapter extends FragmentPagerAdapter {
 
 	@Override
 	public Fragment getItem(int position) {
-		final Fragment f;
 		if (position == 0) {
-			f = new CollectionFragment();
-		} else  if (position == 1) {
-			f = new PlayingFragment();
+			return collectionFragment;
+		} else if (position == 1) {
+			return playingFragment;
 		} else {
 			throw new RuntimeException("No such fragment: " + position);
 		}
-
-		f.setRetainInstance(true);
-		return f;
 	}
 }

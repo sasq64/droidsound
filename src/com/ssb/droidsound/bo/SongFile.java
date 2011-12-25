@@ -39,8 +39,8 @@ public class SongFile {
 		if (f.exists()) {
 			return new SongFile(0, 0, fileName, null, null, f.getName(), null);
 		} else {
-			File parent = f.getParentFile();
-			while (!parent.exists()) {
+			File parent = f;
+			while (! parent.exists()) {
 				parent = parent.getParentFile();
 			}
 			if (parent.exists()) {

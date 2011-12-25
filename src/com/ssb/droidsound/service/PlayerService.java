@@ -11,10 +11,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioFormat;
@@ -287,8 +285,6 @@ public class PlayerService extends Service {
 	 */
 	private PhoneStateListener phoneStateListener;
 
-	private NotificationManager nm;
-
 	/**
 	 * This method starts a new playback thread capable of handling one file.
 	 * The default audio state is "PAUSE", so no playback happens until you
@@ -352,8 +348,6 @@ public class PlayerService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-
-		nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
 		phoneStateListener = new PhoneStateListener() {
 			boolean didPause = false;

@@ -14,7 +14,7 @@ public abstract class DroidSoundPlugin {
 		public String format;
 
 		public int channels;
-		public int date;
+		public int date = -1;
 	};
 
 	private static final MessageDigest MD5;
@@ -123,14 +123,14 @@ public abstract class DroidSoundPlugin {
 			info.title = basename;
 		}
 
-		if (info.date <= 0 && info.copyright != null && info.copyright.length() >= 4) {
-			int year = -1;
+		if (info.date != -1 && info.copyright != null && info.copyright.length() >= 4) {
+			info.date = 0;
 			try {
-				year = Integer.parseInt(info.copyright.substring(0,4));
+				int year = Integer.parseInt(info.copyright.substring(0,4));
+				if (year > 1000 && year < 2100) {
+					info.date = year * 10000;
+				}
 			} catch (NumberFormatException e) {
-			}
-			if (year > 1000 && year < 2100) {
-				info.date = year * 10000;
 			}
 		}
 	}

@@ -1,8 +1,6 @@
 package com.ssb.droidsound.activity;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -23,15 +21,12 @@ import android.widget.TextView;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.app.Application;
-import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.service.SongDatabaseService;
 import com.ssb.droidsound.utils.Log;
 
 public class CollectionFragment extends Fragment {
 	protected static final String TAG = CollectionFragment.class.getSimpleName();
-
-	private final List<String> parents = new ArrayList<String>();
 
 	private ListView collectionView;
 
@@ -41,16 +36,18 @@ public class CollectionFragment extends Fragment {
 
 	private final SongDatabaseService.Sort sorting = SongDatabaseService.Sort.TITLE;
 
+	private boolean shuffle;
+
 	private final ServiceConnection searchDbConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName tag, IBinder binder) {
 			db = (SongDatabaseService.LocalBinder) binder;
+
 			Log.i(TAG, "SongDatabase connection has been established. Showing initial view, and refreshing.");
 			MyAdapter ma = new MyAdapter(getActivity(), db.getFilesInPath(Application.getModsDirectory(), sorting));
+			Log.i(TAG, "New child has: " + ma.getCount() + " lines");
 			collectionView.setAdapter(ma);
-
-			Log.i(TAG, "Refreshing database.");
-			db.scan(false);
+			ma.notifyDataSetChanged();
 		}
 
 		@Override
@@ -115,17 +112,45 @@ public class CollectionFragment extends Fragment {
 			iconView.setImageDrawable(context.getResources().getDrawable(icon));
 			titleView.setText(title != null ? title : filename);
 			subtitleView.setText(composer);
-			sidetitleView.setText(date != 0 ? String.valueOf(date / 10000) : null);
+			String sidetitle = null;
+			if (date > 19000000) {
+				int year = date / 10000;
+				int month = (date / 100) % 100;
+				if (month != 0) {
+					sidetitle = String.format("%04d/%02d", year, month);
+				} else {
+					sidetitle = String.valueOf(year);
+				}
+			}
+			sidetitleView.setText(sidetitle);
 
 			view.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View arg0) {
-					File f = new File(path, filename);
+					File selectedFile = new File(path, filename);
 					if (type != SongDatabaseService.TYPE_FILE) {
-						changeCursor(db.getFilesInPath(f, sorting));
+						changeCursor(db.getFilesInPath(selectedFile, sorting));
 					} else {
-						parents.add(path);
-						player.playMod(SongFile.fromFileName(f.getPath()));
+						Cursor playList = db.getFilesInPath(new File(path), sorting);
+						String[] fileList = new String[playList.getCount()];
+						playList.moveToFirst();
+						int idx = -1;
+						while (! playList.isAfterLast()) {
+							String path = playList.getString(SongDatabaseService.COL_PATH);
+							String name = playList.getString(SongDatabaseService.COL_FILENAME);
+							File playlistFile = new File(path, name);
+							if (playlistFile.equals(selectedFile)) {
+								idx = playList.getPosition();
+							}
+							fileList[playList.getPosition()] = playlistFile.getPath();
+							playList.moveToNext();
+						}
+
+						try {
+							player.playPlaylist(fileList, idx, shuffle);
+						} catch (Exception e) {
+							Log.w(TAG, "Can't play file", e);
+						}
 					}
 				}
 			});
@@ -138,21 +163,24 @@ public class CollectionFragment extends Fragment {
 	}
 
 	@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
-		activity.bindService(new Intent(getActivity(), SongDatabaseService.class), searchDbConnection, Context.BIND_AUTO_CREATE);
-		activity.bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
+	public void onStart() {
+		Log.i(TAG, "onStart");
+		super.onStart();
+		getActivity().bindService(new Intent(getActivity(), SongDatabaseService.class), searchDbConnection, Context.BIND_AUTO_CREATE);
+		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
-	public void onDetach() {
-		super.onDestroy();
+	public void onStop() {
+		Log.i(TAG, "onStop");
+		super.onStop();
 		getActivity().unbindService(searchDbConnection);
 		getActivity().unbindService(playerConnection);
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		Log.i(TAG, "onCreateView");
 		View view = inflater.inflate(R.layout.collection_view, null);
 		collectionView = (ListView) view.findViewById(R.id.collection_view);
 		return view;

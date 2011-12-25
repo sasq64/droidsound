@@ -6,7 +6,8 @@
 	android:background="@android:drawable/list_selector_background">
 
 <ImageView android:src="@drawable/gflat_note" 
-	android:layout_width="36dp" android:layout_height="36dp"
+    android:scaleType="fitXY"
+	android:layout_width="wrap_content" android:layout_height="wrap_content"
 	android:id="@+id/icon"
 	android:layout_alignParentLeft="true"
 	android:layout_centerVertical="true"
@@ -16,19 +17,22 @@
 	android:layout_alignParentTop="true"
 	android:layout_toRightOf="@id/icon"
 	android:id="@+id/title"
-	android:textColor="#FFFFFF" android:textSize="22dp" />
+	android:textAppearance="?android:attr/textAppearanceLarge"
+	android:textColor="@android:color/primary_text_dark" />
+
 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+	android:layout_alignParentBottom="true"
 	android:layout_toRightOf="@id/icon"
 	android:id="@+id/subtitle"
 	android:layout_below="@id/title"
-	android:textColor="#FFFFFF" android:textSize="15dp" />
+	android:textColor="@android:color/secondary_text_dark" />
 
-<TextView android:layout_width="wrap_content" android:layout_height="45dp"
+<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
 	android:layout_alignParentBottom="true"
 	android:layout_alignParentRight="true"
 	android:gravity="bottom"
 	android:id="@+id/sidetitle"
-	android:textColor="#a0a0a0" android:textSize="15dp"
-	android:layout_marginRight="8dp" />
+	android:textColor="@android:color/secondary_text_dark"
+	android:layout_marginRight="4dp" />
 
 </RelativeLayout>
