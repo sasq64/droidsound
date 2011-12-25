@@ -62,14 +62,14 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] data) {
+	protected boolean load(String name, byte[] data) {
 		currentSong = N_load(data, data.length);
 		return currentSong != 0;
 	}
 
 	public boolean loadInfo(File file) throws IOException {
 		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
+		return currentSong != 0;
 	}
 
 	@Override
@@ -102,11 +102,6 @@ public class GMEPlugin extends DroidSoundPlugin {
 	@Override
 	public String getStringInfo(int what) {
 		return N_getStringInfo(currentSong, what);
-	}
-
-	@Override
-	public int getIntInfo(int what) {
-		return N_getIntInfo(currentSong, what);
 	}
 
 	native private long N_load(byte[] module, int size);

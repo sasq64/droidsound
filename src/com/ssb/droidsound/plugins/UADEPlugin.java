@@ -2,6 +2,7 @@ package com.ssb.droidsound.plugins;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashSet;
@@ -43,7 +44,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 					String[] exts = line.substring(x+9).split(",");
 					for (String ex : exts) {
 						int sp = ex.indexOf('\t');
-						if(sp >= 0) {
+						if (sp >= 0) {
 							ex = ex.substring(0, sp);
 						}
 						extensions.add(ex.toUpperCase());
@@ -85,32 +86,44 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public String getBaseName(String name) {
-		name = name.substring(name.lastIndexOf('/')+1);
-
-		int x = name.lastIndexOf('.');
-		if (x >= 0) {
-			String ext = name.substring(x+1).toUpperCase();
-			if (! extensions.contains(ext)) {
-				x = name.indexOf('.');
-				ext = name.substring(0, x).toUpperCase();
-
-				if (extensions.contains(ext)) {
-					return name.substring(x+1);
-				}
-			}
-			return name.substring(0, x);
-		}
-
-		return name;
+	protected boolean load(String name, byte[] module) {
+		throw new RuntimeException("This method should not be called. (See overridden load())");
 	}
 
 	@Override
-	public int getIntInfo(int what) {
-		if (currentSong == 0) {
-			return -1;
+	public boolean load(String f1, byte[] data1, String f2, byte[] data2) {
+		File tmpDir = Application.getTmpDirectory();
+		for (File f : tmpDir.listFiles()) {
+			if (! f.getName().startsWith(".")) {
+				f.delete();
+			}
 		}
-		return N_getIntInfo(currentSong, what);
+
+		try {
+			FileOutputStream fo1 = new FileOutputStream(new File(tmpDir, f1));
+			fo1.write(data1);
+			fo1.close();
+			if (f2 != null) {
+				FileOutputStream fo2 = new FileOutputStream(new File(tmpDir, f2));
+				fo2.write(data1);
+				fo2.close();
+			}
+		}
+		catch (IOException ioe) {
+			throw new RuntimeException(ioe);
+		}
+
+		currentSong = N_loadFile(new File(tmpDir, f1).getPath());
+		return currentSong != 0;
+	}
+
+	@Override
+	public void unload() {
+		if (currentSong == 0) {
+			return;
+		}
+		N_unload(currentSong);
+		currentSong = 0;
 	}
 
 	@Override
@@ -136,26 +149,6 @@ public class UADEPlugin extends DroidSoundPlugin {
 			return "";
 		}
 		return N_getStringInfo(currentSong, what);
-	}
-
-	@Override
-	public boolean load(String name, byte[] module) {
-		throw new RuntimeException("This method should not be called. (See overridden load())");
-	}
-
-	@Override
-	public boolean loadInfo(String name, byte[] module) {
-		currentSong = 0;
-		return true;
-	}
-
-	@Override
-	public void unload() {
-		if (currentSong == 0) {
-			return;
-		}
-		N_unload(currentSong);
-		currentSong = 0;
 	}
 
 	@Override

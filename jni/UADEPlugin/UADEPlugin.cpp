@@ -542,18 +542,14 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 }
 
 
-static int wait_token()
-{
-	do
-	{
+static int wait_token() {
+	do {
 		int ret = uade_receive_message(um, sizeof(space), &uadeipc);
-		if(ret < 0)
-		{
+		if(ret < 0) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not receive events (TOKEN) from uade.\n");
 			return 0;
 		}
-		if (ret == 0)
-		{
+		if (ret == 0) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nEnd of input after reboot.\n");
 			return 0;
 		}
@@ -570,14 +566,12 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 		wait_token();
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "close2\n");
-	if(uade_send_short_message(UADE_COMMAND_REBOOT, &uadeipc))
-	{
+	if(uade_send_short_message(UADE_COMMAND_REBOOT, &uadeipc)) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send reboot\n");
 		return;
 	}
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "close3\n");
-    if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc))
-	{
+        if (uade_send_short_message(UADE_COMMAND_TOKEN, &uadeipc)) {
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nCan not send token\n");
 		return;
 	}

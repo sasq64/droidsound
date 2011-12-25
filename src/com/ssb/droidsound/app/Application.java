@@ -34,6 +34,10 @@ public class Application extends android.app.Application {
 		return new File(Environment.getExternalStorageDirectory(), "MODS");
 	}
 
+	public static File getTmpDirectory() {
+		return app.getDir("tmp", Context.MODE_PRIVATE);
+	}
+
 	public static SharedPreferences getAppPreferences() {
 		return PreferenceManager.getDefaultSharedPreferences(app);
 	}
@@ -91,6 +95,4 @@ public class Application extends android.app.Application {
 			}
 		}
 	}
-
-
 }

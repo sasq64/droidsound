@@ -52,23 +52,24 @@ public abstract class DroidSoundPlugin {
 		return PLUGINS;
 	}
 
-	public boolean loadInfo(String name, byte[] module) {
-		return load(name, module);
-	}
-
-	public abstract void unload();
-
 	public abstract boolean canHandle(String name);
 
-	public abstract boolean load(String name, byte[] module);
+	protected abstract boolean load(String name, byte[] module);
 
-	public void load(String f1, byte[] data1, String f2, byte[] data2) {
-		/* Currently ignoring the secondary file. Some plugins are expected to use it.
-		 * Some plugins (UADE, VICE) may be able to use it. */
-		load(f1, data1);
+	public boolean load(String f1, byte[] data1, String f2, byte[] data2) {
+		if (f2 != null) {
+			throw new RuntimeException("This plugin is not handling a 2nd file.");
+		}
+		return load(f1, data1);
 	}
 
 	public abstract int getSoundData(short[] dest);
+
+	public abstract void unload();
+
+	public int getIntInfo(int what) {
+		return 0;
+	}
 
 	public boolean seekTo(int msec) {
 		return false;
@@ -78,37 +79,14 @@ public abstract class DroidSoundPlugin {
 		return false;
 	}
 
-	// Should return information in string pairs, as TITLE0, TEXT0, TITLE1, TEXT1 etc
-	// Some titles are predfined and excpect certain data
-	// Unknown titles are presented as-is in detailed song info
-	// Known TITLES:
-	// "Instruments" - Instrument names, one instrument per line
-	// "Info" - STIL info for C64, otherwise presented normally
-	// "Channels" - Number of channels
-	// "Copyright" - Same as INFO_COPYRIGHT
-	// "Game" - Same as INFO_GAME
 	public String[] getDetailedInfo() {
 		return null;
 	}
 
 	public abstract String getStringInfo(int what);
 
-	public abstract int getIntInfo( int what);
-
 	public boolean isSilent() {
 		return false;
-	}
-
-	public String getBaseName(String fname) {
-		int slash = fname.lastIndexOf('/');
-		if(slash >= 0) {
-			fname = fname.substring(slash+1);
-		}
-		int dot = fname.lastIndexOf('.');
-		if(dot > 0) {
-			fname = fname.substring(0, dot);
-		}
-		return fname;
 	}
 
 	public abstract void setOption(String string, Object val);

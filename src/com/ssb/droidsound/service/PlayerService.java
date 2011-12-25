@@ -284,6 +284,7 @@ public class PlayerService extends Service {
 		}
 
 		player = new PlayerRunnable(p1, n1, d1, n2, d2);
+		player.setStateRequest(State.PLAY);
 		playerExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(1));
 		player.executeOnExecutor(playerExecutor);
 		notification.setLatestEventInfo(this, "Droidsound", player.getName(), contentIntent);
@@ -435,45 +436,31 @@ public class PlayerService extends Service {
 			}
 		}
 
-
+		/* Plugins will be used to try load the file now, so stop player thread if it is running. */
 		if (player != null) {
 			stopPlayerThread();
 		}
 
+		String basename1 = new File(name1).getName();
+		String basename2 = name2 != null ? new File(name2).getName() : null;
+
+		/* Scan plugin list looking for the one that can handle the file and agrees to load it. */
 		DroidSoundPlugin currentPlugin = null;
-		/* First try plugins that report capability of handling file */
 		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
-			if (! plugin.canHandle(name1)) {
-				continue;
-			}
-			if (plugin.load(name1, data1)) {
+			if (plugin.canHandle(name1) && plugin.load(basename1, data1, basename2, data2)) {
 				currentPlugin = plugin;
 				break;
 			}
 		}
-
-		/* Then try the rest of the plugins. */
 		if (currentPlugin == null) {
-			for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
-				if (plugin.canHandle(name1)) {
-					continue;
-				}
-				if (plugin.load(name1, data1)) {
-					currentPlugin = plugin;
-					break;
-				}
-			}
+			return false;
 		}
 
-		/* Found plugin? Let's start playback thread. */
-		if (currentPlugin != null) {
-			currentPlugin.unload();
-			startPlayerThread(currentPlugin, name1, data1, name2, data2);
-			player.setStateRequest(State.PLAY);
-			return true;
-		}
+		/* Loaded. It will be loaded once more by startPlayerThread, so we unload now... */
+		currentPlugin.unload();
 
-		return false;
+		startPlayerThread(currentPlugin, basename1, data1, basename2, data2);
+		return true;
 	}
 
 	/**

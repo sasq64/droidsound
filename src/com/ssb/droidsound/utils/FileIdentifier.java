@@ -28,15 +28,12 @@ public class FileIdentifier {
 	 *
 	 * If composer could not be found, try to parse title & composer from filename.
 	 *
-	 * If game was set but not title, use game as title
-	 *
 	 * If title still not found, use filename (without extension) as title
-	 *
 	 */
 	private static void fixName(String basename, MusicInfo info) {
 		if (info.composer == null || info.composer.length() == 0) {
 			int sep = basename.indexOf(" - ");
-			if(sep > 0) {
+			if (sep > 0) {
 				info.composer = basename.substring(0, sep);
 				info.title = basename.substring(sep+3);
 			}
@@ -66,20 +63,6 @@ public class FileIdentifier {
 		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
 	}
 
-	private static MusicInfo tryLoad(DroidSoundPlugin plugin, String name, byte[] file) throws IOException {
-		if (plugin.loadInfo(name, file)) {
-			MusicInfo info = new MusicInfo();
-			info.title = plugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
-			info.composer = plugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
-			info.copyright = plugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
-			info.format = plugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
-			info.date = -1;
-			plugin.unload();
-			return info;
-		}
-		return null;
-	}
-
 	private static String getBaseName(String fname) {
 		int slash = fname.lastIndexOf('/');
 		if(slash >= 0) {
@@ -102,22 +85,24 @@ public class FileIdentifier {
 	}
 
 
-	public static MusicInfo identify(String name, byte[] module) throws IOException {
-		int dot = name.lastIndexOf('.');
+	public static MusicInfo identify(String name1, byte[] module1, String name2, byte[] module2) throws IOException {
+		int dot = name1.lastIndexOf('.');
 		final Extension nameExt;
 		try {
-			String ext = name.substring(dot + 1).toUpperCase();
+			String ext = name1.substring(dot + 1).toUpperCase();
 			nameExt = Extension.valueOf(ext);
 		}
 		catch (IllegalArgumentException iae) {
 			for (DroidSoundPlugin plugin : plugins) {
-				if (plugin.canHandle(name)) {
-					MusicInfo info = tryLoad(plugin, name, module);
-					if (info != null) {
-						name = plugin.getBaseName(name);
-						fixName(name, info);
-						return info;
-					}
+				if (plugin.canHandle(name1) && plugin.load(name1, module1, name2, module2)) {
+					MusicInfo info = new MusicInfo();
+					info.title = plugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
+					info.composer = plugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
+					info.copyright = plugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
+					info.format = plugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
+					info.date = -1;
+					plugin.unload();
+					return info;
 				}
 			}
 			return null;
@@ -129,18 +114,18 @@ public class FileIdentifier {
 
 		switch (nameExt) {
 		case PRG: {
-			name = getBaseName(name);
+			name1 = getBaseName(name1);
 			info.format = "SID";
-			fixName(name, info);
+			fixName(name1, info);
 			return info;
 		}
 
 		case SID: {
-			String magic = new String(module, 1, 3, ISO88591);
+			String magic = new String(module1, 1, 3, ISO88591);
 			if (magic.equals("SID")) {
-				info.title = fromData(module, 0x16, 32);
-				info.composer = fromData(module, 0x36, 32);
-				info.copyright = fromData(module, 0x56, 32);
+				info.title = fromData(module1, 0x16, 32);
+				info.composer = fromData(module1, 0x36, 32);
+				info.copyright = fromData(module1, 0x56, 32);
 				info.format = "SID";
 				if (info.copyright.length() >= 4) {
 					try {
@@ -165,64 +150,64 @@ public class FileIdentifier {
 		}
 
 		case S3M: {
-			String magic = new String(module, 44, 4, ISO88591);
+			String magic = new String(module1, 44, 4, ISO88591);
 			if (! magic.equals("SCRM")) {
 				return null;
 			}
-			info.title = fromData(module, 0, 28);
+			info.title = fromData(module1, 0, 28);
 			info.format = "S3M";
 			break;
 		}
 
 		case XM: {
-			String magic = new String(module, 0, 15, ISO88591);
+			String magic = new String(module1, 0, 15, ISO88591);
 			if (! magic.equals("Extended Module")) {
 				return null;
 			}
-			info.title = fromData(module, 17, 20);
-			info.channels = module[0x68];
+			info.title = fromData(module1, 17, 20);
+			info.channels = module1[0x68];
 			info.format = "XM";
 			break;
 		}
 
 		case IT: {
-			String magic = new String(module, 0, 4, ISO88591);
+			String magic = new String(module1, 0, 4, ISO88591);
 			if (! magic.equals("IMPM")) {
 					return null;
 			}
-			info.title = fromData(module, 4, 26);
+			info.title = fromData(module1, 4, 26);
 			info.format = "IT";
 			break;
 		}
 
 		case NSF: {
-			String magic = new String(module, 0, 4, ISO88591);
+			String magic = new String(module1, 0, 4, ISO88591);
 			if (! magic.equals("NESM")) {
 				return null;
 			}
-			info.title = fromData(module, 0xe, 32);
-			info.composer = fromData(module, 0x2e, 32);
-			info.copyright = fromData(module, 0x4e, 32);
+			info.title = fromData(module1, 0xe, 32);
+			info.composer = fromData(module1, 0x2e, 32);
+			info.copyright = fromData(module1, 0x4e, 32);
 			info.format = "NES";
 			break;
 		}
 
 		case SPC: {
 			info.format = "SNES";
-			String magic = new String(module, 0, 27, ISO88591);
+			String magic = new String(module1, 0, 27, ISO88591);
 			if (! magic.equals("SNES-SPC700 Sound File Data")) {
 				return null;
 			}
 
-			if (module[0x23] == 0x1a) {
-				info.title = fromData(module, 0x2e, 32);
-				String game = fromData(module, 0x4e, 32);
+			if (module1[0x23] == 0x1a) {
+				info.title = fromData(module1, 0x2e, 32);
+				String game = fromData(module1, 0x4e, 32);
 
 				if (game.length() > 0) {
 					info.title = game + " - " + info.title;
 				}
 
-				info.composer = fromData(module, 0xb1, 32);
+				info.composer = fromData(module1, 0xb1, 32);
 			}
 			break;
 		}
@@ -232,14 +217,14 @@ public class FileIdentifier {
 		}
 
 		if (dot > 0) {
-			name = name.substring(0, dot);
+			name1 = name1.substring(0, dot);
 		}
-		int slash = name.lastIndexOf('/');
+		int slash = name1.lastIndexOf('/');
 		if (slash >= 0) {
-			name = name.substring(slash+1);
+			name1 = name1.substring(slash+1);
 		}
 
-		fixName(name, info);
+		fixName(name1, info);
 		return info;
 	}
 }

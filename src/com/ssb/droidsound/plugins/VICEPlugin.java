@@ -135,28 +135,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 		return false;
 	}
 
-	private boolean nativeLoad(String name, byte [] module, int size) {
-		final String error;
-		try {
-			File file = File.createTempFile("tmp-XXXXX", "sid");
-			FileOutputStream fo = new FileOutputStream(file);
-			fo.write(module);
-			fo.close();
-			error = N_loadFile(file.getAbsolutePath());
-			file.delete();
-		}
-		catch (IOException ie) {
-			throw new RuntimeException(ie);
-		}
-
-		if (error != null) {
-			Log.i(TAG, "Native code error: " + error);
-			return false;
-		}
-
-		return true;
-	}
-
 	private byte[] calculateMD5(byte[] module) {
 		ByteBuffer src = ByteBuffer.wrap(module);
 		src.order(ByteOrder.BIG_ENDIAN);
@@ -283,41 +261,10 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean loadInfo(String name, byte[] header) {
-		songInfo = new Info();
-		if (name.toLowerCase().endsWith(".prg")) {
-			songInfo.name = name;
-			songInfo.format = "PRG";
-			return true;
-		}
-
-		String s = new String(header, 0, 4, ISO88591);
-		if (! (s.equals("PSID") || s.equals("RSID"))) {
-			return false;
-		}
-
-		songInfo.format = s;
-
-		songInfo.name = new String(header, 0x16, 0x20, ISO88591).replaceAll("\0", "");
-		songInfo.composer = new String(header, 0x36, 0x20, ISO88591).replaceAll("\0", "");
-		songInfo.copyright = new String(header, 0x56, 0x20, ISO88591).replaceAll("\0", "");
-
-		songInfo.videoMode = (header[0x77] >> 2) & 3;
-		songInfo.sidModel = (header[0x77] >> 4) & 3;
-		songInfo.songs = ((header[0xe] << 8) & 0xff00) | (header[0xf] & 0xff);
-		songInfo.startSong = ((header[0x10] << 8) & 0xff00) | (header[0x11] & 0xff) - 1;
-
-		Log.i(TAG, "startSong=" + songInfo.startSong + ", songs=" + songInfo.songs);
-
-		return true;
-	}
-
-	@Override
 	public boolean canHandle(String name) {
 		name = name.toUpperCase();
 		return name.endsWith(".SID") || name.endsWith(".PRG") || name.endsWith(".PSID");
 	}
-
 
 	@Override
 	public String[] getDetailedInfo() {
@@ -344,15 +291,12 @@ public class VICEPlugin extends DroidSoundPlugin {
 		if (what == INFO_LENGTH) {
 			return songLengths[currentTune];
 		}
-
 		if (what == INFO_SUBTUNE_COUNT) {
 			return songInfo.songs;
 		}
-
 		if (what == INFO_SUBTUNE_NO) {
 			return currentTune;
 		}
-
 		if (what == INFO_STARTTUNE) {
 			return songInfo.startSong;
 		}
@@ -379,50 +323,81 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module) {
+	protected boolean load(String name, byte[] module) {
+		throw new RuntimeException("This method should not be called.");
+	}
+
+	@Override
+	public boolean load(String f1, byte[] data1, String f2, byte[] data2) {
 		currentTune = 0;
 		songInfo = null;
-		int type = -1;
 
-		String s = new String(module, 0, 4, ISO88591);
+		String s = new String(data1, 0, 4, ISO88591);
 		if ((s.equals("PSID") || s.equals("RSID"))) {
-			type = 0;
-		} else
-		if (name.toLowerCase().endsWith(".prg")) {
-			type = 1;
-		} else if (module[0] == 0x01 && module[1] == 0x08) {
-			type = 1;
-		}
-
-		if (type < 0) {
-			return false;
-		}
-		if (type == 1) {
-			byte rsid[] = new byte [] {
+		} else if (f1.toLowerCase().endsWith(".prg") || (data1[0] == 0x01 && data1[1] == 0x08)) {
+			byte rsid[] = new byte[] {
 					0x52, 0x53, 0x49, 0x44, 0x00, 0x02, 0x00, 0x7c,
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 					0x00, 0x01, 0x00, 0x00, 0x00, 0x00
 			};
 
-			byte[] oldm = module;
-			module = new byte [oldm.length + 0x7c];
-			System.arraycopy(rsid, 0, module, 0, rsid.length);
-
-			module[0x77] = 2;
-
-			System.arraycopy(oldm, 0, module, 0x7c, oldm.length);
+			byte[] oldm = data1;
+			data1 = new byte[oldm.length + 0x7c];
+			System.arraycopy(rsid, 0, data1, 0, rsid.length);
+			data1[0x77] = 2;
+			System.arraycopy(oldm, 0, data1, 0x7c, oldm.length);
+		} else {
+			return false;
 		}
 
-		loadInfo(name, module);
+		songInfo = new Info();
+		File tmpDir = Application.getTmpDirectory();
+		for (File f : tmpDir.listFiles()) {
+			if (! f.getName().startsWith(".")) {
+				f.delete();
+			}
+		}
+
+		try {
+			FileOutputStream fo1 = new FileOutputStream(new File(tmpDir, f1));
+			fo1.write(data1);
+			fo1.close();
+			if (f2 != null) {
+				FileOutputStream fo2 = new FileOutputStream(new File(tmpDir, f2));
+				fo2.write(data1);
+				fo2.close();
+			}
+		}
+		catch (IOException ioe) {
+			throw new RuntimeException(ioe);
+		}
+
+		String error = N_loadFile(new File(tmpDir, f1).getPath());
+		if (error != null) {
+			Log.w(TAG, "Unable to load file: %s", error);
+			return false;
+		}
+
+		findLength(data1);
+		if (f1.toLowerCase().endsWith(".prg")) {
+			songInfo.name = f1;
+			songInfo.format = "PRG";
+			return true;
+		}
+
+		songInfo.format = s;
+
+		songInfo.name = new String(header, 0x16, 0x20, ISO88591).replaceFirst("\0.*", "");
+		songInfo.composer = new String(header, 0x36, 0x20, ISO88591).replaceFirst("\0.*", "");
+		songInfo.copyright = new String(header, 0x56, 0x20, ISO88591).replaceFirst("\0.*", "");
+
+		songInfo.videoMode = (header[0x77] >> 2) & 3;
+		songInfo.sidModel = (header[0x77] >> 4) & 3;
+		songInfo.songs = ((header[0xe] << 8) & 0xff00) | (header[0xf] & 0xff);
+		songInfo.startSong = ((header[0x10] << 8) & 0xff00) | (header[0x11] & 0xff) - 1;
+
 		currentTune = songInfo.startSong;
-
-		boolean rc =  nativeLoad(name, module, module.length);
-		if (rc) {
-			findLength(module);
-		}
-
-		return rc;
-
+		return true;
 	}
 
 	@Override

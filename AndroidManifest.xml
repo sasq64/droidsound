@@ -44,8 +44,7 @@
 				<data android:mimeType="application/x-prg" />
 				<data android:mimeType="application/octet-stream" />
 			</intent-filter>		
-		</activity>
-		
+		</activity>		
 		<activity android:name=".activity.SettingsActivity"/>
 		
 		<service android:name=".service.SongDatabaseService"/>

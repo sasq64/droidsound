@@ -37,35 +37,16 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void unload() {
-		if (currentSong != 0)
-			N_unload(currentSong);
-	}
-
-	@Override
-	public boolean load(String name, byte[] module) {
-		currentSong = N_load(module, module.length);
-		return currentSong != 0;
-	}
-
-	@Override
-	public String[] getDetailedInfo() {
-		String replay = getStringInfo(52);
-		String hwname = getStringInfo(51);
-		int hwbits = getIntInfo(50);
-		return new String[] {
-				"Format", String.format("SC68: %s", replay != null ? replay : "?"),
-				"Hardware", String.format("%s (%s)", hwname != null ? hwname : "?", HWS[hwbits])
-		};
-	}
-
-	@Override
-	public boolean loadInfo(String name, byte[] data) {
-		currentSong = 0;
+	protected boolean load(String name, byte[] data) {
 		title = null;
 		composer = null;
 		year = null;
 		type = null;
+
+		currentSong = N_load(data, data.length);
+		if (currentSong == 0) {
+			return false;
+		}
 
 		String head = new String(data, 0, 4, ISO88591);
 		if (head.equals("ICE!")) {
@@ -131,11 +112,26 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 				offset += tsize;
 			}
-
-			return true;
 		}
 
-		return false;
+		return true;
+	}
+
+	@Override
+	public void unload() {
+		if (currentSong != 0)
+			N_unload(currentSong);
+	}
+
+	@Override
+	public String[] getDetailedInfo() {
+		String replay = getStringInfo(52);
+		String hwname = getStringInfo(51);
+		int hwbits = getIntInfo(50);
+		return new String[] {
+				"Format", String.format("SC68: %s", replay != null ? replay : "?"),
+				"Hardware", String.format("%s (%s)", hwname != null ? hwname : "?", HWS[hwbits])
+		};
 	}
 
 	private String readNullTerminated(byte[] data, int i) {
@@ -176,7 +172,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		}
 
 		int rc = N_getIntInfo(currentSong, what);
-		if(what == INFO_LENGTH && rc == 0)
+		if (what == INFO_LENGTH && rc == 0)
 			rc = -1;
 		return rc;
 	}

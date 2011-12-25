@@ -117,7 +117,7 @@ public class SongDatabaseService extends Service {
 				if (fileName.equals("")) {
 					pathSet.add(path);
 				} else {
-					FileIdentifier.MusicInfo info = FileIdentifier.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()));
+					FileIdentifier.MusicInfo info = FileIdentifier.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()), null, null);
 					if (info != null) {
 						values.put("TITLE", info.title);
 						values.put("COMPOSER", info.composer);
@@ -269,7 +269,7 @@ public class SongDatabaseService extends Service {
 						values.put("TITLE", fn.substring(0, fn.length() - 6));
 					} else {
 						values.put("TYPE", TYPE_FILE);
-						FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), StreamUtil.readFully(new FileInputStream(f), f.length()));
+						FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), StreamUtil.readFully(new FileInputStream(f), f.length()), null, null);
 						if (info != null) {
 							values.put("TITLE", info.title);
 							values.put("COMPOSER", info.composer);
