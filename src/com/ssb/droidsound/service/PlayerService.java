@@ -31,6 +31,7 @@ import com.ssb.droidsound.bo.PlayQueue;
 import com.ssb.droidsound.bo.Playlist;
 import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.plugins.DroidSoundPlugin.MusicInfo;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.StreamUtil;
 import com.ssb.droidsound.utils.ZipReader;
@@ -43,7 +44,10 @@ import com.ssb.droidsound.utils.ZipReader;
 public class PlayerService extends Service {
 	enum State { PLAY, PAUSE, STOP; }
 
-	public static final String PLAYBACK_ADVANCING = "com.ssb.droidsound.PLAYING";
+	public static final String LOADING_SONG = "com.ssb.droidsound.LOADING_SONG";
+	public static final String ADVANCING = "com.ssb.droidsound.ADVANCING";
+	public static final String UNLOADING_SONG = "com.ssb.droidsound.UNLOADING_SONG";
+
 	private static final String TAG = PlayerService.class.getSimpleName();
 	private static final int NOTIFY_ONGOING_ID = 1;
 
@@ -57,7 +61,6 @@ public class PlayerService extends Service {
 		private static final int FREQUENCY = 44100;
 		private static final int BUFSIZE = FREQUENCY * 2;
 
-		private int playbackFrame;
 		private int songLengthMs;
 		private int defaultSubsong;
 		private int subsongs;
@@ -153,6 +156,44 @@ public class PlayerService extends Service {
 			}
 		}
 
+
+		@Override
+		protected void onPreExecute() {
+			/* Note, this should not fail because it has already been executed once. */
+			plugin.load(f1, data1, f2, data2);
+
+			/* Send musicinfo & any other collected info over intent */
+			MusicInfo info = null;
+			try {
+				info = DroidSoundPlugin.identify(f1, data1);
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Strange, could not parse musicinfo");
+			}
+
+			songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+			if (songLengthMs == 0) {
+				SharedPreferences prefs = Application.getAppPreferences();
+				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
+			}
+
+			subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
+			defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
+			currentSubsong = defaultSubsong;
+
+			Intent intent = new Intent(LOADING_SONG);
+			intent.putExtra("subsongs", subsongs);
+			intent.putExtra("defaultSubsong", defaultSubsong);
+			intent.putExtra("length", songLengthMs / 1000);
+			intent.putExtra("channels", info.channels);
+			intent.putExtra("composer", info.composer);
+			intent.putExtra("copyright", info.copyright);
+			intent.putExtra("date", info.date);
+			intent.putExtra("format", info.format);
+			intent.putExtra("title", info.title);
+			sendBroadcast(intent);
+		}
+
 		/**
 		 * Send notification about subsong advancement.
 		 *
@@ -160,7 +201,7 @@ public class PlayerService extends Service {
 		 */
 		@Override
 		protected void onProgressUpdate(Integer... values) {
-			Intent i = new Intent(PLAYBACK_ADVANCING);
+			Intent i = new Intent(ADVANCING);
 			i.putExtra("time", values[0]);
 			i.putExtra("length", songLengthMs / 1000);
 			sendBroadcast(i);
@@ -179,20 +220,7 @@ public class PlayerService extends Service {
 			/* The plugin audio buffer is smaller to not underrun (we try to keep 75+ % full). */
 			short[] samples = new short[BUFSIZE / 4];
 
-			/* Note, this should not fail because it has already been executed once. */
-			plugin.load(f1, data1, f2, data2);
-
-			songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-			if (songLengthMs == 0) {
-				SharedPreferences prefs = Application.getAppPreferences();
-				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
-			}
-
-			subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
-			defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
-			currentSubsong = defaultSubsong;
-
-			playbackFrame = 0;
+			int playbackFrame = 0;
 			publishProgress(0);
 			Log.i(TAG, "Entering audio playback loop.");
 			try { OUTER: while (true) {
@@ -261,12 +289,16 @@ public class PlayerService extends Service {
 				Log.w(TAG, "Audio playback error: %s", ise);
 			}
 			Log.i(TAG, "Audio playback is terminating.");
-			publishProgress(-1);
-
-			plugin.unload();
 
 			audioTrack.release();
 			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			plugin.unload();
+			Intent intent = new Intent(UNLOADING_SONG);
+			sendBroadcast(intent);
 		}
 	}
 

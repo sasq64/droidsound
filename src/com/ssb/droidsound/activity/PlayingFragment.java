@@ -12,7 +12,9 @@ import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -24,6 +26,39 @@ public class PlayingFragment extends Fragment {
 	protected static final String TAG = PlayingFragment.class.getSimpleName();
 
 	private PlayerService.LocalBinder player;
+
+	private MyAdapter myAdapter;
+
+	private ListView songInfoView;
+
+	protected static class Entry {
+		public final String key, value;
+
+		public Entry(String key, String value) {
+			this.key = key;
+			this.value = value;
+		}
+	}
+
+	protected class MyAdapter extends ArrayAdapter<Entry> {
+		public MyAdapter(Context context) {
+			super(context, 0);
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			if (convertView == null) {
+				convertView = getActivity().getLayoutInflater().inflate(R.id.song_info_list, null);
+			}
+			TextView key = (TextView) convertView.findViewById(R.id.key);
+			TextView value = (TextView) convertView.findViewById(R.id.value);
+
+			Entry e = getItem(position);
+			key.setText(e.key);
+			value.setText(e.value);
+			return convertView;
+		}
+	}
 
 	private final ServiceConnection playerConnection = new ServiceConnection() {
 		@Override
@@ -37,30 +72,45 @@ public class PlayingFragment extends Fragment {
 		}
 	};
 
-	private final BroadcastReceiver playPositionReceiver = new BroadcastReceiver() {
+	private final BroadcastReceiver songLoadingReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context c, Intent i) {
+			myAdapter.clear();
+			Bundle b = i.getExtras();
+			for (String k : b.keySet()) {
+				Entry e = new Entry(k, String.valueOf(b.get(k)));
+				myAdapter.add(e);
+			}
+		}
+	};
+
+	private final BroadcastReceiver advancingReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context c, Intent i) {
 			String a = i.getAction();
-			if (a.equals(PlayerService.PLAYBACK_ADVANCING)) {
+			if (a.equals(PlayerService.ADVANCING)) {
 				int time = i.getIntExtra("time", 0);
-				if (time < 0) {
-					timeView.setText("-:--");
-					lengthView.setText("-:--");
-					seekBar.setProgress(0);
-					seekBar.setMax(1);
-				} else {
-					timeView.setText(String.format("%2d:%02d", time/60, time % 60));
-					int length = i.getIntExtra("length", 0);
-					lengthView.setText(String.format("%d:%02d", length/60, length % 60));
-					if (!seekBarDragging) {
-						seekBar.setProgress(time);
-						seekBar.setMax(length);
-					}
+				timeView.setText(String.format("%2d:%02d", time/60, time % 60));
+				int length = i.getIntExtra("length", 0);
+				lengthView.setText(String.format("%d:%02d", length/60, length % 60));
+				if (!seekBarDragging) {
+					seekBar.setProgress(time);
+					seekBar.setMax(length);
 				}
 			}
 		}
 	};
 
+	private final BroadcastReceiver songUnloadingReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			myAdapter.clear();
+			timeView.setText("-:--");
+			lengthView.setText("-:--");
+			seekBar.setProgress(0);
+			seekBar.setMax(1);
+		}
+	};
 	protected boolean seekBarDragging;
 
 	private final SeekBar.OnSeekBarChangeListener seekBarListener = new SeekBar.OnSeekBarChangeListener() {
@@ -103,20 +153,30 @@ public class PlayingFragment extends Fragment {
 	@Override
 	public void onStart() {
 		super.onStart();
-		getActivity().registerReceiver(playPositionReceiver, new IntentFilter(PlayerService.PLAYBACK_ADVANCING));
+
+
+		getActivity().registerReceiver(songLoadingReceiver, new IntentFilter(PlayerService.LOADING_SONG));
+		getActivity().registerReceiver(advancingReceiver, new IntentFilter(PlayerService.ADVANCING));
+		getActivity().registerReceiver(songUnloadingReceiver, new IntentFilter(PlayerService.UNLOADING_SONG));
 		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
 	public void onStop() {
 		super.onStop();
-		getActivity().unregisterReceiver(playPositionReceiver);
+		getActivity().unregisterReceiver(songLoadingReceiver);
+		getActivity().unregisterReceiver(advancingReceiver);
+		getActivity().unregisterReceiver(songUnloadingReceiver);
 		getActivity().unbindService(playerConnection);
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View view = inflater.inflate(R.layout.playing_view, null);
+
+		songInfoView = (ListView) view.findViewById(R.id.song_info_list);
+		myAdapter = new MyAdapter(getActivity());
+		songInfoView.setAdapter(myAdapter);
 
 		timeView = (TextView) view.findViewById(R.id.time);
 		timeView.setText("-:--");

@@ -2,42 +2,45 @@
     android:id="@+id/linearLayout1"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical">
 
-    <ListView
-        android:id="@+id/info_list"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" >
-    </ListView>
+        android:layout_weight="1">
+        <ListView
+            android:id="@+id/song_info_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp" />
+    </ScrollView>
 
     <LinearLayout
         android:id="@+id/progress_container"
-        android:layout_gravity="center"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" >
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" >
 
         <TextView
             android:id="@+id/time"
-	        android:padding="4dp"
             android:layout_width="wrap_content"
             android:layout_height="fill_parent"
-            android:gravity="center" />
+            android:gravity="center"
+            android:padding="4dp" />
 
         <SeekBar
             android:id="@+id/seek_bar"
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="0dip"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:layout_weight="1"/>
 
         <TextView
             android:id="@+id/length"
-	        android:padding="4dp"
             android:layout_width="wrap_content"
             android:layout_height="fill_parent"
-            android:gravity="center" />
-        </LinearLayout>
+            android:gravity="center"
+            android:padding="4dp" />
+    </LinearLayout>
 
     <GridLayout
         android:id="@+id/buttons"
