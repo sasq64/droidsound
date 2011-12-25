@@ -1,11 +1,13 @@
 package com.ssb.droidsound.plugins;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 
 public class ModPlugin extends DroidSoundPlugin {
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 	private static final String TAG = ModPlugin.class.getSimpleName();
 	static {
 		System.loadLibrary("modplug");
@@ -13,6 +15,10 @@ public class ModPlugin extends DroidSoundPlugin {
 	private static final Set<String> extensions = new HashSet<String>(Arrays.asList(
 			"XM", "S3M", "IT", "UMX", "ULT", "669", "STM"
 	));
+
+	private static String fromData(byte[] module, int start, int len) {
+		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
+	}
 
 	private long currentSong = 0;
 
@@ -96,6 +102,38 @@ public class ModPlugin extends DroidSoundPlugin {
 	@Override
 	public String getVersion() {
 		return "libmodplug v0.8.?";
+	}
+
+	@Override
+	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		String magic;
+
+		magic = new String(module, 44, 4, ISO88591);
+		if (magic.equals("SCRM")) {
+			MusicInfo info = new MusicInfo();
+			info.title = fromData(module, 0, 28);
+			info.format = "S3M";
+			return info;
+		}
+
+		magic = new String(module, 0, 15, ISO88591);
+		if (magic.equals("Extended Module")) {
+			MusicInfo info = new MusicInfo();
+			info.title = fromData(module, 17, 20);
+			info.channels = module[0x68];
+			info.format = "XM";
+			return info;
+		}
+
+		magic = new String(module, 0, 4, ISO88591);
+		if (magic.equals("IMPM")) {
+			MusicInfo info = new MusicInfo();
+			info.title = fromData(module, 4, 26);
+			info.format = "IT";
+			return info;
+		}
+
+		return null;
 	}
 
 	native private long N_load(byte [] module, int size);

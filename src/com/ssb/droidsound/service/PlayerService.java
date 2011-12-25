@@ -16,6 +16,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -27,6 +28,7 @@ import android.telephony.TelephonyManager;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.activity.PlayerActivity;
+import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.PlayQueue;
 import com.ssb.droidsound.bo.Playlist;
 import com.ssb.droidsound.bo.SongFile;
@@ -45,6 +47,7 @@ public class PlayerService extends Service {
 
 	public static final String PLAYBACK_ADVANCING = "com.ssb.droidsound.PLAYING";
 	private static final String TAG = PlayerService.class.getSimpleName();
+	private static final int NOTIFY_ONGOING_ID = 1;
 
 	/**
 	 * This runnable is constructed for playback of one complete song.
@@ -52,9 +55,15 @@ public class PlayerService extends Service {
 	 *
 	 * @author alankila
 	 */
-	private class PlayerRunnable extends AsyncTask<Void, Float, Void> {
+	private class PlayerRunnable extends AsyncTask<Void, Integer, Void> {
 		private static final int FREQUENCY = 44100;
 		private static final int BUFSIZE = FREQUENCY * 2;
+
+		private int playbackFrame;
+		private int songLengthMs;
+		private int defaultSubsong;
+		private int subsongs;
+		private int currentSubsong;
 
 		private final DroidSoundPlugin plugin;
 		private final String f1;
@@ -104,7 +113,7 @@ public class PlayerService extends Service {
 		 */
 		public void setSeekRequest(int msec) {
 			synchronized (this) {
-				Log.i(TAG, "Requesting new seek position", msec);
+				Log.i(TAG, "Requesting new seek position %d ms", msec);
 				seekRequest = msec;
 			}
 		}
@@ -152,10 +161,10 @@ public class PlayerService extends Service {
 		 * @param position
 		 */
 		@Override
-		protected void onProgressUpdate(Float... values) {
+		protected void onProgressUpdate(Integer... values) {
 			Intent i = new Intent(PLAYBACK_ADVANCING);
-			i.putExtra("name", f1);
-			i.putExtra("position", values[0]);
+			i.putExtra("time", values[0]);
+			i.putExtra("length", songLengthMs / 1000);
 			sendBroadcast(i);
 		}
 
@@ -175,7 +184,18 @@ public class PlayerService extends Service {
 			/* Note, this should not fail because it has already been executed once. */
 			plugin.load(f1, data1, f2, data2);
 
-			publishProgress(0f);
+			songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+			if (songLengthMs == 0) {
+				SharedPreferences prefs = Application.getAppPreferences();
+				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
+			}
+
+			subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
+			defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
+			currentSubsong = defaultSubsong;
+
+			playbackFrame = 0;
+			publishProgress(0);
 			Log.i(TAG, "Entering audio playback loop.");
 			try { OUTER: while (true) {
 				final State loopState;
@@ -187,16 +207,20 @@ public class PlayerService extends Service {
 					if (subsongRequest != -1) {
 						plugin.setTune(subsongRequest);
 						subsongRequest = -1;
+						playbackFrame = 0;
+						publishProgress(0);
 					}
 
 					if (seekRequest != -1) {
 						if (plugin.canSeek()) {
 							plugin.seekTo(seekRequest);
+							float pos = seekRequest / 1000f * audioTrack.getPlaybackRate();
+							playbackFrame = (int) pos;
 						}
 						seekRequest = -1;
 					}
 
-					int sec1 = audioTrack.getPlaybackHeadPosition() / audioTrack.getPlaybackRate();
+					int sec1 = playbackFrame / audioTrack.getPlaybackRate();
 					int len = plugin.getSoundData(samples);
 					/* If the length is not positive, it implies errors or song end. We terminate. */
 					if (len <= 0) {
@@ -207,10 +231,16 @@ public class PlayerService extends Service {
 						audioTrack.play();
 					}
 					audioTrack.write(samples, 0, len);
+					playbackFrame += len / audioTrack.getChannelCount();
 
-					float sec2 = audioTrack.getPlaybackHeadPosition() / audioTrack.getPlaybackRate();
-					if (sec1 != (int) sec2) {
+					int sec2 = playbackFrame / audioTrack.getPlaybackRate();
+					if (sec1 != sec2) {
 						publishProgress(sec2);
+					}
+
+					/* Terminate playback when complete song played. */
+					if (sec2 > songLengthMs) {
+						break;
 					}
 
 					break;
@@ -219,7 +249,8 @@ public class PlayerService extends Service {
 					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_PAUSED) {
 						audioTrack.pause();
 					}
-					Thread.sleep(100);
+					Thread.sleep(500);
+					break;
 
 				case STOP:
 					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_STOPPED) {
@@ -232,7 +263,7 @@ public class PlayerService extends Service {
 				Log.w(TAG, "Audio playback error: %s", ise);
 			}
 			Log.i(TAG, "Audio playback is terminating.");
-			publishProgress(-1f);
+			publishProgress(-1);
 
 			plugin.unload();
 
@@ -252,19 +283,11 @@ public class PlayerService extends Service {
 	private PlayerRunnable player;
 
 	/**
-	 * This notification holds the ongoing-notification in status bar.
-	 */
-	private Notification notification;
-
-	/**
-	 * This pending intent shows the UI when clicked.
-	 */
-	private PendingIntent contentIntent;
-
-	/**
 	 * PhoneStateListener is used to shut down playback on incoming call and automatically resume afterwards.
 	 */
 	private PhoneStateListener phoneStateListener;
+
+	private NotificationManager nm;
 
 	/**
 	 * This method starts a new playback thread capable of handling one file.
@@ -287,9 +310,14 @@ public class PlayerService extends Service {
 		player.setStateRequest(State.PLAY);
 		playerExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(1));
 		player.executeOnExecutor(playerExecutor);
-		notification.setLatestEventInfo(this, "Droidsound", player.getName(), contentIntent);
-		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		nm.notify(0x123456, notification);
+
+		Log.i(TAG, "Adding notification");
+		Notification notification = new Notification(R.drawable.droidsound64x64, "DroidSound", System.currentTimeMillis());
+		notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
+		Intent notificationIntent = new Intent(this, PlayerActivity.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		notification.setLatestEventInfo(this, "DroidSound", player.getName(), contentIntent);
+		startForeground(NOTIFY_ONGOING_ID, notification);
 	}
 
 	/**
@@ -313,8 +341,9 @@ public class PlayerService extends Service {
 			playerExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
 		}
 		playerExecutor.shutdown();
-		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-		nm.cancel(0x123456);
+
+		Log.i(TAG, "Removing notification");
+		stopForeground(true);
 
 		player = null;
 		playerExecutor = null;
@@ -323,6 +352,8 @@ public class PlayerService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+
+		nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
 		phoneStateListener = new PhoneStateListener() {
 			boolean didPause = false;
@@ -349,17 +380,6 @@ public class PlayerService extends Service {
 
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
-
-		notification = new Notification(R.drawable.droidsound64x64, "Droidsound", System.currentTimeMillis());
-		Intent notificationIntent = new Intent(this, PlayerActivity.class);
-		notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
-		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
-	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
-	}
-
-	@Override
-	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);
 	}
 
 	@Override

@@ -1,11 +1,22 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 
 public abstract class DroidSoundPlugin {
+	public static class MusicInfo {
+		public String title;
+		public String composer;
+		public String copyright;
+		public String format;
+
+		public int channels;
+		public int date;
+	};
+
 	private static final MessageDigest MD5;
 	static {
 		try {
@@ -85,10 +96,6 @@ public abstract class DroidSoundPlugin {
 
 	public abstract String getStringInfo(int what);
 
-	public boolean isSilent() {
-		return false;
-	}
-
 	public abstract void setOption(String string, Object val);
 
 	public boolean canSeek() {
@@ -96,4 +103,48 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public abstract String getVersion();
+
+	protected abstract MusicInfo getMusicInfo(String name, byte[] module);
+
+	private static void fixInfo(String basename, MusicInfo info) {
+		if (info.composer == null || info.composer.length() == 0) {
+			int sep = basename.indexOf(" - ");
+			if (sep > 0) {
+				info.composer = basename.substring(0, sep);
+				info.title = basename.substring(sep+3);
+			}
+		}
+
+		if (info.composer != null && info.composer.length() == 0) {
+			info.composer = null;
+		}
+
+		if (info.title == null || info.title.length() == 0) {
+			info.title = basename;
+		}
+
+		if (info.date <= 0 && info.copyright != null && info.copyright.length() >= 4) {
+			int year = -1;
+			try {
+				year = Integer.parseInt(info.copyright.substring(0,4));
+			} catch (NumberFormatException e) {
+			}
+			if (year > 1000 && year < 2100) {
+				info.date = year * 10000;
+			}
+		}
+	}
+
+	public static MusicInfo identify(String name1, byte[] module1) throws IOException {
+		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
+			if (plugin.canHandle(name1)) {
+				MusicInfo info = plugin.getMusicInfo(name1, module1);
+				if (info != null) {
+					fixInfo(name1, info);
+					return info;
+				}
+			}
+		}
+		return null;
+	}
 }

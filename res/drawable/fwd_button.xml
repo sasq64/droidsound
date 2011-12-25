@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
  <selector xmlns:android="http://schemas.android.com/apk/res/android">
      <item android:state_pressed="true"
-           android:drawable="@drawable/mg_forward2_h" /> <!-- pressed -->
+           android:drawable="@drawable/mg_forward2_h" />
      <item android:state_focused="true"
-           android:drawable="@drawable/mg_forward2_h" /> <!-- focused -->
-     <item android:drawable="@drawable/mg_forward2" /> <!-- default -->
+           android:drawable="@drawable/mg_forward2_h" />
+     <item android:drawable="@drawable/mg_forward2" />
  </selector>

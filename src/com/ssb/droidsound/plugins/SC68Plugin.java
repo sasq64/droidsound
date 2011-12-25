@@ -25,11 +25,6 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	private long pluginRef;
 
-	private String title = null;
-	private String composer = null;
-	private String year = null;
-	private String type = null;
-
 	@Override
 	public boolean canHandle(String name) {
 		String ext = name.substring(name.indexOf('.') + 1).toLowerCase();
@@ -38,80 +33,9 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	protected boolean load(String name, byte[] data) {
-		title = null;
-		composer = null;
-		year = null;
-		type = null;
-
 		currentSong = N_load(data, data.length);
 		if (currentSong == 0) {
 			return false;
-		}
-
-		String head = new String(data, 0, 4, ISO88591);
-		if (head.equals("ICE!")) {
-			data = N_unice(data);
-			if (data == null)
-				return false;
-		}
-		int size = data.length;
-
-		String header = new String(data, 12, 4, ISO88591);
-		String header2 = new String(data, 0, 16, ISO88591);
-		if (header.equals("SNDH")) {
-			type = "SNDH";
-
-			int offset = 16;
-			while (offset < 1024) {
-				String tag = new String(data, offset, 4, ISO88591);
-				if (tag.equals("TITL")) {
-					title = readNullTerminated(data, offset + 4);
-					offset += 4 + title.length();
-				} else if (tag.equals("COMM")) {
-					composer = readNullTerminated(data, offset + 4);
-					offset += 4 + composer.length();
-				} else if (tag.equals("YEAR")) {
-					year = readNullTerminated(data, offset + 4);
-					offset += 4 + year.length();
-				} else if (tag.equals("HDNS")) {
-					break;
-				}
-
-				offset ++;
-			}
-
-			return true;
-		}
-		if (header2.equals("SC68 Music-file ")) {
-			int offset = 56;
-			type = "SC68";
-			while (offset < 1024) {
-				String tag = new String(data, offset, 4, ISO88591);
-				int tsize = (data[offset+4] & 0xff)
-						| ((data[offset+5] & 0xff) << 8)
-						| ((data[offset+6] & 0xff) << 16)
-						| ((data[offset+7] & 0xff) << 24);
-				offset += 8;
-				if (tsize < 0 || tsize > size) {
-					break;
-				}
-
-				if (tag.equals("SCMN")) {
-					title = new String(data, offset, tsize, ISO88591);
-				} else if (tag.equals("SCFN")) {
-					if (title != null) {
-						title = new String(data, offset, tsize, ISO88591);
-					}
-				} else if (tag.equals("SCAN")) {
-					composer = new String(data, offset, tsize, ISO88591);
-				} else if (tag.equals("SC68")) {
-					tsize = 0;
-				} else if (tag.equals("SCEF") || tag.equals("SCDA")) {
-					break;
-				}
-
-				offset += tsize;
-			}
 		}
 
 		return true;
@@ -149,19 +73,6 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	public String getStringInfo(int what) {
-		if (currentSong == 0) {
-			switch (what) {
-			case INFO_TITLE:
-				return title;
-			case INFO_AUTHOR:
-				return composer;
-			case INFO_COPYRIGHT:
-				return year;
-			case INFO_TYPE:
-				return type;
-			}
-			return null;
-		}
 		return N_getStringInfo(currentSong, what);
 	}
 
@@ -195,6 +106,84 @@ public class SC68Plugin extends DroidSoundPlugin {
 	@Override
 	public String getVersion() {
 		return "Version 3.0.0\nCopyright (C) 2009 Benjamin Gerard";
+	}
+
+	@Override
+	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		String head = new String(module, 0, 4, ISO88591);
+		if (head.equals("ICE!")) {
+			module = N_unice(module);
+			if (module == null) {
+				return null;
+			}
+		}
+		int size = module.length;
+
+		String header = new String(module, 12, 4, ISO88591);
+		String header2 = new String(module, 0, 16, ISO88591);
+		if (header.equals("SNDH")) {
+			MusicInfo info = new MusicInfo();
+			info.format = "SNDH";
+
+			int offset = 16;
+			while (offset < 1024) {
+				String tag = new String(module, offset, 4, ISO88591);
+				if (tag.equals("TITL")) {
+					info.title = readNullTerminated(module, offset + 4);
+					offset += 4 + info.title.length();
+				} else if (tag.equals("COMM")) {
+					info.composer = readNullTerminated(module, offset + 4);
+					offset += 4 + info.composer.length();
+				} else if (tag.equals("YEAR")) {
+					String year = readNullTerminated(module, offset + 4);
+					info.date = Integer.valueOf(year) * 10000;
+					offset += 4 + year.length();
+				} else if (tag.equals("HDNS")) {
+					break;
+				}
+
+				offset ++;
+			}
+
+			return info;
+		}
+		if (header2.equals("SC68 Music-file ")) {
+			MusicInfo info = new MusicInfo();
+			info.format = "SC68";
+
+			int offset = 56;
+			while (offset < 1024) {
+				String tag = new String(module, offset, 4, ISO88591);
+				int tsize = (module[offset+4] & 0xff)
+						| ((module[offset+5] & 0xff) << 8)
+						| ((module[offset+6] & 0xff) << 16)
+						| ((module[offset+7] & 0xff) << 24);
+				offset += 8;
+				if (tsize < 0 || tsize > size) {
+					break;
+				}
+
+				if (tag.equals("SCMN")) {
+					info.title = new String(module, offset, tsize, ISO88591);
+				} else if (tag.equals("SCFN")) {
+					if (info.title != null) {
+						info.title = new String(module, offset, tsize, ISO88591);
+					}
+				} else if (tag.equals("SCAN")) {
+					info.composer = new String(module, offset, tsize, ISO88591);
+				} else if (tag.equals("SC68")) {
+					tsize = 0;
+				} else if (tag.equals("SCEF") || tag.equals("SCDA")) {
+					break;
+				}
+
+				offset += tsize;
+			}
+
+			return info;
+		}
+
+		return null;
 	}
 
 	native private static void N_setDataDir(String dataDir);

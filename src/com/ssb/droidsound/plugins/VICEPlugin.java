@@ -31,6 +31,10 @@ public class VICEPlugin extends DroidSoundPlugin {
 		N_setDataDir(viceDir.getPath());
 	}
 
+	private static String fromData(byte[] module, int start, int len) {
+		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
+	}
+
 	private static class Info {
 		protected String name = "Unknown";
 		protected String composer = "Unknown";
@@ -42,8 +46,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 		protected String format;
 	};
 
-	private static final Object LOCK = new Object();
-	private final byte[] header = new byte[128];
 	private byte[] mainHash;
 	private short[] extraLengths;
 	private int hashLen;
@@ -387,14 +389,14 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 		songInfo.format = s;
 
-		songInfo.name = new String(header, 0x16, 0x20, ISO88591).replaceFirst("\0.*", "");
-		songInfo.composer = new String(header, 0x36, 0x20, ISO88591).replaceFirst("\0.*", "");
-		songInfo.copyright = new String(header, 0x56, 0x20, ISO88591).replaceFirst("\0.*", "");
+		songInfo.name = new String(data1, 0x16, 0x20, ISO88591).replaceFirst("\0.*", "");
+		songInfo.composer = new String(data1, 0x36, 0x20, ISO88591).replaceFirst("\0.*", "");
+		songInfo.copyright = new String(data1, 0x56, 0x20, ISO88591).replaceFirst("\0.*", "");
 
-		songInfo.videoMode = (header[0x77] >> 2) & 3;
-		songInfo.sidModel = (header[0x77] >> 4) & 3;
-		songInfo.songs = ((header[0xe] << 8) & 0xff00) | (header[0xf] & 0xff);
-		songInfo.startSong = ((header[0x10] << 8) & 0xff00) | (header[0x11] & 0xff) - 1;
+		songInfo.videoMode = (data1[0x77] >> 2) & 3;
+		songInfo.sidModel = (data1[0x77] >> 4) & 3;
+		songInfo.songs = ((data1[0xe] << 8) & 0xff00) | (data1[0xf] & 0xff);
+		songInfo.startSong = ((data1[0x10] << 8) & 0xff00) | (data1[0x11] & 0xff) - 1;
 
 		currentTune = songInfo.startSong;
 		return true;
@@ -414,6 +416,30 @@ public class VICEPlugin extends DroidSoundPlugin {
 	public void unload() {
 		songInfo = null;
 		N_unload();
+	}
+
+	@Override
+	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		String magic = new String(module, 1, 3, ISO88591);
+		if (magic.equals("SID")) {
+			MusicInfo info = new MusicInfo();
+			info.title = fromData(module, 0x16, 32);
+			info.composer = fromData(module, 0x36, 32);
+			info.copyright = fromData(module, 0x56, 32);
+			info.format = "SID";
+			if (info.copyright.length() >= 4) {
+				try {
+					int year = Integer.valueOf(info.copyright.substring(0,4));
+					if (year > 1900 && year < 2100) {
+						info.date = year * 10000;
+					}
+				} catch (NumberFormatException e) {
+				}
+			}
+			return info;
+		}
+
+		return null;
 	}
 
 	@Override

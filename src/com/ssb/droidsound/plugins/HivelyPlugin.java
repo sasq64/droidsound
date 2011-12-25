@@ -1,6 +1,7 @@
 package com.ssb.droidsound.plugins;
 
 
+
 public class HivelyPlugin extends DroidSoundPlugin {
 	static {
 		System.loadLibrary("hively");
@@ -22,7 +23,6 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	public boolean canHandle(String name) {
 		return name.toUpperCase().endsWith(".HVL") || name.toUpperCase().endsWith(".AHX");
 	}
-
 
 	@Override
 	public String[] getDetailedInfo() {
@@ -51,6 +51,12 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	@Override
 	public void unload() {
 		N_unload(songRef);
+	}
+
+	@Override
+	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		/* TODO: check if something can be extracted from HVL */
+		return null;
 	}
 
 	native private long N_load(byte [] module, int size);

@@ -2,6 +2,7 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -9,15 +10,21 @@ import java.util.List;
 import java.util.Set;
 
 public class GMEPlugin extends DroidSoundPlugin {
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 	static {
 		System.loadLibrary("gme");
+	}
+
+	private static String fromData(byte[] module, int start, int len) {
+		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
 	}
 
 	private static final Set<String> EXTENSIONS = new HashSet<String>(Arrays.asList(
 			"SPC", "GYM", "NSF", "NSFE", "GBS", "AY", "SAP", "VGM", "VGZ",
 			"HES", "KSS"));
 
-	long currentSong = 0;
+	private long currentSong = 0;
+
 
 	@Override
 	public boolean canHandle(String name) {
@@ -102,6 +109,38 @@ public class GMEPlugin extends DroidSoundPlugin {
 	@Override
 	public String getStringInfo(int what) {
 		return N_getStringInfo(currentSong, what);
+	}
+
+	@Override
+	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		String magic;
+
+		magic = new String(module, 0, 4, ISO88591);
+		if (magic.equals("NESM")) {
+			MusicInfo info = new MusicInfo();
+			info.title = fromData(module, 0xe, 32);
+			info.composer = fromData(module, 0x2e, 32);
+			info.copyright = fromData(module, 0x4e, 32);
+			info.format = "NES";
+			return info;
+		}
+
+		magic = new String(module, 0, 27, ISO88591);
+		if (magic.equals("SNES-SPC700 Sound File Data")) {
+			MusicInfo info = new MusicInfo();
+			info.format = "SNES";
+			if (module[0x23] == 0x1a) {
+				info.title = fromData(module, 0x2e, 32);
+				String game = fromData(module, 0x4e, 32);
+				if (game.length() > 0) {
+					info.title = game + " - " + info.title;
+				}
+				info.composer = fromData(module, 0xb1, 32);
+			}
+			return info;
+		}
+
+		return null;
 	}
 
 	native private long N_load(byte[] module, int size);

@@ -23,8 +23,6 @@ import com.ssb.droidsound.R;
 import com.ssb.droidsound.service.SongDatabaseService;
 
 public class PlayerActivity extends Activity {
-	private static final String TAG = PlayerActivity.class.getSimpleName();
-
 	private ActionBar actionBar;
 	private ViewPager viewPager;
 	private MyAdapter viewPagerAdapter;
@@ -90,8 +88,7 @@ public class PlayerActivity extends Activity {
 			});
 
 			try {
-				int stringId = R.string.class.getField(entry + "_title")
-						.getInt(null);
+				int stringId = R.string.class.getField(entry + "_title").getInt(null);
 				tab.setText(getString(stringId));
 			} catch (Exception e) {
 				throw new RuntimeException(e);

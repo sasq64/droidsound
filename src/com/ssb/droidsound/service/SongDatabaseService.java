@@ -20,7 +20,7 @@ import android.os.IBinder;
 import android.provider.BaseColumns;
 
 import com.ssb.droidsound.app.Application;
-import com.ssb.droidsound.utils.FileIdentifier;
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.StreamUtil;
 
@@ -117,7 +117,7 @@ public class SongDatabaseService extends Service {
 				if (fileName.equals("")) {
 					pathSet.add(path);
 				} else {
-					FileIdentifier.MusicInfo info = FileIdentifier.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()), null, null);
+					DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()));
 					if (info != null) {
 						values.put("TITLE", info.title);
 						values.put("COMPOSER", info.composer);
@@ -177,7 +177,7 @@ public class SongDatabaseService extends Service {
 					}
 				}
 
-				Log.d(TAG, "No change, scanning %d Datbase entries with %d dirs", fileCursor.getCount(), files.size());
+				Log.d(TAG, "No change, scanned %d database entries with %d dirs", fileCursor.getCount(), files.size());
 
 				fileCursor.close();
 
@@ -269,7 +269,7 @@ public class SongDatabaseService extends Service {
 						values.put("TITLE", fn.substring(0, fn.length() - 6));
 					} else {
 						values.put("TYPE", TYPE_FILE);
-						FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), StreamUtil.readFully(new FileInputStream(f), f.length()), null, null);
+						DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(f.getName(), StreamUtil.readFully(new FileInputStream(f), f.length()));
 						if (info != null) {
 							values.put("TITLE", info.title);
 							values.put("COMPOSER", info.composer);

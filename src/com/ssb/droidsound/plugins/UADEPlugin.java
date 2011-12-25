@@ -195,6 +195,11 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return "UADE - Unix Amiga Delitracker Emulator\nversion 2.13\nCopyright 2000-2006, Heikki Orsila";
 	}
 
+	@Override
+	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		return null;
+	}
+
 	native private static void N_init(String baseDir);
 	native private static void N_exit();
 	native private static void N_setOption(int what, int val);
