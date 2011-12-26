@@ -65,24 +65,22 @@ public class Playlist {
 	private static JSONObject serialize(SongFile songFile) throws JSONException {
 		JSONObject obj = new JSONObject();
 		obj.put("subtune", songFile.getSubtune());
-		obj.put("playtime", songFile.getPlaytime());
-		obj.put("fileName", songFile.getFileName());
-		obj.put("zipPath", songFile.getZipPath());
-		obj.put("zipName", songFile.getZipName());
+		obj.put("filePath", songFile.getFilePath());
+		obj.put("zipFilePath", songFile.getZipFilePath());
 		obj.put("title", songFile.getTitle());
 		obj.put("composer", songFile.getComposer());
+		obj.put("date", songFile.getDate());
 		return obj;
 	}
 
 	private static SongFile deserialize(JSONObject obj) throws JSONException {
 		return new SongFile(
 				obj.getInt("subtune"),
-				obj.getInt("playtime"),
 				obj.getString("fileName"),
-				obj.getString("zipPath"),
-				obj.getString("zipName"),
+				obj.getString("zipFilePath"),
 				obj.getString("title"),
-				obj.getString("composer")
+				obj.getString("composer"),
+				obj.getInt("date")
 		);
 	}
 
@@ -106,24 +104,13 @@ public class Playlist {
 		}
 	}
 
-	public synchronized void clear() {
-		songs.clear();
-		flush();
-	}
-
 	public String getTitle() {
 		return title;
 	}
 
-	public synchronized boolean contains(SongFile songFile) {
-		for (SongFile s : songs) {
-
-			if (s.getFileName().equals(songFile.getFileName())) {
-				return true;
-			}
-		}
-
-		return false;
+	public synchronized void clear() {
+		songs.clear();
+		flush();
 	}
 
 	public synchronized void add(SongFile s) {

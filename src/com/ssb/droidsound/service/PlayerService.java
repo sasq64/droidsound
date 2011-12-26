@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -439,25 +440,14 @@ public class PlayerService extends Service {
 	 * @throws InterruptedException
 	 */
 	private boolean startSong(SongFile song) throws IOException, InterruptedException {
-		final String name1;
+		final String name1 = song.getFilePath();
 		final byte[] data1;
 
 		final String name2 = song.getSecondaryFileName();
 		byte[] data2 = null;
 
-		/* FIXME:
-		 *
-		 * Currently, UADE is the only plugin that needs the data as file.
-		 * Maybe we could use an API that allowed providing data via byte[]
-		 * for UADE also.
-		 *
-		 * If that is the case, we could get rid of writeTempFile, and
-		 * DroidSoundPlugin#load(File).
-		 */
-		if (song.getZipPath() != null) {
-			name1 = song.getZipName();
-
-			ZipFile zr = ZipReader.openZip(new File(song.getZipPath()));
+		if (song.getZipFilePath() != null) {
+			ZipFile zr = ZipReader.openZip(new File(song.getZipFilePath()));
 			ZipEntry ze = zr.getEntry(name1);
 			InputStream is1 = zr.getInputStream(ze);
 			data1 = StreamUtil.readFully(is1, ze.getSize());
@@ -475,8 +465,6 @@ public class PlayerService extends Service {
 
 			zr.close();
 		} else {
-			name1 = song.getFileName();
-
 			File f1 = new File(name1);
 			InputStream is1 = new FileInputStream(f1);
 			data1 = StreamUtil.readFully(is1, f1.length());
@@ -573,12 +561,12 @@ public class PlayerService extends Service {
 	    	return false;
 		}
 
-		public boolean playPlaylist(Playlist name, int startIndex, boolean shuffle) throws IOException, InterruptedException {
-			playQueue = new PlayQueue(name, startIndex, shuffle);
+		public boolean playPlaylist(Playlist playlist, int startIndex, boolean shuffle) throws IOException, InterruptedException {
+			playQueue = new PlayQueue(playlist, startIndex, shuffle);
 			return startSong(playQueue.getCurrent());
 		}
 
-		public boolean playPlaylist(String[] names, int startIndex, boolean shuffle) throws IOException, InterruptedException {
+		public boolean playPlaylist(List<SongFile> names, int startIndex, boolean shuffle) throws IOException, InterruptedException {
 			playQueue = new PlayQueue(names, startIndex, shuffle);
 			return startSong(playQueue.getCurrent());
 		}

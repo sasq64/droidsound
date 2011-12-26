@@ -4,15 +4,12 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.ssb.droidsound.utils.Log;
-
 /**
- * This container represents a playable file.
+ * This container represents a playable file at specific subsong.
  *
  * @author alankila
  */
 public class SongFile {
-	private static final String TAG = SongFile.class.getSimpleName();
 	private static final Map<String, String> MAIN_TO_AUX = new HashMap<String, String>();
 	static {
 		MAIN_TO_AUX.put("MDAT", "SMPL");
@@ -24,82 +21,51 @@ public class SongFile {
 	}
 
 	private final int subtune;
-	private final int playtime;
-	private final String fileName;
-
-	private final String zipPath;
-	private final String zipName;
+	private final String filePath;
+	private final String zipFilePath;
 
 	private final String title;
 	private final String composer;
-
-	public static SongFile fromFileName(String fileName) {
-		File f = new File(fileName);
-		/* Check that file exists, and isn't inside an archive... */
-		if (f.exists()) {
-			return new SongFile(0, 0, fileName, null, null, f.getName(), null);
-		} else {
-			File parent = f;
-			while (! parent.exists()) {
-				parent = parent.getParentFile();
-			}
-			if (parent.exists()) {
-				String parentPath = parent.getPath();
-				String childPath = f.getPath().substring(parentPath.length() + 1);
-				Log.i(TAG, "Archive decomposition for path %s => %s and %s", f.getPath(), parentPath, childPath);
-				return new SongFile(0, 0, fileName, parentPath, childPath, f.getName(), null);
-			} else {
-				throw new IllegalArgumentException("The input file name could not be converted into something inside collection.");
-			}
-		}
-	}
+	private final int date;
 
 	public SongFile(SongFile s) {
 		subtune = s.subtune;
-		playtime = s.playtime;
-		fileName = s.fileName;
-		zipPath = s.zipPath;
-		zipName = s.zipName;
+		filePath = s.filePath;
+		zipFilePath = s.zipFilePath;
 		title = s.title;
 		composer = s.composer;
+		date = s.date;
 	}
 
-	public SongFile(int subtune, SongFile s) {
-		this.subtune = subtune;
-		playtime = s.playtime;
-		fileName = s.fileName;
-		zipPath = s.zipPath;
-		zipName = s.zipName;
-		title = s.title;
-		composer = s.composer;
+	public SongFile sibling(String name) {
+		String siblingPath = new File(new File(filePath).getParentFile(), name).getPath();
+		return new SongFile(subtune, siblingPath, zipFilePath, title, composer, date);
 	}
 
-	public SongFile(int subtune, int playtime, String fileName, String zipPath, String zipName, String title, String composer) {
+	public SongFile(int subtune, String fileName, String zipFilePath, String title, String composer, int date) {
 		this.subtune = subtune;
-		this.playtime = playtime;
-		this.fileName = fileName;
-		this.zipPath = zipPath;
-		this.zipName = zipName;
+		this.filePath = fileName;
+		this.zipFilePath = zipFilePath;
 		this.title = title;
 		this.composer = composer;
+		this.date = date;
 	}
 
 	public String getSecondaryFileName() {
-		String path = zipName == null ? fileName : zipName;
-		int dot = path.lastIndexOf('.');
-		int slash = path.lastIndexOf('/');
+		int dot = filePath.lastIndexOf('.');
+		int slash = filePath.lastIndexOf('/');
 		if (dot <= slash) {
 			return null;
 		}
 
-		int firstDot = path.indexOf('.', slash+1);
-		String ext = path.substring(dot+1).toUpperCase();
-		String pref = path.substring(slash+1, firstDot).toUpperCase();
+		int firstDot = filePath.indexOf('.', slash+1);
+		String ext = filePath.substring(dot+1).toUpperCase();
+		String pref = filePath.substring(slash+1, firstDot).toUpperCase();
 
 		if (MAIN_TO_AUX.containsKey(pref)) {
-			return path.substring(0, slash+1) + MAIN_TO_AUX.get(pref) + path.substring(firstDot);
+			return filePath.substring(0, slash+1) + MAIN_TO_AUX.get(pref) + filePath.substring(firstDot);
 		} else if (MAIN_TO_AUX.containsKey(ext)) {
-			return path.substring(0, dot+1) + MAIN_TO_AUX.get(ext);
+			return filePath.substring(0, dot+1) + MAIN_TO_AUX.get(ext);
 		}
 
 		return null;
@@ -110,20 +76,12 @@ public class SongFile {
 		return subtune;
 	}
 
-	public int getPlaytime() {
-		return playtime;
+	public String getFilePath() {
+		return filePath;
 	}
 
-	public String getFileName() {
-		return fileName;
-	}
-
-	public String getZipPath() {
-		return zipPath;
-	}
-
-	public String getZipName() {
-		return zipName;
+	public String getZipFilePath() {
+		return zipFilePath;
 	}
 
 	public String getTitle() {
@@ -132,5 +90,9 @@ public class SongFile {
 
 	public String getComposer() {
 		return composer;
+	}
+
+	public int getDate() {
+		return date;
 	}
 }

@@ -123,7 +123,7 @@ public abstract class DroidSoundPlugin {
 			info.title = basename;
 		}
 
-		if (info.date != -1 && info.copyright != null && info.copyright.length() >= 4) {
+		if (info.date == -1 && info.copyright != null && info.copyright.length() >= 4) {
 			info.date = 0;
 			try {
 				int year = Integer.parseInt(info.copyright.substring(0,4));

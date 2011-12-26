@@ -1,6 +1,7 @@
 package com.ssb.droidsound.activity;
 
-import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -23,6 +24,7 @@ import android.widget.TextView;
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.MemoryCursor;
+import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.service.SongDatabaseService;
 import com.ssb.droidsound.utils.Log;
@@ -90,7 +92,7 @@ public class CollectionFragment extends Fragment {
 
 			final int icon;
 			switch (type) {
-			case SongDatabaseService.TYPE_ARCHIVE:
+			case SongDatabaseService.TYPE_ZIP:
 				icon = R.drawable.gflat_package;
 				break;
 			case SongDatabaseService.TYPE_DIR:
@@ -134,23 +136,22 @@ public class CollectionFragment extends Fragment {
 					if (type != SongDatabaseService.TYPE_FILE) {
 						changeCursor(CollectionFragment.this.getCursor(parentId, childId));
 					} else {
-						Cursor playList = db.getFilesInPath(parentId, sorting);
-						String[] fileList = new String[playList.getCount()];
-						playList.moveToFirst();
+						Cursor playListCursor = db.getFilesInPath(parentId, sorting);
+						List<SongFile> fileList = new ArrayList<SongFile>();
+						playListCursor.moveToFirst();
 						int idx = -1;
 
-						File selectedFile = db.getFilePath(childId);
-						File path = selectedFile.getParentFile();
-						while (! playList.isAfterLast()) {
-							String name = playList.getString(SongDatabaseService.COL_FILENAME);
-							File playlistFile = new File(path, name);
-							if (playlistFile.equals(selectedFile)) {
-								idx = playList.getPosition();
+						SongFile selectedFile = db.getSongFile(childId);
+						while (! playListCursor.isAfterLast()) {
+							String name = playListCursor.getString(SongDatabaseService.COL_FILENAME);
+							SongFile sibling = selectedFile.sibling(name);
+							fileList.add(sibling);
+							if (selectedFile.getFilePath().equals(sibling.getFilePath())) {
+								idx = playListCursor.getPosition();
 							}
-							fileList[playList.getPosition()] = playlistFile.getPath();
-							playList.moveToNext();
+							playListCursor.moveToNext();
 						}
-						playList.close();
+						playListCursor.close();
 
 						try {
 							player.playPlaylist(fileList, idx, shuffle);

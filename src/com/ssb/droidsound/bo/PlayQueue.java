@@ -11,23 +11,15 @@ public class PlayQueue {
 	private int musicListPos;
 	private boolean shuffle;
 
-	public PlayQueue(String[] names, int index, boolean shuffle) {
-		List<SongFile> tmp = new ArrayList<SongFile>();
-		for (String fileName : names) {
-			tmp.add(SongFile.fromFileName(fileName));
-		}
-		init(tmp, index, shuffle);
-	}
-
-	public PlayQueue(Playlist pl, int index, boolean shuffle) {
-		init(pl.getSongs(), index, shuffle);
-	}
-
-	private void init(List<SongFile> songs, int index, boolean shuffle) {
+	public PlayQueue(List<SongFile> songs, int index, boolean shuffle) {
 		musicListInOriginalOrder.addAll(songs);
 		musicList.addAll(songs);
 		musicListPos = index;
 		setShuffle(shuffle);
+	}
+
+	public PlayQueue(Playlist pl, int index, boolean shuffle) {
+		this(pl.getSongs(), index, shuffle);
 	}
 
 	public void setShuffle(boolean on) {

@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +25,7 @@ import android.os.IBinder;
 import android.provider.BaseColumns;
 
 import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.StreamUtil;
@@ -50,7 +50,7 @@ public class SongDatabaseService extends Service {
 
 	public static final int DB_VERSION = 9;
 
-	public static final int TYPE_ARCHIVE = 0x100;
+	public static final int TYPE_ZIP = 0x100;
 	public static final int TYPE_DIR = 0x200;
 	public static final int TYPE_PLIST = 0x300;
 	public static final int TYPE_FILE = 0x400;
@@ -265,7 +265,7 @@ public class SongDatabaseService extends Service {
 					File f = new File(dir, fn);
 					if (f.isFile()) {
 						if (fn.toUpperCase().endsWith(".ZIP")) {
-							values.put("type", TYPE_ARCHIVE);
+							values.put("type", TYPE_ZIP);
 							values.put("title", f.getName().substring(0, fn.length() - 4));
 							long rowId = db.insert("files", null, values);
 							scanZip(f, rowId);
@@ -389,32 +389,58 @@ public class SongDatabaseService extends Service {
 			);
 		}
 
-		public File getFilePath(long childId) {
+		public SongFile getSongFile(long childId) {
 			List<String> list = new ArrayList<String>();
-			long currentId = childId;
-			while (true) {
-				Cursor c = null;
-				try {
-					c = getFileById(currentId);
-					c.moveToFirst();
-					list.add(c.getString(COL_FILENAME));
-					if (c.isNull(COL_PARENT_ID)) {
-						break;
-					}
-					currentId = c.getLong(COL_PARENT_ID);
-				}
-				finally {
-					c.close();
-				}
-			}
-			File path = Application.getModsDirectory();
-			Collections.reverse(list);
-			for (String component : list) {
-				path = new File(path, component);
-			}
-			Log.i(TAG, "Determined file path: %s", path);
+			Cursor c = getFileById(childId);
+			c.moveToFirst();
 
-			return path;
+			String title = c.getString(COL_TITLE);
+			String composer = c.getString(COL_COMPOSER);
+			int date = c.getInt(COL_DATE);
+
+			int zipIdx = -1;
+			while (true) {
+				if (c.getInt(COL_TYPE) == TYPE_ZIP) {
+					zipIdx = list.size();
+				}
+				list.add(c.getString(COL_FILENAME));
+				if (c.isNull(COL_PARENT_ID)) {
+					break;
+				}
+
+				Long parentId = c.getLong(COL_PARENT_ID);
+				c.close();
+				c = getFileById(parentId);
+				c.moveToFirst();
+			}
+			c.close();
+
+			File zipFilePath = null;
+			File path = null;
+
+			if (zipIdx == -1) {
+				path = Application.getModsDirectory();
+				for (int i = list.size() - 1; i >= 0; i --) {
+					path = new File(path, list.get(i));
+				}
+			} else {
+				zipFilePath = Application.getModsDirectory();
+				for (int i = list.size() - 1; i >= zipIdx; i --) {
+					zipFilePath = new File(zipFilePath, list.get(i));
+				}
+				for (int i = zipIdx - 1; i >= 0; i --) {
+					path = new File(path, list.get(i));
+				}
+			}
+
+			return new SongFile(
+					-1,
+					path.getPath(),
+					zipFilePath != null ? zipFilePath.getPath() : null,
+					title,
+					composer,
+					date
+			);
 		}
 	};
 
