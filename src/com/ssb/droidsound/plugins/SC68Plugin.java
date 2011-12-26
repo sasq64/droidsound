@@ -136,7 +136,11 @@ public class SC68Plugin extends DroidSoundPlugin {
 					offset += 4 + info.composer.length();
 				} else if (tag.equals("YEAR")) {
 					String year = readNullTerminated(module, offset + 4);
-					info.date = Integer.valueOf(year) * 10000;
+					try {
+						info.date = Integer.valueOf(year) * 10000;
+					}
+					catch (NumberFormatException nfe) {
+					}
 					offset += 4 + year.length();
 				} else if (tag.equals("HDNS")) {
 					break;

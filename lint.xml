@@ -4,6 +4,7 @@
         <ignore path="res/layout/playing_view.xml" />
     </issue>
     <issue id="NestedScrolling">
+        <ignore path="res/layout/collection_view.xml" />
         <ignore path="res/layout/playing_view.xml" />
     </issue>
     <issue id="NestedWeights">
