@@ -35,7 +35,7 @@ public class SongDatabaseService extends Service {
 
 	private static final String TAG = SongDatabaseService.class.getSimpleName();
 
-	protected final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "title", "composer", "date" };
+	private static final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "title", "composer", "date" };
 	public static final int COL_ID = 0;
 	public static final int COL_PARENT_ID = 1;
 	public static final int COL_FILENAME = 2;
@@ -392,21 +392,27 @@ public class SongDatabaseService extends Service {
 			List<String> list = new ArrayList<String>();
 			long currentId = childId;
 			while (true) {
-				Cursor c = getFileById(currentId);
-				c.moveToFirst();
-				Long parentId = c.getLong(COL_PARENT_ID);
-				list.add(c.getString(COL_FILENAME));
-				c.close();
-				if (parentId == null) {
-					break;
+				Cursor c = null;
+				try {
+					c = getFileById(currentId);
+					c.moveToFirst();
+					list.add(c.getString(COL_FILENAME));
+					if (c.isNull(COL_PARENT_ID)) {
+						break;
+					}
+					currentId = c.getLong(COL_PARENT_ID);
 				}
-				currentId = parentId;
+				finally {
+					c.close();
+				}
 			}
 			File path = Application.getModsDirectory();
 			Collections.reverse(list);
 			for (String component : list) {
 				path = new File(path, component);
 			}
+			Log.i(TAG, "Determined file path: %s", path);
+
 			return path;
 		}
 	};

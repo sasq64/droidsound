@@ -16,9 +16,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.database.AbstractCursor;
-import android.database.Cursor;
-
 import com.ssb.droidsound.utils.Log;
 
 public class Playlist {
@@ -26,7 +23,6 @@ public class Playlist {
 	private static final String TAG = Playlist.class.getSimpleName();
 	private static final Map<File, Playlist> PLAYLISTS = new HashMap<File, Playlist>();
 
-	private MyCursor cursor;
 	private final File plistFile;
 	private final List<SongFile> songs;
 
@@ -65,76 +61,6 @@ public class Playlist {
 			throw new RuntimeException(e);
 		}
 	 }
-
-	 private static class MyCursor extends AbstractCursor {
-		private final List<SongFile> songs;
-		private final String[] columnNames;
-		private final String[] currentRow;
-
-		public MyCursor(Playlist pl) {
-			songs = pl.getSongs();
-			columnNames = new String[] { "PATH", "FILENAME", "TITLE", "SUBTITLE" };
-			currentRow = new String[4];
-		}
-
-		@Override
-		public boolean onMove(int oldPosition, int newPosition) {
-			throw new RuntimeException("Can't move");
-		}
-
-		@Override
-		public String[] getColumnNames() {
-			return columnNames;
-		}
-
-		@Override
-		public int getCount() {
-			return songs.size();
-		}
-
-		@Override
-		public double getDouble(int column) {
-			throw new RuntimeException("No double columns");
-		}
-
-		@Override
-		public float getFloat(int column) {
-			throw new RuntimeException("No float columns");
-		}
-
-		@Override
-		public int getInt(int column) {
-			throw new RuntimeException("No int columns");
-		}
-
-		@Override
-		public long getLong(int column) {
-			throw new RuntimeException("No long columns");
-		}
-
-		@Override
-		public short getShort(int column) {
-			throw new RuntimeException("No short columns");
-		}
-
-		@Override
-		public String getString(int column) {
-			return currentRow[column];
-		}
-
-		@Override
-		public boolean isNull(int column) {
-			return currentRow[column] == null;
-		}
-	 };
-
-	 public synchronized Cursor getCursor() {
-		if (cursor == null) {
-			cursor  = new MyCursor(this);
-		}
-		cursor.moveToPosition(-1);
-		return cursor;
-	}
 
 	private static JSONObject serialize(SongFile songFile) throws JSONException {
 		JSONObject obj = new JSONObject();

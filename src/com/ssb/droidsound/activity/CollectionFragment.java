@@ -21,6 +21,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.bo.MemoryCursor;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.service.SongDatabaseService;
 import com.ssb.droidsound.utils.Log;
@@ -42,12 +44,10 @@ public class CollectionFragment extends Fragment {
 		@Override
 		public void onServiceConnected(ComponentName tag, IBinder binder) {
 			db = (SongDatabaseService.LocalBinder) binder;
-
 			Log.i(TAG, "SongDatabase connection has been established. Showing initial view, and refreshing.");
-			MyAdapter ma = new MyAdapter(getActivity(), db.getFilesInPath(null, sorting));
-			Log.i(TAG, "New child has: " + ma.getCount() + " lines");
+
+			MyAdapter ma = new MyAdapter(getActivity(), getCursor(null, null));
 			collectionView.setAdapter(ma);
-			ma.notifyDataSetChanged();
 		}
 
 		@Override
@@ -80,10 +80,10 @@ public class CollectionFragment extends Fragment {
 			TextView subtitleView = (TextView) view.findViewById(R.id.subtitle);
 			TextView sidetitleView = (TextView) view.findViewById(R.id.sidetitle);
 
-			final long childId = cursor.getLong(SongDatabaseService.COL_ID);
+			final Long childId = cursor.isNull(SongDatabaseService.COL_ID) ? null : cursor.getLong(SongDatabaseService.COL_ID);
 			final int type = cursor.getInt(SongDatabaseService.COL_TYPE);
 			final String title = cursor.getString(SongDatabaseService.COL_TITLE);
-			final Long parentId = cursor.getLong(SongDatabaseService.COL_PARENT_ID);
+			final Long parentId = cursor.isNull(SongDatabaseService.COL_PARENT_ID) ? null : cursor.getLong(SongDatabaseService.COL_PARENT_ID);
 			final String filename = cursor.getString(SongDatabaseService.COL_FILENAME);
 			final String composer = cursor.getString(SongDatabaseService.COL_COMPOSER);
 			final int date = cursor.getInt(SongDatabaseService.COL_DATE);
@@ -131,10 +131,7 @@ public class CollectionFragment extends Fragment {
 				@Override
 				public void onClick(View arg0) {
 					if (type != SongDatabaseService.TYPE_FILE) {
-						Cursor cp = db.getFileById(parentId);
-						Cursor cf = db.getFilesInPath(childId, sorting);
-						Cursor cursor = new MergeCursor(new Cursor[] { cp, cf });
-						changeCursor(cursor);
+						changeCursor(CollectionFragment.this.getCursor(parentId, childId));
 					} else {
 						Cursor playList = db.getFilesInPath(parentId, sorting);
 						String[] fileList = new String[playList.getCount()];
@@ -142,8 +139,8 @@ public class CollectionFragment extends Fragment {
 						int idx = -1;
 
 						File selectedFile = db.getFilePath(childId);
+						File path = selectedFile.getParentFile();
 						while (! playList.isAfterLast()) {
-							String path = playList.getString(SongDatabaseService.COL_PARENT_ID);
 							String name = playList.getString(SongDatabaseService.COL_FILENAME);
 							File playlistFile = new File(path, name);
 							if (playlistFile.equals(selectedFile)) {
@@ -152,6 +149,7 @@ public class CollectionFragment extends Fragment {
 							fileList[playList.getPosition()] = playlistFile.getPath();
 							playList.moveToNext();
 						}
+						playList.close();
 
 						try {
 							player.playPlaylist(fileList, idx, shuffle);
@@ -167,6 +165,22 @@ public class CollectionFragment extends Fragment {
 		public View newView(Context context, Cursor arg1, ViewGroup arg2) {
 			return ((Activity) context).getLayoutInflater().inflate(R.layout.songlist_item, null);
 		}
+	}
+
+	private Cursor getCursor(final Long parentId, final Long childId) {
+		Cursor cf = db.getFilesInPath(childId, sorting);
+		Cursor cp = null;
+		if (parentId != null) {
+			cp = db.getFileById(parentId);
+		} else if (childId != null) {
+			cp = new MemoryCursor(
+					cf.getColumnNames(),
+					new Object[][] {
+						{ null, null, Application.getModsDirectory().getPath(), SongDatabaseService.TYPE_DIR, null, null, 0 }
+					}
+			);
+		}
+		return cp != null ? new MergeCursor(new Cursor[] { cp, cf }) : cf;
 	}
 
 	@Override

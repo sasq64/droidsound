@@ -156,18 +156,6 @@ public class PlayerService extends Service {
 			}
 		}
 
-
-		@Override
-		protected void onPreExecute() {
-			Log.i(TAG, "Adding notification");
-			Notification notification = new Notification(R.drawable.droidsound64x64, "DroidSound", System.currentTimeMillis());
-			notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
-			Intent notificationIntent = new Intent(PlayerService.this, PlayerActivity.class);
-			PendingIntent contentIntent = PendingIntent.getActivity(PlayerService.this, 0, notificationIntent, 0);
-			notification.setLatestEventInfo(PlayerService.this, "DroidSound", player.getName(), contentIntent);
-			startForeground(NOTIFY_ONGOING_ID, notification);
-		}
-
 		private void sendSongInfo() {
 			/* Send musicinfo & any other collected info over intent */
 			MusicInfo info = null;
@@ -319,12 +307,6 @@ public class PlayerService extends Service {
 
 			return null;
 		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			Log.i(TAG, "Removing notification");
-			stopForeground(true);
-		}
 	}
 
 	/**
@@ -359,12 +341,19 @@ public class PlayerService extends Service {
 			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
 		}
 
-		/* We may be running by bind. It is necessary that we become started for playback. */
-		startService(new Intent(this, PlayerService.class));
-
 		player = new PlayerRunnable(p1, n1, d1, n2, d2);
 		player.setStateRequest(State.PLAY);
 		player.executeOnExecutor(playerExecutor);
+
+		/* We may be running by bind. It is necessary that we become started for playback. */
+		Log.i(TAG, "Adding notification");
+		Notification notification = new Notification(R.drawable.droidsound64x64, "DroidSound", System.currentTimeMillis());
+		notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
+		Intent notificationIntent = new Intent(PlayerService.this, PlayerActivity.class);
+		PendingIntent contentIntent = PendingIntent.getActivity(PlayerService.this, 0, notificationIntent, 0);
+		notification.setLatestEventInfo(PlayerService.this, "DroidSound", player.getName(), contentIntent);
+		startForeground(NOTIFY_ONGOING_ID, notification);
+		startService(new Intent(this, PlayerService.class));
 	}
 
 	/**
@@ -378,6 +367,9 @@ public class PlayerService extends Service {
 		if (player == null) {
 			throw new RuntimeException("Playerthread was not running. Someone must call startPlayerThread() first.");
 		}
+
+		Log.i(TAG, "Removing notification");
+		stopForeground(true);
 
 		player.setStateRequest(State.STOP);
 		while (playerExecutor.getActiveCount() != 0) {
