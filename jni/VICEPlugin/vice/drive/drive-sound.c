@@ -1863,13 +1863,13 @@ static int drive_sound_machine_calculate_samples(sound_t **psid, SWORD *pbuf, in
             nos = 1;
             for (j = 0; j < DRIVE_NUM; j++) {
                 motor[j]++;
-                if (motor[j] == spinup + sizeof(spinup)) {
+                if (motor[j] == &spinup[sizeof(spinup)]) {
                     motor[j] = hum;
                 }
-                if (motor[j] == hum + sizeof(hum)) {
+                if (motor[j] == &hum[sizeof(hum)]) {
                     motor[j] = hum;
                 }
-                if (motor[j] == spindown + sizeof(spindown)) {
+                if (motor[j] == &spindown[sizeof(spindown)]) {
                     motor[j] = nosound;
                 }
                 if (motor[j] == nosound + 1) {
@@ -1878,13 +1878,13 @@ static int drive_sound_machine_calculate_samples(sound_t **psid, SWORD *pbuf, in
                     nos = 0;
                 }
                 step[j]++;
-                if (step[j] == stepping + sizeof(stepping)) {
+                if (step[j] == &stepping[sizeof(stepping)]) {
                     step[j] = nosound;
                 }
-                if (step[j] == stepping2 + sizeof(stepping2)) {
+                if (step[j] == &stepping2[sizeof(stepping2)]) {
                     step[j] = nosound;
                 }
-                if (step[j] == bump + sizeof(bump)) {
+                if (step[j] == &bump[sizeof(bump)]) {
                     step[j] = nosound;
                 }
                 if (step[j] == nosound + 1) {

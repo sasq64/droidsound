@@ -88,9 +88,9 @@ static int set_double_size_enabled(int val, void *param)
 
     if (cap_render->sizex > 1
         && (video_chip_cap->dsize_limit_width == 0
-        || (canvas->draw_buffer->canvas_width > 0
-        && canvas->draw_buffer->canvas_width
-        <= video_chip_cap->dsize_limit_width))) {
+            || (canvas->draw_buffer->canvas_width
+                   <= video_chip_cap->dsize_limit_width))
+        ) {
         canvas->videoconfig->doublesizex = (cap_render->sizex - 1);
     } else {
         canvas->videoconfig->doublesizex = 0;
@@ -98,19 +98,20 @@ static int set_double_size_enabled(int val, void *param)
 
     if (cap_render->sizey > 1
         && (video_chip_cap->dsize_limit_height == 0
-        || (canvas->draw_buffer->canvas_height > 0
-        && canvas->draw_buffer->canvas_height
-        <= video_chip_cap->dsize_limit_height))) {
+            || (canvas->draw_buffer->canvas_height
+                   <= video_chip_cap->dsize_limit_height))
+        ) {
         canvas->videoconfig->doublesizey = (cap_render->sizey - 1);
     } else {
         canvas->videoconfig->doublesizey = 0;
     }
 
-    DBG(("set_double_size_enabled sizex:%d sizey:%d doublesizex:%d doublesizey:%d", cap_render->sizex, cap_render->sizey, canvas->videoconfig->doublesizex, canvas->videoconfig->doublesizey));
+
+    DBG(("set_double_size_enabled sizex:%d sizey:%d doublesizex:%d doublesizey:%d rendermode:%d", cap_render->sizex, cap_render->sizey, canvas->videoconfig->doublesizex, canvas->videoconfig->doublesizey, canvas->videoconfig->rendermode));
 
     if ((canvas->videoconfig->double_size_enabled != val
-        || old_doublesizex != canvas->videoconfig->doublesizex
-        || old_doublesizey != canvas->videoconfig->doublesizey)
+         || old_doublesizex != canvas->videoconfig->doublesizex
+         || old_doublesizey != canvas->videoconfig->doublesizey)
         && canvas->initialized
         && canvas->viewport->update_canvas > 0) {
         video_viewport_resize(canvas);
@@ -581,7 +582,14 @@ static int set_pal_blur(int val, void *param)
     return video_color_update_palette(canvas);
 }
 
-static const char *vname_chip_crtemu[] = { "PALScanLineShade", "PALBlur", "PALOddLinePhase", "PALOddLineOffset", NULL };
+static int set_audioleak(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    canvas->videoconfig->video_resources.audioleak = val ? 1 : 0;
+    return 0;
+}
+
+static const char *vname_chip_crtemu[] = { "PALScanLineShade", "PALBlur", "PALOddLinePhase", "PALOddLineOffset", "AudioLeak", NULL };
 
 static resource_int_t resources_chip_crtemu[] =
 {
@@ -593,6 +601,8 @@ static resource_int_t resources_chip_crtemu[] =
       NULL, set_pal_oddlinesphase, NULL },
     { NULL, 750, RES_EVENT_NO, NULL,
       NULL, set_pal_oddlinesoffset, NULL },
+    { NULL, 0, RES_EVENT_NO, NULL,
+      NULL, set_audioleak, NULL },
     RESOURCE_INT_LIST_END
 };
 
@@ -798,6 +808,7 @@ int video_resources_chip_init(const char *chipname,
     resources_chip_crtemu[1].value_ptr = &((*canvas)->videoconfig->video_resources.pal_blur);
     resources_chip_crtemu[2].value_ptr = &((*canvas)->videoconfig->video_resources.pal_oddlines_phase);
     resources_chip_crtemu[3].value_ptr = &((*canvas)->videoconfig->video_resources.pal_oddlines_offset);
+    resources_chip_crtemu[4].value_ptr = &((*canvas)->videoconfig->video_resources.audioleak);
 
     if (resources_register_int(resources_chip_crtemu) < 0) {
         return -1;

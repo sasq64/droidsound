@@ -1,8 +1,8 @@
 /*
- * cbm2-resources.h
+ * video-sound.h - Video to Audio leak emulation
  *
  * Written by
- *  Andreas Boose <viceteam@t-online.de>
+ *  groepaz <groepaz@gmx.net>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -24,22 +24,17 @@
  *
  */
 
-#ifndef VICE_CBM2_RESOURCES_H
-#define VICE_CBM2_RESOURCES_H
+#ifndef VICE_VIDEO_SOUND_H
+#define VICE_VIDEO_SOUND_H
 
-extern int cbm2_resources_init(void);
-extern void cbm2_resources_shutdown(void);
+#include "video.h"
+#include "viewport.h"
 
-extern int cart08_ram;
-extern int cart1_ram;
-extern int cart2_ram;
-extern int cart4_ram;
-extern int cart6_ram;
-extern int cartC_ram;
-
-extern int cbm2_model_line;
-extern int ramsize;
-extern int cia1_model;
+void video_sound_update(video_render_config_t *config, const BYTE *src,
+                      unsigned int width, unsigned int height,
+                      unsigned int xs, unsigned int ys,
+                      unsigned int pitchs, viewport_t *viewport);
+void video_sound_init(void);
 
 #endif
 

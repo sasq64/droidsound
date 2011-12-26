@@ -51,6 +51,7 @@
 #include "debug.h"
 #include "drive-cmdline-options.h"
 #include "drive-resources.h"
+#include "drive-sound.h"
 #include "drive.h"
 #include "drivecpu.h"
 #include "iecdrive.h"
@@ -80,8 +81,8 @@
 #include "traps.h"
 #include "types.h"
 #include "video.h"
+#include "video-sound.h"
 #include "vsync.h"
-#include "drive-sound.h"
 
 machine_context_t machine_context;
 
@@ -274,10 +275,15 @@ int machine_specific_init(void)
     sid_sound_chip_init();
 
     drive_sound_init();
+    video_sound_init();
 
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
+
+    /* Initialize keyboard buffer.
+       This appears to work but doesn't account for banking. */
+    kbdbuf_init(939, 209, 10, (CLOCK)(machine_timing.rfsh_per_sec * machine_timing.cycles_per_rfsh));
 
     /* Initialize the CBM-II-specific part of the UI.  */
     cbm2ui_init();
@@ -397,7 +403,7 @@ void machine_get_line_cycle(unsigned int *line, unsigned int *cycle, int *half_c
     *half_cycle = (int)-1;
 }
 
-static void machine_change_timing_c610(int timeval)
+void machine_change_timing(int timeval)
 {
     /* log_message(LOG_DEFAULT, "machine_change_timing_c610 %d", timeval); */
 
@@ -426,11 +432,6 @@ static void machine_change_timing_c610(int timeval)
     clk_guard_set_clk_base(maincpu_clk_guard, machine_timing.cycles_per_rfsh);
 
     cia1_set_timing(machine_context.cia1, machine_timing.cycles_per_rfsh);
-}
-
-void machine_change_timing(int timeval)
-{
-    machine_change_timing_c610(timeval);
 }
 
 /* Set the screen refresh rate, as this is variable in the CRTC */

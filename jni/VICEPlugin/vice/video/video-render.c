@@ -41,6 +41,7 @@
 #include "renderyuv.h"
 #include "types.h"
 #include "video-render.h"
+#include "video-sound.h"
 #include "video.h"
 
 static void(*render_1x2_func)(video_render_config_t *, const BYTE *, BYTE *,
@@ -111,6 +112,8 @@ void video_render_main(video_render_config_t *config, BYTE *src, BYTE *trg,
     if (width <= 0) {
         return; /* some render routines don't like invalid width */
     }
+
+    video_sound_update(config, src, width, height, xs, ys, pitchs, viewport);
 
     rendermode = config->rendermode;
     colortab = &config->color_tables;

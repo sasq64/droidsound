@@ -4121,7 +4121,7 @@ translate_t string_table[] = {
 #ifdef HAS_TRANSLATION
 /* da */ {IDCLS_SET_C64_MODEL_DA, "Vælg C64 model (c64/c64c/c64old, ntsc/newntsc/oldntsc, drean)"},
 /* de */ {IDCLS_SET_C64_MODEL_DE, "Wähle C64 Modell (c64/c64c/c64alt/c64ntsc/c64cntsc/c64oldntsc/drean)"},
-/* es */ {IDCLS_SET_C64_MODEL_ES, "Seleccionar modelo C64 (c64/c64c/c64antiguo, ntsc/nuevontsc/antiguontsc, drean)"},
+/* es */ {IDCLS_SET_C64_MODEL_ES, "Seleccionar modelo C64 (c64/c64c/c64old, ntsc/newntsc/oldntsc, drean)"},
 /* fr */ {IDCLS_SET_C64_MODEL_FR, ""},  /* fuzzy */
 /* hu */ {IDCLS_SET_C64_MODEL_HU, ""},  /* fuzzy */
 /* it */ {IDCLS_SET_C64_MODEL_IT, "Imposta modello C64 (c64/c64c/c64old, ntsc/newntsc/oldntsc, drean)"},
@@ -4130,7 +4130,24 @@ translate_t string_table[] = {
 /* pl */ {IDCLS_SET_C64_MODEL_PL, "Okre¶l model C64 (c64/c64c/c64old, ntsc/newntsc/oldntsc, drean)"},
 /* ru */ {IDCLS_SET_C64_MODEL_RU, ""},  /* fuzzy */
 /* sv */ {IDCLS_SET_C64_MODEL_SV, "Välj C64-modell (c64/c64c/c64old, ntsc/newntsc/oldntsc, drean)"},
-/* tr */ {IDCLS_SET_C64_MODEL_TR, "C64 modelini belirle (c64/c64c/c64eski, ntsc/yenintsc/eskintsc, drean)"},
+/* tr */ {IDCLS_SET_C64_MODEL_TR, "C64 modelini belirle (c64/c64c/c64old, ntsc/newntsc/oldntsc, drean)"},
+#endif
+
+/* c128/c128-cmdline-options.c */
+/* en */ {IDCLS_SET_C128_MODEL,    N_("Set C128 model (c128/c128dcr, pal/ntsc)")},
+#ifdef HAS_TRANSLATION
+/* da */ {IDCLS_SET_C128_MODEL_DA, "Vælg C128 model (c128/c128dcr, pal/ntsc)"},
+/* de */ {IDCLS_SET_C128_MODEL_DE, "Wähle C128 Modell (c128/c128dcr, pal/ntsc)"},
+/* es */ {IDCLS_SET_C128_MODEL_ES, "Seleccionar modelo C128 (c128/c128dcr, pal/ntsc)"},
+/* fr */ {IDCLS_SET_C128_MODEL_FR, ""},  /* fuzzy */
+/* hu */ {IDCLS_SET_C128_MODEL_HU, ""},  /* fuzzy */
+/* it */ {IDCLS_SET_C128_MODEL_IT, "Imposta modello C128 (c128/c128dcr, pal/ntsc)"},
+/* ko */ {IDCLS_SET_C128_MODEL_KO, ""},  /* fuzzy */
+/* nl */ {IDCLS_SET_C128_MODEL_NL, "Zet C128 model (c128/c128dcr, pal/ntsc)"},
+/* pl */ {IDCLS_SET_C128_MODEL_PL, "Okre¶l model C128 (c128/c128dcr, pal/ntsc)"},
+/* ru */ {IDCLS_SET_C128_MODEL_RU, ""},  /* fuzzy */
+/* sv */ {IDCLS_SET_C128_MODEL_SV, "Välj C128-modell (c128/c128dcr, pal/ntsc)"},
+/* tr */ {IDCLS_SET_C128_MODEL_TR, "C128 modelini belirle (c128/c128dcr, pal/ntsc)"},
 #endif
 
 /* plus4/plus4-cmdline-options.c */
@@ -10401,6 +10418,40 @@ translate_t string_table[] = {
 /* ru */ {IDCLS_DISABLE_DOUBLE_SCAN_RU, ""},  /* fuzzy */
 /* sv */ {IDCLS_DISABLE_DOUBLE_SCAN_SV, "Inaktivera dubbelskanning"},
 /* tr */ {IDCLS_DISABLE_DOUBLE_SCAN_TR, "Çift taramayý pasifleþtir"},
+#endif
+
+/* video/video-cmdline-options.c */
+/* en */ {IDCLS_ENABLE_AUDIO_LEAK,    N_("Enable audio leak emulation")},
+#ifdef HAS_TRANSLATION
+/* da */ {IDCLS_ENABLE_AUDIO_LEAK_DA, ""},  /* fuzzy */
+/* de */ {IDCLS_ENABLE_AUDIO_LEAK_DE, ""},  /* fuzzy */
+/* es */ {IDCLS_ENABLE_AUDIO_LEAK_ES, ""},  /* fuzzy */
+/* fr */ {IDCLS_ENABLE_AUDIO_LEAK_FR, ""},  /* fuzzy */
+/* hu */ {IDCLS_ENABLE_AUDIO_LEAK_HU, ""},  /* fuzzy */
+/* it */ {IDCLS_ENABLE_AUDIO_LEAK_IT, ""},  /* fuzzy */
+/* ko */ {IDCLS_ENABLE_AUDIO_LEAK_KO, ""},  /* fuzzy */
+/* nl */ {IDCLS_ENABLE_AUDIO_LEAK_NL, ""},  /* fuzzy */
+/* pl */ {IDCLS_ENABLE_AUDIO_LEAK_PL, ""},  /* fuzzy */
+/* ru */ {IDCLS_ENABLE_AUDIO_LEAK_RU, ""},  /* fuzzy */
+/* sv */ {IDCLS_ENABLE_AUDIO_LEAK_SV, ""},  /* fuzzy */
+/* tr */ {IDCLS_ENABLE_AUDIO_LEAK_TR, ""},  /* fuzzy */
+#endif
+
+/* video/video-cmdline-options.c */
+/* en */ {IDCLS_DISABLE_AUDIO_LEAK,    N_("Disable audio leak emulation")},
+#ifdef HAS_TRANSLATION
+/* da */ {IDCLS_DISABLE_AUDIO_LEAK_DA, ""},  /* fuzzy */
+/* de */ {IDCLS_DISABLE_AUDIO_LEAK_DE, ""},  /* fuzzy */
+/* es */ {IDCLS_DISABLE_AUDIO_LEAK_ES, ""},  /* fuzzy */
+/* fr */ {IDCLS_DISABLE_AUDIO_LEAK_FR, ""},  /* fuzzy */
+/* hu */ {IDCLS_DISABLE_AUDIO_LEAK_HU, ""},  /* fuzzy */
+/* it */ {IDCLS_DISABLE_AUDIO_LEAK_IT, ""},  /* fuzzy */
+/* ko */ {IDCLS_DISABLE_AUDIO_LEAK_KO, ""},  /* fuzzy */
+/* nl */ {IDCLS_DISABLE_AUDIO_LEAK_NL, ""},  /* fuzzy */
+/* pl */ {IDCLS_DISABLE_AUDIO_LEAK_PL, ""},  /* fuzzy */
+/* ru */ {IDCLS_DISABLE_AUDIO_LEAK_RU, ""},  /* fuzzy */
+/* sv */ {IDCLS_DISABLE_AUDIO_LEAK_SV, ""},  /* fuzzy */
+/* tr */ {IDCLS_DISABLE_AUDIO_LEAK_TR, ""},  /* fuzzy */
 #endif
 
 /* video/video-cmdline-options.c */

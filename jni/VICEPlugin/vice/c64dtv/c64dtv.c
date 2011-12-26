@@ -51,6 +51,7 @@
 #include "debug.h"
 #include "drive-cmdline-options.h"
 #include "drive-resources.h"
+#include "drive-sound.h"
 #include "drive.h"
 #include "drivecpu.h"
 #include "flash-trap.h"
@@ -83,8 +84,8 @@
 #include "types.h"
 #include "vicii.h"
 #include "video.h"
+#include "video-sound.h"
 #include "vsync.h"
-#include "drive-sound.h"
 
 #ifdef HAVE_MOUSE
 #include "mouse.h"
@@ -374,6 +375,7 @@ int machine_specific_init(void)
     sid_sound_chip_init();
 
     drive_sound_init();
+    video_sound_init();
 
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
@@ -537,6 +539,11 @@ void machine_change_timing(int timeval)
       case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_DEBUG_BORDERS):
         timeval ^= VICII_BORDER_MODE(VICII_DEBUG_BORDERS);
         border_mode = VICII_DEBUG_BORDERS;
+        break;
+      case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_NO_BORDERS):
+      case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_NO_BORDERS):
+        timeval ^= VICII_BORDER_MODE(VICII_NO_BORDERS);
+        border_mode = VICII_NO_BORDERS;
         break;
    }
 

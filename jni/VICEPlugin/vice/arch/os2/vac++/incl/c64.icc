@@ -1,3 +1,0 @@
-source type(c)
-    "c64mem.c",
-    "c64model.c"

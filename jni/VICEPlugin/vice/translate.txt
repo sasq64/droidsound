@@ -385,6 +385,9 @@ IDCLS_SET_CIA2_MODEL
 /* c64/c64-cmdline-options.c */
 IDCLS_SET_C64_MODEL
 
+/* c128/c128-cmdline-options.c */
+IDCLS_SET_C128_MODEL
+
 /* plus4/plus4-cmdline-options.c */
 IDCLS_SET_PLUS4_MODEL
 
@@ -1493,6 +1496,12 @@ IDCLS_ENABLE_DOUBLE_SCAN
 
 /* video/video-cmdline-options.c */
 IDCLS_DISABLE_DOUBLE_SCAN
+
+/* video/video-cmdline-options.c */
+IDCLS_ENABLE_AUDIO_LEAK
+
+/* video/video-cmdline-options.c */
+IDCLS_DISABLE_AUDIO_LEAK
 
 /* video/video-cmdline-options.c */
 IDCLS_ENABLE_HARDWARE_SCALING

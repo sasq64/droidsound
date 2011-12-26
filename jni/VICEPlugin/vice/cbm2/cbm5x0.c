@@ -1,5 +1,5 @@
 /*
- * cbm2.c
+ * cbm5x0.c
  *
  * Written by
  *  André Fachat <fachat@physik.tu-chemnitz.de>
@@ -50,6 +50,7 @@
 #include "debug.h"
 #include "drive-cmdline-options.h"
 #include "drive-resources.h"
+#include "drive-sound.h"
 #include "drive.h"
 #include "drivecpu.h"
 #include "iecdrive.h"
@@ -81,8 +82,8 @@
 #include "vicii.h"
 #include "vicii-resources.h"
 #include "video.h"
+#include "video-sound.h"
 #include "vsync.h"
-#include "drive-sound.h"
 
 machine_context_t machine_context;
 
@@ -347,13 +348,18 @@ int machine_specific_init(void)
     sid_sound_chip_init();
 
     drive_sound_init();
+    video_sound_init();
 
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
 
+    /* Initialize keyboard buffer.
+       This appears to work but doesn't account for banking. */
+    kbdbuf_init(939, 209, 10, (CLOCK)(machine_timing.rfsh_per_sec * machine_timing.cycles_per_rfsh));
+
     /* Initialize the CBM-II-specific part of the UI.  */
-#if defined(__BEOS__) || defined(USE_SDLUI)
+#if defined(__BEOS__) || defined(USE_SDLUI) || defined(USE_GNOMEUI) /* XAW? */
     /* FIXME make this available on other ports */
     cbm5x0ui_init();
 #else
@@ -419,10 +425,11 @@ void machine_specific_shutdown(void)
     /* close the video chip(s) */
     vicii_shutdown();
 
-#if defined(__BEOS__) && !defined(USE_SDLUI)
+#if defined(__BEOS__) || defined(USE_SDLUI) || defined(USE_GNOMEUI) /* XAW? */
     /* FIXME make this available on other ports too */
     cbm5x0ui_shutdown();
 #else
+    /* ...and remove this */
     cbm2ui_shutdown();
 #endif
 }
@@ -483,28 +490,35 @@ void machine_get_line_cycle(unsigned int *line, unsigned int *cycle, int *half_c
     *half_cycle = (int)-1;
 }
 
-/* note: function splitted to prepare binary splitting */
-static void machine_change_timing_c500(int timeval)
+void machine_change_timing(int timeval)
 {
    int border_mode;
 
     /* log_message(LOG_DEFAULT, "machine_change_timing_c500 %d", timeval); */
 
     switch (timeval) {
-      default:
-      case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_NORMAL_BORDERS):
-        timeval ^= VICII_BORDER_MODE(VICII_NORMAL_BORDERS);
-        border_mode = VICII_NORMAL_BORDERS;
-        break;
-      case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_FULL_BORDERS):
-        timeval ^= VICII_BORDER_MODE(VICII_FULL_BORDERS);
-        border_mode = VICII_FULL_BORDERS;
-        break;
-      case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_DEBUG_BORDERS):
-        timeval ^= VICII_BORDER_MODE(VICII_DEBUG_BORDERS);
-        border_mode = VICII_DEBUG_BORDERS;
-        break;
-   }
+        default:
+        case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_NORMAL_BORDERS):
+        case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_NORMAL_BORDERS):
+            timeval ^= VICII_BORDER_MODE(VICII_NORMAL_BORDERS);
+            border_mode = VICII_NORMAL_BORDERS;
+            break;
+        case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_FULL_BORDERS):
+        case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_FULL_BORDERS):
+            timeval ^= VICII_BORDER_MODE(VICII_FULL_BORDERS);
+            border_mode = VICII_FULL_BORDERS;
+            break;
+        case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_DEBUG_BORDERS):
+        case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_DEBUG_BORDERS):
+            timeval ^= VICII_BORDER_MODE(VICII_DEBUG_BORDERS);
+            border_mode = VICII_DEBUG_BORDERS;
+            break;
+        case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_NO_BORDERS):
+        case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_NO_BORDERS):
+            timeval ^= VICII_BORDER_MODE(VICII_NO_BORDERS);
+            border_mode = VICII_NO_BORDERS;
+            break;
+    }
 
     switch (timeval) {
         case MACHINE_SYNC_PAL:
@@ -532,11 +546,6 @@ static void machine_change_timing_c500(int timeval)
 
     vicii_change_timing(&machine_timing, border_mode);
     cia1_set_timing(machine_context.cia1, machine_timing.cycles_per_rfsh);
-}
-
-void machine_change_timing(int timeval)
-{
-    machine_change_timing_c500(timeval);
 }
 
 /* Set the screen refresh rate, as this is variable in the CRTC */

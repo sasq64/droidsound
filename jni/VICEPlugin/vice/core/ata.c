@@ -53,8 +53,8 @@
 #define ATA_DRQ 0x08
 #define ATA_ERR 0x01
 #define ATA_COPYRIGHT "KAJTAR ZSOLT (SOCI/SINGULAR)"
-#define ATA_SERIAL_NUMBER &"$Date:: 2011-10-26 03:05:15 #$"[8]
-#define ATA_REVISION &"$Revision:: 24828    $"[12]
+#define ATA_SERIAL_NUMBER &"$Date:: 2011-12-23 01:59:13 #$"[8]
+#define ATA_REVISION &"$Revision:: 25058    $"[12]
 
 #ifdef ATA_DEBUG
 #define debug(_x_) log_message _x_
@@ -277,9 +277,10 @@ static int read_sector(ata_drive_t *drv)
         return drv->error;
     }
 
-    memset(drv->buffer, 0, drv->sector_size);
     clearerr(drv->file);
-    fread(drv->buffer, 1, drv->sector_size, drv->file);
+    if (fread(drv->buffer, drv->sector_size, 1, drv->file) != 1) {
+        memset(drv->buffer, 0, drv->sector_size);
+    }
 
     if (ferror(drv->file)) {
         ata_set_command_block(drv);

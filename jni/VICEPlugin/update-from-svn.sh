@@ -22,7 +22,7 @@ rm -rf "$TARGET"
 echo "Copying SVN checkout..."
 cp -a "$VICEDIR/src" vice
 echo "Removing SVN and autotools specific files..."
-find "$TARGET" -name '.svn' -type d -exec rm -rf '{}' ';'
+find "$TARGET" -name '.svn' -type d -prune -exec rm -rf '{}' ';'
 find "$TARGET" -name '*.in' -type f -exec rm -rf '{}' ';'
 find "$TARGET" -name '*.am' -type f -exec rm -rf '{}' ';'
 find "$TARGET" -name 'configure' -type f -exec rm -rf '{}' ';'

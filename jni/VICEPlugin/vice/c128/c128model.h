@@ -1,8 +1,8 @@
 /*
- * cbm2-resources.h
+ * c128model.h - C64 model detection and setting.
  *
  * Written by
- *  Andreas Boose <viceteam@t-online.de>
+ *  groepaz <groepaz@gmx.net>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -24,22 +24,27 @@
  *
  */
 
-#ifndef VICE_CBM2_RESOURCES_H
-#define VICE_CBM2_RESOURCES_H
+#ifndef VICE_C128MODEL_H
+#define VICE_C128MODEL_H
 
-extern int cbm2_resources_init(void);
-extern void cbm2_resources_shutdown(void);
+#include "types.h"
 
-extern int cart08_ram;
-extern int cart1_ram;
-extern int cart2_ram;
-extern int cart4_ram;
-extern int cart6_ram;
-extern int cartC_ram;
+#define C128MODEL_C128_PAL      0
+#define C128MODEL_C128DCR_PAL   1
 
-extern int cbm2_model_line;
-extern int ramsize;
-extern int cia1_model;
+#define C128MODEL_C128_NTSC     2
+#define C128MODEL_C128DCR_NTSC  3
+
+#define C128MODEL_NUM 4
+
+#define C128MODEL_UNKNOWN 99
+
+extern int c128model_get(void);
+extern int c128model_get_temp(int vicii_model, int sid_model, int vdc_revision,
+                             int vdc_64k, int cia1_model, int cia2_model);
+extern void c128model_set(int model);
+extern void c128model_set_temp(int model, int *vicii_model, int *sid_model,
+                              int *vdc_revision, int *vdc_64k, int *cia1_model, 
+                              int *cia2_model);
 
 #endif
-
