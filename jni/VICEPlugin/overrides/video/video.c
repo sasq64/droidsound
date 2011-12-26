@@ -16,7 +16,15 @@ void video_shutdown(void) {}
 
 struct video_canvas_s *video_canvas_create(struct video_canvas_s *canvas, unsigned int *width, unsigned int *height, int mapped) { return NULL; }
 void video_arch_canvas_init(struct video_canvas_s *canvas) {}
-void video_canvas_shutdown(struct video_canvas_s *canvas) {}
+void video_canvas_shutdown(struct video_canvas_s *canvas) {
+    if (canvas != NULL) {
+        lib_free(canvas->videoconfig);
+        lib_free(canvas->draw_buffer);
+        lib_free(canvas->viewport);
+        lib_free(canvas->geometry);
+        lib_free(canvas);
+    }
+}
 
 struct video_canvas_s *video_canvas_init(void) {
     video_canvas_t *canvas = (void*) lib_calloc(1, sizeof(video_canvas_t));
