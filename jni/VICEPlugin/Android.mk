@@ -18,8 +18,6 @@ LOCAL_SRC_FILES := \
 	android/joy.c \
 	android/signals.c \
 	android/vsyncarch.c \
-	android/gui/c64ui.c \
-	android/gui/c64scui.c \
 	android/gui/uicmdline.c \
 	android/gui/vsidui.c \
 	android/null/fullscreen.c \
