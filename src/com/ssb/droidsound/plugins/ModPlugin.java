@@ -20,7 +20,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
 	}
 
-	private long currentSong = 0;
+	private long currentSong;
 
 	@Override
 	public boolean canHandle(String name) {
@@ -137,7 +137,6 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	native private long N_load(byte [] module, int size);
-	native private long N_loadInfo(byte [] module, int size);
 	native private void N_unload(long song);
 
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts

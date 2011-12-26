@@ -2,17 +2,13 @@
     android:id="@+id/linearLayout1"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical">
+    android:orientation="vertical" >
 
-    <ScrollView
+    <ListView
+        android:id="@+id/song_info_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-        <ListView
-            android:id="@+id/song_info_list"
-            android:layout_width="match_parent"
-            android:layout_height="0dp" />
-    </ScrollView>
+        android:layout_weight="1" />
 
     <LinearLayout
         android:id="@+id/progress_container"
@@ -32,7 +28,7 @@
             style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="0dip"
             android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+            android:layout_weight="1" />
 
         <TextView
             android:id="@+id/length"

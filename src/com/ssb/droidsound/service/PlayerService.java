@@ -57,7 +57,7 @@ public class PlayerService extends Service {
 	 *
 	 * @author alankila
 	 */
-	private class PlayerRunnable extends AsyncTask<Void, Integer, Void> {
+	private class PlayerRunnable extends AsyncTask<Void, Intent, Void> {
 		private static final int FREQUENCY = 44100;
 		private static final int BUFSIZE = FREQUENCY * 2;
 
@@ -159,9 +159,16 @@ public class PlayerService extends Service {
 
 		@Override
 		protected void onPreExecute() {
-			/* Note, this should not fail because it has already been executed once. */
-			plugin.load(f1, data1, f2, data2);
+			Log.i(TAG, "Adding notification");
+			Notification notification = new Notification(R.drawable.droidsound64x64, "DroidSound", System.currentTimeMillis());
+			notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
+			Intent notificationIntent = new Intent(PlayerService.this, PlayerActivity.class);
+			PendingIntent contentIntent = PendingIntent.getActivity(PlayerService.this, 0, notificationIntent, 0);
+			notification.setLatestEventInfo(PlayerService.this, "DroidSound", player.getName(), contentIntent);
+			startForeground(NOTIFY_ONGOING_ID, notification);
+		}
 
+		private void sendSongInfo() {
 			/* Send musicinfo & any other collected info over intent */
 			MusicInfo info = null;
 			try {
@@ -184,14 +191,26 @@ public class PlayerService extends Service {
 			Intent intent = new Intent(LOADING_SONG);
 			intent.putExtra("subsongs", subsongs);
 			intent.putExtra("defaultSubsong", defaultSubsong);
+			intent.putExtra("currentSubsong", currentSubsong);
 			intent.putExtra("length", songLengthMs / 1000);
-			intent.putExtra("channels", info.channels);
-			intent.putExtra("composer", info.composer);
-			intent.putExtra("copyright", info.copyright);
-			intent.putExtra("date", info.date);
-			intent.putExtra("format", info.format);
-			intent.putExtra("title", info.title);
-			sendBroadcast(intent);
+			if (info != null) {
+				intent.putExtra("channels", info.channels);
+				intent.putExtra("composer", info.composer);
+				intent.putExtra("copyright", info.copyright);
+				intent.putExtra("date", info.date);
+				intent.putExtra("format", info.format);
+				intent.putExtra("title", info.title);
+			} else {
+				intent.putExtra("title", getName());
+			}
+			publishProgress(intent);
+		}
+
+		private void sendAdvancing(int time) {
+			Intent intent = new Intent(ADVANCING);
+			intent.putExtra("time", time);
+			intent.putExtra("length", songLengthMs / 1000);
+			publishProgress(intent);
 		}
 
 		/**
@@ -200,11 +219,8 @@ public class PlayerService extends Service {
 		 * @param position
 		 */
 		@Override
-		protected void onProgressUpdate(Integer... values) {
-			Intent i = new Intent(ADVANCING);
-			i.putExtra("time", values[0]);
-			i.putExtra("length", songLengthMs / 1000);
-			sendBroadcast(i);
+		protected void onProgressUpdate(Intent... values) {
+			sendBroadcast(values[0]);
 		}
 
 		@Override
@@ -220,8 +236,12 @@ public class PlayerService extends Service {
 			/* The plugin audio buffer is smaller to not underrun (we try to keep 75+ % full). */
 			short[] samples = new short[BUFSIZE / 4];
 
+			/* Note, this should not fail because it has already been executed once. */
+			plugin.load(f1, data1, f2, data2);
+
 			int playbackFrame = 0;
-			publishProgress(0);
+			sendSongInfo();
+			sendAdvancing(0);
 			Log.i(TAG, "Entering audio playback loop.");
 			try { OUTER: while (true) {
 				final State loopState;
@@ -234,7 +254,7 @@ public class PlayerService extends Service {
 						plugin.setTune(subsongRequest);
 						subsongRequest = -1;
 						playbackFrame = 0;
-						publishProgress(0);
+						sendSongInfo();
 					}
 
 					if (seekRequest != -1) {
@@ -261,7 +281,7 @@ public class PlayerService extends Service {
 
 					int sec2 = playbackFrame / audioTrack.getPlaybackRate();
 					if (sec1 != sec2) {
-						publishProgress(sec2);
+						sendAdvancing(sec2);
 					}
 
 					/* Terminate playback when complete song played. */
@@ -291,14 +311,19 @@ public class PlayerService extends Service {
 			Log.i(TAG, "Audio playback is terminating.");
 
 			audioTrack.release();
+
+			plugin.unload();
+
+			Intent intent = new Intent(UNLOADING_SONG);
+			sendBroadcast(intent);
+
 			return null;
 		}
 
 		@Override
 		protected void onPostExecute(Void result) {
-			plugin.unload();
-			Intent intent = new Intent(UNLOADING_SONG);
-			sendBroadcast(intent);
+			Log.i(TAG, "Removing notification");
+			stopForeground(true);
 		}
 	}
 
@@ -334,18 +359,12 @@ public class PlayerService extends Service {
 			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
 		}
 
+		/* We may be running by bind. It is necessary that we become started for playback. */
+		startService(new Intent(this, PlayerService.class));
+
 		player = new PlayerRunnable(p1, n1, d1, n2, d2);
 		player.setStateRequest(State.PLAY);
-		playerExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(1));
 		player.executeOnExecutor(playerExecutor);
-
-		Log.i(TAG, "Adding notification");
-		Notification notification = new Notification(R.drawable.droidsound64x64, "DroidSound", System.currentTimeMillis());
-		notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
-		Intent notificationIntent = new Intent(this, PlayerActivity.class);
-		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
-		notification.setLatestEventInfo(this, "DroidSound", player.getName(), contentIntent);
-		startForeground(NOTIFY_ONGOING_ID, notification);
 	}
 
 	/**
@@ -361,20 +380,12 @@ public class PlayerService extends Service {
 		}
 
 		player.setStateRequest(State.STOP);
-		/* Android ExecutorService#shutdown() does not wait.
-		 * Also #awaitTermination does not wake when last task is gone.
-		 * So we poll. Hopefully this shit works.
-		 */
 		while (playerExecutor.getActiveCount() != 0) {
 			playerExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
 		}
-		playerExecutor.shutdown();
-
-		Log.i(TAG, "Removing notification");
-		stopForeground(true);
+		stopService(new Intent(this, PlayerService.class));
 
 		player = null;
-		playerExecutor = null;
 	}
 
 	@Override
@@ -406,6 +417,8 @@ public class PlayerService extends Service {
 
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+
+		playerExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(1));
 	}
 
 	@Override
@@ -421,6 +434,8 @@ public class PlayerService extends Service {
 			} catch (InterruptedException e) {
 			}
 		}
+
+		playerExecutor.shutdown();
 	}
 
 	/**

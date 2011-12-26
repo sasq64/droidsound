@@ -48,7 +48,7 @@ public class PlayingFragment extends Fragment {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			if (convertView == null) {
-				convertView = getActivity().getLayoutInflater().inflate(R.id.song_info_list, null);
+				convertView = getActivity().getLayoutInflater().inflate(R.layout.songinfo_pair, null);
 			}
 			TextView key = (TextView) convertView.findViewById(R.id.key);
 			TextView value = (TextView) convertView.findViewById(R.id.value);
@@ -78,9 +78,15 @@ public class PlayingFragment extends Fragment {
 			myAdapter.clear();
 			Bundle b = i.getExtras();
 			for (String k : b.keySet()) {
-				Entry e = new Entry(k, String.valueOf(b.get(k)));
+				Object v = b.get(k);
+				Log.i(TAG, "Received metadata: %s: %s", k, v);
+				if (v == null) {
+					continue;
+				}
+				Entry e = new Entry(k, String.valueOf(v));
 				myAdapter.add(e);
 			}
+			myAdapter.notifyDataSetChanged();
 		}
 	};
 
@@ -93,7 +99,7 @@ public class PlayingFragment extends Fragment {
 				timeView.setText(String.format("%2d:%02d", time/60, time % 60));
 				int length = i.getIntExtra("length", 0);
 				lengthView.setText(String.format("%d:%02d", length/60, length % 60));
-				if (!seekBarDragging) {
+				if (! seekBarDragging) {
 					seekBar.setProgress(time);
 					seekBar.setMax(length);
 				}
