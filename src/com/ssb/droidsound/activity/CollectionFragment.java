@@ -88,8 +88,6 @@ public class CollectionFragment extends Fragment {
 			final String composer = cursor.getString(SongDatabaseService.COL_COMPOSER);
 			final int date = cursor.getInt(SongDatabaseService.COL_DATE);
 
-			Log.i(TAG, "File: %s (id=%d, parent=%d)", filename, childId, parentId);
-
 			final int icon;
 			switch (type) {
 			case SongDatabaseService.TYPE_ARCHIVE:
@@ -97,6 +95,9 @@ public class CollectionFragment extends Fragment {
 				break;
 			case SongDatabaseService.TYPE_DIR:
 				icon = R.drawable.gflat_folder;
+				break;
+			case SongDatabaseService.TYPE_MUS_FOLDER:
+				icon = R.drawable.gflat_mus_folder;
 				break;
 			case SongDatabaseService.TYPE_FILE:
 				icon = R.drawable.gflat_note;
@@ -172,11 +173,11 @@ public class CollectionFragment extends Fragment {
 		Cursor cp = null;
 		if (parentId != null) {
 			cp = db.getFileById(parentId);
-		} else if (childId != null) {
+		} else {
 			cp = new MemoryCursor(
 					cf.getColumnNames(),
 					new Object[][] {
-						{ null, null, Application.getModsDirectory().getPath(), SongDatabaseService.TYPE_DIR, null, null, 0 }
+						{ null, null, Application.getModsDirectory().getPath(), SongDatabaseService.TYPE_MUS_FOLDER, null, null, 0 }
 					}
 			);
 		}

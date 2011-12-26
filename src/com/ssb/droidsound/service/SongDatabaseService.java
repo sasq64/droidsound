@@ -54,6 +54,7 @@ public class SongDatabaseService extends Service {
 	public static final int TYPE_DIR = 0x200;
 	public static final int TYPE_PLIST = 0x300;
 	public static final int TYPE_FILE = 0x400;
+	public static final int TYPE_MUS_FOLDER = 0x500;
 
 	private SQLiteDatabase db;
 
@@ -145,18 +146,18 @@ public class SongDatabaseService extends Service {
 				} else {
 					pathParentId = pathMap.get(path);
 					DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()));
+					ContentValues values = new ContentValues();
+					values.put("parent_id", pathParentId);
+					values.put("type", TYPE_FILE);
+					values.put("filename", fileName);
 					if (info != null) {
-						ContentValues values = new ContentValues();
-						values.put("type", TYPE_FILE);
 						values.put("title", info.title);
 						values.put("composer", info.composer);
 						values.put("date", info.date);
 						values.put("format", info.format);
-						values.put("parent_id", pathParentId);
-						values.put("filename", fileName);
-						db.insert("files", null, values);
-						Log.i(TAG, "Zip: added file %s", fileName);
 					}
+					db.insert("files", null, values);
+					Log.i(TAG, "Zip: added file %s", fileName);
 				}
 
 				if (count ++ % 100 == 0) {
