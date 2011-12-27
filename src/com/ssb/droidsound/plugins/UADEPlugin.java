@@ -194,7 +194,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String getVersion() {
-		return "UADE - Unix Amiga Delitracker Emulator\nversion 2.13\nCopyright 2000-2006, Heikki Orsila";
+		return "UADE 2.13";
 	}
 
 	/**

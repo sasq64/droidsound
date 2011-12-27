@@ -103,7 +103,7 @@ public class ModPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String getVersion() {
-		return "libmodplug v0.8.?";
+		return "libmodplug 0.8.8.4";
 	}
 
 	@Override

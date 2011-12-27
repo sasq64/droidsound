@@ -576,8 +576,11 @@ public class PlayerService extends Service {
 		}
 
 		public boolean seekTo(int msec) {
-			player.setSeekRequest(msec);
-			return true;
+			if (player != null) {
+				player.setSeekRequest(msec);
+				return true;
+			}
+			return false;
 		}
 
 		public boolean setSubSong(int song) {

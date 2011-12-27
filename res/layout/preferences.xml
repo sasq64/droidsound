@@ -11,12 +11,12 @@
 
     <PreferenceScreen
         android:key="audio_prefs"
-        android:summary="Plugin Audio Settings"
-        android:title="Audio" >
+        android:summary="Audio playback configuration"
+        android:title="Audio settings..." >
 
         <PreferenceCategory
             android:key="VICEPlugin"
-            android:title="VICE" >
+            android:title="VICE (Commodore 64 music player)" >
 
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -55,7 +55,7 @@
 
         <PreferenceCategory
             android:key="UADEPlugin"
-            android:title="UADE" >
+            android:title="UADE (amiga module player)" >
 
             <CheckBoxPreference
                 android:defaultValue="true"
@@ -80,23 +80,24 @@
 
     <PreferenceScreen
         android:key="database_prefs"
-        android:summary="Database options"
-        android:title="Database" >
+        android:summary="Index of music files on this device"
+        android:title="Music index options...">
 
-        <Preference
-            android:key="rescan_pref"
-            android:summary="Scan sdcard for changes and update database."
-            android:title="Rescan database" />
-        
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="rescan_full"
-            android:title="Rebuild database"
-            android:summary="Clear database first, then do full scan."/>
+            android:summary="Clear database first, then scan all files"
+            android:title="Full rebuild of index" />
+        
+        <Preference
+            android:key="rescan_pref"
+            android:summary="Scan sdcard for changes and update database"
+            android:title="Refresh index" />
+        
     </PreferenceScreen>
 
     <PreferenceScreen
         android:key="about_prefs"
-        android:title="About Droidsound" />
+        android:title="About..." />
 
 </PreferenceScreen>

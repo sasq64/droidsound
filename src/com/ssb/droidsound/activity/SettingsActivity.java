@@ -107,12 +107,13 @@ public class SettingsActivity extends PreferenceActivity {
 
 		if (abScreen != null) {
 			PreferenceCategory pc = new PreferenceCategory(this);
-			pc.setTitle("Droidsound");
+			pc.setTitle(appName);
 			abScreen.addPreference(pc);
 
 			Preference p = new Preference(this);
 			p.setTitle("Application");
-			p.setSummary(String.format("%s v%s\n(C) 2010,2011 by Jonas Minnberg (Sasq)", appName, pinfo.versionName));
+			p.setSummary("DroidSound v2 (c) 2010,2011 by Jonas Minnberg (Sasq)\n"
+					+ "Android 4+ rewrite by Antti S. Lankila (alankila)");
 			abScreen.addPreference(p);
 
 			pc = new PreferenceCategory(this);

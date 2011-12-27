@@ -19,7 +19,7 @@ public class HivelyPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String getVersion() {
-		return "HVL Replay v1.6";
+		return "HVL Replay 1.6";
 	}
 
 	@Override
