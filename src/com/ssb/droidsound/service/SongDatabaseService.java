@@ -54,13 +54,13 @@ public class SongDatabaseService extends Service {
 	public static final String SCAN_NOTIFY_UPDATE = "com.sddb.droidsound.SCAN_NOTIFY_UPDATE";
 	public static final String SCAN_NOTIFY_DONE = "com.sddb.droidsound.SCAN_NOTIFY_DONE";
 
-	public static final int DB_VERSION = 9;
-
 	public static final int TYPE_ZIP = 0x100;
 	public static final int TYPE_DIR = 0x200;
 	public static final int TYPE_PLIST = 0x300;
 	public static final int TYPE_FILE = 0x400;
 	public static final int TYPE_MUS_FOLDER = 0x500;
+
+	private static final int DB_VERSION = 11;
 
 	private SQLiteDatabase db;
 
@@ -95,6 +95,36 @@ public class SongDatabaseService extends Service {
 			return null;
 		}
 
+		private long insertDirectory(String name, Long parentId) {
+			ContentValues values = new ContentValues();
+			values.put("type", TYPE_DIR);
+			values.put("parent_id", parentId);
+			values.put("filename", name);
+			return db.insert("files", null, values);
+		}
+
+		private void insertFile(File name, byte[] data, long modifyTime, Long parentId) {
+			DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(name.getName(), data);
+			ContentValues values = new ContentValues();
+			values.put("parent_id", parentId);
+			values.put("filename", name.getName());
+			values.put("modify_time", modifyTime);
+			values.put("type", TYPE_FILE);
+			values.put("title", name.getName());
+			values.put("composer", name.getParentFile().getName());
+			if (info != null) {
+				if (info.title != null) {
+					values.put("title", info.title);
+				}
+				if (info.composer != null) {
+					values.put("composer", info.composer);
+				}
+				values.put("date", info.date);
+				values.put("format", info.format);
+				db.insert("files", null, values);
+			}
+		}
+
 		/**
 		 * Zips are scanned in one atomic unit. So db will be placed in transaction for this.
 		 *
@@ -113,7 +143,7 @@ public class SongDatabaseService extends Service {
 			pathMap.put("", parentId);
 
 			ZipEntry ze;
-			int count = 0;
+			int shownPct = -1;
 			while (null != (ze = zis.getNextEntry())) {
 				int slash = ze.getName().lastIndexOf('/');
 				/** Path inside zip to file */
@@ -129,6 +159,7 @@ public class SongDatabaseService extends Service {
 				}
 				final long pathParentId;
 				if ("".equals(name)) {
+					/* Is directory. Pick the part before the last filename */
 					int slash2 = path.lastIndexOf('/');
 					final String pathFilename;
 					if (slash2 == -1) {
@@ -140,44 +171,25 @@ public class SongDatabaseService extends Service {
 						/** Parent of the path (if any) */
 						String parent = path.substring(0, slash2);
 						pathFilename = path.substring(slash2 + 1);
-						Log.i(TAG, "Zip: looking up parent %s for directory: %s", parent, pathFilename);
 						pathParentId = pathMap.get(parent);
 					}
 
-					/* Is directory. Pick the part before the last filename */
-					ContentValues values = new ContentValues();
-					values.put("type", TYPE_DIR);
-					values.put("parent_id", pathParentId);
-					values.put("filename", pathFilename);
-					long rowId = db.insert("files", null, values);
+					Log.i(TAG, "New directory: %s", ze.getName());
+					long rowId = insertDirectory(pathFilename, pathParentId);
 					pathMap.put(path, rowId);
 				} else {
 					pathParentId = pathMap.get(path);
-					DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()));
-					ContentValues values = new ContentValues();
-					values.put("parent_id", pathParentId);
-					values.put("type", TYPE_FILE);
-					values.put("filename", name);
-					values.put("title", name);
-					values.put("composer", new File(path).getName());
-					if (info != null) {
-						if (info.title != null) {
-							values.put("title", info.title);
-						}
-						if (info.composer != null) {
-							values.put("composer", info.composer);
-						}
-						values.put("date", info.date);
-						values.put("format", info.format);
-						db.insert("files", null, values);
-						Log.i(TAG, "Zip: added file %s", name);
-					}
+					/* We could store zipentry's modifytime here, but I doubt it makes a difference. */
+					Log.i(TAG, "New file: %s", ze.getName());
+					insertFile(new File(path, name), StreamUtil.readFully(zis, ze.getSize()), 0, pathParentId);
 				}
 
-				if (count ++ % 100 == 0) {
-					publishProgress(zipFile.getName(), (int) (fis.getChannel().position() / (fis.getChannel().size() / 100)));
-					zis.closeEntry();
+				int pct = (int) (fis.getChannel().position() / (fis.getChannel().size() / 100));
+				if (shownPct != pct) {
+					publishProgress(zipFile.getName(), pct);
+					shownPct = pct;
 				}
+				zis.closeEntry();
 			}
 
 			zis.close();
@@ -186,174 +198,116 @@ public class SongDatabaseService extends Service {
 		/**
 		 * Dir scan. Roots of the tree are those with parentId = null.
 		 */
-		private void scanFiles(File dir, Long parentId, long lastScan) throws IOException {
-			boolean hasChanged = lastScan < dir.lastModified();
-			Log.d(TAG, "Entering '%s', lastScan %d, going to scan: %s", dir.getPath(), lastScan, String.valueOf(hasChanged));
+		private void scanFiles(File dir, Long parentId) throws IOException {
+			Log.i(TAG, "Entering '%s'", dir.getPath());
 
-			final Cursor fileCursor;
+			String where;
+			String[] whereCond;
 			if (parentId == null) {
-				fileCursor = db.query(
-					"files",
-					new String[] { BaseColumns._ID, "filename", "type" },
-					"parent_id IS NULL", null,
-					null, null, null
-				);
+				where = "parent_id IS NULL";
+				whereCond = null;
 			} else {
-				fileCursor = db.query(
-						"files",
-						new String[] { BaseColumns._ID, "filename", "type" },
-						"parent_id = ?", new String[] { String.valueOf(parentId) },
-						null, null, null
-				);
+				where = "parent_id = ?";
+				whereCond = new String[] { String.valueOf(parentId) };
 			}
+			final Cursor fileCursor = db.query(
+					"files",
+					new String[] { BaseColumns._ID, "filename", "modify_time" },
+					where, whereCond,
+					null, null, null
+			);
 
 			/** Going to recurse into these */
-			Map<Long, String> dirsInDatabase = new HashMap<Long, String>();
+			Map<Long, File> dirsInDatabase = new HashMap<Long, File>();
 			publishProgress(dir.getName(), 0);
 
-			/* If there is no change in this directory, we'll just pick the directories to
-			 * recurse into from db. */
-			if (! hasChanged) {
-				while (fileCursor.moveToNext()) {
-					long id = fileCursor.getLong(0);
-					String fileName = fileCursor.getString(1);
-					int type = fileCursor.getInt(2);
-					if (type == TYPE_DIR) {
-						dirsInDatabase.put(id, fileName);
-					}
-				}
-			} else {
-				/**
-				 * Set of files in examined directory. Entries are removed from this set
-				 * if they are also found on the database.
-				 */
-				Set<String> files = new HashSet<String>();
-				for (File f : dir.listFiles()) {
-					String n = f.getName();
-					if (! n.startsWith(".")) {
-						files.add(n);
-					}
-				}
-
-				Log.d(TAG, "Datbase has %d entries, found %d files/dirs", fileCursor.getCount(), files.size());
-				Set<Long> delFiles = new HashSet<Long>();
-
-				Log.d(TAG, "Comparing DB to FS");
-
-				// Iterate over database result and compare to hash set
-				while (fileCursor.moveToNext()) {
-					Long id = fileCursor.getLong(0);
-					String fileName = fileCursor.getString(1);
-
-					if (files.contains(fileName)) {
-						File f = new File(dir, fileName);
-
-						/* FIXME: there's no test to make sure the type is right */
-						if (f.isDirectory()) {
-							dirsInDatabase.put(id, fileName);
-							files.remove(fileName);
-						} else {
-							if (lastScan < f.lastModified()) {
-								Log.i(TAG, "Change in file detected: %s", fileName);
-								delFiles.add(id);
-							} else {
-								files.remove(fileName);
-							}
-						}
-					} else {
-						Log.d(TAG, "!! '%s' found in DB but not on disk, DELETING", fileName);
-						// File has been removed on disk, schedule for DELETE
-						delFiles.add(id);
-					}
-				}
-
-				for (long id : delFiles) {
-					db.delete("files", "_id = ?", new String[] { String.valueOf(id) } );
-				}
-
-				for (String fn : files) {
-					ContentValues values = new ContentValues();
-					values.put("parent_id", parentId);
-					values.put("filename", fn);
-
-					File f = new File(dir, fn);
-					if (f.isFile()) {
-						if (fn.toUpperCase().endsWith(".ZIP")) {
-							values.put("type", TYPE_ZIP);
-							values.put("title", f.getName().substring(0, fn.length() - 4));
-							long rowId = db.insert("files", null, values);
-							scanZip(f, rowId);
-							continue;
-
-						}
-						if (fn.toUpperCase().endsWith(".PLIST")) {
-							values.put("type", TYPE_PLIST);
-							values.put("title", fn.substring(0, fn.length() - 6));
-							db.insert("files", null, values);
-							continue;
-						}
-
-						values.put("type", TYPE_FILE);
-						DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(f.getName(), StreamUtil.readFully(new FileInputStream(f), f.length()));
-						values.put("title", f.getName());
-						values.put("composer", f.getParentFile().getName());
-						if (info != null) {
-							if (info.title != null) {
-								values.put("title", info.title);
-							}
-							if (info.composer != null) {
-								values.put("composer", info.composer);
-							}
-							values.put("date", info.date);
-							values.put("format", info.format);
-							Log.i(TAG, "Added file: %s", f.getName());
-							db.insert("files", null, values);
-						}
-						continue;
-
-					} else if (f.isDirectory()) {
-						values.put("type", TYPE_DIR);
-						long rowId = db.insert("files", null, values);
-						scanFiles(f, rowId, lastScan);
-					} else {
-						Log.i(TAG, "Not adding file %s (not file or directory)", f.getName());
-					}
+			/**
+			 * Set of files in examined directory. Entries are removed from this set
+			 * if they are also found on the database, so the remainder corresponds to files to add.
+			 */
+			Set<File> files = new HashSet<File>();
+			for (File f : dir.listFiles()) {
+				if (! f.getName().startsWith(".")) {
+					files.add(f);
 				}
 			}
 
-			// Close cursor (important since we call ourselves recursively below)
+			Set<Long> delFiles = new HashSet<Long>();
+			/* Compare db and fs */
+			while (fileCursor.moveToNext()) {
+				long id = fileCursor.getLong(0);
+				File file = new File(dir, fileCursor.getString(1));
+				long lastScan = fileCursor.getLong(2);
+
+				if (files.contains(file)) {
+					if (file.isDirectory()) {
+						dirsInDatabase.put(id, file);
+						files.remove(file);
+					} else {
+						/* Has recorded modify-time changed? If so, rescan. */
+						if (lastScan != file.lastModified()) {
+							delFiles.add(id);
+						} else {
+							files.remove(file);
+						}
+					}
+				} else {
+					delFiles.add(id);
+				}
+			}
 			fileCursor.close();
 
-			/* Continue scanning down */
-			for (Entry<Long, String> e : dirsInDatabase.entrySet()) {
-				scanFiles(new File(dir, e.getValue()), e.getKey(), lastScan);
+			/* Delete files that need refresh or which did not exist anymore. */
+			for (long id : delFiles) {
+				db.delete("files", "_id = ?", new String[] { String.valueOf(id) } );
+			}
+
+			/* Add files/directories that did not exist */
+			for (File f : files) {
+				if (f.isFile()) {
+					Log.i(TAG, "New file: %s", f.getPath());
+					String fnUpper = f.getName().toUpperCase();
+					if (fnUpper.endsWith(".ZIP")) {
+						ContentValues values = new ContentValues();
+						values.put("parent_id", parentId);
+						values.put("filename", f.getName());
+						values.put("modify_time", f.lastModified());
+						values.put("type", TYPE_ZIP);
+						values.put("title", f.getName().substring(0, f.getName().length() - 4));
+						long rowId = db.insert("files", null, values);
+						scanZip(f, rowId);
+					} else if (fnUpper.endsWith(".PLIST")) {
+						ContentValues values = new ContentValues();
+						values.put("parent_id", parentId);
+						values.put("filename", f.getName());
+						values.put("modify_time", f.lastModified());
+						values.put("type", TYPE_PLIST);
+						values.put("title", f.getName().substring(0, f.getName().length() - 6));
+						db.insert("files", null, values);
+					} else {
+						insertFile(f, StreamUtil.readFully(new FileInputStream(f), f.length()), f.lastModified(), parentId);
+					}
+				} else if (f.isDirectory()) {
+					Log.i(TAG, "New Directory: %s", f.getPath());
+					long rowId = insertDirectory(f.getName(), parentId);
+					scanFiles(f, rowId);
+				}
+			}
+
+			/* Continue scanning into found directories */
+			for (Entry<Long, File> e : dirsInDatabase.entrySet()) {
+				scanFiles(e.getValue(), e.getKey());
 			}
 		}
 
 		private void doScan(File modsDir, boolean full) throws IOException {
-			long lastScan = 0;
-			Cursor cursor = db.query("variables", new String[] { "value" }, "var = ?", new String[] { "lastscan" }, null, null, null);
-			ContentValues values = new ContentValues();
-			values.put("value", Long.toString(System.currentTimeMillis()));
-			if (cursor.getCount() == 0) {
-				values.put("var", "lastscan");
-				db.insert("variables", null, values);
-			} else {
-				cursor.moveToFirst();
-				lastScan = Long.parseLong(cursor.getString(0));
-				db.update("variables", values, "var = ?", new String[] { "lastscan" });
-			}
-			cursor.close();
-
-			Log.d(TAG, "Last scan %d\n", lastScan);
-
 			if (full) {
 				publishProgress(modsDir.getPath(), 0);
 				db.delete("files", null, null);
-				lastScan = 0;
+				db.delete("songlength", null, null);
 			}
 
-			scanFiles(modsDir, null, lastScan);
+			scanFiles(modsDir, null);
 		}
 
 		@Override
@@ -504,27 +458,38 @@ public class SongDatabaseService extends Service {
 		if (db.needUpgrade(DB_VERSION)) {
 			Log.i(TAG, "Deleting old schema (if any)...");
 			db.execSQL("DROP TABLE IF EXISTS files;");
-			db.execSQL("DROP TABLE IF EXISTS variables;");
+			db.execSQL("DROP TABLE IF EXISTS songlength;");
 
 			Log.i(TAG, "Creating new schema...");
+			/* Record seen songs. */
 			db.execSQL("CREATE TABLE IF NOT EXISTS files ("
 					+ BaseColumns._ID + " INTEGER PRIMARY KEY,"
 					+ "parent_id INTEGER REFERENCES files ON DELETE CASCADE,"
-					+ "filename TEXT,"
-					+ "type INTEGER,"
+					+ "filename TEXT NOT NULL,"
+					+ "type INTEGER NOT NULL,"
+					+ "modify_time INTEGER,"
 					+ "title TEXT,"
 					+ "composer TEXT,"
 					+ "date INTEGER,"
 					+ "format TEXT"
 					+ ");");
 
-			db.execSQL("CREATE TABLE IF NOT EXISTS variables ("
+			/* If a Songlengths.txt file is seen, we parse and store it here.
+			 * Rules are: if subsong is null, then the play length governs all
+			 * subsongs. If a more specific subsong value is found, then that
+			 * should be used.
+			 *
+			 * This is not for SID only, at least not in principle:
+			 * any plugin-given md5 value in this table will do. */
+			db.execSQL("CREATE TABLE IF NOT EXISTS songlength ("
 					+ BaseColumns._ID + " INTEGER PRIMARY KEY,"
-					+ "var TEXT,"
-					+ "value TEXT"
+					+ "md5 CHAR(32) NOT NULL,"
+					+ "subsong INTEGER,"
+					+ "timeMs INTEGER"
 					+ ");");
 
 			db.execSQL("CREATE INDEX ui_files_parent_filename ON files (parent_id, filename);");
+			db.execSQL("CREATE INDEX ui_songlength_md5 ON songlength (md5);");
 			db.setVersion(DB_VERSION);
 			Log.i(TAG, "Schema complete.");
 		}

@@ -1,6 +1,5 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -137,7 +136,7 @@ public abstract class DroidSoundPlugin {
 		}
 	}
 
-	public static MusicInfo identify(String name1, byte[] module1) throws IOException {
+	public static MusicInfo identify(String name1, byte[] module1) {
 		boolean handle = false;
 		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
 			if (plugin.canHandle(name1)) {

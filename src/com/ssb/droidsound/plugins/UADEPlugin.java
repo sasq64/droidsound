@@ -211,8 +211,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 			MusicInfo info = new MusicInfo();
 			int namePtr = ((module[4] & 0xff) << 8) | (module[5] & 0xff);
 			if (namePtr <= module.length - 128) {
-				info.title = new String(module, namePtr, namePtr + 128, ISO88591);
+				info.title = new String(module, namePtr, 128, ISO88591);
 				info.title = info.title.replaceFirst("\u0000.*", "");
+				info.format = "AHX";
 				return info;
 			}
 
