@@ -178,6 +178,7 @@ public class PlayerService extends Service {
 			currentSubsong = defaultSubsong;
 
 			Intent intent = new Intent(LOADING_SONG);
+			intent.putExtra("sticky", true);
 			intent.putExtra("subsongs", subsongs);
 			intent.putExtra("defaultSubsong", defaultSubsong);
 			intent.putExtra("currentSubsong", currentSubsong);
@@ -193,13 +194,23 @@ public class PlayerService extends Service {
 				intent.putExtra("title", getName());
 			}
 			publishProgress(intent);
+
+			sendAdvancing(0);
 		}
 
 		private void sendAdvancing(int time) {
 			Intent intent = new Intent(ADVANCING);
+			intent.putExtra("sticky", true);
 			intent.putExtra("time", time);
 			intent.putExtra("length", songLengthMs / 1000);
 			publishProgress(intent);
+		}
+
+		private void sendUnloading() {
+			Intent loading = new Intent(LOADING_SONG);
+			removeStickyBroadcast(loading);
+			Intent unloading = new Intent(UNLOADING_SONG);
+			sendBroadcast(unloading);
 		}
 
 		/**
@@ -209,7 +220,15 @@ public class PlayerService extends Service {
 		 */
 		@Override
 		protected void onProgressUpdate(Intent... values) {
-			sendBroadcast(values[0]);
+			for (Intent i : values) {
+				boolean asSticky = i.getBooleanExtra("sticky", false);
+				i.removeExtra("sticky");
+				if (asSticky) {
+					sendStickyBroadcast(i);
+				} else {
+					sendBroadcast(i);
+				}
+			}
 		}
 
 		@Override
@@ -230,9 +249,8 @@ public class PlayerService extends Service {
 
 			int playbackFrame = 0;
 			sendSongInfo();
-			sendAdvancing(0);
 			Log.i(TAG, "Entering audio playback loop.");
-			try { OUTER: while (true) {
+			try { PLAYLOOP: while (true) {
 				final State loopState;
 				synchronized (this) {
 					loopState = stateRequest;
@@ -259,7 +277,7 @@ public class PlayerService extends Service {
 					int len = plugin.getSoundData(samples);
 					/* If the length is not positive, it implies errors or song end. We terminate. */
 					if (len <= 0) {
-						break;
+						break PLAYLOOP;
 					}
 
 					if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_STOPPED) {
@@ -275,7 +293,7 @@ public class PlayerService extends Service {
 
 					/* Terminate playback when complete song played. */
 					if (sec2 > songLengthMs) {
-						break;
+						break PLAYLOOP;
 					}
 
 					break;
@@ -291,7 +309,7 @@ public class PlayerService extends Service {
 					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_STOPPED) {
 						audioTrack.stop();
 					}
-					break OUTER;
+					break PLAYLOOP;
 				}
 			} }
 			catch (Exception ise) {
@@ -303,8 +321,7 @@ public class PlayerService extends Service {
 
 			plugin.unload();
 
-			Intent intent = new Intent(UNLOADING_SONG);
-			sendBroadcast(intent);
+			sendUnloading();
 
 			return null;
 		}

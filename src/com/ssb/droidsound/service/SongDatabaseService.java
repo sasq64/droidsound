@@ -110,19 +110,26 @@ public class SongDatabaseService extends Service {
 			int count = 0;
 			while (null != (ze = zis.getNextEntry())) {
 				int slash = ze.getName().lastIndexOf('/');
+				/** Path inside zip to file */
 				final String path;
-				final String fileName;
+				/** Name of file */
+				final String name;
 				if (slash == -1) {
 					path = zipFile.getPath();
-					fileName = ze.getName();
+					name = ze.getName();
 				} else {
 					path = ze.getName().substring(0, slash);
-					fileName = ze.getName().substring(slash  + 1);
+					name = ze.getName().substring(slash  + 1);
+				}
+				int slash2 = path.lastIndexOf('/');
+				/** Parent of the path (if any) */
+				String parent = null;
+				if (slash2 != -1) {
+					parent = path.substring(0, slash2);
 				}
 
 				final long pathParentId;
-				if ("".equals(fileName)) {
-					int slash2 = path.lastIndexOf('/');
+				if ("".equals(name)) {
 					final String pathFilename;
 					if (slash2 == -1) {
 						/* top level in zip: parent to given directory */
@@ -130,10 +137,9 @@ public class SongDatabaseService extends Service {
 						pathParentId = parentId;
 						pathFilename = path;
 					} else {
-						String pathParent = path.substring(0, slash2);
 						pathFilename = path.substring(slash2 + 1);
-						Log.i(TAG, "Zip: looking up parent %s for directory: %s", pathParent, pathFilename);
-						pathParentId = pathMap.get(pathParent);
+						Log.i(TAG, "Zip: looking up parent %s for directory: %s", parent, pathFilename);
+						pathParentId = pathMap.get(parent);
 					}
 
 					/* Is directory. Pick the part before the last filename */
@@ -149,7 +155,8 @@ public class SongDatabaseService extends Service {
 					ContentValues values = new ContentValues();
 					values.put("parent_id", pathParentId);
 					values.put("type", TYPE_FILE);
-					values.put("filename", fileName);
+					values.put("filename", name);
+					values.put("composer", path);
 					if (info != null) {
 						values.put("title", info.title);
 						values.put("composer", info.composer);
@@ -157,7 +164,7 @@ public class SongDatabaseService extends Service {
 						values.put("format", info.format);
 					}
 					db.insert("files", null, values);
-					Log.i(TAG, "Zip: added file %s", fileName);
+					Log.i(TAG, "Zip: added file %s", name);
 				}
 
 				if (count ++ % 100 == 0) {
@@ -281,13 +288,19 @@ public class SongDatabaseService extends Service {
 
 						values.put("type", TYPE_FILE);
 						DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(f.getName(), StreamUtil.readFully(new FileInputStream(f), f.length()));
+						values.put("title", f.getName());
+						values.put("composer", f.getParentFile().getName());
 						if (info != null) {
-							values.put("title", info.title);
-							values.put("composer", info.composer);
+							if (info.title != null) {
+								values.put("title", info.title);
+							}
+							if (info.composer != null) {
+								values.put("composer", info.composer);
+							}
 							values.put("date", info.date);
 							values.put("format", info.format);
-							db.insert("files", null, values);
 						}
+						db.insert("files", null, values);
 						continue;
 
 					} else if (f.isDirectory()) {
