@@ -5,7 +5,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
@@ -19,6 +20,7 @@ import android.content.SharedPreferences;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
+import android.media.audiofx.AudioEffect;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
@@ -168,7 +170,7 @@ public class PlayerService extends Service {
 			}
 
 			songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-			if (songLengthMs == 0) {
+			if (songLengthMs <= 0) {
 				SharedPreferences prefs = Application.getAppPreferences();
 				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
 			}
@@ -241,16 +243,40 @@ public class PlayerService extends Service {
 					AudioFormat.ENCODING_PCM_16BIT,
 					BUFSIZE,
 					AudioTrack.MODE_STREAM);
-			/* The plugin audio buffer is smaller to not underrun (we try to keep 75+ % full). */
-			short[] samples = new short[BUFSIZE / 4];
+	        Intent sessionOpen = new Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
+	        sessionOpen.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioTrack.getAudioSessionId());
+	        sessionOpen.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
 
 			/* Note, this should not fail because it has already been executed once. */
-			plugin.load(f1, data1, f2, data2);
+			if (plugin.load(f1, data1, f2, data2)) {
+				try {
+					backgroundPlayloop(audioTrack);
+				}
+				catch (Exception e) {
+					Log.w(TAG, "Exiting playloop via exception", e);
+				}
+				plugin.unload();
+			}
+			Log.i(TAG, "Audio playback is terminating.");
+
+	        Intent sessionClose = new Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
+	        sessionClose.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioTrack.getAudioSessionId());
+	        sessionClose.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+			audioTrack.release();
+
+			sendUnloading();
+
+			return null;
+		}
+
+		private void backgroundPlayloop(AudioTrack audioTrack) throws InterruptedException {
+			/* The plugin audio buffer is smaller to not underrun (we try to keep 75+ % full). */
+			short[] samples = new short[BUFSIZE / 4];
 
 			int playbackFrame = 0;
 			sendSongInfo();
 			Log.i(TAG, "Entering audio playback loop.");
-			try { PLAYLOOP: while (true) {
+			PLAYLOOP: while (true) {
 				final State loopState;
 				synchronized (this) {
 					loopState = stateRequest;
@@ -311,19 +337,7 @@ public class PlayerService extends Service {
 					}
 					break PLAYLOOP;
 				}
-			} }
-			catch (Exception ise) {
-				Log.w(TAG, "Audio playback error: %s", ise);
 			}
-			Log.i(TAG, "Audio playback is terminating.");
-
-			audioTrack.release();
-
-			plugin.unload();
-
-			sendUnloading();
-
-			return null;
 		}
 	}
 
@@ -428,7 +442,14 @@ public class PlayerService extends Service {
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
-		playerExecutor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(1));
+		playerExecutor = new ThreadPoolExecutor(0, 1, 5, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1), new ThreadFactory() {
+			@Override
+			public Thread newThread(Runnable runnable) {
+				Thread t = new Thread(runnable);
+				t.setPriority(Thread.MAX_PRIORITY);
+				return t;
+			}
+		});
 	}
 
 	@Override

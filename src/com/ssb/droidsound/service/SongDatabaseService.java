@@ -146,7 +146,6 @@ public class SongDatabaseService extends Service {
 					long rowId = db.insert("files", null, values);
 					pathMap.put(path, rowId);
 				} else {
-					File parentFile = new File(path).getParentFile();
 					pathParentId = pathMap.get(path);
 					DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()));
 					ContentValues values = new ContentValues();
@@ -154,9 +153,7 @@ public class SongDatabaseService extends Service {
 					values.put("type", TYPE_FILE);
 					values.put("filename", name);
 					values.put("title", name);
-					if (parentFile != null) {
-						values.put("composer", parentFile.getName());
-					}
+					values.put("composer", new File(path).getName());
 					if (info != null) {
 						if (info.title != null) {
 							values.put("title", info.title);
