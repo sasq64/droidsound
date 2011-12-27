@@ -17,6 +17,8 @@ public abstract class DroidSoundPlugin {
 		public int date = -1;
 	};
 
+	private static final MusicInfo EMPTY_INFO = new MusicInfo();
+
 	private static final MessageDigest MD5;
 	static {
 		try {
@@ -136,8 +138,10 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public static MusicInfo identify(String name1, byte[] module1) throws IOException {
+		boolean handle = false;
 		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
 			if (plugin.canHandle(name1)) {
+				handle = true;
 				MusicInfo info = plugin.getMusicInfo(name1, module1);
 				if (info != null) {
 					fixInfo(name1, info);
@@ -145,6 +149,6 @@ public abstract class DroidSoundPlugin {
 				}
 			}
 		}
-		return null;
+		return handle ? EMPTY_INFO : null;
 	}
 }

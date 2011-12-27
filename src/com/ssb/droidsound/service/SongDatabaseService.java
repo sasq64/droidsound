@@ -156,15 +156,20 @@ public class SongDatabaseService extends Service {
 					values.put("parent_id", pathParentId);
 					values.put("type", TYPE_FILE);
 					values.put("filename", name);
+					values.put("title", name);
 					values.put("composer", path);
 					if (info != null) {
-						values.put("title", info.title);
-						values.put("composer", info.composer);
+						if (info.title != null) {
+							values.put("title", info.title);
+						}
+						if (info.composer != null) {
+							values.put("composer", info.composer);
+						}
 						values.put("date", info.date);
 						values.put("format", info.format);
+						db.insert("files", null, values);
+						Log.i(TAG, "Zip: added file %s", name);
 					}
-					db.insert("files", null, values);
-					Log.i(TAG, "Zip: added file %s", name);
 				}
 
 				if (count ++ % 100 == 0) {
@@ -299,8 +304,9 @@ public class SongDatabaseService extends Service {
 							}
 							values.put("date", info.date);
 							values.put("format", info.format);
+							Log.i(TAG, "Added file: %s", f.getName());
+							db.insert("files", null, values);
 						}
-						db.insert("files", null, values);
 						continue;
 
 					} else if (f.isDirectory()) {
