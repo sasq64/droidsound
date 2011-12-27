@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,6 +14,7 @@ import com.ssb.droidsound.utils.Unzipper;
 
 public class UADEPlugin extends DroidSoundPlugin {
 	private static final String TAG = UADEPlugin.class.getSimpleName();
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 	private static final Set<String> extensions = new HashSet<String>();
 	static {
 		System.loadLibrary("uade");
@@ -195,8 +197,28 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return "UADE - Unix Amiga Delitracker Emulator\nversion 2.13\nCopyright 2000-2006, Heikki Orsila";
 	}
 
+	/**
+	 * Currently extracting info from AHX.
+	 */
 	@Override
 	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		if (module.length < 3) {
+			return null;
+		}
+
+		String header = new String(module, 0, 3, ISO88591);
+		if (header.equals("AHX")) {
+			MusicInfo info = new MusicInfo();
+			int namePtr = ((module[4] & 0xff) << 8) | (module[5] & 0xff);
+			if (namePtr <= module.length - 128) {
+				info.title = new String(module, namePtr, namePtr + 128, ISO88591);
+				info.title = info.title.replaceFirst("\u0000.*", "");
+				return info;
+			}
+
+			return null;
+		}
+
 		return null;
 	}
 

@@ -1,8 +1,11 @@
 package com.ssb.droidsound.plugins;
 
+import java.nio.charset.Charset;
+
 
 
 public class HivelyPlugin extends DroidSoundPlugin {
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 	static {
 		System.loadLibrary("hively");
 	}
@@ -55,7 +58,22 @@ public class HivelyPlugin extends DroidSoundPlugin {
 
 	@Override
 	protected MusicInfo getMusicInfo(String name, byte[] module) {
-		/* TODO: check if something can be extracted from HVL */
+		if (module.length < 3) {
+			return null;
+		}
+		String magic = new String(module, 0, 3, ISO88591);
+		if (magic.equals("HVL") || magic.equals("THX")) {
+			MusicInfo info = new MusicInfo();
+			int namePtr = ((module[4] & 0xff) << 8) | (module[5] & 0xff);
+			if (namePtr <= module.length - 128) {
+				info.title = new String(module, namePtr, namePtr + 128, ISO88591);
+				info.title = info.title.replaceFirst("\u0000.*", "");
+				return info;
+			}
+
+			return null;
+		}
+
 		return null;
 	}
 

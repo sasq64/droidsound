@@ -32,7 +32,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	private static String fromData(byte[] module, int start, int len) {
-		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
+		return new String(module, start, len, ISO88591).replaceFirst("\u0000.*", "");
 	}
 
 	private static class Info {
@@ -265,7 +265,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandle(String name) {
 		name = name.toUpperCase();
-		return name.endsWith(".SID") || name.endsWith(".PRG") || name.endsWith(".PSID");
+		return name.endsWith(".SID") || name.endsWith(".PRG");
 	}
 
 	@Override

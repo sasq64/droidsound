@@ -121,15 +121,9 @@ public class SongDatabaseService extends Service {
 					path = ze.getName().substring(0, slash);
 					name = ze.getName().substring(slash  + 1);
 				}
-				int slash2 = path.lastIndexOf('/');
-				/** Parent of the path (if any) */
-				String parent = null;
-				if (slash2 != -1) {
-					parent = path.substring(0, slash2);
-				}
-
 				final long pathParentId;
 				if ("".equals(name)) {
+					int slash2 = path.lastIndexOf('/');
 					final String pathFilename;
 					if (slash2 == -1) {
 						/* top level in zip: parent to given directory */
@@ -137,6 +131,8 @@ public class SongDatabaseService extends Service {
 						pathParentId = parentId;
 						pathFilename = path;
 					} else {
+						/** Parent of the path (if any) */
+						String parent = path.substring(0, slash2);
 						pathFilename = path.substring(slash2 + 1);
 						Log.i(TAG, "Zip: looking up parent %s for directory: %s", parent, pathFilename);
 						pathParentId = pathMap.get(parent);
@@ -150,6 +146,7 @@ public class SongDatabaseService extends Service {
 					long rowId = db.insert("files", null, values);
 					pathMap.put(path, rowId);
 				} else {
+					File parentFile = new File(path).getParentFile();
 					pathParentId = pathMap.get(path);
 					DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(ze.getName(), StreamUtil.readFully(zis, ze.getSize()));
 					ContentValues values = new ContentValues();
@@ -157,7 +154,9 @@ public class SongDatabaseService extends Service {
 					values.put("type", TYPE_FILE);
 					values.put("filename", name);
 					values.put("title", name);
-					values.put("composer", path);
+					if (parentFile != null) {
+						values.put("composer", parentFile.getName());
+					}
 					if (info != null) {
 						if (info.title != null) {
 							values.put("title", info.title);
@@ -387,14 +386,14 @@ public class SongDatabaseService extends Service {
 						"files",
 						COLUMNS,
 						"parent_id IS NULL", null,
-						null, null, String.valueOf(sorting) + ", FILENAME"
+						null, null, "type, lower(" + String.valueOf(sorting) + "), filename"
 				);
 			} else {
 				return db.query(
 						"files",
 						COLUMNS,
 						"parent_id = ?", new String[] { String.valueOf(parentId) },
-						null, null, String.valueOf(sorting) + ", FILENAME"
+						null, null, "type, lower(" + String.valueOf(sorting) + "), filename"
 				);
 			}
 		}

@@ -27,8 +27,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean canHandle(String name) {
-		String ext = name.substring(name.indexOf('.') + 1).toLowerCase();
-		return ext.equals("sndh") || ext.equals("sc68") || ext.equals("snd");
+		String ext = name.substring(name.indexOf('.') + 1).toUpperCase();
+		return ext.equals("SNDH") || ext.equals("SC68") || ext.equals("SND");
 	}
 
 	@Override
@@ -110,6 +110,9 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		if (module.length < 20) {
+			return null;
+		}
 		String head = new String(module, 0, 4, ISO88591);
 		if (head.equals("ICE!")) {
 			module = N_unice(module);

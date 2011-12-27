@@ -16,7 +16,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 
 	private static String fromData(byte[] module, int start, int len) {
-		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
+		return new String(module, start, len, ISO88591).replaceFirst("\u0000.*", "");
 	}
 
 	private static final Set<String> EXTENSIONS = new HashSet<String>(Arrays.asList(
@@ -113,8 +113,11 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	@Override
 	protected MusicInfo getMusicInfo(String name, byte[] module) {
-		String magic;
+		if (module.length < 27) {
+			return null;
+		}
 
+		String magic;
 		magic = new String(module, 0, 4, ISO88591);
 		if (magic.equals("NESM")) {
 			MusicInfo info = new MusicInfo();

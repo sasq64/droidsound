@@ -17,7 +17,7 @@ public class ModPlugin extends DroidSoundPlugin {
 	));
 
 	private static String fromData(byte[] module, int start, int len) {
-		return new String(module, start, len, ISO88591).replaceAll("\u0000", "").trim();
+		return new String(module, start, len, ISO88591).replaceFirst("\u0000.*", "");
 	}
 
 	private long currentSong;
@@ -25,7 +25,9 @@ public class ModPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandle(String name) {
 		int x = name.lastIndexOf('.');
-		if(x < 0) return false;
+		if (x < 0) {
+			return false;
+		}
 		String ext = name.substring(x+1).toUpperCase();
 		return extensions.contains(ext);
 	}
@@ -106,8 +108,11 @@ public class ModPlugin extends DroidSoundPlugin {
 
 	@Override
 	protected MusicInfo getMusicInfo(String name, byte[] module) {
-		String magic;
+		if (module.length < 48) {
+			return null;
+		}
 
+		String magic;
 		magic = new String(module, 44, 4, ISO88591);
 		if (magic.equals("SCRM")) {
 			MusicInfo info = new MusicInfo();
