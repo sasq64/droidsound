@@ -5,9 +5,11 @@ import java.util.List;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.database.MergeCursor;
@@ -32,15 +34,23 @@ import com.ssb.droidsound.utils.Log;
 public class CollectionFragment extends Fragment {
 	protected static final String TAG = CollectionFragment.class.getSimpleName();
 
+	/** Currently playing song's id */
+	private Long currentlyPlayingSong;
+	/** Currently displayed folder's parent's id */
+	private Long parentId;
+	/** CUrrently displayed folder's id. */
+	private Long childId;
+	/** Desired sorting of the collection */
+	private final SongDatabaseService.Sort sorting = SongDatabaseService.Sort.TITLE;
+	/** Shuffle playback? */
+	private boolean shuffle;
+
+	private MyAdapter collectionViewAdapter;
 	private ListView collectionView;
 
 	private SongDatabaseService.LocalBinder db;
 
 	private PlayerService.LocalBinder player;
-
-	private final SongDatabaseService.Sort sorting = SongDatabaseService.Sort.TITLE;
-
-	private boolean shuffle;
 
 	private final ServiceConnection searchDbConnection = new ServiceConnection() {
 		@Override
@@ -48,8 +58,8 @@ public class CollectionFragment extends Fragment {
 			db = (SongDatabaseService.LocalBinder) binder;
 			Log.i(TAG, "SongDatabase connection has been established. Showing initial view, and refreshing.");
 
-			MyAdapter ma = new MyAdapter(getActivity(), getCursor(null, null));
-			collectionView.setAdapter(ma);
+			collectionViewAdapter = new MyAdapter(getActivity(), getCursor(parentId, childId));
+			collectionView.setAdapter(collectionViewAdapter);
 		}
 
 		@Override
@@ -78,6 +88,7 @@ public class CollectionFragment extends Fragment {
 		@Override
 		public void bindView(View view, Context context, Cursor cursor) {
 			ImageView iconView = (ImageView) view.findViewById(R.id.icon);
+			ImageView playingView = (ImageView) view.findViewById(R.id.playing);
 			TextView titleView = (TextView) view.findViewById(R.id.title);
 			TextView subtitleView = (TextView) view.findViewById(R.id.subtitle);
 			TextView sidetitleView = (TextView) view.findViewById(R.id.sidetitle);
@@ -89,6 +100,8 @@ public class CollectionFragment extends Fragment {
 			final String filename = cursor.getString(SongDatabaseService.COL_FILENAME);
 			final String composer = cursor.getString(SongDatabaseService.COL_COMPOSER);
 			final int date = cursor.getInt(SongDatabaseService.COL_DATE);
+
+			playingView.setVisibility(childId != null && childId.equals(currentlyPlayingSong) ? View.VISIBLE : View.GONE);
 
 			final int icon;
 			switch (type) {
@@ -134,6 +147,8 @@ public class CollectionFragment extends Fragment {
 				@Override
 				public void onClick(View arg0) {
 					if (type != SongDatabaseService.TYPE_FILE) {
+						CollectionFragment.this.parentId = parentId;
+						CollectionFragment.this.childId = childId;
 						changeCursor(CollectionFragment.this.getCursor(parentId, childId));
 					} else {
 						Cursor playListCursor = db.getFilesInPath(parentId, sorting);
@@ -143,8 +158,9 @@ public class CollectionFragment extends Fragment {
 
 						SongFile selectedFile = db.getSongFile(childId);
 						while (! playListCursor.isAfterLast()) {
+							long id = playListCursor.getLong(SongDatabaseService.COL_ID);
 							String name = playListCursor.getString(SongDatabaseService.COL_FILENAME);
-							SongFile sibling = selectedFile.sibling(name);
+							SongFile sibling = selectedFile.sibling(id, name);
 							fileList.add(sibling);
 							if (selectedFile.getFilePath().equals(sibling.getFilePath())) {
 								idx = playListCursor.getPosition();
@@ -169,6 +185,19 @@ public class CollectionFragment extends Fragment {
 		}
 	}
 
+	private final BroadcastReceiver currentSongReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context c, Intent i) {
+			String a = i.getAction();
+			if (a.equals(PlayerService.LOADING_SONG)) {
+				currentlyPlayingSong = i.getLongExtra("file.id", 0);
+				collectionViewAdapter.notifyDataSetChanged();
+			} else if (a.equals(PlayerService.UNLOADING_SONG)) {
+				currentlyPlayingSong = null;
+			}
+		}
+	};
+
 	private Cursor getCursor(final Long parentId, final Long childId) {
 		Cursor cf = db.getFilesInPath(childId, sorting);
 		Cursor cp = null;
@@ -191,6 +220,10 @@ public class CollectionFragment extends Fragment {
 		super.onStart();
 		getActivity().bindService(new Intent(getActivity(), SongDatabaseService.class), searchDbConnection, Context.BIND_AUTO_CREATE);
 		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
+		IntentFilter songChangeFilter = new IntentFilter();
+		songChangeFilter.addAction(PlayerService.LOADING_SONG);
+		songChangeFilter.addAction(PlayerService.UNLOADING_SONG);
+		getActivity().registerReceiver(currentSongReceiver, songChangeFilter);
 	}
 
 	@Override
@@ -199,13 +232,29 @@ public class CollectionFragment extends Fragment {
 		super.onStop();
 		getActivity().unbindService(searchDbConnection);
 		getActivity().unbindService(playerConnection);
+		getActivity().unregisterReceiver(currentSongReceiver);
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
 		Log.i(TAG, "onCreateView");
+		if (state != null) {
+			parentId = state.containsKey("parentId") ? state.getLong("parentId", 0) : null;
+			childId = state.containsKey("childId") ? state.getLong("childId", 0) : null;
+		}
 		View view = inflater.inflate(R.layout.collection_view, null);
 		collectionView = (ListView) view.findViewById(R.id.collection_view);
 		return view;
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		if (parentId != null) {
+			outState.putLong("parentId", parentId);
+		}
+		if (childId != null) {
+			outState.putLong("childId", childId);
+		}
 	}
 }

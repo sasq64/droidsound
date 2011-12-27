@@ -20,6 +20,7 @@ public class SongFile {
 		MAIN_TO_AUX.put("DUM", "INS");
 	}
 
+	private final long id;
 	private final int subtune;
 	private final String filePath;
 	private final String zipFilePath;
@@ -28,21 +29,13 @@ public class SongFile {
 	private final String composer;
 	private final int date;
 
-	public SongFile(SongFile s) {
-		subtune = s.subtune;
-		filePath = s.filePath;
-		zipFilePath = s.zipFilePath;
-		title = s.title;
-		composer = s.composer;
-		date = s.date;
-	}
-
-	public SongFile sibling(String name) {
+	public SongFile sibling(long id, String name) {
 		String siblingPath = new File(new File(filePath).getParentFile(), name).getPath();
-		return new SongFile(subtune, siblingPath, zipFilePath, title, composer, date);
+		return new SongFile(id, subtune, siblingPath, zipFilePath, title, composer, date);
 	}
 
-	public SongFile(int subtune, String fileName, String zipFilePath, String title, String composer, int date) {
+	public SongFile(long id, int subtune, String fileName, String zipFilePath, String title, String composer, int date) {
+		this.id = id;
 		this.subtune = subtune;
 		this.filePath = fileName;
 		this.zipFilePath = zipFilePath;
@@ -94,5 +87,9 @@ public class SongFile {
 
 	public int getDate() {
 		return date;
+	}
+
+	public long getId() {
+		return id;
 	}
 }

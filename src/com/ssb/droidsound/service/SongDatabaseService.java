@@ -31,7 +31,13 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.StreamUtil;
 
 public class SongDatabaseService extends Service {
-	public enum Sort { TITLE, COMPOSER, FILENAME }
+	public enum Sort {
+		TITLE, COMPOSER, FILENAME;
+
+		protected String toSQL() {
+			return "type, lower(" + String.valueOf(this) + "), filename";
+		}
+	}
 
 	private static final String TAG = SongDatabaseService.class.getSimpleName();
 
@@ -362,39 +368,46 @@ public class SongDatabaseService extends Service {
 			new Scanner(full).execute();
 		}
 
-		public Cursor search(String query, int sorting) {
+		public Cursor search(String query, Sort sorting) {
 			String q = "%" + query + "%" ;
 			return db.query("files",
 					COLUMNS,
 					"title LIKE ? OR composer LIKE ? OR filename LIKE ?", new String[] { q, q, q },
-					null, null, String.valueOf(Sort.values()[sorting]) + " ASC");
+					null, null, sorting.toSQL()
+			);
 		}
 
 		/**
-		 * Return files in collection.
+		 * Return files found in collection.
 		 *
-		 * @param file
-		 * @param sorting
+		 * @param parentId the parent to scan, null for roots
+		 * @param sorting output order of results
 		 * @return Cursor to read from
 		 */
 		public Cursor getFilesInPath(Long parentId, Sort sorting) {
+			String where;
+			String[] whereCond;
 			if (parentId == null) {
-				return db.query(
-						"files",
-						COLUMNS,
-						"parent_id IS NULL", null,
-						null, null, "type, lower(" + String.valueOf(sorting) + "), filename"
-				);
+				where = "parent_id IS NULL";
+				whereCond = null;
 			} else {
-				return db.query(
-						"files",
-						COLUMNS,
-						"parent_id = ?", new String[] { String.valueOf(parentId) },
-						null, null, "type, lower(" + String.valueOf(sorting) + "), filename"
-				);
+				where = "parent_id = ?";
+				whereCond = new String[] { String.valueOf(parentId) };
 			}
+			return db.query(
+					"files",
+					COLUMNS,
+					where, whereCond,
+					null, null, sorting.toSQL()
+			);
 		}
 
+		/**
+		 * Return a particular file's data from collection.
+		 *
+		 * @param id file's id
+		 * @return cursor to read from
+		 */
 		public Cursor getFileById(long id) {
 			return db.query(
 					"files",
@@ -404,7 +417,13 @@ public class SongDatabaseService extends Service {
 			);
 		}
 
-		public SongFile getSongFile(long childId) {
+		/**
+		 * Get a full {@link SongFile} instance from a collection entry.
+		 *
+		 * @param childId
+		 * @return songfile
+		 */
+		public SongFile getSongFile(final long childId) {
 			List<String> list = new ArrayList<String>();
 			Cursor c = getFileById(childId);
 			c.moveToFirst();
@@ -449,6 +468,7 @@ public class SongDatabaseService extends Service {
 			}
 
 			return new SongFile(
+					childId,
 					-1,
 					path.getPath(),
 					zipFilePath != null ? zipFilePath.getPath() : null,

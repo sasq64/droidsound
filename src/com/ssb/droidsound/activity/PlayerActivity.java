@@ -165,13 +165,8 @@ public class PlayerActivity extends Activity {
 class MyAdapter extends FragmentPagerAdapter {
 	private final String[] entries = { "collection", "playing" };
 
-	private final CollectionFragment collectionFragment = new CollectionFragment();
-	private final PlayingFragment playingFragment = new PlayingFragment();
-
 	public MyAdapter(FragmentManager fm) {
 		super(fm);
-		collectionFragment.setRetainInstance(true);
-		playingFragment.setRetainInstance(true);
 	}
 
 	public String[] getEntries() {
@@ -186,9 +181,9 @@ class MyAdapter extends FragmentPagerAdapter {
 	@Override
 	public Fragment getItem(int position) {
 		if (position == 0) {
-			return collectionFragment;
+			return new CollectionFragment();
 		} else if (position == 1) {
-			return playingFragment;
+			return new PlayingFragment();
 		} else {
 			throw new RuntimeException("No such fragment: " + position);
 		}

@@ -18,10 +18,6 @@ public class PlayQueue {
 		setShuffle(shuffle);
 	}
 
-	public PlayQueue(Playlist pl, int index, boolean shuffle) {
-		this(pl.getSongs(), index, shuffle);
-	}
-
 	public void setShuffle(boolean on) {
 		if (on && !shuffle) {
 			SongFile c = getCurrent();

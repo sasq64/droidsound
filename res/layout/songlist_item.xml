@@ -1,38 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-	android:background="@android:drawable/list_selector_background">
+    android:background="@android:drawable/list_selector_background"
+    android:orientation="vertical" >
 
-<ImageView android:src="@drawable/gflat_note" 
-    android:scaleType="fitXY"
-	android:layout_width="wrap_content" android:layout_height="wrap_content"
-	android:id="@+id/icon"
-	android:layout_alignParentLeft="true"
-	android:layout_centerVertical="true"
-	android:contentDescription="@string/icon"/>
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:contentDescription="@string/icon"
+        android:scaleType="fitXY"
+        android:src="@drawable/gflat_note" >
+    </ImageView>
 
-<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-	android:layout_alignParentTop="true"
-	android:layout_toRightOf="@id/icon"
-	android:id="@+id/title"
-	android:textAppearance="?android:attr/textAppearanceLarge"
-	android:textColor="@android:color/primary_text_dark" />
+    <ImageView
+        android:id="@+id/playing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:contentDescription="@string/playing_title"
+        android:src="@android:drawable/stat_sys_headset" />
 
-<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-	android:layout_alignParentBottom="true"
-	android:layout_toRightOf="@id/icon"
-	android:id="@+id/subtitle"
-	android:layout_below="@id/title"
-	android:textColor="@android:color/secondary_text_dark" />
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@id/icon"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@android:color/primary_text_dark" />
 
-<TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-	android:layout_alignParentBottom="true"
-	android:layout_alignParentRight="true"
-	android:gravity="bottom"
-	android:id="@+id/sidetitle"
-	android:textColor="@android:color/secondary_text_dark"
-	android:layout_marginRight="4dp" />
+    <TextView
+        android:id="@+id/subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@id/title"
+        android:layout_toRightOf="@id/icon"
+        android:textColor="@android:color/secondary_text_dark" />
+
+    <TextView
+        android:id="@+id/sidetitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="4dp"
+        android:gravity="bottom"
+        android:textColor="@android:color/secondary_text_dark" />
 
 </RelativeLayout>

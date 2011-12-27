@@ -31,10 +31,8 @@ import com.ssb.droidsound.R;
 import com.ssb.droidsound.activity.PlayerActivity;
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.PlayQueue;
-import com.ssb.droidsound.bo.Playlist;
 import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.plugins.DroidSoundPlugin.MusicInfo;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.StreamUtil;
 import com.ssb.droidsound.utils.ZipReader;
@@ -70,6 +68,7 @@ public class PlayerService extends Service {
 		private int currentSubsong;
 
 		private final DroidSoundPlugin plugin;
+		private final SongFile song;
 		private final String f1;
 		private final byte[] data1;
 		private final String f2;
@@ -87,13 +86,15 @@ public class PlayerService extends Service {
 		 * formats need such a capability, but if it ever happens, Map<String, byte[]> is probably good idea.
 		 *
 		 * @param plugin plugin to play file with
+		 * @param song
 		 * @param name1 name of file 1
 		 * @param data1 data of file 1
 		 * @param name2 name of file 2
 		 * @param data2 data of file 2
 		 */
-		protected PlayerRunnable(DroidSoundPlugin plugin, String name1, byte[] data1, String name2, byte[] data2) {
+		protected PlayerRunnable(DroidSoundPlugin plugin, SongFile song, String name1, byte[] data1, String name2, byte[] data2) {
 			this.plugin = plugin;
+			this.song = song;
 			this.f1 = name1;
 			this.data1 = data1;
 			this.f2 = name2;
@@ -160,41 +161,19 @@ public class PlayerService extends Service {
 		}
 
 		private void sendSongInfo() {
-			/* Send musicinfo & any other collected info over intent */
-			MusicInfo info = null;
-			try {
-				info = DroidSoundPlugin.identify(f1, data1);
-			}
-			catch (Exception e) {
-				throw new RuntimeException("Strange, could not parse musicinfo");
-			}
-
-			songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-			if (songLengthMs <= 0) {
-				SharedPreferences prefs = Application.getAppPreferences();
-				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
-			}
-
-			subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
-			defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
-			currentSubsong = defaultSubsong;
-
 			Intent intent = new Intent(LOADING_SONG);
 			intent.putExtra("sticky", true);
-			intent.putExtra("subsongs", subsongs);
-			intent.putExtra("defaultSubsong", defaultSubsong);
-			intent.putExtra("currentSubsong", currentSubsong);
-			intent.putExtra("length", songLengthMs / 1000);
-			if (info != null) {
-				intent.putExtra("channels", info.channels);
-				intent.putExtra("composer", info.composer);
-				intent.putExtra("copyright", info.copyright);
-				intent.putExtra("date", info.date);
-				intent.putExtra("format", info.format);
-				intent.putExtra("title", info.title);
-			} else {
-				intent.putExtra("title", getName());
-			}
+			intent.putExtra("plugin.name", plugin.getVersion());
+			intent.putExtra("plugin.seekable", plugin.canSeek());
+			intent.putExtra("plugin.detailedInfo", plugin.getDetailedInfo());
+			intent.putExtra("subsong.length", songLengthMs / 1000);
+			intent.putExtra("file.id", song.getId());
+			intent.putExtra("file.subsongs", subsongs);
+			intent.putExtra("file.defaultSubsong", defaultSubsong);
+			intent.putExtra("file.currentSubsong", currentSubsong);
+			intent.putExtra("file.title", song.getTitle());
+			intent.putExtra("file.composer", song.getComposer());
+			intent.putExtra("file.date", song.getDate());
 			publishProgress(intent);
 
 			sendAdvancing(0);
@@ -213,6 +192,16 @@ public class PlayerService extends Service {
 			removeStickyBroadcast(loading);
 			Intent unloading = new Intent(UNLOADING_SONG);
 			sendBroadcast(unloading);
+		}
+
+		private void sendLoadingWithSubsong(int newSubsong) {
+			currentSubsong = newSubsong;
+			songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+			if (songLengthMs <= 0) {
+				SharedPreferences prefs = Application.getAppPreferences();
+				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
+			}
+			sendSongInfo();
 		}
 
 		/**
@@ -249,33 +238,36 @@ public class PlayerService extends Service {
 
 			/* Note, this should not fail because it has already been executed once. */
 			if (plugin.load(f1, data1, f2, data2)) {
+				Log.i(TAG, "Entering audio playback loop.");
 				try {
-					backgroundPlayloop(audioTrack);
+					subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
+					defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
+					sendLoadingWithSubsong(defaultSubsong);
+					doInBackgroundPlayloop(audioTrack);
+					sendUnloading();
 				}
 				catch (Exception e) {
 					Log.w(TAG, "Exiting playloop via exception", e);
 				}
 				plugin.unload();
+				Log.i(TAG, "Audio playback is terminating.");
+			} else {
+				Log.w(TAG, "Plugin could not load song.");
 			}
-			Log.i(TAG, "Audio playback is terminating.");
 
 	        Intent sessionClose = new Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
 	        sessionClose.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioTrack.getAudioSessionId());
 	        sessionClose.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
 			audioTrack.release();
 
-			sendUnloading();
-
 			return null;
 		}
 
-		private void backgroundPlayloop(AudioTrack audioTrack) throws InterruptedException {
+		private void doInBackgroundPlayloop(AudioTrack audioTrack) throws InterruptedException {
 			/* The plugin audio buffer is smaller to not underrun (we try to keep 75+ % full). */
 			short[] samples = new short[BUFSIZE / 4];
 
 			int playbackFrame = 0;
-			sendSongInfo();
-			Log.i(TAG, "Entering audio playback loop.");
 			PLAYLOOP: while (true) {
 				final State loopState;
 				synchronized (this) {
@@ -284,10 +276,11 @@ public class PlayerService extends Service {
 				switch (loopState) {
 				case PLAY: {
 					if (subsongRequest != -1) {
-						plugin.setTune(subsongRequest);
+						if (plugin.setTune(subsongRequest)) {
+							playbackFrame = 0;
+							sendLoadingWithSubsong(subsongRequest);
+						}
 						subsongRequest = -1;
-						playbackFrame = 0;
-						sendSongInfo();
 					}
 
 					if (seekRequest != -1) {
@@ -362,18 +355,19 @@ public class PlayerService extends Service {
 	 * tell it to start playing.
 	 *
 	 * @param p1
+	 * @param song
 	 * @param n1
 	 * @param d1
 	 * @param n2
 	 * @param d2
 	 */
-	private void startPlayerThread(DroidSoundPlugin p1, String n1, byte[] d1, String n2, byte[] d2) {
+	private void startPlayerThread(DroidSoundPlugin p1, SongFile song, String n1, byte[] d1, String n2, byte[] d2) {
 		Log.i(TAG, "Requesting player thread to start");
 		if (player != null) {
 			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
 		}
 
-		player = new PlayerRunnable(p1, n1, d1, n2, d2);
+		player = new PlayerRunnable(p1, song, n1, d1, n2, d2);
 		player.setStateRequest(State.PLAY);
 		player.executeOnExecutor(playerExecutor);
 
@@ -538,7 +532,7 @@ public class PlayerService extends Service {
 		/* Loaded. It will be loaded once more by startPlayerThread, so we unload now... */
 		currentPlugin.unload();
 
-		startPlayerThread(currentPlugin, basename1, data1, basename2, data2);
+		startPlayerThread(currentPlugin, song, basename1, data1, basename2, data2);
 		return true;
 	}
 
@@ -597,11 +591,6 @@ public class PlayerService extends Service {
 	    	}
 
 	    	return false;
-		}
-
-		public boolean playPlaylist(Playlist playlist, int startIndex, boolean shuffle) throws IOException, InterruptedException {
-			playQueue = new PlayQueue(playlist, startIndex, shuffle);
-			return startSong(playQueue.getCurrent());
 		}
 
 		public boolean playPlaylist(List<SongFile> names, int startIndex, boolean shuffle) throws IOException, InterruptedException {
