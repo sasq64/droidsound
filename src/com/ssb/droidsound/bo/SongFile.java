@@ -1,6 +1,5 @@
 package com.ssb.droidsound.bo;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,11 +27,6 @@ public class SongFile {
 	private final String title;
 	private final String composer;
 	private final int date;
-
-	public SongFile sibling(long id, String name) {
-		String siblingPath = new File(new File(filePath).getParentFile(), name).getPath();
-		return new SongFile(id, subtune, siblingPath, zipFilePath, title, composer, date);
-	}
 
 	public SongFile(long id, int subtune, String fileName, String zipFilePath, String title, String composer, int date) {
 		this.id = id;

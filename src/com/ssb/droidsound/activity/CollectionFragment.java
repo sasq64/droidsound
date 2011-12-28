@@ -156,13 +156,11 @@ public class CollectionFragment extends Fragment {
 						playListCursor.moveToFirst();
 						int idx = -1;
 
-						SongFile selectedFile = db.getSongFile(childId);
 						while (! playListCursor.isAfterLast()) {
 							long id = playListCursor.getLong(SongDatabaseService.COL_ID);
-							String name = playListCursor.getString(SongDatabaseService.COL_FILENAME);
-							SongFile sibling = selectedFile.sibling(id, name);
+							SongFile sibling = db.getSongFile(id);
 							fileList.add(sibling);
-							if (selectedFile.getFilePath().equals(sibling.getFilePath())) {
+							if (childId != null && id == childId) {
 								idx = playListCursor.getPosition();
 							}
 							playListCursor.moveToNext();
