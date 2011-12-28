@@ -235,6 +235,7 @@ public class PlayerService extends Service {
 	        Intent sessionOpen = new Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
 	        sessionOpen.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioTrack.getAudioSessionId());
 	        sessionOpen.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+	        publishProgress(sessionOpen);
 
 			/* Note, this should not fail because it has already been executed once. */
 			if (plugin.load(f1, data1, f2, data2)) {
@@ -258,6 +259,7 @@ public class PlayerService extends Service {
 	        Intent sessionClose = new Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
 	        sessionClose.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioTrack.getAudioSessionId());
 	        sessionClose.putExtra(AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+	        publishProgress(sessionClose);
 			audioTrack.release();
 
 			return null;
@@ -395,13 +397,13 @@ public class PlayerService extends Service {
 		}
 
 		Log.i(TAG, "Removing notification");
+		stopService(new Intent(this, PlayerService.class));
 		stopForeground(true);
 
 		player.setStateRequest(State.STOP);
 		while (playerExecutor.getActiveCount() != 0) {
 			playerExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
 		}
-		stopService(new Intent(this, PlayerService.class));
 
 		player = null;
 	}
