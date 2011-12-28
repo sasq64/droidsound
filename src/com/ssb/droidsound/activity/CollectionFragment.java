@@ -36,16 +36,18 @@ public class CollectionFragment extends Fragment {
 
 	/** Currently playing song's id */
 	private Long currentlyPlayingSong;
-	/** Currently displayed folder's parent's id */
-	private Long parentId;
-	/** CUrrently displayed folder's id. */
+
+	/** Currently displayed folder's id. */
 	private Long childId;
+
 	/** Desired sorting of the collection */
 	private final SongDatabaseService.Sort sorting = SongDatabaseService.Sort.TITLE;
+
 	/** Shuffle playback? */
 	private boolean shuffle;
 
 	private MyAdapter collectionViewAdapter;
+
 	private ListView collectionView;
 
 	private SongDatabaseService.LocalBinder db;
@@ -58,7 +60,7 @@ public class CollectionFragment extends Fragment {
 			db = (SongDatabaseService.LocalBinder) binder;
 			Log.i(TAG, "SongDatabase connection has been established. Showing initial view, and refreshing.");
 
-			collectionViewAdapter = new MyAdapter(getActivity(), getCursor(parentId, childId));
+			collectionViewAdapter = new MyAdapter(getActivity(), getCursor(childId));
 			collectionView.setAdapter(collectionViewAdapter);
 		}
 
@@ -94,10 +96,10 @@ public class CollectionFragment extends Fragment {
 			TextView sidetitleView = (TextView) view.findViewById(R.id.sidetitle);
 
 			final Long childId = cursor.isNull(SongDatabaseService.COL_ID) ? null : cursor.getLong(SongDatabaseService.COL_ID);
-			final int type = cursor.getInt(SongDatabaseService.COL_TYPE);
-			final String title = cursor.getString(SongDatabaseService.COL_TITLE);
 			final Long parentId = cursor.isNull(SongDatabaseService.COL_PARENT_ID) ? null : cursor.getLong(SongDatabaseService.COL_PARENT_ID);
 			final String filename = cursor.getString(SongDatabaseService.COL_FILENAME);
+			final int type = cursor.getInt(SongDatabaseService.COL_TYPE);
+			final String title = cursor.getString(SongDatabaseService.COL_TITLE);
 			final String composer = cursor.getString(SongDatabaseService.COL_COMPOSER);
 			final int date = cursor.getInt(SongDatabaseService.COL_DATE);
 
@@ -147,11 +149,10 @@ public class CollectionFragment extends Fragment {
 				@Override
 				public void onClick(View arg0) {
 					if (type != SongDatabaseService.TYPE_FILE) {
-						CollectionFragment.this.parentId = parentId;
 						CollectionFragment.this.childId = childId;
-						changeCursor(CollectionFragment.this.getCursor(parentId, childId));
+						changeCursor(CollectionFragment.this.getCursor(childId));
 					} else {
-						Cursor playListCursor = db.getFilesInPath(parentId, sorting);
+						Cursor playListCursor = db.getFilesByParentId(parentId, sorting);
 						List<SongFile> fileList = new ArrayList<SongFile>();
 						playListCursor.moveToFirst();
 						int idx = -1;
@@ -196,9 +197,18 @@ public class CollectionFragment extends Fragment {
 		}
 	};
 
-	private Cursor getCursor(final Long parentId, final Long childId) {
-		Cursor cf = db.getFilesInPath(childId, sorting);
-		Cursor cp = null;
+	private Cursor getCursor(final Long selectedId) {
+		Long parentId = null;
+		/* Null means we are already at top level */
+		if (selectedId != null) {
+			Cursor child = db.getFileById(selectedId);
+			child.moveToFirst();
+			parentId = child.isNull(SongDatabaseService.COL_PARENT_ID) ? null : child.getLong(SongDatabaseService.COL_PARENT_ID);
+			child.close();
+		}
+
+		Cursor cf = db.getFilesByParentId(selectedId, sorting);
+		final Cursor cp;
 		if (parentId != null) {
 			cp = db.getFileById(parentId);
 		} else {
@@ -209,7 +219,7 @@ public class CollectionFragment extends Fragment {
 					}
 			);
 		}
-		return cp != null ? new MergeCursor(new Cursor[] { cp, cf }) : cf;
+		return new MergeCursor(new Cursor[] { cp, cf });
 	}
 
 	@Override
@@ -237,7 +247,6 @@ public class CollectionFragment extends Fragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
 		Log.i(TAG, "onCreateView");
 		if (state != null) {
-			parentId = state.containsKey("parentId") ? state.getLong("parentId", 0) : null;
 			childId = state.containsKey("childId") ? state.getLong("childId", 0) : null;
 		}
 		View view = inflater.inflate(R.layout.collection_view, null);
@@ -248,9 +257,6 @@ public class CollectionFragment extends Fragment {
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-		if (parentId != null) {
-			outState.putLong("parentId", parentId);
-		}
 		if (childId != null) {
 			outState.putLong("childId", childId);
 		}

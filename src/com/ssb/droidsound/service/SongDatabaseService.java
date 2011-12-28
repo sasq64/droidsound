@@ -1,8 +1,12 @@
 package com.ssb.droidsound.service;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
@@ -35,11 +41,12 @@ public class SongDatabaseService extends Service {
 		TITLE, COMPOSER, FILENAME;
 
 		protected String toSQL() {
-			return "type, lower(" + String.valueOf(this) + "), filename";
+			return "type, lower(" + String.valueOf(this).toLowerCase() + "), lower(filename)";
 		}
 	}
 
 	private static final String TAG = SongDatabaseService.class.getSimpleName();
+	public static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 
 	private static final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "title", "composer", "date" };
 	public static final int COL_ID = 0;
@@ -178,10 +185,14 @@ public class SongDatabaseService extends Service {
 					long rowId = insertDirectory(pathFilename, pathParentId);
 					pathMap.put(path, rowId);
 				} else {
-					pathParentId = pathMap.get(path);
-					/* We could store zipentry's modifytime here, but I doubt it makes a difference. */
-					Log.i(TAG, "New file: %s", ze.getName());
-					insertFile(new File(path, name), StreamUtil.readFully(zis, ze.getSize()), 0, pathParentId);
+					if (ze.getName().equals("Songlengths.txt")) {
+						scanSonglengthsTxt(zis);
+					} else {
+						pathParentId = pathMap.get(path);
+						/* We could store zipentry's modifytime here, but I doubt it makes a difference. */
+						Log.i(TAG, "New file: %s", ze.getName());
+						insertFile(new File(path, name), StreamUtil.readFully(zis, ze.getSize()), 0, pathParentId);
+					}
 				}
 
 				int pct = (int) (fis.getChannel().position() / (fis.getChannel().size() / 100));
@@ -284,8 +295,14 @@ public class SongDatabaseService extends Service {
 						values.put("type", TYPE_PLIST);
 						values.put("title", f.getName().substring(0, f.getName().length() - 6));
 						db.insert("files", null, values);
+					} else if (f.getName().equals("Songlengths.txt")) {
+						FileInputStream fi = new FileInputStream(f);
+						scanSonglengthsTxt(fi);
+						fi.close();
 					} else {
-						insertFile(f, StreamUtil.readFully(new FileInputStream(f), f.length()), f.lastModified(), parentId);
+						FileInputStream fi = new FileInputStream(f);
+						insertFile(f, StreamUtil.readFully(fi, f.length()), f.lastModified(), parentId);
+						fi.close();
 					}
 				} else if (f.isDirectory()) {
 					Log.i(TAG, "New Directory: %s", f.getPath());
@@ -297,6 +314,35 @@ public class SongDatabaseService extends Service {
 			/* Continue scanning into found directories */
 			for (Entry<Long, File> e : dirsInDatabase.entrySet()) {
 				scanFiles(e.getValue(), e.getKey());
+			}
+		}
+
+		private void scanSonglengthsTxt(InputStream is) throws IOException {
+			BufferedReader br = new BufferedReader(new InputStreamReader(is, ISO88591));
+
+			Pattern md5AndTimes = Pattern.compile("([a-fA-f0-9])=(.*)");
+			Pattern timestamps = Pattern.compile("([0-9]{1,2}):([0-9]{2})");
+
+			String line;
+			while (null != (line = br.readLine())) {
+				Matcher m = md5AndTimes.matcher(line);
+				if (! m.matches()) {
+					continue;
+				}
+				String md5 = m.group(1).toLowerCase();
+				String times = m.group(2);
+
+				m = timestamps.matcher(times);
+				int song = 0;
+				while (m.find()) {
+					int minutes = Integer.valueOf(m.group(1));
+					int seconds = Integer.valueOf(m.group(2));
+					ContentValues cv = new ContentValues();
+					cv.put("md5", md5);
+					cv.put("subsong", ++ song);
+					cv.put("timeMs", (minutes * 60 + seconds) * 1000);
+					db.insert("songlength", null, cv);
+				}
 			}
 		}
 
@@ -338,7 +384,7 @@ public class SongDatabaseService extends Service {
 		 * @param sorting output order of results
 		 * @return Cursor to read from
 		 */
-		public Cursor getFilesInPath(Long parentId, Sort sorting) {
+		public Cursor getFilesByParentId(Long parentId, Sort sorting) {
 			String where;
 			String[] whereCond;
 			if (parentId == null) {

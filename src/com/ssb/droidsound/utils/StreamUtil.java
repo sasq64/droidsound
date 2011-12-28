@@ -19,5 +19,4 @@ public class StreamUtil {
 		new DataInputStream(is).readFully(data);
 		return data;
 	}
-
 }
