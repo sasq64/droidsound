@@ -13,8 +13,7 @@
         android:layout_centerVertical="true"
         android:contentDescription="@string/icon"
         android:scaleType="fitXY"
-        android:src="@drawable/gflat_note" >
-    </ImageView>
+        android:src="@drawable/gflat_note" />
 
     <ImageView
         android:id="@+id/playing"
@@ -22,6 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
+        android:layout_margin="4dp"
         android:contentDescription="@string/playing_title"
         android:src="@android:drawable/stat_sys_headset" />
 
@@ -39,7 +39,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_below="@id/title"
         android:layout_toRightOf="@id/icon"
         android:textColor="@android:color/secondary_text_dark" />
 
