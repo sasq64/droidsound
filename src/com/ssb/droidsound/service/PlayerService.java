@@ -74,9 +74,9 @@ public class PlayerService extends Service {
 		private final String f2;
 		private final byte[] data2;
 
-		private State stateRequest = State.PAUSE;
-		private int seekRequest = -1;
-		private int subsongRequest = -1;
+		private State syncStateRequest = State.PAUSE;
+		private int syncSeekRequest = -1;
+		private int syncSubsongRequest = -1;
 
 		/**
 		 * Cosntruct a player that tries to load the file called f1 with content data1,
@@ -119,7 +119,7 @@ public class PlayerService extends Service {
 		public void setSeekRequest(int msec) {
 			synchronized (this) {
 				Log.i(TAG, "Requesting new seek position %d ms", msec);
-				seekRequest = msec;
+				syncSeekRequest = msec;
 			}
 		}
 
@@ -130,7 +130,7 @@ public class PlayerService extends Service {
 		 */
 		public State getStateRequest() {
 			synchronized (this) {
-				return stateRequest;
+				return syncStateRequest;
 			}
 		}
 		/**
@@ -142,7 +142,7 @@ public class PlayerService extends Service {
 		public void setStateRequest(State newState) {
 			synchronized (this) {
 				Log.i(TAG, "Requesting new state: %s", newState);
-				stateRequest = newState;
+				syncStateRequest = newState;
 			}
 		}
 
@@ -156,7 +156,7 @@ public class PlayerService extends Service {
 		public void setSubSongRequest(int song) {
 			synchronized (this) {
 				Log.i(TAG, "Requesting subsong: %d", song);
-				subsongRequest = song;
+				syncSubsongRequest = song;
 			}
 		}
 
@@ -271,27 +271,33 @@ public class PlayerService extends Service {
 
 			int playbackFrame = 0;
 			PLAYLOOP: while (true) {
+				/* Avoid race condition: copy inter-thread data into local variables. */
 				final State loopState;
+				final int loopSubsongRequest;
+				final int loopSeekRequest;
 				synchronized (this) {
-					loopState = stateRequest;
+					loopState = syncStateRequest;
+					loopSubsongRequest = syncSubsongRequest;
+					syncSubsongRequest = -1;
+					loopSeekRequest = syncSeekRequest;
+					syncSeekRequest = -1;
 				}
+
 				switch (loopState) {
 				case PLAY: {
-					if (subsongRequest != -1) {
-						if (plugin.setTune(subsongRequest)) {
+					if (loopSubsongRequest != -1) {
+						if (plugin.setTune(loopSubsongRequest)) {
 							playbackFrame = 0;
-							sendLoadingWithSubsong(subsongRequest);
+							sendLoadingWithSubsong(loopSubsongRequest);
 						}
-						subsongRequest = -1;
 					}
 
-					if (seekRequest != -1) {
+					if (loopSeekRequest != -1) {
 						if (plugin.canSeek()) {
-							plugin.seekTo(seekRequest);
-							float pos = seekRequest / 1000f * audioTrack.getPlaybackRate();
+							plugin.seekTo(loopSeekRequest);
+							float pos = loopSeekRequest / 1000f * audioTrack.getPlaybackRate();
 							playbackFrame = (int) pos;
 						}
-						seekRequest = -1;
 					}
 
 					int sec1 = playbackFrame / audioTrack.getPlaybackRate();
