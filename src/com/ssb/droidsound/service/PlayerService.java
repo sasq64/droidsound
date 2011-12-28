@@ -160,25 +160,6 @@ public class PlayerService extends Service {
 			}
 		}
 
-		private void sendSongInfo() {
-			Intent intent = new Intent(LOADING_SONG);
-			intent.putExtra("sticky", true);
-			intent.putExtra("plugin.name", plugin.getVersion());
-			intent.putExtra("plugin.seekable", plugin.canSeek());
-			intent.putExtra("plugin.detailedInfo", plugin.getDetailedInfo());
-			intent.putExtra("subsong.length", songLengthMs / 1000);
-			intent.putExtra("file.id", song.getId());
-			intent.putExtra("file.subsongs", subsongs);
-			intent.putExtra("file.defaultSubsong", defaultSubsong);
-			intent.putExtra("file.currentSubsong", currentSubsong);
-			intent.putExtra("file.title", song.getTitle());
-			intent.putExtra("file.composer", song.getComposer());
-			intent.putExtra("file.date", song.getDate());
-			publishProgress(intent);
-
-			sendAdvancing(0);
-		}
-
 		private void sendAdvancing(int time) {
 			Intent intent = new Intent(ADVANCING);
 			intent.putExtra("sticky", true);
@@ -201,7 +182,23 @@ public class PlayerService extends Service {
 				SharedPreferences prefs = Application.getAppPreferences();
 				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
 			}
-			sendSongInfo();
+
+			Intent intent = new Intent(LOADING_SONG);
+			intent.putExtra("sticky", true);
+			intent.putExtra("plugin.name", plugin.getVersion());
+			intent.putExtra("plugin.currentSubsong", currentSubsong);
+			intent.putExtra("plugin.seekable", plugin.canSeek());
+			intent.putExtra("plugin.detailedInfo", plugin.getDetailedInfo());
+			intent.putExtra("subsong.length", songLengthMs / 1000);
+			intent.putExtra("file.id", song.getId());
+			intent.putExtra("file.subsongs", subsongs);
+			intent.putExtra("file.defaultSubsong", defaultSubsong);
+			intent.putExtra("file.title", song.getTitle());
+			intent.putExtra("file.composer", song.getComposer());
+			intent.putExtra("file.date", song.getDate());
+			publishProgress(intent);
+
+			sendAdvancing(0);
 		}
 
 		/**
@@ -242,7 +239,7 @@ public class PlayerService extends Service {
 				Log.i(TAG, "Entering audio playback loop.");
 				try {
 					subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
-					defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
+					defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE);
 					sendLoadingWithSubsong(defaultSubsong);
 					doInBackgroundPlayloop(audioTrack);
 					sendUnloading();
@@ -307,7 +304,7 @@ public class PlayerService extends Service {
 						break PLAYLOOP;
 					}
 
-					if (audioTrack.getPlayState() == AudioTrack.PLAYSTATE_STOPPED) {
+					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_PLAYING) {
 						audioTrack.play();
 					}
 					audioTrack.write(samples, 0, len);

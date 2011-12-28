@@ -189,10 +189,10 @@ public class CollectionFragment extends Fragment {
 			String a = i.getAction();
 			if (a.equals(PlayerService.LOADING_SONG)) {
 				currentlyPlayingSong = i.getLongExtra("file.id", 0);
-				collectionViewAdapter.notifyDataSetChanged();
 			} else if (a.equals(PlayerService.UNLOADING_SONG)) {
 				currentlyPlayingSong = null;
 			}
+			collectionViewAdapter.notifyDataSetChanged();
 		}
 	};
 

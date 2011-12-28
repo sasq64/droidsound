@@ -40,6 +40,11 @@ public class PlayingFragment extends Fragment {
 		}
 	}
 
+	private void playButton(boolean enabled) {
+		playButton.setVisibility(enabled ? View.VISIBLE : View.GONE);
+		pauseButton.setVisibility(enabled ? View.GONE : View.VISIBLE);
+	}
+
 	protected class MyAdapter extends ArrayAdapter<Entry> {
 		public MyAdapter(Context context) {
 			super(context, 0);
@@ -79,13 +84,15 @@ public class PlayingFragment extends Fragment {
 			Bundle b = i.getExtras();
 			for (String k : b.keySet()) {
 				Object v = b.get(k);
-				Log.i(TAG, "Received metadata: %s: %s", k, v);
 				if (v == null) {
 					continue;
 				}
 				Entry e = new Entry(k, String.valueOf(v));
 				myAdapter.add(e);
 			}
+
+			playButton(false);
+			seekBar.setEnabled(i.getBooleanExtra("plugin.canSeek", false));
 			myAdapter.notifyDataSetChanged();
 		}
 	};
@@ -115,6 +122,7 @@ public class PlayingFragment extends Fragment {
 			lengthView.setText("-:--");
 			seekBar.setProgress(0);
 			seekBar.setMax(1);
+			playButton(true);
 		}
 	};
 	protected boolean seekBarDragging;
@@ -208,6 +216,7 @@ public class PlayingFragment extends Fragment {
 		playButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
+				playButton(false);
 				player.playPause(true);
 			}
 		});
@@ -215,6 +224,7 @@ public class PlayingFragment extends Fragment {
 		pauseButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
+				playButton(true);
 				player.playPause(false);
 			}
 		});
