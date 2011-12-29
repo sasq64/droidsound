@@ -83,7 +83,7 @@ public class PlayerService extends Service {
 		private static final int FREQUENCY = 44100;
 		private static final int BUFSIZE = FREQUENCY * 2;
 
-		private int songLengthMs;
+		private int subsongLengthMs;
 		private int defaultSubsong;
 		private int subsongs;
 		private int currentSubsong;
@@ -185,7 +185,6 @@ public class PlayerService extends Service {
 			Intent intent = new Intent(ADVANCING);
 			intent.putExtra("sticky", true);
 			intent.putExtra("time", time);
-			intent.putExtra("length", songLengthMs / 1000);
 			publishProgress(intent);
 		}
 
@@ -201,13 +200,13 @@ public class PlayerService extends Service {
 
 		private void sendLoadingWithSubsong(int newSubsong) {
 			currentSubsong = newSubsong;
-			songLengthMs = db.getSongLength(plugin.md5(data1), newSubsong + 1);
-			if (songLengthMs <= 0) {
-				songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+			subsongLengthMs = db.getSongLength(plugin.md5(data1), newSubsong + 1);
+			if (subsongLengthMs <= 0) {
+				subsongLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 			}
-			if (songLengthMs <= 0) {
+			if (subsongLengthMs <= 0) {
 				SharedPreferences prefs = Application.getAppPreferences();
-				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
+				subsongLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
 			}
 
 			Intent intent = new Intent(LOADING_SONG);
@@ -216,7 +215,7 @@ public class PlayerService extends Service {
 			intent.putExtra("plugin.currentSubsong", currentSubsong);
 			intent.putExtra("plugin.seekable", plugin.canSeek());
 			intent.putExtra("plugin.detailedInfo", plugin.getDetailedInfo());
-			intent.putExtra("subsong.length", songLengthMs / 1000);
+			intent.putExtra("subsong.length", subsongLengthMs / 1000);
 			intent.putExtra("file.id", song.getId());
 			intent.putExtra("file.subsongs", subsongs);
 			intent.putExtra("file.defaultSubsong", defaultSubsong);
@@ -343,7 +342,7 @@ public class PlayerService extends Service {
 					}
 
 					/* Terminate playback when complete song played. */
-					if (sec2 > songLengthMs / 1000) {
+					if (sec2 > subsongLengthMs / 1000) {
 						break PLAYLOOP;
 					}
 

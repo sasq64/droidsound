@@ -91,8 +91,12 @@ public class PlayingFragment extends Fragment {
 				myAdapter.add(e);
 			}
 
-			playButton(false);
+			int length = i.getIntExtra("subsong.length", 0);
+			lengthView.setText(String.format("%d:%02d", length/60, length % 60));
 			seekBar.setEnabled(i.getBooleanExtra("plugin.seekable", false));
+			seekBar.setMax(length);
+
+			playButton(false);
 			myAdapter.notifyDataSetChanged();
 		}
 	};
@@ -100,16 +104,10 @@ public class PlayingFragment extends Fragment {
 	private final BroadcastReceiver advancingReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context c, Intent i) {
-			String a = i.getAction();
-			if (a.equals(PlayerService.ADVANCING)) {
-				int time = i.getIntExtra("time", 0);
-				timeView.setText(String.format("%2d:%02d", time/60, time % 60));
-				int length = i.getIntExtra("length", 0);
-				lengthView.setText(String.format("%d:%02d", length/60, length % 60));
-				if (! seekBarDragging) {
-					seekBar.setProgress(time);
-					seekBar.setMax(length);
-				}
+			int time = i.getIntExtra("time", 0);
+			timeView.setText(String.format("%2d:%02d", time/60, time % 60));
+			if (! seekBarDragging) {
+				seekBar.setProgress(time);
 			}
 		}
 	};
@@ -168,7 +166,6 @@ public class PlayingFragment extends Fragment {
 	public void onStart() {
 		super.onStart();
 
-
 		getActivity().registerReceiver(songLoadingReceiver, new IntentFilter(PlayerService.LOADING_SONG));
 		getActivity().registerReceiver(advancingReceiver, new IntentFilter(PlayerService.ADVANCING));
 		getActivity().registerReceiver(songUnloadingReceiver, new IntentFilter(PlayerService.UNLOADING_SONG));
@@ -178,6 +175,7 @@ public class PlayingFragment extends Fragment {
 	@Override
 	public void onStop() {
 		super.onStop();
+
 		getActivity().unregisterReceiver(songLoadingReceiver);
 		getActivity().unregisterReceiver(advancingReceiver);
 		getActivity().unregisterReceiver(songUnloadingReceiver);
