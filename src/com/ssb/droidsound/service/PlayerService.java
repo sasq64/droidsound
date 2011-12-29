@@ -167,6 +167,18 @@ public class PlayerService extends Service {
 			}
 		}
 
+		public synchronized int getCurrentSubsong() {
+			return currentSubsong;
+		}
+
+		public synchronized int getMaxSubsong() {
+			return subsongs;
+		}
+
+		public synchronized int getDefaultSubsong() {
+			return defaultSubsong;
+		}
+
 		/**
 		 * Tell native code to switch to a different subsong. The
 		 * subsong range is player and tune specific, but the value
@@ -183,12 +195,11 @@ public class PlayerService extends Service {
 
 		private void sendAdvancing(int time) {
 			Intent intent = new Intent(ADVANCING);
-			intent.putExtra("sticky", true);
 			intent.putExtra("time", time);
 			publishProgress(intent);
 		}
 
-		private void sendUnloading() {
+		private synchronized void sendUnloading() {
 			Intent loading = new Intent(LOADING_SONG);
 			removeStickyBroadcast(loading);
 			Intent unloading = new Intent(UNLOADING_SONG);
@@ -199,7 +210,9 @@ public class PlayerService extends Service {
 		}
 
 		private void sendLoadingWithSubsong(int newSubsong) {
-			currentSubsong = newSubsong;
+			synchronized (this) {
+				currentSubsong = newSubsong;
+			}
 			subsongLengthMs = db.getSongLength(plugin.md5(data1), newSubsong + 1);
 			if (subsongLengthMs <= 0) {
 				subsongLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
@@ -264,8 +277,10 @@ public class PlayerService extends Service {
 			if (plugin.load(f1, data1, f2, data2)) {
 				Log.i(TAG, "Entering audio playback loop.");
 				try {
-					subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
-					defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE);
+					synchronized (this) {
+						subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
+						defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE);
+					}
 					sendLoadingWithSubsong(defaultSubsong);
 					doInBackgroundPlayloop(audioTrack);
 					sendUnloading();
@@ -611,14 +626,43 @@ public class PlayerService extends Service {
 		}
 
 		public boolean playNext() throws IOException, InterruptedException {
+			if (player != null) {
+				int cs = player.getCurrentSubsong();
+				int ms = player.getMaxSubsong();
+				int def = player.getDefaultSubsong();
+
+				cs ++;
+				if (cs >= ms) {
+					cs = 0;
+				}
+				if (cs != def) {
+					player.setSubSongRequest(cs);
+					return true;
+				}
+			}
 			if (playQueue == null) {
 				return false;
 			}
+
 			SongFile song = playQueue.next();
 			return playMod(song);
 		}
 
 		public boolean playPrev() throws IOException, InterruptedException {
+			if (player != null) {
+				int cs = player.getCurrentSubsong();
+				int ms = player.getMaxSubsong();
+				int def = player.getDefaultSubsong();
+
+				if (cs != def) {
+					cs --;
+					if (cs < 0) {
+						cs = ms - 1;
+					}
+					player.setSubSongRequest(cs);
+					return true;
+				}
+			}
 	    	if (playQueue == null) {
 	    		return false;
 	    	}
