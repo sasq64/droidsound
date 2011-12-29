@@ -66,8 +66,8 @@ public class Playlist {
 		JSONObject obj = new JSONObject();
 		obj.put("id", songFile.getId());
 		obj.put("subtune", songFile.getSubtune());
-		obj.put("filePath", songFile.getFilePath());
-		obj.put("zipFilePath", songFile.getZipFilePath());
+		obj.put("filePath", songFile.getFilePath().getPath());
+		obj.put("zipFilePath", songFile.getZipFilePath().getPath());
 		obj.put("title", songFile.getTitle());
 		obj.put("composer", songFile.getComposer());
 		obj.put("date", songFile.getDate());
@@ -78,8 +78,8 @@ public class Playlist {
 		return new SongFile(
 				obj.getLong("id"),
 				obj.getInt("subtune"),
-				obj.getString("fileName"),
-				obj.getString("zipFilePath"),
+				new File(obj.getString("fileName")),
+				new File(obj.getString("zipFilePath")),
 				obj.getString("title"),
 				obj.getString("composer"),
 				obj.getInt("date")

@@ -1,16 +1,14 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 
 import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.utils.HashUtil;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
@@ -52,12 +50,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	private final int songLengths[] = new int[256];
 	private int currentTune;
-
-	protected static class Option {
-		protected String name;
-		protected String description;
-		protected Object defaultValue;
-	}
 
 	private Info songInfo;
 
@@ -137,129 +129,65 @@ public class VICEPlugin extends DroidSoundPlugin {
 		return false;
 	}
 
-	private byte[] calculateMD5(byte[] module) {
+	@Override
+	public byte[] md5(byte[] module) {
 		ByteBuffer src = ByteBuffer.wrap(module);
 		src.order(ByteOrder.BIG_ENDIAN);
 
-		byte[] id = new byte[4];
+		final byte[] id = new byte[4];
 		src.get(id);
-		int version = src.getShort();
-		src.position(8);
-		short initAdress = src.getShort();
-		short playAdress = src.getShort();
-		short songs = src.getShort();
-		int speedBits = src.getInt();
-		src.position(0x76);
-		int flags = src.getShort();
-
-		int offset = 120;
-		if (version == 2) {
-			offset = 126;
+		if (id[1] != 'S' && id[2] != 'I' && id[3] != 'D') {
+			return null;
 		}
 
-		int speed = 0;
-		if (id[0] == 'R') {
-			speed = 60;
+		final int version = src.getShort() & 0xffff;
+		src.position(0x8);
+		final int loadAddress = src.getShort() & 0xffff;
+		final int initAddress = src.getShort() & 0xffff;
+		final int playAddress = src.getShort() & 0xffff;
+		final int songs = src.getShort() & 0xffff;
+		src.position(0x12);
+		final int speedBits = src.getInt();
+		final int flags;
+
+		int moduleDataOffset;
+		if (version == 1) {
+			flags = 0;
+			moduleDataOffset = 0x76;
+		} else {
+			src.position(0x76);
+			flags = src.getShort() & 0xffff;
+			moduleDataOffset = 0x7c;
+		}
+		if (loadAddress == 0) {
+			moduleDataOffset += 2;
 		}
 
-		ByteBuffer dest = ByteBuffer.allocate(65536 + 128);
+		/* header is only partially included, maximum data length is < 64k, 256 for subsong speeds */
+		ByteBuffer dest = ByteBuffer.allocate(65536 + 256);
 		dest.order(ByteOrder.LITTLE_ENDIAN);
 
-		dest.put(module, offset, module.length - offset);
-		dest.putShort(initAdress);
-		dest.putShort(playAdress);
-		dest.putShort(songs);
+		Log.i(TAG, "md5 signature pieces: %x %04x %04x %d %d %d", moduleDataOffset, initAddress, playAddress, songs, version, (flags >> 2) & 0x3);
+		dest.put(module, moduleDataOffset, module.length - moduleDataOffset);
+		dest.putShort((short) initAddress);
+		dest.putShort((short) playAddress);
+		dest.putShort((short) songs);
 
-		for (int i = 0; i < songs; i ++) {
-			if ((speedBits & (1 << i)) != 0) {
+		for (int i = 0; i < songs && i < 256; i ++) {
+			int ibit = i < 32 ? i : 31;
+			if (id[0] == 'R' || (speedBits & (1 << ibit)) != 0) {
 				dest.put((byte) 60);
 			} else {
-				dest.put((byte) speed);
+				dest.put((byte) 0);
 			}
 		}
 
-		if ((flags & 0x8) != 0) {
+		/* sid clock flags == 2 -> write 2 */
+		if (version != 1 && ((flags >> 2) & 0x3) == 2) {
 			dest.put((byte) 2);
 		}
 
-		return calcMD5(Arrays.copyOf(dest.array(), dest.position()));
-	}
-
-	private void findLength(byte[] module) {
-		for (int i = 0; i < 256; i++) {
-			songLengths[i] = 60*60*1000;
-		}
-
-		if (mainHash == null) {
-			try {
-				InputStream is = Application.getAssetManager().open("songlengths.dat");
-				if(is != null) {
-					DataInputStream dis = new DataInputStream(is);
-					hashLen = dis.readInt();
-					mainHash = new byte[hashLen * 6];
-					dis.read(mainHash);
-					int l = is.available()/2;
-					Log.d(TAG, "We have %d lengths and %d hashes", l, hashLen);
-					extraLengths = new short [l];
-					for(int i=0; i<l; i++) {
-						extraLengths[i] = dis.readShort();
-					}
-					is.close();
-
-				}
-			} catch (IOException e) {
-			}
-		}
-
-		if (mainHash != null) {
-			byte[] md5 = calculateMD5(module);
-			int first = 0;
-			int upto = hashLen;
-
-			int found = -1;
-
-			long key = ((md5[0]&0xff) << 24) | ((md5[1]&0xff) << 16) | ((md5[2]&0xff) << 8) | (md5[3] & 0xff);
-			key &= 0xffffffffL;
-
-			//short lens [] = new short [128];
-
-	    	Log.d(TAG, "MD5 %08x", key);
-			while (first < upto) {
-		        int mid = (first + upto) / 2;  // Compute mid point.
-	    		long hash = ((mainHash[mid*6]&0xff) << 24) | ((mainHash[mid*6+1]&0xff) << 16) | ((mainHash[mid*6+2]&0xff) << 8) | (mainHash[mid*6+3] & 0xff);
-	    		hash &= 0xffffffffL;
-
-	        	//Log.d(TAG, "offs %x, hash %08x", mid, hash);
-		        if (key < hash) {
-		            upto = mid;     // repeat search in bottom half.
-		        } else if (key > hash) {
-		            first = mid + 1;  // Repeat search in top half.
-		        } else {
-		        	found = mid;
-		        	int len = ((mainHash[mid*6+4]&0xff)<<8) | (mainHash[mid*6+5]&0xff);
-	    			Log.d(TAG, "LEN: %x", len);
-		        	if((len & 0x8000) != 0) {
-		        		len &= 0x7fff;
-		        		int xl = 0;
-		        		int n = 0;
-		        		while((xl & 0x8000) == 0) {
-		        			xl = extraLengths[len++] & 0xffff;
-		        			songLengths[n++] = (xl & 0x7fff) * 1000;
-		        		}
-
-		        		//for(int i=0; i<n; i++) {
-		        		//	Log.d(TAG, "LEN: %02d:%02d", songLengths[i]/60, songLengths[i]%60);
-		        		//}
-		        	} else {
-		        		Log.d(TAG, "SINGLE LEN: %02d:%02d", len/60, len%60);
-		        		songLengths[0] = (len * 1000);
-		        	}
-		        	break;
-		        }
-		    }
-
-			Log.d(TAG, "Found md5 at offset %d", found);
-		}
+		return HashUtil.md5(dest.array(), 0, dest.position());
 	}
 
 	@Override
@@ -331,12 +259,18 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean load(String f1, byte[] data1, String f2, byte[] data2) {
+		if (data1.length < 128) {
+			return false;
+		}
+
 		currentTune = 0;
 		songInfo = null;
 
+		boolean isPrg = false;
 		String s = new String(data1, 0, 4, ISO88591);
 		if ((s.equals("PSID") || s.equals("RSID"))) {
 		} else if (f1.toLowerCase().endsWith(".prg") || (data1[0] == 0x01 && data1[1] == 0x08)) {
+			isPrg = true;
 			byte rsid[] = new byte[] {
 					0x52, 0x53, 0x49, 0x44, 0x00, 0x02, 0x00, 0x7c,
 					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
@@ -380,8 +314,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 			return false;
 		}
 
-		findLength(data1);
-		if (f1.toLowerCase().endsWith(".prg")) {
+		if (isPrg) {
 			songInfo.name = f1;
 			songInfo.format = "PRG";
 			return true;

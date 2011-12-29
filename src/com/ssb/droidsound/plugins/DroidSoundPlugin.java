@@ -1,9 +1,9 @@
 package com.ssb.droidsound.plugins;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
+
+import com.ssb.droidsound.utils.HashUtil;
 
 public abstract class DroidSoundPlugin {
 	public static class MusicInfo {
@@ -17,15 +17,6 @@ public abstract class DroidSoundPlugin {
 	};
 
 	private static final MusicInfo EMPTY_INFO = new MusicInfo();
-
-	private static final MessageDigest MD5;
-	static {
-		try {
-			MD5 = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			throw new ExceptionInInitializerError(e);
-		}
-	}
 
 	private static final List<DroidSoundPlugin> PLUGINS = Arrays.asList(
 			new VICEPlugin(),
@@ -56,12 +47,12 @@ public abstract class DroidSoundPlugin {
 	public static final int OPT_FILTER_BIAS = 6;
 	public static final int OPT_SID_MODEL = 7;
 
-	public synchronized static byte[] calcMD5(byte[] songBuffer) {
-		return MD5.digest(songBuffer);
-	}
-
 	public static List<DroidSoundPlugin> getPluginList() {
 		return PLUGINS;
+	}
+
+	public byte[] md5(byte[] data) {
+		return HashUtil.md5(data);
 	}
 
 	public abstract boolean canHandle(String name);

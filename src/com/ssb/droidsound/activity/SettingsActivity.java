@@ -18,18 +18,18 @@ import android.preference.PreferenceScreen;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.service.SongDatabaseService;
+import com.ssb.droidsound.service.MusicIndexService;
 import com.ssb.droidsound.utils.Log;
 
 public class SettingsActivity extends PreferenceActivity {
 	protected static final String TAG = SettingsActivity.class.getSimpleName();
 
-	private SongDatabaseService.LocalBinder db;
+	private MusicIndexService.LocalBinder db;
 
 	private final ServiceConnection dbConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			db = (SongDatabaseService.LocalBinder) binder;
+			db = (MusicIndexService.LocalBinder) binder;
 		}
 
 		@Override
@@ -59,7 +59,7 @@ public class SettingsActivity extends PreferenceActivity {
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.layout.preferences);
 
-		bindService(new Intent(this, SongDatabaseService.class), dbConnection, Context.BIND_AUTO_CREATE);
+		bindService(new Intent(this, MusicIndexService.class), dbConnection, Context.BIND_AUTO_CREATE);
 
 		Preference pref = findPreference("rescan_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {

@@ -23,7 +23,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.ssb.droidsound.R;
-import com.ssb.droidsound.service.SongDatabaseService;
+import com.ssb.droidsound.service.MusicIndexService;
 import com.ssb.droidsound.utils.Log;
 
 public class PlayerActivity extends Activity {
@@ -33,12 +33,12 @@ public class PlayerActivity extends Activity {
 	private ViewPager viewPager;
 	private MyAdapter viewPagerAdapter;
 
-	private SongDatabaseService.LocalBinder db;
+	private MusicIndexService.LocalBinder db;
 
 	private final ServiceConnection dbConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			db = (SongDatabaseService.LocalBinder) binder;
+			db = (MusicIndexService.LocalBinder) binder;
 			Log.i(TAG, "Refreshing database.");
 			db.scan(false);
 		}
@@ -55,18 +55,18 @@ public class PlayerActivity extends Activity {
 		@Override
 		public void onReceive(Context c, Intent i) {
 			String a = i.getAction();
-			if (a.equals(SongDatabaseService.SCAN_NOTIFY_BEGIN)) {
+			if (a.equals(MusicIndexService.SCAN_NOTIFY_BEGIN)) {
 				pd = new ProgressDialog(c);
 				pd.setCancelable(false);
 				pd.show();
 				return;
 			}
-			if (a.equals(SongDatabaseService.SCAN_NOTIFY_UPDATE)) {
+			if (a.equals(MusicIndexService.SCAN_NOTIFY_UPDATE)) {
 				String path = i.getStringExtra("path");
 				int progress = i.getIntExtra("progress", 0);
 				pd.setMessage(String.format("%s (%d %%)", path, progress));
 			}
-			if (a.equals(SongDatabaseService.SCAN_NOTIFY_DONE)) {
+			if (a.equals(MusicIndexService.SCAN_NOTIFY_DONE)) {
 				pd.dismiss();
 				pd = null;
 				return;
@@ -80,12 +80,12 @@ public class PlayerActivity extends Activity {
 		setContentView(R.layout.top);
 
 		IntentFilter searchReceiverFilter = new IntentFilter();
-		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_BEGIN);
-		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_UPDATE);
-		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_DONE);
+		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_BEGIN);
+		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_UPDATE);
+		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_DONE);
 		registerReceiver(searchReceiver, searchReceiverFilter);
 
-		bindService(new Intent(this, SongDatabaseService.class), dbConnection, Context.BIND_AUTO_CREATE);
+		bindService(new Intent(this, MusicIndexService.class), dbConnection, Context.BIND_AUTO_CREATE);
 
 		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);

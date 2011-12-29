@@ -48,7 +48,7 @@
 		</activity>		
 		<activity android:name=".activity.SettingsActivity"/>
 		
-		<service android:name=".service.SongDatabaseService"/>
+		<service android:name=".service.MusicIndexService"/>
 		<service android:name=".service.PlayerService"/>
 	</application>
 

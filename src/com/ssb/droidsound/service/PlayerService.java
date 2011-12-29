@@ -1,21 +1,19 @@
 package com.ssb.droidsound.service;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -32,10 +30,9 @@ import com.ssb.droidsound.activity.PlayerActivity;
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.PlayQueue;
 import com.ssb.droidsound.bo.SongFile;
+import com.ssb.droidsound.bo.SongFileData;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
-import com.ssb.droidsound.utils.StreamUtil;
-import com.ssb.droidsound.utils.ZipReader;
 
 /**
  * This service handles the background playback. It works by playlist and file-by-file basis.
@@ -51,6 +48,20 @@ public class PlayerService extends Service {
 
 	private static final String TAG = PlayerService.class.getSimpleName();
 	private static final int NOTIFY_ONGOING_ID = 1;
+
+	private MusicIndexService.LocalBinder db;
+	private final ServiceConnection dbConnection = new ServiceConnection() {
+		@Override
+		public void onServiceConnected(ComponentName tag, IBinder binder) {
+			db = (MusicIndexService.LocalBinder) binder;
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName tag) {
+			db = null;
+		}
+
+	};
 
 	/**
 	 * This runnable is constructed for playback of one complete song.
@@ -177,7 +188,10 @@ public class PlayerService extends Service {
 
 		private void sendLoadingWithSubsong(int newSubsong) {
 			currentSubsong = newSubsong;
-			songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+			songLengthMs = db.getSongLength(plugin.md5(data1), newSubsong + 1);
+			if (songLengthMs <= 0) {
+				songLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
+			}
 			if (songLengthMs <= 0) {
 				SharedPreferences prefs = Application.getAppPreferences();
 				songLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
@@ -415,6 +429,8 @@ public class PlayerService extends Service {
 	public void onCreate() {
 		super.onCreate();
 
+		bindService(new Intent(this, MusicIndexService.class), dbConnection, Context.BIND_AUTO_CREATE);
+
 		phoneStateListener = new PhoneStateListener() {
 			boolean didPause = false;
 
@@ -455,6 +471,8 @@ public class PlayerService extends Service {
 	public void onDestroy() {
 		super.onDestroy();
 
+		unbindService(dbConnection);
+
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, 0);
 
@@ -477,55 +495,21 @@ public class PlayerService extends Service {
 	 * @throws InterruptedException
 	 */
 	private boolean startSong(SongFile song) throws IOException, InterruptedException {
-		final String name1 = song.getFilePath();
-		final byte[] data1;
-
-		final String name2 = song.getSecondaryFileName();
-		byte[] data2 = null;
-
-		if (song.getZipFilePath() != null) {
-			ZipFile zr = ZipReader.openZip(new File(song.getZipFilePath()));
-			ZipEntry ze = zr.getEntry(name1);
-			InputStream is1 = zr.getInputStream(ze);
-			data1 = StreamUtil.readFully(is1, ze.getSize());
-			is1.close();
-
-			/* If the name looks like there might be a secondary file, we extract that from zip also */
-			if (name2 != null) {
-				ZipEntry ze2 = zr.getEntry(name2);
-				if (ze2 != null) {
-					InputStream is2 = zr.getInputStream(ze2);
-					data2 = StreamUtil.readFully(is1, ze2.getSize());
-					is2.close();
-				}
-			}
-
-			zr.close();
-		} else {
-			File f1 = new File(name1);
-			InputStream is1 = new FileInputStream(f1);
-			data1 = StreamUtil.readFully(is1, f1.length());
-			is1.close();
-			if (name2 != null) {
-				File f2 = new File(song.getSecondaryFileName());
-				InputStream is2 = new FileInputStream(f2);
-				data2 = StreamUtil.readFully(is2, f2.length());
-				is2.close();
-			}
-		}
+		List<SongFileData> files = db.getSongFileData(song);
+		String basename1 = files.get(0).getFile().getName();
+		byte[] data1 = files.get(0).getData();
+		String basename2 = files.size() == 2 ? files.get(1).getFile().getName() : null;
+		byte[] data2 = files.size() == 2 ? files.get(1).getData() : null;
 
 		/* Plugins will be used to try load the file now, so stop player thread if it is running. */
 		if (player != null) {
 			stopPlayerThread();
 		}
 
-		String basename1 = new File(name1).getName();
-		String basename2 = name2 != null ? new File(name2).getName() : null;
-
 		/* Scan plugin list looking for the one that can handle the file and agrees to load it. */
 		DroidSoundPlugin currentPlugin = null;
 		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
-			if (plugin.canHandle(name1) && plugin.load(basename1, data1, basename2, data2)) {
+			if (plugin.canHandle(basename1) && plugin.load(basename1, data1, basename2, data2)) {
 				currentPlugin = plugin;
 				break;
 			}

@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import android.app.Service;
@@ -33,11 +34,13 @@ import android.provider.BaseColumns;
 
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.SongFile;
+import com.ssb.droidsound.bo.SongFileData;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.StreamUtil;
+import com.ssb.droidsound.utils.ZipReader;
 
-public class SongDatabaseService extends Service {
+public class MusicIndexService extends Service {
 	public enum Sort {
 		TITLE, COMPOSER, FILENAME;
 
@@ -46,7 +49,7 @@ public class SongDatabaseService extends Service {
 		}
 	}
 
-	private static final String TAG = SongDatabaseService.class.getSimpleName();
+	private static final String TAG = MusicIndexService.class.getSimpleName();
 	public static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 
 	private static final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "title", "composer", "date" };
@@ -58,9 +61,9 @@ public class SongDatabaseService extends Service {
 	public static final int COL_COMPOSER = 5;
 	public static final int COL_DATE = 6;
 
-	public static final String SCAN_NOTIFY_BEGIN = "com.sddb.droidsound.SCAN_NOTIFY_BEGIN";
-	public static final String SCAN_NOTIFY_UPDATE = "com.sddb.droidsound.SCAN_NOTIFY_UPDATE";
-	public static final String SCAN_NOTIFY_DONE = "com.sddb.droidsound.SCAN_NOTIFY_DONE";
+	public static final String SCAN_NOTIFY_BEGIN = "com.ssb.droidsound.SCAN_NOTIFY_BEGIN";
+	public static final String SCAN_NOTIFY_UPDATE = "com.ssb.droidsound.SCAN_NOTIFY_UPDATE";
+	public static final String SCAN_NOTIFY_DONE = "com.ssb.droidsound.SCAN_NOTIFY_DONE";
 
 	public static final int TYPE_ZIP = 0x100;
 	public static final int TYPE_DIR = 0x200;
@@ -429,6 +432,88 @@ public class SongDatabaseService extends Service {
 			);
 		}
 
+		public List<SongFileData> getSongFileData(SongFile song) throws IOException, InterruptedException {
+			final File name1 = song.getFilePath();
+			final byte[] data1;
+
+			final File name2 = song.getSecondaryFileName();
+			byte[] data2 = null;
+
+			if (song.getZipFilePath() != null) {
+				ZipFile zr = ZipReader.openZip(song.getZipFilePath());
+				ZipEntry ze = zr.getEntry(name1.getPath());
+				InputStream is1 = zr.getInputStream(ze);
+				data1 = StreamUtil.readFully(is1, ze.getSize());
+				is1.close();
+
+				/* If the name looks like there might be a secondary file, we extract that from zip also */
+				if (name2 != null) {
+					ZipEntry ze2 = zr.getEntry(name2.getPath());
+					if (ze2 != null) {
+						InputStream is2 = zr.getInputStream(ze2);
+						data2 = StreamUtil.readFully(is1, ze2.getSize());
+						is2.close();
+					}
+				}
+
+				zr.close();
+			} else {
+				InputStream is1 = new FileInputStream(name1);
+				data1 = StreamUtil.readFully(is1, name1.length());
+				is1.close();
+				if (name2 != null) {
+					InputStream is2 = new FileInputStream(name2);
+					data2 = StreamUtil.readFully(is2, name2.length());
+					is2.close();
+				}
+			}
+
+			List<SongFileData> list = new ArrayList<SongFileData>();
+			list.add(new SongFileData(name1, data1));
+			if (name2 != null) {
+				list.add(new SongFileData(name2, data2));
+			}
+			return list;
+		}
+
+		/**
+		 *
+		 *
+		 * @param md5 the plugin-generated md5sum for the tune
+		 * @param subsong subsong value 1 .. N and 0 is never valid)
+		 * @return
+		 */
+		public int getSongLength(byte[] md5, int subsong) {
+			String hex = "";
+			for (byte b : md5) {
+				hex += String.format("%02x", b & 0xff);
+			}
+
+			int nonSubsongSpecificTime = -1;
+			int subsongSpecificTime = -1;
+			Cursor c = db.query("songlength",
+					new String[] { "subsong", "timeMs" },
+					"md5 = ?", new String[] { hex },
+					null, null, null
+			);
+			while (c.moveToNext()) {
+				int rowTime = c.getInt(1);
+				if (c.isNull(0)) {
+					nonSubsongSpecificTime = rowTime;
+					continue;
+				}
+
+				int rowSubsong = c.getInt(0);
+				if (rowSubsong == subsong) {
+					subsongSpecificTime = rowTime;
+				}
+			}
+			c.close();
+
+			Log.i(TAG, "Looking up songlength for (%s, %d) => %d ms (fallback: %d ms)", hex, subsong, subsongSpecificTime, nonSubsongSpecificTime);
+			return subsongSpecificTime != -1 ? subsongSpecificTime : nonSubsongSpecificTime;
+		}
+
 		/**
 		 * Get a full {@link SongFile} instance from a collection entry.
 		 *
@@ -482,8 +567,8 @@ public class SongDatabaseService extends Service {
 			return new SongFile(
 					childId,
 					-1,
-					path.getPath(),
-					zipFilePath != null ? zipFilePath.getPath() : null,
+					path,
+					zipFilePath != null ? zipFilePath : null,
 					title,
 					composer,
 					date
@@ -541,9 +626,9 @@ public class SongDatabaseService extends Service {
 			 * any plugin-given md5 value in this table will do. */
 			db.execSQL("CREATE TABLE IF NOT EXISTS songlength ("
 					+ BaseColumns._ID + " INTEGER PRIMARY KEY,"
-					+ "md5 CHAR(32) NOT NULL,"
+					+ "md5 TEXT NOT NULL,"
 					+ "subsong INTEGER,"
-					+ "timeMs INTEGER"
+					+ "timeMs INTEGER NOT NULL"
 					+ ");");
 
 			db.execSQL("CREATE UNIQUE INDEX ui_files_parent_filename ON files (parent_id, filename);");

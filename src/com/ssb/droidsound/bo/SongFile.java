@@ -1,5 +1,6 @@
 package com.ssb.droidsound.bo;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,14 +22,14 @@ public class SongFile {
 
 	private final long id;
 	private final int subtune;
-	private final String filePath;
-	private final String zipFilePath;
+	private final File filePath;
+	private final File zipFilePath;
 
 	private final String title;
 	private final String composer;
 	private final int date;
 
-	public SongFile(long id, int subtune, String fileName, String zipFilePath, String title, String composer, int date) {
+	public SongFile(long id, int subtune, File fileName, File zipFilePath, String title, String composer, int date) {
 		this.id = id;
 		this.subtune = subtune;
 		this.filePath = fileName;
@@ -38,21 +39,19 @@ public class SongFile {
 		this.date = date;
 	}
 
-	public String getSecondaryFileName() {
-		int dot = filePath.lastIndexOf('.');
-		int slash = filePath.lastIndexOf('/');
-		if (dot <= slash) {
-			return null;
+	public File getSecondaryFileName() {
+		String name = filePath.getName();
+
+		int lastDot = name.lastIndexOf('.');
+		String ext = name.substring(lastDot + 1).toUpperCase();
+		if (MAIN_TO_AUX.containsKey(ext)) {
+			return new File(filePath.getParentFile(), name.substring(lastDot + 1) + MAIN_TO_AUX.get(ext));
 		}
 
-		int firstDot = filePath.indexOf('.', slash+1);
-		String ext = filePath.substring(dot+1).toUpperCase();
-		String pref = filePath.substring(slash+1, firstDot).toUpperCase();
-
+		int firstDot = name.indexOf('.');
+		String pref = name.substring(0, firstDot).toUpperCase();
 		if (MAIN_TO_AUX.containsKey(pref)) {
-			return filePath.substring(0, slash+1) + MAIN_TO_AUX.get(pref) + filePath.substring(firstDot);
-		} else if (MAIN_TO_AUX.containsKey(ext)) {
-			return filePath.substring(0, dot+1) + MAIN_TO_AUX.get(ext);
+			return new File(filePath.getParentFile(), MAIN_TO_AUX.get(pref) + name.substring(firstDot));
 		}
 
 		return null;
@@ -63,11 +62,11 @@ public class SongFile {
 		return subtune;
 	}
 
-	public String getFilePath() {
+	public File getFilePath() {
 		return filePath;
 	}
 
-	public String getZipFilePath() {
+	public File getZipFilePath() {
 		return zipFilePath;
 	}
 
