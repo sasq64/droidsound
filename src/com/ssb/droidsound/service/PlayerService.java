@@ -343,7 +343,7 @@ public class PlayerService extends Service {
 					}
 
 					/* Terminate playback when complete song played. */
-					if (sec2 > songLengthMs) {
+					if (sec2 > songLengthMs / 1000) {
 						break PLAYLOOP;
 					}
 
