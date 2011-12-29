@@ -28,10 +28,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean canHandle(String name) {
-		int x = name.lastIndexOf('.');
-		if (x < 0)
-			return false;
-		String ext = name.substring(x + 1).toUpperCase();
+		String ext = name.substring(name.indexOf('.') + 1).toUpperCase();
 		return EXTENSIONS.contains(ext);
 	}
 

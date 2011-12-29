@@ -264,8 +264,8 @@ public class VICEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean canHandle(String name) {
-		name = name.toUpperCase();
-		return name.endsWith(".SID") || name.endsWith(".PRG");
+		String ext = name.substring(name.indexOf('.') + 1).toUpperCase();
+		return ext.equals("SID") || ext.equals("PRG");
 	}
 
 	@Override

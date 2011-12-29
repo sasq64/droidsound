@@ -24,7 +24,8 @@ public class HivelyPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean canHandle(String name) {
-		return name.toUpperCase().endsWith(".HVL") || name.toUpperCase().endsWith(".AHX");
+		String ext = name.substring(name.indexOf('.') + 1).toUpperCase();
+		return ext.equals("HVL") || ext.equals("AHX");
 	}
 
 	@Override

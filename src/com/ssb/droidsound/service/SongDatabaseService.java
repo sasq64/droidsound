@@ -547,7 +547,8 @@ public class SongDatabaseService extends Service {
 					+ ");");
 
 			db.execSQL("CREATE UNIQUE INDEX ui_files_parent_filename ON files (parent_id, filename);");
-			db.execSQL("CREATE UNIQUE INDEX ui_songlength_md5 ON songlength (md5, subsong);");
+			db.execSQL("CREATE UNIQUE INDEX ui_songlength_md5_subsong ON songlength (md5, subsong);");
+
 			db.setVersion(DB_VERSION);
 			Log.i(TAG, "Schema complete.");
 		}
