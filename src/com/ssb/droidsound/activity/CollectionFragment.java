@@ -106,14 +106,14 @@ public class CollectionFragment extends Fragment {
 			TextView subtitleView = (TextView) view.findViewById(R.id.subtitle);
 			TextView sidetitleView = (TextView) view.findViewById(R.id.sidetitle);
 
-			final Long childId = cursor.isNull(MusicIndexService.COL_ID) ? null : cursor.getLong(MusicIndexService.COL_ID);
+			final Long childId = cursor.getLong(MusicIndexService.COL_ID);
 			final String filename = cursor.getString(MusicIndexService.COL_FILENAME);
 			final int type = cursor.getInt(MusicIndexService.COL_TYPE);
 			final String title = cursor.getString(MusicIndexService.COL_TITLE);
 			final String composer = cursor.getString(MusicIndexService.COL_COMPOSER);
 			final int date = cursor.getInt(MusicIndexService.COL_DATE);
 
-			playingView.setVisibility(childId != null && childId.equals(currentlyPlayingSong) ? View.VISIBLE : View.GONE);
+			playingView.setVisibility(childId.equals(currentlyPlayingSong) ? View.VISIBLE : View.GONE);
 
 			final int icon;
 			switch (type) {

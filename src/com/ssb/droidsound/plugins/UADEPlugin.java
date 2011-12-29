@@ -147,8 +147,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 	@Override
 	public String getStringInfo(int what) {
-		if(currentSong == 0) {
-			return "";
+		if (currentSong == 0) {
+			return null;
 		}
 		return N_getStringInfo(currentSong, what);
 	}
@@ -162,7 +162,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean seekTo( int msec) {
+	public boolean seekTo(int msec) {
 		if (currentSong == 0) {
 			return false;
 		}
@@ -221,6 +221,14 @@ public class UADEPlugin extends DroidSoundPlugin {
 		}
 
 		return null;
+	}
+
+	@Override
+	public int getIntInfo(int what) {
+		if (currentSong == 0) {
+			return -1;
+		}
+		return N_getIntInfo(currentSong, what);
 	}
 
 	native private static void N_init(String baseDir);
