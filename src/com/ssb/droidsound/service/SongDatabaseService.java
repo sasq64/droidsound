@@ -24,6 +24,7 @@ import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Binder;
@@ -67,21 +68,32 @@ public class SongDatabaseService extends Service {
 	public static final int TYPE_FILE = 0x400;
 	public static final int TYPE_MUS_FOLDER = 0x500;
 
-	private static final int DB_VERSION = 11;
+	private static final int DB_VERSION = 18;
 
 	private SQLiteDatabase db;
 
+	private boolean scanning;
+
 	protected class Scanner extends AsyncTask<Void, Object, Void> {
 		private final boolean full;
+		private final DatabaseUtils.InsertHelper filesHelper;
+		private final DatabaseUtils.InsertHelper songlengthHelper;
 
 		protected Scanner(boolean full) {
 			this.full = full;
+			filesHelper = new DatabaseUtils.InsertHelper(db, "files");
+			songlengthHelper = new DatabaseUtils.InsertHelper(db, "songlength");
 		}
 
 		@Override
 		protected void onPreExecute() {
+			if (scanning) {
+				cancel(true);
+				return;
+			}
 			Intent intent = new Intent(SCAN_NOTIFY_BEGIN);
 			sendBroadcast(intent);
+			scanning = true;
 		}
 
 		@Override
@@ -102,12 +114,19 @@ public class SongDatabaseService extends Service {
 			return null;
 		}
 
+		@Override
+		protected void onPostExecute(Void result) {
+			Intent intent = new Intent(SCAN_NOTIFY_DONE);
+			sendBroadcast(intent);
+			scanning = false;
+		}
+
 		private long insertDirectory(String name, Long parentId) {
 			ContentValues values = new ContentValues();
 			values.put("type", TYPE_DIR);
 			values.put("parent_id", parentId);
 			values.put("filename", name);
-			return db.insert("files", null, values);
+			return filesHelper.insert(values);
 		}
 
 		private void insertFile(File name, byte[] data, long modifyTime, Long parentId) {
@@ -128,12 +147,12 @@ public class SongDatabaseService extends Service {
 				}
 				values.put("date", info.date);
 				values.put("format", info.format);
-				db.insert("files", null, values);
+				filesHelper.insert(values);
 			}
 		}
 
 		/**
-		 * Zips are scanned in one atomic unit. So db will be placed in transaction for this.
+		 * Zip scanner
 		 *
 		 * @param zipFile
 		 * @return
@@ -148,7 +167,6 @@ public class SongDatabaseService extends Service {
 			ZipInputStream zis = new ZipInputStream(fis);
 			Map<String, Long> pathMap = new HashMap<String, Long>();
 			pathMap.put("", parentId);
-
 			ZipEntry ze;
 			int shownPct = -1;
 			while (null != (ze = zis.getNextEntry())) {
@@ -171,7 +189,6 @@ public class SongDatabaseService extends Service {
 					final String pathFilename;
 					if (slash2 == -1) {
 						/* top level in zip: parent to given directory */
-						Log.i(TAG, "Zip: directory %s is in top level", path);
 						pathParentId = parentId;
 						pathFilename = path;
 					} else {
@@ -185,12 +202,12 @@ public class SongDatabaseService extends Service {
 					long rowId = insertDirectory(pathFilename, pathParentId);
 					pathMap.put(path, rowId);
 				} else {
-					if (ze.getName().equals("Songlengths.txt")) {
+					if (name.equals("Songlengths.txt")) {
 						scanSonglengthsTxt(zis);
 					} else {
 						pathParentId = pathMap.get(path);
 						/* We could store zipentry's modifytime here, but I doubt it makes a difference. */
-						Log.i(TAG, "New file: %s", ze.getName());
+						//Log.i(TAG, "New file: %s", ze.getName());
 						insertFile(new File(path, name), StreamUtil.readFully(zis, ze.getSize()), 0, pathParentId);
 					}
 				}
@@ -202,7 +219,6 @@ public class SongDatabaseService extends Service {
 				}
 				zis.closeEntry();
 			}
-
 			zis.close();
 		}
 
@@ -285,7 +301,7 @@ public class SongDatabaseService extends Service {
 						values.put("modify_time", f.lastModified());
 						values.put("type", TYPE_ZIP);
 						values.put("title", f.getName().substring(0, f.getName().length() - 4));
-						long rowId = db.insert("files", null, values);
+						long rowId = filesHelper.insert(values);
 						scanZip(f, rowId);
 					} else if (fnUpper.endsWith(".PLIST")) {
 						ContentValues values = new ContentValues();
@@ -294,7 +310,7 @@ public class SongDatabaseService extends Service {
 						values.put("modify_time", f.lastModified());
 						values.put("type", TYPE_PLIST);
 						values.put("title", f.getName().substring(0, f.getName().length() - 6));
-						db.insert("files", null, values);
+						filesHelper.insert(values);
 					} else if (f.getName().equals("Songlengths.txt")) {
 						FileInputStream fi = new FileInputStream(f);
 						scanSonglengthsTxt(fi);
@@ -305,7 +321,7 @@ public class SongDatabaseService extends Service {
 						fi.close();
 					}
 				} else if (f.isDirectory()) {
-					Log.i(TAG, "New Directory: %s", f.getPath());
+					Log.i(TAG, "New directory: %s", f.getPath());
 					long rowId = insertDirectory(f.getName(), parentId);
 					scanFiles(f, rowId);
 				}
@@ -320,7 +336,7 @@ public class SongDatabaseService extends Service {
 		private void scanSonglengthsTxt(InputStream is) throws IOException {
 			BufferedReader br = new BufferedReader(new InputStreamReader(is, ISO88591));
 
-			Pattern md5AndTimes = Pattern.compile("([a-fA-f0-9])=(.*)");
+			Pattern md5AndTimes = Pattern.compile("([a-fA-f0-9]{32})=(.*)");
 			Pattern timestamps = Pattern.compile("([0-9]{1,2}):([0-9]{2})");
 
 			String line;
@@ -341,7 +357,7 @@ public class SongDatabaseService extends Service {
 					cv.put("md5", md5);
 					cv.put("subsong", ++ song);
 					cv.put("timeMs", (minutes * 60 + seconds) * 1000);
-					db.insert("songlength", null, cv);
+					songlengthHelper.insert(cv);
 				}
 			}
 		}
@@ -352,14 +368,10 @@ public class SongDatabaseService extends Service {
 				db.delete("files", null, null);
 				db.delete("songlength", null, null);
 			}
-
+			db.beginTransactionNonExclusive();
 			scanFiles(modsDir, null);
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			Intent intent = new Intent(SCAN_NOTIFY_DONE);
-			sendBroadcast(intent);
+			db.setTransactionSuccessful();
+			db.endTransaction();
 		}
 	}
 
@@ -534,8 +546,8 @@ public class SongDatabaseService extends Service {
 					+ "timeMs INTEGER"
 					+ ");");
 
-			db.execSQL("CREATE INDEX ui_files_parent_filename ON files (parent_id, filename);");
-			db.execSQL("CREATE INDEX ui_songlength_md5 ON songlength (md5);");
+			db.execSQL("CREATE UNIQUE INDEX ui_files_parent_filename ON files (parent_id, filename);");
+			db.execSQL("CREATE UNIQUE INDEX ui_songlength_md5 ON songlength (md5, subsong);");
 			db.setVersion(DB_VERSION);
 			Log.i(TAG, "Schema complete.");
 		}

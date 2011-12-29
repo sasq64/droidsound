@@ -78,13 +78,14 @@ public class PlayerActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.top);
-		bindService(new Intent(this, SongDatabaseService.class), dbConnection, Context.BIND_AUTO_CREATE);
 
 		IntentFilter searchReceiverFilter = new IntentFilter();
 		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_BEGIN);
 		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_UPDATE);
 		searchReceiverFilter.addAction(SongDatabaseService.SCAN_NOTIFY_DONE);
 		registerReceiver(searchReceiver, searchReceiverFilter);
+
+		bindService(new Intent(this, SongDatabaseService.class), dbConnection, Context.BIND_AUTO_CREATE);
 
 		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
