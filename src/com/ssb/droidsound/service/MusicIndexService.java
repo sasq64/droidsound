@@ -98,6 +98,7 @@ public class MusicIndexService extends Service {
 			Intent intent = new Intent(SCAN_NOTIFY_BEGIN);
 			sendBroadcast(intent);
 			scanning = true;
+			startService(new Intent(MusicIndexService.this, MusicIndexService.class));
 		}
 
 		@Override
@@ -120,6 +121,7 @@ public class MusicIndexService extends Service {
 
 		@Override
 		protected void onPostExecute(Void result) {
+			stopService(new Intent(MusicIndexService.this, MusicIndexService.class));
 			Intent intent = new Intent(SCAN_NOTIFY_DONE);
 			sendBroadcast(intent);
 			scanning = false;
