@@ -65,11 +65,12 @@ public class MusicIndexService extends Service {
 	public static final String SCAN_NOTIFY_UPDATE = "com.ssb.droidsound.SCAN_NOTIFY_UPDATE";
 	public static final String SCAN_NOTIFY_DONE = "com.ssb.droidsound.SCAN_NOTIFY_DONE";
 
-	public static final int TYPE_ZIP = 0x100;
-	public static final int TYPE_DIR = 0x200;
-	public static final int TYPE_PLIST = 0x300;
-	public static final int TYPE_FILE = 0x400;
-	public static final int TYPE_MUS_FOLDER = 0x500;
+	public static final int TYPE_ZIP = 1;
+	public static final int TYPE_DIR = 2;
+	public static final int TYPE_PLIST = 3;
+	public static final int TYPE_FILE = 4;
+	public static final int TYPE_MUS_FOLDER = 5;
+	public static final int TYPE_SONGLENGTH = 6;
 
 	private static final int DB_VERSION = 18;
 
@@ -205,10 +206,15 @@ public class MusicIndexService extends Service {
 					long rowId = insertDirectory(pathFilename, pathParentId);
 					pathMap.put(path, rowId);
 				} else {
+					pathParentId = pathMap.get(path);
 					if (name.equals("Songlengths.txt")) {
-						scanSonglengthsTxt(zis);
+						ContentValues cv = new ContentValues();
+						cv.put("filename", name);
+						cv.put("parent_id", pathParentId);
+						cv.put("type", TYPE_SONGLENGTH);
+						long rowId = filesHelper.insert(cv);
+						scanSonglengthsTxt(rowId, zis);
 					} else {
-						pathParentId = pathMap.get(path);
 						/* We could store zipentry's modifytime here, but I doubt it makes a difference. */
 						//Log.i(TAG, "New file: %s", ze.getName());
 						insertFile(new File(path, name), StreamUtil.readFully(zis, ze.getSize()), 0, pathParentId);
@@ -338,6 +344,29 @@ public class MusicIndexService extends Service {
 			}
 			db.setTransactionSuccessful();
 			db.endTransaction();
+			publishProgress(dir.getName(), 100);
+
+			for (File f : directoriesToAdd) {
+				/* This is unfortunate, we need to create the directory before we can recurse into it.
+				 * Thankfully the transactionality here is not critical as we are talking about
+				 * real files here, a future scan will look them up just fine. */
+				long rowId = insertDirectory(f.getName(), parentId);
+				scanFiles(f, rowId);
+			}
+
+			for (File f : songLengthsToDo) {
+				db.beginTransaction();
+				ContentValues cv = new ContentValues();
+				cv.put("filename", f.getName());
+				cv.put("parent_id", parentId);
+				cv.put("type", TYPE_SONGLENGTH);
+				long rowId = filesHelper.insert(cv);
+				FileInputStream fi = new FileInputStream(f);
+				scanSonglengthsTxt(rowId, fi);
+				fi.close();
+				db.setTransactionSuccessful();
+				db.endTransaction();
+			}
 
 			for (Entry<File, ContentValues> entries : zipsToScan.entrySet()) {
 				db.beginTransaction();
@@ -345,20 +374,7 @@ public class MusicIndexService extends Service {
 				scanZip(entries.getKey(), rowId);
 				db.setTransactionSuccessful();
 				db.endTransaction();
-			}
-
-			for (File f : songLengthsToDo) {
-				db.beginTransaction();
-				FileInputStream fi = new FileInputStream(f);
-				scanSonglengthsTxt(fi);
-				fi.close();
-				db.setTransactionSuccessful();
-				db.endTransaction();
-			}
-
-			for (File f : directoriesToAdd) {
-				long rowId = insertDirectory(f.getName(), parentId);
-				scanFiles(f, rowId);
+				publishProgress(entries.getKey().getName(), 100);
 			}
 
 			/* Continue scanning into found directories */
@@ -367,8 +383,10 @@ public class MusicIndexService extends Service {
 			}
 		}
 
-		private void scanSonglengthsTxt(InputStream is) throws IOException {
+		private void scanSonglengthsTxt(long fileId, InputStream is) throws IOException {
 			BufferedReader br = new BufferedReader(new InputStreamReader(is, ISO88591));
+			ContentValues cv = new ContentValues();
+			cv.put("file_id", fileId);
 
 			Pattern md5AndTimes = Pattern.compile("([a-fA-f0-9]{32})=(.*)");
 			Pattern timestamps = Pattern.compile("([0-9]{1,2}):([0-9]{2})");
@@ -387,7 +405,6 @@ public class MusicIndexService extends Service {
 				while (m.find()) {
 					int minutes = Integer.valueOf(m.group(1));
 					int seconds = Integer.valueOf(m.group(2));
-					ContentValues cv = new ContentValues();
 					cv.put("md5", md5);
 					cv.put("subsong", ++ song);
 					cv.put("timeMs", (minutes * 60 + seconds) * 1000);
@@ -412,10 +429,10 @@ public class MusicIndexService extends Service {
 		}
 
 		public Cursor search(String query, Sort sorting) {
-			String q = "%" + query + "%" ;
+			String q = "%" + query.toLowerCase() + "%" ;
 			return db.query("files",
 					COLUMNS,
-					"title LIKE ? OR composer LIKE ? OR filename LIKE ?", new String[] { q, q, q },
+					"(lower(title) LIKE ? OR lower(composer) LIKE ? OR lower(filename) LIKE ?) AND type = ?", new String[] { q, q, q, String.valueOf(TYPE_FILE) },
 					null, null, sorting.toSQL()
 			);
 		}
@@ -656,6 +673,7 @@ public class MusicIndexService extends Service {
 			 * any plugin-given md5 value in this table will do. */
 			db.execSQL("CREATE TABLE IF NOT EXISTS songlength ("
 					+ BaseColumns._ID + " INTEGER PRIMARY KEY,"
+					+ "file_id NOT NULL REFERENCES files ON DELETE CASCADE,"
 					+ "md5 TEXT NOT NULL,"
 					+ "subsong INTEGER,"
 					+ "timeMs INTEGER NOT NULL"

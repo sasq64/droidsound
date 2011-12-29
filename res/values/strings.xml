@@ -75,4 +75,5 @@
 <item>3</item>
 </string-array>
 <string name="icon">Icon</string>
+<string name="back">Back</string>
 </resources>

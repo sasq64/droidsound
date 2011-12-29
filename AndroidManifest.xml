@@ -8,7 +8,8 @@
 	<uses-permission android:name="android.permission.BROADCAST_STICKY"/>
 
 	<application android:icon="@drawable/droidsound64x64" android:label="@string/app_name" android:debuggable="false" android:name=".app.Application">
-		<activity android:name=".activity.PlayerActivity" android:launchMode="singleTop" android:label="@string/app_name">
+		<activity android:name=".activity.PlayerActivity" android:launchMode="singleTop" android:label="@string/app_name"
+		    android:windowSoftInputMode="stateHidden">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
 				<category android:name="android.intent.category.LAUNCHER" />

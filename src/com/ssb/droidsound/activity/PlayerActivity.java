@@ -7,15 +7,8 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
@@ -23,73 +16,22 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.ssb.droidsound.R;
-import com.ssb.droidsound.service.MusicIndexService;
-import com.ssb.droidsound.utils.Log;
 
 public class PlayerActivity extends Activity {
-	private static final String TAG = PlayerActivity.class.getSimpleName();
-
 	private ActionBar actionBar;
+
 	private ViewPager viewPager;
+
 	private MyAdapter viewPagerAdapter;
-
-	private MusicIndexService.LocalBinder db;
-
-	private final ServiceConnection dbConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			db = (MusicIndexService.LocalBinder) binder;
-			Log.i(TAG, "Refreshing database.");
-			db.scan(false);
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName tag) {
-			db = null;
-		}
-	};
-
-	private final BroadcastReceiver searchReceiver = new BroadcastReceiver() {
-		private ProgressDialog pd;
-
-		@Override
-		public void onReceive(Context c, Intent i) {
-			String a = i.getAction();
-			if (a.equals(MusicIndexService.SCAN_NOTIFY_BEGIN)) {
-				pd = new ProgressDialog(c);
-				pd.setCancelable(false);
-				pd.show();
-				return;
-			}
-			if (a.equals(MusicIndexService.SCAN_NOTIFY_UPDATE)) {
-				String path = i.getStringExtra("path");
-				int progress = i.getIntExtra("progress", 0);
-				pd.setMessage(String.format("%s (%d %%)", path, progress));
-			}
-			if (a.equals(MusicIndexService.SCAN_NOTIFY_DONE)) {
-				pd.dismiss();
-				pd = null;
-				return;
-			}
-		}
-	};
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.top);
 
-		IntentFilter searchReceiverFilter = new IntentFilter();
-		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_BEGIN);
-		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_UPDATE);
-		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_DONE);
-		registerReceiver(searchReceiver, searchReceiverFilter);
-
-		bindService(new Intent(this, MusicIndexService.class), dbConnection, Context.BIND_AUTO_CREATE);
-
 		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-		actionBar.setDisplayShowTitleEnabled(true);
+		actionBar.setDisplayOptions(0);
 
 		viewPager = (ViewPager) findViewById(R.id.viewPager);
 		viewPagerAdapter = new MyAdapter(getFragmentManager());
@@ -135,13 +77,6 @@ public class PlayerActivity extends Activity {
 			public void onPageScrollStateChanged(int arg0) {
 			}
 		});
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		unregisterReceiver(searchReceiver);
-		unbindService(dbConnection);
 	}
 
 	@Override

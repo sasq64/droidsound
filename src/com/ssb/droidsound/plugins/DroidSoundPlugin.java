@@ -99,19 +99,21 @@ public abstract class DroidSoundPlugin {
 	protected abstract MusicInfo getMusicInfo(String name, byte[] module);
 
 	private static void fixInfo(String basename, MusicInfo info) {
-		if (info.composer == null || info.composer.length() == 0) {
-			int sep = basename.indexOf(" - ");
-			if (sep > 0) {
-				info.composer = basename.substring(0, sep);
-				info.title = basename.substring(sep+3);
+		if (info.composer != null) {
+			info.composer = info.composer.trim();
+			if ("".equals(info.composer)) {
+				info.composer = null;
 			}
 		}
 
-		if (info.composer != null && info.composer.length() == 0) {
-			info.composer = null;
+		if (info.title != null) {
+			info.title = info.title.trim();
+			if ("".equals(info.title)) {
+				info.title = null;
+			}
 		}
 
-		if (info.title == null || info.title.length() == 0) {
+		if (info.title == null) {
 			info.title = basename;
 		}
 

@@ -8,6 +8,10 @@
         <ignore path="res/layout/playing_view.xml" />
     </issue>
     <issue id="NestedWeights">
+        <ignore path="res/layout/collection_view.xml" />
         <ignore path="res/layout/playing_view.xml" />
+    </issue>
+    <issue id="TextFields">
+        <ignore path="res/layout/collection_view.xml" />
     </issue>
 </lint>
