@@ -92,7 +92,7 @@ public class PlayingFragment extends Fragment {
 			}
 
 			playButton(false);
-			seekBar.setEnabled(i.getBooleanExtra("plugin.canSeek", false));
+			seekBar.setEnabled(i.getBooleanExtra("plugin.seekable", false));
 			myAdapter.notifyDataSetChanged();
 		}
 	};
@@ -216,16 +216,26 @@ public class PlayingFragment extends Fragment {
 		playButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
+				try {
+					player.playPause(true);
+				} catch (Exception e) {
+					Log.w(TAG, "Failed to start playing", e);
+					return;
+				}
 				playButton(false);
-				player.playPause(true);
 			}
 		});
 		pauseButton = (ImageButton) view.findViewById(R.id.button_pause);
 		pauseButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
+				try {
+					player.playPause(false);
+				} catch (Exception e) {
+					Log.w(TAG, "Failed to pause playing", e);
+					return;
+				}
 				playButton(true);
-				player.playPause(false);
 			}
 		});
 		stopButton = (ImageButton) view.findViewById(R.id.button_stop);

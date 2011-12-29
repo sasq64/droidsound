@@ -10,9 +10,11 @@ import java.util.concurrent.TimeUnit;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.media.AudioFormat;
@@ -40,6 +42,14 @@ import com.ssb.droidsound.utils.Log;
  * @author alankila
  */
 public class PlayerService extends Service {
+	/**
+	 * These represent the desired UI-related state of the player thread.
+	 * PLAY means that music playback is desired and should begin as soon as possible.
+	 * PAUSE means that temporary pause has been requested.
+	 * STOP means that playback is no longer desired and should terminate as soon as possible.
+	 *
+	 * @author alankila
+	 */
 	enum State { PLAY, PAUSE, STOP; }
 
 	public static final String LOADING_SONG = "com.ssb.droidsound.LOADING_SONG";
@@ -85,7 +95,7 @@ public class PlayerService extends Service {
 		private final String f2;
 		private final byte[] data2;
 
-		private State syncStateRequest = State.PAUSE;
+		private State syncStateRequest = State.PLAY;
 		private int syncSeekRequest = -1;
 		private int syncSubsongRequest = -1;
 
@@ -135,7 +145,7 @@ public class PlayerService extends Service {
 		}
 
 		/**
-		 * Get current playback state. Default state is PAUSE.
+		 * Get current playback state.
 		 *
 		 * @return current player thread state
 		 */
@@ -145,8 +155,8 @@ public class PlayerService extends Service {
 			}
 		}
 		/**
-		 * Set change in playback state. STOP results in thread's exit,
-		 * PAUSE temporarily suspends playback. Default state is PAUSE.
+		 * Change playback state of a running thread.
+		 * Once STOP has been processed, thread no longer runs.
 		 *
 		 * @param newState
 		 */
@@ -183,6 +193,9 @@ public class PlayerService extends Service {
 			Intent loading = new Intent(LOADING_SONG);
 			removeStickyBroadcast(loading);
 			Intent unloading = new Intent(UNLOADING_SONG);
+			synchronized (this) {
+				unloading.putExtra("state", syncStateRequest);
+			}
 			sendBroadcast(unloading);
 		}
 
@@ -344,9 +357,7 @@ public class PlayerService extends Service {
 					break;
 
 				case STOP:
-					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_STOPPED) {
-						audioTrack.stop();
-					}
+					audioTrack.stop();
 					break PLAYLOOP;
 				}
 			}
@@ -364,9 +375,47 @@ public class PlayerService extends Service {
 	private PlayerRunnable player;
 
 	/**
+	 * Song change detector
+	 */
+	private final BroadcastReceiver unloadingSongReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context c, Intent i) {
+			State s = (State) i.getSerializableExtra("state");
+			if (player != null && s != State.STOP) {
+				try {
+					mBinder.playNext();
+				} catch (Exception e) {
+					Log.w(TAG, "Could not switch to next song.", e);
+				}
+			}
+		}
+	};
+
+	/**
 	 * PhoneStateListener is used to shut down playback on incoming call and automatically resume afterwards.
 	 */
-	private PhoneStateListener phoneStateListener;
+	private final PhoneStateListener phoneStateListener = new PhoneStateListener() {
+		boolean didPause = false;
+
+		@Override
+		public void onCallStateChanged(int state, String incomingNumber) {
+			switch(state) {
+			case TelephonyManager.CALL_STATE_RINGING:
+			case TelephonyManager.CALL_STATE_OFFHOOK:
+				if (player != null && player.getStateRequest() == State.PLAY) {
+					player.setStateRequest(State.PAUSE);
+					didPause = true;
+				}
+				break;
+			case TelephonyManager.CALL_STATE_IDLE:
+				if (player != null && didPause) {
+					player.setStateRequest(State.PLAY);
+				}
+				didPause = false;
+				break;
+			}
+		}
+	};
 
 	/**
 	 * This method starts a new playback thread capable of handling one file.
@@ -387,7 +436,6 @@ public class PlayerService extends Service {
 		}
 
 		player = new PlayerRunnable(p1, song, n1, d1, n2, d2);
-		player.setStateRequest(State.PLAY);
 		player.executeOnExecutor(playerExecutor);
 
 		/* We may be running by bind. It is necessary that we become started for playback. */
@@ -431,28 +479,7 @@ public class PlayerService extends Service {
 
 		bindService(new Intent(this, MusicIndexService.class), dbConnection, Context.BIND_AUTO_CREATE);
 
-		phoneStateListener = new PhoneStateListener() {
-			boolean didPause = false;
-
-			@Override
-			public void onCallStateChanged(int state, String incomingNumber) {
-				switch(state) {
-				case TelephonyManager.CALL_STATE_RINGING:
-				case TelephonyManager.CALL_STATE_OFFHOOK:
-					if (player != null && player.getStateRequest() == State.PLAY) {
-						player.setStateRequest(State.PAUSE);
-						didPause = true;
-					}
-					break;
-				case TelephonyManager.CALL_STATE_IDLE:
-					if (player != null && didPause) {
-						player.setStateRequest(State.PLAY);
-					}
-					didPause = false;
-					break;
-				}
-			}
-		};
+		registerReceiver(unloadingSongReceiver, new IntentFilter(UNLOADING_SONG));
 
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
@@ -473,6 +500,8 @@ public class PlayerService extends Service {
 
 		unbindService(dbConnection);
 
+		unregisterReceiver(unloadingSongReceiver);
+
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, 0);
 
@@ -487,45 +516,6 @@ public class PlayerService extends Service {
 	}
 
 	/**
-	 * Start playing a song identified by SongFile parameter.
-	 *
-	 * @param song
-	 * @return
-	 * @throws IOException
-	 * @throws InterruptedException
-	 */
-	private boolean startSong(SongFile song) throws IOException, InterruptedException {
-		List<SongFileData> files = db.getSongFileData(song);
-		String basename1 = files.get(0).getFile().getName();
-		byte[] data1 = files.get(0).getData();
-		String basename2 = files.size() == 2 ? files.get(1).getFile().getName() : null;
-		byte[] data2 = files.size() == 2 ? files.get(1).getData() : null;
-
-		/* Plugins will be used to try load the file now, so stop player thread if it is running. */
-		if (player != null) {
-			stopPlayerThread();
-		}
-
-		/* Scan plugin list looking for the one that can handle the file and agrees to load it. */
-		DroidSoundPlugin currentPlugin = null;
-		for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
-			if (plugin.canHandle(basename1) && plugin.load(basename1, data1, basename2, data2)) {
-				currentPlugin = plugin;
-				break;
-			}
-		}
-		if (currentPlugin == null) {
-			return false;
-		}
-
-		/* Loaded. It will be loaded once more by startPlayerThread, so we unload now... */
-		currentPlugin.unload();
-
-		startPlayerThread(currentPlugin, song, basename1, data1, basename2, data2);
-		return true;
-	}
-
-	/**
 	 * This class represents a connection to this server.
 	 * Only local process usage is expected.
 	 *
@@ -534,20 +524,51 @@ public class PlayerService extends Service {
 	public class LocalBinder extends Binder {
 		private PlayQueue playQueue;
 
-		public boolean playMod(SongFile song) {
-			try {
-				return startSong(song);
+		/**
+		 * Start playing a song identified by SongFile parameter.
+		 *
+		 * @param song
+		 * @return
+		 * @throws IOException
+		 * @throws InterruptedException
+		 */
+		public boolean playMod(SongFile song) throws IOException, InterruptedException {
+			List<SongFileData> files = db.getSongFileData(song);
+			String basename1 = files.get(0).getFile().getName();
+			byte[] data1 = files.get(0).getData();
+			String basename2 = files.size() == 2 ? files.get(1).getFile().getName() : null;
+			byte[] data2 = files.size() == 2 ? files.get(1).getData() : null;
+
+			/* Plugins will be used to try load the file now, so stop player thread if it is running. */
+			if (player != null) {
+				stopPlayerThread();
 			}
-			catch (Exception e) {
-				Log.w(TAG, "Unable to start playing", e);
+
+			/* Scan plugin list looking for the one that can handle the file and agrees to load it. */
+			DroidSoundPlugin currentPlugin = null;
+			for (DroidSoundPlugin plugin : DroidSoundPlugin.getPluginList()) {
+				if (plugin.canHandle(basename1) && plugin.load(basename1, data1, basename2, data2)) {
+					currentPlugin = plugin;
+					break;
+				}
+			}
+			if (currentPlugin == null) {
 				return false;
 			}
+
+			/* Loaded. It will be loaded once more by startPlayerThread, so we unload now... */
+			currentPlugin.unload();
+
+			startPlayerThread(currentPlugin, song, basename1, data1, basename2, data2);
+			return true;
 		}
 
-		public boolean playPause(boolean play) {
-			if (player != null) {
+		public boolean playPause(boolean play) throws IOException, InterruptedException {
+			if (player != null && player.getStateRequest() != State.STOP) {
 				player.setStateRequest(play ? State.PLAY : State.PAUSE);
 				return true;
+			} else if (play && playQueue != null) {
+				playMod(playQueue.getCurrent());
 			}
 			return false;
 		}
@@ -587,7 +608,7 @@ public class PlayerService extends Service {
 
 		public boolean playPlaylist(List<SongFile> names, int startIndex, boolean shuffle) throws IOException, InterruptedException {
 			playQueue = new PlayQueue(names, startIndex, shuffle);
-			return startSong(playQueue.getCurrent());
+			return playMod(playQueue.getCurrent());
 		}
 
 		public boolean playNext() throws IOException, InterruptedException {
@@ -595,7 +616,7 @@ public class PlayerService extends Service {
 				return false;
 			}
 			SongFile song = playQueue.next();
-			return startSong(song);
+			return playMod(song);
 		}
 
 		public boolean playPrev() throws IOException, InterruptedException {
@@ -603,7 +624,7 @@ public class PlayerService extends Service {
 	    		return false;
 	    	}
 	    	SongFile song = playQueue.prev();
-	    	return startSong(song);
+	    	return playMod(song);
 		}
 	}
 
