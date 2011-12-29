@@ -229,8 +229,7 @@ public class MusicIndexService extends Service {
 		 * Dir scan. Roots of the tree are those with parentId = null.
 		 */
 		private void scanFiles(File dir, Long parentId) throws IOException {
-			Log.i(TAG, "Entering '%s'", dir.getPath());
-
+			publishProgress(dir.getName(), 0);
 			String where;
 			String[] whereCond;
 			if (parentId == null) {
@@ -248,14 +247,13 @@ public class MusicIndexService extends Service {
 			);
 
 			/** Going to recurse into these */
-			Map<Long, File> dirsInDatabase = new HashMap<Long, File>();
-			publishProgress(dir.getName(), 0);
+			Map<Long, File> directoriesToRecurse = new HashMap<Long, File>();
 
 			/**
 			 * Set of files in examined directory. Entries are removed from this set
 			 * if they are also found on the database, so the remainder corresponds to files to add.
 			 */
-			Set<File> files = new HashSet<File>();
+			List<File> files = new ArrayList<File>();
 			for (File f : dir.listFiles()) {
 				if (! f.getName().startsWith(".")) {
 					files.add(f);
@@ -271,7 +269,7 @@ public class MusicIndexService extends Service {
 
 				if (files.contains(file)) {
 					if (file.isDirectory()) {
-						dirsInDatabase.put(id, file);
+						directoriesToRecurse.put(id, file);
 						files.remove(file);
 					} else {
 						/* Has recorded modify-time changed? If so, rescan. */
@@ -288,12 +286,19 @@ public class MusicIndexService extends Service {
 			fileCursor.close();
 
 			/* Delete files that need refresh or which did not exist anymore. */
+			db.beginTransaction();
 			for (long id : delFiles) {
 				db.delete("files", "_id = ?", new String[] { String.valueOf(id) } );
 			}
 
+			Map<File, ContentValues> zipsToScan = new HashMap<File, ContentValues>();
+			List<File> songLengthsToDo = new ArrayList<File>();
+			List<File> directoriesToAdd = new ArrayList<File>();
+
 			/* Add files/directories that did not exist */
-			for (File f : files) {
+			int pct = 0;
+			for (int i = 0; i < files.size(); i ++) {
+				File f = files.get(i);
 				if (f.isFile()) {
 					Log.i(TAG, "New file: %s", f.getPath());
 					String fnUpper = f.getName().toUpperCase();
@@ -304,8 +309,7 @@ public class MusicIndexService extends Service {
 						values.put("modify_time", f.lastModified());
 						values.put("type", TYPE_ZIP);
 						values.put("title", f.getName().substring(0, f.getName().length() - 4));
-						long rowId = filesHelper.insert(values);
-						scanZip(f, rowId);
+						zipsToScan.put(f, values);
 					} else if (fnUpper.endsWith(".PLIST")) {
 						ContentValues values = new ContentValues();
 						values.put("parent_id", parentId);
@@ -315,9 +319,7 @@ public class MusicIndexService extends Service {
 						values.put("title", f.getName().substring(0, f.getName().length() - 6));
 						filesHelper.insert(values);
 					} else if (f.getName().equals("Songlengths.txt")) {
-						FileInputStream fi = new FileInputStream(f);
-						scanSonglengthsTxt(fi);
-						fi.close();
+						songLengthsToDo.add(f);
 					} else {
 						FileInputStream fi = new FileInputStream(f);
 						insertFile(f, StreamUtil.readFully(fi, f.length()), f.lastModified(), parentId);
@@ -325,13 +327,42 @@ public class MusicIndexService extends Service {
 					}
 				} else if (f.isDirectory()) {
 					Log.i(TAG, "New directory: %s", f.getPath());
-					long rowId = insertDirectory(f.getName(), parentId);
-					scanFiles(f, rowId);
+					directoriesToAdd.add(f);
 				}
+
+				int nextPct = i * 100 / files.size();
+				if (pct != nextPct) {
+					publishProgress(dir.getName(), nextPct);
+					pct = nextPct;
+				}
+			}
+			db.setTransactionSuccessful();
+			db.endTransaction();
+
+			for (Entry<File, ContentValues> entries : zipsToScan.entrySet()) {
+				db.beginTransaction();
+				long rowId = filesHelper.insert(entries.getValue());
+				scanZip(entries.getKey(), rowId);
+				db.setTransactionSuccessful();
+				db.endTransaction();
+			}
+
+			for (File f : songLengthsToDo) {
+				db.beginTransaction();
+				FileInputStream fi = new FileInputStream(f);
+				scanSonglengthsTxt(fi);
+				fi.close();
+				db.setTransactionSuccessful();
+				db.endTransaction();
+			}
+
+			for (File f : directoriesToAdd) {
+				long rowId = insertDirectory(f.getName(), parentId);
+				scanFiles(f, rowId);
 			}
 
 			/* Continue scanning into found directories */
-			for (Entry<Long, File> e : dirsInDatabase.entrySet()) {
+			for (Entry<Long, File> e : directoriesToRecurse.entrySet()) {
 				scanFiles(e.getValue(), e.getKey());
 			}
 		}
@@ -371,10 +402,7 @@ public class MusicIndexService extends Service {
 				db.delete("files", null, null);
 				db.delete("songlength", null, null);
 			}
-			db.beginTransactionNonExclusive();
 			scanFiles(modsDir, null);
-			db.setTransactionSuccessful();
-			db.endTransaction();
 		}
 	}
 
@@ -598,6 +626,8 @@ public class MusicIndexService extends Service {
 	private SQLiteDatabase checkVersion() {
 		File dbName = getDatabasePath("songs.db");
 		SQLiteDatabase db = SQLiteDatabase.openOrCreateDatabase(dbName, null);
+		db.enableWriteAheadLogging();
+
 		if (db.needUpgrade(DB_VERSION)) {
 			Log.i(TAG, "Deleting old schema (if any)...");
 			db.execSQL("DROP TABLE IF EXISTS files;");

@@ -27,8 +27,8 @@ import com.ssb.droidsound.R;
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.MemoryCursor;
 import com.ssb.droidsound.bo.SongFile;
-import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.service.MusicIndexService;
+import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
 
 public class CollectionFragment extends Fragment {
