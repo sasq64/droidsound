@@ -59,6 +59,40 @@ public class PlayerService extends Service {
 	private static final String TAG = PlayerService.class.getSimpleName();
 	private static final int NOTIFY_ONGOING_ID = 1;
 
+	private int serviceWantedCount;
+
+	/**
+	 * Manages the lifecycle of this service.
+	 *
+	 * If you want this service to stick around, call it with +1. If you want it to go away,
+	 * call it with -1. Whether it actually goes away depends on the total count of such callers.
+	 *
+	 * @param diff the difference to use count (-1 or +1)
+	 * @param notifyText set notify text to (may be null).
+	 */
+	private void addServiceWantedCount(int diff, String notifyText) {
+		if (serviceWantedCount == 0) {
+			Log.i(TAG, "Adding notification");
+			startService(new Intent(this, PlayerService.class));
+			startForeground(NOTIFY_ONGOING_ID, new Notification());
+		}
+		serviceWantedCount += diff;
+		if (serviceWantedCount == 0) {
+			Log.i(TAG, "Removing notification");
+			stopForeground(true);
+			stopService(new Intent(this, PlayerService.class));
+		}
+
+		if (serviceWantedCount > 0 && notifyText != null) {
+			Notification notification = new Notification(R.drawable.droidsound64x64, "DroidSound", System.currentTimeMillis());
+			notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
+			Intent notificationIntent = new Intent(PlayerService.this, PlayerActivity.class);
+			PendingIntent contentIntent = PendingIntent.getActivity(PlayerService.this, 0, notificationIntent, 0);
+			notification.setLatestEventInfo(PlayerService.this, "DroidSound", notifyText, contentIntent);
+			startForeground(NOTIFY_ONGOING_ID, notification);
+		}
+	}
+
 	private MusicIndexService.LocalBinder db;
 	private final ServiceConnection dbConnection = new ServiceConnection() {
 		@Override
@@ -120,15 +154,6 @@ public class PlayerService extends Service {
 			this.data1 = data1;
 			this.f2 = name2;
 			this.data2 = data2;
-		}
-
-		/**
-		 * Get the name of file being played.
-		 *
-		 * @return file name
-		 */
-		public String getName() {
-			return f1;
 		}
 
 		/**
@@ -289,7 +314,7 @@ public class PlayerService extends Service {
 					Log.w(TAG, "Exiting playloop via exception", e);
 				}
 				plugin.unload();
-				Log.i(TAG, "Audio playback is terminating.");
+				Log.i(TAG, "Exiting audio playback loop.");
 			} else {
 				Log.w(TAG, "Plugin could not load song.");
 			}
@@ -449,18 +474,10 @@ public class PlayerService extends Service {
 			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
 		}
 
+		addServiceWantedCount(1, n1);
+
 		player = new PlayerRunnable(p1, song, n1, d1, n2, d2);
 		player.executeOnExecutor(playerExecutor);
-
-		/* We may be running by bind. It is necessary that we become started for playback. */
-		Log.i(TAG, "Adding notification");
-		Notification notification = new Notification(R.drawable.droidsound64x64, "DroidSound", System.currentTimeMillis());
-		notification.flags |= Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE;
-		Intent notificationIntent = new Intent(PlayerService.this, PlayerActivity.class);
-		PendingIntent contentIntent = PendingIntent.getActivity(PlayerService.this, 0, notificationIntent, 0);
-		notification.setLatestEventInfo(PlayerService.this, "DroidSound", player.getName(), contentIntent);
-		startForeground(NOTIFY_ONGOING_ID, notification);
-		startService(new Intent(this, PlayerService.class));
 	}
 
 	/**
@@ -475,16 +492,13 @@ public class PlayerService extends Service {
 			throw new RuntimeException("Playerthread was not running. Someone must call startPlayerThread() first.");
 		}
 
-		Log.i(TAG, "Removing notification");
-		stopService(new Intent(this, PlayerService.class));
-		stopForeground(true);
-
 		player.setStateRequest(State.STOP);
 		while (playerExecutor.getActiveCount() != 0) {
 			playerExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
 		}
-
 		player = null;
+
+		addServiceWantedCount(-1, null);
 	}
 
 	@Override
@@ -553,6 +567,8 @@ public class PlayerService extends Service {
 			String basename2 = files.size() == 2 ? files.get(1).getFile().getName() : null;
 			byte[] data2 = files.size() == 2 ? files.get(1).getData() : null;
 
+			addServiceWantedCount(1, basename1);
+
 			/* Plugins will be used to try load the file now, so stop player thread if it is running. */
 			if (player != null) {
 				stopPlayerThread();
@@ -574,6 +590,8 @@ public class PlayerService extends Service {
 			currentPlugin.unload();
 
 			startPlayerThread(currentPlugin, song, basename1, data1, basename2, data2);
+
+			addServiceWantedCount(-1, null);
 			return true;
 		}
 
@@ -626,7 +644,7 @@ public class PlayerService extends Service {
 		}
 
 		public boolean playNext() throws IOException, InterruptedException {
-			if (player != null) {
+			if (player != null && player.getStateRequest() != State.STOP) {
 				int cs = player.getCurrentSubsong();
 				int ms = player.getMaxSubsong();
 				int def = player.getDefaultSubsong();
@@ -649,7 +667,7 @@ public class PlayerService extends Service {
 		}
 
 		public boolean playPrev() throws IOException, InterruptedException {
-			if (player != null) {
+			if (player != null && player.getStateRequest() != State.STOP) {
 				int cs = player.getCurrentSubsong();
 				int ms = player.getMaxSubsong();
 				int def = player.getDefaultSubsong();
