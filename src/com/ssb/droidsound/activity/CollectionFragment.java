@@ -47,7 +47,7 @@ public class CollectionFragment extends Fragment {
 	/** Shuffle playback? */
 	private boolean shuffle;
 
-	private MyAdapter collectionViewAdapter;
+	private CollectionViewAdapter collectionViewAdapter;
 
 	private ListView collectionView;
 
@@ -71,7 +71,7 @@ public class CollectionFragment extends Fragment {
 
 			db.scan(false);
 
-			collectionViewAdapter = new MyAdapter(getActivity(), getDisplayedChildIdCursor());
+			collectionViewAdapter = new CollectionViewAdapter(getActivity());
 			collectionView.setAdapter(collectionViewAdapter);
 		}
 
@@ -93,9 +93,9 @@ public class CollectionFragment extends Fragment {
 		}
 	};
 
-	protected class MyAdapter extends CursorAdapter {
-		protected MyAdapter(Context context, Cursor cursor) {
-			super(context, cursor);
+	protected class CollectionViewAdapter extends CursorAdapter {
+		protected CollectionViewAdapter(Context context) {
+			super(context, getDisplayedChildIdCursor());
 		}
 
 		@Override
@@ -162,6 +162,7 @@ public class CollectionFragment extends Fragment {
 					if (type != MusicIndexService.TYPE_FILE) {
 						/* Move to subfolder */
 						setDisplayedChildId(childId);
+						backButtonEnabled();
 					} else {
 						/* Scavenge the entries from our cursor */
 						List<SongFile> fileList = new ArrayList<SongFile>();
@@ -235,7 +236,6 @@ public class CollectionFragment extends Fragment {
 	}
 	protected void setDisplayedChildId(Long childId) {
 		this.childId = childId;
-		backButton.setEnabled(childId != null);
 		if (collectionViewAdapter != null) {
 			collectionViewAdapter.changeCursor(getDisplayedChildIdCursor());
 		}
@@ -247,6 +247,9 @@ public class CollectionFragment extends Fragment {
 		} else {
 			return db.search(search, sorting);
 		}
+	}
+	protected void backButtonEnabled() {
+		backButton.setEnabled(getDisplayedChildId() != null || searchView.getText().length() > 0);
 	}
 
 	@Override
@@ -290,14 +293,20 @@ public class CollectionFragment extends Fragment {
 		backButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				Cursor child = db.getFileById(getDisplayedChildId());
-				if (child.getCount() == 0) {
-					setDisplayedChildId(null);
+				if (searchView.getText().length() != 0) {
+					searchView.setText("");
+					collectionViewAdapter.changeCursor(getDisplayedChildIdCursor());
 				} else {
-					child.moveToFirst();
-					setDisplayedChildId(child.isNull(MusicIndexService.COL_PARENT_ID) ? null : child.getLong(MusicIndexService.COL_PARENT_ID));
-					child.close();
+					Cursor child = db.getFileById(getDisplayedChildId());
+					if (child.getCount() == 0) {
+						setDisplayedChildId(null);
+					} else {
+						child.moveToFirst();
+						setDisplayedChildId(child.isNull(MusicIndexService.COL_PARENT_ID) ? null : child.getLong(MusicIndexService.COL_PARENT_ID));
+						child.close();
+					}
 				}
+				backButtonEnabled();
 			}
 		});
 
@@ -306,6 +315,7 @@ public class CollectionFragment extends Fragment {
 			@Override
 			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
 				collectionViewAdapter.changeCursor(getDisplayedChildIdCursor());
+				backButton.setEnabled(true);
 				InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
 				imm.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
 				return true;
@@ -317,6 +327,7 @@ public class CollectionFragment extends Fragment {
 		} else {
 			setDisplayedChildId(null);
 		}
+		backButtonEnabled();
 
 		return view;
 	}
