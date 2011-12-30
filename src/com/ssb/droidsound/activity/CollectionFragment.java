@@ -235,21 +235,12 @@ public class CollectionFragment extends Fragment {
 	private final BroadcastReceiver searchReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context c, Intent i) {
-			String a = i.getAction();
-			if (a.equals(MusicIndexService.SCAN_NOTIFY_BEGIN)) {
-				progressContainerView.setVisibility(View.VISIBLE);
-				return;
+			int progress = i.getIntExtra("progress", 0);
+			if (progress == 100) {
+				refreshListFragment();
 			}
-			if (a.equals(MusicIndexService.SCAN_NOTIFY_UPDATE)) {
-				int progress = i.getIntExtra("progress", 0);
-				if (progress == 100) {
-					refreshListFragment();
-				}
-				progressPercentageView.setText(String.format("%d%%", progress));
-			}
-			if (a.equals(MusicIndexService.SCAN_NOTIFY_DONE)) {
-				progressContainerView.setVisibility(View.GONE);
-			}
+			progressPercentageView.setText(String.format("%d%%", progress));
+			progressContainerView.setVisibility(i.getBooleanExtra("scanning", false) ? View.VISIBLE : View.GONE);
 		}
 	};
 
@@ -297,11 +288,7 @@ public class CollectionFragment extends Fragment {
 		songChangeFilter.addAction(PlayerService.UNLOADING_SONG);
 		getActivity().registerReceiver(currentSongReceiver, songChangeFilter);
 
-		IntentFilter searchReceiverFilter = new IntentFilter();
-		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_BEGIN);
-		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_UPDATE);
-		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_DONE);
-		getActivity().registerReceiver(searchReceiver, searchReceiverFilter);
+		getActivity().registerReceiver(searchReceiver, new IntentFilter(MusicIndexService.ACTION_SCAN));
 
 		refreshListFragment();
 	}

@@ -61,9 +61,7 @@ public class MusicIndexService extends Service {
 	public static final int COL_COMPOSER = 5;
 	public static final int COL_DATE = 6;
 
-	public static final String SCAN_NOTIFY_BEGIN = "com.ssb.droidsound.SCAN_NOTIFY_BEGIN";
-	public static final String SCAN_NOTIFY_UPDATE = "com.ssb.droidsound.SCAN_NOTIFY_UPDATE";
-	public static final String SCAN_NOTIFY_DONE = "com.ssb.droidsound.SCAN_NOTIFY_DONE";
+	public static final String ACTION_SCAN = "com.ssb.droidsound.SCAN";
 
 	public static final int TYPE_ZIP = 1;
 	public static final int TYPE_DIR = 2;
@@ -78,7 +76,7 @@ public class MusicIndexService extends Service {
 
 	private boolean scanning;
 
-	protected class Scanner extends AsyncTask<Void, Object, Void> {
+	protected class Scanner extends AsyncTask<Void, Intent, Void> {
 		private final boolean full;
 		private final DatabaseUtils.InsertHelper filesHelper;
 		private final DatabaseUtils.InsertHelper songlengthHelper;
@@ -95,18 +93,22 @@ public class MusicIndexService extends Service {
 				cancel(true);
 				return;
 			}
-			Intent beginIntent = new Intent(SCAN_NOTIFY_BEGIN);
-			sendStickyBroadcast(beginIntent);
 			scanning = true;
 			startService(new Intent(MusicIndexService.this, MusicIndexService.class));
 		}
 
 		@Override
-		protected void onProgressUpdate(Object... values) {
-			Intent updateIntent = new Intent(SCAN_NOTIFY_UPDATE);
-			updateIntent.putExtra("path", (String) values[0]);
-			updateIntent.putExtra("progress", (Integer) values[1]);
-			sendBroadcast(updateIntent);
+		protected void onProgressUpdate(Intent... intents) {
+			for (Intent i : intents) {
+				sendStickyBroadcast(i);
+			}
+		}
+
+		private void sendUpdate(int pct) {
+			Intent intent = new Intent(ACTION_SCAN);
+			intent.putExtra("progress", pct);
+			intent.putExtra("scanning", true);
+			publishProgress(intent);
 		}
 
 		@Override
@@ -122,10 +124,11 @@ public class MusicIndexService extends Service {
 		@Override
 		protected void onPostExecute(Void result) {
 			stopService(new Intent(MusicIndexService.this, MusicIndexService.class));
-			Intent beginIntent = new Intent(SCAN_NOTIFY_BEGIN);
-			removeStickyBroadcast(beginIntent);
-			Intent doneIntent = new Intent(SCAN_NOTIFY_DONE);
-			sendBroadcast(doneIntent);
+			Intent endIntent = new Intent(ACTION_SCAN);
+			endIntent.putExtra("progress", 100);
+			endIntent.putExtra("scanning", false);
+			removeStickyBroadcast(endIntent);
+			sendBroadcast(endIntent);
 			scanning = false;
 		}
 
@@ -227,11 +230,11 @@ public class MusicIndexService extends Service {
 
 				int pct = (int) (fis.getChannel().position() / (fis.getChannel().size() / 100));
 				if (shownPct != pct) {
-					publishProgress(zipFile.getName(), pct);
-					shownPct = pct;
+					sendUpdate(pct);
 				}
 				zis.closeEntry();
 			}
+			sendUpdate(100);
 			zis.close();
 		}
 
@@ -239,7 +242,7 @@ public class MusicIndexService extends Service {
 		 * Dir scan. Roots of the tree are those with parentId = null.
 		 */
 		private void scanFiles(File dir, Long parentId) throws IOException {
-			publishProgress(dir.getName(), 0);
+			sendUpdate(0);
 			String where;
 			String[] whereCond;
 			if (parentId == null) {
@@ -342,13 +345,13 @@ public class MusicIndexService extends Service {
 
 				int nextPct = i * 100 / files.size();
 				if (pct != nextPct) {
-					publishProgress(dir.getName(), nextPct);
 					pct = nextPct;
+					sendUpdate(pct);
 				}
 			}
 			db.setTransactionSuccessful();
 			db.endTransaction();
-			publishProgress(dir.getName(), 100);
+			sendUpdate(100);
 
 			for (File f : directoriesToAdd) {
 				/* This is unfortunate, we need to create the directory before we can recurse into it.
@@ -378,7 +381,7 @@ public class MusicIndexService extends Service {
 				scanZip(entries.getKey(), rowId);
 				db.setTransactionSuccessful();
 				db.endTransaction();
-				publishProgress(entries.getKey().getName(), 100);
+				sendUpdate(100);
 			}
 
 			/* Continue scanning into found directories */
@@ -419,7 +422,6 @@ public class MusicIndexService extends Service {
 
 		private void doScan(File modsDir, boolean full) throws IOException {
 			if (full) {
-				publishProgress(modsDir.getPath(), 0);
 				db.delete("files", null, null);
 				db.delete("songlength", null, null);
 			}
