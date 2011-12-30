@@ -1,23 +1,19 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:baselineAligned="false"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:background="#ff111111"
         android:layout_height="wrap_content" >
 
-        <Button
-            android:id="@+id/back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/back" />
-
         <EditText
             android:id="@+id/search"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:layout_weight="1">
         </EditText>
 
@@ -39,11 +35,10 @@
         </FrameLayout>
     </LinearLayout>
 
-    <ListView
+    <FrameLayout
         android:id="@+id/collection_view"
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fastScrollEnabled="true" />
+        android:layout_weight="1" />
 
 </LinearLayout>

@@ -5,6 +5,8 @@ import java.util.List;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.FragmentTransaction;
+import android.app.ListFragment;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -19,11 +21,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import com.ssb.droidsound.R;
@@ -38,20 +38,11 @@ public class CollectionFragment extends Fragment {
 	/** Currently playing song's id */
 	private Long currentlyPlayingSong;
 
-	/** Currently displayed folder's id. */
-	private Long childId;
-
 	/** Desired sorting of the collection */
 	private final MusicIndexService.Sort sorting = MusicIndexService.Sort.TITLE;
 
 	/** Shuffle playback? */
 	private boolean shuffle;
-
-	private CollectionViewAdapter collectionViewAdapter;
-
-	private ListView collectionView;
-
-	private Button backButton;
 
 	private TextView searchView;
 
@@ -63,16 +54,41 @@ public class CollectionFragment extends Fragment {
 
 	private PlayerService.LocalBinder player;
 
+	protected void navigateWithBackStack(Cursor cursor) {
+		/* Move to subfolder */
+		ListFragment lf = new FastListFragment();
+		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), cursor);
+		lf.setListAdapter(cva);
+
+		/* Only adding collection_view the first time around. */
+		FragmentTransaction ft = getFragmentManager().beginTransaction();
+		ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+		ft.addToBackStack(null);
+		ft.replace(R.id.collection_view, lf);
+		ft.commit();
+	}
+
+	protected void refreshListFragment() {
+		ListFragment lf = (ListFragment) getFragmentManager().findFragmentById(R.id.collection_view);
+		if (lf != null) {
+			((CollectionViewAdapter) lf.getListAdapter()).notifyDataSetChanged();
+		}
+	}
+
 	private final ServiceConnection searchDbConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName tag, IBinder binder) {
 			db = (MusicIndexService.LocalBinder) binder;
 			Log.i(TAG, "SongDatabase connection has been established. Showing initial view, and refreshing.");
-
 			db.scan(false);
 
-			collectionViewAdapter = new CollectionViewAdapter(getActivity());
-			collectionView.setAdapter(collectionViewAdapter);
+			ListFragment lf = new FastListFragment();
+			CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), db.getFilesByParentId(null, sorting));
+			lf.setListAdapter(cva);
+			FragmentTransaction ft = getFragmentManager().beginTransaction();
+			ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+			ft.replace(R.id.collection_view, lf);
+			ft.commit();
 		}
 
 		@Override
@@ -80,6 +96,14 @@ public class CollectionFragment extends Fragment {
 			db = null;
 		}
 	};
+
+	protected static class FastListFragment extends ListFragment {
+		@Override
+		public void onViewCreated(View view, Bundle savedInstanceState) {
+			super.onViewCreated(view, savedInstanceState);
+			getListView().setFastScrollEnabled(true);
+		}
+	}
 
 	private final ServiceConnection playerConnection = new ServiceConnection() {
 		@Override
@@ -94,8 +118,8 @@ public class CollectionFragment extends Fragment {
 	};
 
 	protected class CollectionViewAdapter extends CursorAdapter {
-		protected CollectionViewAdapter(Context context) {
-			super(context, getDisplayedChildIdCursor());
+		protected CollectionViewAdapter(Context context, Cursor cursor) {
+			super(context, cursor);
 		}
 
 		@Override
@@ -160,9 +184,8 @@ public class CollectionFragment extends Fragment {
 				@Override
 				public void onClick(View arg0) {
 					if (type != MusicIndexService.TYPE_FILE) {
-						/* Move to subfolder */
-						setDisplayedChildId(childId);
-						backButtonEnabled();
+						Cursor c = db.getFilesByParentId(childId, sorting);
+						navigateWithBackStack(c);
 					} else {
 						/* Scavenge the entries from our cursor */
 						List<SongFile> fileList = new ArrayList<SongFile>();
@@ -204,9 +227,7 @@ public class CollectionFragment extends Fragment {
 			} else if (a.equals(PlayerService.UNLOADING_SONG)) {
 				currentlyPlayingSong = null;
 			}
-			if (collectionViewAdapter != null) {
-				collectionViewAdapter.notifyDataSetChanged();
-			}
+			refreshListFragment();
 		}
 	};
 
@@ -220,8 +241,8 @@ public class CollectionFragment extends Fragment {
 			}
 			if (a.equals(MusicIndexService.SCAN_NOTIFY_UPDATE)) {
 				int progress = i.getIntExtra("progress", 0);
-				if (progress == 100 && collectionViewAdapter != null) {
-					collectionViewAdapter.notifyDataSetChanged();
+				if (progress == 100) {
+					refreshListFragment();
 				}
 				progressPercentageView.setText(String.format("%d%%", progress));
 			}
@@ -231,33 +252,37 @@ public class CollectionFragment extends Fragment {
 		}
 	};
 
-	protected Long getDisplayedChildId() {
-		return childId;
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		getActivity().bindService(new Intent(getActivity(), MusicIndexService.class), searchDbConnection, Context.BIND_AUTO_CREATE);
+		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
-	protected void setDisplayedChildId(Long childId) {
-		this.childId = childId;
-		if (collectionViewAdapter != null) {
-			collectionViewAdapter.changeCursor(getDisplayedChildIdCursor());
-		}
-	}
-	private Cursor getDisplayedChildIdCursor() {
-		String search = searchView.getText().toString();
-		if ("".equals(search)) {
-			return db.getFilesByParentId(childId, sorting);
-		} else {
-			return db.search(search, sorting);
-		}
-	}
-	protected void backButtonEnabled() {
-		backButton.setEnabled(getDisplayedChildId() != null || searchView.getText().length() > 0);
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
+		View view = inflater.inflate(R.layout.collection_view, null);
+		progressContainerView = (FrameLayout) view.findViewById(R.id.progress_container);
+		progressPercentageView = (TextView) view.findViewById(R.id.progress_percentage);
+		searchView = (TextView) view.findViewById(R.id.search);
+
+		progressContainerView.setVisibility(View.GONE);
+		searchView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+			@Override
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				navigateWithBackStack(db.search(searchView.getText().toString(), sorting));
+				InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+				imm.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
+				return true;
+			}
+		});
+
+		return view;
 	}
 
 	@Override
 	public void onStart() {
-		Log.i(TAG, "onStart");
 		super.onStart();
-		getActivity().bindService(new Intent(getActivity(), MusicIndexService.class), searchDbConnection, Context.BIND_AUTO_CREATE);
-		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 
 		IntentFilter songChangeFilter = new IntentFilter();
 		songChangeFilter.addAction(PlayerService.LOADING_SONG);
@@ -273,71 +298,15 @@ public class CollectionFragment extends Fragment {
 
 	@Override
 	public void onStop() {
-		Log.i(TAG, "onStop");
 		super.onStop();
-		getActivity().unbindService(searchDbConnection);
-		getActivity().unbindService(playerConnection);
 		getActivity().unregisterReceiver(currentSongReceiver);
 		getActivity().unregisterReceiver(searchReceiver);
 	}
 
 	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
-		View view = inflater.inflate(R.layout.collection_view, null);
-		collectionView = (ListView) view.findViewById(R.id.collection_view);
-		backButton = (Button) view.findViewById(R.id.back);
-		progressContainerView = (FrameLayout) view.findViewById(R.id.progress_container);
-		progressPercentageView = (TextView) view.findViewById(R.id.progress_percentage);
-		searchView = (TextView) view.findViewById(R.id.search);
-
-		backButton.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View arg0) {
-				if (searchView.getText().length() != 0) {
-					searchView.setText("");
-					collectionViewAdapter.changeCursor(getDisplayedChildIdCursor());
-				} else {
-					Cursor child = db.getFileById(getDisplayedChildId());
-					if (child.getCount() == 0) {
-						setDisplayedChildId(null);
-					} else {
-						child.moveToFirst();
-						setDisplayedChildId(child.isNull(MusicIndexService.COL_PARENT_ID) ? null : child.getLong(MusicIndexService.COL_PARENT_ID));
-						child.close();
-					}
-				}
-				backButtonEnabled();
-			}
-		});
-
-		progressContainerView.setVisibility(View.GONE);
-		searchView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-			@Override
-			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-				collectionViewAdapter.changeCursor(getDisplayedChildIdCursor());
-				backButton.setEnabled(true);
-				InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-				imm.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
-				return true;
-			}
-		});
-
-		if (state != null) {
-			setDisplayedChildId(state.containsKey("childId") ? state.getLong("childId", 0) : null);
-		} else {
-			setDisplayedChildId(null);
-		}
-		backButtonEnabled();
-
-		return view;
-	}
-
-	@Override
-	public void onSaveInstanceState(Bundle outState) {
-		super.onSaveInstanceState(outState);
-		Long child = getDisplayedChildId();
-		if (child != null) {
-			outState.putLong("childId", child);
-		}
+	public void onDestroy() {
+		super.onDestroy();
+		getActivity().unbindService(searchDbConnection);
+		getActivity().unbindService(playerConnection);
 	}
 }
