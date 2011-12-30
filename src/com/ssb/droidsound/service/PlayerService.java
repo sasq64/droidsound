@@ -3,6 +3,7 @@ package com.ssb.droidsound.service;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -485,6 +486,7 @@ public class PlayerService extends Service {
 	 * or it gets interrupted.
 	 *
 	 * @throws InterruptedException
+	 * @throws ExecutionException
 	 */
 	private void stopPlayerThread() throws InterruptedException {
 		Log.i(TAG, "Requesting player thread to stop");
@@ -493,8 +495,11 @@ public class PlayerService extends Service {
 		}
 
 		player.setStateRequest(State.STOP);
-		while (playerExecutor.getActiveCount() != 0) {
-			playerExecutor.awaitTermination(100, TimeUnit.MILLISECONDS);
+		try {
+			player.get();
+		}
+		catch (ExecutionException ee) {
+			Log.w(TAG, "Playerthread terminated in exception.", ee);
 		}
 		player = null;
 
