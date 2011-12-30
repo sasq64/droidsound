@@ -20,6 +20,7 @@ import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CursorAdapter;
 import android.widget.FrameLayout;
@@ -247,7 +248,7 @@ public class CollectionFragment extends Fragment {
 				progressPercentageView.setText(String.format("%d%%", progress));
 			}
 			if (a.equals(MusicIndexService.SCAN_NOTIFY_DONE)) {
-				progressContainerView.setVisibility(View.INVISIBLE);
+				progressContainerView.setVisibility(View.GONE);
 			}
 		}
 	};
@@ -270,7 +271,14 @@ public class CollectionFragment extends Fragment {
 		searchView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
 			@Override
 			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-				navigateWithBackStack(db.search(searchView.getText().toString(), sorting));
+				/* Is return press? */
+				if (actionId != EditorInfo.IME_NULL || event.getAction() != KeyEvent.ACTION_DOWN) {
+					return false;
+				}
+				String value = String.valueOf(searchView.getText());
+				if (! "".equals(value)) {
+					navigateWithBackStack(db.search(value, sorting));
+				}
 				InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
 				imm.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
 				return true;
@@ -294,6 +302,8 @@ public class CollectionFragment extends Fragment {
 		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_UPDATE);
 		searchReceiverFilter.addAction(MusicIndexService.SCAN_NOTIFY_DONE);
 		getActivity().registerReceiver(searchReceiver, searchReceiverFilter);
+
+		refreshListFragment();
 	}
 
 	@Override

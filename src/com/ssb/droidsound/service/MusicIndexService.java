@@ -95,18 +95,18 @@ public class MusicIndexService extends Service {
 				cancel(true);
 				return;
 			}
-			Intent intent = new Intent(SCAN_NOTIFY_BEGIN);
-			sendBroadcast(intent);
+			Intent beginIntent = new Intent(SCAN_NOTIFY_BEGIN);
+			sendStickyBroadcast(beginIntent);
 			scanning = true;
 			startService(new Intent(MusicIndexService.this, MusicIndexService.class));
 		}
 
 		@Override
 		protected void onProgressUpdate(Object... values) {
-			Intent intent = new Intent(SCAN_NOTIFY_UPDATE);
-			intent.putExtra("path", (String) values[0]);
-			intent.putExtra("progress", (Integer) values[1]);
-			sendBroadcast(intent);
+			Intent updateIntent = new Intent(SCAN_NOTIFY_UPDATE);
+			updateIntent.putExtra("path", (String) values[0]);
+			updateIntent.putExtra("progress", (Integer) values[1]);
+			sendBroadcast(updateIntent);
 		}
 
 		@Override
@@ -122,8 +122,10 @@ public class MusicIndexService extends Service {
 		@Override
 		protected void onPostExecute(Void result) {
 			stopService(new Intent(MusicIndexService.this, MusicIndexService.class));
-			Intent intent = new Intent(SCAN_NOTIFY_DONE);
-			sendBroadcast(intent);
+			Intent beginIntent = new Intent(SCAN_NOTIFY_BEGIN);
+			removeStickyBroadcast(beginIntent);
+			Intent doneIntent = new Intent(SCAN_NOTIFY_DONE);
+			sendBroadcast(doneIntent);
 			scanning = false;
 		}
 
