@@ -20,10 +20,10 @@ public abstract class DroidSoundPlugin {
 
 	private static final List<DroidSoundPlugin> PLUGINS = Arrays.asList(
 			new VICEPlugin(),
-			new ModPlugin(),
 			new GMEPlugin(),
 			new SC68Plugin(),
 			new UADEPlugin(),
+			new ModPlugin(),
 			new HivelyPlugin()
 	);
 
