@@ -59,26 +59,31 @@ public class VisualizationView extends SurfaceView {
 		}
 	}
 
-	private double projectFft(int idx) {
+	private double projectFft(double idx) {
 		return minFreq * Math.pow(2, idx / 12.0);
+	}
+
+	private static double getBin(int idx, byte[] data) {
+		float re = data[idx * 2] / 128f;
+		float im = data[idx * 2 + 1] / 128f;
+		return re * re + im * im;
 	}
 
 	private void updateFftData(byte[] data) {
 		data[1] = 0;
 		/* Remap data bins into our freq-linear fft */
 		for (int i = 0; i < fft.length; i ++) {
-			double startFreq = projectFft(i);
-			double endFreq = projectFft(i + 1);
+			double startFreq = projectFft(i + 0.5);
+			double endFreq = projectFft(i + 0.5);
 
-			double startIdx = startFreq / 22050.0 * fft.length;
-			double endIdx = endFreq / 22050.0 * fft.length;
+			double startIdx = startFreq / 22050.0 * data.length / 2;
+			double endIdx = endFreq / 22050.0 * data.length / 2;
 
-			float n = (int) endIdx - (int) startIdx + 1;
-			float lenSq = 0;
-			for (int idx = (int) startIdx; idx < (int) endIdx + 1; idx ++) {
-				float re = data[idx * 2] / 128f;
-				float im = data[idx * 2 + 1] / 128f;
-				lenSq += re * re + im * im;
+			double lenSq = 0;
+			int n = 0;
+			for (int idx = (int) startIdx; idx <= (int) endIdx; idx ++) {
+				lenSq += getBin(idx, data);
+				n ++;
 			}
 			lenSq /= n;
 
@@ -111,7 +116,7 @@ public class VisualizationView extends SurfaceView {
 		int size = Math.min(4096, minmax[1]);
 		size = Math.max(size, minmax[0]);
 
-		minFreq = 1024 / size * 440;
+		minFreq = 1024 / size * 220;
 		maxFreq = 14080;
 		Log.i(TAG, "Requesting %d point FFT for %f-%f Hz display", size, minFreq, maxFreq);
 
