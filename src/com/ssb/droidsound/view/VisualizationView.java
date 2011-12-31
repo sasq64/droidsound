@@ -115,10 +115,12 @@ public class VisualizationView extends SurfaceView {
 		int[] minmax = Visualizer.getCaptureSizeRange();
 		int size = Math.min(4096, minmax[1]);
 		size = Math.max(size, minmax[0]);
+		int rate = Math.min(20000, Visualizer.getMaxCaptureRate());
 
 		minFreq = 1024 / size * 220;
 		maxFreq = 14080;
-		Log.i(TAG, "Requesting %d point FFT for %f-%f Hz display", size, minFreq, maxFreq);
+		Log.i(TAG, "Requesting %d point FFT for %.0f-%.0f Hz display @ %d updates/s", size, minFreq, maxFreq, rate/1000);
+
 
 		/* We try to get 2048 FFT values out (= 4096 bytes). This gives us about 10 Hz resolution,
 		 * sufficient for good visualization.
@@ -132,7 +134,7 @@ public class VisualizationView extends SurfaceView {
 			@Override
 			public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
 			}
-		}, 20000, false, true)) {
+		}, rate, false, true)) {
 			throw new IllegalStateException("Invalid visualizer state");
 		}
 		if (Visualizer.SUCCESS != v.setCaptureSize(size)) {
