@@ -374,6 +374,7 @@ public class PlayerService extends Service {
 					if (audioTrack.getPlayState() != AudioTrack.PLAYSTATE_PLAYING) {
 						audioTrack.play();
 					}
+
 					audioTrack.write(samples, 0, len);
 					playbackFrame += len / audioTrack.getChannelCount();
 
@@ -486,7 +487,6 @@ public class PlayerService extends Service {
 	 * or it gets interrupted.
 	 *
 	 * @throws InterruptedException
-	 * @throws ExecutionException
 	 */
 	private void stopPlayerThread() throws InterruptedException {
 		Log.i(TAG, "Requesting player thread to stop");

@@ -2,7 +2,8 @@
 <resources>
 <string name="app_name">DroidSound</string>
 <string name="collection_title">Collection</string>
-<string name="playing_title">Currently playing</string>
+<string name="playing_title">Playback</string>
+<string name="visualization_title">Visualization</string>
 <string name="scan_db">Rescan database</string>
 <string-array name="scan_opts">
     <item>Full</item>

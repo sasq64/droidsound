@@ -35,6 +35,7 @@ public class PlayerActivity extends Activity {
 
 		viewPager = (ViewPager) findViewById(R.id.viewPager);
 		viewPagerAdapter = new MyAdapter(getFragmentManager());
+		viewPager.setOffscreenPageLimit(viewPagerAdapter.getCount());
 
 		for (String entry : viewPagerAdapter.getEntries()) {
 			ActionBar.Tab tab = actionBar.newTab();
@@ -99,7 +100,7 @@ public class PlayerActivity extends Activity {
 }
 
 class MyAdapter extends FragmentPagerAdapter {
-	private final String[] entries = { "collection", "playing" };
+	private final String[] entries = { "collection", "playing", "visualization" };
 
 	public MyAdapter(FragmentManager fm) {
 		super(fm);
@@ -121,6 +122,8 @@ class MyAdapter extends FragmentPagerAdapter {
 			f = new CollectionFragment();
 		} else if (position == 1) {
 			f = new PlayingFragment();
+		} else if (position == 2) {
+			f = new VisualizationFragment();
 		} else {
 			throw new RuntimeException("No such fragment: " + position);
 		}
