@@ -30,6 +30,7 @@ public class VisualizationFragment extends Fragment {
 			if (a.equals(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION)) {
 				Visualizer v = visualizationView.getVisualizer();
 				if (v != null) {
+					v.setEnabled(false);
 					v.release();
 					visualizationView.setVisualizer(null);
 				}
