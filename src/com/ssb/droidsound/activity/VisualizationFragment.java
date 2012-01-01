@@ -41,18 +41,18 @@ public class VisualizationFragment extends Fragment {
 	protected VisualizationView visualizationView;
 
 	@Override
-	public void onStart() {
-		super.onStart();
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
 		intentFilter.addAction(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
-		getActivity().registerReceiver(musicDataReceiver, intentFilter);
+		getActivity().getApplicationContext().registerReceiver(musicDataReceiver, intentFilter);
 	}
 
 	@Override
-	public void onStop() {
-		super.onStop();
-		getActivity().unregisterReceiver(musicDataReceiver);
+	public void onDestroy() {
+		super.onDestroy();
+		getActivity().getApplicationContext().unregisterReceiver(musicDataReceiver);
 	}
 
 	@Override

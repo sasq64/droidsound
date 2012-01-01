@@ -223,9 +223,9 @@ public class CollectionFragment extends Fragment {
 		@Override
 		public void onReceive(Context c, Intent i) {
 			String a = i.getAction();
-			if (a.equals(PlayerService.LOADING_SONG)) {
+			if (a.equals(PlayerService.ACTION_LOADING_SONG)) {
 				currentlyPlayingSong = i.getLongExtra("file.id", 0);
-			} else if (a.equals(PlayerService.UNLOADING_SONG)) {
+			} else if (a.equals(PlayerService.ACTION_UNLOADING_SONG)) {
 				currentlyPlayingSong = null;
 			}
 			refreshListFragment();
@@ -249,6 +249,11 @@ public class CollectionFragment extends Fragment {
 		super.onCreate(savedInstanceState);
 		getActivity().bindService(new Intent(getActivity(), MusicIndexService.class), searchDbConnection, Context.BIND_AUTO_CREATE);
 		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
+		IntentFilter songChangeFilter = new IntentFilter();
+		songChangeFilter.addAction(PlayerService.ACTION_LOADING_SONG);
+		songChangeFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
+		getActivity().getApplicationContext().registerReceiver(currentSongReceiver, songChangeFilter);
+		getActivity().getApplicationContext().registerReceiver(searchReceiver, new IntentFilter(MusicIndexService.ACTION_SCAN));
 	}
 
 	@Override
@@ -280,29 +285,12 @@ public class CollectionFragment extends Fragment {
 	}
 
 	@Override
-	public void onStart() {
-		super.onStart();
-
-		IntentFilter songChangeFilter = new IntentFilter();
-		songChangeFilter.addAction(PlayerService.LOADING_SONG);
-		songChangeFilter.addAction(PlayerService.UNLOADING_SONG);
-		getActivity().registerReceiver(currentSongReceiver, songChangeFilter);
-
-		getActivity().registerReceiver(searchReceiver, new IntentFilter(MusicIndexService.ACTION_SCAN));
-
-		refreshListFragment();
-	}
-
-	@Override
-	public void onStop() {
-		super.onStop();
-		getActivity().unregisterReceiver(currentSongReceiver);
-		getActivity().unregisterReceiver(searchReceiver);
-	}
-
-	@Override
 	public void onDestroy() {
 		super.onDestroy();
+
+		getActivity().getApplicationContext().unregisterReceiver(currentSongReceiver);
+		getActivity().getApplicationContext().unregisterReceiver(searchReceiver);
+
 		getActivity().unbindService(searchDbConnection);
 		getActivity().unbindService(playerConnection);
 	}

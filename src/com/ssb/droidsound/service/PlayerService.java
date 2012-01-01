@@ -53,9 +53,9 @@ public class PlayerService extends Service {
 	 */
 	enum State { PLAY, PAUSE, STOP; }
 
-	public static final String LOADING_SONG = "com.ssb.droidsound.LOADING_SONG";
-	public static final String ADVANCING = "com.ssb.droidsound.ADVANCING";
-	public static final String UNLOADING_SONG = "com.ssb.droidsound.UNLOADING_SONG";
+	public static final String ACTION_LOADING_SONG = "com.ssb.droidsound.LOADING_SONG";
+	public static final String ACTION_ADVANCING = "com.ssb.droidsound.ADVANCING";
+	public static final String ACTION_UNLOADING_SONG = "com.ssb.droidsound.UNLOADING_SONG";
 
 	private static final String TAG = PlayerService.class.getSimpleName();
 	private static final int NOTIFY_ONGOING_ID = 1;
@@ -220,15 +220,13 @@ public class PlayerService extends Service {
 		}
 
 		private void sendAdvancing(int time) {
-			Intent intent = new Intent(ADVANCING);
+			Intent intent = new Intent(ACTION_ADVANCING);
 			intent.putExtra("time", time);
 			publishProgress(intent);
 		}
 
 		private synchronized void sendUnloading() {
-			Intent loading = new Intent(LOADING_SONG);
-			removeStickyBroadcast(loading);
-			Intent unloading = new Intent(UNLOADING_SONG);
+			Intent unloading = new Intent(ACTION_UNLOADING_SONG);
 			synchronized (this) {
 				unloading.putExtra("state", syncStateRequest);
 			}
@@ -248,8 +246,7 @@ public class PlayerService extends Service {
 				subsongLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
 			}
 
-			Intent intent = new Intent(LOADING_SONG);
-			intent.putExtra("sticky", true);
+			Intent intent = new Intent(ACTION_LOADING_SONG);
 			intent.putExtra("plugin.name", plugin.getVersion());
 			intent.putExtra("plugin.currentSubsong", currentSubsong);
 			intent.putExtra("plugin.seekable", plugin.canSeek());
@@ -274,13 +271,7 @@ public class PlayerService extends Service {
 		@Override
 		protected void onProgressUpdate(Intent... values) {
 			for (Intent i : values) {
-				boolean asSticky = i.getBooleanExtra("sticky", false);
-				i.removeExtra("sticky");
-				if (asSticky) {
-					sendStickyBroadcast(i);
-				} else {
-					sendBroadcast(i);
-				}
+				sendBroadcast(i);
 			}
 		}
 
@@ -512,7 +503,7 @@ public class PlayerService extends Service {
 
 		bindService(new Intent(this, MusicIndexService.class), dbConnection, Context.BIND_AUTO_CREATE);
 
-		registerReceiver(unloadingSongReceiver, new IntentFilter(UNLOADING_SONG));
+		registerReceiver(unloadingSongReceiver, new IntentFilter(ACTION_UNLOADING_SONG));
 
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);

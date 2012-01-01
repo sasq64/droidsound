@@ -100,7 +100,7 @@ public class MusicIndexService extends Service {
 		@Override
 		protected void onProgressUpdate(Intent... intents) {
 			for (Intent i : intents) {
-				sendStickyBroadcast(i);
+				sendBroadcast(i);
 			}
 		}
 
@@ -127,7 +127,6 @@ public class MusicIndexService extends Service {
 			Intent endIntent = new Intent(ACTION_SCAN);
 			endIntent.putExtra("progress", 100);
 			endIntent.putExtra("scanning", false);
-			removeStickyBroadcast(endIntent);
 			sendBroadcast(endIntent);
 			scanning = false;
 		}

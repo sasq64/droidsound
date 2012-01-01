@@ -163,23 +163,23 @@ public class PlayingFragment extends Fragment {
 	private ImageButton forwardButton;
 
 	@Override
-	public void onStart() {
-		super.onStart();
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
 
-		getActivity().registerReceiver(songLoadingReceiver, new IntentFilter(PlayerService.LOADING_SONG));
-		getActivity().registerReceiver(advancingReceiver, new IntentFilter(PlayerService.ADVANCING));
-		getActivity().registerReceiver(songUnloadingReceiver, new IntentFilter(PlayerService.UNLOADING_SONG));
-		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
+		getActivity().getApplicationContext().registerReceiver(songLoadingReceiver, new IntentFilter(PlayerService.ACTION_LOADING_SONG));
+		getActivity().getApplicationContext().registerReceiver(advancingReceiver, new IntentFilter(PlayerService.ACTION_ADVANCING));
+		getActivity().getApplicationContext().registerReceiver(songUnloadingReceiver, new IntentFilter(PlayerService.ACTION_UNLOADING_SONG));
+		getActivity().getApplicationContext().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
-	public void onStop() {
-		super.onStop();
+	public void onDestroy() {
+		super.onDestroy();
 
-		getActivity().unregisterReceiver(songLoadingReceiver);
-		getActivity().unregisterReceiver(advancingReceiver);
-		getActivity().unregisterReceiver(songUnloadingReceiver);
-		getActivity().unbindService(playerConnection);
+		getActivity().getApplicationContext().unregisterReceiver(songLoadingReceiver);
+		getActivity().getApplicationContext().unregisterReceiver(advancingReceiver);
+		getActivity().getApplicationContext().unregisterReceiver(songUnloadingReceiver);
+		getActivity().getApplicationContext().unbindService(playerConnection);
 	}
 
 	@Override
