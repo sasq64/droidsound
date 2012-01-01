@@ -55,10 +55,10 @@ public class CollectionFragment extends Fragment {
 
 	private PlayerService.LocalBinder player;
 
-	protected void navigateWithBackStack(Cursor cursor) {
+	protected void navigateWithBackStack(ICursorFactory cursorFactory) {
 		/* Move to subfolder */
 		ListFragment lf = new FastListFragment();
-		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), cursor);
+		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), cursorFactory);
 		lf.setListAdapter(cva);
 
 		/* Only adding collection_view the first time around. */
@@ -72,7 +72,7 @@ public class CollectionFragment extends Fragment {
 	protected void refreshListFragment() {
 		ListFragment lf = (ListFragment) getFragmentManager().findFragmentById(R.id.collection_view);
 		if (lf != null) {
-			((CollectionViewAdapter) lf.getListAdapter()).notifyDataSetChanged();
+			((CollectionViewAdapter) lf.getListAdapter()).requery();
 		}
 	}
 
@@ -84,7 +84,12 @@ public class CollectionFragment extends Fragment {
 			db.scan(false);
 
 			ListFragment lf = new FastListFragment();
-			CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), db.getFilesByParentId(null, sorting));
+			CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
+				@Override
+				public Cursor getCursor() {
+					return db.getFilesByParentId(null, sorting);
+				}
+			});
 			lf.setListAdapter(cva);
 			FragmentTransaction ft = getFragmentManager().beginTransaction();
 			ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
@@ -118,9 +123,20 @@ public class CollectionFragment extends Fragment {
 		}
 	};
 
+	protected interface ICursorFactory {
+		public Cursor getCursor();
+	}
+
 	protected class CollectionViewAdapter extends CursorAdapter {
-		protected CollectionViewAdapter(Context context, Cursor cursor) {
-			super(context, cursor);
+		private final ICursorFactory cursorFactory;
+
+		protected CollectionViewAdapter(Context context, ICursorFactory cursorFactory) {
+			super(context, cursorFactory.getCursor());
+			this.cursorFactory = cursorFactory;
+		}
+
+		public void requery() {
+			changeCursor(cursorFactory.getCursor());
 		}
 
 		@Override
@@ -185,8 +201,13 @@ public class CollectionFragment extends Fragment {
 				@Override
 				public void onClick(View arg0) {
 					if (type != MusicIndexService.TYPE_FILE) {
-						Cursor c = db.getFilesByParentId(childId, sorting);
-						navigateWithBackStack(c);
+						navigateWithBackStack(new ICursorFactory() {
+							@Override
+							public Cursor getCursor() {
+								return db.getFilesByParentId(childId, sorting);
+							}
+
+						});
 					} else {
 						/* Scavenge the entries from our cursor */
 						List<SongFile> fileList = new ArrayList<SongFile>();
@@ -271,9 +292,14 @@ public class CollectionFragment extends Fragment {
 				if (actionId != EditorInfo.IME_NULL || event.getAction() != KeyEvent.ACTION_DOWN) {
 					return false;
 				}
-				String value = String.valueOf(searchView.getText());
+				final String value = String.valueOf(searchView.getText());
 				if (! "".equals(value)) {
-					navigateWithBackStack(db.search(value, sorting));
+					navigateWithBackStack(new ICursorFactory() {
+						@Override
+						public Cursor getCursor() {
+							return db.search(value, sorting);
+						}
+					});
 				}
 				InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
 				imm.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
