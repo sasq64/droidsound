@@ -9,7 +9,7 @@ public class StreamUtil {
 	public static void copy(InputStream is, OutputStream os) throws IOException {
 		byte[] buffer = new byte[10240];
 		int length;
-		while (0 != (length = is.read(buffer))) {
+		while (0 < (length = is.read(buffer))) {
 			os.write(buffer, 0, length);
 		}
 	}

@@ -89,6 +89,8 @@ public class Application extends android.app.Application {
 
 					FileWriter fw = new FileWriter(new File(modsDir, ".nomedia"));
 					fw.close();
+
+					Toast.makeText(this, getString(R.string.mods_setup), Toast.LENGTH_LONG).show();
 				} catch (IOException e) {
 					Toast.makeText(this, e.toString(), Toast.LENGTH_LONG).show();
 				}

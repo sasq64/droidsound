@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 <string name="app_name">DroidSound</string>
+<string name="icon">Icon</string>
 <string name="collection_title">Collection</string>
 <string name="playing_title">Playback</string>
 <string name="visualization_title">Visualization</string>
-<string name="scan_db">Rescan database</string>
-<string-array name="scan_opts">
-    <item>Full</item>
-</string-array>
+<string name="mods_setup">Created and setup MODS directory on external sdcard.</string>
 <string name="settings">Settings</string>
 
 <string-array name="panning_opts">
@@ -75,6 +73,4 @@
 <item>2</item>
 <item>3</item>
 </string-array>
-<string name="icon">Icon</string>
-<string name="back">Back</string>
 </resources>
