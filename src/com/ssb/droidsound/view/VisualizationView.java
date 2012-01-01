@@ -73,17 +73,21 @@ public class VisualizationView extends SurfaceView {
 		data[1] = 0;
 		/* Remap data bins into our freq-linear fft */
 		for (int i = 0; i < fft.length; i ++) {
-			double startFreq = projectFft(i + 0.5);
+			double startFreq = projectFft(i - 0.5);
 			double endFreq = projectFft(i + 0.5);
 
 			double startIdx = startFreq / 22050.0 * data.length / 2;
 			double endIdx = endFreq / 22050.0 * data.length / 2;
 
 			double lenSq = 0;
-			int n = 0;
-			for (int idx = (int) startIdx; idx <= (int) endIdx; idx ++) {
-				lenSq += getBin(idx, data);
-				n ++;
+			double n = 0;
+			while (endIdx - startIdx > 1e-10) {
+				int intStartIdx = (int) startIdx;
+				/* Determine width inside the current bin. */
+				double width = Math.min(endIdx - startIdx, intStartIdx + 1 - startIdx) + 1e-10;
+				lenSq += getBin(intStartIdx, data) * width;
+				startIdx += width;
+				n += width;
 			}
 			lenSq /= n;
 
@@ -95,8 +99,8 @@ public class VisualizationView extends SurfaceView {
 				fft[i] = x;
 				lifetime[i] = 1f;
 			} else {
-				fft[i] = Math.max(x, fft[i] - 0.02f);
-				lifetime[i] = Math.max(0, lifetime[i] - 0.1f);
+				fft[i] = Math.max(x, fft[i] - 0.025f);
+				lifetime[i] = Math.max(0, lifetime[i] - 0.075f);
 			}
 		}
 		invalidate();
