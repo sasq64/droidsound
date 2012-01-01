@@ -91,9 +91,9 @@ public class VisualizationView extends SurfaceView {
 			}
 			lenSq /= n;
 
-			double dB = Math.log(lenSq + 1e-5) / Math.log(10) * 10;
+			double dB = Math.log(lenSq + 1e-10) / Math.log(10) * 10;
 
-			float x = ((float) dB / 48f) + 0.8f;
+			float x = ((float) dB / 50f) + 0.8f;
 
 			if (x > fft[i]) {
 				fft[i] = x;
