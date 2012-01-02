@@ -5,12 +5,12 @@
 
     <com.ssb.droidsound.view.VisualizationInfoView
         android:id="@+id/visualization_info"
-        android:layout_width="fill_parent"
-        android:layout_height="25dp" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
     
     <com.ssb.droidsound.view.VisualizationView
         android:id="@+id/visualization"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
     

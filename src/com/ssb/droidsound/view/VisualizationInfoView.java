@@ -60,6 +60,12 @@ public class VisualizationInfoView extends SurfaceView {
 		white.setTextAlign(Paint.Align.CENTER);
 	}
 
+	@Override
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		int width = MeasureSpec.getSize(widthMeasureSpec);
+		setMeasuredDimension(width, width / 12);
+	}
+
 	private void calculateColors() {
 		for (int i = 0; i < colors.length; i ++) {
 			String noteName = NOTE_NAME[i % 12];
@@ -95,10 +101,10 @@ public class VisualizationInfoView extends SurfaceView {
 		int width = getWidth();
 		int height = getHeight();
 		for (int i = 0; i < 12; i ++) {
-			float x1 = width / 2 + (i - 6) * height;
+			float x1 = (width + 1f) * i / 12f;
 			float x2 = x1 + height - 1;
 			float y1 = 0;
-			float y2 = height - 1;
+			float y2 = height-1;
 			fftPaint.setColor(colors[i].toRGB(0.5f));
 			canvas.drawRect(x1, y1, x2, y2, fftPaint);
 			canvas.drawText(NOTE_NAME[i], (x1 + x2) / 2f, (y1 + y2 - white.getFontMetrics().ascent) / 2f, white);
