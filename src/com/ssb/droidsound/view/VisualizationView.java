@@ -1,5 +1,6 @@
 package com.ssb.droidsound.view;
 
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
@@ -13,21 +14,62 @@ import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.service.PlayerService.FFTData;
 
 public class VisualizationView extends SurfaceView {
+	private static class Color {
+		private final float r, g, b;
+
+		protected Color(float r, float g, float b) {
+			this.r = r;
+			this.g = g;
+			this.b = b;
+		}
+
+		protected float gamma(float arg) {
+			return (float) Math.pow(arg, 1/2.2);
+		}
+
+		protected int toRGB(float luminosity) {
+			return 0xff000000
+					| (Math.round(gamma(luminosity * r) * 255) << 16)
+					| (Math.round(gamma(luminosity * g) * 255) << 8)
+					| (Math.round(gamma(luminosity * b) * 255) << 0);
+		}
+	}
+
 	public static final int BINS = 12 * 7;
 
 	protected static final String TAG = VisualizationView.class.getSimpleName();
 
-	private final double minFreq = 110;
+	private final double minFreq = 110; /* A */
 	private final float[] fft = new float[BINS];
 	private final float[] lifetime = new float[BINS];
-	private final float[][] coloring = new float[BINS][];
+	private final Color[] coloring = new Color[BINS];
 
 	private Queue<FFTData> queue;
+
+	private final String NOTE_NAME[] = new String[] {
+			"A",
+			"A#",
+			"H",
+			"C",
+			"C#",
+			"D",
+			"D#",
+			"E",
+			"F",
+			"F#",
+			"G",
+			"G#"
+	};
+
+	private final Paint white;
 
 	public VisualizationView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setWillNotDraw(false);
 		calculateColors();
+		white = new Paint();
+		white.setColor(0xffffffff);
+		white.setTextAlign(Paint.Align.CENTER);
 	}
 
 	/**
@@ -37,16 +79,37 @@ public class VisualizationView extends SurfaceView {
 	 */
 	public void setData(Queue<PlayerService.FFTData> data) {
 		this.queue = data;
+		Arrays.fill(fft, 0);
+		Arrays.fill(lifetime, 0);
 		invalidate();
 	}
 
 	private void calculateColors() {
 		for (int i = 0; i < coloring.length; i ++) {
+			String noteName = NOTE_NAME[i % 12];
 			double note = i / 12.0;
-			float r = (float) (.5 + .5 * Math.sin(2 * Math.PI * note));
-			float g = (float) (.5 + .5 * Math.sin(2 * Math.PI * (note + 1/3.0)));
-			float b = (float) (.5 + .5 * Math.sin(2 * Math.PI * (note + 2/3.0)));
-			coloring[i] = new float[] { r, g, b };
+
+			/* Generate colors around the color wheel */
+			float r2 = (float) (.5 + .5 * Math.sin(2 * Math.PI * note));
+			float g2 = (float) (.5 + .5 * Math.sin(2 * Math.PI * (note + 1/3.0)));
+			float b2 = (float) (.5 + .5 * Math.sin(2 * Math.PI * (note + 2/3.0)));
+
+			/* Increase saturation */
+			float r = r2 - (g2 + b2) * .2f;
+			float g = g2 - (r2 + b2) * .2f;
+			float b = b2 - (r2 + g2) * .2f;
+
+			/* Approximate white keys by reducing saturation. */
+			if (! noteName.contains("#")) {
+				r = .4f + r * .6f;
+				g = .4f + g * .6f;
+				b = .4f + b * .6f;
+			} else {
+				r *= 0.6f;
+				g *= 0.6f;
+				b *= 0.6f;
+			}
+			coloring[i] = new Color(r, g, b);
 		}
 	}
 
@@ -65,28 +128,23 @@ public class VisualizationView extends SurfaceView {
 		Paint fftPaint = new Paint();
 		for (int i = 0; i < fft.length; i ++) {
 			float dBNorm = fft[i];
-			float a = lifetime[i];
-			fftPaint.setColor(0xff000000
-					| (Math.round((float) Math.sqrt(a * coloring[i][0]) * 255) << 16)
-					| (Math.round((float) Math.sqrt(a * coloring[i][1]) * 255) << 8)
-					| (Math.round((float) Math.sqrt(a * coloring[i][2]) * 255) << 0)
-			);
+			float luminosity = lifetime[i];
+			fftPaint.setColor(coloring[i].toRGB(luminosity));
 
 			float x = (i + 0.5f) / (fft.length) * width;
 			canvas.drawLine(x, height, x, height * (1f - dBNorm), fftPaint);
 		}
-	}
 
-	private double projectFft(double idx) {
-		return minFreq * Math.pow(2, idx / 12.0);
-	}
-
-	private static double getBin(int idx, short[] data) {
-		/* FIXME: not sure of the scale factor. It's supposed to be 1 << 16 but it is not.
-		 * The FFT code must apply some kind of scaling, but it's not a value I expect. */
-		float re = data[idx * 2] / (float) (1 << 8);
-		float im = data[idx * 2 + 1] / (float) (1 << 8);
-		return re * re + im * im;
+		float ref = Math.min(width, height) / 12f;
+		for (int i = 0; i < 12; i ++) {
+			float x1 = width / 2 + (i - 6) * ref;
+			float x2 = x1 + ref - 1;
+			float y1 = 0;
+			float y2 = ref;
+			fftPaint.setColor(coloring[i].toRGB(0.5f));
+			canvas.drawRect(x1, y1, x2, y2, fftPaint);
+			canvas.drawText(NOTE_NAME[i], (x1 + x2) / 2f, (y1 + y2 - white.getFontMetrics().ascent) / 2f, white);
+		}
 	}
 
 	private long updateFftData() {
@@ -102,6 +160,16 @@ public class VisualizationView extends SurfaceView {
 			}
 			return data.getDelay(TimeUnit.MILLISECONDS);
 		}
+	}
+
+	private double projectFft(double idx) {
+		return minFreq * Math.pow(2, idx / 12.0);
+	}
+
+	private static double getBin(int idx, short[] data) {
+		float re = data[idx * 2] / (float) (1 << 9);
+		float im = data[idx * 2 + 1] / (float) (1 << 9);
+		return re * re + im * im;
 	}
 
 	private void updateFftData(short[] buf) {
