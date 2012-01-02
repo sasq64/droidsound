@@ -18,10 +18,13 @@ import android.view.ViewGroup;
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.OverlappingFFT;
+import com.ssb.droidsound.view.VisualizationInfoView;
 import com.ssb.droidsound.view.VisualizationView;
 
 public class VisualizationFragment extends Fragment {
 	protected static final String TAG = VisualizationFragment.class.getSimpleName();;
+
+	private VisualizationInfoView visualizationInfoView;
 
 	protected VisualizationView visualizationView;
 
@@ -64,7 +67,9 @@ public class VisualizationFragment extends Fragment {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		View view = inflater.inflate(R.layout.visualization_view, null);
+		visualizationInfoView = (VisualizationInfoView) view.findViewById(R.id.visualization_info);
 		visualizationView = (VisualizationView) view.findViewById(R.id.visualization);
+		visualizationView.setColors(visualizationInfoView.getColors());
 		return view;
 	}
 }

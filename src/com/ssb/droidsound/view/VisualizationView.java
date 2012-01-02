@@ -13,27 +13,6 @@ import android.view.SurfaceView;
 import com.ssb.droidsound.utils.OverlappingFFT;
 
 public class VisualizationView extends SurfaceView {
-	private static class Color {
-		private final float r, g, b;
-
-		protected Color(float r, float g, float b) {
-			this.r = r;
-			this.g = g;
-			this.b = b;
-		}
-
-		protected float gamma(float arg) {
-			return (float) Math.pow(arg, 1/2.2);
-		}
-
-		protected int toRGB(float luminosity) {
-			return 0xff000000
-					| (Math.round(gamma(luminosity * r) * 255) << 16)
-					| (Math.round(gamma(luminosity * g) * 255) << 8)
-					| (Math.round(gamma(luminosity * b) * 255) << 0);
-		}
-	}
-
 	public static final int BINS = 12 * 7;
 
 	protected static final String TAG = VisualizationView.class.getSimpleName();
@@ -41,34 +20,22 @@ public class VisualizationView extends SurfaceView {
 	private final double minFreq = 110; /* A */
 	private final float[] fft = new float[BINS];
 	private final float[] lifetime = new float[BINS];
-	private final Color[] coloring = new Color[BINS];
+	private VisualizationInfoView.Color[] colors;
 
 	private Queue<OverlappingFFT.Data> queue;
-
-	private final String NOTE_NAME[] = new String[] {
-			"A",
-			"A#",
-			"H",
-			"C",
-			"C#",
-			"D",
-			"D#",
-			"E",
-			"F",
-			"F#",
-			"G",
-			"G#"
-	};
 
 	private final Paint white;
 
 	public VisualizationView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setWillNotDraw(false);
-		calculateColors();
 		white = new Paint();
 		white.setColor(0xffffffff);
 		white.setTextAlign(Paint.Align.CENTER);
+	}
+
+	public void setColors(VisualizationInfoView.Color[] colors) {
+		this.colors = colors;
 	}
 
 	/**
@@ -81,35 +48,6 @@ public class VisualizationView extends SurfaceView {
 		Arrays.fill(fft, 0);
 		Arrays.fill(lifetime, 0);
 		invalidate();
-	}
-
-	private void calculateColors() {
-		for (int i = 0; i < coloring.length; i ++) {
-			String noteName = NOTE_NAME[i % 12];
-			double note = i / 12.0;
-
-			/* Generate colors around the color wheel */
-			float r2 = (float) (.5 + .5 * Math.sin(2 * Math.PI * note));
-			float g2 = (float) (.5 + .5 * Math.sin(2 * Math.PI * (note + 1/3.0)));
-			float b2 = (float) (.5 + .5 * Math.sin(2 * Math.PI * (note + 2/3.0)));
-
-			/* Increase saturation */
-			float r = r2 - (g2 + b2) * .2f;
-			float g = g2 - (r2 + b2) * .2f;
-			float b = b2 - (r2 + g2) * .2f;
-
-			/* Approximate white keys by reducing saturation. */
-			if (! noteName.contains("#")) {
-				r = .4f + r * .6f;
-				g = .4f + g * .6f;
-				b = .4f + b * .6f;
-			} else {
-				r *= 0.6f;
-				g *= 0.6f;
-				b *= 0.6f;
-			}
-			coloring[i] = new Color(r, g, b);
-		}
 	}
 
 	@Override
@@ -131,21 +69,10 @@ public class VisualizationView extends SurfaceView {
 		for (int i = 0; i < fft.length; i ++) {
 			float dBNorm = fft[i];
 			float luminosity = lifetime[i];
-			fftPaint.setColor(coloring[i].toRGB(luminosity));
+			fftPaint.setColor(colors[i].toRGB(luminosity));
 
 			float x = (i + 0.5f) / (fft.length) * width;
 			canvas.drawLine(x, height, x, height * (1f - dBNorm), fftPaint);
-		}
-
-		float ref = Math.min(width, height) / 12f;
-		for (int i = 0; i < 12; i ++) {
-			float x1 = width / 2 + (i - 6) * ref;
-			float x2 = x1 + ref - 1;
-			float y1 = 0;
-			float y2 = ref;
-			fftPaint.setColor(coloring[i].toRGB(0.5f));
-			canvas.drawRect(x1, y1, x2, y2, fftPaint);
-			canvas.drawText(NOTE_NAME[i], (x1 + x2) / 2f, (y1 + y2 - white.getFontMetrics().ascent) / 2f, white);
 		}
 	}
 

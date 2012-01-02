@@ -1,10 +1,17 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent" >
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
 
+    <com.ssb.droidsound.view.VisualizationInfoView
+        android:id="@+id/visualization_info"
+        android:layout_width="fill_parent"
+        android:layout_height="25dp" />
+    
     <com.ssb.droidsound.view.VisualizationView
         android:id="@+id/visualization"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent" />
-
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+    
 </LinearLayout>
