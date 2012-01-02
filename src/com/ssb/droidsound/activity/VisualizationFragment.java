@@ -15,7 +15,6 @@ import android.view.ViewGroup;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.service.PlayerService;
-import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.view.VisualizationView;
 
 public class VisualizationFragment extends Fragment {
@@ -39,8 +38,7 @@ public class VisualizationFragment extends Fragment {
 	private final BroadcastReceiver musicChangeReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context arg0, Intent arg1) {
-			short[] data = player.getFftBuffer();
-			Log.i(TAG, "Got array: " + data);
+			short[][] data = player.getFftBuffer();
 			visualizationView.setData(data);
 		}
 	};

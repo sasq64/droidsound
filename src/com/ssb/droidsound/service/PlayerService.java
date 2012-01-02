@@ -120,7 +120,7 @@ public class PlayerService extends Service {
 		private static final int BUFSIZE = FREQUENCY * 2;
 
 		/** 1024 point FFT buffer */
-		private final short[] fft = new short[1024 * 2];
+		private final short[][] fft = new short[16][1024 * 2];
 
 		private int subsongLengthMs;
 		private int defaultSubsong;
@@ -166,7 +166,7 @@ public class PlayerService extends Service {
 		 *
 		 * @return data array
 		 */
-		public short[] getFftBuffer() {
+		public short[][] getFftBuffer() {
 			return fft;
 		}
 
@@ -337,6 +337,8 @@ public class PlayerService extends Service {
 			/* I've selected a size which is convenient for FFT. */
 			short[] samples = new short[4096 * 2];
 
+			int idx = 0;
+
 			int playbackFrame = 0;
 			PLAYLOOP: while (true) {
 				/* Avoid race condition: copy inter-thread data into local variables. */
@@ -383,7 +385,16 @@ public class PlayerService extends Service {
 					/* If not the right size, then what?
 					 * I think I'll fix the plugins to always generate the full buffer of audio. */
 					if (len == samples.length) {
-						FFT.fft(samples, fft);
+						short[] buf = fft[idx];
+						synchronized (buf) {
+							FFT.fft(samples, buf);
+							long time = System.currentTimeMillis();
+							buf[0] = (short) time;
+							buf[1] = (short) (time >>> 16);
+							buf[2] = (short) (time >>> 32);
+							buf[3] = (short) (time >>> 48);
+						}
+						idx = idx + 1 & fft.length - 1;
 					}
 					playbackFrame += len / audioTrack.getChannelCount();
 
@@ -702,7 +713,7 @@ public class PlayerService extends Service {
 	    	return playMod(song);
 		}
 
-		public short[] getFftBuffer() {
+		public short[][] getFftBuffer() {
 			if (player == null) {
 				return null;
 			}

@@ -7,24 +7,21 @@ import android.util.AttributeSet;
 import android.view.SurfaceView;
 
 public class VisualizationView extends SurfaceView {
+	public static final int BINS = 12 * 8;
+
 	protected static final String TAG = VisualizationView.class.getSimpleName();
 
 	private final double minFreq = 55;
-	private final double maxFreq = 14080;
-	private final float[] fft;
-	private final float[] lifetime;
-	private final float[][] coloring;
+	private final float[] fft = new float[BINS];
+	private final float[] lifetime = new float[BINS];
+	private final float[][] coloring = new float[BINS][];
 
-	private short[] data;
+	private short[][] data;
+	private int dataIdx;
 
 	public VisualizationView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setWillNotDraw(false);
-
-		int bins = (int) Math.round((Math.log(maxFreq) - Math.log(minFreq)) / Math.log(2)) * 12;
-		fft = new float[bins];
-		lifetime = new float[bins];
-		coloring = new float[bins][];
 		calculateColors();
 	}
 
@@ -33,7 +30,7 @@ public class VisualizationView extends SurfaceView {
 	 *
 	 * @param data
 	 */
-	public void setData(short[] data) {
+	public void setData(short[][] data) {
 		this.data = data;
 		invalidate();
 	}
@@ -53,6 +50,8 @@ public class VisualizationView extends SurfaceView {
 		if (data == null) {
 			return;
 		}
+
+		postInvalidateDelayed(40);
 		updateFftData();
 
 		int width = getWidth();
@@ -71,9 +70,6 @@ public class VisualizationView extends SurfaceView {
 			float x = (i + 0.5f) / (fft.length) * width;
 			canvas.drawLine(x, height, x, height * (1f - dBNorm), fftPaint);
 		}
-
-		/* Try to get 10 updates per second. */
-		postInvalidateDelayed(100);
 	}
 
 	private double projectFft(double idx) {
@@ -86,14 +82,40 @@ public class VisualizationView extends SurfaceView {
 		return re * re + im * im;
 	}
 
-	private void updateFftData() {
+	private boolean updateFftData() {
+		boolean updated = false;
+		/* Crude hack! Fixed 500 ms delay estimate */
+		long upTo = System.currentTimeMillis() - 500;
+		while (true) {
+			synchronized (data) {
+				short[] buf = data[dataIdx];
+				long time = (long) buf[0] & 0xffff;
+				time |= (long) (buf[1] & 0xffff) << 16;
+				time |= (long) (buf[2] & 0xffff) << 32;
+				time |= (long) (buf[3] & 0xffff) << 48;
+				if (time == 0 || time > upTo) {
+					break;
+				}
+				updateFftData(buf);
+				updated = true;
+				buf[0] = 0;
+				buf[1] = 0;
+				buf[2] = 0;
+				buf[3] = 0;
+			}
+			dataIdx = dataIdx + 1 & (data.length - 1);
+		}
+		return updated;
+	}
+
+	private void updateFftData(short[] buf) {
 		/* Remap data bins into our freq-linear fft */
 		for (int i = 0; i < fft.length; i ++) {
 			double startFreq = projectFft(i - 0.5);
 			double endFreq = projectFft(i + 0.5);
 
-			double startIdx = startFreq / 22050 * (data.length >> 1);
-			double endIdx = endFreq / 22050 * (data.length >> 1);
+			double startIdx = startFreq / 22050 * (buf.length >> 1);
+			double endIdx = endFreq / 22050 * (buf.length >> 1);
 
 			double lenSq = 0;
 			double n = 0;
@@ -101,7 +123,7 @@ public class VisualizationView extends SurfaceView {
 				int intStartIdx = (int) startIdx;
 				/* Determine width inside the current bin. */
 				double width = Math.min(endIdx - startIdx, intStartIdx + 1 - startIdx) + 1e-10;
-				lenSq += getBin(intStartIdx, data) * width;
+				lenSq += getBin(intStartIdx, buf) * width;
 				startIdx += width;
 				n += width;
 			}
@@ -119,6 +141,5 @@ public class VisualizationView extends SurfaceView {
 				lifetime[i] = Math.max(0, lifetime[i] - 0.075f);
 			}
 		}
-		invalidate();
 	}
 }
