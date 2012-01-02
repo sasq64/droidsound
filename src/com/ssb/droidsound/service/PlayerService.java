@@ -35,6 +35,7 @@ import com.ssb.droidsound.bo.PlayQueue;
 import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.bo.SongFileData;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.utils.FFT;
 import com.ssb.droidsound.utils.Log;
 
 /**
@@ -118,6 +119,9 @@ public class PlayerService extends Service {
 		private static final int FREQUENCY = 44100;
 		private static final int BUFSIZE = FREQUENCY * 2;
 
+		/** 1024 point FFT buffer */
+		private final short[] fft = new short[1024 * 2];
+
 		private int subsongLengthMs;
 		private int defaultSubsong;
 		private int subsongs;
@@ -155,6 +159,15 @@ public class PlayerService extends Service {
 			this.data1 = data1;
 			this.f2 = name2;
 			this.data2 = data2;
+		}
+
+		/**
+		 * Return FFT data accumulated by player.
+		 *
+		 * @return data array
+		 */
+		public short[] getFftBuffer() {
+			return fft;
 		}
 
 		/**
@@ -321,8 +334,8 @@ public class PlayerService extends Service {
 		}
 
 		private void doInBackgroundPlayloop(AudioTrack audioTrack) throws InterruptedException {
-			/* The plugin audio buffer is smaller to not underrun (we try to keep 75+ % full). */
-			short[] samples = new short[BUFSIZE / 4];
+			/* I've selected a size which is convenient for FFT. */
+			short[] samples = new short[4096 * 2];
 
 			int playbackFrame = 0;
 			PLAYLOOP: while (true) {
@@ -367,6 +380,11 @@ public class PlayerService extends Service {
 					}
 
 					audioTrack.write(samples, 0, len);
+					/* If not the right size, then what?
+					 * I think I'll fix the plugins to always generate the full buffer of audio. */
+					if (len == samples.length) {
+						FFT.fft(samples, fft);
+					}
 					playbackFrame += len / audioTrack.getChannelCount();
 
 					int sec2 = playbackFrame / audioTrack.getPlaybackRate();
@@ -682,6 +700,14 @@ public class PlayerService extends Service {
 	    	}
 	    	SongFile song = playQueue.prev();
 	    	return playMod(song);
+		}
+
+		public short[] getFftBuffer() {
+			if (player == null) {
+				return null;
+			}
+
+			return player.getFftBuffer();
 		}
 	}
 

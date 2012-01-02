@@ -2,57 +2,61 @@ package com.ssb.droidsound.activity;
 
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.audiofx.AudioEffect;
-import android.media.audiofx.Visualizer;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.view.VisualizationView;
 
 public class VisualizationFragment extends Fragment {
-	public static final String ACTION_DATA = "com.ssb.droidsound.DATA";
+	protected static final String TAG = VisualizationFragment.class.getSimpleName();;
 
-	private final BroadcastReceiver musicDataReceiver = new BroadcastReceiver() {
+	protected VisualizationView visualizationView;
+
+	private PlayerService.LocalBinder player;
+	private final ServiceConnection playerConnection = new ServiceConnection() {
 		@Override
-		public void onReceive(Context c, Intent i) {
-			String a = i.getAction();
-			if (a.equals(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION)) {
-				Visualizer v = new Visualizer(i.getIntExtra(AudioEffect.EXTRA_AUDIO_SESSION, 0));
-				visualizationView.setVisualizer(v);
-				return;
-			}
-			if (a.equals(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION)) {
-				Visualizer v = visualizationView.getVisualizer();
-				if (v != null) {
-					v.setEnabled(false);
-					v.release();
-					visualizationView.setVisualizer(null);
-				}
-			}
+		public void onServiceConnected(ComponentName tag, IBinder binder) {
+			player = (PlayerService.LocalBinder) binder;
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName arg0) {
+			player = null;
 		}
 	};
 
-	protected VisualizationView visualizationView;
+	private final BroadcastReceiver musicChangeReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context arg0, Intent arg1) {
+			short[] data = player.getFftBuffer();
+			Log.i(TAG, "Got array: " + data);
+			visualizationView.setData(data);
+		}
+	};
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
-		intentFilter.addAction(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
-		getActivity().getApplicationContext().registerReceiver(musicDataReceiver, intentFilter);
+		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
+		getActivity().getApplicationContext().registerReceiver(musicChangeReceiver, new IntentFilter(PlayerService.ACTION_LOADING_SONG));
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		getActivity().getApplicationContext().unregisterReceiver(musicDataReceiver);
+		getActivity().unbindService(playerConnection);
+		getActivity().getApplicationContext().unregisterReceiver(musicChangeReceiver);
 	}
 
 	@Override

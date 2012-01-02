@@ -3,26 +3,39 @@ package com.ssb.droidsound.view;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.media.audiofx.Visualizer;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
-
-import com.ssb.droidsound.utils.Log;
 
 public class VisualizationView extends SurfaceView {
 	protected static final String TAG = VisualizationView.class.getSimpleName();
 
-	private double minFreq;
-	private double maxFreq;
-	private float[] fft;
-	private float[] lifetime;
-	private float[][] coloring;
+	private final double minFreq = 55;
+	private final double maxFreq = 14080;
+	private final float[] fft;
+	private final float[] lifetime;
+	private final float[][] coloring;
 
-	private Visualizer visualizer;
+	private short[] data;
 
 	public VisualizationView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setWillNotDraw(false);
+
+		int bins = (int) Math.round((Math.log(maxFreq) - Math.log(minFreq)) / Math.log(2)) * 12;
+		fft = new float[bins];
+		lifetime = new float[bins];
+		coloring = new float[bins][];
+		calculateColors();
+	}
+
+	/**
+	 * Set the data array. Visualizer will update as long as this exists.
+	 *
+	 * @param data
+	 */
+	public void setData(short[] data) {
+		this.data = data;
+		invalidate();
 	}
 
 	private void calculateColors() {
@@ -37,9 +50,10 @@ public class VisualizationView extends SurfaceView {
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-		if (visualizer == null) {
+		if (data == null) {
 			return;
 		}
+		updateFftData();
 
 		int width = getWidth();
 		int height = getHeight();
@@ -57,27 +71,29 @@ public class VisualizationView extends SurfaceView {
 			float x = (i + 0.5f) / (fft.length) * width;
 			canvas.drawLine(x, height, x, height * (1f - dBNorm), fftPaint);
 		}
+
+		/* Try to get 10 updates per second. */
+		postInvalidateDelayed(100);
 	}
 
 	private double projectFft(double idx) {
 		return minFreq * Math.pow(2, idx / 12.0);
 	}
 
-	private static double getBin(int idx, byte[] data) {
-		float re = data[idx * 2] / 128f;
-		float im = data[idx * 2 + 1] / 128f;
+	private static double getBin(int idx, short[] data) {
+		float re = data[idx * 2] / (float) (1 << 10);
+		float im = data[idx * 2 + 1] / (float) (1 << 10);
 		return re * re + im * im;
 	}
 
-	private void updateFftData(byte[] data) {
-		data[1] = 0;
+	private void updateFftData() {
 		/* Remap data bins into our freq-linear fft */
 		for (int i = 0; i < fft.length; i ++) {
 			double startFreq = projectFft(i - 0.5);
 			double endFreq = projectFft(i + 0.5);
 
-			double startIdx = startFreq / 22050.0 * data.length / 2;
-			double endIdx = endFreq / 22050.0 * data.length / 2;
+			double startIdx = startFreq / 22050 * (data.length >> 1);
+			double endIdx = endFreq / 22050 * (data.length >> 1);
 
 			double lenSq = 0;
 			double n = 0;
@@ -93,9 +109,9 @@ public class VisualizationView extends SurfaceView {
 
 			double dB = Math.log(lenSq + 1e-10) / Math.log(10) * 10;
 
-			float x = ((float) dB / 50f) + 0.8f;
+			float x = ((float) dB / 60f) + 0.8f;
 
-			if (x > fft[i]) {
+			if (x >= fft[i]) {
 				fft[i] = x;
 				lifetime[i] = 1f;
 			} else {
@@ -104,55 +120,5 @@ public class VisualizationView extends SurfaceView {
 			}
 		}
 		invalidate();
-	}
-
-	public Visualizer getVisualizer() {
-		return visualizer;
-	}
-
-	public void setVisualizer(Visualizer v) {
-		visualizer = v;
-		if (v == null) {
-			return;
-		}
-
-		int[] minmax = Visualizer.getCaptureSizeRange();
-		int size = Math.min(4096, minmax[1]);
-		size = Math.max(size, minmax[0]);
-		int rate = Math.min(20000, Visualizer.getMaxCaptureRate());
-
-		minFreq = 1024 / size * 220;
-		maxFreq = 14080;
-		Log.i(TAG, "Requesting %d point FFT for %.0f-%.0f Hz display @ %d updates/s", size, minFreq, maxFreq, rate/1000);
-
-
-		/* We try to get 2048 FFT values out (= 4096 bytes). This gives us about 10 Hz resolution,
-		 * sufficient for good visualization.
-		 */
-		if (Visualizer.SUCCESS != v.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
-			@Override
-			public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {
-				updateFftData(fft);
-			}
-
-			@Override
-			public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) {
-			}
-		}, rate, false, true)) {
-			throw new IllegalStateException("Invalid visualizer state");
-		}
-		if (Visualizer.SUCCESS != v.setCaptureSize(size)) {
-			throw new IllegalStateException("Invalid visualizer state");
-		}
-
-		int bins = (int) ((Math.log(maxFreq) - Math.log(minFreq)) / Math.log(2) * 12);
-		fft = new float[bins];
-		lifetime = new float[bins];
-		coloring = new float[bins][];
-		calculateColors();
-
-		if (Visualizer.SUCCESS != v.setEnabled(true)) {
-			throw new IllegalStateException("Invalid visualizer state");
-		}
 	}
 }

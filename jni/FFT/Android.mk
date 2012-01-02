@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-#include $(call all-subdir-makefiles) 
 
-X := $(call my-dir)
+LOCAL_PATH := $(call my-dir)
 
-# include $(X)/Tremor/Android.mk
+include $(CLEAR_VARS)
 
-include $(X)/ModPlugin/Android.mk
-include $(X)/GMEPlugin/Android.mk
-include $(X)/SC68Plugin/Android.mk
-include $(X)/VICEPlugin/Android.mk
-include $(X)/UADEPlugin/Android.mk
-include $(X)/HivelyPlugin/Android.mk
-include $(X)/FFT/Android.mk
+LOCAL_MODULE    := fft
+
+LOCAL_SRC_FILES := FFT.cpp fixedfft.cpp
+
+include $(BUILD_SHARED_LIBRARY)
