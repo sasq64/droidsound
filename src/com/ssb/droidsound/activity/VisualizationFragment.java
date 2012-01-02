@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.utils.OverlappingFFT;
 import com.ssb.droidsound.view.VisualizationView;
 
 public class VisualizationFragment extends Fragment {
@@ -40,7 +41,7 @@ public class VisualizationFragment extends Fragment {
 	private final BroadcastReceiver musicChangeReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context arg0, Intent arg1) {
-			Queue<PlayerService.FFTData> data = player.getFftBuffer();
+			Queue<OverlappingFFT.Data> data = player.getFftBuffer();
 			visualizationView.setData(data);
 		}
 	};

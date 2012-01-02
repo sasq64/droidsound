@@ -2,15 +2,15 @@
 #include "com_ssb_droidsound_utils_FFT.h"
 #include "fixedfft.h"
 
-#define MAX_FFT 4096
+#define MAX_FFT_SIZE 4096
 
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_FFT_fft(JNIEnv *env, jclass klass, jshortArray jin, jshortArray jout)
 {
-        int32_t tmp[MAX_FFT];
+        int32_t tmp[MAX_FFT_SIZE];
 
         int32_t fftLen = env->GetArrayLength(jin);
         fftLen >>= 2;
-        if (fftLen < 0 || fftLen > MAX_FFT) {
+        if (fftLen < 0 || fftLen > MAX_FFT_SIZE) {
             return;
         }
         

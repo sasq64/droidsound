@@ -10,8 +10,7 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
 
-import com.ssb.droidsound.service.PlayerService;
-import com.ssb.droidsound.service.PlayerService.FFTData;
+import com.ssb.droidsound.utils.OverlappingFFT;
 
 public class VisualizationView extends SurfaceView {
 	private static class Color {
@@ -44,7 +43,7 @@ public class VisualizationView extends SurfaceView {
 	private final float[] lifetime = new float[BINS];
 	private final Color[] coloring = new Color[BINS];
 
-	private Queue<FFTData> queue;
+	private Queue<OverlappingFFT.Data> queue;
 
 	private final String NOTE_NAME[] = new String[] {
 			"A",
@@ -77,7 +76,7 @@ public class VisualizationView extends SurfaceView {
 	 *
 	 * @param data
 	 */
-	public void setData(Queue<PlayerService.FFTData> data) {
+	public void setData(Queue<OverlappingFFT.Data> data) {
 		this.queue = data;
 		Arrays.fill(fft, 0);
 		Arrays.fill(lifetime, 0);
@@ -119,7 +118,10 @@ public class VisualizationView extends SurfaceView {
 			return;
 		}
 
-		long futureDelay = updateFftData();
+		long futureDelay = -1;
+		while (futureDelay < 0) {
+			futureDelay = updateFftData();
+		}
 		postInvalidateDelayed(futureDelay);
 
 		int width = getWidth();
@@ -149,7 +151,7 @@ public class VisualizationView extends SurfaceView {
 
 	private long updateFftData() {
 		synchronized (queue) {
-			PlayerService.FFTData data = queue.poll();
+			OverlappingFFT.Data data = queue.poll();
 			if (data != null) {
 				updateFftData(data.getFft());
 			}
@@ -164,12 +166,6 @@ public class VisualizationView extends SurfaceView {
 
 	private double projectFft(double idx) {
 		return minFreq * Math.pow(2, idx / 12.0);
-	}
-
-	private static double getBin(int idx, short[] data) {
-		float re = data[idx * 2] / (float) (1 << 9);
-		float im = data[idx * 2 + 1] / (float) (1 << 9);
-		return re * re + im * im;
 	}
 
 	private void updateFftData(short[] buf) {
@@ -187,7 +183,9 @@ public class VisualizationView extends SurfaceView {
 				int intStartIdx = (int) startIdx;
 				/* Determine width inside the current bin. */
 				double width = Math.min(endIdx - startIdx, intStartIdx + 1 - startIdx) + 1e-10;
-				lenSq += getBin(intStartIdx, buf) * width;
+				float re = buf[intStartIdx << 1] / (float) (1 << 10);
+				float im = buf[(intStartIdx << 1) + 1] / (float) (1 << 10);
+				lenSq += re * re + im * im;
 				startIdx += width;
 				n += width;
 			}
