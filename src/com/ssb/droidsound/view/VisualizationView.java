@@ -7,11 +7,11 @@ import android.util.AttributeSet;
 import android.view.SurfaceView;
 
 public class VisualizationView extends SurfaceView {
-	public static final int BINS = 12 * 8;
+	public static final int BINS = 12 * 7;
 
 	protected static final String TAG = VisualizationView.class.getSimpleName();
 
-	private final double minFreq = 55;
+	private final double minFreq = 110;
 	private final float[] fft = new float[BINS];
 	private final float[] lifetime = new float[BINS];
 	private final float[][] coloring = new float[BINS][];
@@ -51,8 +51,16 @@ public class VisualizationView extends SurfaceView {
 			return;
 		}
 
-		postInvalidateDelayed(40);
-		updateFftData();
+		long futureTime = updateFftData();
+		if (futureTime == 0) {
+			postInvalidateDelayed(1000);
+		} else {
+			long t = futureTime - System.currentTimeMillis();
+			if (t <= 0) {
+				t = 1;
+			}
+			postInvalidateDelayed(t);
+		}
 
 		int width = getWidth();
 		int height = getHeight();
@@ -82,10 +90,8 @@ public class VisualizationView extends SurfaceView {
 		return re * re + im * im;
 	}
 
-	private boolean updateFftData() {
-		boolean updated = false;
-		/* Crude hack! Fixed 500 ms delay estimate */
-		long upTo = System.currentTimeMillis() - 500;
+	private long updateFftData() {
+		long upTo = System.currentTimeMillis();
 		while (true) {
 			synchronized (data) {
 				short[] buf = data[dataIdx];
@@ -94,10 +100,9 @@ public class VisualizationView extends SurfaceView {
 				time |= (long) (buf[2] & 0xffff) << 32;
 				time |= (long) (buf[3] & 0xffff) << 48;
 				if (time == 0 || time > upTo) {
-					break;
+					return time;
 				}
 				updateFftData(buf);
-				updated = true;
 				buf[0] = 0;
 				buf[1] = 0;
 				buf[2] = 0;
@@ -105,7 +110,6 @@ public class VisualizationView extends SurfaceView {
 			}
 			dataIdx = dataIdx + 1 & (data.length - 1);
 		}
-		return updated;
 	}
 
 	private void updateFftData(short[] buf) {

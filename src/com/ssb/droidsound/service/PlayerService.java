@@ -116,11 +116,13 @@ public class PlayerService extends Service {
 	 * @author alankila
 	 */
 	private class PlayerRunnable extends AsyncTask<Void, Intent, Void> {
-		private static final int FREQUENCY = 44100;
-		private static final int BUFSIZE = FREQUENCY * 2;
+		private static final int FREQUENCY_HZ = 44100;
+		private static final int BUFSIZE_BYTES = FREQUENCY_HZ * 4;
 
-		/** 1024 point FFT buffer */
-		private final short[][] fft = new short[16][1024 * 2];
+		/**
+		 * 1024 point FFT buffers. The number of buffers is used as delay line
+		 * to account for sound buffering (1 second). */
+		private final short[][] fft = new short[32][1024 * 2];
 
 		private int subsongLengthMs;
 		private int defaultSubsong;
@@ -293,10 +295,10 @@ public class PlayerService extends Service {
 			/* In theory we could ask plugin about desired frequency and other information. */
 			AudioTrack audioTrack = new AudioTrack(
 					AudioManager.STREAM_MUSIC,
-					FREQUENCY,
+					FREQUENCY_HZ,
 					AudioFormat.CHANNEL_CONFIGURATION_STEREO,
 					AudioFormat.ENCODING_PCM_16BIT,
-					BUFSIZE,
+					BUFSIZE_BYTES,
 					AudioTrack.MODE_STREAM);
 	        Intent sessionOpen = new Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
 	        sessionOpen.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, audioTrack.getAudioSessionId());
@@ -336,6 +338,8 @@ public class PlayerService extends Service {
 		private void doInBackgroundPlayloop(AudioTrack audioTrack) throws InterruptedException {
 			/* I've selected a size which is convenient for FFT. */
 			short[] samples = new short[4096 * 2];
+			short[] fftSamples = new short[4096 * 2];
+			int fftSamplesIdx = 0;
 
 			int idx = 0;
 
@@ -371,9 +375,9 @@ public class PlayerService extends Service {
 					}
 
 					int sec1 = playbackFrame / audioTrack.getPlaybackRate();
-					int len = plugin.getSoundData(samples);
+					int lengthInSamples = plugin.getSoundData(samples);
 					/* If the length is not positive, it implies errors or song end. We terminate. */
-					if (len <= 0) {
+					if (lengthInSamples <= 0) {
 						break PLAYLOOP;
 					}
 
@@ -381,22 +385,38 @@ public class PlayerService extends Service {
 						audioTrack.play();
 					}
 
-					audioTrack.write(samples, 0, len);
-					/* If not the right size, then what?
-					 * I think I'll fix the plugins to always generate the full buffer of audio. */
-					if (len == samples.length) {
-						short[] buf = fft[idx];
-						synchronized (buf) {
-							FFT.fft(samples, buf);
-							long time = System.currentTimeMillis();
-							buf[0] = (short) time;
-							buf[1] = (short) (time >>> 16);
-							buf[2] = (short) (time >>> 32);
-							buf[3] = (short) (time >>> 48);
+					audioTrack.write(samples, 0, lengthInSamples);
+					playbackFrame += lengthInSamples / 2;
+
+					/* Burn me and rewrite this crap. */
+					int posInSamples = 0;
+					long estimatedPlaybackTime = System.currentTimeMillis() + 1000 * (BUFSIZE_BYTES / 4 - lengthInSamples / 2) / audioTrack.getPlaybackRate();
+					while (posInSamples < lengthInSamples) {
+						/* Fill as much as possible into fftInput1 */
+						int copyLenInSamples = Math.min(lengthInSamples - posInSamples, fftSamples.length - fftSamplesIdx);
+						System.arraycopy(samples, posInSamples, fftSamples, fftSamplesIdx, copyLenInSamples);
+						fftSamplesIdx += copyLenInSamples;
+						posInSamples += copyLenInSamples;
+
+						/* Complete buffer? */
+						if (fftSamplesIdx == fftSamples.length) {
+							short[] buf = fft[idx];
+							synchronized (buf) {
+								/* Run FFT, and place estimated time this buffer will be played back
+								 * at start of some ignored FFT components... */
+								FFT.fft(fftSamples, buf);
+								long time = estimatedPlaybackTime + 1000 * posInSamples / 2 / audioTrack.getPlaybackRate();
+								buf[0] = (short) time;
+								buf[1] = (short) (time >>> 16);
+								buf[2] = (short) (time >>> 32);
+								buf[3] = (short) (time >>> 48);
+							}
+							idx = idx + 1 & fft.length - 1;
+							/* Move 2nd half of the buffer to beginning. */
+							fftSamplesIdx = fftSamples.length >> 1;
+							System.arraycopy(fftSamples, fftSamplesIdx, fftSamples, 0, fftSamplesIdx);
 						}
-						idx = idx + 1 & fft.length - 1;
 					}
-					playbackFrame += len / audioTrack.getChannelCount();
 
 					int sec2 = playbackFrame / audioTrack.getPlaybackRate();
 					if (sec1 != sec2) {
