@@ -92,8 +92,7 @@ public class OverlappingFFT {
 				 */
 				short[] buf = new short[fftSamples.length >> 2];
 				synchronized (queue) {
-					if (queue.size() == maxLength) {
-						/* throwing data away, nobody is reading it ... */
+					if (queue.size() > maxLength) {
 						queue.poll();
 					}
 
