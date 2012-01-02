@@ -1,5 +1,7 @@
 package com.ssb.droidsound.activity;
 
+import java.util.Queue;
+
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -38,7 +40,7 @@ public class VisualizationFragment extends Fragment {
 	private final BroadcastReceiver musicChangeReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context arg0, Intent arg1) {
-			short[][] data = player.getFftBuffer();
+			Queue<PlayerService.FFTData> data = player.getFftBuffer();
 			visualizationView.setData(data);
 		}
 	};

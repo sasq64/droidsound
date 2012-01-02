@@ -1,10 +1,16 @@
 package com.ssb.droidsound.view;
 
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
+
+import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.service.PlayerService.FFTData;
 
 public class VisualizationView extends SurfaceView {
 	public static final int BINS = 12 * 7;
@@ -16,8 +22,7 @@ public class VisualizationView extends SurfaceView {
 	private final float[] lifetime = new float[BINS];
 	private final float[][] coloring = new float[BINS][];
 
-	private short[][] data;
-	private int dataIdx;
+	private Queue<FFTData> queue;
 
 	public VisualizationView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -30,8 +35,8 @@ public class VisualizationView extends SurfaceView {
 	 *
 	 * @param data
 	 */
-	public void setData(short[][] data) {
-		this.data = data;
+	public void setData(Queue<PlayerService.FFTData> data) {
+		this.queue = data;
 		invalidate();
 	}
 
@@ -47,20 +52,12 @@ public class VisualizationView extends SurfaceView {
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-		if (data == null) {
+		if (queue == null) {
 			return;
 		}
 
-		long futureTime = updateFftData();
-		if (futureTime == 0) {
-			postInvalidateDelayed(1000);
-		} else {
-			long t = futureTime - System.currentTimeMillis();
-			if (t <= 0) {
-				t = 1;
-			}
-			postInvalidateDelayed(t);
-		}
+		long futureDelay = updateFftData();
+		postInvalidateDelayed(futureDelay);
 
 		int width = getWidth();
 		int height = getHeight();
@@ -85,30 +82,25 @@ public class VisualizationView extends SurfaceView {
 	}
 
 	private static double getBin(int idx, short[] data) {
-		float re = data[idx * 2] / (float) (1 << 10);
-		float im = data[idx * 2 + 1] / (float) (1 << 10);
+		/* FIXME: not sure of the scale factor. It's supposed to be 1 << 16 but it is not.
+		 * The FFT code must apply some kind of scaling, but it's not a value I expect. */
+		float re = data[idx * 2] / (float) (1 << 8);
+		float im = data[idx * 2 + 1] / (float) (1 << 8);
 		return re * re + im * im;
 	}
 
 	private long updateFftData() {
-		long upTo = System.currentTimeMillis();
-		while (true) {
-			synchronized (data) {
-				short[] buf = data[dataIdx];
-				long time = (long) buf[0] & 0xffff;
-				time |= (long) (buf[1] & 0xffff) << 16;
-				time |= (long) (buf[2] & 0xffff) << 32;
-				time |= (long) (buf[3] & 0xffff) << 48;
-				if (time == 0 || time > upTo) {
-					return time;
-				}
-				updateFftData(buf);
-				buf[0] = 0;
-				buf[1] = 0;
-				buf[2] = 0;
-				buf[3] = 0;
+		synchronized (queue) {
+			PlayerService.FFTData data = queue.poll();
+			if (data != null) {
+				updateFftData(data.getFft());
 			}
-			dataIdx = dataIdx + 1 & (data.length - 1);
+
+			data = queue.peek();
+			if (data == null) {
+				return 100;
+			}
+			return data.getDelay(TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -135,14 +127,17 @@ public class VisualizationView extends SurfaceView {
 
 			double dB = Math.log(lenSq + 1e-10) / Math.log(10) * 10;
 
+			/* FIXME: is -60 dB good limit? I think that because this class is used
+			 * for module playback with 8 bit samples, showing much lower than 50 dB is
+			 * not a good idea. */
 			float x = ((float) dB / 60f) + 0.8f;
 
 			if (x >= fft[i]) {
 				fft[i] = x;
 				lifetime[i] = 1f;
 			} else {
-				fft[i] = Math.max(x, fft[i] - 0.025f);
-				lifetime[i] = Math.max(0, lifetime[i] - 0.075f);
+				fft[i] = Math.max(x, fft[i] - 0.05f);
+				lifetime[i] = Math.max(0, lifetime[i] - 0.1f);
 			}
 		}
 	}

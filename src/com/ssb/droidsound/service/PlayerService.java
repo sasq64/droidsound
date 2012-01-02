@@ -2,7 +2,10 @@ package com.ssb.droidsound.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -106,8 +109,102 @@ public class PlayerService extends Service {
 		public void onServiceDisconnected(ComponentName tag) {
 			db = null;
 		}
-
 	};
+
+	public static class FFTData implements Delayed {
+		private final Long time;
+		private final short[] fft;
+
+		public FFTData(long time, short[] fft) {
+			this.time = time;
+			this.fft = fft;
+		}
+
+		public short[] getFft() {
+			return fft;
+		}
+
+		@Override
+		public int compareTo(Delayed other) {
+			return time.compareTo(((FFTData) other).time);
+		}
+
+		@Override
+		public long getDelay(TimeUnit tu) {
+			long millis = time - System.currentTimeMillis();
+			return tu.convert(millis, TimeUnit.MILLISECONDS);
+		}
+	}
+
+	private static class OverlappingFFT {
+		private final Queue<FFTData> queue = new DelayQueue<FFTData>();
+
+		/** Accumulation buffer until full FFT has been reached. 16-bit stereo. */
+		private final short[] fftSamples = new short[4096 * 2];
+
+		/** Current index within accumulation buffer */
+		private int fftSamplesIdx;
+
+		/** Audio output rate */
+		private final int frameRate;
+
+		/** Length of data buffering */
+		private final int bufferingMs;
+
+		private final int maxLength;
+
+		private OverlappingFFT(int bufsizeFrames, int frameRate) {
+			this.frameRate = frameRate;
+			bufferingMs = bufsizeFrames * 1000 / frameRate;
+			int framesPerFft = fftSamples.length / 2;
+			int fullFramesPerSecond = frameRate / framesPerFft;
+			int fullFramesPerSecondWithOverlap = fullFramesPerSecond * 2;
+			int fftFramesRequired = fullFramesPerSecondWithOverlap * bufferingMs / 1000;
+
+			Log.i(TAG, "FFT timing information: %d full frames required, %d ms buffer",
+					fftFramesRequired, bufferingMs);
+
+			/* Adding some extra buffers here to allow scheduling glitches etc. */
+			maxLength = fftFramesRequired + 4;
+		}
+
+		public void feed(short[] samples, int posInSamples, int lengthInSamples) {
+			/* This assumes that the last audiotrack.write() just filled the buffer
+			 * maximally. However, I don't know if it's actually true. */
+			long estimatedPlaybackTime = System.currentTimeMillis() + bufferingMs;
+			while (posInSamples < lengthInSamples) {
+				/* Fill as much as possible into fftInput1 */
+				int copyLenInSamples = Math.min(lengthInSamples - posInSamples, fftSamples.length - fftSamplesIdx);
+				System.arraycopy(samples, posInSamples, fftSamples, fftSamplesIdx, copyLenInSamples);
+				fftSamplesIdx += copyLenInSamples;
+				posInSamples += copyLenInSamples;
+
+				/* Complete buffer? */
+				if (fftSamplesIdx == fftSamples.length) {
+					short[] buf = new short[fftSamples.length >> 2];
+					synchronized (queue) {
+						if (queue.size() == maxLength) {
+							/* throwing data away, nobody is reading it ... */
+							queue.poll();
+						}
+
+						/* Run FFT, and place estimated time this buffer will be played back
+						 * at start of some ignored FFT components... */
+						FFT.fft(fftSamples, buf);
+						long time = estimatedPlaybackTime + 1000 * posInSamples / 2 / frameRate;
+						queue.add(new FFTData(time, buf));
+					}
+					/* Move 2nd half of the buffer to beginning. */
+					fftSamplesIdx = fftSamples.length >> 1;
+					System.arraycopy(fftSamples, fftSamplesIdx, fftSamples, 0, fftSamplesIdx);
+				}
+			}
+		}
+
+		public Queue<FFTData> getQueue() {
+			return queue;
+		}
+	}
 
 	/**
 	 * This runnable is constructed for playback of one complete song.
@@ -119,10 +216,7 @@ public class PlayerService extends Service {
 		private static final int FREQUENCY_HZ = 44100;
 		private static final int BUFSIZE_BYTES = FREQUENCY_HZ * 4;
 
-		/**
-		 * 1024 point FFT buffers. The number of buffers is used as delay line
-		 * to account for sound buffering (1 second). */
-		private final short[][] fft = new short[32][1024 * 2];
+		private final OverlappingFFT fft = new OverlappingFFT(BUFSIZE_BYTES / 4, FREQUENCY_HZ);
 
 		private int subsongLengthMs;
 		private int defaultSubsong;
@@ -141,7 +235,7 @@ public class PlayerService extends Service {
 		private int syncSubsongRequest = -1;
 
 		/**
-		 * Cosntruct a player that tries to load the file called f1 with content data1,
+		 * Construct a player that tries to load the file called f1 with content data1,
 		 * and also offers optional f2 and content data2 if the native code needs it.
 		 * <p>
 		 * Generalization to more than 2 files has not been done because no known
@@ -168,8 +262,8 @@ public class PlayerService extends Service {
 		 *
 		 * @return data array
 		 */
-		public short[][] getFftBuffer() {
-			return fft;
+		public Queue<FFTData> getFftBuffer() {
+			return fft.getQueue();
 		}
 
 		/**
@@ -338,10 +432,6 @@ public class PlayerService extends Service {
 		private void doInBackgroundPlayloop(AudioTrack audioTrack) throws InterruptedException {
 			/* I've selected a size which is convenient for FFT. */
 			short[] samples = new short[4096 * 2];
-			short[] fftSamples = new short[4096 * 2];
-			int fftSamplesIdx = 0;
-
-			int idx = 0;
 
 			int playbackFrame = 0;
 			PLAYLOOP: while (true) {
@@ -374,7 +464,6 @@ public class PlayerService extends Service {
 						}
 					}
 
-					int sec1 = playbackFrame / audioTrack.getPlaybackRate();
 					int lengthInSamples = plugin.getSoundData(samples);
 					/* If the length is not positive, it implies errors or song end. We terminate. */
 					if (lengthInSamples <= 0) {
@@ -386,38 +475,12 @@ public class PlayerService extends Service {
 					}
 
 					audioTrack.write(samples, 0, lengthInSamples);
+
+					/* Update our FFT */
+					fft.feed(samples, 0, lengthInSamples);
+
+					int sec1 = playbackFrame / audioTrack.getPlaybackRate();
 					playbackFrame += lengthInSamples / 2;
-
-					/* Burn me and rewrite this crap. */
-					int posInSamples = 0;
-					long estimatedPlaybackTime = System.currentTimeMillis() + 1000 * (BUFSIZE_BYTES / 4 - lengthInSamples / 2) / audioTrack.getPlaybackRate();
-					while (posInSamples < lengthInSamples) {
-						/* Fill as much as possible into fftInput1 */
-						int copyLenInSamples = Math.min(lengthInSamples - posInSamples, fftSamples.length - fftSamplesIdx);
-						System.arraycopy(samples, posInSamples, fftSamples, fftSamplesIdx, copyLenInSamples);
-						fftSamplesIdx += copyLenInSamples;
-						posInSamples += copyLenInSamples;
-
-						/* Complete buffer? */
-						if (fftSamplesIdx == fftSamples.length) {
-							short[] buf = fft[idx];
-							synchronized (buf) {
-								/* Run FFT, and place estimated time this buffer will be played back
-								 * at start of some ignored FFT components... */
-								FFT.fft(fftSamples, buf);
-								long time = estimatedPlaybackTime + 1000 * posInSamples / 2 / audioTrack.getPlaybackRate();
-								buf[0] = (short) time;
-								buf[1] = (short) (time >>> 16);
-								buf[2] = (short) (time >>> 32);
-								buf[3] = (short) (time >>> 48);
-							}
-							idx = idx + 1 & fft.length - 1;
-							/* Move 2nd half of the buffer to beginning. */
-							fftSamplesIdx = fftSamples.length >> 1;
-							System.arraycopy(fftSamples, fftSamplesIdx, fftSamples, 0, fftSamplesIdx);
-						}
-					}
-
 					int sec2 = playbackFrame / audioTrack.getPlaybackRate();
 					if (sec1 != sec2) {
 						sendAdvancing(sec2);
@@ -733,7 +796,7 @@ public class PlayerService extends Service {
 	    	return playMod(song);
 		}
 
-		public short[][] getFftBuffer() {
+		public Queue<FFTData> getFftBuffer() {
 			if (player == null) {
 				return null;
 			}
