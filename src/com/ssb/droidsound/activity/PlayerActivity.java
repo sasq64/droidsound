@@ -36,6 +36,7 @@ public class PlayerActivity extends Activity {
 		viewPager = (ViewPager) findViewById(R.id.viewPager);
 		viewPagerAdapter = new MyAdapter(getFragmentManager());
 		viewPager.setOffscreenPageLimit(viewPagerAdapter.getCount());
+		viewPager.setKeepScreenOn(true);
 
 		for (String entry : viewPagerAdapter.getEntries()) {
 			ActionBar.Tab tab = actionBar.newTab();
