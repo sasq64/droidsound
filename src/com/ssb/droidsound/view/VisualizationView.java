@@ -77,18 +77,16 @@ public class VisualizationView extends SurfaceView {
 	}
 
 	private long updateFftData() {
-		synchronized (queue) {
-			OverlappingFFT.Data data = queue.poll();
-			if (data != null) {
-				updateFftData(data.getFft());
-			}
-
-			data = queue.peek();
-			if (data == null) {
-				return 100;
-			}
-			return data.getDelay(TimeUnit.MILLISECONDS);
+		OverlappingFFT.Data data = queue.poll();
+		if (data != null) {
+			updateFftData(data.getFft());
 		}
+
+		data = queue.peek();
+		if (data == null) {
+			return 100;
+		}
+		return data.getDelay(TimeUnit.MILLISECONDS);
 	}
 
 	private double projectFft(double idx) {

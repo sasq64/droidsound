@@ -91,17 +91,14 @@ public class OverlappingFFT {
 				 * actually returned.
 				 */
 				short[] buf = new short[fftSamples.length >> 2];
-				synchronized (queue) {
-					if (queue.size() > maxLength) {
-						queue.poll();
-					}
-
-					/* Run FFT, and place estimated time this buffer will be played back
-					 * at start of some ignored FFT components... */
-					FFT.fft(fftSamples, buf);
-					long time = estimatedPlaybackTime + 1000 * posInSamples / 2 / frameRate;
-					queue.add(new Data(time, buf));
+				if (queue.size() > maxLength) {
+					queue.poll();
 				}
+				/* Run FFT, and place estimated time this buffer will be played back
+				 * at start of some ignored FFT components... */
+				FFT.fft(fftSamples, buf);
+				long time = estimatedPlaybackTime + 1000 * posInSamples / 2 / frameRate;
+				queue.add(new Data(time, buf));
 
 				fftSamplesIdx = (fftSamples.length >> 2) * 3;
 				System.arraycopy(fftSamples, fftSamples.length >> 2, fftSamples, 0, fftSamplesIdx);
