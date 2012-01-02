@@ -180,7 +180,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getString
 		break;
 	case INFO_INSTRUMENTS:
 	{
-		char instruments[2048];
+		char instruments[16384];
 		char *ptr = instruments;
 		int ni = ModPlug_NumInstruments(info->mod);
 		int ns = ModPlug_NumSamples(info->mod);
