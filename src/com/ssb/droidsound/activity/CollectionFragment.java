@@ -103,7 +103,7 @@ public class CollectionFragment extends Fragment {
 		}
 	};
 
-	protected static class FastListFragment extends ListFragment {
+	public static class FastListFragment extends ListFragment {
 		@Override
 		public void onViewCreated(View view, Bundle savedInstanceState) {
 			super.onViewCreated(view, savedInstanceState);
