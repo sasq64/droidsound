@@ -52,14 +52,15 @@ public class MusicIndexService extends Service {
 	private static final String TAG = MusicIndexService.class.getSimpleName();
 	public static final Charset ISO88591 = Charset.forName("ISO-8859-1");
 
-	private static final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "title", "composer", "date" };
+	private static final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "format", "title", "composer", "date" };
 	public static final int COL_ID = 0;
 	public static final int COL_PARENT_ID = 1;
 	public static final int COL_FILENAME = 2;
 	public static final int COL_TYPE = 3;
-	public static final int COL_TITLE = 4;
-	public static final int COL_COMPOSER = 5;
-	public static final int COL_DATE = 6;
+	public static final int COL_FORMAT = 4;
+	public static final int COL_TITLE = 5;
+	public static final int COL_COMPOSER = 6;
+	public static final int COL_DATE = 7;
 
 	public static final String ACTION_SCAN = "com.ssb.droidsound.SCAN";
 
@@ -662,11 +663,11 @@ public class MusicIndexService extends Service {
 					+ "parent_id INTEGER REFERENCES files ON DELETE CASCADE,"
 					+ "filename TEXT NOT NULL,"
 					+ "type INTEGER NOT NULL,"
+					+ "format TEXT"
 					+ "modify_time INTEGER,"
 					+ "title TEXT,"
 					+ "composer TEXT,"
 					+ "date INTEGER,"
-					+ "format TEXT"
 					+ ");");
 
 			/* If a Songlengths.txt file is seen, we parse and store it here.

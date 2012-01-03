@@ -142,6 +142,7 @@ public class CollectionFragment extends Fragment {
 		@Override
 		public void bindView(View view, Context context, Cursor cursor) {
 			ImageView iconView = (ImageView) view.findViewById(R.id.icon);
+			TextView formatView = (TextView) view.findViewById(R.id.format);
 			ImageView playingView = (ImageView) view.findViewById(R.id.playing);
 			TextView titleView = (TextView) view.findViewById(R.id.title);
 			TextView subtitleView = (TextView) view.findViewById(R.id.subtitle);
@@ -150,6 +151,7 @@ public class CollectionFragment extends Fragment {
 			final Long childId = cursor.getLong(MusicIndexService.COL_ID);
 			final String filename = cursor.getString(MusicIndexService.COL_FILENAME);
 			final int type = cursor.getInt(MusicIndexService.COL_TYPE);
+			final String format = cursor.getString(MusicIndexService.COL_FORMAT);
 			final String title = cursor.getString(MusicIndexService.COL_TITLE);
 			final String composer = cursor.getString(MusicIndexService.COL_COMPOSER);
 			final int date = cursor.getInt(MusicIndexService.COL_DATE);
@@ -183,6 +185,7 @@ public class CollectionFragment extends Fragment {
 			}
 
 			iconView.setImageDrawable(context.getResources().getDrawable(icon));
+			formatView.setText(format);
 			titleView.setText(title != null ? title : filename);
 			subtitleView.setText(composer);
 			String sidetitle = null;
@@ -236,7 +239,7 @@ public class CollectionFragment extends Fragment {
 
 		@Override
 		public View newView(Context context, Cursor arg1, ViewGroup arg2) {
-			return ((Activity) context).getLayoutInflater().inflate(R.layout.songlist_item, null);
+			return ((Activity) context).getLayoutInflater().inflate(R.layout.collection_item, null);
 		}
 	}
 

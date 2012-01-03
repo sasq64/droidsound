@@ -49,21 +49,23 @@ public class VisualizationInfoView extends SurfaceView {
 			"G#"
 	};
 
-	private final Paint white;
+	private final Paint noteLabel;
 
 	public VisualizationInfoView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setWillNotDraw(false);
 		calculateColors();
-		white = new Paint();
-		white.setColor(0xffffffff);
-		white.setTextAlign(Paint.Align.CENTER);
+		noteLabel = new Paint();
+		noteLabel.setColor(0xffffffff);
+		noteLabel.setTextAlign(Paint.Align.CENTER);
+		noteLabel.setShadowLayer(1, 0, 1, 0xb4000000);
 	}
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		int width = MeasureSpec.getSize(widthMeasureSpec);
 		setMeasuredDimension(width, width / 12);
+		noteLabel.setTextSize(width / 12f / 3f);
 	}
 
 	private void calculateColors() {
@@ -100,6 +102,7 @@ public class VisualizationInfoView extends SurfaceView {
 		Paint fftPaint = new Paint();
 		int width = getWidth();
 		int height = getHeight();
+		float fh = noteLabel.getFontMetrics().ascent + noteLabel.getFontMetrics().descent;
 		for (int i = 0; i < 12; i ++) {
 			float x1 = (width + 1f) * i / 12f;
 			float x2 = x1 + height - 1;
@@ -107,7 +110,7 @@ public class VisualizationInfoView extends SurfaceView {
 			float y2 = height-1;
 			fftPaint.setColor(colors[i].toRGB(0.5f));
 			canvas.drawRect(x1, y1, x2, y2, fftPaint);
-			canvas.drawText(NOTE_NAME[i], (x1 + x2) / 2f, (y1 + y2 - white.getFontMetrics().ascent) / 2f, white);
+			canvas.drawText(NOTE_NAME[i], (x1 + x2) / 2f, (y1 + y2 - fh) / 2f, noteLabel);
 		}
 	}
 

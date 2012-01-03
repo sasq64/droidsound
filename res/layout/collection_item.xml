@@ -3,7 +3,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:background="@android:drawable/list_selector_background"
-    android:orientation="vertical">
+    android:orientation="vertical" >
 
     <ImageView
         android:id="@+id/icon"
@@ -14,6 +14,19 @@
         android:contentDescription="@string/icon"
         android:scaleType="fitXY"
         android:src="@drawable/gflat_note" />
+
+    <TextView
+        android:id="@+id/format"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@id/icon"
+        android:layout_alignParentBottom="true"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="1"
+        android:textAppearance="@android:style/TextAppearance.Small"
+        android:textColor="#ffffccff" />
 
     <ImageView
         android:id="@+id/playing"
@@ -32,10 +45,10 @@
         android:layout_alignParentTop="true"
         android:layout_toRightOf="@id/icon"
         android:lines="1"
-        android:shadowRadius="2"
         android:shadowColor="@android:color/black"
         android:shadowDx="0"
         android:shadowDy="1"
+        android:shadowRadius="2"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textColor="@android:color/primary_text_dark" />
 
