@@ -1,2 +1,1 @@
-APP_ABI := armeabi
-APP_CFLAGS += -mtune=cortex-a8
+APP_ABI := all
