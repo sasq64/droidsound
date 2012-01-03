@@ -7,27 +7,6 @@ import android.util.AttributeSet;
 import android.view.SurfaceView;
 
 public class VisualizationInfoView extends SurfaceView {
-	public static class Color {
-		private final float r, g, b;
-
-		protected Color(float r, float g, float b) {
-			this.r = r;
-			this.g = g;
-			this.b = b;
-		}
-
-		protected float gamma(float arg) {
-			return (float) Math.pow(arg, 1/2.2);
-		}
-
-		protected int toRGB(float luminosity) {
-			return 0xff000000
-					| (Math.round(gamma(luminosity * r) * 255) << 16)
-					| (Math.round(gamma(luminosity * g) * 255) << 8)
-					| (Math.round(gamma(luminosity * b) * 255) << 0);
-		}
-	}
-
 	public static final int BINS = 12 * 7;
 
 	protected static final String TAG = VisualizationInfoView.class.getSimpleName();
@@ -105,10 +84,10 @@ public class VisualizationInfoView extends SurfaceView {
 		float fh = noteLabel.getFontMetrics().ascent + noteLabel.getFontMetrics().descent;
 		for (int i = 0; i < 12; i ++) {
 			float x1 = (width + 1f) * i / 12f;
-			float x2 = x1 + height - 1;
+			float x2 = (width + 1f) * (i + 1) / 12f - 1;
 			float y1 = 0;
 			float y2 = height-1;
-			fftPaint.setColor(colors[i].toRGB(0.5f));
+			fftPaint.setColor(colors[i].toRGB(0.5f, 1f));
 			canvas.drawRect(x1, y1, x2, y2, fftPaint);
 			canvas.drawText(NOTE_NAME[i], (x1 + x2) / 2f, (y1 + y2 - fh) / 2f, noteLabel);
 		}

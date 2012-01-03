@@ -20,11 +20,12 @@ public class VisualizationView extends SurfaceView {
 	private final double minFreq = 110; /* A */
 	private final float[] fft = new float[BINS];
 	private final float[] lifetime = new float[BINS];
-	private VisualizationInfoView.Color[] colors;
+	private Color[] colors;
 
 	private Queue<OverlappingFFT.Data> queue;
 
 	private final Paint white;
+	private final Paint fftPaint;
 
 	public VisualizationView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -32,10 +33,18 @@ public class VisualizationView extends SurfaceView {
 		white = new Paint();
 		white.setColor(0xffffffff);
 		white.setTextAlign(Paint.Align.CENTER);
+
+		fftPaint = new Paint();
+		fftPaint.setAntiAlias(true);
 	}
 
-	public void setColors(VisualizationInfoView.Color[] colors) {
+	public void setColors(Color[] colors) {
 		this.colors = colors;
+	}
+
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		fftPaint.setStrokeWidth(w / 2f / fft.length);
 	}
 
 	/**
@@ -66,13 +75,21 @@ public class VisualizationView extends SurfaceView {
 		int height = getHeight();
 
 		Paint fftPaint = new Paint();
+		fftPaint.setAntiAlias(true);
+		fftPaint.setStrokeWidth(width / 2f / fft.length);
 		for (int i = 0; i < fft.length; i ++) {
-			float dBNorm = fft[i];
+			float dbPrev = i == 0 ? fft[i] : fft[i - 1];
+			float dbNorm = fft[i];
+			float dbNext = i == fft.length - 1 ? fft[i] : fft[i + 1];
+
+			float hump = 2f * dbNorm - dbPrev - dbNext;
+			float saturation = Math.max(0, Math.min(1, hump * 10f));
+
 			float luminosity = lifetime[i];
-			fftPaint.setColor(colors[i].toRGB(luminosity));
+			fftPaint.setColor(colors[i].toRGB(luminosity, saturation));
 
 			float x = (i + 0.5f) / (fft.length) * width;
-			canvas.drawLine(x, height, x, height * (1f - dBNorm), fftPaint);
+			canvas.drawLine(x, height, x, height * (1f - dbNorm), fftPaint);
 		}
 	}
 
