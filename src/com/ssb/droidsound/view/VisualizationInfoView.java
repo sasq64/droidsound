@@ -64,13 +64,13 @@ public class VisualizationInfoView extends SurfaceView {
 
 			/* Approximate white keys by reducing saturation. */
 			if (! noteName.contains("#")) {
-				r = .4f + r * .6f;
-				g = .4f + g * .6f;
-				b = .4f + b * .6f;
+				r = .25f + r * .75f;
+				g = .25f + g * .75f;
+				b = .25f + b * .75f;
 			} else {
-				r *= 0.6f;
-				g *= 0.6f;
-				b *= 0.6f;
+				r *= 0.75f;
+				g *= 0.75f;
+				b *= 0.75f;
 			}
 			colors[i] = new Color(r, g, b);
 		}
@@ -83,13 +83,14 @@ public class VisualizationInfoView extends SurfaceView {
 		int height = getHeight();
 		float fh = noteLabel.getFontMetrics().ascent + noteLabel.getFontMetrics().descent;
 		for (int i = 0; i < 12; i ++) {
+			int n = (i + 3) % 12;
 			float x1 = (width + 1f) * i / 12f;
 			float x2 = (width + 1f) * (i + 1) / 12f - 1;
 			float y1 = 0;
 			float y2 = height-1;
-			fftPaint.setColor(colors[i].toRGB(0.5f, 1f));
+			fftPaint.setColor(colors[n].toRGB(0.5f, 1f));
 			canvas.drawRect(x1, y1, x2, y2, fftPaint);
-			canvas.drawText(NOTE_NAME[i], (x1 + x2) / 2f, (y1 + y2 - fh) / 2f, noteLabel);
+			canvas.drawText(NOTE_NAME[n], (x1 + x2) / 2f, (y1 + y2 - fh) / 2f, noteLabel);
 		}
 	}
 
