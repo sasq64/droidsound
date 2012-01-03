@@ -202,22 +202,44 @@ public class UADEPlugin extends DroidSoundPlugin {
 	 */
 	@Override
 	protected MusicInfo getMusicInfo(String name, byte[] module) {
-		if (module.length < 3) {
+		if (module.length < 4) {
 			return null;
 		}
 
-		String header = new String(module, 0, 3, ISO88591);
-		if (header.equals("AHX")) {
+		String header = new String(module, 0, 4, ISO88591);
+		if (header.substring(0, 3).equals("AHX")) {
 			MusicInfo info = new MusicInfo();
 			int namePtr = ((module[4] & 0xff) << 8) | (module[5] & 0xff);
 			if (namePtr <= module.length - 128) {
-				info.title = new String(module, namePtr, 128, ISO88591);
-				info.title = info.title.replaceFirst("\u0000.*", "");
+				info.title = new String(module, namePtr, 128, ISO88591).replaceFirst("\u0000.*", "");
 				info.format = "AHX";
 				return info;
 			}
 
 			return null;
+		}
+
+		if (header.matches("MMD[0-3C]")) {
+			/* MED format looks complicated. No idea where to get the title. */
+			MusicInfo info = new MusicInfo();
+			info.format = "MED";
+			return info;
+		}
+
+
+		if (module.length < 0x43c) {
+			return null;
+		}
+
+		String modMagic = new String(module, 0x438, 4, ISO88591);
+		/* magic sequences taken from modplugin's load_mod.cpp.
+		 * There are still some unrecognized MOD files that have no magic
+		 * signature, presumably the very first soundtracker formats. */
+		if (modMagic.matches("M\\.K\\.|M!K!|M&K!|N\\.T\\.|CD81|OKTA|FLT[4-9]|[2-9]CHN|[12][0-9]CH|3[0-2]CH|TDZ[4-9]|16CN|32CN")) {
+			MusicInfo info = new MusicInfo();
+			info.title = new String(module, 0, 32, ISO88591).replaceFirst("\u0000.*", "");
+			info.format = "MOD";
+			return info;
 		}
 
 		return null;
