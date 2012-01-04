@@ -42,7 +42,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_FFT_fft(JNIEnv *env, jclass
             /* The combination of (w ^ x) - w reads the table in reverse
              * direction until element 0, then forwards */
             int32_t sin = int16_t(twiddle[(w ^ x) - x]);
-            tmp[i] = ((mono1 * sin) & 0xffff0000) | (((mono2 * sin) >> 16) & 0xffff);
+            tmp[i] = (((mono1 * sin) << 1) & 0xffff0000) | (((mono2 * sin) >> 15) & 0xffff);
         }
         env->ReleasePrimitiveArrayCritical(jin, in, 0);
 
