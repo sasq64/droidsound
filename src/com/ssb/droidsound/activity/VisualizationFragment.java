@@ -44,7 +44,7 @@ public class VisualizationFragment extends Fragment {
 	private final BroadcastReceiver musicChangeReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context arg0, Intent arg1) {
-			Queue<OverlappingFFT.Data> data = player.getFftBuffer();
+			Queue<OverlappingFFT.Data> data = player.getFftQueue();
 			visualizationView.setData(data);
 		}
 	};

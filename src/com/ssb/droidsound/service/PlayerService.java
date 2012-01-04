@@ -166,7 +166,7 @@ public class PlayerService extends Service {
 		 *
 		 * @return data array
 		 */
-		public Queue<Data> getFftBuffer() {
+		public Queue<Data> getFftQueue() {
 			return fft.getQueue();
 		}
 
@@ -700,12 +700,12 @@ public class PlayerService extends Service {
 	    	return playMod(song);
 		}
 
-		public Queue<Data> getFftBuffer() {
+		public Queue<Data> getFftQueue() {
 			if (player == null) {
 				return null;
 			}
 
-			return player.getFftBuffer();
+			return player.getFftQueue();
 		}
 	}
 

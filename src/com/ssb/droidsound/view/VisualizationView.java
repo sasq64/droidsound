@@ -2,7 +2,6 @@ package com.ssb.droidsound.view;
 
 import java.util.Arrays;
 import java.util.Queue;
-import java.util.concurrent.TimeUnit;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -66,10 +65,7 @@ public class VisualizationView extends SurfaceView {
 			return;
 		}
 
-		long futureDelay = -1;
-		while (futureDelay < 0) {
-			futureDelay = updateFftData();
-		}
+		long futureDelay = updateFftData();
 		postInvalidateDelayed(futureDelay);
 
 		int width = getWidth();
@@ -95,16 +91,21 @@ public class VisualizationView extends SurfaceView {
 	}
 
 	private long updateFftData() {
-		OverlappingFFT.Data data = queue.poll();
-		if (data != null) {
-			updateFftData(data.getFft());
-		}
+		while (true) {
+			long ctm = System.currentTimeMillis();
+			OverlappingFFT.Data data = queue.peek();
+			if (data == null) {
+				return 100;
+			}
+			if (data.getTime() > ctm) {
+				return data.getTime() - ctm;
+			}
 
-		data = queue.peek();
-		if (data == null) {
-			return 100;
+			data = queue.poll();
+			if (data != null) {
+				updateFftData(data.getFft());
+			}
 		}
-		return data.getDelay(TimeUnit.MILLISECONDS);
 	}
 
 	private double projectFft(double idx) {

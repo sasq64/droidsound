@@ -1,9 +1,7 @@
 package com.ssb.droidsound.utils;
 
 import java.util.Queue;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * This class performs 4096 point FFT with 75 % overlap between
@@ -13,7 +11,7 @@ import java.util.concurrent.TimeUnit;
  * @author alankila
  */
 public class OverlappingFFT {
-	public static class Data implements Delayed {
+	public static class Data implements Comparable<Data> {
 		private final Long time;
 		private final short[] fft;
 
@@ -22,26 +20,22 @@ public class OverlappingFFT {
 			this.fft = fft;
 		}
 
+		public long getTime() {
+			return time;
+		}
+
 		public short[] getFft() {
 			return fft;
 		}
 
 		@Override
-		public int compareTo(Delayed other) {
-			return time.compareTo(((Data) other).time);
-		}
-
-		@Override
-		public long getDelay(TimeUnit tu) {
-			long millis = time - System.currentTimeMillis();
-			return tu.convert(millis, TimeUnit.MILLISECONDS);
+		public int compareTo(Data other) {
+			return time.compareTo(other.time);
 		}
 	}
 
-	private static final String TAG = OverlappingFFT.class.getSimpleName();
-
 	/** Queue of generated FFT frames for later processing. */
-	private final Queue<Data> queue = new DelayQueue<Data>();
+	private final Queue<Data> queue = new ConcurrentLinkedQueue<Data>();
 
 	/** Accumulation buffer until full FFT has been reached. 16-bit stereo. */
 	private final short[] fftSamples = new short[8192 * 2];
@@ -55,22 +49,9 @@ public class OverlappingFFT {
 	/** Length of data buffering */
 	private final int bufferingMs;
 
-	/** Maximum # of entries permitted in queue. */
-	private final int maxLength;
-
 	public OverlappingFFT(int bufsizeFrames, int frameRate) {
 		this.frameRate = frameRate;
 		bufferingMs = bufsizeFrames * 1000 / frameRate;
-		int framesPerFft = fftSamples.length / 2;
-		int fullFramesPerSecond = frameRate / framesPerFft;
-		int fullFramesPerSecondWithOverlap = fullFramesPerSecond * 4;
-		int fftFramesRequired = fullFramesPerSecondWithOverlap * bufferingMs / 1000;
-
-		Log.i(TAG, "FFT timing information: %d full frames required, %d ms buffer",
-				fftFramesRequired, bufferingMs);
-
-		/* Adding some extra buffers here to allow scheduling glitches etc. */
-		maxLength = fftFramesRequired + 4;
 	}
 
 	public void feed(short[] samples, int posInSamples, int lengthInSamples) {
@@ -86,14 +67,26 @@ public class OverlappingFFT {
 
 			/* Complete buffer? */
 			if (fftSamplesIdx == fftSamples.length) {
+				/* Consume events if the view isn't consuming them.
+				 * The condition to wait is 2 buffer lengths, after which
+				 * the elements are just thrown away. We should probably work out
+				 * how to stop OverlapppingFFT
+				 */
+				while (true) {
+					Data d = queue.peek();
+					if (d != null && d.getTime() + bufferingMs < System.currentTimeMillis()) {
+						queue.poll();
+						continue;
+					}
+					break;
+				}
+
 				/* The length is halved because FFT is computed over mono signal,
 				 * and then halved again because only half of the FFT spectrum is
 				 * actually returned.
 				 */
 				short[] buf = new short[fftSamples.length >> 2];
-				if (queue.size() > maxLength) {
-					queue.poll();
-				}
+
 				/* Run FFT, and place estimated time this buffer will be played back
 				 * at start of some ignored FFT components... */
 				FFT.fft(fftSamples, buf);
