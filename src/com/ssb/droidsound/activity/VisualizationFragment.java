@@ -43,8 +43,11 @@ public class VisualizationFragment extends Fragment {
 
 	private final BroadcastReceiver musicChangeReceiver = new BroadcastReceiver() {
 		@Override
-		public void onReceive(Context arg0, Intent arg1) {
-			Queue<OverlappingFFT.Data> data = player.getFftQueue();
+		public void onReceive(Context c, Intent i) {
+			Queue<OverlappingFFT.Data> data = null;
+			if (i.getAction().equals(PlayerService.ACTION_LOADING_SONG)) {
+				data = player.getFftQueue();
+			}
 			visualizationView.setData(data);
 		}
 	};
@@ -53,7 +56,10 @@ public class VisualizationFragment extends Fragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
-		getActivity().getApplicationContext().registerReceiver(musicChangeReceiver, new IntentFilter(PlayerService.ACTION_LOADING_SONG));
+		IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(PlayerService.ACTION_LOADING_SONG);
+		intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
+		getActivity().getApplicationContext().registerReceiver(musicChangeReceiver, intentFilter);
 	}
 
 	@Override

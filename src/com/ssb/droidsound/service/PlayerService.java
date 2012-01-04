@@ -573,6 +573,11 @@ public class PlayerService extends Service {
 		 * @throws InterruptedException
 		 */
 		public boolean playMod(SongFile song) throws IOException, InterruptedException {
+			/* Plugins will be used to try load the file now, so stop player thread if it is running. */
+			if (player != null) {
+				stopPlayerThread();
+			}
+
 			List<SongFileData> files = db.getSongFileData(song);
 			String basename1 = files.get(0).getFile().getName();
 			byte[] data1 = files.get(0).getData();
@@ -580,11 +585,6 @@ public class PlayerService extends Service {
 			byte[] data2 = files.size() == 2 ? files.get(1).getData() : null;
 
 			addServiceWantedCount(1, basename1);
-
-			/* Plugins will be used to try load the file now, so stop player thread if it is running. */
-			if (player != null) {
-				stopPlayerThread();
-			}
 
 			/* Scan plugin list looking for the one that can handle the file and agrees to load it. */
 			DroidSoundPlugin currentPlugin = null;
