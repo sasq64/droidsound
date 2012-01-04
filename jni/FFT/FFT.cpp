@@ -2,8 +2,6 @@
 #include "com_ssb_droidsound_utils_FFT.h"
 #include "fixedfft.h"
 
-#define MAX_FFT_SIZE 4096
-
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_FFT_fft(JNIEnv *env, jclass klass, jshortArray jin, jshortArray jout)
 {
         int32_t tmp[MAX_FFT_SIZE];
@@ -24,11 +22,27 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_FFT_fft(JNIEnv *env, jclass
             return;
         }
 
+        int scale = LOG_FFT_SIZE;
+        for (int32_t i = 1; i <= fftLen >> 1; i <<= 1, --scale);
+
         /* Convert 16-bit stereo to real-valued mono input packing 2 values per int32 */
         for (int32_t i = 0; i < fftLen; i += 1) {
-             int32_t mono1 = in[(i << 2) + 0] + in[(i << 2) + 1] >> 1;
-             int32_t mono2 = in[(i << 2) + 2] + in[(i << 2) + 3] >> 1;
-             tmp[i] = (mono1 << 16) | (mono2 & 0xffff);
+            int32_t mono1 = in[(i << 2) + 0] + in[(i << 2) + 1] >> 1;
+            int32_t mono2 = in[(i << 2) + 2] + in[(i << 2) + 3] >> 1;
+
+            /* Get window function index, half of the table. */
+            int32_t widx = i >> 1;
+            if (widx == 0) {
+                /* 0 would look up element MAX_FFT_SIZE/4. */
+                widx = 1;
+            }
+
+            int32_t w = MAX_FFT_SIZE / 4 - (widx << scale);
+            int32_t x = w >> 31;
+            /* The combination of (w ^ x) - w reads the table in reverse
+             * direction until element 0, then forwards */
+            int32_t sin = int16_t(twiddle[(w ^ x) - x]);
+            tmp[i] = ((mono1 * sin) & 0xffff0000) | (((mono2 * sin) >> 16) & 0xffff);
         }
         env->ReleasePrimitiveArrayCritical(jin, in, 0);
 

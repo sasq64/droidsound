@@ -1,38 +1,9 @@
-/*
- * Copyright (C) 2010 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+#!/usr/bin/perl -w
+use strict;
 
-/* A Fixed point implementation of Fast Fourier Transform (FFT). Complex numbers
- * are represented by 32-bit integers, where higher 16 bits are real part and
- * lower ones are imaginary part. Few compromises are made between efficiency,
- * accuracy, and maintainability. To make it fast, arithmetic shifts are used
- * instead of divisions, and bitwise inverses are used instead of negates. To
- * keep it small, only radix-2 Cooley-Tukey algorithm is implemented, and only
- * half of the twiddle factors are stored. Although there are still ways to make
- * it even faster or smaller, it costs too much on one of the aspects.
- */
+use integer;
 
-#include <stdio.h>
-#include <stdint.h>
-#ifdef __arm__
-#include <machine/cpu-features.h>
-#endif
-
-#include "fixedfft.h"
-
-const int32_t twiddle[MAX_FFT_SIZE / 4] = {
+my @twiddle = (
     0x00008000, 0xffce8000, 0xff9b8000, 0xff698000, 0xff378001, 0xff058001,
     0xfed28001, 0xfea08002, 0xfe6e8002, 0xfe3c8003, 0xfe098004, 0xfdd78005,
     0xfda58006, 0xfd738007, 0xfd408008, 0xfd0e8009, 0xfcdc800a, 0xfcaa800b,
@@ -204,86 +175,23 @@ const int32_t twiddle[MAX_FFT_SIZE / 4] = {
     0x800afcdc, 0x8009fd0e, 0x8008fd40, 0x8007fd73, 0x8006fda5, 0x8005fdd7,
     0x8004fe09, 0x8003fe3c, 0x8002fe6e, 0x8002fea0, 0x8001fed2, 0x8001ff05,
     0x8001ff37, 0x8000ff69, 0x8000ff9b, 0x8000ffce,
-};
+);
 
-/* Returns the multiplication of \conj{a} and {b}. */
-static inline int32_t mult(int32_t a, int32_t b)
-{
-#if __ARM_ARCH__ >= 6
-    int32_t t = b;
-    __asm__("smuad  %0, %0, %1"          : "+r" (t) : "r" (a));
-    __asm__("smusdx %0, %0, %1"          : "+r" (b) : "r" (a));
-    __asm__("pkhtb  %0, %0, %1, ASR #16" : "+r" (t) : "r" (b));
-    return t;
-#else
-    return (((a >> 16) * (b >> 16) + (int16_t)a * (int16_t)b) & ~0xFFFF) |
-        ((((a >> 16) * (int16_t)b - (int16_t)a * (b >> 16)) >> 16) & 0xFFFF);
-#endif
-}
+my $fftLen = shift || 4096;
 
-static inline int32_t half(int32_t a)
-{
-#if __ARM_ARCH__ >= 6
-    __asm__("shadd16 %0, %0, %1" : "+r" (a) : "r" (0));
-    return a;
-#else
-    return ((a >> 1) & ~0x8000) | (a & 0x8000);
-#endif
-}
+my $scale = 12;
+for (my $i = 1; $i <= $fftLen >> 1; $i <<= 1, --$scale) {}
 
-void fixed_fft(int n, int32_t *v)
-{
-    int scale = LOG_FFT_SIZE, i, p, r;
+for (my $i = 0; $i < $fftLen; $i += 1) {
+     my $t = $i >> 1 || 1;
 
-    for (r = 0, i = 1; i < n; ++i) {
-        for (p = n; !(p & r); p >>= 1, r ^= p);
-        if (i < r) {
-            int32_t t = v[i];
-            v[i] = v[r];
-            v[r] = t;
-        }
-    }
+     my $w = (1 << 12) / 4 - ($t << $scale);
+     my $ws = $w >> 31;
+     my $idx = ($w ^ $ws) - $ws;
 
-    for (p = 1; p < n; p <<= 1) {
-        --scale;
-
-        for (i = 0; i < n; i += p << 1) {
-            int32_t x = half(v[i]);
-            int32_t y = half(v[i + p]);
-            v[i] = x + y;
-            v[i + p] = x - y;
-        }
-
-        for (r = 1; r < p; ++r) {
-            int32_t w = MAX_FFT_SIZE / 4 - (r << scale);
-            i = w >> 31;
-            w = twiddle[(w ^ i) - i] ^ (i << 16);
-            for (i = r; i < n; i += p << 1) {
-                int32_t x = half(v[i]);
-                int32_t y = mult(w, v[i + p]);
-                v[i] = x - y;
-                v[i + p] = x + y;
-            }
-        }
-    }
-}
-
-void fixed_fft_real(int n, int32_t *v)
-{
-    int scale = LOG_FFT_SIZE, m = n >> 1, i;
-
-    fixed_fft(n, v);
-    for (i = 1; i <= n; i <<= 1, --scale);
-    v[0] = mult(~v[0], 0x80008000);
-    v[m] = half(v[m]);
-
-    for (i = 1; i < n >> 1; ++i) {
-        int32_t x = half(v[i]);
-        int32_t z = half(v[n - i]);
-        int32_t y = z - (x ^ 0xFFFF);
-        x = half(x + (z ^ 0xFFFF));
-        y = mult(y, twiddle[i << scale]);
-        v[i] = x - y;
-        v[n - i] = (x + y) ^ 0xFFFF;
-    }
+     my $v = $twiddle[$idx] & 0xffff;
+     if ($v & 0x8000) {
+         $v |= -1 ^ 0xffff;
+     }
+     print "$i => twiddle[$idx] = $v\t$w, $ws", "\n";
 }

@@ -80,7 +80,7 @@ public class VisualizationView extends SurfaceView {
 			float dbNext = i == fft.length - 1 ? fft[i] : fft[i + 1];
 
 			float hump = 2f * dbNorm - dbPrev - dbNext;
-			float saturation = Math.max(0, Math.min(1, hump * 10f));
+			float saturation = Math.max(0, Math.min(1, hump * 5f));
 
 			float luminosity = lifetime[i];
 			fftPaint.setColor(colors[i].toRGB(luminosity, saturation));
@@ -121,25 +121,25 @@ public class VisualizationView extends SurfaceView {
 			double startIdx = startFreq / 22050 * (buf.length >> 1);
 			double endIdx = endFreq / 22050 * (buf.length >> 1);
 
-			double lenSq = 0;
-			double n = 0;
+			double lenSqMax = 1e-10;
 			while (endIdx - startIdx > 1e-10) {
 				int intStartIdx = (int) startIdx;
 				/* Determine width inside the current bin. */
 				double width = Math.min(endIdx - startIdx, intStartIdx + 1 - startIdx) + 1e-10;
 				float re = buf[intStartIdx << 1] / (float) (1 << 10);
 				float im = buf[(intStartIdx << 1) + 1] / (float) (1 << 10);
-				lenSq += re * re + im * im;
+				double lenSq = (re * re + im * im) * width;
+				if (lenSq > lenSqMax) {
+					lenSqMax = lenSq;
+				}
 				startIdx += width;
-				n += width;
 			}
-			lenSq /= n;
 
-			double dB = Math.log(lenSq + 1e-10) / Math.log(10) * 10;
+			double dB = Math.log(lenSqMax) / Math.log(10) * 10;
 
-			/* FIXME: is -60 dB good limit? I think that because this class is used
-			 * for module playback with 8 bit samples, showing much lower than 50 dB is
-			 * not a good idea. */
+			/* 60 dB correlates with 1 << 10 above. The lowest bit seems to be pure noise,
+			 * but because there's great degree of averaging of bins, the noise level is pushed
+			 * to somewhat less than 60 dB except for lowest displayed bass frequencies. */
 			float x = ((float) dB / 60f) + 0.8f;
 
 			if (x >= fft[i]) {
