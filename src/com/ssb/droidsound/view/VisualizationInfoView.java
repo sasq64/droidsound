@@ -1,5 +1,7 @@
 package com.ssb.droidsound.view;
 
+import com.ssb.droidsound.utils.Color;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;

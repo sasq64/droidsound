@@ -10,6 +10,7 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
 
+import com.ssb.droidsound.utils.Color;
 import com.ssb.droidsound.utils.OverlappingFFT;
 
 public class VisualizationView extends SurfaceView {
