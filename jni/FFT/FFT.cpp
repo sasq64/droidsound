@@ -26,23 +26,26 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_FFT_fft(JNIEnv *env, jclass
         for (int32_t i = 1; i <= fftLen >> 1; i <<= 1, --scale);
 
         /* Convert 16-bit stereo to real-valued mono input packing 2 values per int32 */
-        for (int32_t i = 0; i < fftLen; i += 1) {
-            int32_t mono1 = in[(i << 2) + 0] + in[(i << 2) + 1] >> 1;
-            int32_t mono2 = in[(i << 2) + 2] + in[(i << 2) + 3] >> 1;
+        for (int32_t i = 0; i < fftLen >> 1; i += 1) {
+            /* head sample */
+            int32_t mh1 = in[(i << 2) + 0] + in[(i << 2) + 1] >> 1;
+            int32_t mh2 = in[(i << 2) + 2] + in[(i << 2) + 3] >> 1;
+            /* tail sample */
+            int32_t j = fftLen - 1 - i;
+            int32_t mt1 = in[(j << 2) + 0] + in[(j << 2) + 1] >> 1;
+            int32_t mt2 = in[(j << 2) + 2] + in[(j << 2) + 3] >> 1;
 
             /* Get window function index, half of the table. */
-            int32_t widx = i >> 1;
-            if (widx == 0) {
-                /* 0 would look up element MAX_FFT_SIZE/4. */
-                widx = 1;
-            }
-
+            int32_t widx = i != 0 ? i : 1;
             int32_t w = MAX_FFT_SIZE / 4 - (widx << scale);
-            int32_t x = w >> 31;
+            int32_t ws = w >> 31;
             /* The combination of (w ^ x) - w reads the table in reverse
-             * direction until element 0, then forwards */
-            int32_t sin = int16_t(twiddle[(w ^ x) - x]);
-            tmp[i] = (((mono1 * sin) << 1) & 0xffff0000) | (((mono2 * sin) >> 15) & 0xffff);
+             * until element 0, then forwards. Resulting curve is -cos(). */
+            int32_t cos = int16_t((twiddle[(w ^ ws) - ws] ^ ws) >> 16);
+            /* Hamming window: 0.54 - 0.46 * cos() */
+            int32_t win = 0x8a3d + ((0x75c3 * cos) >> 15);
+            tmp[i] = ((mh1 * win) & 0xffff0000) | (((mh2 * win) >> 16) & 0xffff);
+            tmp[j] = ((mt1 * win) & 0xffff0000) | (((mt2 * win) >> 16) & 0xffff);
         }
         env->ReleasePrimitiveArrayCritical(jin, in, 0);
 

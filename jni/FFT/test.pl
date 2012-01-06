@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 use strict;
-
 use integer;
 
 my @twiddle = (
@@ -178,20 +177,24 @@ my @twiddle = (
 );
 
 my $fftLen = shift || 4096;
+use constant MAX_FFT_SIZE => 4096;
 
 my $scale = 12;
 for (my $i = 1; $i <= $fftLen >> 1; $i <<= 1, --$scale) {}
 
-for (my $i = 0; $i < $fftLen; $i += 1) {
-     my $t = $i >> 1 || 1;
+        for (my $i = 0; $i < ($fftLen >> 1); $i += 1) {
+            my $j = $fftLen - $i - 1;
+            my $widx = $i ? $i : 1;
+            my $w = MAX_FFT_SIZE / 4 - ($widx << $scale);
+            my $ws = $w < 0 ? -1 : 0;
+            my $idx = ($w ^ $ws) - $ws;
+            die $i if $idx >= @twiddle || $idx < 0;
+            my $cos = (($twiddle[$idx] ^ $ws) >> 16) & 0xffff;
+            if ($cos & 0x8000) {
+                $cos |= -1 ^ 0xffff;
+            }
+            my $win = 0x8a3d + ((0x75c3 * $cos) >> 15);
+            print "$i $win\n";
+            print "$j $win\n";
+        }
 
-     my $w = (1 << 12) / 4 - ($t << $scale);
-     my $ws = $w >> 31;
-     my $idx = ($w ^ $ws) - $ws;
-
-     my $v = $twiddle[$idx] & 0xffff;
-     if ($v & 0x8000) {
-         $v |= -1 ^ 0xffff;
-     }
-     print "$i => twiddle[$idx] = $v\t$w, $ws", "\n";
-}
