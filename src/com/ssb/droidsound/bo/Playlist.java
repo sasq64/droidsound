@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -21,21 +19,13 @@ import com.ssb.droidsound.utils.Log;
 public class Playlist {
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 	private static final String TAG = Playlist.class.getSimpleName();
-	private static final Map<File, Playlist> PLAYLISTS = new HashMap<File, Playlist>();
 
 	private final File plistFile;
 	private final List<SongFile> songs;
 
 	private String title;
 
-	public static synchronized Playlist getPlaylist(File file) {
-		if (! PLAYLISTS.containsKey(file)) {
-			PLAYLISTS.put(file, new Playlist(file));
-		}
-		return PLAYLISTS.get(file);
-	}
-
-	protected Playlist(File file) {
+	public Playlist(File file) {
 		plistFile = file;
 		Log.d(TAG, "Opening playlist " + file.getPath());
 
@@ -52,10 +42,12 @@ public class Playlist {
 			dis.readFully(data);
 			dis.close();
 
-			JSONArray json = new JSONArray(new String(data, UTF8));
-			for (int i = 0; i < json.length(); i ++) {
-				JSONObject obj = json.getJSONObject(i);
-				songs.add(deserialize(obj));
+			if (data.length != 0) {
+				JSONArray json = new JSONArray(new String(data, UTF8));
+				for (int i = 0; i < json.length(); i ++) {
+					JSONObject obj = json.getJSONObject(i);
+					songs.add(deserialize(obj));
+				}
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -126,10 +118,5 @@ public class Playlist {
 
 	public synchronized List<SongFile> getSongs() {
 		return Collections.unmodifiableList(songs);
-	}
-
-	public synchronized void deletePlaylist() {
-		PLAYLISTS.remove(this);
-		plistFile.delete();
 	}
 }

@@ -33,6 +33,7 @@ import android.os.IBinder;
 import android.provider.BaseColumns;
 
 import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.bo.Playlist;
 import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.bo.SongFileData;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
@@ -66,7 +67,7 @@ public class MusicIndexService extends Service {
 
 	public static final int TYPE_ZIP = 1;
 	public static final int TYPE_DIR = 2;
-	public static final int TYPE_PLIST = 3;
+	public static final int TYPE_PLAYLIST = 3;
 	public static final int TYPE_FILE = 4;
 	public static final int TYPE_MUS_FOLDER = 5;
 	public static final int TYPE_SONGLENGTH = 6;
@@ -328,7 +329,7 @@ public class MusicIndexService extends Service {
 						values.put("parent_id", parentId);
 						values.put("filename", f.getName());
 						values.put("modify_time", f.lastModified());
-						values.put("type", TYPE_PLIST);
+						values.put("type", TYPE_PLAYLIST);
 						values.put("title", f.getName().substring(0, f.getName().length() - 6));
 						filesHelper.insert(values);
 					} else if (f.getName().equals("Songlengths.txt")) {
@@ -624,6 +625,24 @@ public class MusicIndexService extends Service {
 					composer,
 					date
 			);
+		}
+
+		public List<Playlist> getPlaylistsList() {
+			Cursor c = db.query(
+					"files",
+					new String[] { "filename" },
+					"parent_id IS NULL AND type = ?", new String[] { String.valueOf(TYPE_PLAYLIST) },
+					null, null, null
+			);
+
+			List<Playlist> pl = new ArrayList<Playlist>();
+			while (c.moveToNext()) {
+				String name = c.getString(0);
+				File f = new File(Application.getModsDirectory(), name);
+				pl.add(new Playlist(f));
+			}
+
+			return pl;
 		}
 	};
 

@@ -16,8 +16,11 @@ import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -28,6 +31,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.bo.Playlist;
 import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.service.MusicIndexService;
 import com.ssb.droidsound.service.PlayerService;
@@ -173,7 +177,7 @@ public class CollectionFragment extends Fragment {
 			case MusicIndexService.TYPE_FILE:
 				icon = R.drawable.gflat_note;
 				break;
-			case MusicIndexService.TYPE_PLIST:
+			case MusicIndexService.TYPE_PLAYLIST:
 				if (filename.equals("Favorites.plist")) {
 					icon = R.drawable.gflat_heart;
 				} else {
@@ -200,6 +204,29 @@ public class CollectionFragment extends Fragment {
 			}
 			sidetitleView.setText(sidetitle);
 
+			view.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+				@Override
+				public void onCreateContextMenu(ContextMenu menu, View v,
+						ContextMenuInfo menuInfo) {
+
+					/* Add to playlist: X entries */
+					if (type == MusicIndexService.TYPE_FILE) {
+						String fav = getString(R.string.to_favorites);
+						List<Playlist> pl = db.getPlaylistsList();
+						for (int i = 0; i < pl.size(); i ++) {
+							String title = pl.get(i).getTitle();
+							menu.add(1, i, Menu.NONE, fav + " " + title);
+						}
+					}
+
+					/* Delete? Needs to be a deleteable item, though. */
+					SongFile sf = db.getSongFile(childId);
+					if (sf.getZipFilePath() == null
+						|| type == MusicIndexService.TYPE_ZIP) {
+						menu.add(2, Menu.NONE, Menu.NONE, R.string.delete);
+					}
+				}
+			});
 			view.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View arg0) {

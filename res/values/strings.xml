@@ -8,6 +8,9 @@
 <string name="mods_setup">Created and setup MODS directory on external sdcard.</string>
 <string name="settings">Settings</string>
 
+<string name="to_favorites">Add to playlist: </string>
+<string name="delete">Delete file</string>
+
 <string-array name="panning_opts">
 	<item>0 % (mono)</item>
 	<item>25 %</item>
