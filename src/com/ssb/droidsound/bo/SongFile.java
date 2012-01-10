@@ -5,7 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This container represents a playable file at specific subsong.
+ * This container represents a playable file at specific subsong
+ * setting.
  *
  * @author alankila
  */
@@ -25,15 +26,17 @@ public class SongFile {
 	private final File filePath;
 	private final File zipFilePath;
 
+	private final String format;
 	private final String title;
 	private final String composer;
 	private final int date;
 
-	public SongFile(long id, int subtune, File fileName, File zipFilePath, String title, String composer, int date) {
+	public SongFile(long id, int subtune, File fileName, File zipFilePath, String format, String title, String composer, int date) {
 		this.id = id;
 		this.subtune = subtune;
 		this.filePath = fileName;
 		this.zipFilePath = zipFilePath;
+		this.format = format;
 		this.title = title;
 		this.composer = composer;
 		this.date = date;
@@ -70,6 +73,10 @@ public class SongFile {
 		return zipFilePath;
 	}
 
+	public String getFormat() {
+		return format;
+	}
+
 	public String getTitle() {
 		return title;
 	}
@@ -84,5 +91,19 @@ public class SongFile {
 
 	public long getId() {
 		return id;
+	}
+
+	@Override
+	public int hashCode() {
+		return (int) id;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		if (other instanceof SongFile) {
+			return id == ((SongFile) other).id;
+		}
+
+		return false;
 	}
 }

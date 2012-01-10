@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -21,6 +22,7 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -31,6 +33,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.Playlist;
 import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.service.MusicIndexService;
@@ -39,15 +42,11 @@ import com.ssb.droidsound.utils.Log;
 
 public class CollectionFragment extends Fragment {
 	protected static final String TAG = CollectionFragment.class.getSimpleName();
+	protected static final int MENU_GROUP_DELETE = 1;
+	protected static final int MENU_GROUP_PLAYLIST = 2;
 
 	/** Currently playing song's id */
 	private Long currentlyPlayingSong;
-
-	/** Desired sorting of the collection */
-	private final MusicIndexService.Sort sorting = MusicIndexService.Sort.TITLE;
-
-	/** Shuffle playback? */
-	private boolean shuffle;
 
 	private TextView searchView;
 
@@ -73,11 +72,27 @@ public class CollectionFragment extends Fragment {
 		ft.commit();
 	}
 
-	protected void refreshListFragment() {
+	protected CollectionViewAdapter getActiveCollectionViewAdapter() {
 		ListFragment lf = (ListFragment) getFragmentManager().findFragmentById(R.id.collection_view);
 		if (lf != null) {
-			((CollectionViewAdapter) lf.getListAdapter()).requery();
+			return (CollectionViewAdapter) lf.getListAdapter();
 		}
+		return null;
+	}
+
+	protected void refreshListFragment() {
+		CollectionViewAdapter cva = getActiveCollectionViewAdapter();
+		if (cva == null) {
+			return;
+		}
+
+		cva.requery();
+	}
+
+	protected MusicIndexService.Sort getSorting() {
+		SharedPreferences prefs = Application.getAppPreferences();
+		String sorting = prefs.getString("sorting", "TITLE");
+		return MusicIndexService.Sort.valueOf(sorting);
 	}
 
 	private final ServiceConnection searchDbConnection = new ServiceConnection() {
@@ -91,7 +106,7 @@ public class CollectionFragment extends Fragment {
 			CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
 				@Override
 				public Cursor getCursor() {
-					return db.getFilesByParentId(null, sorting);
+					return db.getFilesByParentId(null, getSorting());
 				}
 			});
 			lf.setListAdapter(cva);
@@ -206,16 +221,21 @@ public class CollectionFragment extends Fragment {
 
 			view.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
 				@Override
-				public void onCreateContextMenu(ContextMenu menu, View v,
-						ContextMenuInfo menuInfo) {
+				public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+					/* menuInfo is null.
+					 * Encoding the data to the fields I got in menu, then.
+					 * Thanks, android. */
+					int intChildId = (int) (long) childId;
+
+					menu.setHeaderTitle(title);
 
 					/* Add to playlist: X entries */
 					if (type == MusicIndexService.TYPE_FILE) {
 						String fav = getString(R.string.to_favorites);
-						List<Playlist> pl = db.getPlaylistsList();
-						for (int i = 0; i < pl.size(); i ++) {
-							String title = pl.get(i).getTitle();
-							menu.add(1, i, Menu.NONE, fav + " " + title);
+						for (Playlist pl : db.getPlaylistsList()) {
+							int id = (int) pl.getId();
+							String title = pl.getTitle();
+							menu.add(MENU_GROUP_PLAYLIST, intChildId, id, fav + " " + title);
 						}
 					}
 
@@ -223,7 +243,7 @@ public class CollectionFragment extends Fragment {
 					SongFile sf = db.getSongFile(childId);
 					if (sf.getZipFilePath() == null
 						|| type == MusicIndexService.TYPE_ZIP) {
-						menu.add(2, Menu.NONE, Menu.NONE, R.string.delete);
+						menu.add(MENU_GROUP_DELETE, intChildId, Menu.NONE, R.string.delete);
 					}
 				}
 			});
@@ -234,7 +254,7 @@ public class CollectionFragment extends Fragment {
 						navigateWithBackStack(new ICursorFactory() {
 							@Override
 							public Cursor getCursor() {
-								return db.getFilesByParentId(childId, sorting);
+								return db.getFilesByParentId(childId, getSorting());
 							}
 
 						});
@@ -254,6 +274,8 @@ public class CollectionFragment extends Fragment {
 						}
 
 						try {
+							SharedPreferences prefs = Application.getAppPreferences();
+							boolean shuffle = prefs.getBoolean("shuffle", false);
 							player.playPlaylist(fileList, idx, shuffle);
 						} catch (Exception e) {
 							Log.w(TAG, "Can't play file", e);
@@ -267,6 +289,37 @@ public class CollectionFragment extends Fragment {
 		@Override
 		public View newView(Context context, Cursor arg1, ViewGroup arg2) {
 			return ((Activity) context).getLayoutInflater().inflate(R.layout.collection_item, null);
+		}
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		SongFile sf = db.getSongFile(item.getItemId());
+
+		switch (item.getGroupId()) {
+		case MENU_GROUP_PLAYLIST: {
+			Log.i(TAG, "Adding " + sf.getFilePath() + " to playlist");
+			for (Playlist pl : db.getPlaylistsList()) {
+				if ((int) pl.getId() == item.getOrder()) {
+					Log.i(TAG, "Found playlist " + pl.getTitle());
+					pl.getSongs().add(sf);
+					pl.persist();
+					db.scan(false);
+				}
+			}
+
+			return true;
+		}
+
+		case MENU_GROUP_DELETE: {
+			Log.i(TAG, "Deleting file");
+			sf.getFilePath().delete();
+			db.scan(false);
+			return true;
+		}
+
+		default:
+			return false;
 		}
 	}
 
@@ -327,7 +380,7 @@ public class CollectionFragment extends Fragment {
 					navigateWithBackStack(new ICursorFactory() {
 						@Override
 						public Cursor getCursor() {
-							return db.search(value, sorting);
+							return db.search(value, getSorting());
 						}
 					});
 				}

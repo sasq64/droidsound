@@ -133,6 +133,13 @@ public class MusicIndexService extends Service {
 			scanning = false;
 		}
 
+		/**
+		 * Insert a directory node to a parent.
+		 *
+		 * @param name
+		 * @param parentId
+		 * @return rowid
+		 */
 		private long insertDirectory(String name, Long parentId) {
 			ContentValues values = new ContentValues();
 			values.put("type", TYPE_DIR);
@@ -141,6 +148,14 @@ public class MusicIndexService extends Service {
 			return filesHelper.insert(values);
 		}
 
+		/**
+		 * Insert a file node to a parent.
+		 *
+		 * @param name
+		 * @param data
+		 * @param modifyTime
+		 * @param parentId
+		 */
 		private void insertFile(File name, byte[] data, long modifyTime, Long parentId) {
 			DroidSoundPlugin.MusicInfo info = DroidSoundPlugin.identify(name.getName(), data);
 			ContentValues values = new ContentValues();
@@ -162,6 +177,34 @@ public class MusicIndexService extends Service {
 				filesHelper.insert(values);
 			}
 		}
+
+		/**
+		 * Insert a playlist node.
+		 * <p>
+		 * The playlist node is a bit tricky because it encodes the full path to the file
+		 * sans the base directory of the collection. They are also serialized in different
+		 * kind of files and only cached in db.
+		 *
+		 * @param rowId
+		 * @param f
+		 */
+		private void insertPlaylist(long rowId, File f) {
+			ContentValues values = new ContentValues();
+			Playlist pl = new Playlist(rowId, f);
+
+			for (SongFile sf : pl.getSongs()) {
+				values.put("parent_id", rowId);
+				values.put("filename", sf.getFilePath().getPath());
+				values.put("title", sf.getTitle());
+				values.put("type", TYPE_FILE);
+				values.put("title", sf.getTitle());
+				values.put("composer", sf.getComposer());
+				values.put("date", sf.getDate());
+				values.put("format", sf.getFormat());
+				filesHelper.insert(values);
+			}
+		}
+
 
 		/**
 		 * Zip scanner
@@ -331,7 +374,9 @@ public class MusicIndexService extends Service {
 						values.put("modify_time", f.lastModified());
 						values.put("type", TYPE_PLAYLIST);
 						values.put("title", f.getName().substring(0, f.getName().length() - 6));
-						filesHelper.insert(values);
+
+						long rowId = filesHelper.insert(values);
+						insertPlaylist(rowId, f);
 					} else if (f.getName().equals("Songlengths.txt")) {
 						songLengthsToDo.add(f);
 					} else {
@@ -577,12 +622,17 @@ public class MusicIndexService extends Service {
 			Cursor c = getFileById(childId);
 			c.moveToFirst();
 
+			String format = c.getString(COL_FORMAT);
 			String title = c.getString(COL_TITLE);
 			String composer = c.getString(COL_COMPOSER);
 			int date = c.getInt(COL_DATE);
 
 			int zipIdx = -1;
+			int playlistIdx = -1;
 			while (true) {
+				if (c.getInt(COL_TYPE) == TYPE_PLAYLIST) {
+					playlistIdx = list.size();
+				}
 				if (c.getInt(COL_TYPE) == TYPE_ZIP) {
 					zipIdx = list.size();
 				}
@@ -601,17 +651,21 @@ public class MusicIndexService extends Service {
 			File zipFilePath = null;
 			File path = null;
 
-			if (zipIdx == -1) {
-				path = Application.getModsDirectory();
-				for (int i = list.size() - 1; i >= 0; i --) {
-					path = new File(path, list.get(i));
-				}
-			} else {
+			if (playlistIdx != -1) {
+				// This is a bit nasty. The playlist encodes the whole path to file.
+				//path = Application.getModsDirectory();
+				path = new File(list.get(0));
+			} else if (zipIdx != -1) {
 				zipFilePath = Application.getModsDirectory();
 				for (int i = list.size() - 1; i >= zipIdx; i --) {
 					zipFilePath = new File(zipFilePath, list.get(i));
 				}
 				for (int i = zipIdx - 1; i >= 0; i --) {
+					path = new File(path, list.get(i));
+				}
+			} else {
+				path = Application.getModsDirectory();
+				for (int i = list.size() - 1; i >= 0; i --) {
 					path = new File(path, list.get(i));
 				}
 			}
@@ -621,6 +675,7 @@ public class MusicIndexService extends Service {
 					-1,
 					path,
 					zipFilePath != null ? zipFilePath : null,
+					format,
 					title,
 					composer,
 					date
@@ -630,16 +685,17 @@ public class MusicIndexService extends Service {
 		public List<Playlist> getPlaylistsList() {
 			Cursor c = db.query(
 					"files",
-					new String[] { "filename" },
+					new String[] { "_id", "filename" },
 					"parent_id IS NULL AND type = ?", new String[] { String.valueOf(TYPE_PLAYLIST) },
 					null, null, null
 			);
 
 			List<Playlist> pl = new ArrayList<Playlist>();
 			while (c.moveToNext()) {
-				String name = c.getString(0);
+				long id = c.getLong(0);
+				String name = c.getString(1);
 				File f = new File(Application.getModsDirectory(), name);
-				pl.add(new Playlist(f));
+				pl.add(new Playlist(id, f));
 			}
 
 			return pl;

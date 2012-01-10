@@ -74,10 +74,10 @@ public class VisualizationView extends SurfaceView {
 		Paint fftPaint = new Paint();
 		fftPaint.setAntiAlias(true);
 		fftPaint.setStrokeWidth(width / 2f / fft.length);
-		for (int i = 0; i < fft.length; i ++) {
-			float dbPrev = i == 0 ? fft[i] : fft[i - 1];
+		for (int i = 1; i < fft.length - 1; i += 1) {
+			float dbPrev = fft[i-1];
 			float dbNorm = fft[i];
-			float dbNext = i == fft.length - 1 ? fft[i] : fft[i + 1];
+			float dbNext = fft[i+1];
 
 			float hump = 2f * dbNorm - dbPrev - dbNext;
 			float saturation = Math.max(0, Math.min(1, hump * 5f));
