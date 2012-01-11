@@ -34,7 +34,7 @@ public class VisualizationView extends SurfaceView {
 		white.setTextAlign(Paint.Align.CENTER);
 
 		fftPaint = new Paint();
-		fftPaint.setAntiAlias(true);
+		//fftPaint.setAntiAlias(true);
 	}
 
 	public void setColors(Color[] colors) {
@@ -43,7 +43,7 @@ public class VisualizationView extends SurfaceView {
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		fftPaint.setStrokeWidth((float) w / fft.length * 2f - 0.5f);
+		fftPaint.setStrokeWidth((float) w / fft.length * 2f - 1f);
 	}
 
 	/**
