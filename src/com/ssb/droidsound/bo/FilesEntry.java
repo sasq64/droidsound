@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * @author alankila
  */
-public class SongFile {
+public class FilesEntry {
 	private static final Map<String, String> MAIN_TO_AUX = new HashMap<String, String>();
 	static {
 		MAIN_TO_AUX.put("MDAT", "SMPL");
@@ -31,7 +31,7 @@ public class SongFile {
 	private final String composer;
 	private final int date;
 
-	public SongFile(long id, int subtune, File fileName, File zipFilePath, String format, String title, String composer, int date) {
+	public FilesEntry(long id, int subtune, File fileName, File zipFilePath, String format, String title, String composer, int date) {
 		this.id = id;
 		this.subtune = subtune;
 		this.filePath = fileName;
@@ -60,6 +60,9 @@ public class SongFile {
 		return null;
 	}
 
+	public long getId() {
+		return id;
+	}
 
 	public int getSubtune() {
 		return subtune;
@@ -89,21 +92,16 @@ public class SongFile {
 		return date;
 	}
 
-	public long getId() {
-		return id;
-	}
-
 	@Override
 	public int hashCode() {
-		return (int) id;
+		return filePath.hashCode();
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		if (other instanceof SongFile) {
-			return id == ((SongFile) other).id;
+		if (other instanceof FilesEntry) {
+			return filePath.equals(((FilesEntry) other).filePath);
 		}
-
-		return false;
+		return super.equals(other);
 	}
 }

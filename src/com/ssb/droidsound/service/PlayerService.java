@@ -33,7 +33,7 @@ import com.ssb.droidsound.R;
 import com.ssb.droidsound.activity.PlayerActivity;
 import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.bo.PlayQueue;
-import com.ssb.droidsound.bo.SongFile;
+import com.ssb.droidsound.bo.FilesEntry;
 import com.ssb.droidsound.bo.SongFileData;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
@@ -128,7 +128,7 @@ public class PlayerService extends Service {
 		private int currentSubsong;
 
 		private final DroidSoundPlugin plugin;
-		private final SongFile song;
+		private final FilesEntry song;
 		private final String f1;
 		private final byte[] data1;
 		private final String f2;
@@ -152,7 +152,7 @@ public class PlayerService extends Service {
 		 * @param name2 name of file 2
 		 * @param data2 data of file 2
 		 */
-		protected PlayerRunnable(DroidSoundPlugin plugin, SongFile song, String name1, byte[] data1, String name2, byte[] data2) {
+		protected PlayerRunnable(DroidSoundPlugin plugin, FilesEntry song, String name1, byte[] data1, String name2, byte[] data2) {
 			this.plugin = plugin;
 			this.song = song;
 			this.f1 = name1;
@@ -477,7 +477,7 @@ public class PlayerService extends Service {
 	 * @param n2
 	 * @param d2
 	 */
-	private void startPlayerThread(DroidSoundPlugin p1, SongFile song, String n1, byte[] d1, String n2, byte[] d2) {
+	private void startPlayerThread(DroidSoundPlugin p1, FilesEntry song, String n1, byte[] d1, String n2, byte[] d2) {
 		Log.i(TAG, "Requesting player thread to start");
 		if (player != null) {
 			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
@@ -572,7 +572,7 @@ public class PlayerService extends Service {
 		 * @throws IOException
 		 * @throws InterruptedException
 		 */
-		public boolean playMod(SongFile song) throws IOException, InterruptedException {
+		public boolean playMod(FilesEntry song) throws IOException, InterruptedException {
 			/* Plugins will be used to try load the file now, so stop player thread if it is running. */
 			if (player != null) {
 				stopPlayerThread();
@@ -650,7 +650,7 @@ public class PlayerService extends Service {
 	    	return false;
 		}
 
-		public boolean playPlaylist(List<SongFile> names, int startIndex, boolean shuffle) throws IOException, InterruptedException {
+		public boolean playPlaylist(List<FilesEntry> names, int startIndex, boolean shuffle) throws IOException, InterruptedException {
 			playQueue = new PlayQueue(names, startIndex, shuffle);
 			return playMod(playQueue.getCurrent());
 		}
@@ -674,7 +674,7 @@ public class PlayerService extends Service {
 				return false;
 			}
 
-			SongFile song = playQueue.next();
+			FilesEntry song = playQueue.next();
 			return playMod(song);
 		}
 
@@ -696,7 +696,7 @@ public class PlayerService extends Service {
 	    	if (playQueue == null) {
 	    		return false;
 	    	}
-	    	SongFile song = playQueue.prev();
+	    	FilesEntry song = playQueue.prev();
 	    	return playMod(song);
 		}
 

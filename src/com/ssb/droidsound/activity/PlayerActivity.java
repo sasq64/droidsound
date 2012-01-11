@@ -94,9 +94,10 @@ public class PlayerActivity extends Activity {
 		switch(choice) {
 		case R.id.settings:
 			startActivity(new Intent(this, SettingsActivity.class));
-			break;
+			return true;
+		default:
+			return false;
 		}
-		return true;
 	}
 }
 

@@ -6,10 +6,17 @@
 <string name="playing_title">Playback</string>
 <string name="visualization_title">Visualization</string>
 <string name="mods_setup">Created and setup MODS directory on external sdcard.</string>
+
+<string name="create_playlist">Create playlist</string>
 <string name="settings">Settings</string>
 
-<string name="to_favorites">Add to playlist: </string>
+<string name="add_to_playlist">Add to playlist: </string>
+<string name="remove_from_playlist">Remove from playlist</string>
 <string name="delete">Delete file</string>
+<string name="delete_zip">Delete zip</string>
+<string name="delete_directory">Remove directory</string>
+<string name="delete_playlist">Remove playlist</string>
+<string name="confirm">Confirm deletion</string>
 
 <string-array name="panning_opts">
 	<item>0 % (mono)</item>

@@ -12,12 +12,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * Represents snapshots of database entries.
+ * ID is not provided because it is not reliable (could change from scan to scan).
+ *
+ * @author alankila
+ */
 public class Playlist {
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 
 	private final long id;
 	private final File file;
-	private final List<SongFile> songs;
+	private final List<FilesEntry> songs;
 
 	private String title;
 
@@ -31,7 +37,7 @@ public class Playlist {
 			title = title.substring(0, dot);
 		}
 
-		songs = new ArrayList<SongFile>();
+		songs = new ArrayList<FilesEntry>();
 		try {
 			byte[] data = new byte[(int) file.length()];
 			if (data.length != 0) {
@@ -54,7 +60,7 @@ public class Playlist {
 		try {
 			FileOutputStream fos = new FileOutputStream(file);
 			JSONArray arr = new JSONArray();
-			for (SongFile s : songs) {
+			for (FilesEntry s : songs) {
 				JSONObject obj = serialize(s);
 				arr.put(obj);
 			}
@@ -65,10 +71,9 @@ public class Playlist {
 		}
 	}
 
-	private static JSONObject serialize(SongFile songFile) throws JSONException {
+	private static JSONObject serialize(FilesEntry songFile) throws JSONException {
 		File zipFilePath = songFile.getZipFilePath();
 		JSONObject obj = new JSONObject();
-		obj.put("id", songFile.getId());
 		obj.put("subtune", songFile.getSubtune());
 		obj.put("filePath", songFile.getFilePath().getPath());
 		obj.put("zipFilePath", zipFilePath != null ? zipFilePath.getPath() : null);
@@ -79,9 +84,9 @@ public class Playlist {
 		return obj;
 	}
 
-	private static SongFile deserialize(JSONObject obj) throws JSONException {
-		return new SongFile(
-				obj.getLong("id"),
+	private static FilesEntry deserialize(JSONObject obj) throws JSONException {
+		return new FilesEntry(
+				0,
 				obj.getInt("subtune"),
 				new File(obj.getString("filePath")),
 				obj.has("zipFilePath") ? new File(obj.getString("zipFilePath")) : null,
@@ -100,7 +105,7 @@ public class Playlist {
 		return title;
 	}
 
-	public List<SongFile> getSongs() {
+	public List<FilesEntry> getSongs() {
 		return songs;
 	}
 }

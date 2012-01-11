@@ -33,8 +33,8 @@ import android.os.IBinder;
 import android.provider.BaseColumns;
 
 import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.bo.FilesEntry;
 import com.ssb.droidsound.bo.Playlist;
-import com.ssb.droidsound.bo.SongFile;
 import com.ssb.droidsound.bo.SongFileData;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Log;
@@ -66,13 +66,13 @@ public class MusicIndexService extends Service {
 	public static final String ACTION_SCAN = "com.ssb.droidsound.SCAN";
 
 	public static final int TYPE_ZIP = 1;
-	public static final int TYPE_DIR = 2;
+	public static final int TYPE_DIRECTORY = 2;
 	public static final int TYPE_PLAYLIST = 3;
 	public static final int TYPE_FILE = 4;
 	public static final int TYPE_MUS_FOLDER = 5;
 	public static final int TYPE_SONGLENGTH = 6;
 
-	private static final int DB_VERSION = 18;
+	private static final int DB_VERSION = 19;
 
 	private SQLiteDatabase db;
 
@@ -142,9 +142,10 @@ public class MusicIndexService extends Service {
 		 */
 		private long insertDirectory(String name, Long parentId) {
 			ContentValues values = new ContentValues();
-			values.put("type", TYPE_DIR);
+			values.put("type", TYPE_DIRECTORY);
 			values.put("parent_id", parentId);
 			values.put("filename", name);
+			values.put("title", name);
 			return filesHelper.insert(values);
 		}
 
@@ -192,9 +193,15 @@ public class MusicIndexService extends Service {
 			ContentValues values = new ContentValues();
 			Playlist pl = new Playlist(rowId, f);
 
-			for (SongFile sf : pl.getSongs()) {
+			for (FilesEntry sf : pl.getSongs()) {
 				values.put("parent_id", rowId);
-				values.put("filename", sf.getFilePath().getPath());
+				/* okay, we'll encode zip path and file path into this field. Sorry. */
+				String path = sf.getFilePath().getPath();
+				File zipFilePath = sf.getZipFilePath();
+				if (zipFilePath != null) {
+					path += "\u0000" + zipFilePath.getPath();
+				}
+				values.put("filename", path);
 				values.put("title", sf.getTitle());
 				values.put("type", TYPE_FILE);
 				values.put("title", sf.getTitle());
@@ -216,7 +223,9 @@ public class MusicIndexService extends Service {
 		 */
 		private void scanZip(File zipFile, Long parentId) throws ZipException, IOException {
 			Log.i(TAG, "Scanning ZIP %s for files...", zipFile.getPath());
+			db.execSQL("PRAGMA foreign_keys=ON");
 			db.delete("files", "parent_id = ?", new String [] { String.valueOf(parentId) });
+			db.execSQL("PRAGMA foreign_keys=OFF");
 
 			FileInputStream fis = new FileInputStream(zipFile);
 			ZipInputStream zis = new ZipInputStream(fis);
@@ -278,7 +287,7 @@ public class MusicIndexService extends Service {
 				}
 				zis.closeEntry();
 			}
-			sendUpdate(100);
+
 			zis.close();
 		}
 
@@ -344,9 +353,11 @@ public class MusicIndexService extends Service {
 
 			/* Delete files that need refresh or which did not exist anymore. */
 			db.beginTransaction();
+			db.execSQL("PRAGMA foreign_keys=ON");
 			for (long id : delFiles) {
 				db.delete("files", "_id = ?", new String[] { String.valueOf(id) } );
 			}
+			db.execSQL("PRAGMA foreign_keys=OFF");
 
 			Map<File, ContentValues> zipsToScan = new HashMap<File, ContentValues>();
 			List<File> songLengthsToDo = new ArrayList<File>();
@@ -468,7 +479,9 @@ public class MusicIndexService extends Service {
 
 		private void doScan(File modsDir, boolean full) throws IOException {
 			if (full) {
+				sendUpdate(0);
 				db.delete("files", null, null);
+				sendUpdate(50);
 				db.delete("songlength", null, null);
 			}
 			scanFiles(modsDir, null);
@@ -529,7 +542,7 @@ public class MusicIndexService extends Service {
 			);
 		}
 
-		public List<SongFileData> getSongFileData(SongFile song) throws IOException, InterruptedException {
+		public List<SongFileData> getSongFileData(FilesEntry song) throws IOException, InterruptedException {
 			final File name1 = song.getFilePath();
 			final byte[] data1;
 
@@ -612,12 +625,12 @@ public class MusicIndexService extends Service {
 		}
 
 		/**
-		 * Get a full {@link SongFile} instance from a collection entry.
+		 * Get a full {@link FilesEntry} instance from a collection entry.
 		 *
 		 * @param childId
 		 * @return songfile
 		 */
-		public SongFile getSongFile(final long childId) {
+		public FilesEntry getSongFile(final long childId) {
 			List<String> list = new ArrayList<String>();
 			Cursor c = getFileById(childId);
 			c.moveToFirst();
@@ -651,10 +664,14 @@ public class MusicIndexService extends Service {
 			File zipFilePath = null;
 			File path = null;
 
-			if (playlistIdx != -1) {
-				// This is a bit nasty. The playlist encodes the whole path to file.
-				//path = Application.getModsDirectory();
-				path = new File(list.get(0));
+			/* Ugly hack alert: selected file within playlist? */
+			if (playlistIdx != -1 && list.size() > 1) {
+				/* unpack filename (ugly alert) */
+				String[] paths = list.get(0).split("\u0000");
+				path = new File(paths[0]);
+				if (paths.length == 2) {
+					zipFilePath = new File(paths[1]);
+				}
 			} else if (zipIdx != -1) {
 				zipFilePath = Application.getModsDirectory();
 				for (int i = list.size() - 1; i >= zipIdx; i --) {
@@ -670,7 +687,7 @@ public class MusicIndexService extends Service {
 				}
 			}
 
-			return new SongFile(
+			return new FilesEntry(
 					childId,
 					-1,
 					path,
@@ -728,8 +745,8 @@ public class MusicIndexService extends Service {
 
 		if (db.needUpgrade(DB_VERSION)) {
 			Log.i(TAG, "Deleting old schema (if any)...");
-			db.execSQL("DROP TABLE IF EXISTS files;");
 			db.execSQL("DROP TABLE IF EXISTS songlength;");
+			db.execSQL("DROP TABLE IF EXISTS files;");
 
 			Log.i(TAG, "Creating new schema...");
 			/* Record seen songs. */
@@ -738,12 +755,13 @@ public class MusicIndexService extends Service {
 					+ "parent_id INTEGER REFERENCES files ON DELETE CASCADE,"
 					+ "filename TEXT NOT NULL,"
 					+ "type INTEGER NOT NULL,"
-					+ "format TEXT"
+					+ "format TEXT,"
 					+ "modify_time INTEGER,"
 					+ "title TEXT,"
 					+ "composer TEXT,"
-					+ "date INTEGER,"
+					+ "date INTEGER"
 					+ ");");
+			db.execSQL("CREATE UNIQUE INDEX ui_files_parent_filename ON files (parent_id, filename);");
 
 			/* If a Songlengths.txt file is seen, we parse and store it here.
 			 * Rules are: if subsong is null, then the play length governs all
@@ -759,9 +777,8 @@ public class MusicIndexService extends Service {
 					+ "subsong INTEGER,"
 					+ "timeMs INTEGER NOT NULL"
 					+ ");");
-
-			db.execSQL("CREATE UNIQUE INDEX ui_files_parent_filename ON files (parent_id, filename);");
 			db.execSQL("CREATE UNIQUE INDEX ui_songlength_md5_subsong ON songlength (md5, subsong);");
+			db.execSQL("CREATE INDEX ui_songlength_file ON songlength (file_id);");
 
 			db.setVersion(DB_VERSION);
 			Log.i(TAG, "Schema complete.");

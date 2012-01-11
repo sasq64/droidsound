@@ -6,12 +6,12 @@ import java.util.List;
 
 
 public class PlayQueue {
-	private final List<SongFile> musicListInOriginalOrder = new ArrayList<SongFile>();
-	private final List<SongFile> musicList = new ArrayList<SongFile>();
+	private final List<FilesEntry> musicListInOriginalOrder = new ArrayList<FilesEntry>();
+	private final List<FilesEntry> musicList = new ArrayList<FilesEntry>();
 	private int musicListPos;
 	private boolean shuffle;
 
-	public PlayQueue(List<SongFile> songs, int index, boolean shuffle) {
+	public PlayQueue(List<FilesEntry> songs, int index, boolean shuffle) {
 		musicListInOriginalOrder.addAll(songs);
 		musicList.addAll(songs);
 		musicListPos = index;
@@ -20,18 +20,18 @@ public class PlayQueue {
 
 	public void setShuffle(boolean on) {
 		if (on && !shuffle) {
-			SongFile c = getCurrent();
+			FilesEntry c = getCurrent();
 			Collections.shuffle(musicList);
 			setCurrent(c);
 		} else if (!on && shuffle) {
-			SongFile c = getCurrent();
+			FilesEntry c = getCurrent();
 			musicList.clear();
 			musicList.addAll(musicListInOriginalOrder);
 			setCurrent(c);
 		}
 	}
 
-	public SongFile prev() {
+	public FilesEntry prev() {
 		musicListPos--;
 		if (musicListPos < 0) {
 			musicListPos += musicList.size();
@@ -39,7 +39,7 @@ public class PlayQueue {
 		return musicList.get(musicListPos);
 	}
 
-	public SongFile next() {
+	public FilesEntry next() {
 		musicListPos++;
 		if (musicListPos >= musicList.size()) {
 			musicListPos -= musicList.size();
@@ -47,7 +47,7 @@ public class PlayQueue {
 		return musicList.get(musicListPos);
 	}
 
-	public SongFile getCurrent() {
+	public FilesEntry getCurrent() {
 		if (musicListPos >= musicList.size()) {
 			return null;
 		}
@@ -65,7 +65,7 @@ public class PlayQueue {
 		musicListPos = i;
 	}
 
-	public int setCurrent(SongFile song) {
+	public int setCurrent(FilesEntry song) {
 		musicListPos = musicList.indexOf(song);
 		return musicListPos;
 	}
