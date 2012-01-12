@@ -10,16 +10,13 @@ import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.app.ListFragment;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
@@ -59,9 +56,22 @@ public class CollectionFragment extends Fragment {
 
 	private FrameLayout progressContainerView;
 
-	private MusicIndexService.LocalBinder db;
+	private void navigateStart() {
+		((PlayerActivity) getActivity()).getMusicIndexService().scan(false);
 
-	private PlayerService.LocalBinder player;
+		ListFragment lf = new FastListFragment();
+		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
+			@Override
+			public Cursor getCursor() {
+				return ((PlayerActivity) getActivity()).getMusicIndexService().getFilesByParentId(null, getSorting());
+			}
+		});
+		lf.setListAdapter(cva);
+		FragmentTransaction ft = getFragmentManager().beginTransaction();
+		ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+		ft.replace(R.id.collection_view, lf);
+		ft.commit();
+	}
 
 	protected void navigateWithBackStack(ICursorFactory cursorFactory) {
 		/* Move to subfolder */
@@ -82,33 +92,6 @@ public class CollectionFragment extends Fragment {
 		String sorting = prefs.getString("sorting", "TITLE");
 		return MusicIndexService.Sort.valueOf(sorting);
 	}
-
-	private final ServiceConnection searchDbConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			db = (MusicIndexService.LocalBinder) binder;
-			Log.i(TAG, "SongDatabase connection has been established. Showing initial view, and refreshing.");
-			db.scan(false);
-
-			ListFragment lf = new FastListFragment();
-			CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
-				@Override
-				public Cursor getCursor() {
-					return db.getFilesByParentId(null, getSorting());
-				}
-			});
-			lf.setListAdapter(cva);
-			FragmentTransaction ft = getFragmentManager().beginTransaction();
-			ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
-			ft.replace(R.id.collection_view, lf);
-			ft.commit();
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName tag) {
-			db = null;
-		}
-	};
 
 	public static class FastListFragment extends ListFragment {
 		private final BroadcastReceiver songChangeReceiver = new BroadcastReceiver() {
@@ -149,18 +132,6 @@ public class CollectionFragment extends Fragment {
 			getActivity().getApplicationContext().unregisterReceiver(updateReceiver);
 		}
 	}
-
-	private final ServiceConnection playerConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			player = (PlayerService.LocalBinder) binder;
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName arg0) {
-			player = null;
-		}
-	};
 
 	protected interface ICursorFactory {
 		public Cursor getCursor();
@@ -247,7 +218,7 @@ public class CollectionFragment extends Fragment {
 
 					int parentType = 0;
 					if (parentId != null) {
-						Cursor pc = db.getFileById(parentId);
+						Cursor pc = ((PlayerActivity) getActivity()).getMusicIndexService().getFileById(parentId);
 						pc.moveToFirst();
 						parentType = pc.getInt(MusicIndexService.COL_TYPE);
 						pc.close();
@@ -256,7 +227,7 @@ public class CollectionFragment extends Fragment {
 					/* Add to playlist: X */
 					if (parentType != MusicIndexService.TYPE_PLAYLIST && type == MusicIndexService.TYPE_FILE) {
 						String fav = getString(R.string.add_to_playlist);
-						for (Playlist pl : db.getPlaylistsList()) {
+						for (Playlist pl : ((PlayerActivity) getActivity()).getMusicIndexService().getPlaylistsList()) {
 							int id = (int) pl.getId();
 							String title = pl.getTitle();
 							menu.add(MENU_GROUP_ADD_TO_PLAYLIST, intChildId, id, fav + " " + title);
@@ -269,7 +240,7 @@ public class CollectionFragment extends Fragment {
 					}
 
 					/* Delete file (not contained in zip) */
-					FilesEntry sf = db.getSongFile(childId);
+					FilesEntry sf = ((PlayerActivity) getActivity()).getMusicIndexService().getSongFile(childId);
 					if (parentType != MusicIndexService.TYPE_PLAYLIST
 							&& type == MusicIndexService.TYPE_FILE
 							&& sf.getZipFilePath() == null) {
@@ -279,7 +250,7 @@ public class CollectionFragment extends Fragment {
 						menu.add(MENU_GROUP_DELETE, intChildId, Menu.NONE, R.string.delete_zip);
 					}
 					if (type == MusicIndexService.TYPE_DIRECTORY) {
-						Cursor kids = db.getFilesByParentId(childId, MusicIndexService.Sort.TITLE);
+						Cursor kids = ((PlayerActivity) getActivity()).getMusicIndexService().getFilesByParentId(childId, MusicIndexService.Sort.TITLE);
 						if (kids.getCount() == 0) {
 							menu.add(MENU_GROUP_DELETE, intChildId, Menu.NONE, R.string.delete_directory);
 						}
@@ -298,7 +269,7 @@ public class CollectionFragment extends Fragment {
 							@Override
 							public Cursor getCursor() {
 								Log.i(TAG, "Querying elements for child: %d", childId);
-								return db.getFilesByParentId(childId, getSorting());
+								return ((PlayerActivity) getActivity()).getMusicIndexService().getFilesByParentId(childId, getSorting());
 							}
 
 						});
@@ -310,7 +281,7 @@ public class CollectionFragment extends Fragment {
 						for (int i = 0; i < c.getCount(); i ++) {
 							c.moveToPosition(i);
 							long id = c.getLong(MusicIndexService.COL_ID);
-							FilesEntry sibling = db.getSongFile(id);
+							FilesEntry sibling = ((PlayerActivity) getActivity()).getMusicIndexService().getSongFile(id);
 							fileList.add(sibling);
 							if (childId != null && id == childId) {
 								idx = i;
@@ -320,7 +291,7 @@ public class CollectionFragment extends Fragment {
 						try {
 							SharedPreferences prefs = Application.getAppPreferences();
 							boolean shuffle = prefs.getBoolean("shuffle", false);
-							player.playPlaylist(fileList, idx, shuffle);
+							((PlayerActivity) getActivity()).getPlayerService().playPlaylist(fileList, idx, shuffle);
 						} catch (Exception e) {
 							Log.w(TAG, "Can't play file", e);
 						}
@@ -338,18 +309,18 @@ public class CollectionFragment extends Fragment {
 
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
-		final FilesEntry sf = db.getSongFile(item.getItemId());
+		final FilesEntry sf = ((PlayerActivity) getActivity()).getMusicIndexService().getSongFile(item.getItemId());
 
 		switch (item.getGroupId()) {
 		case MENU_GROUP_ADD_TO_PLAYLIST: {
-			for (Playlist pl : db.getPlaylistsList()) {
+			for (Playlist pl : ((PlayerActivity) getActivity()).getMusicIndexService().getPlaylistsList()) {
 				if ((int) pl.getId() == item.getOrder()) {
 					/* Avoid adding a file twice. */
 					if (! pl.getSongs().contains(sf)) {
 						pl.getSongs().add(sf);
 					}
 					pl.persist();
-					db.scan(false);
+					((PlayerActivity) getActivity()).getMusicIndexService().scan(false);
 				}
 			}
 
@@ -357,11 +328,11 @@ public class CollectionFragment extends Fragment {
 		}
 
 		case MENU_GROUP_REMOVE_FROM_PLAYLIST: {
-			for (Playlist pl : db.getPlaylistsList()) {
+			for (Playlist pl : ((PlayerActivity) getActivity()).getMusicIndexService().getPlaylistsList()) {
 				if ((int) pl.getId() == item.getOrder()) {
 					pl.getSongs().remove(sf);
 					pl.persist();
-					db.scan(false);
+					((PlayerActivity) getActivity()).getMusicIndexService().scan(false);
 				}
 			}
 
@@ -379,7 +350,7 @@ public class CollectionFragment extends Fragment {
 				@Override
 				public void onClick(DialogInterface dialog, int whichButton) {
 					f.delete();
-					db.scan(false);
+					((PlayerActivity) getActivity()).getMusicIndexService().scan(false);
 				}
 			});
 			alert.create().show();
@@ -408,7 +379,7 @@ public class CollectionFragment extends Fragment {
 					String v = nameField.getText().toString();
 					Playlist p = new Playlist(0, new File(Application.getModsDirectory(), v + ".plist"));
 					p.persist();
-					db.scan(false);
+					((PlayerActivity) getActivity()).getMusicIndexService().scan(false);
 				}
 			});
 
@@ -449,11 +420,10 @@ public class CollectionFragment extends Fragment {
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		Log.i(TAG, "Creating fragment");
 		super.onCreate(savedInstanceState);
 		setHasOptionsMenu(true);
 
-		getActivity().bindService(new Intent(getActivity(), MusicIndexService.class), searchDbConnection, Context.BIND_AUTO_CREATE);
-		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(PlayerService.ACTION_LOADING_SONG);
 		intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
@@ -463,6 +433,8 @@ public class CollectionFragment extends Fragment {
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle state) {
+		Log.i(TAG, "Creating view");
+
 		View view = inflater.inflate(R.layout.collection_view, null);
 		progressContainerView = (FrameLayout) view.findViewById(R.id.progress_container);
 		progressPercentageView = (TextView) view.findViewById(R.id.progress_percentage);
@@ -482,7 +454,7 @@ public class CollectionFragment extends Fragment {
 						@Override
 						public Cursor getCursor() {
 							Log.i(TAG, "Querying for search: " + value);
-							return db.search(value, getSorting());
+							return ((PlayerActivity) getActivity()).getMusicIndexService().search(value, getSorting());
 						}
 					});
 				}
@@ -491,6 +463,16 @@ public class CollectionFragment extends Fragment {
 				return true;
 			}
 		});
+
+		/* Restore list fragment */
+		Fragment topFragment = getFragmentManager().findFragmentById(R.id.collection_view);
+		if (topFragment != null) {
+			FragmentTransaction ft = getFragmentManager().beginTransaction();
+			ft.replace(R.id.collection_view, topFragment);
+			ft.commit();
+		} else {
+			navigateStart();
+		}
 
 		return view;
 	}
@@ -501,7 +483,5 @@ public class CollectionFragment extends Fragment {
 
 		getActivity().getApplicationContext().unregisterReceiver(songChangeReceiver);
 		getActivity().getApplicationContext().unregisterReceiver(searchReceiver);
-		getActivity().unbindService(searchDbConnection);
-		getActivity().unbindService(playerConnection);
 	}
 }

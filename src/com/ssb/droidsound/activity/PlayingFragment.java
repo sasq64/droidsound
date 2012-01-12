@@ -2,13 +2,10 @@ package com.ssb.droidsound.activity;
 
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,8 +21,6 @@ import com.ssb.droidsound.utils.Log;
 
 public class PlayingFragment extends Fragment {
 	protected static final String TAG = PlayingFragment.class.getSimpleName();
-
-	private PlayerService.LocalBinder player;
 
 	private MyAdapter myAdapter;
 
@@ -64,18 +59,6 @@ public class PlayingFragment extends Fragment {
 			return convertView;
 		}
 	}
-
-	private final ServiceConnection playerConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			player = (PlayerService.LocalBinder) binder;
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName arg0) {
-			player = null;
-		}
-	};
 
 	private final BroadcastReceiver songLoadingReceiver = new BroadcastReceiver() {
 		@Override
@@ -142,7 +125,7 @@ public class PlayingFragment extends Fragment {
 				return;
 			}
 
-			player.seekTo(pos * 1000);
+			((PlayerActivity) getActivity()).getPlayerService().seekTo(pos * 1000);
 		}
 	};
 
@@ -169,7 +152,6 @@ public class PlayingFragment extends Fragment {
 		getActivity().getApplicationContext().registerReceiver(songLoadingReceiver, new IntentFilter(PlayerService.ACTION_LOADING_SONG));
 		getActivity().getApplicationContext().registerReceiver(advancingReceiver, new IntentFilter(PlayerService.ACTION_ADVANCING));
 		getActivity().getApplicationContext().registerReceiver(songUnloadingReceiver, new IntentFilter(PlayerService.ACTION_UNLOADING_SONG));
-		getActivity().getApplicationContext().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
@@ -179,7 +161,6 @@ public class PlayingFragment extends Fragment {
 		getActivity().getApplicationContext().unregisterReceiver(songLoadingReceiver);
 		getActivity().getApplicationContext().unregisterReceiver(advancingReceiver);
 		getActivity().getApplicationContext().unregisterReceiver(songUnloadingReceiver);
-		getActivity().getApplicationContext().unbindService(playerConnection);
 	}
 
 	@Override
@@ -204,7 +185,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					player.playPrev();
+					((PlayerActivity) getActivity()).getPlayerService().playPrev();
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to play prev", e);
 				}
@@ -215,7 +196,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					player.playPause(true);
+					((PlayerActivity) getActivity()).getPlayerService().playPause(true);
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to start playing", e);
 					return;
@@ -228,7 +209,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					player.playPause(false);
+					((PlayerActivity) getActivity()).getPlayerService().playPause(false);
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to pause playing", e);
 					return;
@@ -240,7 +221,7 @@ public class PlayingFragment extends Fragment {
 		stopButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				player.stop();
+				((PlayerActivity) getActivity()).getPlayerService().stop();
 			}
 		});
 		forwardButton = (ImageButton) view.findViewById(R.id.button_forward);
@@ -248,7 +229,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					player.playNext();
+					((PlayerActivity) getActivity()).getPlayerService().playNext();
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to play prev", e);
 				}

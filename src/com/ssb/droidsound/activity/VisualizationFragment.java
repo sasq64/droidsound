@@ -4,13 +4,10 @@ import java.util.Queue;
 
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,25 +25,12 @@ public class VisualizationFragment extends Fragment {
 
 	protected VisualizationView visualizationView;
 
-	private PlayerService.LocalBinder player;
-	private final ServiceConnection playerConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			player = (PlayerService.LocalBinder) binder;
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName arg0) {
-			player = null;
-		}
-	};
-
 	private final BroadcastReceiver musicChangeReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context c, Intent i) {
 			Queue<OverlappingFFT.Data> data = null;
 			if (i.getAction().equals(PlayerService.ACTION_LOADING_SONG)) {
-				data = player.getFftQueue();
+				data = ((PlayerActivity) getActivity()).getPlayerService().getFftQueue();
 			}
 			visualizationView.setData(data);
 		}
@@ -55,7 +39,6 @@ public class VisualizationFragment extends Fragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		getActivity().bindService(new Intent(getActivity(), PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(PlayerService.ACTION_LOADING_SONG);
 		intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
@@ -65,7 +48,6 @@ public class VisualizationFragment extends Fragment {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		getActivity().unbindService(playerConnection);
 		getActivity().getApplicationContext().unregisterReceiver(musicChangeReceiver);
 	}
 
@@ -76,6 +58,10 @@ public class VisualizationFragment extends Fragment {
 		visualizationInfoView = (VisualizationInfoView) view.findViewById(R.id.visualization_info);
 		visualizationView = (VisualizationView) view.findViewById(R.id.visualization);
 		visualizationView.setColors(visualizationInfoView.getColors());
+
+		Queue<OverlappingFFT.Data> data = ((PlayerActivity) getActivity()).getPlayerService().getFftQueue();
+		visualizationView.setData(data);
+
 		return view;
 	}
 }
