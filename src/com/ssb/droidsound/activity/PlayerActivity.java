@@ -93,6 +93,9 @@ public class PlayerActivity extends Activity {
 
 		viewPager = (ViewPager) findViewById(R.id.viewPager);
 		viewPagerAdapter = new MyAdapter(getFragmentManager());
+		/* This is done because fragmentmanager crashes if the fragmenttransaction references
+		 * a fragment which viewpager has deallocated. This stuff is pretty much shit. */
+		viewPager.setOffscreenPageLimit(viewPagerAdapter.getCount());
 		viewPager.setKeepScreenOn(true);
 
 		for (String entry : viewPagerAdapter.getEntries()) {
