@@ -739,8 +739,10 @@ public class MusicIndexService extends Service {
 	}
 
 	private SQLiteDatabase checkVersion() {
-		File dbName = getDatabasePath("songs.db");
-		SQLiteDatabase db = SQLiteDatabase.openOrCreateDatabase(dbName, null);
+		File f = getDatabasePath("index.db");
+		f.getParentFile().mkdirs();
+
+		SQLiteDatabase db = SQLiteDatabase.openOrCreateDatabase(f, null);
 		db.enableWriteAheadLogging();
 
 		if (db.needUpgrade(DB_VERSION)) {

@@ -107,9 +107,10 @@ public class CollectionFragment extends Fragment {
 			@Override
 			public void onReceive(Context c, Intent i) {
 				if (i.getIntExtra("progress", 0) == 100) {
-					Log.i(TAG, "Fragment will requery");
 					CollectionViewAdapter listAdapter = (CollectionViewAdapter) getListAdapter();
-					listAdapter.requery();
+					if (listAdapter != null) {
+						listAdapter.requery();
+					}
 				}
 			}
 		};
@@ -121,15 +122,15 @@ public class CollectionFragment extends Fragment {
 			IntentFilter intentFilter = new IntentFilter();
 			intentFilter.addAction(PlayerService.ACTION_LOADING_SONG);
 			intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
-			getActivity().getApplicationContext().registerReceiver(songChangeReceiver, intentFilter);
-			getActivity().getApplicationContext().registerReceiver(updateReceiver, new IntentFilter(MusicIndexService.ACTION_SCAN));
+			getActivity().registerReceiver(songChangeReceiver, intentFilter);
+			getActivity().registerReceiver(updateReceiver, new IntentFilter(MusicIndexService.ACTION_SCAN));
 		}
 
 		@Override
 		public void onDestroyView() {
 			super.onDestroyView();
-			getActivity().getApplicationContext().unregisterReceiver(songChangeReceiver);
-			getActivity().getApplicationContext().unregisterReceiver(updateReceiver);
+			getActivity().unregisterReceiver(songChangeReceiver);
+			getActivity().unregisterReceiver(updateReceiver);
 		}
 	}
 
