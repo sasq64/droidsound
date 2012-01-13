@@ -30,26 +30,11 @@ public class VisualizationFragment extends Fragment {
 		public void onReceive(Context c, Intent i) {
 			Queue<OverlappingFFT.Data> data = null;
 			if (i.getAction().equals(PlayerService.ACTION_LOADING_SONG)) {
-				data = ((PlayerActivity) getActivity()).getPlayerService().getFftQueue();
+				data = ((PlayerActivity) getActivity()).getPlayerService().enableFftQueue();
 			}
 			visualizationView.setData(data);
 		}
 	};
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(PlayerService.ACTION_LOADING_SONG);
-		intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
-		getActivity().getApplicationContext().registerReceiver(musicChangeReceiver, intentFilter);
-	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		getActivity().getApplicationContext().unregisterReceiver(musicChangeReceiver);
-	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -59,9 +44,21 @@ public class VisualizationFragment extends Fragment {
 		visualizationView = (VisualizationView) view.findViewById(R.id.visualization);
 		visualizationView.setColors(visualizationInfoView.getColors());
 
-		Queue<OverlappingFFT.Data> data = ((PlayerActivity) getActivity()).getPlayerService().getFftQueue();
+		IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(PlayerService.ACTION_LOADING_SONG);
+		intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
+		getActivity().registerReceiver(musicChangeReceiver, intentFilter);
+
+		Queue<OverlappingFFT.Data> data = ((PlayerActivity) getActivity()).getPlayerService().enableFftQueue();
 		visualizationView.setData(data);
 
 		return view;
+	}
+
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		getActivity().unregisterReceiver(musicChangeReceiver);
+		((PlayerActivity) getActivity()).getPlayerService().disableFftQueue();
 	}
 }

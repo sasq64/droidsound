@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -120,7 +121,7 @@ public class PlayerService extends Service {
 		private static final int FREQUENCY_HZ = 44100;
 		private static final int BUFSIZE_BYTES = FREQUENCY_HZ * 4;
 
-		private final OverlappingFFT fft = new OverlappingFFT(BUFSIZE_BYTES / 4, FREQUENCY_HZ);
+		private final AtomicReference<OverlappingFFT> fft = new AtomicReference<OverlappingFFT>(null);
 
 		private int subsongLengthMs;
 		private int defaultSubsong;
@@ -166,8 +167,16 @@ public class PlayerService extends Service {
 		 *
 		 * @return data array
 		 */
-		public Queue<Data> getFftQueue() {
-			return fft.getQueue();
+		public Queue<Data> enableFftQueue() {
+			if (fft.get() == null) {
+				fft.set(new OverlappingFFT(BUFSIZE_BYTES / 4, FREQUENCY_HZ));
+			}
+			return fft.get().getQueue();
+		}
+
+		/** Remove FFT queue. */
+		public void disableFftQueue() {
+			fft.set(null);
 		}
 
 		/**
@@ -381,7 +390,10 @@ public class PlayerService extends Service {
 					audioTrack.write(samples, 0, lengthInSamples);
 
 					/* Update our FFT */
-					fft.feed(samples, 0, lengthInSamples);
+					OverlappingFFT _fft = fft.get();
+					if (_fft != null) {
+						_fft.feed(samples, 0, lengthInSamples);
+					}
 
 					int sec1 = playbackFrame / audioTrack.getPlaybackRate();
 					playbackFrame += lengthInSamples / 2;
@@ -700,12 +712,20 @@ public class PlayerService extends Service {
 	    	return playMod(song);
 		}
 
-		public Queue<Data> getFftQueue() {
+		public Queue<Data> enableFftQueue() {
 			if (player == null) {
 				return null;
 			}
 
-			return player.getFftQueue();
+			return player.enableFftQueue();
+		}
+
+		public void disableFftQueue() {
+			if (player == null) {
+				return;
+			}
+
+			player.disableFftQueue();
 		}
 	}
 
