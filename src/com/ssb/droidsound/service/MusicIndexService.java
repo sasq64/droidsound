@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -50,10 +51,11 @@ public class MusicIndexService extends Service {
 		}
 	}
 
-	private static final String TAG = MusicIndexService.class.getSimpleName();
-	public static final Charset ISO88591 = Charset.forName("ISO-8859-1");
+	protected static final String TAG = MusicIndexService.class.getSimpleName();
+	protected  static final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "format", "title", "composer", "date" };
 
-	private static final String[] COLUMNS = new String[] { "_id", "parent_id", "filename", "type", "format", "title", "composer", "date" };
+	protected static final Charset ISO88591 = Charset.forName("ISO-8859-1");
+
 	public static final int COL_ID = 0;
 	public static final int COL_PARENT_ID = 1;
 	public static final int COL_FILENAME = 2;
@@ -74,9 +76,9 @@ public class MusicIndexService extends Service {
 
 	private static final int DB_VERSION = 19;
 
-	private SQLiteDatabase db;
+	protected SQLiteDatabase db;
 
-	private boolean scanning;
+	protected AtomicBoolean scanning = new AtomicBoolean();
 
 	protected class Scanner extends AsyncTask<Void, Intent, Void> {
 		private final boolean full;
@@ -91,12 +93,13 @@ public class MusicIndexService extends Service {
 
 		@Override
 		protected void onPreExecute() {
-			if (scanning) {
+			if (scanning.get()) {
 				cancel(true);
 				return;
 			}
-			scanning = true;
-			startService(new Intent(MusicIndexService.this, MusicIndexService.class));
+			if (scanning.compareAndSet(false, true)) {
+				startService(new Intent(MusicIndexService.this, MusicIndexService.class));
+			}
 		}
 
 		@Override
@@ -116,7 +119,7 @@ public class MusicIndexService extends Service {
 		@Override
 		protected Void doInBackground(Void... ignored) {
 			try {
-				doScan(Application.getModsDirectory(), full);
+				doScan(Application.getModsDirectory());
 			} catch (IOException e) {
 				Log.w(TAG, "Unable to finish scan", e);
 			}
@@ -130,7 +133,7 @@ public class MusicIndexService extends Service {
 			endIntent.putExtra("progress", 100);
 			endIntent.putExtra("scanning", false);
 			sendBroadcast(endIntent);
-			scanning = false;
+			scanning.set(false);
 		}
 
 		/**
@@ -477,7 +480,7 @@ public class MusicIndexService extends Service {
 			}
 		}
 
-		private void doScan(File modsDir, boolean full) throws IOException {
+		private void doScan(File modsDir) throws IOException {
 			if (full) {
 				sendUpdate(0);
 				db.delete("files", null, null);
@@ -542,7 +545,7 @@ public class MusicIndexService extends Service {
 			);
 		}
 
-		public List<SongFileData> getSongFileData(FilesEntry song) throws IOException, InterruptedException {
+		public List<SongFileData> getSongFileData(FilesEntry song) throws IOException {
 			final File name1 = song.getFilePath();
 			final byte[] data1;
 
@@ -717,7 +720,7 @@ public class MusicIndexService extends Service {
 
 			return pl;
 		}
-	};
+	}
 
 	private final IBinder localBinder = new LocalBinder();
 
@@ -742,17 +745,17 @@ public class MusicIndexService extends Service {
 		File f = getDatabasePath("index.db");
 		f.getParentFile().mkdirs();
 
-		SQLiteDatabase db = SQLiteDatabase.openOrCreateDatabase(f, null);
-		db.enableWriteAheadLogging();
+		SQLiteDatabase toCheckDb = SQLiteDatabase.openOrCreateDatabase(f, null);
+		toCheckDb.enableWriteAheadLogging();
 
-		if (db.needUpgrade(DB_VERSION)) {
+		if (toCheckDb.needUpgrade(DB_VERSION)) {
 			Log.i(TAG, "Deleting old schema (if any)...");
-			db.execSQL("DROP TABLE IF EXISTS songlength;");
-			db.execSQL("DROP TABLE IF EXISTS files;");
+			toCheckDb.execSQL("DROP TABLE IF EXISTS songlength;");
+			toCheckDb.execSQL("DROP TABLE IF EXISTS files;");
 
 			Log.i(TAG, "Creating new schema...");
 			/* Record seen songs. */
-			db.execSQL("CREATE TABLE IF NOT EXISTS files ("
+			toCheckDb.execSQL("CREATE TABLE IF NOT EXISTS files ("
 					+ BaseColumns._ID + " INTEGER PRIMARY KEY,"
 					+ "parent_id INTEGER REFERENCES files ON DELETE CASCADE,"
 					+ "filename TEXT NOT NULL,"
@@ -763,7 +766,7 @@ public class MusicIndexService extends Service {
 					+ "composer TEXT,"
 					+ "date INTEGER"
 					+ ");");
-			db.execSQL("CREATE UNIQUE INDEX ui_files_parent_filename ON files (parent_id, filename);");
+			toCheckDb.execSQL("CREATE UNIQUE INDEX ui_files_parent_filename ON files (parent_id, filename);");
 
 			/* If a Songlengths.txt file is seen, we parse and store it here.
 			 * Rules are: if subsong is null, then the play length governs all
@@ -772,20 +775,20 @@ public class MusicIndexService extends Service {
 			 *
 			 * This is not for SID only, at least not in principle:
 			 * any plugin-given md5 value in this table will do. */
-			db.execSQL("CREATE TABLE IF NOT EXISTS songlength ("
+			toCheckDb.execSQL("CREATE TABLE IF NOT EXISTS songlength ("
 					+ BaseColumns._ID + " INTEGER PRIMARY KEY,"
 					+ "file_id NOT NULL REFERENCES files ON DELETE CASCADE,"
 					+ "md5 TEXT NOT NULL,"
 					+ "subsong INTEGER,"
 					+ "timeMs INTEGER NOT NULL"
 					+ ");");
-			db.execSQL("CREATE UNIQUE INDEX ui_songlength_md5_subsong ON songlength (md5, subsong);");
-			db.execSQL("CREATE INDEX ui_songlength_file ON songlength (file_id);");
+			toCheckDb.execSQL("CREATE UNIQUE INDEX ui_songlength_md5_subsong ON songlength (md5, subsong);");
+			toCheckDb.execSQL("CREATE INDEX ui_songlength_file ON songlength (file_id);");
 
-			db.setVersion(DB_VERSION);
+			toCheckDb.setVersion(DB_VERSION);
 			Log.i(TAG, "Schema complete.");
 		}
 
-		return db;
+		return toCheckDb;
 	}
 }

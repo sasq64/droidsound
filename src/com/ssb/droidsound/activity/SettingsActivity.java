@@ -24,7 +24,7 @@ import com.ssb.droidsound.utils.Log;
 public class SettingsActivity extends PreferenceActivity {
 	protected static final String TAG = SettingsActivity.class.getSimpleName();
 
-	private MusicIndexService.LocalBinder db;
+	protected MusicIndexService.LocalBinder db;
 
 	private final ServiceConnection dbConnection = new ServiceConnection() {
 		@Override
@@ -52,7 +52,7 @@ public class SettingsActivity extends PreferenceActivity {
 			plugin.setOption(k2, newValue);
 			return true;
 		}
-	};
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -75,7 +75,9 @@ public class SettingsActivity extends PreferenceActivity {
 		PackageInfo pinfo = null;
 		try {
 			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-		} catch (NameNotFoundException e) {}
+		} catch (NameNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 
 		String appName = getString(pinfo.applicationInfo.labelRes);
 

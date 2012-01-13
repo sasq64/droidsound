@@ -9,7 +9,7 @@ public class Color {
 		this.b = b;
 	}
 
-	private float gamma(float arg) {
+	private static float gamma(float arg) {
 		return (float) Math.pow(arg, 1/2.2);
 	}
 

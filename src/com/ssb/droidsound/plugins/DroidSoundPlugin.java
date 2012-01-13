@@ -14,7 +14,7 @@ public abstract class DroidSoundPlugin {
 
 		public int channels;
 		public int date = -1;
-	};
+	}
 
 	private static final MusicInfo EMPTY_INFO = new MusicInfo();
 

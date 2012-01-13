@@ -50,11 +50,11 @@ public class CollectionFragment extends Fragment {
 
 	protected Long currentSongId;
 
-	private TextView searchView;
+	protected TextView searchView;
 
-	private TextView progressPercentageView;
+	protected TextView progressPercentageView;
 
-	private FrameLayout progressContainerView;
+	protected FrameLayout progressContainerView;
 
 	private void navigateStart() {
 		((PlayerActivity) getActivity()).getMusicIndexService().scan(false);
@@ -87,7 +87,7 @@ public class CollectionFragment extends Fragment {
 		ft.commit();
 	}
 
-	protected MusicIndexService.Sort getSorting() {
+	protected static MusicIndexService.Sort getSorting() {
 		SharedPreferences prefs = Application.getAppPreferences();
 		String sorting = prefs.getString("sorting", "TITLE");
 		return MusicIndexService.Sort.valueOf(sorting);
@@ -230,14 +230,15 @@ public class CollectionFragment extends Fragment {
 						String fav = getString(R.string.add_to_playlist);
 						for (Playlist pl : ((PlayerActivity) getActivity()).getMusicIndexService().getPlaylistsList()) {
 							int id = (int) pl.getId();
-							String title = pl.getTitle();
-							menu.add(MENU_GROUP_ADD_TO_PLAYLIST, intChildId, id, fav + " " + title);
+							menu.add(MENU_GROUP_ADD_TO_PLAYLIST, intChildId, id, fav + " " + pl.getTitle());
 						}
 					}
 
 					/* Remove from playlist */
-					if (parentType == MusicIndexService.TYPE_PLAYLIST) {
-						menu.add(MENU_GROUP_REMOVE_FROM_PLAYLIST, intChildId, (int) (long) parentId, R.string.remove_from_playlist);
+					if (parentId != null) {
+						if (parentType == MusicIndexService.TYPE_PLAYLIST) {
+							menu.add(MENU_GROUP_REMOVE_FROM_PLAYLIST, intChildId, (int) (long) parentId, R.string.remove_from_playlist);
+						}
 					}
 
 					/* Delete file (not contained in zip) */
@@ -284,7 +285,7 @@ public class CollectionFragment extends Fragment {
 							long id = c.getLong(MusicIndexService.COL_ID);
 							FilesEntry sibling = ((PlayerActivity) getActivity()).getMusicIndexService().getSongFile(id);
 							fileList.add(sibling);
-							if (childId != null && id == childId) {
+							if (id == childId) {
 								idx = i;
 							}
 						}

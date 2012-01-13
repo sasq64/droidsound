@@ -33,7 +33,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		return new String(module, start, len, ISO88591).replaceFirst("\u0000.*", "");
 	}
 
-	private static class Info {
+	protected static class Info {
 		protected String name = "Unknown";
 		protected String composer = "Unknown";
 		protected String copyright = "Unknown";
@@ -42,7 +42,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 		protected int startSong = 1;
 		protected int songs = 1;
 		protected String format;
-	};
+	}
 
 	private byte[] mainHash;
 	private short[] extraLengths;

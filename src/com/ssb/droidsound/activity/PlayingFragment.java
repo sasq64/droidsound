@@ -22,7 +22,7 @@ import com.ssb.droidsound.utils.Log;
 public class PlayingFragment extends Fragment {
 	protected static final String TAG = PlayingFragment.class.getSimpleName();
 
-	private MyAdapter myAdapter;
+	protected MyAdapter myAdapter;
 
 	private ListView songInfoView;
 
@@ -35,7 +35,7 @@ public class PlayingFragment extends Fragment {
 		}
 	}
 
-	private void playButton(boolean enabled) {
+	protected void playButton(boolean enabled) {
 		playButton.setVisibility(enabled ? View.VISIBLE : View.GONE);
 		pauseButton.setVisibility(enabled ? View.GONE : View.VISIBLE);
 	}
@@ -129,11 +129,11 @@ public class PlayingFragment extends Fragment {
 		}
 	};
 
-	private SeekBar seekBar;
+	protected SeekBar seekBar;
 
-	private TextView timeView;
+	protected TextView timeView;
 
-	private TextView lengthView;
+	protected TextView lengthView;
 
 	private ImageButton backButton;
 

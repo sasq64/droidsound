@@ -58,7 +58,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		};
 	}
 
-	private String readNullTerminated(byte[] data, int i) {
+	private static String readNullTerminated(byte[] data, int i) {
 		int len = 0;
 		while (i + len < data.length && data[i + len] != 0) {
 			len ++;

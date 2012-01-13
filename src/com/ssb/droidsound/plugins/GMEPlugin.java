@@ -1,7 +1,6 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,17 +41,17 @@ public class GMEPlugin extends DroidSoundPlugin {
 		List<String> list = new ArrayList<String>();
 
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
-		if (s != null & s.length() > 0) {
+		if (s != null && s.length() > 0) {
 			list.add("Format");
 			list.add("GME: " + s);
 		}
 		s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
-		if (s != null & s.length() > 0) {
+		if (s != null && s.length() > 0) {
 			list.add("Copyright");
 			list.add(s);
 		}
 		s = N_getStringInfo(currentSong, INFO_GAME);
-		if (s != null & s.length() > 0) {
+		if (s != null && s.length() > 0) {
 			list.add("Game");
 			list.add(s);
 		}
@@ -71,7 +70,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 		return currentSong != 0;
 	}
 
-	public boolean loadInfo(File file) throws IOException {
+	public boolean loadInfo(File file) {
 		currentSong = N_loadFile(file.getPath());
 		return currentSong != 0;
 	}

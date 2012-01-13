@@ -75,7 +75,7 @@ public class PlayerService extends Service {
 	 * @param diff the difference to use count (-1 or +1)
 	 * @param notifyText set notify text to (may be null).
 	 */
-	private void addServiceWantedCount(int diff, String notifyText) {
+	protected void addServiceWantedCount(int diff, String notifyText) {
 		if (serviceWantedCount == 0) {
 			Log.i(TAG, "Adding notification");
 			startService(new Intent(this, PlayerService.class));
@@ -98,7 +98,8 @@ public class PlayerService extends Service {
 		}
 	}
 
-	private MusicIndexService.LocalBinder db;
+	protected MusicIndexService.LocalBinder db;
+
 	private final ServiceConnection dbConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName tag, IBinder binder) {
@@ -432,7 +433,7 @@ public class PlayerService extends Service {
 	/**
 	 * This runnable represents one song being played back currently.
 	 */
-	private PlayerRunnable player;
+	protected PlayerRunnable player;
 
 	/**
 	 * Song change detector
@@ -489,7 +490,7 @@ public class PlayerService extends Service {
 	 * @param n2
 	 * @param d2
 	 */
-	private void startPlayerThread(DroidSoundPlugin p1, FilesEntry song, String n1, byte[] d1, String n2, byte[] d2) {
+	protected void startPlayerThread(DroidSoundPlugin p1, FilesEntry song, String n1, byte[] d1, String n2, byte[] d2) {
 		Log.i(TAG, "Requesting player thread to start");
 		if (player != null) {
 			throw new RuntimeException("Playerthread was still running. Someone must call stopPlayerThread() first.");
@@ -507,7 +508,7 @@ public class PlayerService extends Service {
 	 *
 	 * @throws InterruptedException
 	 */
-	private void stopPlayerThread() throws InterruptedException {
+	protected void stopPlayerThread() throws InterruptedException {
 		Log.i(TAG, "Requesting player thread to stop");
 		if (player == null) {
 			throw new RuntimeException("Playerthread was not running. Someone must call startPlayerThread() first.");
@@ -729,7 +730,7 @@ public class PlayerService extends Service {
 		}
 	}
 
-	private final LocalBinder mBinder = new LocalBinder();
+	protected final LocalBinder mBinder = new LocalBinder();
 
     @Override
     public IBinder onBind(Intent intent) {

@@ -105,7 +105,7 @@ public class VisualizationView extends SurfaceView {
 		return minFreq * Math.pow(2, idx / 12.0);
 	}
 
-	private double getInterpolated(short[] buf, double x) {
+	private static double getInterpolated(short[] buf, double x) {
 		int i = (int) x;
 		double f = x - i;
 

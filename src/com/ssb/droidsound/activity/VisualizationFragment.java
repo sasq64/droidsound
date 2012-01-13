@@ -19,7 +19,7 @@ import com.ssb.droidsound.view.VisualizationInfoView;
 import com.ssb.droidsound.view.VisualizationView;
 
 public class VisualizationFragment extends Fragment {
-	protected static final String TAG = VisualizationFragment.class.getSimpleName();;
+	protected static final String TAG = VisualizationFragment.class.getSimpleName();
 
 	private VisualizationInfoView visualizationInfoView;
 

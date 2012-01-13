@@ -24,7 +24,7 @@ import com.ssb.droidsound.service.MusicIndexService;
 import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity {
-	private MusicIndexService.LocalBinder musicIndex;
+	protected MusicIndexService.LocalBinder musicIndex;
 
 	private final ServiceConnection musicIndexConnection = new ServiceConnection() {
 		@Override
@@ -40,7 +40,7 @@ public class PlayerActivity extends Activity {
 		}
 	};
 
-	private PlayerService.LocalBinder player;
+	protected PlayerService.LocalBinder player;
 
 	private final ServiceConnection playerConnection = new ServiceConnection() {
 		@Override
@@ -63,9 +63,9 @@ public class PlayerActivity extends Activity {
 		return player;
 	}
 
-	private ActionBar actionBar;
+	protected ActionBar actionBar;
 
-	private ViewPager viewPager;
+	protected ViewPager viewPager;
 
 	private MyAdapter viewPagerAdapter;
 
@@ -78,7 +78,7 @@ public class PlayerActivity extends Activity {
 		bindService(new Intent(PlayerActivity.this, PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
 
-	private void onCreateEnd() {
+	protected void onCreateEnd() {
 		if (musicIndex == null || player == null) {
 			return;
 		}
@@ -99,8 +99,8 @@ public class PlayerActivity extends Activity {
 		viewPager.setKeepScreenOn(true);
 
 		for (String entry : viewPagerAdapter.getEntries()) {
-			ActionBar.Tab tab = actionBar.newTab();
-			tab.setTabListener(new TabListener() {
+			ActionBar.Tab newTab = actionBar.newTab();
+			newTab.setTabListener(new TabListener() {
 				@Override
 				public void onTabReselected(Tab tab, FragmentTransaction ft) {
 				}
@@ -117,11 +117,11 @@ public class PlayerActivity extends Activity {
 
 			try {
 				int stringId = R.string.class.getField(entry + "_title").getInt(null);
-				tab.setText(getString(stringId));
+				newTab.setText(getString(stringId));
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-			actionBar.addTab(tab);
+			actionBar.addTab(newTab);
 		}
 
 		viewPager.setAdapter(viewPagerAdapter);
