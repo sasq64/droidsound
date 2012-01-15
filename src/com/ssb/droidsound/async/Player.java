@@ -1,6 +1,7 @@
 package com.ssb.droidsound.async;
 
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import android.content.Intent;
@@ -37,13 +38,6 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 	private static final int FREQUENCY_HZ = 44100;
 	private static final int BUFSIZE_BYTES = FREQUENCY_HZ * 4;
 
-	private final AtomicReference<OverlappingFFT> fft = new AtomicReference<OverlappingFFT>(null);
-
-	private int subsongLengthMs;
-	private int defaultSubsong;
-	private int subsongs;
-	private int currentSubsong;
-
 	private final SongDatabase db; /* fixme: get rid of this! */
 	private final DroidSoundPlugin plugin;
 	private final FilesEntry song;
@@ -51,10 +45,15 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 	private final byte[] data1;
 	private final String f2;
 	private final byte[] data2;
+	private final AtomicReference<OverlappingFFT> fft = new AtomicReference<OverlappingFFT>();
 
-	private State syncStateRequest = State.PLAY;
-	private int syncSeekRequest = -1;
-	private int syncSubsongRequest = -1;
+	private final AtomicInteger subsongLengthMs = new AtomicInteger();
+	private final AtomicInteger defaultSubsong = new AtomicInteger();
+	private final AtomicInteger subsongs = new AtomicInteger();
+	private final AtomicReference<State> syncStateRequest = new AtomicReference<State>(State.PLAY);
+	private final AtomicInteger syncSeekRequest = new AtomicInteger(-1);
+	private final AtomicInteger syncSubsongRequest = new AtomicInteger(-1);
+	private final AtomicInteger currentSubsong = new AtomicInteger();
 
 	/**
 	 * Construct a player that tries to load the file called f1 with content data1,
@@ -104,10 +103,8 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 	 * @param msec
 	 */
 	public void setSeekRequest(int msec) {
-		synchronized (this) {
-			Log.i(TAG, "Requesting new seek position %d ms", msec);
-			syncSeekRequest = msec;
-		}
+		Log.i(TAG, "Requesting new seek position %d ms", msec);
+		syncSeekRequest.set(msec);
 	}
 
 	/**
@@ -116,9 +113,7 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 	 * @return current player thread state
 	 */
 	public State getStateRequest() {
-		synchronized (this) {
-			return syncStateRequest;
-		}
+		return syncStateRequest.get();
 	}
 	/**
 	 * Change playback state of a running thread.
@@ -127,22 +122,19 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 	 * @param newState
 	 */
 	public void setStateRequest(State newState) {
-		synchronized (this) {
-			Log.i(TAG, "Requesting new state: %s", newState);
-			syncStateRequest = newState;
-		}
+		syncStateRequest.set(newState);
 	}
 
-	public synchronized int getCurrentSubsong() {
-		return currentSubsong;
+	public int getCurrentSubsong() {
+		return currentSubsong.get();
 	}
 
-	public synchronized int getMaxSubsong() {
-		return subsongs;
+	public int getMaxSubsong() {
+		return subsongs.get();
 	}
 
-	public synchronized int getDefaultSubsong() {
-		return defaultSubsong;
+	public int getDefaultSubsong() {
+		return defaultSubsong.get();
 	}
 
 	/**
@@ -153,10 +145,7 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 	 * @param song
 	 */
 	public void setSubSongRequest(int song) {
-		synchronized (this) {
-			Log.i(TAG, "Requesting subsong: %d", song);
-			syncSubsongRequest = song;
-		}
+		syncSubsongRequest.set(song);
 	}
 
 	private void sendAdvancing(int time) {
@@ -165,25 +154,21 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 		publishProgress(intent);
 	}
 
-	private synchronized void sendUnloading() {
+	private void sendUnloading() {
 		Intent unloading = new Intent(ACTION_UNLOADING_SONG);
-		synchronized (this) {
-			unloading.putExtra("state", syncStateRequest);
-		}
+		unloading.putExtra("state", syncStateRequest.get());
 		Application.broadcast(unloading);
 	}
 
 	private void sendLoadingWithSubsong(int newSubsong) {
-		synchronized (this) {
-			currentSubsong = newSubsong;
+		currentSubsong.set(newSubsong);
+		subsongLengthMs.set(db.getSongLength(plugin.md5(data1), newSubsong + 1));
+		if (subsongLengthMs.get() <= 0) {
+			subsongLengthMs.set(plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
 		}
-		subsongLengthMs = db.getSongLength(plugin.md5(data1), newSubsong + 1);
-		if (subsongLengthMs <= 0) {
-			subsongLengthMs = plugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-		}
-		if (subsongLengthMs <= 0) {
+		if (subsongLengthMs.get() <= 0) {
 			SharedPreferences prefs = Application.getAppPreferences();
-			subsongLengthMs = Integer.valueOf(prefs.getString("default_length", "0")) * 1000;
+			subsongLengthMs.set(Integer.valueOf(prefs.getString("default_length", "0")) * 1000);
 		}
 
 		Intent intent = new Intent(ACTION_LOADING_SONG);
@@ -191,7 +176,7 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 		intent.putExtra("plugin.currentSubsong", currentSubsong);
 		intent.putExtra("plugin.seekable", plugin.canSeek());
 		intent.putExtra("plugin.detailedInfo", plugin.getDetailedInfo());
-		intent.putExtra("subsong.length", subsongLengthMs / 1000);
+		intent.putExtra("subsong.length", subsongLengthMs.get() / 1000);
 		intent.putExtra("file.id", song.getId());
 		intent.putExtra("file.subsongs", subsongs);
 		intent.putExtra("file.defaultSubsong", defaultSubsong);
@@ -234,11 +219,9 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 		if (plugin.load(f1, data1, f2, data2)) {
 			Log.i(TAG, "Entering audio playback loop.");
 			try {
-				synchronized (this) {
-					subsongs = plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
-					defaultSubsong = plugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE);
-				}
-				sendLoadingWithSubsong(defaultSubsong);
+				subsongs.set(plugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT));
+				defaultSubsong.set(plugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE));
+				sendLoadingWithSubsong(defaultSubsong.get());
 				doInBackgroundPlayloop(audioTrack);
 				sendUnloading();
 			}
@@ -266,20 +249,9 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 
 		int playbackFrame = 0;
 		PLAYLOOP: while (true) {
-			/* Avoid race condition: copy inter-thread data into local variables. */
-			final State loopState;
-			final int loopSubsongRequest;
-			final int loopSeekRequest;
-			synchronized (this) {
-				loopState = syncStateRequest;
-				loopSubsongRequest = syncSubsongRequest;
-				syncSubsongRequest = -1;
-				loopSeekRequest = syncSeekRequest;
-				syncSeekRequest = -1;
-			}
-
-			switch (loopState) {
+			switch (syncStateRequest.get()) {
 			case PLAY: {
+				final int loopSubsongRequest = syncSubsongRequest.getAndSet(-1);
 				if (loopSubsongRequest != -1) {
 					if (plugin.setTune(loopSubsongRequest)) {
 						playbackFrame = 0;
@@ -287,6 +259,7 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 					}
 				}
 
+				final int loopSeekRequest = syncSeekRequest.getAndSet(-1);
 				if (loopSeekRequest != -1) {
 					if (plugin.canSeek()) {
 						plugin.seekTo(loopSeekRequest);
@@ -321,7 +294,7 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 				}
 
 				/* Terminate playback when complete song played. */
-				if (sec2 > subsongLengthMs / 1000) {
+				if (sec2 > subsongLengthMs.get() / 1000) {
 					break PLAYLOOP;
 				}
 

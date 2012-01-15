@@ -105,6 +105,15 @@ public class PlayingFragment extends Fragment {
 			seekBar.setProgress(0);
 			seekBar.setMax(1);
 			playButton(true);
+
+			Player.State state = (Player.State) intent.getSerializableExtra("state");
+			if (state == Player.State.PLAY) {
+				try {
+					Application.playNext();
+				} catch (Exception e) {
+					Log.w(TAG, "Failed to auto-switch to next song");
+				}
+			}
 		}
 	};
 	protected boolean seekBarDragging;
