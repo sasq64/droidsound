@@ -49,8 +49,10 @@ public class VisualizationFragment extends Fragment {
 		intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
 		getActivity().registerReceiver(musicChangeReceiver, intentFilter);
 
-		Queue<OverlappingFFT.Data> data = ((PlayerActivity) getActivity()).getPlayerService().enableFftQueue();
-		visualizationView.setData(data);
+		PlayerService.LocalBinder ps = ((PlayerActivity) getActivity()).getPlayerService();
+		if (ps != null) {
+			visualizationView.setData(ps.enableFftQueue());
+		}
 
 		return view;
 	}

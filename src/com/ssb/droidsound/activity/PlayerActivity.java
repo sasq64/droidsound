@@ -72,6 +72,7 @@ public class PlayerActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setContentView(R.layout.top);
 		bindService(new Intent(this, MusicIndexService.class), musicIndexConnection, Context.BIND_AUTO_CREATE);
 		bindService(new Intent(PlayerActivity.this, PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
 	}
@@ -85,7 +86,6 @@ public class PlayerActivity extends Activity {
 			return;
 		}
 
-		setContentView(R.layout.top);
 		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 		actionBar.setDisplayOptions(0);
