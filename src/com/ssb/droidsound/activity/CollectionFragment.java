@@ -48,7 +48,7 @@ public class CollectionFragment extends Fragment {
 	protected static final int MENU_GROUP_REMOVE_FROM_PLAYLIST = 3;
 	protected static final int MENU_GROUP_CREATE_PLAYLIST = 4;
 
-	protected Long currentSongId;
+	protected long currentSongId;
 
 	protected TextView searchView;
 
@@ -160,7 +160,7 @@ public class CollectionFragment extends Fragment {
 			TextView subtitleView = (TextView) view.findViewById(R.id.subtitle);
 			TextView sidetitleView = (TextView) view.findViewById(R.id.sidetitle);
 
-			final Long childId = cursor.getLong(MusicIndexService.COL_ID);
+			final long childId = cursor.getLong(MusicIndexService.COL_ID);
 			final Long parentId = cursor.isNull(MusicIndexService.COL_PARENT_ID) ? null : cursor.getLong(MusicIndexService.COL_PARENT_ID);
 			final int type = cursor.getInt(MusicIndexService.COL_TYPE);
 			final String format = cursor.getString(MusicIndexService.COL_FORMAT);
@@ -168,7 +168,7 @@ public class CollectionFragment extends Fragment {
 			final String composer = cursor.getString(MusicIndexService.COL_COMPOSER);
 			final int date = cursor.getInt(MusicIndexService.COL_DATE);
 
-			playingView.setVisibility(childId.equals(currentSongId) ? View.VISIBLE : View.GONE);
+			playingView.setVisibility(childId == currentSongId ? View.VISIBLE : View.GONE);
 
 			final int icon;
 			switch (type) {
@@ -214,7 +214,7 @@ public class CollectionFragment extends Fragment {
 					/* menuInfo is null.
 					 * Encoding the data to the fields I got in menu, then.
 					 * Thanks, android. */
-					int intChildId = (int) (long) childId;
+					int intChildId = (int) childId;
 					menu.setHeaderTitle(title);
 
 					int parentType = 0;
@@ -406,7 +406,7 @@ public class CollectionFragment extends Fragment {
 			if (a.equals(PlayerService.ACTION_LOADING_SONG)) {
 				currentSongId = i.getLongExtra("file.id", 0);
 			} else if (a.equals(PlayerService.ACTION_UNLOADING_SONG)) {
-				currentSongId = null;
+				currentSongId = 0;
 			}
 		}
 	};
