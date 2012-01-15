@@ -75,8 +75,8 @@ public class VisualizationView extends SurfaceView {
 			float dbNext = fft[i+1];
 
 			float hump = 2f * dbNorm - dbPrev - dbNext;
-			float saturation = Math.max(0, Math.min(1, hump * 10f));
-			fftPaint.setColor(colors[i / 2].toRGB((1f + saturation) * 0.5f, saturation));
+			float saturation = Math.max(0, Math.min(1, hump * 4f));
+			fftPaint.setColor(colors[(i >> 1) % 12].toRGB((1f + saturation) * 0.5f, saturation));
 
 			float x = (i + 0.5f) / (fft.length) * width;
 			canvas.drawLine(x, height, x, height * (1f - dbNorm), fftPaint);
@@ -105,18 +105,17 @@ public class VisualizationView extends SurfaceView {
 		return minFreq * Math.pow(2, idx / 12.0);
 	}
 
+	private static double getBin(short[] buf, int i) {
+		double re = buf[i << 1];
+		double im = buf[(i << 1) | 1];
+		return re * re + im * im;
+	}
+
 	private static double getInterpolated(short[] buf, double x) {
 		int i = (int) x;
-		double f = x - i;
-
-		/* Magnitude squared interpolation. */
-		double re1 = buf[i << 1];
-		double im1 = buf[(i << 1) | 1];
-		double c1 = re1 * re1 + im1 * im1;
-		double re2 = buf[(i + 1) << 1];
-		double im2 = buf[((i + 1) << 1) | 1];
-		double c2 = re2 * re2 + im2 * im2;
-		return (c1 + (c2 - c1) * f) / (1 << 20);
+		double c1 = getBin(buf, i);
+		double c2 = getBin(buf, i + 1);
+		return c1 + (c2 - c1) * (x - i);
 	}
 
 	private void updateFftData(short[] buf) {
@@ -132,13 +131,12 @@ public class VisualizationView extends SurfaceView {
 			int x = (int) startIdx + 1;
 			int xEnd = (int) endIdx + 1;
 			while (x < xEnd) {
-				double re = buf[x << 1];
-				double im = buf[(x << 1) | 1];
-				lenSqMax = Math.max(lenSqMax, (re * re + im * im) / (1 << 20));
+				double c = getBin(buf, x);
+				lenSqMax = Math.max(lenSqMax, c);
 				x += 1;
 			}
 
-			double dB = Math.log(lenSqMax) / Math.log(10) * 10;
+			double dB = Math.log(lenSqMax / (1 << 20)) / Math.log(10) * 10;
 
 			/* 60 dB correlates with 1 << 10 above. The lowest bit seems to be pure noise,
 			 * but because there's great degree of averaging of bins, the noise level is pushed

@@ -1,19 +1,17 @@
 package com.ssb.droidsound.view;
 
-import com.ssb.droidsound.utils.Color;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
 
-public class VisualizationInfoView extends SurfaceView {
-	public static final int BINS = 12 * 7;
+import com.ssb.droidsound.utils.Color;
 
+public class VisualizationInfoView extends SurfaceView {
 	protected static final String TAG = VisualizationInfoView.class.getSimpleName();
 
-	private final Color[] colors = new Color[BINS];
+	private final Color[] colors = new Color[12];
 
 	private final String NOTE_NAME[] = new String[] {
 			"A",
