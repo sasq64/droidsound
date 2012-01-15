@@ -75,7 +75,7 @@ public class VisualizationView extends SurfaceView {
 			float dbNext = fft[i+1];
 
 			float hump = 2f * dbNorm - dbPrev - dbNext;
-			float saturation = Math.max(0, Math.min(1, hump * 5f));
+			float saturation = Math.max(0, Math.min(1, hump * 10f));
 			fftPaint.setColor(colors[i / 2].toRGB((1f + saturation) * 0.5f, saturation));
 
 			float x = (i + 0.5f) / (fft.length) * width;
@@ -109,24 +109,17 @@ public class VisualizationView extends SurfaceView {
 		int i = (int) x;
 		double f = x - i;
 
-		int re1 = buf[i << 1];
-		int im1 = buf[(i << 1) + 1];
-		int re2 = buf[(i + 1) << 1];
-		int im2 = buf[((i + 1) << 1) + 1];
-
-		double re = re1 + (re2 - re1) * f;
-		double im = im1 + (im2 - im1) * f;
-		return (re * re + im * im) / (1 << 20);
+		/* Magnitude squared interpolation. */
+		double re1 = buf[i << 1];
+		double im1 = buf[(i << 1) | 1];
+		double c1 = re1 * re1 + im1 * im1;
+		double re2 = buf[(i + 1) << 1];
+		double im2 = buf[((i + 1) << 1) | 1];
+		double c2 = re2 * re2 + im2 * im2;
+		return (c1 + (c2 - c1) * f) / (1 << 20);
 	}
 
 	private void updateFftData(short[] buf) {
-		/* Generates a test pattern to see that interpolation is OK
-		for (int i = 0; i < buf.length; i += 2) {
-			short n = (i & 2) == 0 ? (short) 1024 : 0;
-			buf[i] = n;
-			buf[i + 1] = n;
-		}*/
-
 		/* Remap data bins into our freq-linear fft */
 		for (int i = 0; i < fft.length; i ++) {
 			final double startFreq = projectFft((i - 1 - 0.5) / 2);
@@ -135,29 +128,13 @@ public class VisualizationView extends SurfaceView {
 			final double startIdx = startFreq / 22050 * (buf.length >> 1);
 			final double endIdx = endFreq / 22050 * (buf.length >> 1);
 
-			double lenSqMax = 1e-10;
-			int x = (int) startIdx;
-			while (x < endIdx) {
-				double lenSq;
-				if (x < startIdx) {
-					/* The partial chunk at start: triangular overlap by linear interpolation.
-					 * The width is the length until the next full start idx, or to the endIdx. */
-					double width = Math.min(endIdx, x + 1) - startIdx;
-					lenSq = getInterpolated(buf, startIdx + width * .5);
-				} else if (x + 1 > endIdx) {
-					/* The partial chunk at end: triangular overlap by linear interpolation.
-					 * The width is simply distance from the start to end. */
-					double width = endIdx - x;
-					lenSq = getInterpolated(buf, endIdx - width * .5);
-				} else {
-					/* Full bin */
-					double re = buf[x << 1];
-					double im = buf[(x << 1) + 1];
-					lenSq = (re * re + im * im) / (1 << 20);
-				}
-				if (lenSq > lenSqMax) {
-					lenSqMax = lenSq;
-				}
+			double lenSqMax = getInterpolated(buf, startIdx);
+			int x = (int) startIdx + 1;
+			int xEnd = (int) endIdx + 1;
+			while (x < xEnd) {
+				double re = buf[x << 1];
+				double im = buf[(x << 1) | 1];
+				lenSqMax = Math.max(lenSqMax, (re * re + im * im) / (1 << 20));
 				x += 1;
 			}
 
