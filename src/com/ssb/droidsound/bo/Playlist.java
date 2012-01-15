@@ -74,7 +74,6 @@ public class Playlist {
 	private static JSONObject serialize(FilesEntry songFile) throws JSONException {
 		File zipFilePath = songFile.getZipFilePath();
 		JSONObject obj = new JSONObject();
-		obj.put("subtune", songFile.getSubtune());
 		obj.put("filePath", songFile.getFilePath().getPath());
 		obj.put("zipFilePath", zipFilePath != null ? zipFilePath.getPath() : null);
 		obj.put("format", songFile.getFormat());
@@ -86,7 +85,6 @@ public class Playlist {
 
 	private static FilesEntry deserialize(JSONObject obj) throws JSONException {
 		return new FilesEntry(
-				0,
 				obj.getInt("subtune"),
 				new File(obj.getString("filePath")),
 				obj.has("zipFilePath") ? new File(obj.getString("zipFilePath")) : null,

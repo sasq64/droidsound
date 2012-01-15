@@ -16,7 +16,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.ssb.droidsound.R;
-import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.async.Player;
 import com.ssb.droidsound.utils.Log;
 
 public class PlayingFragment extends Fragment {
@@ -125,7 +126,7 @@ public class PlayingFragment extends Fragment {
 				return;
 			}
 
-			((PlayerActivity) getActivity()).getPlayerService().seekTo(pos * 1000);
+			Application.seekTo(pos * 1000);
 		}
 	};
 
@@ -149,9 +150,9 @@ public class PlayingFragment extends Fragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		getActivity().getApplicationContext().registerReceiver(songLoadingReceiver, new IntentFilter(PlayerService.ACTION_LOADING_SONG));
-		getActivity().getApplicationContext().registerReceiver(advancingReceiver, new IntentFilter(PlayerService.ACTION_ADVANCING));
-		getActivity().getApplicationContext().registerReceiver(songUnloadingReceiver, new IntentFilter(PlayerService.ACTION_UNLOADING_SONG));
+		getActivity().getApplicationContext().registerReceiver(songLoadingReceiver, new IntentFilter(Player.ACTION_LOADING_SONG));
+		getActivity().getApplicationContext().registerReceiver(advancingReceiver, new IntentFilter(Player.ACTION_ADVANCING));
+		getActivity().getApplicationContext().registerReceiver(songUnloadingReceiver, new IntentFilter(Player.ACTION_UNLOADING_SONG));
 	}
 
 	@Override
@@ -185,7 +186,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					((PlayerActivity) getActivity()).getPlayerService().playPrev();
+					Application.playPrev();
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to play prev", e);
 				}
@@ -196,7 +197,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					((PlayerActivity) getActivity()).getPlayerService().playPause(true);
+					Application.playPause(true);
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to start playing", e);
 					return;
@@ -209,7 +210,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					((PlayerActivity) getActivity()).getPlayerService().playPause(false);
+					Application.playPause(false);
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to pause playing", e);
 					return;
@@ -221,7 +222,7 @@ public class PlayingFragment extends Fragment {
 		stopButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				((PlayerActivity) getActivity()).getPlayerService().stop();
+				Application.stop();
 			}
 		});
 		forwardButton = (ImageButton) view.findViewById(R.id.button_forward);
@@ -229,7 +230,7 @@ public class PlayingFragment extends Fragment {
 			@Override
 			public void onClick(View arg0) {
 				try {
-					((PlayerActivity) getActivity()).getPlayerService().playNext();
+					Application.playNext();
 				} catch (Exception e) {
 					Log.w(TAG, "Failed to play prev", e);
 				}

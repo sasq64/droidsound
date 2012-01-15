@@ -1,13 +1,8 @@
 package com.ssb.droidsound.activity;
 
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
@@ -17,26 +12,12 @@ import android.preference.PreferenceGroup;
 import android.preference.PreferenceScreen;
 
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.service.MusicIndexService;
 import com.ssb.droidsound.utils.Log;
 
 public class SettingsActivity extends PreferenceActivity {
 	protected static final String TAG = SettingsActivity.class.getSimpleName();
-
-	protected MusicIndexService.LocalBinder db;
-
-	private final ServiceConnection dbConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			db = (MusicIndexService.LocalBinder) binder;
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName tag) {
-			db = null;
-		}
-	};
 
 	protected static class AudiopPrefsListener implements OnPreferenceChangeListener {
 		private final DroidSoundPlugin plugin;
@@ -59,14 +40,12 @@ public class SettingsActivity extends PreferenceActivity {
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.layout.preferences);
 
-		bindService(new Intent(this, MusicIndexService.class), dbConnection, Context.BIND_AUTO_CREATE);
-
 		Preference pref = findPreference("rescan_pref");
 		pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				CheckBoxPreference cbp = (CheckBoxPreference) findPreference("rescan_full");
-				db.scan(cbp.isChecked());
+				Application.getSongDatabase().scan(cbp.isChecked());
 				finish();
 				return true;
 			}
@@ -138,11 +117,5 @@ public class SettingsActivity extends PreferenceActivity {
 			p.setSummary("G-Flat SVG by poptones");
 			abScreen.addPreference(p);
 		}
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		unbindService(dbConnection);
 	}
 }

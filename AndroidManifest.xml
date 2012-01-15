@@ -61,8 +61,7 @@
         </activity>
         <activity android:name=".activity.SettingsActivity" />
 
-        <service android:name=".service.MusicIndexService" />
-        <service android:name=".service.PlayerService" />
+        <service android:name=".service.ProtectionMoneyService" />
     </application>
 
 </manifest>

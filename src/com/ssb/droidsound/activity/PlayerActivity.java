@@ -7,12 +7,8 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
@@ -20,49 +16,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.ssb.droidsound.R;
-import com.ssb.droidsound.service.MusicIndexService;
-import com.ssb.droidsound.service.PlayerService;
 
 public class PlayerActivity extends Activity {
-	protected MusicIndexService.LocalBinder musicIndex;
-
-	private final ServiceConnection musicIndexConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			musicIndex = (MusicIndexService.LocalBinder) binder;
-			musicIndex.scan(false);
-			onCreateEnd();
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName tag) {
-			musicIndex = null;
-		}
-	};
-
-	protected PlayerService.LocalBinder player;
-
-	private final ServiceConnection playerConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName tag, IBinder binder) {
-			player = (PlayerService.LocalBinder) binder;
-			onCreateEnd();
-		}
-
-		@Override
-		public void onServiceDisconnected(ComponentName arg0) {
-			player = null;
-		}
-	};
-
-	public MusicIndexService.LocalBinder getMusicIndexService() {
-		return musicIndex;
-	}
-
-	public PlayerService.LocalBinder getPlayerService() {
-		return player;
-	}
-
 	protected ActionBar actionBar;
 
 	protected ViewPager viewPager;
@@ -73,18 +28,6 @@ public class PlayerActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.top);
-		bindService(new Intent(this, MusicIndexService.class), musicIndexConnection, Context.BIND_AUTO_CREATE);
-		bindService(new Intent(PlayerActivity.this, PlayerService.class), playerConnection, Context.BIND_AUTO_CREATE);
-	}
-
-	protected void onCreateEnd() {
-		if (musicIndex == null || player == null) {
-			return;
-		}
-
-		if (actionBar != null) {
-			return;
-		}
 
 		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
@@ -138,13 +81,6 @@ public class PlayerActivity extends Activity {
 			public void onPageScrollStateChanged(int arg0) {
 			}
 		});
-	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		unbindService(musicIndexConnection);
-		unbindService(playerConnection);
 	}
 
 	@Override

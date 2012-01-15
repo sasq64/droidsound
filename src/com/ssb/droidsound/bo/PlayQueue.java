@@ -54,13 +54,6 @@ public class PlayQueue {
 		return musicList.get(musicListPos);
 	}
 
-	public int getCurrentStartSong() {
-		if (musicListPos >= musicList.size()) {
-			return -1;
-		}
-		return musicList.get(musicListPos).getSubtune();
-	}
-
 	public void setCurrent(int i) {
 		musicListPos = i;
 	}

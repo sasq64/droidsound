@@ -22,7 +22,6 @@ public class FilesEntry {
 	}
 
 	private final long id;
-	private final int subtune;
 	private final File filePath;
 	private final File zipFilePath;
 
@@ -31,9 +30,8 @@ public class FilesEntry {
 	private final String composer;
 	private final int date;
 
-	public FilesEntry(long id, int subtune, File fileName, File zipFilePath, String format, String title, String composer, int date) {
+	public FilesEntry(long id, File fileName, File zipFilePath, String format, String title, String composer, int date) {
 		this.id = id;
-		this.subtune = subtune;
 		this.filePath = fileName;
 		this.zipFilePath = zipFilePath;
 		this.format = format;
@@ -62,10 +60,6 @@ public class FilesEntry {
 
 	public long getId() {
 		return id;
-	}
-
-	public int getSubtune() {
-		return subtune;
 	}
 
 	public File getFilePath() {

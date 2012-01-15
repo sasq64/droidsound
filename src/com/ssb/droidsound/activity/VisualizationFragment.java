@@ -13,7 +13,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.ssb.droidsound.R;
-import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.async.Player;
 import com.ssb.droidsound.utils.OverlappingFFT;
 import com.ssb.droidsound.view.VisualizationInfoView;
 import com.ssb.droidsound.view.VisualizationView;
@@ -29,8 +30,8 @@ public class VisualizationFragment extends Fragment {
 		@Override
 		public void onReceive(Context c, Intent i) {
 			Queue<OverlappingFFT.Data> data = null;
-			if (i.getAction().equals(PlayerService.ACTION_LOADING_SONG)) {
-				data = ((PlayerActivity) getActivity()).getPlayerService().enableFftQueue();
+			if (i.getAction().equals(Player.ACTION_LOADING_SONG)) {
+				data = Application.enableFftQueue();
 			}
 			visualizationView.setData(data);
 		}
@@ -45,14 +46,10 @@ public class VisualizationFragment extends Fragment {
 		visualizationView.setColors(visualizationInfoView.getColors());
 
 		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(PlayerService.ACTION_LOADING_SONG);
-		intentFilter.addAction(PlayerService.ACTION_UNLOADING_SONG);
+		intentFilter.addAction(Player.ACTION_LOADING_SONG);
+		intentFilter.addAction(Player.ACTION_UNLOADING_SONG);
 		getActivity().registerReceiver(musicChangeReceiver, intentFilter);
-
-		PlayerService.LocalBinder ps = ((PlayerActivity) getActivity()).getPlayerService();
-		if (ps != null) {
-			visualizationView.setData(ps.enableFftQueue());
-		}
+		visualizationView.setData(Application.enableFftQueue());
 
 		return view;
 	}
@@ -61,6 +58,6 @@ public class VisualizationFragment extends Fragment {
 	public void onDestroyView() {
 		super.onDestroyView();
 		getActivity().unregisterReceiver(musicChangeReceiver);
-		((PlayerActivity) getActivity()).getPlayerService().disableFftQueue();
+		Application.disableFftQueue();
 	}
 }
