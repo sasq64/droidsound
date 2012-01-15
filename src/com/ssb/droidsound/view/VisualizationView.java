@@ -143,13 +143,7 @@ public class VisualizationView extends SurfaceView {
 			/* 60 dB correlates with 1 << 10 above. The lowest bit seems to be pure noise,
 			 * but because there's great degree of averaging of bins, the noise level is pushed
 			 * to somewhat less than 60 dB except for lowest displayed bass frequencies. */
-			float y = ((float) dB / 60f) + 0.8f;
-
-			if (y >= fft[i]) {
-				fft[i] = y;
-			} else {
-				fft[i] = Math.max(y, fft[i] - 0.1f);
-			}
+			fft[i] = ((float) dB / 60f) + 0.8f;
 		}
 	}
 }
