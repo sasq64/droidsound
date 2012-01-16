@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -35,6 +36,7 @@ import android.widget.TextView;
 
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.app.Application;
+import com.ssb.droidsound.async.AsyncQueryResult;
 import com.ssb.droidsound.async.Player;
 import com.ssb.droidsound.async.Scanner;
 import com.ssb.droidsound.bo.FilesEntry;
@@ -60,13 +62,13 @@ public class CollectionFragment extends Fragment {
 	private void navigateStart() {
 		Application.getSongDatabase().scan(false);
 
-		ListFragment lf = new FastListFragment();
 		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
 			@Override
 			public Cursor getCursor() {
 				return Application.getSongDatabase().getFilesByParentId(null, getSorting());
 			}
 		});
+		ListFragment lf = new FastListFragment();
 		lf.setListAdapter(cva);
 
 		FragmentTransaction ft = getFragmentManager().beginTransaction();
@@ -74,10 +76,10 @@ public class CollectionFragment extends Fragment {
 		ft.commit();
 	}
 
-	protected void navigateWithBackStack(ICursorFactory cursorFactory) {
+	protected void navigateWithBackStack(ICursorFactory cf) {
 		/* Move to subfolder */
 		ListFragment lf = new FastListFragment();
-		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), cursorFactory);
+		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), cf);
 		lf.setListAdapter(cva);
 
 		FragmentTransaction ft = getFragmentManager().beginTransaction();
@@ -141,14 +143,15 @@ public class CollectionFragment extends Fragment {
 	protected class CollectionViewAdapter extends CursorAdapter {
 		private final ICursorFactory cursorFactory;
 
-		protected CollectionViewAdapter(Context context, ICursorFactory cursorFactory) {
-			super(context, cursorFactory.getCursor());
+		public CollectionViewAdapter(Context context, ICursorFactory cursorFactory) {
+			super(context, null);
 			this.cursorFactory = cursorFactory;
+			requery();
 		}
 
 		public void requery() {
-			changeCursor(cursorFactory.getCursor());
-			Log.i(TAG, "After query: " + getCursor().getCount());
+			Cursor c = cursorFactory.getCursor();
+			new AsyncQueryResult(c, this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 		}
 
 		@Override
@@ -270,10 +273,8 @@ public class CollectionFragment extends Fragment {
 						navigateWithBackStack(new ICursorFactory() {
 							@Override
 							public Cursor getCursor() {
-								Log.i(TAG, "Querying elements for child: %d", childId);
 								return Application.getSongDatabase().getFilesByParentId(childId, getSorting());
 							}
-
 						});
 					} else {
 						/* Scavenge the entries from our cursor */
@@ -455,7 +456,6 @@ public class CollectionFragment extends Fragment {
 					navigateWithBackStack(new ICursorFactory() {
 						@Override
 						public Cursor getCursor() {
-							Log.i(TAG, "Querying for search: " + value);
 							return Application.getSongDatabase().search(value, getSorting());
 						}
 					});

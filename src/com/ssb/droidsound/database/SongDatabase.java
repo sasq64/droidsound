@@ -108,7 +108,8 @@ public class SongDatabase {
 		return db.query("files",
 				COLUMNS,
 				"(lower(title) LIKE ? OR lower(composer) LIKE ? OR lower(filename) LIKE ?) AND type = ?", new String[] { q, q, q, String.valueOf(TYPE_FILE) },
-				null, null, sorting.toSQL()
+				null, null, sorting.toSQL(),
+				"100"
 		);
 	}
 
