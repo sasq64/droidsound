@@ -484,12 +484,17 @@ public class CollectionFragment extends Fragment {
 
 			@Override
 			public boolean onQueryTextChange(final String newText) {
-				/* Do not try search if old query has not yet returned. */
-				CursorAdapter old = searchView.getSuggestionsAdapter();
-				if (old != null && old.getCursor() == null) {
+				/* Remove adapter to hide obsolete result sets.
+				 * Would be lovely to be able to interrupt any previous
+				 * query, but that does not strike as possible to me. */
+				searchView.setSuggestionsAdapter(null);
+
+				if (newText.length() < 3) {
 					return false;
 				}
 
+				/* We should probably ratelimit the asynctask spam we can cause.
+				 * Ideally we'd maintain an internal queue here. I'll just spam them for now. */
 				Log.i(TAG, "Firing a new suggestions scan for: '%s'", newText);
 				Cursor c = Application.getSongDatabase().search(newText, getSorting());
 				CursorAdapter ca = new SimpleCursorAdapter(
@@ -500,7 +505,7 @@ public class CollectionFragment extends Fragment {
 						new int[] { android.R.id.text1, android.R.id.text2 }
 				);
 				searchView.setSuggestionsAdapter(ca);
-				new AsyncQueryResult(c, ca).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+				new AsyncQueryResult(c, ca).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
 				return true;
 			}
 		});
