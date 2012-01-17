@@ -10,14 +10,13 @@
         android:background="#ff111111"
         android:layout_height="wrap_content" >
 
-        <EditText
+        <SearchView
             android:id="@+id/search"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:imeOptions="actionSearch"
-            android:layout_weight="1">
-        </EditText>
+            android:iconifiedByDefault="false"
+            android:layout_weight="1" />
 
         <FrameLayout
             android:id="@+id/progress_container"

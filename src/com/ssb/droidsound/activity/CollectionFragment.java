@@ -20,18 +20,17 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.CursorAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.SearchView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 import com.ssb.droidsound.R;
@@ -53,7 +52,7 @@ public class CollectionFragment extends Fragment {
 
 	protected long currentSongId;
 
-	protected TextView searchView;
+	protected SearchView searchView;
 
 	protected TextView progressPercentageView;
 
@@ -441,27 +440,67 @@ public class CollectionFragment extends Fragment {
 		View view = inflater.inflate(R.layout.collection_view, null);
 		progressContainerView = (FrameLayout) view.findViewById(R.id.progress_container);
 		progressPercentageView = (TextView) view.findViewById(R.id.progress_percentage);
-		searchView = (TextView) view.findViewById(R.id.search);
+		searchView = (SearchView) view.findViewById(R.id.search);
 
 		progressContainerView.setVisibility(View.GONE);
-		searchView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+
+		searchView.setOnSuggestionListener(new SearchView.OnSuggestionListener() {
 			@Override
-			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-				/* Is return press? */
-				if (actionId != EditorInfo.IME_NULL || event.getAction() != KeyEvent.ACTION_DOWN) {
-					return false;
+			public boolean onSuggestionSelect(int position) {
+				return false;
+			}
+
+			@Override
+			public boolean onSuggestionClick(int position) {
+				CursorAdapter ca = searchView.getSuggestionsAdapter();
+				Cursor c = ca.getCursor();
+				c.moveToPosition(position);
+				long childId = c.getLong(SongDatabase.COL_ID);
+				FilesEntry fe = Application.getSongDatabase().getSongFile(childId);
+				try {
+					Application.playMod(fe);
+				} catch (Exception e) {
+					Log.w(TAG, "Can't play song from selection", e);
 				}
-				final String value = String.valueOf(searchView.getText());
-				if (! "".equals(value)) {
+				return true;
+			}
+		});
+
+		searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+			@Override
+			public boolean onQueryTextSubmit(final String query) {
+				if (! "".equals(query)) {
 					navigateWithBackStack(new ICursorFactory() {
 						@Override
 						public Cursor getCursor() {
-							return Application.getSongDatabase().search(value, getSorting());
+							return Application.getSongDatabase().search(query, getSorting());
 						}
 					});
+					return true;
 				}
-				InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-				imm.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
+
+				return false;
+			}
+
+			@Override
+			public boolean onQueryTextChange(final String newText) {
+				/* Do not try search if old query has not yet returned. */
+				CursorAdapter old = searchView.getSuggestionsAdapter();
+				if (old != null && old.getCursor() == null) {
+					return false;
+				}
+
+				Log.i(TAG, "Firing a new suggestions scan for: '%s'", newText);
+				Cursor c = Application.getSongDatabase().search(newText, getSorting());
+				CursorAdapter ca = new SimpleCursorAdapter(
+						getActivity(),
+						android.R.layout.simple_list_item_2,
+						null,
+						new String[] { "title", "composer" },
+						new int[] { android.R.id.text1, android.R.id.text2 }
+				);
+				searchView.setSuggestionsAdapter(ca);
+				new AsyncQueryResult(c, ca).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 				return true;
 			}
 		});
