@@ -6,8 +6,7 @@ public class FFT {
 	}
 
 	/**
-	 * Calculates the real-valued spectrum from input.
-	 * The input is reduced to mono and spectrum is calculated with 12 bit precision.
+	 * Calculates the real-valued spectrum from input. The input is reduced to mono.
 	 *
 	 * @param in 16 bit stereo data, 2 * 2^n long
 	 * @param out 16-bit spectral data in (real, imag) pairs, same length as input

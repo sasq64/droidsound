@@ -36,6 +36,13 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.OverlappingFFT.Data;
 import com.ssb.droidsound.utils.StreamUtil;
 
+/**
+ * This class is a miscellaneous garbage dump for operations that are simultaneously
+ * necessary from multiple application contexts. Also some singleton utility objects
+ * are maintained here.
+ * 
+ * @author alankila
+ */
 public class Application extends android.app.Application {
 	protected static Application app;
 	private static final String TAG = Application.class.getSimpleName();

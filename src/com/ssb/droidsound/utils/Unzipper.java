@@ -33,9 +33,9 @@ public class Unzipper {
 				while (0 < (data = zis.read(buffer))) {
 					os.write(buffer, 0, data);
 				}
+				os.close();
 
 				zis.closeEntry();
-				os.close();
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);

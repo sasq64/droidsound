@@ -7,8 +7,8 @@
 
     <ImageView
         android:id="@+id/icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:layout_alignParentLeft="true"
         android:layout_centerVertical="true"
         android:contentDescription="@string/icon"
@@ -17,16 +17,19 @@
 
     <TextView
         android:id="@+id/format"
-        android:layout_width="wrap_content"
+        android:layout_width="64dp"
         android:layout_height="wrap_content"
         android:layout_alignLeft="@id/icon"
-        android:layout_alignParentBottom="true"
-        android:shadowColor="@android:color/black"
+        android:layout_alignBottom="@id/icon"
+        android:paddingBottom="6dp"
+        android:gravity="center"
+        android:shadowColor="#000"
         android:shadowDx="0"
         android:shadowDy="1"
-        android:shadowRadius="1"
-        android:textAppearance="@android:style/TextAppearance.Small"
-        android:textColor="#ffffccff" />
+        android:shadowRadius="2"
+        android:textSize="10dp"
+        android:textStyle="bold"
+        android:textColor="#fcf" />
 
     <ImageView
         android:id="@+id/playing"

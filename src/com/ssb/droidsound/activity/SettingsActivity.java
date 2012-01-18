@@ -1,7 +1,5 @@
 package com.ssb.droidsound.activity;
 
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
@@ -51,15 +49,6 @@ public class SettingsActivity extends PreferenceActivity {
 			}
 		});
 
-		PackageInfo pinfo = null;
-		try {
-			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-		} catch (NameNotFoundException e) {
-			throw new RuntimeException(e);
-		}
-
-		String appName = getString(pinfo.applicationInfo.labelRes);
-
 		PreferenceScreen aScreen = (PreferenceScreen) findPreference("audio_prefs");
 		for (int i = 0; i < aScreen.getPreferenceCount(); i++) {
 			Preference p = aScreen.getPreference(i);
@@ -88,17 +77,26 @@ public class SettingsActivity extends PreferenceActivity {
 
 		if (abScreen != null) {
 			PreferenceCategory pc = new PreferenceCategory(this);
-			pc.setTitle(appName);
+			pc.setTitle(R.string.app_name);
 			abScreen.addPreference(pc);
 
 			Preference p = new Preference(this);
-			p.setTitle("Application");
-			p.setSummary("DroidSound v2 (c) 2010,2011 by Jonas Minnberg (Sasq)\n"
-					+ "Android 4+ rewrite by Antti S. Lankila (alankila)");
+			p.setTitle("Original version");
+			p.setSummary("(c) 2010, 2011 by Jonas Minnberg");
+			abScreen.addPreference(p);
+
+			p = new Preference(this);
+			p.setTitle("Android 4.0 rewrite");
+			p.setSummary("(c) 2011,2012 by Antti S. Lankila");
+			abScreen.addPreference(p);
+
+			p = new Preference(this);
+			p.setTitle("Icons");
+			p.setSummary("G-Flat SVG by poptones");
 			abScreen.addPreference(p);
 
 			pc = new PreferenceCategory(this);
-			pc.setTitle("Plugins");
+			pc.setTitle("Contained projects");
 			abScreen.addPreference(pc);
 
 			for (DroidSoundPlugin pl : DroidSoundPlugin.getPluginList()) {
@@ -107,15 +105,6 @@ public class SettingsActivity extends PreferenceActivity {
 				p.setSummary(pl.getVersion());
 				abScreen.addPreference(p);
 			}
-
-			pc = new PreferenceCategory(this);
-			pc.setTitle("Other");
-			abScreen.addPreference(pc);
-
-			p = new Preference(this);
-			p.setTitle("Icons");
-			p.setSummary("G-Flat SVG by poptones");
-			abScreen.addPreference(p);
 		}
 	}
 }
