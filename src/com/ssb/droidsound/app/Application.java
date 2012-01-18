@@ -40,7 +40,7 @@ import com.ssb.droidsound.utils.StreamUtil;
  * This class is a miscellaneous garbage dump for operations that are simultaneously
  * necessary from multiple application contexts. Also some singleton utility objects
  * are maintained here.
- * 
+ *
  * @author alankila
  */
 public class Application extends android.app.Application {
@@ -77,6 +77,14 @@ public class Application extends android.app.Application {
 
 	public static SongDatabase getSongDatabase() {
 		return songDatabase;
+	}
+
+	public static Long getCurrentlyPlayingSongId() {
+		if (player == null) {
+			return null;
+		}
+
+		return player.getFileId();
 	}
 
 	@Override

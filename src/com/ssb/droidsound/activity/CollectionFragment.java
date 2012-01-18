@@ -50,8 +50,6 @@ public class CollectionFragment extends Fragment {
 	protected static final int MENU_GROUP_REMOVE_FROM_PLAYLIST = 3;
 	protected static final int MENU_GROUP_CREATE_PLAYLIST = 4;
 
-	protected long currentSongId;
-
 	protected FastListFragment parentFragment;
 
 	protected SearchView searchView;
@@ -158,7 +156,9 @@ public class CollectionFragment extends Fragment {
 			final String composer = cursor.getString(SongDatabase.COL_COMPOSER);
 			final int date = cursor.getInt(SongDatabase.COL_DATE);
 
-			playingView.setVisibility(childId == currentSongId ? View.VISIBLE : View.GONE);
+			Long currentSongId = Application.getCurrentlyPlayingSongId();
+			playingView.setVisibility(currentSongId != null && currentSongId.equals(childId)
+					? View.VISIBLE : View.GONE);
 
 			final int icon;
 			switch (type) {
@@ -387,18 +387,6 @@ public class CollectionFragment extends Fragment {
 		menu.add(MENU_GROUP_CREATE_PLAYLIST, Menu.NONE, Menu.NONE, R.string.create_playlist);
 	}
 
-	private final BroadcastReceiver songChangeReceiver = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context c, Intent i) {
-			String a = i.getAction();
-			if (a.equals(Player.ACTION_LOADING_SONG)) {
-				currentSongId = i.getLongExtra("file.id", 0);
-			} else if (a.equals(Player.ACTION_UNLOADING_SONG)) {
-				currentSongId = 0;
-			}
-		}
-	};
-
 	private final BroadcastReceiver searchReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context c, Intent i) {
@@ -410,15 +398,8 @@ public class CollectionFragment extends Fragment {
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		Log.i(TAG, "Creating fragment");
 		super.onCreate(savedInstanceState);
 		setHasOptionsMenu(true);
-
-		IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(Player.ACTION_LOADING_SONG);
-		intentFilter.addAction(Player.ACTION_UNLOADING_SONG);
-		getActivity().getApplicationContext().registerReceiver(songChangeReceiver, intentFilter);
-		getActivity().getApplicationContext().registerReceiver(searchReceiver, new IntentFilter(Scanner.ACTION_SCAN));
 	}
 
 	@Override
@@ -517,14 +498,17 @@ public class CollectionFragment extends Fragment {
 		ft.replace(R.id.collection_view, topFragment);
 		ft.commit();
 
+		IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(Player.ACTION_LOADING_SONG);
+		intentFilter.addAction(Player.ACTION_UNLOADING_SONG);
+		getActivity().registerReceiver(searchReceiver, new IntentFilter(Scanner.ACTION_SCAN));
+
 		return view;
 	}
 
 	@Override
-	public void onDestroy() {
-		super.onDestroy();
-
-		getActivity().getApplicationContext().unregisterReceiver(songChangeReceiver);
-		getActivity().getApplicationContext().unregisterReceiver(searchReceiver);
+	public void onDestroyView() {
+		super.onDestroyView();
+		getActivity().unregisterReceiver(searchReceiver);
 	}
 }

@@ -79,6 +79,10 @@ public class Player extends AsyncTask<Void, Intent, Void> {
 		this.data2 = data2;
 	}
 
+	public Long getFileId() {
+		return song.getId();
+	}
+
 	/**
 	 * Return FFT data accumulated by player.
 	 *
