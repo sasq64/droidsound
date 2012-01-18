@@ -52,32 +52,18 @@ public class CollectionFragment extends Fragment {
 
 	protected long currentSongId;
 
+	protected FastListFragment parentFragment;
+
 	protected SearchView searchView;
 
 	protected TextView progressPercentageView;
 
 	protected FrameLayout progressContainerView;
 
-	private void navigateStart() {
-		Application.getSongDatabase().scan(false);
-
-		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
-			@Override
-			public Cursor getCursor() {
-				return Application.getSongDatabase().getFilesByParentId(null, getSorting());
-			}
-		});
-		ListFragment lf = new FastListFragment();
-		lf.setListAdapter(cva);
-
-		FragmentTransaction ft = getFragmentManager().beginTransaction();
-		ft.replace(R.id.collection_view, lf);
-		ft.commit();
-	}
-
 	protected void navigateWithBackStack(ICursorFactory cf) {
 		/* Move to subfolder */
 		ListFragment lf = new FastListFragment();
+		lf.setRetainInstance(true);
 		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), cf);
 		lf.setListAdapter(cva);
 
@@ -100,7 +86,9 @@ public class CollectionFragment extends Fragment {
 			public void onReceive(Context c, Intent i) {
 				Log.i(TAG, "Song change received, redisplaying");
 				CollectionViewAdapter listAdapter = (CollectionViewAdapter) getListAdapter();
-				listAdapter.notifyDataSetChanged();
+				if (listAdapter != null) {
+					listAdapter.notifyDataSetChanged();
+				}
 			}
 		};
 
@@ -511,14 +499,23 @@ public class CollectionFragment extends Fragment {
 		});
 
 		/* Restore list fragment */
-		Fragment topFragment = getFragmentManager().findFragmentById(R.id.collection_view);
-		if (topFragment != null) {
-			FragmentTransaction ft = getFragmentManager().beginTransaction();
-			ft.replace(R.id.collection_view, topFragment);
-			ft.commit();
-		} else {
-			navigateStart();
+		FastListFragment topFragment = (FastListFragment) getFragmentManager().findFragmentById(R.id.collection_view);
+		if (topFragment == parentFragment) {
+			parentFragment = new FastListFragment();
+			parentFragment.setRetainInstance(true);
+			CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
+				@Override
+				public Cursor getCursor() {
+					return Application.getSongDatabase().getFilesByParentId(null, getSorting());
+				}
+			});
+			parentFragment.setListAdapter(cva);
+			topFragment = parentFragment;
 		}
+
+		FragmentTransaction ft = getFragmentManager().beginTransaction();
+		ft.replace(R.id.collection_view, topFragment);
+		ft.commit();
 
 		return view;
 	}

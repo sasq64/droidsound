@@ -16,6 +16,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 
 import com.ssb.droidsound.R;
+import com.ssb.droidsound.app.Application;
 
 public class PlayerActivity extends Activity {
 	protected ActionBar actionBar;
@@ -28,6 +29,8 @@ public class PlayerActivity extends Activity {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.top);
+
+		Application.getSongDatabase().scan(false);
 
 		actionBar = getActionBar();
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
