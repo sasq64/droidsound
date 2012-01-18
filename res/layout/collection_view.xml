@@ -4,7 +4,9 @@
     android:baselineAligned="false"
     android:orientation="vertical">
 
+    <!-- focusable hack is here to prevent searchview from gaining it. -->
     <LinearLayout
+		android:focusable="true" android:focusableInTouchMode="true"
         android:animateLayoutChanges="true"
         android:layout_width="match_parent"
         android:background="#ff111111"
