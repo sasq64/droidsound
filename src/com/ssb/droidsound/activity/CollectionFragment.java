@@ -1,25 +1,18 @@
 package com.ssb.droidsound.activity;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
-import android.app.ListFragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.ContextMenu;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,7 +21,6 @@ import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
@@ -50,251 +42,37 @@ public class CollectionFragment extends Fragment {
 	protected static final int MENU_GROUP_REMOVE_FROM_PLAYLIST = 3;
 	protected static final int MENU_GROUP_CREATE_PLAYLIST = 4;
 
-	protected FastListFragment parentFragment;
-
 	protected SearchView searchView;
 
 	protected TextView progressPercentageView;
 
 	protected FrameLayout progressContainerView;
 
-	protected void navigateWithBackStack(ICursorFactory cf) {
-		/* Move to subfolder */
-		ListFragment lf = new FastListFragment();
-		lf.setRetainInstance(true);
-		CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), cf);
-		lf.setListAdapter(cva);
+	protected void navigateWithBackStack(String query) {
+		Fragment f = new FastListFragment();
+		Bundle b = new Bundle();
+		b.putString("query", query);
+		f.setArguments(b);
 
 		FragmentTransaction ft = getFragmentManager().beginTransaction();
 		ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
 		ft.addToBackStack(null);
-		ft.replace(R.id.collection_view, lf);
+		ft.replace(R.id.collection_view, f);
 		ft.commit();
 	}
 
-	protected static SongDatabase.Sort getSorting() {
-		SharedPreferences prefs = Application.getAppPreferences();
-		String sorting = prefs.getString("sorting", "TITLE");
-		return SongDatabase.Sort.valueOf(sorting);
-	}
+	protected void navigateWithBackStack(long parentId) {
+		/* Move to subfolder */
+		Fragment f = new FastListFragment();
+		Bundle b = new Bundle();
+		b.putLong("parentId", parentId);
+		f.setArguments(b);
 
-	public static class FastListFragment extends ListFragment {
-		private final BroadcastReceiver songChangeReceiver = new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context c, Intent i) {
-				Log.i(TAG, "Song change received, redisplaying");
-				CollectionViewAdapter listAdapter = (CollectionViewAdapter) getListAdapter();
-				if (listAdapter != null) {
-					listAdapter.notifyDataSetChanged();
-				}
-			}
-		};
-
-		private final BroadcastReceiver updateReceiver = new BroadcastReceiver() {
-			@Override
-			public void onReceive(Context c, Intent i) {
-				if (i.getIntExtra("progress", 0) == 100) {
-					CollectionViewAdapter listAdapter = (CollectionViewAdapter) getListAdapter();
-					if (listAdapter != null) {
-						listAdapter.requery();
-					}
-				}
-			}
-		};
-
-		@Override
-		public void onViewCreated(View view, Bundle savedInstanceState) {
-			super.onViewCreated(view, savedInstanceState);
-			getListView().setFastScrollEnabled(true);
-			IntentFilter intentFilter = new IntentFilter();
-			intentFilter.addAction(Player.ACTION_LOADING_SONG);
-			intentFilter.addAction(Player.ACTION_UNLOADING_SONG);
-			getActivity().registerReceiver(songChangeReceiver, intentFilter);
-			getActivity().registerReceiver(updateReceiver, new IntentFilter(Scanner.ACTION_SCAN));
-		}
-
-		@Override
-		public void onDestroyView() {
-			super.onDestroyView();
-			getActivity().unregisterReceiver(songChangeReceiver);
-			getActivity().unregisterReceiver(updateReceiver);
-		}
-	}
-
-	protected interface ICursorFactory {
-		public Cursor getCursor();
-	}
-
-	protected class CollectionViewAdapter extends CursorAdapter {
-		private final ICursorFactory cursorFactory;
-
-		public CollectionViewAdapter(Context context, ICursorFactory cursorFactory) {
-			super(context, null);
-			this.cursorFactory = cursorFactory;
-			requery();
-		}
-
-		public void requery() {
-			Cursor c = cursorFactory.getCursor();
-			new AsyncQueryResult(c, this).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-		}
-
-		@Override
-		public void bindView(View view, Context context, Cursor cursor) {
-			ImageView iconView = (ImageView) view.findViewById(R.id.icon);
-			TextView formatView = (TextView) view.findViewById(R.id.format);
-			ImageView playingView = (ImageView) view.findViewById(R.id.playing);
-			TextView titleView = (TextView) view.findViewById(R.id.title);
-			TextView subtitleView = (TextView) view.findViewById(R.id.subtitle);
-			TextView sidetitleView = (TextView) view.findViewById(R.id.sidetitle);
-
-			final long childId = cursor.getLong(SongDatabase.COL_ID);
-			final Long parentId = cursor.isNull(SongDatabase.COL_PARENT_ID) ? null : cursor.getLong(SongDatabase.COL_PARENT_ID);
-			final int type = cursor.getInt(SongDatabase.COL_TYPE);
-			final String format = cursor.getString(SongDatabase.COL_FORMAT);
-			final String title = cursor.getString(SongDatabase.COL_TITLE);
-			final String composer = cursor.getString(SongDatabase.COL_COMPOSER);
-			final int date = cursor.getInt(SongDatabase.COL_DATE);
-
-			Long currentSongId = Application.getCurrentlyPlayingSongId();
-			playingView.setVisibility(currentSongId != null && currentSongId.equals(childId)
-					? View.VISIBLE : View.GONE);
-
-			final int icon;
-			switch (type) {
-			case SongDatabase.TYPE_MUS_FOLDER:
-				icon = R.drawable.gflat_mus_folder;
-				break;
-			case SongDatabase.TYPE_SONGLENGTH:
-			case SongDatabase.TYPE_ZIP:
-				icon = R.drawable.gflat_package;
-				break;
-			case SongDatabase.TYPE_PLAYLIST:
-				icon = R.drawable.gflat_heart;
-				break;
-			case SongDatabase.TYPE_DIRECTORY:
-				icon = R.drawable.gflat_folder;
-				break;
-			case SongDatabase.TYPE_FILE:
-				icon = R.drawable.gflat_note;
-				break;
-			default:
-				icon = R.drawable.gflat_note;
-			}
-
-			iconView.setImageDrawable(context.getResources().getDrawable(icon));
-			formatView.setText(format);
-			titleView.setText(title);
-			subtitleView.setText(composer);
-			String sidetitle = null;
-			if (date > 19000000) {
-				int year = date / 10000;
-				int month = (date / 100) % 100;
-				if (month != 0) {
-					sidetitle = String.format("%04d/%02d", year, month);
-				} else {
-					sidetitle = String.valueOf(year);
-				}
-			}
-			sidetitleView.setText(sidetitle);
-
-			view.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
-				@Override
-				public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-					/* menuInfo is null.
-					 * Encoding the data to the fields I got in menu, then.
-					 * Thanks, android. */
-					int intChildId = (int) childId;
-					menu.setHeaderTitle(title);
-
-					int parentType = 0;
-					if (parentId != null) {
-						Cursor pc = Application.getSongDatabase().getFileById(parentId);
-						pc.moveToFirst();
-						parentType = pc.getInt(SongDatabase.COL_TYPE);
-						pc.close();
-					}
-
-					/* Add to playlist: X */
-					if (parentType != SongDatabase.TYPE_PLAYLIST && type == SongDatabase.TYPE_FILE) {
-						String fav = getString(R.string.add_to_playlist);
-						for (Playlist pl : Application.getSongDatabase().getPlaylistsList()) {
-							int id = (int) pl.getId();
-							menu.add(MENU_GROUP_ADD_TO_PLAYLIST, intChildId, id, fav + " " + pl.getTitle());
-						}
-					}
-
-					/* Remove from playlist */
-					if (parentId != null) {
-						if (parentType == SongDatabase.TYPE_PLAYLIST) {
-							menu.add(MENU_GROUP_REMOVE_FROM_PLAYLIST, intChildId, (int) (long) parentId, R.string.remove_from_playlist);
-						}
-					}
-
-					/* Delete file (not contained in zip) */
-					FilesEntry sf = Application.getSongDatabase().getSongFile(childId);
-					if (parentType != SongDatabase.TYPE_PLAYLIST
-							&& type == SongDatabase.TYPE_FILE
-							&& sf.getZipFilePath() == null) {
-						menu.add(MENU_GROUP_DELETE, intChildId, Menu.NONE, R.string.delete);
-					}
-					if (type == SongDatabase.TYPE_ZIP) {
-						menu.add(MENU_GROUP_DELETE, intChildId, Menu.NONE, R.string.delete_zip);
-					}
-					if (type == SongDatabase.TYPE_DIRECTORY) {
-						Cursor kids = Application.getSongDatabase().getFilesByParentId(childId, SongDatabase.Sort.TITLE);
-						if (kids.getCount() == 0) {
-							menu.add(MENU_GROUP_DELETE, intChildId, Menu.NONE, R.string.delete_directory);
-						}
-						kids.close();
-					}
-					if (type == SongDatabase.TYPE_PLAYLIST) {
-						menu.add(MENU_GROUP_DELETE, intChildId, Menu.NONE, R.string.delete_playlist);
-					}
-				}
-			});
-			view.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View arg0) {
-					if (type != SongDatabase.TYPE_FILE) {
-						navigateWithBackStack(new ICursorFactory() {
-							@Override
-							public Cursor getCursor() {
-								return Application.getSongDatabase().getFilesByParentId(childId, getSorting());
-							}
-						});
-					} else {
-						/* Scavenge the entries from our cursor */
-						List<FilesEntry> fileList = new ArrayList<FilesEntry>();
-						int idx = -1;
-						Cursor c = getCursor();
-						for (int i = 0; i < c.getCount(); i ++) {
-							c.moveToPosition(i);
-							long id = c.getLong(SongDatabase.COL_ID);
-							FilesEntry sibling = Application.getSongDatabase().getSongFile(id);
-							fileList.add(sibling);
-							if (id == childId) {
-								idx = i;
-							}
-						}
-
-						try {
-							SharedPreferences prefs = Application.getAppPreferences();
-							boolean shuffle = prefs.getBoolean("shuffle", false);
-							Application.playPlaylist(fileList, idx, shuffle);
-						} catch (Exception e) {
-							Log.w(TAG, "Can't play file", e);
-						}
-					}
-				}
-
-			});
-		}
-
-		@Override
-		public View newView(Context context, Cursor arg1, ViewGroup arg2) {
-			return ((Activity) context).getLayoutInflater().inflate(R.layout.collection_item, null);
-		}
+		FragmentTransaction ft = getFragmentManager().beginTransaction();
+		ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN);
+		ft.addToBackStack(null);
+		ft.replace(R.id.collection_view, f);
+		ft.commit();
 	}
 
 	@Override
@@ -439,12 +217,7 @@ public class CollectionFragment extends Fragment {
 			@Override
 			public boolean onQueryTextSubmit(final String query) {
 				if (! "".equals(query)) {
-					navigateWithBackStack(new ICursorFactory() {
-						@Override
-						public Cursor getCursor() {
-							return Application.getSongDatabase().search(query, getSorting());
-						}
-					});
+					navigateWithBackStack(query);
 					return true;
 				}
 
@@ -465,7 +238,7 @@ public class CollectionFragment extends Fragment {
 				/* We should probably ratelimit the asynctask spam we can cause.
 				 * Ideally we'd maintain an internal queue here. I'll just spam them for now. */
 				Log.i(TAG, "Firing a new suggestions scan for: '%s'", newText);
-				Cursor c = Application.getSongDatabase().search(newText, getSorting());
+				Cursor c = Application.getSongDatabase().search(newText, SongDatabase.Sort.TITLE);
 				CursorAdapter ca = new SimpleCursorAdapter(
 						getActivity(),
 						android.R.layout.simple_list_item_2,
@@ -480,18 +253,10 @@ public class CollectionFragment extends Fragment {
 		});
 
 		/* Restore list fragment */
-		FastListFragment topFragment = (FastListFragment) getFragmentManager().findFragmentById(R.id.collection_view);
-		if (topFragment == parentFragment) {
-			parentFragment = new FastListFragment();
-			parentFragment.setRetainInstance(true);
-			CollectionViewAdapter cva = new CollectionViewAdapter(getActivity(), new ICursorFactory() {
-				@Override
-				public Cursor getCursor() {
-					return Application.getSongDatabase().getFilesByParentId(null, getSorting());
-				}
-			});
-			parentFragment.setListAdapter(cva);
-			topFragment = parentFragment;
+		Fragment topFragment = getFragmentManager().findFragmentById(R.id.collection_view);
+		if (topFragment == null) {
+			topFragment = new FastListFragment();
+			topFragment.setArguments(new Bundle());
 		}
 
 		FragmentTransaction ft = getFragmentManager().beginTransaction();
