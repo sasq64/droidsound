@@ -255,13 +255,12 @@ public class CollectionFragment extends Fragment {
 		/* Restore list fragment */
 		Fragment topFragment = getFragmentManager().findFragmentById(R.id.collection_view);
 		if (topFragment == null) {
-			topFragment = new FastListFragment();
-			topFragment.setArguments(new Bundle());
+			Fragment f = new FastListFragment();
+			f.setArguments(new Bundle());
+			FragmentTransaction ft = getFragmentManager().beginTransaction();
+			ft.add(R.id.collection_view, f);
+			ft.commit();
 		}
-
-		FragmentTransaction ft = getFragmentManager().beginTransaction();
-		ft.replace(R.id.collection_view, topFragment);
-		ft.commit();
 
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(Player.ACTION_LOADING_SONG);
