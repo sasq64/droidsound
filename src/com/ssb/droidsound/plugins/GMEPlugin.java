@@ -142,6 +142,11 @@ public class GMEPlugin extends DroidSoundPlugin {
 		return null;
 	}
 
+	@Override
+	public int getIntInfo(int what){
+	    return N_getIntInfo(currentSong, what);
+	}
+
 	native private long N_load(byte[] module, int size);
 
 	native private long N_loadFile(String name);
