@@ -30,6 +30,7 @@
 #define VICE_DRIVE_H
 
 #include "types.h"
+#include "rtc/ds1216e.h"
 
 #define DRIVE_NUM 4
 #define MAX_PWM 1000
@@ -56,6 +57,8 @@
 #define DRIVE_TYPE_1571   1571
 #define DRIVE_TYPE_1571CR 1573
 #define DRIVE_TYPE_1581   1581
+#define DRIVE_TYPE_2000   2000
+#define DRIVE_TYPE_4000   4000
 #define DRIVE_TYPE_2031   2031
 #define DRIVE_TYPE_2040   2040  /* DOS 1 dual floppy drive, 170k/disk */
 #define DRIVE_TYPE_3040   3040  /* DOS 2.0 dual floppy drive, 170k/disk */
@@ -121,9 +124,7 @@ typedef struct drive_s {
 
     /* Original ROM code is saved here.  */
     BYTE rom_idle_trap[4];
-
-    /* Original ROM code of the checksum routine is saved here.  */
-    BYTE rom_checksum[4];
+    int trap, trapcont;
 
     /* Byte ready line.  */
     unsigned int byte_ready_level;
@@ -218,6 +219,10 @@ typedef struct drive_s {
     /* Are the Professional DOS extentions enabled?  */
     int profdos;
 
+    /* RTC context */
+    rtc_ds1216e_t *ds1216;
+    time_t rtc_offset;
+
     /* Drive ROM starts here.  */
     WORD rom_start;
 
@@ -270,7 +275,6 @@ extern int drive_check_expansion8000(int drive_type);
 extern int drive_check_expansionA000(int drive_type);
 extern int drive_check_parallel_cable(int drive_type);
 extern int drive_check_extend_policy(int drive_type);
-extern int drive_check_idle_method(int drive_type);
 extern int drive_check_profdos(int drive_type);
 
 extern int drive_num_leds(unsigned int dnr);

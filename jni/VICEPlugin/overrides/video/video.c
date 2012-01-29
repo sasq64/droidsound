@@ -6,7 +6,7 @@
 void video_render_initconfig(video_render_config_t *config) {}
 void video_render_setphysicalcolor(video_render_config_t *config, int index, DWORD color, int depth) {}
 void video_render_setrawrgb(unsigned int index, DWORD r, DWORD g, DWORD b) {}
-void video_render_initraw(void) {}
+void video_render_initraw(struct video_render_config_s *videoconfig) {}
 
 /**************************************************************/
 
@@ -16,7 +16,15 @@ void video_shutdown(void) {}
 
 struct video_canvas_s *video_canvas_create(struct video_canvas_s *canvas, unsigned int *width, unsigned int *height, int mapped) { return NULL; }
 void video_arch_canvas_init(struct video_canvas_s *canvas) {}
-void video_canvas_shutdown(struct video_canvas_s *canvas) {}
+void video_canvas_shutdown(struct video_canvas_s *canvas) {
+    if (canvas != NULL) {
+        lib_free(canvas->videoconfig);
+        lib_free(canvas->draw_buffer);
+        lib_free(canvas->viewport);
+        lib_free(canvas->geometry);
+        lib_free(canvas);
+    }
+}
 
 struct video_canvas_s *video_canvas_init(void) {
     video_canvas_t *canvas = (void*) lib_calloc(1, sizeof(video_canvas_t));

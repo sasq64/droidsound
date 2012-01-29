@@ -125,7 +125,7 @@ static unsigned int resources_calc_hash_key(const char *name)
     key = 0; shift = 0;
     for (i = 0; name[i] != '\0'; i++) {
         /* resources are case-insensitive */
-        unsigned int sym = (unsigned int)tolower(name[i]);
+        unsigned int sym = (unsigned int)tolower((int)name[i]);
 
         if (shift >= logHashSize)
             shift = 0;
@@ -245,7 +245,7 @@ int resources_register_int(const resource_int_t *r)
 
         hashkey = resources_calc_hash_key(sp->name);
         dp->hash_next = hashTable[hashkey];
-        hashTable[hashkey] = (dp - resources);
+        hashTable[hashkey] = (int)(dp - resources);
 
         num_resources++, sp++, dp++;
     }
@@ -290,7 +290,7 @@ int resources_register_string(const resource_string_t *r)
 
         hashkey = resources_calc_hash_key(sp->name);
         dp->hash_next = hashTable[hashkey];
-        hashTable[hashkey] = (dp - resources);
+        hashTable[hashkey] = (int)(dp - resources);
 
         num_resources++, sp++, dp++;
     }
@@ -322,6 +322,8 @@ static resource_ram_t *lookup(const char *name)
     resource_ram_t *res;
     unsigned int hashkey;
 
+    if (name == NULL)
+        return NULL;
     hashkey = resources_calc_hash_key(name);
     res = (hashTable[hashkey] >= 0) ? resources + hashTable[hashkey] : NULL;
     while (res != NULL) {
@@ -347,7 +349,7 @@ int resources_write_item_to_file(FILE *fp, const char *name)
     resource_ram_t *res = lookup(name);
 
     if (res != NULL) {
-        write_resource_item(fp, res - resources);
+        write_resource_item(fp, (int)(res - resources));
         return 0;
     }
     log_warning(LOG_DEFAULT, "Trying to save unknown resource '%s'", name);
@@ -360,7 +362,7 @@ char *resources_write_item_to_string(const char *name, const char *delim)
     resource_ram_t *res = lookup(name);
 
     if (res != NULL)
-        return string_resource_item(res - resources, delim);
+        return string_resource_item((int)(res - resources), delim);
 
     log_warning(LOG_DEFAULT, "Trying to save unknown resource '%s'", name);
 
@@ -577,6 +579,7 @@ int resources_set_int_sprintf(const char *name, int value, ...)
 
     va_start(args, value);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_set_int(resname, value);
     lib_free(resname);
@@ -592,6 +595,7 @@ int resources_set_string_sprintf(const char *name, const char *value, ...)
 
     va_start(args, value);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_set_string(resname, value);
     lib_free(resname);
@@ -722,6 +726,7 @@ int resources_get_int_sprintf(const char *name, int *value_return, ...)
 
     va_start(args, value_return);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_get_int(resname, value_return);
     lib_free(resname);
@@ -738,6 +743,7 @@ int resources_get_string_sprintf(const char *name, const char **value_return,
 
     va_start(args, value_return);
     resname = lib_mvsprintf(name, args);
+    va_end(args);
 
     result = resources_get_string(resname, value_return);
     lib_free(resname);
@@ -947,7 +953,7 @@ int resources_read_item_from_file(FILE *f)
     if (!arg_ptr)
         return -1;
 
-    resname_len = arg_ptr - buf;
+    resname_len = (int)(arg_ptr - buf);
     arg_ptr++;
     arg_len = strlen(arg_ptr);
 
@@ -1109,12 +1115,12 @@ static void write_resource_item(FILE *f, int num)
    resources for the other emulators.  */
 int resources_save(const char *fname)
 {
-    char *backup_name;
-    FILE *in_file, *out_file;
-    int have_old;
+    char *backup_name = NULL;
+    FILE *in_file = NULL, *out_file;
     unsigned int i;
     char *default_name = NULL;
 
+    /* get name for config file */
     if (fname == NULL) {
         if (vice_config_file == NULL) {
             default_name = archdep_default_save_resource_file_name();
@@ -1124,36 +1130,40 @@ int resources_save(const char *fname)
         fname = default_name;
     }
 
+    /* make a backup of an existing config, open it */
     if (util_file_exists(fname) != 0) {
-        have_old = 1;
+        /* try to open it */
         if (ioutil_access(fname, IOUTIL_ACCESS_W_OK) != 0) {
             lib_free(default_name);
             return RESERR_WRITE_PROTECTED;
         }
-    } else {
-        have_old = 0;
-    }
-
-    /* Make a backup copy of the existing configuration file.  */
-    backup_name = archdep_make_backup_filename(fname);
-
-    if (util_file_exists(backup_name) != 0) {
-        if (ioutil_access(backup_name, IOUTIL_ACCESS_W_OK) != 0) {
+        /* get backup name */
+        backup_name = archdep_make_backup_filename(fname);
+        /* if backup exists, remove it */
+        if (util_file_exists(backup_name) != 0) {
+            if (ioutil_access(backup_name, IOUTIL_ACCESS_W_OK) != 0) {
+                lib_free(backup_name);
+                lib_free(default_name);
+                return RESERR_WRITE_PROTECTED;
+            }
+            if (ioutil_remove(backup_name) != 0) {
+                lib_free(backup_name);
+                lib_free(default_name);
+                return RESERR_CANNOT_REMOVE_BACKUP;
+            }
+        }
+        /* move existing config to backup */
+        if (ioutil_rename(fname, backup_name) != 0) {
             lib_free(backup_name);
             lib_free(default_name);
-            return RESERR_WRITE_PROTECTED;
+            return RESERR_CANNOT_RENAME_FILE;
         }
-        if (ioutil_remove(backup_name) != 0) {
+        /* open the old config */
+        in_file = fopen(backup_name, MODE_READ_TEXT);
+        if (!in_file) {
             lib_free(backup_name);
-            lib_free(default_name);
-            return RESERR_CANNOT_REMOVE_BACKUP;
+            return RESERR_READ_ERROR;
         }
-    }
-
-    if (have_old != 0 && ioutil_rename(fname, backup_name) != 0) {
-        lib_free(backup_name);
-        lib_free(default_name);
-        return RESERR_CANNOT_RENAME_FILE;
     }
 
     log_message(LOG_DEFAULT, "Writing configuration file `%s'.", fname);
@@ -1161,6 +1171,9 @@ int resources_save(const char *fname)
     out_file = fopen(fname, MODE_WRITE_TEXT);
 
     if (!out_file) {
+        if (in_file != NULL) {
+            fclose(in_file);
+        }
         lib_free(backup_name);
         lib_free(default_name);
         return RESERR_CANNOT_CREATE_FILE;
@@ -1168,44 +1181,38 @@ int resources_save(const char *fname)
 
     setbuf(out_file, NULL);
 
-    if (have_old) {
-        in_file = fopen(backup_name, MODE_READ_TEXT);
-
-        if (!in_file) {
-            fclose(out_file);
-            lib_free(backup_name);
-            return RESERR_READ_ERROR;
-        }
-
-        /* Copy the configuration for the other emulators.  */
+    /* Copy the configuration for the other emulators.  */
+    if(in_file != NULL) {
         while (1) {
             char buf[1024];
 
-            if (util_get_line(buf, 1024, in_file) < 0)
+            if (util_get_line(buf, 1024, in_file) < 0) {
                 break;
+            }
 
-            if (check_emu_id(buf))
+            if (check_emu_id(buf)) {
                 break;
+            }
 
             fprintf(out_file, "%s\n", buf);
         }
-    } else {
-        in_file = NULL;
     }
 
     /* Write our current configuration.  */
     fprintf(out_file,"[%s]\n", machine_id);
-    for (i = 0; i < num_resources; i++)
+    for (i = 0; i < num_resources; i++) {
         write_resource_item(out_file, i);
-        fprintf(out_file, "\n");
+    }
+    fprintf(out_file, "\n");
 
-    if (have_old) {
+    if(in_file != NULL) {
         char buf[1024];
 
         /* Skip the old configuration for this emulator.  */
         while (1) {
-            if (util_get_line(buf, 1024, in_file) < 0)
+            if (util_get_line(buf, 1024, in_file) < 0) {
                 break;
+            }
 
             /* Check if another emulation section starts.  */
             if (*buf == '[') {
@@ -1216,23 +1223,20 @@ int resources_save(const char *fname)
 
         if (!feof(in_file)) {
             /* Copy the configuration for the other emulators.  */
-            while (util_get_line(buf, 1024, in_file) >= 0)
+            while (util_get_line(buf, 1024, in_file) >= 0) {
                 fprintf(out_file, "%s\n", buf);
+            }
         }
+        fclose(in_file);
+        /* remove the backup */
+        ioutil_remove(backup_name);
     }
 
-    if (in_file)
-        fclose(in_file);
-
     fclose(out_file);
-#ifdef __riscos
-    remove(backup_name);
-#endif
     lib_free(backup_name);
     lib_free(default_name);
     return 0;
 }
-
 
 int resources_register_callback(const char *name,
                                 resource_callback_func_t *callback,

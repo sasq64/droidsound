@@ -1,5 +1,5 @@
 /*
- * cbm2video.c - Machine specific video handling.
+ * cbm2video.c - CBM-6x0/7x0 machine specific video handling.
  *
  * Written by
  *  Andreas Boose <viceteam@t-online.de>
@@ -30,7 +30,6 @@
 
 #include "crtc.h"
 #include "machine-video.h"
-#include "vicii.h"
 #include "video.h"
 
 
@@ -44,9 +43,7 @@ void machine_video_init(void)
 
 int machine_video_resources_init(void)
 {
-    if (video_resources_pal_init() < 0
-        || video_resources_crt_init() < 0
-        || video_resources_init() < 0) {
+    if (video_resources_init() < 0) {
         return -1;
     }
     return 0;
@@ -56,9 +53,6 @@ struct video_canvas_s *machine_video_canvas_get(unsigned int window)
 {
     if (window == 0) {
         return crtc_get_canvas();
-    }
-    if (window == 1) {
-        return vicii_get_canvas();
     }
     return NULL;
 }

@@ -1,83 +1,67 @@
-<?xml version="1.0" encoding="utf-8"?> 
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.ssb.droidsound" android:installLocation="auto"
-	android:versionName="1.2beta3" android:versionCode="12">
+    package="com.ssb.droidsound"
+    android:versionCode="20"
+    android:versionName="2" >
 
-	<uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.WAKE_LOCK" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
-	<uses-permission android:name="android.permission.WRITE_SETTINGS" />
-	<!--  uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />  -->
-	<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-sdk android:minSdkVersion="14" />
 
-	<application android:icon="@drawable/droidsound64x64" android:label="@string/app_name"
-	android:theme="@android:style/Theme.NoTitleBar" android:debuggable="false">
-		<activity android:name=".PlayerActivity" android:launchMode="singleTop" android:label="@string/app_name">
-			<intent-filter>
-				<action android:name="android.intent.action.SEARCH" />
-			</intent-filter>
-			<meta-data android:name="android.app.searchable" android:resource="@xml/searchable" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
 
-			<intent-filter>
-				<action android:name="android.intent.action.MAIN" />
-				<category android:name="android.intent.category.LAUNCHER" />
-			</intent-filter>
+    <application
+        android:name=".app.Application"
+        android:debuggable="false"
+        android:icon="@drawable/droidsound64x64"
+        android:label="@string/app_name" >
+        <activity
+            android:name=".activity.PlayerActivity"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="stateHidden" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
-			 <intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
                 <action android:name="android.intent.action.SEND" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
 
-			<intent-filter>
-				<action android:name="android.intent.action.VIEW" />
-				<category android:name="android.intent.category.DEFAULT" />
-				<category android:name="android.intent.category.BROWSABLE" />
-				<data android:scheme="http" />
-				<data android:scheme="content" />
-				<data android:scheme="file" />
-								
-				<data android:mimeType="audio/prs.sid" />
-				<data android:mimeType="audio/x-sid" />
-				<data android:mimeType="audio/x-mod" />
-				<data android:mimeType="audio/x-s3m" />
-				<data android:mimeType="audio/x-xm" />
-				<data android:mimeType="audio/x-it" />
-				<data android:mimeType="audio/x-mpegurl" />
-				<data android:mimeType="audio/x-scpls" />
-				<data android:mimeType="audio/x-gbs" />
-				<data android:mimeType="audio/x-nsf" />
-				<data android:mimeType="audio/x-nsfe" />
-				<data android:mimeType="audio/x-spc" />
-				<data android:mimeType="audio/x-gym" />
-				<data android:mimeType="audio/x-ay" />
-				<data android:mimeType="audio/x-vgm" />
-				<data android:mimeType="audio/x-vgz" />
-				<data android:mimeType="application/x-prg" />
-				<data android:mimeType="application/octet-stream" />
-			</intent-filter>		
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
 
-			<intent-filter>				
-				<action android:name="android.intent.action.VIEW" />
-				<category android:name="android.intent.category.DEFAULT" />
-				<data android:scheme="file" />
-				<data android:mimeType="application/zip" />
-			</intent-filter>
+                <data android:scheme="file" />
+                <data android:mimeType="audio/prs.sid" />
+                <data android:mimeType="audio/x-sid" />
+                <data android:mimeType="audio/x-mod" />
+                <data android:mimeType="audio/x-s3m" />
+                <data android:mimeType="audio/x-xm" />
+                <data android:mimeType="audio/x-it" />
+                <data android:mimeType="audio/x-mpegurl" />
+                <data android:mimeType="audio/x-scpls" />
+                <data android:mimeType="audio/x-gbs" />
+                <data android:mimeType="audio/x-nsf" />
+                <data android:mimeType="audio/x-nsfe" />
+                <data android:mimeType="audio/x-spc" />
+                <data android:mimeType="audio/x-gym" />
+                <data android:mimeType="audio/x-ay" />
+                <data android:mimeType="audio/x-vgm" />
+                <data android:mimeType="audio/x-vgz" />
+                <data android:mimeType="application/x-prg" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".activity.SettingsActivity" />
 
+        <service android:name=".service.ProtectionMoneyService" />
+    </application>
 
-		</activity>
-		
-		<service android:name=".service.PlayerService"/>
-		
-		<activity android:name=".SettingsActivity" />
-		<activity android:name=".HelpActivity" />
-		
-		<!-- provider android:name="com.ssb.droidsound.provider.SongProvider" android:authorities="com.ssb.droidsound.provider" / -->
-		
-		<meta-data android:name="android.app.default_searchable" android:value=".PlayerActivity" />
-	</application>
-	<uses-sdk android:minSdkVersion="4" />
-
-
-</manifest> 
+</manifest>

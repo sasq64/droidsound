@@ -34,13 +34,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "delaep64.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
 #include "vicii-phi1.h"
+#include "crt.h"
 
 /*
  * for cart schematics, see http://a98.shuttle.de/~michael/dela-ep64/
@@ -93,9 +95,13 @@
 
 static int currbank = 0;
 
+static BYTE regval = 0;
+
 static void delaep64_io1(BYTE value, unsigned int mode)
 {
     BYTE bank, config;
+
+    regval = value;
 
     /* D7 -> EXROM */
     config = (value & 0x80) ? 2 : 0;
@@ -116,7 +122,7 @@ static void delaep64_io1(BYTE value, unsigned int mode)
     currbank = bank;
 }
 
-static BYTE REGPARM1 delaep64_io1_read(WORD addr)
+static BYTE delaep64_io1_read(WORD addr)
 {
     BYTE value = vicii_read_phi1();
 
@@ -125,14 +131,22 @@ static BYTE REGPARM1 delaep64_io1_read(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 delaep64_io1_peek(WORD addr)
+static BYTE delaep64_io1_peek(WORD addr)
 {
-    return currbank;
+    return regval;
 }
 
-void REGPARM2 delaep64_io1_store(WORD addr, BYTE value)
+void delaep64_io1_store(WORD addr, BYTE value)
 {
     delaep64_io1(value, CMODE_WRITE);
+}
+
+static int delaep64_dump(void)
+{
+    mon_out("Currently selected EPROM bank: %d, cart status: %s\n",
+            currbank,
+            (regval & 0x80) ? "Disabled" : "Enabled");
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -146,8 +160,10 @@ static io_source_t delaep64_device = {
     delaep64_io1_store,
     delaep64_io1_read,
     delaep64_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_DELA_EP64
+    delaep64_dump,
+    CARTRIDGE_DELA_EP64,
+    0,
+    0
 };
 
 static io_source_list_t *delaep64_list_item = NULL;
@@ -163,9 +179,9 @@ void delaep64_config_init(void)
     delaep64_io1(0, CMODE_READ);
 }
 
-/* FIXME: should copy rawcart to roml_banks ! */
 void delaep64_config_setup(BYTE *rawcart)
 {
+    memcpy(roml_banks, rawcart, 0x2000 * 9);
     delaep64_io1(0, CMODE_READ);
 }
 
@@ -175,81 +191,76 @@ static int delaep64_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    delaep64_list_item = c64io_register(&delaep64_device);
+    delaep64_list_item = io_source_register(&delaep64_device);
     return 0;
 }
 
-/* FIXME: this function should setup rawcart instead of copying to roml_banks ! */
-/* FIXME: handle the various combinations / possible file lengths */
 int delaep64_bin_attach(const char *filename, BYTE *rawcart)
 {
-    if (util_file_load(filename, roml_banks, 0x2000, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
-        return -1;
+    int size = 0x12000;
+ 
+    memset(rawcart, 0xff, 0x12000);
+    while (size != 0) {
+        if (util_file_load(filename, rawcart, size, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
+            size -= 0x2000;
+        } else {
+            return delaep64_common_attach();
+        }
     }
-    return delaep64_common_attach();
+    return -1;
 }
 
-/* FIXME: this function should setup rawcart instead of copying to roml_banks ! */
 int delaep64_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    WORD chip;
-    WORD size;
-    WORD rom_size = 0;
-    BYTE chipheader[0x10];
+    int rom_size = -1;
+    crt_chip_header_t chip;
 
     /*
      * 0x00000-0x01fff: 2764
      * 0x02000-0x09fff: 1st 27256
      * 0x0a000-0x11fff: 2nd 27256
      */
-    memset(roml_banks, 0xff, 0x12000);
+    memset(rawcart, 0xff, 0x12000);
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
-
-    chip = (chipheader[0x0a] << 8) + chipheader[0x0b];
-    size = (chipheader[0x0e] << 8) + chipheader[0x0f];
 
     /* First handle the base image */
-    if (size != 0x2000) {
+    if (chip.size != 0x2000) {
         return -1;
     }
 
-    if (fread(roml_banks, 0x2000, 1, fd) < 1) {
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        chip = (chipheader[0x0a] << 8) + chipheader[0x0b];
-        size = (chipheader[0x0e] << 8) + chipheader[0x0f];
-
         /* check for the size of the following rom images,
            they can be of either 0x2000 or 0x8000 */
-        if (size != 0x2000 && size != 0x8000) {
+        if (chip.size != 0x2000 && chip.size != 0x8000) {
             return -1;
         }
 
         /* make sure all rom images are of the same size */
-        if (rom_size == 0) {
-            rom_size = size;
-        } else {
-            if (size != rom_size) {
-                return -1;
-            }
+        if (rom_size < 0) {
+            rom_size = chip.size;
+        } 
+        if (chip.size != rom_size) {
+            return -1;
         }
 
         /* maximum of 2 32kb or 8 8kb images allowed */
-        if ((rom_size == 0x8000 && chip > 2) || (rom_size == 0x2000 && chip > 8)) {
+        if ((rom_size == 0x8000 && chip.bank > 2) || (rom_size == 0x2000 && chip.bank > 8)) {
             return -1;
         }
 
         /* put the images in the right place */
-        if (fread(roml_banks + 0x2000 + ((chip - 1) * rom_size), size , 1, fd) < 1) {
+        if (crt_read_chip(rawcart, 0x2000 + ((chip.bank - 1) * rom_size), &chip, fd)) {
             return -1;
         }
     }
@@ -259,7 +270,7 @@ int delaep64_crt_attach(FILE *fd, BYTE *rawcart)
 void delaep64_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(delaep64_list_item);
+    io_source_unregister(delaep64_list_item);
     delaep64_list_item = NULL;
 }
 

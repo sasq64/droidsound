@@ -45,7 +45,7 @@
 
 #include "archdep.h"
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "interrupt.h"
@@ -252,9 +252,9 @@ static int reu_write_image = 0;
 /* ------------------------------------------------------------------------- */
 
 /* some prototypes are needed */
-static void REGPARM2 reu_io2_store(WORD addr, BYTE byte);
-static BYTE REGPARM1 reu_io2_read(WORD addr);
-static BYTE REGPARM1 reu_io2_peek(WORD addr);
+static void reu_io2_store(WORD addr, BYTE byte);
+static BYTE reu_io2_read(WORD addr);
+static BYTE reu_io2_peek(WORD addr);
 
 static io_source_t reu_io2_device = {
     CARTRIDGE_NAME_REU,
@@ -267,6 +267,7 @@ static io_source_t reu_io2_device = {
     reu_io2_peek,
     NULL, /* TODO: dump */
     CARTRIDGE_REU,
+    IO_PRIO_HIGH, /* high priority so it will work together with cartridges like RR and SSV5 */
     0
 };
 
@@ -313,7 +314,7 @@ static int set_reu_enabled(int val, void *param)
             return -1;
         }
         c64export_remove(&export_res_reu);
-        c64io_unregister(reu_list_item);
+        io_source_unregister(reu_list_item);
         reu_list_item = NULL;
         reu_enabled = 0;
     } else if ((val) && (!reu_enabled)) {
@@ -323,7 +324,7 @@ static int set_reu_enabled(int val, void *param)
         if (c64export_add(&export_res_reu) < 0) {
             return -1;
         }
-        reu_list_item = c64io_register(&reu_io2_device);
+        reu_list_item = io_source_register(&reu_io2_device);
         reu_enabled = 1;
     }
     return 0;
@@ -912,7 +913,7 @@ static void reu_store_without_sideeffects(WORD addr, BYTE byte)
   \return
     The value the register has
 */
-static BYTE REGPARM1 reu_io2_read(WORD addr)
+static BYTE reu_io2_read(WORD addr)
 {
     BYTE retval = 0xff;
 
@@ -944,7 +945,7 @@ static BYTE REGPARM1 reu_io2_read(WORD addr)
     return retval;
 }
 
-static BYTE REGPARM1 reu_io2_peek(WORD addr)
+static BYTE reu_io2_peek(WORD addr)
 {
     BYTE retval = 0xff;
     if (addr < rec_options.first_unused_register_address) {
@@ -962,7 +963,7 @@ static BYTE REGPARM1 reu_io2_peek(WORD addr)
   \param byte
     The value to set the register to
 */
-static void REGPARM2 reu_io2_store(WORD addr, BYTE byte)
+static void reu_io2_store(WORD addr, BYTE byte)
 {
     if (!reu_dma_active && (addr < rec_options.first_unused_register_address)) {
         reu_store_without_sideeffects(addr, byte);

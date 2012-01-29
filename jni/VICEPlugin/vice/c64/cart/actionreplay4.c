@@ -34,11 +34,12 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
+#include "cartio.h"
 #include "cartridge.h"
-#include "c64io.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
    Action Replay 4
@@ -63,8 +64,8 @@ static int ar_active;
 /* ---------------------------------------------------------------------*/
 
 /* some prototypes are needed */
-static void REGPARM2 actionreplay4_io1_store(WORD addr, BYTE value);
-static BYTE REGPARM1 actionreplay4_io2_read(WORD addr);
+static void actionreplay4_io1_store(WORD addr, BYTE value);
+static BYTE actionreplay4_io2_read(WORD addr);
 
 static io_source_t actionreplay4_io1_device = {
     CARTRIDGE_NAME_ACTION_REPLAY4,
@@ -76,7 +77,9 @@ static io_source_t actionreplay4_io1_device = {
     NULL,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_ACTION_REPLAY4
+    CARTRIDGE_ACTION_REPLAY4,
+    0,
+    0
 };
 
 static io_source_t actionreplay4_io2_device = {
@@ -89,7 +92,9 @@ static io_source_t actionreplay4_io2_device = {
     actionreplay4_io2_read,
     NULL, /* TODO: peek */
     NULL, /* TODO: dump */
-    CARTRIDGE_ACTION_REPLAY4
+    CARTRIDGE_ACTION_REPLAY4,
+    0,
+    0
 };
 
 static io_source_list_t *actionreplay4_io1_list_item = NULL;
@@ -101,7 +106,7 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
-static void REGPARM2 actionreplay4_io1_store(WORD addr, BYTE value)
+static void actionreplay4_io1_store(WORD addr, BYTE value)
 {
     BYTE exrom, bank, conf, game, disable;
 
@@ -120,7 +125,7 @@ static void REGPARM2 actionreplay4_io1_store(WORD addr, BYTE value)
     }
 }
 
-static BYTE REGPARM1 actionreplay4_io2_read(WORD addr)
+static BYTE actionreplay4_io2_read(WORD addr)
 {
     actionreplay4_io2_device.io_source_valid = 0;
 
@@ -150,7 +155,7 @@ static BYTE REGPARM1 actionreplay4_io2_read(WORD addr)
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 actionreplay4_roml_read(WORD addr)
+BYTE actionreplay4_roml_read(WORD addr)
 {
     return roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
 }
@@ -190,8 +195,8 @@ static int actionreplay4_common_attach(void)
         return -1;
     }
 
-    actionreplay4_io1_list_item = c64io_register(&actionreplay4_io1_device);
-    actionreplay4_io2_list_item = c64io_register(&actionreplay4_io2_device);
+    actionreplay4_io1_list_item = io_source_register(&actionreplay4_io1_device);
+    actionreplay4_io2_list_item = io_source_register(&actionreplay4_io2_device);
 
     return 0;
 }
@@ -207,19 +212,19 @@ int actionreplay4_bin_attach(const char *filename, BYTE *rawcart)
 
 int actionreplay4_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i;
 
     for (i = 0; i <= 3; i++) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             return -1;
         }
 
-        if (chipheader[0xb] > 3) {
+        if (chip.bank > 3 || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -230,8 +235,8 @@ int actionreplay4_crt_attach(FILE *fd, BYTE *rawcart)
 void actionreplay4_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(actionreplay4_io1_list_item);
-    c64io_unregister(actionreplay4_io2_list_item);
+    io_source_unregister(actionreplay4_io1_list_item);
+    io_source_unregister(actionreplay4_io2_list_item);
     actionreplay4_io1_list_item = NULL;
     actionreplay4_io2_list_item = NULL;
 }

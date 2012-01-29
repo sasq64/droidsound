@@ -26,6 +26,14 @@
 
 #include "vice.h"
 
+/* #define DEBUG_DISKIMAGE */
+
+#ifdef DEBUG_DISKIMAGE
+#define DBG(x)  log_debug x
+#else
+#define DBG(x)
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -176,6 +184,9 @@ static const char *disk_image_type(disk_image_t *image)
         case DISK_IMAGE_TYPE_X64: return "X64";
         case DISK_IMAGE_TYPE_D71: return "D71";
         case DISK_IMAGE_TYPE_D81: return "D81";
+        case DISK_IMAGE_TYPE_D1M: return "D1M";
+        case DISK_IMAGE_TYPE_D2M: return "D2M";
+        case DISK_IMAGE_TYPE_D4M: return "D4M";
         default: return NULL;
     }
 }
@@ -354,6 +365,8 @@ void disk_image_media_destroy(disk_image_t *image)
 int disk_image_open(disk_image_t *image)
 {
     int rc = 0;
+
+    DBG(("disk_image_open"));
 
     switch (image->device) {
       case DISK_IMAGE_DEVICE_FS:

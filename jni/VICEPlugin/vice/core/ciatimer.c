@@ -38,14 +38,14 @@
 #include "types.h"
 
 
-#if 0 /* def CIAT_NEED_LOG */
+#ifdef CIAT_NEED_LOG
 
-static int ciat_logfl = 0;
+static int ciat_logfl = 0; /* 0 means logging disabled */
 static int logtab = 0;
 static const char spaces[] = "                                                  ";
 /* extern int traceflg; */
 
-static void ciat_login(const char *format,...) {
+void ciat_login(const char *format,...) {
     va_list ap;
     va_start(ap, format);
     if (/* traceflg ||*/ ciat_logfl) {
@@ -53,10 +53,11 @@ static void ciat_login(const char *format,...) {
         vprintf(format, ap);
         printf(" {\n");
     }
+    va_end(ap);
     logtab += 2;
 }
 
-static void ciat_logout(const char *format,...) {
+void ciat_logout(const char *format,...) {
     va_list ap;
     va_start(ap, format);
     if ((/* traceflg ||*/ ciat_logfl) && strlen(format)) {
@@ -64,6 +65,7 @@ static void ciat_logout(const char *format,...) {
         vprintf(format, ap);
         printf("\n");
     }
+    va_end(ap);
     if (logtab > 1)
         logtab -= 2;
     if (ciat_logfl) {
@@ -71,7 +73,7 @@ static void ciat_logout(const char *format,...) {
     }
 }
 
-static void ciat_log(const char *format,...) {
+void ciat_log(const char *format,...) {
     va_list ap;
     va_start(ap, format);
     if (/* traceflg ||*/ ciat_logfl) {
@@ -79,9 +81,10 @@ static void ciat_log(const char *format,...) {
         vprintf(format, ap);
         printf("\n");
     }
+    va_end(ap);
 }
 
-static void ciat_print_state(const ciat_t *state)
+void ciat_print_state(const ciat_t *state)
 {
     printf("%s print: clk=%ld, cnt=%04x (%d), latch=%04x (%d)\n",
            state->name, (long)(state->clk),

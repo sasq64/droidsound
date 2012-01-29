@@ -1,116 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-<string name="app_name">Droidsound</string>
-<string name="create_moddir_failed">Could not create MODS directory on sdcard!</string>
-<string name="sdcard_not_found">Could not access sdcard!</string>
-<string name="search_hint">Search title</string>
-<string name="scan_db">Rescan database</string>
-<string name="about_droidsound">"By sasq64@gmail.com"</string>
-<string name="recreate_confirm">This will recreate the entire database. It may take a long time. Are you absolutely sure?</string>
-<string-array name="scan_opts">
-    <item>Full</item>
-</string-array>
-<string name="details">Details</string>
-<string name="favorite">Favorite</string>
-<string name="go_to_dir">Go to directory</string>
-<string name="remove">Remove</string>
-<string name="cut">Cut</string>
-<string name="paste">Paste</string>
-<string name="remove_all">Remove all</string>
-<string name="do_remove_all">Really clear playlist?</string>
-<string name="del_dir">Delete</string>
-<string name="del_file">Delete</string>
-<string name="del_plist">Delete</string>
-<string name="make_wav">Create Ringtone</string>
-<string name="do_del_plist">Really delete playlist?</string>
-<string name="do_del_dir">Really delete directory?</string>
-<string name="do_del_file">Really delete file?</string>
-<string name="do_make_wav">Really Set as Ringtone?</string>
-<string name="ringtone_set">New ringtone set</string>
-<string name="ringtone_created">New ringtone created</string>
-<string name="rescan">Rescan</string>
-<string name="abort_scan">Abort scan</string>
-<string name="about">About</string>
-<string name="new_">New</string>
-<string name="quit">Quit</string>
-<string name="database_cleared">Database cleared</string>
-<string name="clearing_database">Clearing database</string>
-<string name="database_busy">Database busy!</string>
-<string name="scanning">Scanning</string>
-<string name="title">Title</string>
-<string name="info">Info</string>
-<string name="composer">Composer</string>
-<string name="copyright">Copyright</string>
-<string name="upgrade_db">Database format has changed. Old database will be dropped and recreated.</string>
-<string name="add_to_plist">Add to \'[playlist]\'</string>
+<string name="app_name">DroidSound</string>
+<string name="icon">Icon</string>
+<string name="collection_title">Collection</string>
+<string name="playing_title">Playback</string>
+<string name="visualization_title">Visualization</string>
+<string name="mods_setup">Created and setup MODS directory on external sdcard.</string>
+
 <string name="create_playlist">Create playlist</string>
-<string name="set_plist">Set current playlist</string>
-<string name="name_playlist">Playlist name</string>
-<string name="name_folder">Folder name</string>
-<string name="name_link">Link name (http://)</string>
 <string name="settings">Settings</string>
-<string name="will_be_downloaded">will be downloaded.</string>
-<string name="is_downloading">is currently downloading...</string>
-<string name="is_downloaded">is already downloaded.</string>
-<string name="is_queued">is queued for downloading.</string>
 
-<string name="hvsc_desc">The High Voltage Sid Collection (230 MB)</string>
-<string name="csdb_desc">The CSDb Scene Database (660 KB)</string>
-<string name="testmods_desc">Some test mods</string>
+<string name="add_to_playlist">Add to playlist: </string>
+<string name="remove_from_playlist">Remove from playlist</string>
+<string name="delete">Delete file</string>
+<string name="delete_zip">Delete zip</string>
+<string name="delete_directory">Remove directory</string>
+<string name="delete_playlist">Remove playlist</string>
+<string name="confirm">Confirm deletion</string>
 
-<string name="zip_import_failed">Failed to import zip file.</string>
-<string name="zip_import_replace">Will not replace existing zip file. Remove it first.</string>
-<string name="ask_speech">You do not have speech installed - install it from Market now?</string>
-<string name="notification">Droidsound playing</string>
-
-<string name="sort_name">Sorting on Title</string>
-<string name="sort_author">Sorting on Composer</string>
-<string name="sort_date">Sorting on Date</string>
-
-<string name="unpack_examples">Since this looks like the first time you are running Droidsound I have extracted some example
-music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.\n\nAlso check out \'Download\' in the Settings
-to download more music from the web.</string>
-
-<string-array name="fav_opts">
-	<item>Default subtune</item>
-	<item>Current subtune</item>
-	<item>All subtunes</item>
-</string-array>
-
-
-<string-array name="new_opts">
-	<item>Folder</item>
-	<item>Playlist</item>
-	<item>HTTP Link</item>
-</string-array>
-
-<string-array name="indexing_opts">
-	<item>None</item>
-	<item>Basic</item>
-	<item>Full</item>
-</string-array>
+<string name="file_title">Title</string>
+<string name="file_composer">Composer</string>
+<string name="file_date">Date</string>
+<string name="file_subsongs">Subsongs</string>
+<string name="plugin_name">Player</string>
 
 <string-array name="panning_opts">
-	<item>Mono</item>
-	<item>Some</item>
-	<item>50/50</item>
-	<item>Lots</item>
-	<item>Full Stereo</item>
+	<item>0 % (mono)</item>
+	<item>25 %</item>
+	<item>50 %</item>
+	<item>75 %</item>
+	<item>100 % (stereo)</item>
 </string-array>
-
-
-<string-array name="buffer_opts">
-	<item>Short</item>
-	<item>Medium</item>
-	<item>Long</item>
-	<item>Very long</item>
-</string-array>
-
-<string-array name="engine_opts">
-<item>Sidplay2</item>
-<item>VICE</item>
-</string-array>
-
 
 <string-array name="videomode_opts">
 <item>PAL</item>

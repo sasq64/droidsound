@@ -38,6 +38,7 @@
 #include "maincpu.h"
 #include "printer.h"
 #include "types.h"
+#include "userport_joystick.h"
 #include "via.h"
 #include "vic.h"
 #include "vic20.h"
@@ -50,26 +51,26 @@
 #endif
 
 
-void REGPARM2 via2_store(WORD addr, BYTE data)
+void via2_store(WORD addr, BYTE data)
 {
     viacore_store(machine_context.via2, addr, data);
 }
 
-BYTE REGPARM1 via2_read(WORD addr)
+BYTE via2_read(WORD addr)
 {
     return viacore_read(machine_context.via2, addr);
 }
 
-BYTE REGPARM1 via2_peek(WORD addr)
+BYTE via2_peek(WORD addr)
 {
     return viacore_peek(machine_context.via2, addr);
 }
 
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
 }
 
@@ -129,9 +130,9 @@ static void undump_prb(via_context_t *via_context, BYTE byte)
 static void store_prb(via_context_t *via_context, BYTE byte, BYTE myoldpb,
                       WORD addr)
 {
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA) {
-        extra_joystick_cga_store(byte);
-    }
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_pbx(byte);
+
     printer_userport_write_data(byte);
 #ifdef HAVE_RS232
     rsuser_write_ctrl(byte);
@@ -235,29 +236,14 @@ inline static BYTE read_prb(via_context_t *via_context)
     BYTE byte;
     byte = via_context->via[VIA_PRB] | ~(via_context->via[VIA_DDRB]);
 
-    if (extra_joystick_enable) {
-        switch (extra_joystick_type) {
-            case EXTRA_JOYSTICK_CGA:
-                byte = extra_joystick_cga_read();
-                break;
-            case EXTRA_JOYSTICK_PET:
-                byte = extra_joystick_pet_read();
-                break;
-            case EXTRA_JOYSTICK_HUMMER:
-                byte = extra_joystick_hummer_read();
-                break;
-            case EXTRA_JOYSTICK_OEM:
-                byte = extra_joystick_oem_read();
-                break;
-        }
-        byte = byte & ~(via_context->via[VIA_DDRB]);
-    } else {
 #ifdef HAVE_RS232
+    if (rsuser_enabled) {
         byte = rsuser_read_ctrl();
-#else
-        byte = 0xff;
-#endif
     }
+#endif
+
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    byte = userport_joystick_read_pbx(byte);
 
     return byte;
 }
@@ -308,4 +294,3 @@ void vic20via2_setup_context(machine_context_t *machine_context)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-

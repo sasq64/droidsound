@@ -11,9 +11,7 @@
 #include "sndfile.h"
 #include "it_defs.h"
 
-#include <android/log.h> 
-
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #pragma warning(disable:4244)
 #endif
 
@@ -47,7 +45,7 @@ BOOL CSoundFile::ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkver
 		memcpy(penv->filename, pis->filename, 12);
 		penv->nFadeOut = bswapLE16(pis->fadeout) << 6;
 		penv->nGlobalVol = 64;
-		for (UINT j=0; j<120; j++)
+		for (UINT j=0; j<NOTE_MAX; j++)
 		{
 			UINT note = pis->keyboard[j*2];
 			UINT ins = pis->keyboard[j*2+1];
@@ -86,7 +84,7 @@ BOOL CSoundFile::ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkver
 		penv->nFadeOut = bswapLE16(pis->fadeout) << 5;
 		penv->nGlobalVol = pis->gbv >> 1;
 		if (penv->nGlobalVol > 64) penv->nGlobalVol = 64;
-		for (UINT j=0; j<120; j++)
+		for (UINT j=0; j<NOTE_MAX; j++)
 		{
 			UINT note = pis->keyboard[j*2];
 			UINT ins = pis->keyboard[j*2+1];
@@ -161,7 +159,6 @@ BOOL CSoundFile::ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkver
 BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 //--------------------------------------------------------------
 {
-	ITFILEHEADER pifh = *(ITFILEHEADER *)lpStream;
 	DWORD dwMemPos = sizeof(ITFILEHEADER);
 	DWORD inspos[MAX_INSTRUMENTS];
 	DWORD smppos[MAX_SAMPLES];
@@ -169,8 +166,8 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	BYTE chnmask[64], channels_used[64];
 	MODCOMMAND lastvalue[64];
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Trying to load %d bytes IT", dwMemLength);
-
+	if ((!lpStream) || (dwMemLength < sizeof(ITFILEHEADER))) return FALSE;
+	ITFILEHEADER pifh = *(ITFILEHEADER *)lpStream;
 
 	pifh.id = bswapLE32(pifh.id);
 	pifh.reserved1 = bswapLE16(pifh.reserved1);
@@ -186,10 +183,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	pifh.msgoffset = bswapLE32(pifh.msgoffset);
 	pifh.reserved2 = bswapLE32(pifh.reserved2);
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "1");
-
-
-	if ((!lpStream) || (dwMemLength < 0x100)) return FALSE;
 	if ((pifh.id != 0x4D504D49) || (pifh.insnum >= MAX_INSTRUMENTS)
 	 || (!pifh.smpnum) || (pifh.smpnum >= MAX_INSTRUMENTS) || (!pifh.ordnum)) return FALSE;
 	if (dwMemPos + pifh.ordnum + pifh.insnum*4
@@ -201,8 +194,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	if (pifh.flags & 0x80) m_dwSongFlags |= SONG_EMBEDMIDICFG;
 	if (pifh.flags & 0x1000) m_dwSongFlags |= SONG_EXFILTERRANGE;
 	memcpy(m_szNames[0], pifh.songname, 26);
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "2");
-
 	m_szNames[0][26] = 0;
 	// Global Volume
 	if (pifh.globalvol)
@@ -211,8 +202,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 		if (!m_nDefaultGlobalVolume) m_nDefaultGlobalVolume = 256;
 		if (m_nDefaultGlobalVolume > 256) m_nDefaultGlobalVolume = 256;
 	}
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "3");
-
 	if (pifh.speed) m_nDefaultSpeed = pifh.speed;
 	if (pifh.tempo) m_nDefaultTempo = pifh.tempo;
 	m_nSongPreAmp = pifh.mv & 0x7F;
@@ -226,11 +215,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 		if (n <= 64) ChnSettings[ipan].nPan = n << 2;
 		if (n == 100) ChnSettings[ipan].dwFlags |= CHN_SURROUND;
 	}
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "4");
-
 	if (m_nChannels < 4) m_nChannels = 4;
 	// Reading Song Message
-	if ((pifh.special & 0x01) && (pifh.msglength) && (pifh.msgoffset + pifh.msglength < dwMemLength))
+	if ((pifh.special & 0x01) && (pifh.msglength) && (pifh.msglength <= dwMemLength) && (pifh.msgoffset < dwMemLength - pifh.msglength))
 	{
 		m_lpszSongComments = new char[pifh.msglength+1];
 		if (m_lpszSongComments)
@@ -239,8 +226,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 			m_lpszSongComments[pifh.msglength] = 0;
 		}
 	}
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "5");
-
 	// Reading orders
 	UINT nordsize = pifh.ordnum;
 	if (nordsize > MAX_ORDERS) nordsize = MAX_ORDERS;
@@ -252,8 +237,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	if (inspossize > MAX_INSTRUMENTS) inspossize = MAX_INSTRUMENTS;
 	inspossize <<= 2;
 	memcpy(inspos, lpStream+dwMemPos, inspossize);
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "6");
-
 	for (UINT j=0; j < (inspossize>>2); j++)
 	{
 	       inspos[j] = bswapLE32(inspos[j]);
@@ -265,8 +248,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	if (smppossize > MAX_SAMPLES) smppossize = MAX_SAMPLES;
 	smppossize <<= 2;
 	memcpy(smppos, lpStream+dwMemPos, smppossize);
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "7");
-
 	for (UINT j=0; j < (smppossize>>2); j++)
 	{
 	       smppos[j] = bswapLE32(smppos[j]);
@@ -278,8 +259,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	if (patpossize > MAX_PATTERNS) patpossize = MAX_PATTERNS;
 	patpossize <<= 2;
 	memcpy(patpos, lpStream+dwMemPos, patpossize);
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "8");
-
 	for (UINT j=0; j < (patpossize>>2); j++)
 	{
 	       patpos[j] = bswapLE32(patpos[j]);
@@ -288,12 +267,10 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	// Reading IT Extra Info
 	if (dwMemPos + 2 < dwMemLength)
 	{
-		UINT nflt = read16(lpStream + dwMemPos);
+		UINT nflt = bswapLE16(*((WORD *)(lpStream + dwMemPos)));
 		dwMemPos += 2;
 		if (dwMemPos + nflt * 8 < dwMemLength) dwMemPos += nflt * 8;
 	}
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "9");
-
 	// Reading Midi Output & Macros
 	if (m_dwSongFlags & SONG_EMBEDMIDICFG)
 	{
@@ -303,13 +280,10 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 			dwMemPos += sizeof(MODMIDICFG);
 		}
 	}
-
-
 	// Read pattern names: "PNAM"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x4d414e50))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e50))
 	{
-		/// UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
 		dwMemPos += 8;
 		if ((dwMemPos + len <= dwMemLength) && (len <= MAX_PATTERNS*MAX_PATTERNNAME) && (len >= MAX_PATTERNNAME))
 		{
@@ -325,10 +299,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	// 4-channels minimum
 	m_nChannels = 4;
 	// Read channel names: "CNAM"
-	if ((dwMemPos + 8 < dwMemLength) && (read32(lpStream+dwMemPos) == 0x4d414e43))
+	if ((dwMemPos + 8 < dwMemLength) && (bswapLE32(*((DWORD *)(lpStream+dwMemPos))) == 0x4d414e43))
 	{
-		/// UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
-		UINT len = read32(lpStream+dwMemPos+4);
+		UINT len = bswapLE32(*((DWORD *)(lpStream+dwMemPos+4)));
 		dwMemPos += 8;
 		if ((dwMemPos + len <= dwMemLength) && (len <= 64*MAX_CHANNELNAME))
 		{
@@ -342,28 +315,22 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 			dwMemPos += len;
 		}
 	}
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "3");
-
 	// Read mix plugins information
 	if (dwMemPos + 8 < dwMemLength)
 	{
 		dwMemPos += LoadMixPlugins(lpStream+dwMemPos, dwMemLength-dwMemPos);
 	}
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "4");
-
 	// Checking for unused channels
 	UINT npatterns = pifh.patnum;
 	if (npatterns > MAX_PATTERNS) npatterns = MAX_PATTERNS;
 	for (UINT patchk=0; patchk<npatterns; patchk++)
 	{
 		memset(chnmask, 0, sizeof(chnmask));
-		if ((!patpos[patchk]) || ((DWORD)patpos[patchk] + 4 >= dwMemLength)) continue;
-		UINT len = read16(lpStream+patpos[patchk]);
-		UINT rows = read16(lpStream+patpos[patchk]+2);
+		if ((!patpos[patchk]) || ((DWORD)patpos[patchk] >= dwMemLength - 4)) continue;
+		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[patchk])));
+		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[patchk]+2)));
 		if ((rows < 4) || (rows > 256)) continue;
-		if (patpos[patchk]+8+len > dwMemLength) continue;
+		if (8+len > dwMemLength || patpos[patchk] > dwMemLength - (8+len)) continue;
 		UINT i = 0;
 		const BYTE *p = lpStream+patpos[patchk]+8;
 		UINT nrow = 0;
@@ -403,10 +370,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	m_nInstruments = 0;
 	if (pifh.flags & 0x04) m_nInstruments = pifh.insnum;
 	if (m_nInstruments >= MAX_INSTRUMENTS) m_nInstruments = MAX_INSTRUMENTS-1;
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "5");
-
-
 	for (UINT nins=0; nins<m_nInstruments; nins++)
 	{
 		if ((inspos[nins] > 0) && (inspos[nins] < dwMemLength - sizeof(ITOLDINSTRUMENT)))
@@ -418,98 +381,87 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 			ITInstrToMPT(lpStream + inspos[nins], penv, pifh.cmwt);
 		}
 	}
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "6");
-
 	// Reading Samples
 	m_nSamples = pifh.smpnum;
 	if (m_nSamples >= MAX_SAMPLES) m_nSamples = MAX_SAMPLES-1;
-	for (UINT nsmp=0; nsmp<pifh.smpnum; nsmp++)
+	for (UINT nsmp=0; nsmp<pifh.smpnum; nsmp++) if ((smppos[nsmp]) && (smppos[nsmp] <= dwMemLength - sizeof(ITSAMPLESTRUCT)))
 	{
-		if ((smppos[nsmp]) && (smppos[nsmp] + sizeof(ITSAMPLESTRUCT) <= dwMemLength))
+		ITSAMPLESTRUCT pis = *(ITSAMPLESTRUCT *)(lpStream+smppos[nsmp]);
+		pis.id = bswapLE32(pis.id);
+		pis.length = bswapLE32(pis.length);
+		pis.loopbegin = bswapLE32(pis.loopbegin);
+		pis.loopend = bswapLE32(pis.loopend);
+		pis.C5Speed = bswapLE32(pis.C5Speed);
+		pis.susloopbegin = bswapLE32(pis.susloopbegin);
+		pis.susloopend = bswapLE32(pis.susloopend);
+		pis.samplepointer = bswapLE32(pis.samplepointer);
+
+		if (pis.id == 0x53504D49)
 		{
-			ITSAMPLESTRUCT pis = *(ITSAMPLESTRUCT *)(lpStream+smppos[nsmp]);
-			pis.id = bswapLE32(pis.id);
-			pis.length = bswapLE32(pis.length);
-			pis.loopbegin = bswapLE32(pis.loopbegin);
-			pis.loopend = bswapLE32(pis.loopend);
-			pis.C5Speed = bswapLE32(pis.C5Speed);
-			pis.susloopbegin = bswapLE32(pis.susloopbegin);
-			pis.susloopend = bswapLE32(pis.susloopend);
-			pis.samplepointer = bswapLE32(pis.samplepointer);
-
-			// __android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "len %d ptr %x", pis.length, pis.samplepointer);
-
-			if (pis.id == 0x53504D49)
+			MODINSTRUMENT *pins = &Ins[nsmp+1];
+			memcpy(pins->name, pis.filename, 12);
+			pins->uFlags = 0;
+			pins->nLength = 0;
+			pins->nLoopStart = pis.loopbegin;
+			pins->nLoopEnd = pis.loopend;
+			pins->nSustainStart = pis.susloopbegin;
+			pins->nSustainEnd = pis.susloopend;
+			pins->nC4Speed = pis.C5Speed;
+			if (!pins->nC4Speed) pins->nC4Speed = 8363;
+			if (pis.C5Speed < 256) pins->nC4Speed = 256;
+			pins->nVolume = pis.vol << 2;
+			if (pins->nVolume > 256) pins->nVolume = 256;
+			pins->nGlobalVol = pis.gvl;
+			if (pins->nGlobalVol > 64) pins->nGlobalVol = 64;
+			if (pis.flags & 0x10) pins->uFlags |= CHN_LOOP;
+			if (pis.flags & 0x20) pins->uFlags |= CHN_SUSTAINLOOP;
+			if (pis.flags & 0x40) pins->uFlags |= CHN_PINGPONGLOOP;
+			if (pis.flags & 0x80) pins->uFlags |= CHN_PINGPONGSUSTAIN;
+			pins->nPan = (pis.dfp & 0x7F) << 2;
+			if (pins->nPan > 256) pins->nPan = 256;
+			if (pis.dfp & 0x80) pins->uFlags |= CHN_PANNING;
+			pins->nVibType = autovibit2xm[pis.vit & 7];
+			pins->nVibRate = pis.vis;
+			pins->nVibDepth = pis.vid & 0x7F;
+			pins->nVibSweep = (pis.vir + 3) / 4;
+			if ((pis.samplepointer) && (pis.samplepointer < dwMemLength) && (pis.length))
 			{
-				MODINSTRUMENT *pins = &Ins[nsmp+1];
-				memcpy(pins->name, pis.filename, 12);
-				pins->uFlags = 0;
-				pins->nLength = 0;
-				pins->nLoopStart = pis.loopbegin;
-				pins->nLoopEnd = pis.loopend;
-				pins->nSustainStart = pis.susloopbegin;
-				pins->nSustainEnd = pis.susloopend;
-				pins->nC4Speed = pis.C5Speed;
-				if (!pins->nC4Speed) pins->nC4Speed = 8363;
-				if (pis.C5Speed < 256) pins->nC4Speed = 256;
-				pins->nVolume = pis.vol << 2;
-				if (pins->nVolume > 256) pins->nVolume = 256;
-				pins->nGlobalVol = pis.gvl;
-				if (pins->nGlobalVol > 64) pins->nGlobalVol = 64;
-				if (pis.flags & 0x10) pins->uFlags |= CHN_LOOP;
-				if (pis.flags & 0x20) pins->uFlags |= CHN_SUSTAINLOOP;
-				if (pis.flags & 0x40) pins->uFlags |= CHN_PINGPONGLOOP;
-				if (pis.flags & 0x80) pins->uFlags |= CHN_PINGPONGSUSTAIN;
-				pins->nPan = (pis.dfp & 0x7F) << 2;
-				if (pins->nPan > 256) pins->nPan = 256;
-				if (pis.dfp & 0x80) pins->uFlags |= CHN_PANNING;
-				pins->nVibType = autovibit2xm[pis.vit & 7];
-				pins->nVibRate = pis.vis;
-				pins->nVibDepth = pis.vid & 0x7F;
-				pins->nVibSweep = (pis.vir + 3) / 4;
-				if ((pis.samplepointer) && (pis.samplepointer < dwMemLength) && (pis.length))
+				pins->nLength = pis.length;
+				if (pins->nLength > MAX_SAMPLE_LENGTH) pins->nLength = MAX_SAMPLE_LENGTH;
+				UINT flags = (pis.cvt & 1) ? RS_PCM8S : RS_PCM8U;
+				if (pis.flags & 2)
 				{
-					pins->nLength = pis.length;
-					if (pins->nLength > MAX_SAMPLE_LENGTH) pins->nLength = MAX_SAMPLE_LENGTH;
-					UINT flags = (pis.cvt & 1) ? RS_PCM8S : RS_PCM8U;
-					if (pis.flags & 2)
-					{
-						flags += 5;
-						if (pis.flags & 4) flags |= RSF_STEREO;
-						pins->uFlags |= CHN_16BIT;
-						// IT 2.14 16-bit packed sample ?
-						if (pis.flags & 8) flags = ((pifh.cmwt >= 0x215) && (pis.cvt & 4)) ? RS_IT21516 : RS_IT21416;
-					} else
-					{
-						if (pis.flags & 4) flags |= RSF_STEREO;
-						if (pis.cvt == 0xFF) flags = RS_ADPCM4; else
-						// IT 2.14 8-bit packed sample ?
-						if (pis.flags & 8)	flags =	((pifh.cmwt >= 0x215) && (pis.cvt & 4)) ? RS_IT2158 : RS_IT2148;
-					}
-					ReadSample(&Ins[nsmp+1], flags, (LPSTR)(lpStream+pis.samplepointer), dwMemLength - pis.samplepointer);
+					flags += 5;
+					if (pis.flags & 4) flags |= RSF_STEREO;
+					pins->uFlags |= CHN_16BIT;
+					// IT 2.14 16-bit packed sample ?
+					if (pis.flags & 8) flags = ((pifh.cmwt >= 0x215) && (pis.cvt & 4)) ? RS_IT21516 : RS_IT21416;
+				} else
+				{
+					if (pis.flags & 4) flags |= RSF_STEREO;
+					if (pis.cvt == 0xFF) flags = RS_ADPCM4; else
+					// IT 2.14 8-bit packed sample ?
+					if (pis.flags & 8)	flags =	((pifh.cmwt >= 0x215) && (pis.cvt & 4)) ? RS_IT2158 : RS_IT2148;
 				}
+				ReadSample(&Ins[nsmp+1], flags, (LPSTR)(lpStream+pis.samplepointer), dwMemLength - pis.samplepointer);
 			}
-			memcpy(m_szNames[nsmp+1], pis.name, 26);
 		}
+		memcpy(m_szNames[nsmp+1], pis.name, 26);
 	}
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "7");
-
 	// Reading Patterns
 	for (UINT npat=0; npat<npatterns; npat++)
 	{
-		if ((!patpos[npat]) || ((DWORD)patpos[npat] + 4 >= dwMemLength))
+		if ((!patpos[npat]) || ((DWORD)patpos[npat] >= dwMemLength - 4))
 		{
 			PatternSize[npat] = 64;
 			Patterns[npat] = AllocatePattern(64, m_nChannels);
 			continue;
 		}
 
-		UINT len = read16(lpStream+patpos[npat]);
-		UINT rows = read16(lpStream+patpos[npat]+2);
+		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[npat])));
+		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[npat]+2)));
 		if ((rows < 4) || (rows > 256)) continue;
-		if (patpos[npat]+8+len > dwMemLength) continue;
+		if (8+len > dwMemLength || patpos[npat] > dwMemLength - (8+len)) continue;
 		PatternSize[npat] = rows;
 		if ((Patterns[npat] = AllocatePattern(rows, m_nChannels)) == NULL) continue;
 		memset(lastvalue, 0, sizeof(lastvalue));
@@ -641,7 +593,9 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 
 #ifndef MODPLUG_NO_FILESAVE
 //#define SAVEITTIMESTAMP
+#ifdef _MSC_VER
 #pragma warning(disable:4100)
+#endif
 
 BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 //---------------------------------------------------------
@@ -740,7 +694,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		header.msgoffset = dwHdrPos + dwExtra + header.insnum*4 + header.patnum*4 + header.smpnum*4;
 	}
 	// Write file header
-	memcpy(writeheader, header, sizeof(header));
+	memcpy(&writeheader, &header, sizeof(header));
 
 	// Byteswap header information
 	writeheader.id = bswapLE32(writeheader.id);
@@ -792,7 +746,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		DWORD d = bswapLE32(0x4d414e50);
 		UINT len= bswapLE32(dwPatNamLen);
 		fwrite(&d, 1, 4, f);
-		write(&len, 1, 4, f);
+		fwrite(&len, 1, 4, f);
 		fwrite(m_lpszPatternNames, 1, dwPatNamLen, f);
 	}
 	// Writing channel Names
@@ -846,7 +800,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 			iti.ifc = penv->nIFC;
 			iti.ifr = penv->nIFR;
 			iti.nos = 0;
-			for (UINT i=0; i<120; i++) if (penv->Keyboard[i] < MAX_SAMPLES)
+			for (UINT i=0; i<NOTE_MAX; i++) if (penv->Keyboard[i] < MAX_SAMPLES)
 			{
 				UINT smp = penv->Keyboard[i];
 				if ((smp) && (!smpcount[smp]))
@@ -904,7 +858,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		} else
 		// Save Empty Instrument
 		{
-			for (UINT i=0; i<120; i++) iti.keyboard[i*2] = i;
+			for (UINT i=0; i<NOTE_MAX; i++) iti.keyboard[i*2] = i;
 			iti.ppc = 5*12;
 			iti.gbv = 128;
 			iti.dfp = 0x20;
@@ -947,8 +901,8 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		if (PatternSize[npat] == 64)
 		{
 			MODCOMMAND *pzc = Patterns[npat];
-			UINT nz = PatternSize[npat] * m_nChannels;
-			for (UINT iz=0; iz<nz; iz++)
+			UINT iz, nz = PatternSize[npat] * m_nChannels;
+			for (iz=0; iz<nz; iz++)
 			{
 				if ((pzc[iz].note) || (pzc[iz].instr)
 				 || (pzc[iz].volcmd) || (pzc[iz].command)) break;
@@ -1117,7 +1071,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		if (psmp->uFlags & CHN_PINGPONGSUSTAIN) itss.flags |= 0x80;
 		itss.C5Speed = psmp->nC4Speed;
 		if (!itss.C5Speed) // if no C5Speed assume it is XM Sample
-		{
+		{ 
 			UINT period;
 
 			/**
@@ -1125,7 +1079,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 			 * RealNote = Note + RelativeTone
 			 */
 			period = GetPeriodFromNote(61+psmp->RelativeTone, psmp->nFineTune, 0);
-
+						
 			if (period)
 				itss.C5Speed = GetFreqFromPeriod(period, 0, 0);
 			/**
@@ -1193,7 +1147,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	}
 	// Updating offsets
 	fseek(f, dwHdrPos, SEEK_SET);
-
+	
 	/* <Toad> Now we can byteswap them ;-) */
 	UINT WW;
 	UINT WX;
@@ -1211,7 +1165,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	WX <<= 2;
 	for (WW=0; WW < (WX>>2); WW++)
 	       patpos[WW] = bswapLE32(patpos[WW]);
-
+	
 	if (header.insnum) fwrite(inspos, 4, header.insnum, f);
 	if (header.smpnum) fwrite(smppos, 4, header.smpnum, f);
 	if (header.patnum) fwrite(patpos, 4, header.patnum, f);
@@ -1219,7 +1173,9 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	return TRUE;
 }
 
+#ifdef _MSC_VER
 //#pragma warning(default:4100)
+#endif
 #endif // MODPLUG_NO_FILESAVE
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1268,7 +1224,7 @@ void ITUnpack8Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dwM
 		if (!wCount)
 		{
 			wCount = 0x8000;
-			wHdr = read16(pSrc);
+			wHdr = bswapLE16(*((LPWORD)pSrc));
 			pSrc += 2;
 			bLeft = 9;
 			bTemp = bTemp2 = 0;
@@ -1513,15 +1469,13 @@ UINT CSoundFile::LoadMixPlugins(const void *pData, UINT nLen)
 		DWORD nPluginSize;
 		UINT nPlugin;
 
-		/// nPluginSize = bswapLE32(*(DWORD *)(p+nPos+4));
-		nPluginSize = read32(p+nPos+4);
+		nPluginSize = bswapLE32(*(DWORD *)(p+nPos+4));
 		if (nPluginSize > nLen-nPos-8) break;;
-		/// if ((bswapLE32(*(DWORD *)(p+nPos))) == 0x58464843)
-		if (read32(p+nPos) == 0x58464843)
+		if ((bswapLE32(*(DWORD *)(p+nPos))) == 0x58464843)
 		{
 			for (UINT ch=0; ch<64; ch++) if (ch*4 < nPluginSize)
 			{
-				ChnSettings[ch].nMixPlugin = read32(p+nPos+8+ch*4);
+				ChnSettings[ch].nMixPlugin = bswapLE32(*(DWORD *)(p+nPos+8+ch*4));
 			}
 		} else
 		{
@@ -1533,7 +1487,7 @@ UINT CSoundFile::LoadMixPlugins(const void *pData, UINT nLen)
 			nPlugin = (p[nPos+2]-'0')*10 + (p[nPos+3]-'0');
 			if ((nPlugin < MAX_MIXPLUGINS) && (nPluginSize >= sizeof(SNDMIXPLUGININFO)+4))
 			{
-				DWORD dwExtra = read32(p+nPos+8+sizeof(SNDMIXPLUGININFO));
+				DWORD dwExtra = bswapLE32(*(DWORD *)(p+nPos+8+sizeof(SNDMIXPLUGININFO)));
 				m_MixPlugins[nPlugin].Info = *(const SNDMIXPLUGININFO *)(p+nPos+8);
 				m_MixPlugins[nPlugin].Info.dwPluginId1 = bswapLE32(m_MixPlugins[nPlugin].Info.dwPluginId1);
 				m_MixPlugins[nPlugin].Info.dwPluginId2 = bswapLE32(m_MixPlugins[nPlugin].Info.dwPluginId2);

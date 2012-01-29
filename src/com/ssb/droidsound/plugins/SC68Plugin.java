@@ -1,287 +1,205 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
-import android.os.Environment;
-import com.ssb.droidsound.utils.Log;
-
+import com.ssb.droidsound.app.Application;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class SC68Plugin extends DroidSoundPlugin {
 	private static final String TAG = SC68Plugin.class.getSimpleName();
+	private static final Charset ISO88591 = Charset.forName("ISO-8859-1");
+	private static final String[] HWS = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" };
+
 	static {
 		System.loadLibrary("sc68");
+		File pluginDir = Application.getPluginDataDirectory(SC68Plugin.class);
+		File sc68Dir = new File(pluginDir, "sc68data");
+		if (! sc68Dir.exists()) {
+			Unzipper.unzipAsset("sc68data.zip", pluginDir);
+		}
+		N_setDataDir(sc68Dir.getPath());
 	}
+
 	private long currentSong;
-	private static Object lock = new Object();
-	private static boolean inited = false;
-	
-	private File sc68Dir;
+
 	private long pluginRef;
 
-	private String title = null;
-	private String composer = null;
-	private String year = null;
-	private String type = null;
-	private Unzipper unzipper = null;
-
-	public SC68Plugin() {
-
-		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-		sc68Dir = new File(droidDir, "sc68data");
-		synchronized (lock) {					
-			if(!sc68Dir.exists()) {
-				droidDir.mkdir();
-				unzipper = Unzipper.getInstance();
-				unzipper.unzipAssetAsync(getContext(), "sc68data.zip", droidDir);
-			}
-			if(!inited) {
-				N_setDataDir(sc68Dir.getPath());
-				inited = true;
-			}
-		}
-	}
-	
 	@Override
 	public boolean canHandle(String name) {
-		String ext = name.substring(name.indexOf('.')+1).toLowerCase();
-		return(ext.equals("sndh") || ext.equals("sc68") || ext.equals("snd"));
+		String ext = name.substring(name.indexOf('.') + 1).toUpperCase();
+		return ext.equals("SNDH") || ext.equals("SC68") || ext.equals("SND");
 	}
-	
+
+	@Override
+	protected boolean load(String name, byte[] data) {
+		currentSong = N_load(data, data.length);
+		if (currentSong == 0) {
+			return false;
+		}
+
+		return true;
+	}
+
 	@Override
 	public void unload() {
-		Log.d(TAG, "Unloading");
-		if(currentSong != 0)
-			N_unload(currentSong);		
+		if (currentSong != 0)
+			N_unload(currentSong);
 	}
 
-	@Override
-	public boolean load(String name, byte[] module, int size) {
-		
-		
-		if(unzipper != null) {
-			while(!unzipper.checkJob("sc68data.zip")) {
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					return false;
-				}
-			}
-			unzipper = null;
-		}
-		
-		Log.d(TAG, "Trying to load '%s'", name);
-		currentSong = N_load(module, size);
-		Log.d(TAG, "Trying to load '%s' -> %d", name, currentSong);
-		return (currentSong != 0);
-	}
-	
-	private static byte[] targetBuffer;
-	
-	
-	private static String fromData(byte [] data, int start, int len) throws UnsupportedEncodingException {
-		int i = start;
-		for(; i<start+len; i++) {
-			if(data[i] == 0) {
-				i++;
-				break;
-			}
-		}
-		return new String(data, start, i-start, "ISO-8859-1").trim();
-	}
-	
-	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
-	
 	@Override
 	public String[] getDetailedInfo() {
-		
-		String [] info = new String [4];
-		
-		String replay = getStringInfo(52);
-		String hwname = getStringInfo(51);
+		String replay = N_getStringInfo(currentSong, 52);
+		String hwname = N_getStringInfo(currentSong, 51);
 		int hwbits = getIntInfo(50);
-		if(replay == null) replay = "?";
-		if(hwname == null) hwname = "?";
-		
-		info[0] = "Format";
-		info[1] = String.format("SC68: %s", replay);
-		info[2] = "Hardware";
-		info[3] = String.format("%s (%s)", hwname, hws[hwbits]);
-		return info;
+		return new String[] {
+				String.format("Format: %s", replay != null ? replay : "?"),
+				String.format("Hardware: %s (%s)", hwname != null ? hwname : "?", HWS[hwbits])
+		};
+	}
+
+	private static String readNullTerminated(byte[] data, int i) {
+		int len = 0;
+		while (i + len < data.length && data[i + len] != 0) {
+			len ++;
+		}
+		return new String(data, i, len, ISO88591);
 	}
 
 	@Override
-	public boolean loadInfo(String name, byte[] module, int size) {
-
-		currentSong = 0;
-		title = null;
-		composer = null;
-		year = null;
-		type = null;
-
-		byte data [] = module;
-		String head = new String(module, 0, 4);
-		if(head.equals("ICE!")) {
-			
-			Log.d(TAG, "Unicing");
-			
-			if(targetBuffer == null) {
-				targetBuffer = new byte [1024*1024];
-			}
-			int rc = N_unice(module, targetBuffer);
-			if(rc < 0)
-				return false;
-			size = rc;
-			data = targetBuffer;
-		}
-		
-		String header = new String(data, 12, 4);
-		String header2 = new String(data, 0, 16);
-		if(header.equals("SNDH")) {
-			Log.d(TAG, "Found SNDH");
-			type = "SNDH";
-			int offset = 16;
-			boolean done = false;
-			
-			while(offset < 1024) {
-				String tag = new String(data, offset, 4);
-				//Log.d(TAG, "TAG: %s", tag);
-				try {
-					if(tag.equals("TITL")) {
-						title = fromData(data, offset+4, 64);
-						Log.d(TAG, "TITLE: %s", title);
-						offset += (4+title.length());
-					} else if(tag.equals("COMM")) {
-						composer = fromData(data, offset+4, 64);
-						offset += (4+composer.length());
-					} else if(tag.equals("YEAR")) {
-						year = fromData(data, offset+4, 32);
-						offset += (4+year.length());
-					} else if(tag.equals("HDNS")) {
-						Log.d(TAG, "END");
-						break;
-					} else {
-						while(data[offset] != 0) offset++;
-					}
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				while(data[offset] == 0) offset++;
-			}			
-			
-			return true;
-		} else if(header2.equals("SC68 Music-file ")) {
-			int offset = 56;
-			type = "SC68";
-			while(offset < 1024) {
-				String tag = new String(data, offset, 4);
-				int tsize = data[offset+4] | (data[offset+5]<<8) | (data[offset+6]<<16) | (data[offset+7]<<24);
-				offset += 8;
-				Log.d(TAG, "TAG: %s, size %d", tag, tsize);
-				if(tsize < 0 || tsize > size) {
-					break;
-				}
-				try {
-					if(tag.equals("SCMN")) {
-						title = fromData(data, offset, tsize);
-						Log.d(TAG, "TITLE: %s", title);
-					} else if(tag.equals("SCFN")) {
-						if(title != null) {
-							title = fromData(data, offset, tsize);
-							Log.d(TAG, "TITLE: %s", title);
-						}
-					} else if(tag.equals("SCAN")) {
-						composer = fromData(data, offset, tsize);
-					} else if(tag.equals("SC68")) {
-						tsize = 0;
-					} else if(tag.equals("SCEF") || tag.equals("SCDA")) {
-						Log.d(TAG, "END");
-						break;
-					} else {			
-					}
-				} catch (UnsupportedEncodingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				offset += tsize;
-			}			
-			
-			return true;
-			
-			
-		}
-
-		return false;
-	}
-	
-
-	@Override
-	public int getSoundData(short[] dest, int size) {
-		return N_getSoundData(currentSong, dest, size);
-	}
-
-	@Override
-	public String getStringInfo(int what) {
-		if(currentSong == 0) {
-			switch(what) {
-			case INFO_TITLE:
-				return title;
-			case INFO_AUTHOR:
-				return composer;
-			case INFO_COPYRIGHT:
-				return year;
-			case INFO_TYPE:
-				return type;
-			}			
-			return null;
-		}
-		return N_getStringInfo(currentSong, what);
+	public int getSoundData(short[] dest) {
+		return N_getSoundData(currentSong, dest, dest.length);
 	}
 
 	@Override
 	public int getIntInfo(int what) {
-		if(currentSong == 0) {
+		if (currentSong == 0) {
 			return -1;
 		}
-		
+
 		int rc = N_getIntInfo(currentSong, what);
-		if(what == INFO_LENGTH && rc == 0)
+		if (what == INFO_LENGTH && rc == 0)
 			rc = -1;
 		return rc;
 	}
-	
+
 	@Override
 	public boolean setTune(int tune) {
-		
-		Log.d(TAG, "Set tune %d", tune);
-		
 		return N_setTune(currentSong, tune);
 	}
-	
+
 	@Override
 	public boolean seekTo(int msec) {
 		return N_seekTo(currentSong, msec);
 	}
-	
+
 	@Override
-	public String getVersion() {
-		return "Version 3.0.0\nCopyright (C) 2009 Benjamin Gerard";
+	public void setOption(String string, Object val) {
+		/* No options */
 	}
 
-	native public long N_load(byte [] module, int size);
-	native public long N_loadInfo(byte [] module, int size);
-	native public void N_unload(long song);
-	
+	@Override
+	public String getVersion() {
+		return "SC68 3.0.0";
+	}
+
+	@Override
+	protected MusicInfo getMusicInfo(String name, byte[] module) {
+		if (module.length < 20) {
+			return null;
+		}
+		String head = new String(module, 0, 4, ISO88591);
+		if (head.equals("ICE!")) {
+			module = N_unice(module);
+			if (module == null) {
+				return null;
+			}
+		}
+		int size = module.length;
+
+		String header = new String(module, 12, 4, ISO88591);
+		String header2 = new String(module, 0, 16, ISO88591);
+		if (header.equals("SNDH")) {
+			MusicInfo info = new MusicInfo();
+			info.format = "SNDH";
+
+			int offset = 16;
+			while (offset < 1024) {
+				String tag = new String(module, offset, 4, ISO88591);
+				if (tag.equals("TITL")) {
+					info.title = readNullTerminated(module, offset + 4);
+					offset += 4 + info.title.length();
+				} else if (tag.equals("COMM")) {
+					info.composer = readNullTerminated(module, offset + 4);
+					offset += 4 + info.composer.length();
+				} else if (tag.equals("YEAR")) {
+					String year = readNullTerminated(module, offset + 4);
+					try {
+						info.date = Integer.valueOf(year) * 10000;
+					}
+					catch (NumberFormatException nfe) {
+					}
+					offset += 4 + year.length();
+				} else if (tag.equals("HDNS")) {
+					break;
+				}
+
+				offset ++;
+			}
+
+			return info;
+		}
+		if (header2.equals("SC68 Music-file ")) {
+			MusicInfo info = new MusicInfo();
+			info.format = "SC68";
+
+			int offset = 56;
+			while (offset < 1024) {
+				String tag = new String(module, offset, 4, ISO88591);
+				int tsize = (module[offset+4] & 0xff)
+						| ((module[offset+5] & 0xff) << 8)
+						| ((module[offset+6] & 0xff) << 16)
+						| ((module[offset+7] & 0xff) << 24);
+				offset += 8;
+				if (tsize < 0 || tsize > size) {
+					break;
+				}
+
+				if (tag.equals("SCMN")) {
+					info.title = new String(module, offset, tsize, ISO88591);
+				} else if (tag.equals("SCFN")) {
+					if (info.title != null) {
+						info.title = new String(module, offset, tsize, ISO88591);
+					}
+				} else if (tag.equals("SCAN")) {
+					info.composer = new String(module, offset, tsize, ISO88591);
+				} else if (tag.equals("SC68")) {
+					tsize = 0;
+				} else if (tag.equals("SCEF") || tag.equals("SCDA")) {
+					break;
+				}
+
+				offset += tsize;
+			}
+
+			return info;
+		}
+
+		return null;
+	}
+
+	native private static void N_setDataDir(String dataDir);
+
+	native private long N_load(byte[] module, int size);
+	native private long N_loadInfo(byte[] module, int size);
+	native private void N_unload(long song);
+
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
-	native public int N_getSoundData(long song, short [] dest, int size);	
-	native public boolean N_seekTo(long song, int seconds);
-	native public boolean N_setTune(long song, int tune);
-	native public String N_getStringInfo(long song, int what);
-	native public int N_getIntInfo(long song, int what);
-	
-	native public void N_setDataDir(String dataDir);
-	native public int N_unice(byte [] data, byte [] target);
+	native private int N_getSoundData(long song, short [] dest, int size);
+	native private boolean N_seekTo(long song, int seconds);
+	native private boolean N_setTune(long song, int tune);
+	native private String N_getStringInfo(long song, int what);
+	native private int N_getIntInfo(long song, int what);
+
+	native private byte[] N_unice(byte[] data);
 }

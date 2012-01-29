@@ -43,7 +43,7 @@ extern "C" {
  * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init
-  (JNIEnv *, jobject, jstring);
+  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin
@@ -60,14 +60,6 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit
  */
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption
   (JNIEnv *, jclass, jint, jint);
-
-/*
- * Class:     com_ssb_droidsound_plugins_UADEPlugin
- * Method:    N_canHandle
- * Signature: (Ljava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHandle
-  (JNIEnv *, jobject, jstring);
 
 /*
  * Class:     com_ssb_droidsound_plugins_UADEPlugin

@@ -119,8 +119,8 @@ CB2            - enable Cartridge (?)
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "maincpu.h"
 #include "machine.h"
@@ -128,16 +128,17 @@ CB2            - enable Cartridge (?)
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* ---------------------------------------------------------------------*/
 
 /* some prototypes are needed */
-static void REGPARM2 magicformel_io1_store(WORD addr, BYTE value);
-static BYTE REGPARM1 magicformel_io1_read(WORD addr);
-static BYTE REGPARM1 magicformel_io1_peek(WORD addr);
-static void REGPARM2 magicformel_io2_store(WORD addr, BYTE value);
-static BYTE REGPARM1 magicformel_io2_read(WORD addr);
-static BYTE REGPARM1 magicformel_io2_peek(WORD addr);
+static void magicformel_io1_store(WORD addr, BYTE value);
+static BYTE magicformel_io1_read(WORD addr);
+static BYTE magicformel_io1_peek(WORD addr);
+static void magicformel_io2_store(WORD addr, BYTE value);
+static BYTE magicformel_io2_read(WORD addr);
+static BYTE magicformel_io2_peek(WORD addr);
 
 static io_source_t magicformel_io1_device = {
     CARTRIDGE_NAME_MAGIC_FORMEL,
@@ -149,7 +150,9 @@ static io_source_t magicformel_io1_device = {
     magicformel_io1_read,
     magicformel_io1_peek,
     NULL, /* dump */
-    CARTRIDGE_MAGIC_FORMEL
+    CARTRIDGE_MAGIC_FORMEL,
+    0,
+    0
 };
 
 static io_source_t magicformel_io2_device = {
@@ -162,7 +165,9 @@ static io_source_t magicformel_io2_device = {
     magicformel_io2_read,
     magicformel_io2_peek,
     NULL, /* dump */
-    CARTRIDGE_MAGIC_FORMEL
+    CARTRIDGE_MAGIC_FORMEL,
+    0,
+    0
 };
 
 static io_source_list_t *magicformel_io1_list_item = NULL;
@@ -514,7 +519,7 @@ static void mc6821_store(int port /* rs1 */,int reg /* rs0 */,BYTE data)
 * 
 ****************************************************************************/
 
-static BYTE REGPARM1 magicformel_io1_read(WORD addr)
+static BYTE magicformel_io1_read(WORD addr)
 {
 #ifdef DEBUG_IO1_NO_DISABLE
     if (1) {
@@ -530,12 +535,12 @@ static BYTE REGPARM1 magicformel_io1_read(WORD addr)
     return 0;
 }
 
-static BYTE REGPARM1 magicformel_io1_peek(WORD addr)
+static BYTE magicformel_io1_peek(WORD addr)
 {
     return export_ram0[(ram_page << 8) + (addr & 0xff)];
 }
 
-static void REGPARM2 magicformel_io1_store(WORD addr, BYTE value)
+static void magicformel_io1_store(WORD addr, BYTE value)
 {
 #ifdef DEBUG_IO1_NO_DISABLE
     if (1) {
@@ -554,7 +559,7 @@ static void REGPARM2 magicformel_io1_store(WORD addr, BYTE value)
     d1 goes to d7
 */
 
-static BYTE REGPARM1 magicformel_io2_read(WORD addr)
+static BYTE magicformel_io2_read(WORD addr)
 {
     int data, port, reg;
 
@@ -568,7 +573,7 @@ static BYTE REGPARM1 magicformel_io2_read(WORD addr)
     return mc6821_read(port /* rs1 */, reg /* rs0 */);
 }
 
-static BYTE REGPARM1 magicformel_io2_peek(WORD addr)
+static BYTE magicformel_io2_peek(WORD addr)
 {
     int data, port, reg;
 
@@ -580,7 +585,7 @@ static BYTE REGPARM1 magicformel_io2_peek(WORD addr)
     return mc6821_peek(port /* rs1 */, reg /* rs0 */);
 }
 
-static void REGPARM2 magicformel_io2_store(WORD addr, BYTE value)
+static void magicformel_io2_store(WORD addr, BYTE value)
 {
     int port;
     WORD reg;
@@ -603,7 +608,7 @@ static void REGPARM2 magicformel_io2_store(WORD addr, BYTE value)
     the "mf-windows" stuff only works if it reads RAM here, the freezer must
     however always read ROM
 */
-BYTE REGPARM1 magicformel_romh_read(WORD addr)
+BYTE magicformel_romh_read(WORD addr)
 {
     if (freeze_enabled) {
         if (kernal_decoder(addr)) {
@@ -613,13 +618,42 @@ BYTE REGPARM1 magicformel_romh_read(WORD addr)
     return mem_read_without_ultimax(addr);
 }
 
-BYTE REGPARM1 magicformel_romh_read_hirom(WORD addr)
+BYTE magicformel_romh_read_hirom(WORD addr)
 {
     if (kernal_decoder(addr)) {
         return romh_banks[(addr & 0x1fff) + (romh_bank << 13)];
     }
     return mem_read_without_ultimax(addr);
 }
+
+int magicformel_romh_phi1_read(WORD addr, BYTE *value)
+{
+    return CART_READ_C64MEM;
+}
+
+int magicformel_romh_phi2_read(WORD addr, BYTE *value)
+{
+    return magicformel_romh_phi1_read(addr, value);
+}
+
+int magicformel_peek_mem(struct export_s *export, WORD addr, BYTE *value)
+{
+    if (addr >= 0x8000 && addr <= 0x9fff) {
+        if (export_ram) {
+            *value = export_ram0[addr & 0x1fff];
+            return CART_READ_VALID;
+        }
+        *value = roml_banks[(addr & 0x1fff) + (roml_bank << 13)];
+        return CART_READ_VALID;
+    }
+
+    if (addr >= 0xe000) {
+        *value = romh_banks[(addr & 0x1fff) + (romh_bank << 13)];
+        return CART_READ_VALID;
+    }
+    return CART_READ_THROUGH;
+}
+
 
 /****************************************************************************/
 
@@ -677,8 +711,8 @@ static int magicformel_common_attach(void)
         return -1;
     }
 
-    magicformel_io1_list_item = c64io_register(&magicformel_io1_device);
-    magicformel_io2_list_item = c64io_register(&magicformel_io2_device);
+    magicformel_io1_list_item = io_source_register(&magicformel_io1_device);
+    magicformel_io2_list_item = io_source_register(&magicformel_io2_device);
     return 0;
 }
 
@@ -704,19 +738,19 @@ int magicformel_bin_attach(const char *filename, BYTE *rawcart)
 
 int magicformel_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
     int i, cnt = 0;
 
     for (i = 0; i <= 15; i++) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
 
-        if (chipheader[0xb] > 15) {
+        if (chip.bank > 15 || chip.size != 0x2000) {
             return -1;
         }
 
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
         cnt++;
@@ -741,8 +775,8 @@ int magicformel_crt_attach(FILE *fd, BYTE *rawcart)
 void magicformel_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(magicformel_io1_list_item);
-    c64io_unregister(magicformel_io2_list_item);
+    io_source_unregister(magicformel_io1_list_item);
+    io_source_unregister(magicformel_io2_list_item);
     magicformel_io1_list_item = NULL;
     magicformel_io2_list_item = NULL;
 }

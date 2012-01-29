@@ -33,13 +33,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
+#include "monitor.h"
 #include "ocean.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     "Ocean" Game Cartridge
@@ -62,8 +64,11 @@
 
 static int currbank = 0;
 
-static void REGPARM2 ocean_io1_store(WORD addr, BYTE value)
+static BYTE regval = 0;
+
+static void ocean_io1_store(WORD addr, BYTE value)
 {
+    regval = value;
     currbank = value & 0x3f;
     cart_romhbank_set_slotmain(currbank);
     cart_romlbank_set_slotmain(currbank);
@@ -74,10 +79,17 @@ static void REGPARM2 ocean_io1_store(WORD addr, BYTE value)
     cart_port_config_changed_slotmain();
 }
 
-static BYTE REGPARM1 ocean_io1_peek(WORD addr)
+static BYTE ocean_io1_peek(WORD addr)
 {
-    return currbank;
+    return regval;
 }
+
+static int ocean_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
+}
+
 /* ---------------------------------------------------------------------*/
 
 static io_source_t ocean_device = {
@@ -89,8 +101,10 @@ static io_source_t ocean_device = {
     ocean_io1_store,
     NULL,
     ocean_io1_peek,
-    NULL, /* dump */
-    CARTRIDGE_OCEAN
+    ocean_dump,
+    CARTRIDGE_OCEAN,
+    0,
+    0
 };
 
 static io_source_list_t *ocean_list_item = NULL;
@@ -101,7 +115,7 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 ocean_romh_read(WORD addr)
+BYTE ocean_romh_read(WORD addr)
 {
     /* 256 kB OCEAN carts may access memory either at $8000 or $a000 */
     return roml_banks[(addr & 0x1fff) + (romh_bank << 13)];
@@ -129,7 +143,7 @@ static int ocean_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    ocean_list_item = c64io_register(&ocean_device);
+    ocean_list_item = io_source_register(&ocean_device);
     return 0;
 }
 
@@ -149,16 +163,16 @@ int ocean_bin_attach(const char *filename, BYTE *rawcart)
 
 int ocean_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
-        if (chipheader[0xb] >= 64 || (chipheader[0xc] != 0x80 && chipheader[0xc] != 0xa0)) {
+        if (chip.bank > 63 || (chip.start != 0x8000 && chip.start != 0xa000) || chip.size != 0x2000) {
             return -1;
         }
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -168,7 +182,7 @@ int ocean_crt_attach(FILE *fd, BYTE *rawcart)
 void ocean_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(ocean_list_item);
+    io_source_unregister(ocean_list_item);
     ocean_list_item = NULL;
 }
 

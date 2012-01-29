@@ -59,26 +59,26 @@ typedef struct drivevia1_context_s {
 } drivevia1_context_t;
 
 
-void REGPARM3 via1d1541_store(drive_context_t *ctxptr, WORD addr, BYTE data)
+void via1d1541_store(drive_context_t *ctxptr, WORD addr, BYTE data)
 {
     viacore_store(ctxptr->via1d1541, addr, data);
 }
 
-BYTE REGPARM2 via1d1541_read(drive_context_t *ctxptr, WORD addr)
+BYTE via1d1541_read(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_read(ctxptr->via1d1541, addr);
 }
 
-BYTE REGPARM2 via1d1541_peek(drive_context_t *ctxptr, WORD addr)
+BYTE via1d1541_peek(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_peek(ctxptr->via1d1541, addr);
 }
 
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
 }
 
@@ -224,10 +224,11 @@ static void store_prb(via_context_t *via_context, BYTE byte, BYTE p_oldpb,
 
 static void undump_pcr(via_context_t *via_context, BYTE byte)
 {
+#if 0
     drivevia1_context_t *via1p;
 
     via1p = (drivevia1_context_t *)(via_context->prv);
-#if 0
+
     /* FIXME: Is this correct? */
     if (via1p->number != 0)
         via2d_update_pcr(byte, &drive[0]);
@@ -291,15 +292,12 @@ static BYTE read_prb(via_context_t *via_context)
 {
     BYTE byte;
     BYTE orval;
-    BYTE andval;
     drivevia1_context_t *via1p;
 
     via1p = (drivevia1_context_t *)(via_context->prv);
 
     /* 0 for drive0, 0x20 for drive 1 */
     orval = (via1p->number << 5);
-    /* 0xfe for drive0, 0xff for drive 1 */
-    andval = (0xfe | via1p->number);
 
     if (iecbus != NULL) {
         byte = (((via_context->via[VIA_PRB] & 0x1a)

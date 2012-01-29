@@ -111,15 +111,15 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1getIntInfo
  * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1setDataDir
-  (JNIEnv *, jobject, jstring);
+  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     com_ssb_droidsound_plugins_SC68Plugin
  * Method:    N_unice
  * Signature: ([B[B)V
  */
-JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1unice
-  (JNIEnv *, jobject, jbyteArray, jbyteArray);
+JNIEXPORT jbyteArray JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1unice
+  (JNIEnv *, jobject, jbyteArray);
 
 #ifdef __cplusplus
 }

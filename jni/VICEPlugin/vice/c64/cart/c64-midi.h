@@ -31,7 +31,7 @@
 #include "midi.h"
 
 /* returns 1 if interface is at $de00 (on C64) */
-extern int REGPARM1 c64_midi_base_de00(void);
+extern int c64_midi_base_de00(void);
 
 extern int c64_midi_resources_init(void);
 extern int c64_midi_cmdline_options_init(void);
@@ -54,5 +54,9 @@ extern int c64_midi_maplin_cart_enabled(void);
 
 extern int c64_midi_enable(void);
 extern void c64_midi_detach(void);
+
+struct snapshot_s;
+extern int c64_midi_snapshot_read_module(struct snapshot_s *s);
+extern int c64_midi_snapshot_write_module(struct snapshot_s *s);
 
 #endif

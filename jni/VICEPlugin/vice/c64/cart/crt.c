@@ -34,6 +34,7 @@
 #include "crt.h"
 #include "resources.h"
 #include "types.h"
+#include "c64cart.h"
 
 #define CARTRIDGE_INCLUDE_PRIVATE_API
 #include "actionreplay.h"
@@ -41,6 +42,7 @@
 #include "actionreplay3.h"
 #include "actionreplay4.h"
 #include "atomicpower.h"
+#include "c64-generic.h"
 #include "c64tpi.h"
 #include "comal80.h"
 #include "capture.h"
@@ -60,11 +62,11 @@
 #include "freezemachine.h"
 #include "funplay.h"
 #include "gamekiller.h"
-#include "generic.h"
 #include "gs.h"
 #include "ide64.h"
 #include "isepic.h"
 #include "kcs.h"
+#include "kingsoft.h"
 #include "mach5.h"
 #include "magicdesk.h"
 #include "magicformel.h"
@@ -73,11 +75,13 @@
 #include "mmc64.h"
 #include "mmcreplay.h"
 #include "ocean.h"
+#include "pagefox.h"
 #include "prophet64.h"
 #include "retroreplay.h"
 #include "rexep256.h"
 #include "rexutility.h"
 #include "ross.h"
+#include "silverrock128.h"
 #include "simonsbasic.h"
 #include "stardos.h"
 #include "stb.h"
@@ -89,6 +93,7 @@
 #include "warpspeed.h"
 #include "westermann.h"
 #include "zaxxon.h"
+#include "util.h"
 #undef CARTRIDGE_INCLUDE_PRIVATE_API
 
 /* #define DEBUGCRT */
@@ -103,45 +108,183 @@
  * CRT image "strings".
  */
 const char CRT_HEADER[] = "C64 CARTRIDGE   ";
-const char CHIP_HEADER[] = "CHIP";
+const static char CHIP_HEADER[] = "CHIP";
 
-static int crt_read_header(FILE *fd, BYTE *header)
+/*
+    Open a crt file and read header, return NULL on fault, fd otherwise
+*/
+static FILE *crt_open(const char *filename, crt_header_t *header)
 {
-    if (fread(header, 0x40, 1, fd) < 1) {
-        DBG(("CRT: could not read header\n"));
-        fclose(fd);
-        return -1;
+    BYTE crt_header[0x40];
+    DWORD skip;
+    FILE *fd;
+
+    fd = fopen(filename, MODE_READ);
+
+    if (fd == NULL) {
+        return NULL;
     }
 
-    if (strncmp((char*)header, CRT_HEADER, 16)) {
-        DBG(("CRT: header invalid\n"));
-        fclose(fd);
-        return -1;
-    }
+    do {
+        if (fread(crt_header, sizeof(crt_header), 1, fd) < 1) {
+            DBG(("CRT: could not read header\n"));
+            break;
+        }
 
-    return 0;
+        if (memcmp(crt_header, CRT_HEADER, 16)) {
+            DBG(("CRT: header invalid\n"));
+            break;
+        }
+
+        skip = util_be_buf_to_dword(&crt_header[0x10]);
+
+        if (skip < sizeof(crt_header)) {
+            break; /* invalid header size */
+        }
+        skip -= sizeof(crt_header); /* without header */
+
+        header->version = util_be_buf_to_word(&crt_header[0x14]);
+        header->type = util_be_buf_to_word(&crt_header[0x16]);
+        header->exrom = crt_header[0x18];
+        header->game = crt_header[0x19];
+        memset(header->name, 0, sizeof(header->name));
+        strncpy(header->name, (char*)&crt_header[0x20], sizeof(header->name) - 1);
+
+        fseek(fd, skip, SEEK_CUR); /* skip the rest */
+
+        return fd; /* Ok, exit */
+    } while (0);
+
+    fclose(fd);
+    return NULL; /* Fault */
 }
 /*
     returns -1 on error, else a positive CRT ID
 */
 int crt_getid(const char *filename)
 {
-    BYTE header[0x40];
+    crt_header_t header;
     FILE *fd;
 
-    fd = fopen(filename, MODE_READ);
+    fd = crt_open(filename, &header);
 
     if (fd == NULL) {
         return -1;
     }
 
-    if (crt_read_header(fd, header) == -1) {
-        return -1;
-    }
-
     fclose(fd);
 
-    return header[0x17] + header[0x16] * 256;
+    return header.type;
+}
+
+/*
+    Read and pharse chip header, return -1 on fault
+*/
+int crt_read_chip_header(crt_chip_header_t *header, FILE *fd)
+{
+    BYTE chipheader[0x10];
+
+    if (fread(chipheader, sizeof(chipheader), 1, fd) < 1) {
+        return -1; /* couldn't read header */
+    }
+    if (memcmp(chipheader, CHIP_HEADER, 4)) {
+        return -1; /* invalid header signature */
+    }
+
+    header->skip = util_be_buf_to_dword(&chipheader[4]);
+
+    if (header->skip < sizeof(chipheader)) {
+        return -1; /* invalid packet size */
+    }
+    header->skip -= sizeof(chipheader); /* without header */
+
+    header->size = util_be_buf_to_word(&chipheader[14]);
+    if (header->size > header->skip) {
+        return -1; /* rom bigger then total size?! */
+    }
+    header->skip -= header->size; /* skip size after image */
+    header->type = util_be_buf_to_word(&chipheader[8]);
+    header->bank = util_be_buf_to_word(&chipheader[10]);
+    header->start = util_be_buf_to_word(&chipheader[12]);
+
+    if (header->start + header->size > 0x10000) {
+        return -1; /* rom crossing the 64k boundary?! */
+    }
+
+    return 0;
+}
+/*
+    Read chip data, return -1 on error
+*/
+int crt_read_chip(BYTE *rawcart, int offset, crt_chip_header_t *chip, FILE *fd)
+{
+    if (offset + chip->size > C64CART_IMAGE_LIMIT) {
+        return -1; /* overflow */
+    }
+    if (fread(&rawcart[offset], chip->size, 1, fd) < 1) {
+        return -1; /* eof?! */
+    }
+    fseek(fd, chip->skip, SEEK_CUR); /* skip the rest */
+
+    return 0;
+}
+/*
+    Write chip header and data, return -1 on fault
+*/
+int crt_write_chip(BYTE *data, crt_chip_header_t *header, FILE *fd)
+{
+    BYTE chipheader[0x10];
+
+    memcpy(chipheader, CHIP_HEADER, 4);
+    util_dword_to_be_buf(&chipheader[4], header->size + sizeof(chipheader));
+    util_word_to_be_buf(&chipheader[8], header->type);
+    util_word_to_be_buf(&chipheader[10], header->bank);
+    util_word_to_be_buf(&chipheader[12], header->start);
+    util_word_to_be_buf(&chipheader[14], header->size);
+
+    if (fwrite(chipheader, sizeof(chipheader), 1, fd) < 1) {
+        return -1; /* could not write chip header */
+    }
+
+    if (fwrite(data, header->size, 1, fd) < 1) {
+        return -1; /* could not write chip content */
+    }
+
+    return 0;
+}
+/*
+    Create crt file with header, return NULL on fault, fd otherwise
+*/
+FILE *crt_create(const char *filename, int type, int exrom, int game, const char *name)
+{
+    BYTE crt_header[0x40];
+    FILE *fd;
+
+    if (filename == NULL) {
+        return NULL;
+    }
+
+    fd = fopen(filename, MODE_WRITE);
+
+    if (fd == NULL) {
+        return NULL;
+    }
+
+    memset(&crt_header, 0, sizeof(crt_header));
+    memcpy(crt_header, CRT_HEADER, 16);
+    util_dword_to_be_buf(&crt_header[0x10], sizeof(crt_header));
+    util_word_to_be_buf(&crt_header[0x14], 0x100); /* version */
+    util_word_to_be_buf(&crt_header[0x16], type);
+    crt_header[0x18] = exrom ? 1 : 0;
+    crt_header[0x19] = game ? 1 : 0;
+    strncpy((char*)&crt_header[0x20], name, sizeof(crt_header) - 0x20);
+
+    if (fwrite(crt_header, sizeof(crt_header), 1, fd) < 1) {
+        fclose(fd);
+        return NULL;
+    }
+
+    return fd;
 }
 
 /*
@@ -152,24 +295,20 @@ int crt_getid(const char *filename)
 */
 int crt_attach(const char *filename, BYTE *rawcart)
 {
-    BYTE header[0x40];
+    crt_header_t header;
     int rc, new_crttype;
     FILE *fd;
 
     DBG(("crt_attach: %s\n", filename));
 
-    fd = fopen(filename, MODE_READ);
+    fd = crt_open(filename, &header);
 
     if (fd == NULL) {
         return -1;
     }
 
-    if (crt_read_header(fd, header) == -1) {
-        return -1;
-    }
-
-    new_crttype = (header[0x17] + (header[0x16] * 256));
-    if (header[0x17] & 0x80) {
+    new_crttype = header.type;
+    if (new_crttype & 0x8000) {
         /* handle our negative test IDs */
         new_crttype -= 0x10000;
     }
@@ -228,7 +367,7 @@ int crt_attach(const char *filename, BYTE *rawcart)
             rc = dinamic_crt_attach(fd, rawcart);
             break;
         case CARTRIDGE_EASYFLASH:
-            rc = easyflash_crt_attach(fd, rawcart, header, filename);
+            rc = easyflash_crt_attach(fd, rawcart, filename);
             break;
         case CARTRIDGE_EPYX_FASTLOAD:
             rc = epyxfastload_crt_attach(fd, rawcart);
@@ -275,6 +414,9 @@ int crt_attach(const char *filename, BYTE *rawcart)
         case CARTRIDGE_KCS_POWER:
             rc = kcs_crt_attach(fd, rawcart);
             break;
+        case CARTRIDGE_KINGSOFT:
+            rc = kingsoft_crt_attach(fd, rawcart);
+            break;
         case CARTRIDGE_MACH5:
             rc = mach5_crt_attach(fd, rawcart);
             break;
@@ -302,6 +444,9 @@ int crt_attach(const char *filename, BYTE *rawcart)
         case CARTRIDGE_P64:
             rc = p64_crt_attach(fd, rawcart);
             break;
+        case CARTRIDGE_PAGEFOX:
+            rc = pagefox_crt_attach(fd, rawcart);
+            break;
         case CARTRIDGE_RETRO_REPLAY:
             rc = retroreplay_crt_attach(fd, rawcart, filename);
             break;
@@ -313,6 +458,9 @@ int crt_attach(const char *filename, BYTE *rawcart)
             break;
         case CARTRIDGE_ROSS:
             rc = ross_crt_attach(fd, rawcart);
+            break;
+        case CARTRIDGE_SILVERROCK_128:
+            rc = silverrock128_crt_attach(fd, rawcart);
             break;
         case CARTRIDGE_SIMONS_BASIC:
             rc = simon_crt_attach(fd, rawcart);

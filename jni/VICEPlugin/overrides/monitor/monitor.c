@@ -18,7 +18,7 @@ void monitor_abort(void) {}
 int monitor_force_import(MEMSPACE mem) { return 0; }
 void monitor_check_icount(WORD a) {}
 void monitor_check_icount_interrupt(void) {}
-void monitor_check_watchpoints(WORD a) {}
+void monitor_check_watchpoints(unsigned int lastpc, unsigned int pc) {}
 
 void monitor_cpu_type_set(const char *cpu_type) {}
 
@@ -35,6 +35,7 @@ int mon_out(const char *format, ...) { return 0; }
 
 /* Prototypes */
 int monitor_breakpoint_check_checkpoint(MEMSPACE mem, WORD addr, struct break_list_s *list) { return 0; }
+int monitor_check_breakpoints(MEMSPACE mem, WORD addr) { return 0; }
 
 const char *mon_disassemble_to_string(MEMSPACE mem, unsigned int addr, unsigned int x, unsigned int p1, unsigned int p2, unsigned int p3, int hex_mode, const char *cpu_type) { return NULL; }
 

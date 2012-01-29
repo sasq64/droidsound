@@ -136,8 +136,10 @@ extern void cart_romlbank_set_slotmain(unsigned int bank);
 
 /* FIXME: these are shared between all "main slot" carts,
           individual cart implementations should get reworked to use local buffers */
-extern BYTE roml_banks[], romh_banks[]; /* "Main Slot" ROML/ROMH images.  */
-extern BYTE export_ram0[];
+extern BYTE *roml_banks, *romh_banks, *export_ram0;
+extern int rombanks_resources_init(void);
+extern void rombanks_resources_shutdown(void);
+
 extern int roml_bank, romh_bank, export_ram; /* "Main Slot" ROML/ROMH/RAM banking.  */
 
 extern void cart_config_changed_slotmain(BYTE mode_phi1, BYTE mode_phi2, unsigned int wflag);

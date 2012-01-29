@@ -67,7 +67,8 @@
 #include "rotation.h"
 #include "types.h"
 #include "uiapi.h"
-
+#include "ds1216e.h"
+#include "drive-sound.h"
 
 drive_context_t *drive_context[DRIVE_NUM];
 
@@ -184,6 +185,10 @@ int drive_init(void)
             resources_set_int_sprintf("Drive%iType", DRIVE_TYPE_NONE, dnr + 8);
 
         machine_drive_rom_setup_image(dnr);
+
+        drive->rtc_offset = (time_t)0; /* TODO: offset */
+        drive->ds1216 = ds1216e_init(&drive->rtc_offset);
+        drive->ds1216->hours12 = 1;
     }
 
     for (dnr = 0; dnr < DRIVE_NUM; dnr++) {
@@ -218,7 +223,7 @@ int drive_init(void)
 
     for (dnr = 0; dnr < DRIVE_NUM; dnr++) {
         drive = drive_context[dnr]->drive;
-        driverom_initialize_traps(drive);
+        driverom_initialize_traps(drive, 1);
 
         drivesync_clock_frequency(drive->type, drive);
 
@@ -244,6 +249,7 @@ void drive_shutdown(void)
     for (dnr = 0; dnr < DRIVE_NUM; dnr++) {
         drivecpu_shutdown(drive_context[dnr]);
         gcr_destroy_image(drive_context[dnr]->drive->gcr);
+        ds1216e_destroy(drive_context[dnr]->drive->ds1216);
     }
 
     for (dnr = 0; dnr < DRIVE_NUM; dnr++) {
@@ -264,6 +270,8 @@ void drive_set_active_led_color(unsigned int type, unsigned int dnr)
         break;
       case DRIVE_TYPE_1541II:
       case DRIVE_TYPE_1581:
+      case DRIVE_TYPE_2000:
+      case DRIVE_TYPE_4000:
         drive_led_color[dnr] = DRIVE_ACTIVE_GREEN;
         break;
       case DRIVE_TYPE_2031:
@@ -476,15 +484,16 @@ void drive_set_half_track(int num, drive_t *dptr)
 /*-------------------------------------------------------------------------- */
 
 /* Increment the head position by `step' half-tracks. Valid values
-   for `step' are `+1' and `-1'.  */
+   for `step' are `+1', '+2' and `-1'.  */
 void drive_move_head(int step, drive_t *drive)
 {
     drive_gcr_data_writeback(drive);
     if (drive->type == DRIVE_TYPE_1571
         || drive->type == DRIVE_TYPE_1571CR) {
-        if (drive->current_half_track + step == 71)
+        if (drive->current_half_track + step >= 71)
             return;
     }
+    drive_sound_head(drive->current_half_track, step, drive->mynumber);
     drive_set_half_track(drive->current_half_track + step, drive);
 }
 
@@ -652,7 +661,7 @@ static void drive_led_update(drive_t *drive)
         my_led_status = drive->led_status;
 
     /* Update remaining led clock ticks. */
-    if (drive->led_status)
+    if (drive->led_status & 1)
         drive->led_active_ticks += *(drive->clk)
                                    - drive->led_last_change_clk;
     drive->led_last_change_clk = *(drive->clk);
@@ -663,9 +672,15 @@ static void drive_led_update(drive_t *drive)
     if (led_period == 0)
         return;
 
-    led_pwm = drive->led_active_ticks * 1000 / led_period;
+    if (drive->led_active_ticks > led_period) {
     /* during startup it has been observer that led_pwm > 1000, 
        which potentially breaks several UIs */
+    /* this also happens when the drive is reset from UI
+       and the LED was on */
+        led_pwm = 1000;
+    } else {
+        led_pwm = drive->led_active_ticks * 1000 / led_period;
+    }
     assert(led_pwm <= MAX_PWM);
     if (led_pwm > MAX_PWM) {
         led_pwm = MAX_PWM;
@@ -687,7 +702,7 @@ void drive_update_ui_status(void)
 {
     int i;
 
-    if (console_mode || vsid_mode) {
+    if (console_mode || (machine_class == VICE_MACHINE_VSID)) {
         return;
     }
 
@@ -722,6 +737,11 @@ int drive_num_leds(unsigned int dnr)
         return 2;
     }
 
+    if (drive_context[dnr]->drive->type == DRIVE_TYPE_2000
+        || drive_context[dnr]->drive->type == DRIVE_TYPE_4000) {
+        return 2;
+    }
+
     return 1;
 }
 
@@ -740,8 +760,6 @@ void drive_vsync_hook(void)
             && drive->enable)
             drivecpu_execute(drive_context[dnr], maincpu_clk);
     }
-
-    machine_drive_vsync_hook();
 }
 
 /* ------------------------------------------------------------------------- */

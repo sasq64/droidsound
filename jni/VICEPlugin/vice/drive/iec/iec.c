@@ -45,6 +45,8 @@
 #include "via.h"
 #include "via1d1541.h"
 #include "wd1770.h"
+#include "via4000.h"
+#include "pc8477.h"
 
 
 /* Pointer to the IEC bus structure.  */
@@ -72,7 +74,9 @@ void iec_drive_init(struct drive_context_s *drv)
     via1d1541_init(drv);
     cia1571_init(drv);
     cia1581_init(drv);
+    via4000_init(drv);
     wd1770d_init(drv);
+    pc8477d_init(drv);
 }
 
 void iec_drive_reset(struct drive_context_s *drv)
@@ -97,11 +101,18 @@ void iec_drive_reset(struct drive_context_s *drv)
 
     if (drv->drive->type == DRIVE_TYPE_1581) {
         ciacore_reset(drv->cia1581);
+        wd1770_reset(drv->wd1770);
     } else {
         ciacore_disable(drv->cia1581);
     }
-    /* FIXME:  which drive type needs this chip?? */
-    wd1770d_reset(drv);
+
+    if (drv->drive->type == DRIVE_TYPE_2000
+        || drv->drive->type == DRIVE_TYPE_4000) {
+        viacore_reset(drv->via4000);
+        pc8477_reset(drv->pc8477, drv->drive->type == DRIVE_TYPE_4000);
+    } else {
+        viacore_disable(drv->via4000);
+    }
 }
 
 void iec_drive_mem_init(struct drive_context_s *drv, unsigned int type)
@@ -114,6 +125,8 @@ void iec_drive_setup_context(struct drive_context_s *drv)
     via1d1541_setup_context(drv);
     cia1571_setup_context(drv);
     cia1581_setup_context(drv);
+    via4000_setup_context(drv);
+    pc8477_setup_context(drv);
 }
 
 void iec_drive_shutdown(struct drive_context_s *drv)
@@ -121,6 +134,7 @@ void iec_drive_shutdown(struct drive_context_s *drv)
     viacore_shutdown(drv->via1d1541);
     ciacore_shutdown(drv->cia1571);
     ciacore_shutdown(drv->cia1581);
+    viacore_shutdown(drv->via4000);
 }
 
 void iec_drive_idling_method(unsigned int dnr)
@@ -134,11 +148,6 @@ void iec_drive_idling_method(unsigned int dnr)
     lib_free(tmp);
 }
 
-void iec_drive_vsync_hook(void)
-{
-    wd1770_vsync_hook();
-}
-
 void iec_drive_rom_load(void)
 {
     iecrom_load_1541();
@@ -146,6 +155,8 @@ void iec_drive_rom_load(void)
     iecrom_load_1570();
     iecrom_load_1571();
     iecrom_load_1581();
+    iecrom_load_2000();
+    iecrom_load_4000();
 }
 
 void iec_drive_rom_setup_image(unsigned int dnr)
@@ -192,6 +203,12 @@ int iec_drive_snapshot_read(struct drive_context_s *ctxptr,
             return -1;
     }
 
+    if (ctxptr->drive->type == DRIVE_TYPE_2000
+        || ctxptr->drive->type == DRIVE_TYPE_4000) {
+        if (viacore_snapshot_read_module(ctxptr->via4000, s) < 0)
+            return -1;
+    }
+
     return 0;
 }
 
@@ -219,17 +236,23 @@ int iec_drive_snapshot_write(struct drive_context_s *ctxptr,
             return -1;
     }
 
+    if (ctxptr->drive->type == DRIVE_TYPE_2000
+        || ctxptr->drive->type == DRIVE_TYPE_4000) {
+        if (viacore_snapshot_write_module(ctxptr->via4000, s) < 0)
+            return -1;
+    }
+
     return 0;
 }
 
 int iec_drive_image_attach(struct disk_image_s *image, unsigned int unit)
 {
-    return wd1770_attach_image(image, unit);
+    return wd1770_attach_image(image, unit) & pc8477_attach_image(image, unit);
 }
 
 int iec_drive_image_detach(struct disk_image_s *image, unsigned int unit)
 {
-    return wd1770_detach_image(image, unit);
+    return wd1770_detach_image(image, unit) & pc8477_detach_image(image, unit);
 }
 
 void iec_drive_port_default(struct drive_context_s *drv)

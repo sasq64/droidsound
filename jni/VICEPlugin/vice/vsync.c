@@ -66,7 +66,9 @@ int vsync_frame_counter;
 #include "sound.h"
 #include "translate.h"
 #include "types.h"
+#if (defined(WIN32) || defined (HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
 #include "videoarch.h"
+#endif
 #include "vsync.h"
 #include "vsyncapi.h"
 
@@ -82,6 +84,11 @@ static int refresh_rate;
 
 /* "Warp mode".  If nonzero, attempt to run as fast as possible. */
 static int warp_mode_enabled;
+
+/* Dingoo overclocking mode */
+#ifdef DINGOO_NATIVE
+static int overclock_mode_enabled;
+#endif
 
 static int set_relative_speed(int val, void *param)
 {
@@ -111,6 +118,15 @@ static int set_warp_mode(int val, void *param)
     return 0;
 }
 
+#ifdef DINGOO_NATIVE
+static int set_overclock_mode(int val, void *param)
+{
+    overclock_mode_enabled = val;
+    set_overclock(val);
+    return 0;
+}
+#endif
+
 /* Vsync-related resources. */
 static const resource_int_t resources_int[] = {
     { "Speed", 100, RES_EVENT_SAME, NULL,
@@ -120,6 +136,11 @@ static const resource_int_t resources_int[] = {
     { "WarpMode", 0, RES_EVENT_STRICT, (resource_value_t)0,
       /* FIXME: maybe RES_EVENT_NO */
       &warp_mode_enabled, set_warp_mode, NULL },
+#ifdef DINGOO_NATIVE
+    { "OverClock", 0, RES_EVENT_STRICT, (resource_value_t)1,
+      /* FIXME: maybe RES_EVENT_NO */
+      &overclock_mode_enabled, set_overclock_mode, NULL },
+#endif
     { NULL }
 };
 
@@ -224,7 +245,10 @@ static void display_speed(int num_frames)
                / factor;
     frame_rate = num_frames / diff_sec;
     speed_index = 100.0 * diff_clk / (cycles_per_sec * diff_sec);
-    vsyncarch_display_speed(speed_index, frame_rate, warp_mode_enabled);
+    
+    if (!console_mode) {
+        vsyncarch_display_speed(speed_index, frame_rate, warp_mode_enabled);
+    }
 
     speed_eval_prev_clk = maincpu_clk;
 }
@@ -314,7 +338,7 @@ int vsync_do_vsync(struct video_canvas_s *c, int been_skipped)
     signed long delay;
     long frame_ticks_remainder, frame_ticks_integer, compval;
 
-#if (defined(WIN32) || defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
+#if (defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
     float refresh_cmp;
     int refresh_div;
 #endif
@@ -412,7 +436,7 @@ int vsync_do_vsync(struct video_canvas_s *c, int been_skipped)
 
     /* This is the time between the start of the next frame and now. */
     delay = (signed long)(now - next_frame_start);
-#if (defined(WIN32) || defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
+#if (defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
     refresh_cmp = (float)(c->refreshrate / refresh_frequency);
     refresh_div = (int)(refresh_cmp + 0.5f);
     refresh_cmp /= (float)refresh_div;
@@ -438,7 +462,7 @@ int vsync_do_vsync(struct video_canvas_s *c, int been_skipped)
     if (!warp_mode_enabled && timer_speed && delay < 0) {
         vsyncarch_sleep(-delay);
     }
-#if (defined(WIN32) || defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
+#if (defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
     vsyncarch_prepare_vbl();
 #endif
     /*
@@ -474,8 +498,8 @@ int vsync_do_vsync(struct video_canvas_s *c, int been_skipped)
         skip_next_frame = 0;
         skipped_redraw = 0;
     }
-#if (defined(WIN32) || defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
-	}
+#if (defined(HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
+    }
 #endif
 
     /*
@@ -534,7 +558,7 @@ int vsync_do_vsync(struct video_canvas_s *c, int been_skipped)
     return skip_next_frame;
 }
 
-#if (defined(WIN32) || defined (HAVE_OPENGL_SYNC)) && !defined(USE_SDLUI)
+#if defined (HAVE_OPENGL_SYNC) && !defined(USE_SDLUI)
 
 static unsigned long last = 0;
 static unsigned long nosynccount = 0;
@@ -557,7 +581,7 @@ void vsyncarch_verticalblank(video_canvas_t *c, float rate, int frames)
     max = (frm * 7) >> 3;
     vbl = 0;
     while (max >= (nowi - lastx)) {
-	vsyncarch_sync_with_raster(c);
+    vsyncarch_sync_with_raster(c);
         nowi = vsyncarch_gettime();
         vbl = 1;
     }
@@ -576,7 +600,7 @@ void vsyncarch_prepare_vbl(void)
     nosynccount = 0;
 }
 
-#endif /* WIN32 || HAVE_OPENGL_SYNC */
+#endif /* defined (HAVE_OPENGL_SYNC) && !defined(USE_SDLUI) */
 
 #endif
 

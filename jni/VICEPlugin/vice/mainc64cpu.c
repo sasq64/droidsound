@@ -95,6 +95,7 @@ inline static void interrupt_delay(void)
 static void maincpu_steal_cycles(void)
 {
     interrupt_cpu_status_t *cs = maincpu_int_status;
+    BYTE opcode;
 
     if (maincpu_ba_low_flags & MAINCPU_BA_LOW_VICII) {
         vicii_steal_cycles();
@@ -110,25 +111,45 @@ static void maincpu_steal_cycles(void)
         alarm_context_dispatch(maincpu_alarm_context, maincpu_clk);
     }
 
-    /* CLI */
-    if (OPINFO_NUMBER(*cs->last_opcode_info_ptr) == 0x58) {
-        /* this is a hacky way of signaling CLI() that it
-           shouldn't delay the interrupt */
-        OPINFO_SET_ENABLES_IRQ(*cs->last_opcode_info_ptr, 1);
+    /* special handling for steals during opcodes */
+    opcode = OPINFO_NUMBER(*cs->last_opcode_info_ptr);
+    switch (opcode) {
+        /* SHA */
+        case 0x93:
+        /* SHS */
+        case 0x9b:
+        /* SHY */
+        case 0x9c:
+        /* SHX */
+        case 0x9e:
+        /* SHA */
+        case 0x9f:
+            /* this is a hacky way of signaling SET_ABS_SH_I() that
+               cycles were stolen before the write */
+            /* (fall through) */
+
+        /* ANE */
+        case 0x8b:
+            /* this is a hacky way of signaling ANE() that
+               cycles were stolen after the first fetch */
+            /* (fall through) */
+
+        /* CLI */
+        case 0x58:
+            /* this is a hacky way of signaling CLI() that it
+               shouldn't delay the interrupt */
+            OPINFO_SET_ENABLES_IRQ(*cs->last_opcode_info_ptr, 1);
+            break;
+
+        default:
+            break;
     }
 
     /* SEI: do not update interrupt delay counters */
-    if (OPINFO_NUMBER(*cs->last_opcode_info_ptr) != 0x78) {
+    if (opcode != 0x78) {
         if (cs->irq_delay_cycles == 0 && cs->irq_clk < maincpu_clk) {
             cs->irq_delay_cycles++;
         }
-    }
-
-    /* ANE */
-    if (OPINFO_NUMBER(*cs->last_opcode_info_ptr) == 0x8b) {
-        /* this is a hacky way of signaling ANE() that
-           cycles were stolen after the first fetch */
-        OPINFO_SET_ENABLES_IRQ(*cs->last_opcode_info_ptr, 1);
     }
 
     if (cs->nmi_delay_cycles == 0 && cs->nmi_clk < maincpu_clk) {
@@ -155,7 +176,7 @@ inline static void check_ba(void)
 
 /* FIXME do proper ROM/RAM/IO tests */
 
-void REGPARM2 memmap_mem_store(unsigned int addr, unsigned int value)
+void memmap_mem_store(unsigned int addr, unsigned int value)
 {
     if ((addr >= 0xd000)&&(addr <= 0xdfff)) {
         monitor_memmap_store(addr, MEMMAP_I_O_W);
@@ -165,7 +186,7 @@ void REGPARM2 memmap_mem_store(unsigned int addr, unsigned int value)
     (*_mem_write_tab_ptr[(addr) >> 8])((WORD)(addr), (BYTE)(value));
 }
 
-BYTE REGPARM1 memmap_mem_read(unsigned int addr)
+BYTE memmap_mem_read(unsigned int addr)
 {
     check_ba();
 
@@ -313,6 +334,9 @@ int maincpu_rmw_flag = 0;
    by one more cycle if necessary, as happens with conditional branch opcodes
    when the branch is taken.  */
 unsigned int last_opcode_info;
+
+/* Address of the last executed opcode. This is used by watchpoints. */
+unsigned int last_opcode_addr;
 
 /* Number of write cycles for each 6510 opcode.  */
 const CLOCK maincpu_opcode_write_cycles[] = {
@@ -503,6 +527,7 @@ void maincpu_mainloop(void)
 #define CLK maincpu_clk
 #define RMW_FLAG maincpu_rmw_flag
 #define LAST_OPCODE_INFO last_opcode_info
+#define LAST_OPCODE_ADDR last_opcode_addr
 #define TRACEFLG debug.maincpu_traceflg
 
 #define CPU_INT_STATUS maincpu_int_status

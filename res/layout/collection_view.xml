@@ -1,0 +1,45 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:baselineAligned="false"
+    android:orientation="vertical">
+
+    <!-- focusable hack is here to prevent searchview from gaining it. -->
+    <LinearLayout
+		android:focusable="true" android:focusableInTouchMode="true"
+        android:animateLayoutChanges="true"
+        android:layout_width="match_parent"
+        android:background="#ff111111"
+        android:layout_height="wrap_content" >
+
+        <SearchView
+            android:id="@+id/search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:iconifiedByDefault="false"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:id="@+id/progress_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/progress_percentage"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/collection_view"
+        android:layout_width="fill_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>

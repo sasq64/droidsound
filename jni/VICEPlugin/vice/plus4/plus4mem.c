@@ -51,7 +51,7 @@
 #include "resources.h"
 #include "sid-resources.h"
 #include "sid.h"
-#include "sidcartjoy.h"
+#include "sidcart.h"
 #include "ted.h"
 #include "ted-mem.h"
 #include "types.h"
@@ -174,6 +174,9 @@ static BYTE old_port_write_bit = 0xff;
 /* Tape read input.  */
 static BYTE tape_read = 0xff;
 
+/* Current watchpoint state. 1 = watchpoints active, 0 = no watchpoints */
+static int watchpoints_active;
+
 inline static void mem_proc_port_store(void)
 {
 
@@ -227,7 +230,7 @@ void mem_proc_port_trigger_flux_change(unsigned int on)
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 zero_read(WORD addr)
+BYTE zero_read(WORD addr)
 {
     addr &= 0xff;
 
@@ -242,7 +245,7 @@ BYTE REGPARM1 zero_read(WORD addr)
         return cs256k_read(addr);
 }
 
-void REGPARM2 zero_store(WORD addr, BYTE value)
+void zero_store(WORD addr, BYTE value)
 {
     addr &= 0xff;
 
@@ -278,7 +281,7 @@ static void mem_config_set(unsigned int config)
 {
     mem_config = config;
 
-    if (any_watchpoints(e_comp_space)) {
+    if (watchpoints_active) {
         _mem_read_tab_ptr = mem_read_tab_watch;
         _mem_write_tab_ptr = mem_write_tab_watch;
     } else {
@@ -310,14 +313,14 @@ void mem_config_rom_set(unsigned int config)
 
 /* ------------------------------------------------------------------------- */
 
-static BYTE REGPARM1 read_watch(WORD addr)
+static BYTE read_watch(WORD addr)
 {
     monitor_watch_push_load_addr(addr, e_comp_space);
     return mem_read_tab[mem_config][addr >> 8](addr);
 }
 
 
-static void REGPARM2 store_watch(WORD addr, BYTE value)
+static void store_watch(WORD addr, BYTE value)
 {
     monitor_watch_push_store_addr(addr, e_comp_space);
     mem_write_tab[mem_config][addr >> 8](addr, value);
@@ -332,36 +335,37 @@ void mem_toggle_watchpoints(int flag, void *context)
         _mem_read_tab_ptr = mem_read_tab[mem_config];
         _mem_write_tab_ptr = mem_write_tab[mem_config];
     }
+    watchpoints_active = flag;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static BYTE REGPARM1 ram_read(WORD addr)
+static BYTE ram_read(WORD addr)
 {
     return mem_ram[addr];
 }
 
-static BYTE REGPARM1 ram_read_32k(WORD addr)
+static BYTE ram_read_32k(WORD addr)
 {
     return mem_ram[addr & 0x7fff];
 }
 
-static BYTE REGPARM1 ram_read_16k(WORD addr)
+static BYTE ram_read_16k(WORD addr)
 {
     return mem_ram[addr & 0x3fff];
 }
 
-static void REGPARM2 ram_store(WORD addr, BYTE value)
+static void ram_store(WORD addr, BYTE value)
 {
     mem_ram[addr] = value;
 }
 
-static void REGPARM2 ram_store_32k(WORD addr, BYTE value)
+static void ram_store_32k(WORD addr, BYTE value)
 {
     mem_ram[addr & 0x7fff] = value;
 }
 
-static void REGPARM2 ram_store_16k(WORD addr, BYTE value)
+static void ram_store_16k(WORD addr, BYTE value)
 {
     mem_ram[addr & 0x3fff] = value;
 }
@@ -370,19 +374,19 @@ static void REGPARM2 ram_store_16k(WORD addr, BYTE value)
 
 /* Generic memory access.  */
 
-void REGPARM2 mem_store(WORD addr, BYTE value)
+void mem_store(WORD addr, BYTE value)
 {
     _mem_write_tab_ptr[addr >> 8](addr, value);
 }
 
-BYTE REGPARM1 mem_read(WORD addr)
+BYTE mem_read(WORD addr)
 {
     return _mem_read_tab_ptr[addr >> 8](addr);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static BYTE REGPARM1 fdxx_read(WORD addr)
+static BYTE fdxx_read(WORD addr)
 {
 #ifdef HAVE_RS232
     if (addr >= 0xfd00 && addr <= 0xfd0f) {
@@ -414,18 +418,18 @@ static BYTE REGPARM1 fdxx_read(WORD addr)
         return pio2_read(addr);
     }
 
-    if (sidcart_enabled && sidcart_address == 0 && addr >= 0xfd40 && addr <= 0xfd5f) {
+    if (sidcart_enabled() && sidcart_address == 0 && addr >= 0xfd40 && addr <= 0xfd5f) {
         return sid_read(addr);
     }
 
-    if (sidcart_enabled && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
+    if (sidcart_enabled() && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
         return sidcartjoy_read(addr);
     }
 
     return 0;
 }
 
-static void REGPARM2 fdxx_store(WORD addr, BYTE value)
+static void fdxx_store(WORD addr, BYTE value)
 {
 #ifdef HAVE_RS232
     if (addr >= 0xfd00 && addr <= 0xfd0f) {
@@ -457,15 +461,15 @@ static void REGPARM2 fdxx_store(WORD addr, BYTE value)
         pio2_store(addr, value);
         return;
     }
-    if (sidcart_enabled && sidcart_address==0 && addr >= 0xfd40 && addr <= 0xfd5d) {
+    if (sidcart_enabled() && sidcart_address==0 && addr >= 0xfd40 && addr <= 0xfd5d) {
         sid_store(addr, value);
         return;
     }
-    if (sidcart_enabled && digiblaster_enabled && sidcart_address==0 && addr == 0xfd5e) {
+    if (sidcart_enabled() && digiblaster_enabled() && sidcart_address==0 && addr == 0xfd5e) {
         digiblaster_store(addr, value);
         return;
     }
-    if (sidcart_enabled && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
+    if (sidcart_enabled() && sidcartjoy_enabled && addr >= 0xfd80 && addr <= 0xfd8f) {
         sidcartjoy_store(addr, value);
         return;
     }
@@ -475,7 +479,7 @@ static void REGPARM2 fdxx_store(WORD addr, BYTE value)
     }
 }
 
-static BYTE REGPARM1 fexx_read(WORD addr)
+static BYTE fexx_read(WORD addr)
 {
     if (addr >= 0xfec0 && addr <= 0xfedf) {
         return plus4tcbm2_read(addr);
@@ -485,14 +489,14 @@ static BYTE REGPARM1 fexx_read(WORD addr)
         return plus4tcbm1_read(addr);
     }
 
-    if (sidcart_enabled && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9f) {
+    if (sidcart_enabled() && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9f) {
         return sid_read(addr);
     }
 
     return 0;
 }
 
-static void REGPARM2 fexx_store(WORD addr, BYTE value)
+static void fexx_store(WORD addr, BYTE value)
 {
     if (addr >= 0xfec0 && addr <= 0xfedf) {
         plus4tcbm2_store(addr, value);
@@ -502,17 +506,17 @@ static void REGPARM2 fexx_store(WORD addr, BYTE value)
         plus4tcbm1_store(addr, value);
         return;
     }
-    if (sidcart_enabled && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9d) {
+    if (sidcart_enabled() && sidcart_address==1 && addr >= 0xfe80 && addr <= 0xfe9d) {
         sid_store(addr, value);
         return;
     }
-    if (sidcart_enabled && digiblaster_enabled && sidcart_address==1 && addr == 0xfe9e) {
+    if (sidcart_enabled() && digiblaster_enabled() && sidcart_address==1 && addr == 0xfe9e) {
         digiblaster_store(addr, value);
         return;
     }
 }
 
-static BYTE REGPARM1 h256k_ram_ffxx_read(WORD addr)
+static BYTE h256k_ram_ffxx_read(WORD addr)
 {
     if ((addr >= 0xff20) && (addr != 0xff3e) && (addr != 0xff3f))
         return h256k_read(addr);
@@ -520,7 +524,7 @@ static BYTE REGPARM1 h256k_ram_ffxx_read(WORD addr)
     return ted_read(addr);
 }
 
-static BYTE REGPARM1 cs256k_ram_ffxx_read(WORD addr)
+static BYTE cs256k_ram_ffxx_read(WORD addr)
 {
     if ((addr >= 0xff20) && (addr != 0xff3e) && (addr != 0xff3f))
         return cs256k_read(addr);
@@ -528,7 +532,7 @@ static BYTE REGPARM1 cs256k_ram_ffxx_read(WORD addr)
     return ted_read(addr);
 }
 
-static BYTE REGPARM1 ram_ffxx_read(WORD addr)
+static BYTE ram_ffxx_read(WORD addr)
 {
     if ((addr >= 0xff20) && (addr != 0xff3e) && (addr != 0xff3f))
         return ram_read(addr);
@@ -536,7 +540,7 @@ static BYTE REGPARM1 ram_ffxx_read(WORD addr)
     return ted_read(addr);
 }
 
-static BYTE REGPARM1 ram_ffxx_read_32k(WORD addr)
+static BYTE ram_ffxx_read_32k(WORD addr)
 {
     if ((addr >= 0xff20) && (addr != 0xff3e) && (addr != 0xff3f))
         return ram_read_32k(addr);
@@ -544,7 +548,7 @@ static BYTE REGPARM1 ram_ffxx_read_32k(WORD addr)
     return ted_read(addr);
 }
 
-static BYTE REGPARM1 ram_ffxx_read_16k(WORD addr)
+static BYTE ram_ffxx_read_16k(WORD addr)
 {
     if ((addr >= 0xff20) && (addr != 0xff3e) && (addr != 0xff3f))
         return ram_read_16k(addr);
@@ -553,7 +557,7 @@ static BYTE REGPARM1 ram_ffxx_read_16k(WORD addr)
 }
 
 
-static void REGPARM2 h256k_ram_ffxx_store(WORD addr, BYTE value)
+static void h256k_ram_ffxx_store(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -562,7 +566,7 @@ static void REGPARM2 h256k_ram_ffxx_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 cs256k_ram_ffxx_store(WORD addr, BYTE value)
+static void cs256k_ram_ffxx_store(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -571,7 +575,7 @@ static void REGPARM2 cs256k_ram_ffxx_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 ram_ffxx_store(WORD addr, BYTE value)
+static void ram_ffxx_store(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -580,7 +584,7 @@ static void REGPARM2 ram_ffxx_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 ram_ffxx_store_32k(WORD addr, BYTE value)
+static void ram_ffxx_store_32k(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -589,7 +593,7 @@ static void REGPARM2 ram_ffxx_store_32k(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 ram_ffxx_store_16k(WORD addr, BYTE value)
+static void ram_ffxx_store_16k(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -598,7 +602,7 @@ static void REGPARM2 ram_ffxx_store_16k(WORD addr, BYTE value)
     }
 }
 
-static BYTE REGPARM1 rom_ffxx_read(WORD addr)
+static BYTE rom_ffxx_read(WORD addr)
 {
     if ((addr >= 0xff20) && (addr != 0xff3e) && (addr != 0xff3f))
         return plus4memrom_rom_read(addr);
@@ -606,7 +610,7 @@ static BYTE REGPARM1 rom_ffxx_read(WORD addr)
     return ted_read(addr);
 }
 
-static void REGPARM2 rom_ffxx_store(WORD addr, BYTE value)
+static void rom_ffxx_store(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -615,7 +619,7 @@ static void REGPARM2 rom_ffxx_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 h256k_rom_ffxx_store(WORD addr, BYTE value)
+static void h256k_rom_ffxx_store(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -624,7 +628,7 @@ static void REGPARM2 h256k_rom_ffxx_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 cs256k_rom_ffxx_store(WORD addr, BYTE value)
+static void cs256k_rom_ffxx_store(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -633,7 +637,7 @@ static void REGPARM2 cs256k_rom_ffxx_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 rom_ffxx_store_32k(WORD addr, BYTE value)
+static void rom_ffxx_store_32k(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -642,7 +646,7 @@ static void REGPARM2 rom_ffxx_store_32k(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 rom_ffxx_store_16k(WORD addr, BYTE value)
+static void rom_ffxx_store_16k(WORD addr, BYTE value)
 {
     if (addr < 0xff20 || addr == 0xff3e || addr == 0xff3f) {
         ted_store(addr, value);
@@ -1005,9 +1009,9 @@ int mem_bank_from_name(const char *name)
     return -1;
 }
 
-void REGPARM2 store_bank_io(WORD addr, BYTE byte)
+void store_bank_io(WORD addr, BYTE byte)
 {
-    if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
+    if (acia_enabled() && (addr >= 0xfd00) && (addr <= 0xfd0f)) {
         acia_store(addr, byte);
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         pio1_store(addr, byte);
@@ -1029,7 +1033,7 @@ void REGPARM2 store_bank_io(WORD addr, BYTE byte)
 /* read i/o without side-effects */
 static BYTE peek_bank_io(WORD addr)
 {
-    if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
+    if (acia_enabled() && (addr >= 0xfd00) && (addr <= 0xfd0f)) {
         return acia_read(addr); /* FIXME */
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         return pio1_read(addr); /* FIXME */
@@ -1050,7 +1054,7 @@ static BYTE peek_bank_io(WORD addr)
 /* read i/o with side-effects */
 static BYTE read_bank_io(WORD addr)
 {
-    if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
+    if (acia_enabled() && (addr >= 0xfd00) && (addr <= 0xfd0f)) {
         return acia_read(addr);
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         return pio1_read(addr);
@@ -1191,7 +1195,9 @@ void mem_bank_write(int bank, WORD addr, BYTE byte, void *context)
 
 static int mem_dump_io(WORD addr) {
     if ((addr >= 0xfd00) && (addr <= 0xfd0f)) {
-        /* return acia_dump(machine_context.acia1); */ /* FIXME */
+        if(acia_enabled()) {
+            /* return acia_dump(machine_context.acia1); */ /* FIXME */
+        }
     } else if ((addr >= 0xfd10) && (addr <= 0xfd1f)) {
         /* return pio_dump(machine_context.pio1); */ /* FIXME */
     } else if ((addr >= 0xfd20) && (addr <= 0xfd2f)) {
@@ -1214,7 +1220,10 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
 {
     mem_ioreg_list_t *mem_ioreg_list = NULL;
 
-    mon_ioreg_add_list(&mem_ioreg_list, "ACIA", 0xfd00, 0xfd0f, mem_dump_io);
+    /* no ACIA in C16/C116 */
+    if (acia_enabled()) {
+        mon_ioreg_add_list(&mem_ioreg_list, "ACIA", 0xfd00, 0xfd0f, mem_dump_io);
+    }
     mon_ioreg_add_list(&mem_ioreg_list, "PIO1", 0xfd10, 0xfd1f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "PIO2", 0xfd30, 0xfd3f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "TIA1", 0xfec0, 0xfedf, mem_dump_io);

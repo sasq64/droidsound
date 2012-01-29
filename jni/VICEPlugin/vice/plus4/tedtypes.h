@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef _TEDTYPES_H
-#define _TEDTYPES_H
+#ifndef VICE_TEDTYPES_H
+#define VICE_TEDTYPES_H
 
 #include "raster.h"
 #include "types.h"
@@ -103,6 +103,10 @@
 
 /* FIXME add negated colors as well */
 #define TED_NUM_COLORS                  128
+
+/* for small displays */
+#define TED_TINY_FIRST_DISPLAYED_LINE   40
+#define TED_TINY_LAST_DISPLAYED_LINE    279
 
 /* Available video modes.  The number is given by TED registers.  */
 enum ted_video_mode_s {

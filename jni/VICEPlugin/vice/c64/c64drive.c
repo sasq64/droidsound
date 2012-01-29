@@ -40,7 +40,7 @@
 
 int machine_drive_resources_init(void)
 {
-    int drive_8_type = vsid_mode ? DRIVE_TYPE_NONE : DRIVE_TYPE_1541;
+    int drive_8_type = (machine_class == VICE_MACHINE_VSID) ? DRIVE_TYPE_NONE : DRIVE_TYPE_1541;
 
     return drive_resources_type_init(drive_8_type) | iec_drive_resources_init() | iec_c64exp_resources_init() | ieee_drive_resources_init();
 }
@@ -97,11 +97,6 @@ void machine_drive_setup_context(struct drive_context_s *drv)
 void machine_drive_idling_method(unsigned int dnr)
 {
     iec_drive_idling_method(dnr);
-}
-
-void machine_drive_vsync_hook(void)
-{
-    iec_drive_vsync_hook();
 }
 
 void machine_drive_rom_load(void)

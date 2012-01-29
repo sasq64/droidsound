@@ -134,8 +134,9 @@ int fsimage_open(disk_image_t *image)
         return -1;
     }
 
-    if (fsimage_probe(image) == 0)
+    if (fsimage_probe(image) == 0) {
         return 0;
+    }
 
     zfile_fclose(fsimage->fd);
     log_message(fsimage_log, "Unknown disk image `%s'.", fsimage->name);
@@ -184,6 +185,9 @@ int fsimage_read_sector(disk_image_t *image, BYTE *buf, unsigned int track,
       case DISK_IMAGE_TYPE_D80:
       case DISK_IMAGE_TYPE_D82:
       case DISK_IMAGE_TYPE_X64:
+      case DISK_IMAGE_TYPE_D1M:
+      case DISK_IMAGE_TYPE_D2M:
+      case DISK_IMAGE_TYPE_D4M:
         sectors = disk_image_check_sector(image, track, sector);
 
         if (sectors < 0) {
@@ -280,6 +284,9 @@ int fsimage_write_sector(disk_image_t *image, BYTE *buf, unsigned int track,
       case DISK_IMAGE_TYPE_D80:
       case DISK_IMAGE_TYPE_D82:
       case DISK_IMAGE_TYPE_X64:
+      case DISK_IMAGE_TYPE_D1M:
+      case DISK_IMAGE_TYPE_D2M:
+      case DISK_IMAGE_TYPE_D4M:
         if (sectors < 0) {
             log_error(fsimage_log, "Track: %i, Sector: %i out of bounds.",
                       track, sector);

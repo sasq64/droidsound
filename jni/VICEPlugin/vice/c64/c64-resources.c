@@ -32,9 +32,9 @@
 #include "c64-resources.h"
 #include "c64acia.h"
 #include "c64cart.h"
-#include "c64io.h"
 #include "c64cia.h"
 #include "c64rom.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cia.h"
 #include "kbd.h"
@@ -48,6 +48,7 @@
 #include "util.h"
 #include "vicii-resources.h"
 #include "vicii.h"
+#include "c64fastiec.h"
 
 #define KBD_INDEX_C64_SYM   0
 #define KBD_INDEX_C64_POS   1
@@ -249,6 +250,10 @@ static const resource_int_t resources_int[] = {
 #endif
     { "SidStereoAddressStart", 0xde00, RES_EVENT_SAME, NULL,
       (int *)&sid_stereo_address_start, sid_set_sid_stereo_address, NULL },
+    { "SidTripleAddressStart", 0xdf00, RES_EVENT_SAME, NULL,
+      (int *)&sid_triple_address_start, sid_set_sid_triple_address, NULL },
+    { "BurstMod", BURST_MOD_NONE, RES_EVENT_NO, NULL,
+      &burst_mod, set_burst_mod, NULL },
     { NULL }
 };
 

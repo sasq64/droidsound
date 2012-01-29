@@ -86,7 +86,7 @@ extern char *alloca();
 static int yyerror(char *s);
 static int temp;
 static int resolve_datatype(unsigned guess_type, const char *num);
-static int resolve_range(enum t_memspace memspace, MON_ADDR range[2], 
+static int resolve_range(enum t_memspace memspace, MON_ADDR range[2],
                          const char *num);
 static void mon_quit(void);
 
@@ -105,7 +105,7 @@ extern int cur_len, last_len;
 #define ERR_RANGE_BAD_START 2
 #define ERR_RANGE_BAD_END 3
 #define ERR_BAD_CMD 4
-#define ERR_EXPECT_BRKNUM 5
+#define ERR_EXPECT_CHECKNUM 5
 #define ERR_EXPECT_END_CMD 6
 #define ERR_MISSING_CLOSE_PAREN 7
 #define ERR_INCOMPLETE_COMPARE_OP 8
@@ -156,7 +156,7 @@ extern int cur_len, last_len;
 %token CMD_ATTACH CMD_DETACH CMD_MON_RESET CMD_TAPECTRL CMD_CARTFREEZE
 %token CMD_CPUHISTORY CMD_MEMMAPZAP CMD_MEMMAPSHOW CMD_MEMMAPSAVE
 %token CMD_COMMENT CMD_LIST
-%token CMD_EXPORT
+%token CMD_EXPORT CMD_AUTOSTART CMD_AUTOLOAD
 %token<str> CMD_LABEL_ASGN
 %token<i> L_PAREN R_PAREN ARG_IMMEDIATE REG_A REG_X REG_Y COMMA INST_SEP
 %token<i> REG_B REG_C REG_D REG_E REG_H REG_L
@@ -169,12 +169,12 @@ extern int cur_len, last_len;
 %token<action> CMD_CHECKPT_ON CMD_CHECKPT_OFF TOGGLE
 %type<range> address_range address_opt_range
 %type<a>  address opt_address
-%type<cond_node> cond_expr compare_operand
+%type<cond_node> opt_if_cond_expr cond_expr compare_operand
 %type<i> number expression d_number guess_default device_num
-%type<i> memspace memloc memaddr breakpt_num opt_mem_op
+%type<i> memspace memloc memaddr checkpt_num opt_mem_op
 %type<i> top_level value
 %type<i> asm_operand_mode assembly_instruction register
-%type<str> rest_of_line opt_rest_of_line data_list data_element filename 
+%type<str> rest_of_line opt_rest_of_line data_list data_element filename
 %token<i> MASK
 %type<str> hunt_list hunt_element
 
@@ -303,7 +303,7 @@ symbol_table_rules: CMD_LOAD_LABELS memspace opt_sep filename end_cmd
                   ;
 
 asm_rules: CMD_ASSEMBLE address
-           { mon_start_assemble_mode($2, NULL); } post_assemble end_cmd 
+           { mon_start_assemble_mode($2, NULL); } post_assemble end_cmd
            { }
          | CMD_ASSEMBLE address end_cmd
            { mon_start_assemble_mode($2, NULL); }
@@ -355,61 +355,68 @@ memory_rules: CMD_MOVE address_range opt_sep address end_cmd
               { mon_memmap_save($2,$4); }
             ;
 
-checkpoint_rules: CMD_BREAK address_opt_range end_cmd
+checkpoint_rules: CMD_BREAK opt_mem_op address_opt_range opt_if_cond_expr end_cmd
                   {
-                      mon_breakpoint_add_checkpoint($2[0], $2[1], FALSE, FALSE,
-                                                    FALSE, FALSE);
-                  }
-                | CMD_UNTIL address_opt_range end_cmd
-                  {
-                      mon_breakpoint_add_checkpoint($2[0], $2[1], FALSE, FALSE,
-                                                    FALSE, TRUE);
-                  }
-                | CMD_BREAK address_opt_range IF cond_expr end_cmd
-                  {
-                      temp = mon_breakpoint_add_checkpoint($2[0], $2[1], FALSE,
-                                                           FALSE, FALSE, FALSE);
+                      if ($2) {
+                          temp = mon_breakpoint_add_checkpoint($3[0], $3[1], TRUE, $2, FALSE);
+                      } else {
+                          temp = mon_breakpoint_add_checkpoint($3[0], $3[1], TRUE, e_store, FALSE);
+                      }
                       mon_breakpoint_set_checkpoint_condition(temp, $4);
-                  }
-                | CMD_WATCH opt_mem_op opt_sep address_opt_range end_cmd
-                  {
-                      mon_breakpoint_add_checkpoint($4[0], $4[1], FALSE,
-                      ($2 == e_load || $2 == e_load_store),
-                      ($2 == e_store || $2 == e_load_store), FALSE);
-                  }
-                | CMD_TRACE address_opt_range end_cmd
-                  {
-                      mon_breakpoint_add_checkpoint($2[0], $2[1], TRUE, FALSE, FALSE,
-                                                    FALSE);
                   }
                 | CMD_BREAK end_cmd
                   { mon_breakpoint_print_checkpoints(); }
+
+                | CMD_UNTIL address_opt_range end_cmd
+                  {
+                      mon_breakpoint_add_checkpoint($2[0], $2[1], TRUE, e_exec, TRUE);
+                  }
                 | CMD_UNTIL end_cmd
                   { mon_breakpoint_print_checkpoints(); }
-                | CMD_TRACE end_cmd
-                  { mon_breakpoint_print_checkpoints(); }
+
+                | CMD_WATCH opt_mem_op address_opt_range opt_if_cond_expr end_cmd
+                  {
+                      if ($2) {
+                          temp = mon_breakpoint_add_checkpoint($3[0], $3[1], TRUE, $2, FALSE);
+                      } else {
+                          temp = mon_breakpoint_add_checkpoint($3[0], $3[1], TRUE, e_load | e_store, FALSE);
+                      }
+                      mon_breakpoint_set_checkpoint_condition(temp, $4);
+                  }
                 | CMD_WATCH end_cmd
+                  { mon_breakpoint_print_checkpoints(); }
+
+                | CMD_TRACE opt_mem_op address_opt_range opt_if_cond_expr end_cmd
+                  {
+                      if ($2) {
+                          temp = mon_breakpoint_add_checkpoint($3[0], $3[1], FALSE, $2, FALSE);
+                      } else {
+                          temp = mon_breakpoint_add_checkpoint($3[0], $3[1], FALSE, e_load | e_store, FALSE);
+                      }
+                      mon_breakpoint_set_checkpoint_condition(temp, $4);
+                  }
+                | CMD_TRACE end_cmd
                   { mon_breakpoint_print_checkpoints(); }
                 ;
 
 
-checkpoint_control_rules: CMD_CHECKPT_ON breakpt_num end_cmd
+checkpoint_control_rules: CMD_CHECKPT_ON checkpt_num end_cmd
                           { mon_breakpoint_switch_checkpoint(e_ON, $2); }
-                        | CMD_CHECKPT_OFF breakpt_num end_cmd
+                        | CMD_CHECKPT_OFF checkpt_num end_cmd
                           { mon_breakpoint_switch_checkpoint(e_OFF, $2); }
-                        | CMD_IGNORE breakpt_num end_cmd
+                        | CMD_IGNORE checkpt_num end_cmd
                           { mon_breakpoint_set_ignore_count($2, -1); }
-                        | CMD_IGNORE breakpt_num opt_sep expression end_cmd
+                        | CMD_IGNORE checkpt_num opt_sep expression end_cmd
                           { mon_breakpoint_set_ignore_count($2, $4); }
-                        | CMD_DELETE breakpt_num end_cmd
+                        | CMD_DELETE checkpt_num end_cmd
                           { mon_breakpoint_delete_checkpoint($2); }
                         | CMD_DELETE end_cmd
                           { mon_breakpoint_delete_checkpoint(-1); }
-                        | CMD_CONDITION breakpt_num IF cond_expr end_cmd
+                        | CMD_CONDITION checkpt_num IF cond_expr end_cmd
                           { mon_breakpoint_set_checkpoint_condition($2, $4); }
-                        | CMD_COMMAND breakpt_num opt_sep STRING end_cmd
+                        | CMD_COMMAND checkpt_num opt_sep STRING end_cmd
                           { mon_breakpoint_set_checkpoint_command($2, $4); }
-                        | CMD_COMMAND breakpt_num error end_cmd
+                        | CMD_COMMAND checkpt_num error end_cmd
                           { return ERR_EXPECT_STRING; }
                         ;
 
@@ -464,7 +471,7 @@ monitor_misc_rules: CMD_DISK rest_of_line end_cmd
                     { mon_print_convert($2); }
                   | CMD_CHDIR rest_of_line end_cmd
                     { mon_change_dir($2); }
-                  | CMD_KEYBUF rest_of_line end_cmd
+                  | CMD_KEYBUF rest_of_line end_cmd /* STRING */
                     { mon_keyboard_feed($2); }
                   | CMD_BACKTRACE end_cmd
                     { mon_backtrace(); }
@@ -522,6 +529,14 @@ disk_rules: CMD_LOAD filename device_num opt_address end_cmd
             { mon_attach($2,$3); }
           | CMD_DETACH expression end_cmd
             { mon_detach($2); }
+          | CMD_AUTOSTART filename end_cmd
+            { mon_autostart($2,0,1); }
+          | CMD_AUTOSTART filename opt_sep number end_cmd
+            { mon_autostart($2,$4,1); }
+          | CMD_AUTOLOAD filename end_cmd
+            { mon_autostart($2,0,0); }
+          | CMD_AUTOLOAD filename opt_sep number end_cmd
+            { mon_autostart($2,$4,0); }
           ;
 
 cmd_file_rules: CMD_RECORD filename end_cmd
@@ -557,8 +572,9 @@ device_num: expression
       | error { return ERR_EXPECT_DEVICE_NUM; }
       ;
 
-opt_mem_op: MEM_OP { $$ = $1; }
-          | { $$ = e_load_store; }
+opt_mem_op: opt_mem_op MEM_OP { $$ = $1 | $2; }
+          | MEM_OP { $$ = $1; }
+          | { $$ = 0; }
           ;
 
 register: MON_REGISTER          { $$ = new_reg(default_memspace, $1); }
@@ -569,12 +585,12 @@ reg_list: reg_list COMMA reg_asgn
         | reg_asgn
         ;
 
-reg_asgn: register EQUALS number 
+reg_asgn: register EQUALS number
           { (monitor_cpu_for_memspace[reg_memspace($1)]->mon_register_set_val)(reg_memspace($1), reg_regid($1), (WORD) $3); }
         ;
 
-breakpt_num: d_number { $$ = $1; }
-           | error { return ERR_EXPECT_BRKNUM; }
+checkpt_num: d_number { $$ = $1; }
+           | error { return ERR_EXPECT_CHECKNUM; }
            ;
 
 address_opt_range: address_range
@@ -582,7 +598,7 @@ address_opt_range: address_range
                  ;
 
 address_range: address opt_sep address { $$[0] = $1; $$[1] = $3; }
-             | H_RANGE_GUESS 
+             | H_RANGE_GUESS
                { if (resolve_range(e_default_space, $$, $1)) return ERR_ADDR_TOO_BIG; }
              | memspace opt_sep H_RANGE_GUESS
                { if (resolve_range($1, $$, $3)) return ERR_ADDR_TOO_BIG; }
@@ -592,17 +608,17 @@ opt_address: opt_sep address { $$ = $2; }
            | { $$ = BAD_ADDR; }
            ;
 
-address: memloc 
+address: memloc
          {
              $$ = new_addr(e_default_space,$1);
-             if (opt_asm) new_cmd = asm_mode = 1; 
+             if (opt_asm) new_cmd = asm_mode = 1;
          }
        | memspace opt_sep memloc
          {
              $$ = new_addr($1, $3);
-             if (opt_asm) new_cmd = asm_mode = 1; 
+             if (opt_asm) new_cmd = asm_mode = 1;
          }
-       | LABEL 
+       | LABEL
          {
              temp = mon_symbol_table_lookup_addr(e_default_space, $1);
              if (temp >= 0)
@@ -635,6 +651,9 @@ expression: expression '+' expression { $$ = $1 + $3; }
           | '(' expression error { return ERR_MISSING_CLOSE_PAREN; }
           | value { $$ = $1; }
           ;
+
+opt_if_cond_expr: IF cond_expr { $$ = $2; }
+                | { $$ = 0; }
 
 cond_expr: cond_expr COMPARE_OP cond_expr
            {
@@ -811,7 +830,7 @@ void parse_and_execute_line(char *input)
          case ERR_RANGE_BAD_END:
            mon_out("Bad second address in range:\n");
            break;
-         case ERR_EXPECT_BRKNUM:
+         case ERR_EXPECT_CHECKNUM:
            mon_out("Checkpoint number expected:\n");
            break;
          case ERR_EXPECT_END_CMD:
@@ -884,12 +903,12 @@ static int resolve_datatype(unsigned guess_type, const char *num)
 }
 
 /*
- * Resolve a character sequence containing 8 hex digits like "08001000". 
+ * Resolve a character sequence containing 8 hex digits like "08001000".
  * This could be a lazy version of "0800 1000". If the default radix is not
  * hexadecimal, we handle it like a ordinary number, in the latter case there
  * is only one number in the range.
  */
-static int resolve_range(enum t_memspace memspace, MON_ADDR range[2], 
+static int resolve_range(enum t_memspace memspace, MON_ADDR range[2],
                          const char *num)
 {
     char start[5];
@@ -939,7 +958,7 @@ static void mon_quit(void)
 {
 #ifdef OS2
     /* same as "quit" */
-    exit_mon = 1; 
+    exit_mon = 1;
 #else
     exit_mon = 2;
 #endif

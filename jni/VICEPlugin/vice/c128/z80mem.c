@@ -32,7 +32,7 @@
 #include "c128mem.h"
 #include "c128mmu.h"
 #include "c64cia.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cmdline.h"
 #include "log.h"
 #include "mem.h"
@@ -97,44 +97,44 @@ int z80mem_cmdline_options_init(void)
 
 /* Generic memory access.  */
 #if 0
-static void REGPARM2 z80mem_store(WORD addr, BYTE value)
+static void z80mem_store(WORD addr, BYTE value)
 {
     _z80mem_write_tab_ptr[addr >> 8](addr, value);
 }
 
-static BYTE REGPARM1 z80mem_read(WORD addr)
+static BYTE z80mem_read(WORD addr)
 {
     return _z80mem_read_tab_ptr[addr >> 8](addr);
 }
 #endif
 
-BYTE REGPARM1 bios_read(WORD addr)
+BYTE bios_read(WORD addr)
 {
     return z80bios_rom[addr & 0x0fff];
 }
 
-void REGPARM2 bios_store(WORD addr, BYTE value)
+void bios_store(WORD addr, BYTE value)
 {
     z80bios_rom[addr] = value;
 }
 
-static BYTE REGPARM1 z80_read_zero(WORD addr)
+static BYTE z80_read_zero(WORD addr)
 {
     return mem_page_zero[addr];
 }
 
-static void REGPARM2 z80_store_zero(WORD addr, BYTE value)
+static void z80_store_zero(WORD addr, BYTE value)
 {
     mem_page_zero[addr] = value;
 }
 
-static BYTE REGPARM1 read_unconnected_io(WORD addr)
+static BYTE read_unconnected_io(WORD addr)
 {
     log_message(z80mem_log, "Read from unconnected IO %04x", addr);
     return 0;
 }
 
-static void REGPARM2 store_unconnected_io(WORD addr, BYTE value)
+static void store_unconnected_io(WORD addr, BYTE value)
 {
     log_message(z80mem_log, "Store to unconnected IO %04x %02x", addr, value);
 }
@@ -331,25 +331,26 @@ void z80mem_initialize(void)
         io_read_tab[i] = read_unconnected_io;
         io_write_tab[i] = store_unconnected_io;
     }
-    io_read_tab[0xd0] = vicii_read;
-    io_write_tab[0xd0] = vicii_store;
-    io_read_tab[0xd1] = vicii_read;
-    io_write_tab[0xd1] = vicii_store;
-    io_read_tab[0xd2] = vicii_read;
-    io_write_tab[0xd2] = vicii_store;
-    io_read_tab[0xd3] = vicii_read;
-    io_write_tab[0xd3] = vicii_store;
+    io_read_tab[0xd0] = c64io_d000_read;
+    io_write_tab[0xd0] = c64io_d000_store;
+    io_read_tab[0xd1] = c64io_d100_read;
+    io_write_tab[0xd1] = c64io_d100_store;
+    io_read_tab[0xd2] = c64io_d200_read;
+    io_write_tab[0xd2] = c64io_d200_store;
+    io_read_tab[0xd3] = c64io_d300_read;
+    io_write_tab[0xd3] = c64io_d300_store;
 
-    io_read_tab[0xd4] = sid_read;
-    io_write_tab[0xd4] = sid_store;
+    io_read_tab[0xd4] = c64io_d400_read;
+    io_write_tab[0xd4] = c64io_d400_store;
 
     io_read_tab[0xd5] = mmu_read;
     io_write_tab[0xd5] = mmu_store;
 
     io_read_tab[0xd6] = vdc_read;
     io_write_tab[0xd6] = vdc_store;
-    io_read_tab[0xd7] = d7xx_read;
-    io_write_tab[0xd7] = d7xx_store;
+
+    io_read_tab[0xd7] = c64io_d700_read;
+    io_write_tab[0xd7] = c64io_d700_store;
 
     io_read_tab[0xd8] = colorram_read;
     io_write_tab[0xd8] = colorram_store;
@@ -365,10 +366,10 @@ void z80mem_initialize(void)
     io_read_tab[0xdd] = cia2_read;
     io_write_tab[0xdd] = cia2_store;
 
-    io_read_tab[0xde] = c64io1_read;
-    io_write_tab[0xde] = c64io1_store;
-    io_read_tab[0xdf] = c64io2_read;
-    io_write_tab[0xdf] = c64io2_store;
+    io_read_tab[0xde] = c64io_de00_read;
+    io_write_tab[0xde] = c64io_de00_store;
+    io_read_tab[0xdf] = c64io_df00_read;
+    io_write_tab[0xdf] = c64io_df00_store;
 }
 
 #ifdef _MSC_VER

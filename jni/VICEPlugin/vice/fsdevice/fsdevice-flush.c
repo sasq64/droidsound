@@ -63,6 +63,11 @@ static int fsdevice_flush_cd(vdrive_t* vdrive, char *arg)
 {
     int er;
 
+    /* arrow left also works for dir up */
+    if (!strcmp("_", arg)) {
+        arg = "..";
+    }
+
     er = CBMDOS_IPE_OK;
     if (ioutil_chdir(fsdevice_get_path(vdrive->unit)) || ioutil_chdir(arg)) {
         er = CBMDOS_IPE_NOT_FOUND;
@@ -574,6 +579,7 @@ void fsdevice_flush(vdrive_t *vdrive, unsigned int secondary)
 
        cd
        cd_
+       cd:_
        /
        md
        rd
@@ -603,6 +609,8 @@ void fsdevice_flush(vdrive_t *vdrive, unsigned int secondary)
     } else if (!strcmp(cmd, "cd")) {
         er = fsdevice_flush_cd(vdrive, arg);
     } else if (!strcmp((char *)(fsdevice_dev[dnr].cmdbuf), "CD_")) {
+        er = fsdevice_flush_cdup(vdrive);
+    } else if (!strcmp((char *)(fsdevice_dev[dnr].cmdbuf), "CD:_")) {
         er = fsdevice_flush_cdup(vdrive);
     } else if (*cmd == '/') {
         er = fsdevice_flush_partition(vdrive, arg);

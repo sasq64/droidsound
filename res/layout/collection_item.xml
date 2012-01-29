@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@android:drawable/list_selector_background"
+    android:orientation="vertical" >
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:contentDescription="@string/icon"
+        android:scaleType="fitXY"
+        android:src="@drawable/gflat_note" />
+
+    <TextView
+        android:id="@+id/format"
+        android:layout_width="64dp"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@id/icon"
+        android:layout_alignBottom="@id/icon"
+        android:paddingBottom="6dp"
+        android:gravity="center"
+        android:shadowColor="#000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="2"
+        android:textSize="10dp"
+        android:textStyle="bold"
+        android:textColor="#fcf" />
+
+    <ImageView
+        android:id="@+id/playing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_margin="4dp"
+        android:contentDescription="@string/playing_title"
+        android:src="@android:drawable/stat_sys_headset" />
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@id/icon"
+        android:lines="1"
+        android:shadowColor="@android:color/black"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="2"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@android:color/primary_text_dark" />
+
+    <TextView
+        android:id="@+id/subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/icon"
+        android:textColor="@android:color/secondary_text_dark" />
+
+    <TextView
+        android:id="@+id/sidetitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="4dp"
+        android:gravity="bottom"
+        android:textColor="@android:color/secondary_text_dark" />
+
+</RelativeLayout>

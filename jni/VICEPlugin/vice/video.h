@@ -29,6 +29,11 @@
 
 #include "types.h"
 
+/* video filter type, resource "CHIPFilter" */
+#define VIDEO_FILTER_NONE         0
+#define VIDEO_FILTER_CRT          1
+#define VIDEO_FILTER_SCALE2X      2
+
 /* These constants are used to configure the video output.  */
 
 /* no video output (dummy) */
@@ -38,12 +43,14 @@
 #define VIDEO_RENDER_PAL_2X2    2
 /* no filtering */
 #define VIDEO_RENDER_RGB_1X1    3
-#define VIDEO_RENDER_RGB_1X2    4
+#define VIDEO_RENDER_RGB_1X2    4 /* needed for y-stretch */
 #define VIDEO_RENDER_RGB_2X2    5
+#define VIDEO_RENDER_RGB_2X4    6 /* needed for y-stretch */
 /* RGB(I) or monochrome Monitor (CRTC and VDC) */
-#define VIDEO_RENDER_CRT_1X1    6 /* FIXME: to be written */
-#define VIDEO_RENDER_CRT_1X2    7
-#define VIDEO_RENDER_CRT_2X2    8 /* FIXME: to be written, needed by crtc */
+#define VIDEO_RENDER_CRT_1X1    7 /* FIXME: to be written */
+#define VIDEO_RENDER_CRT_1X2    8 /* needed for y-stretch */
+#define VIDEO_RENDER_CRT_2X2    9
+#define VIDEO_RENDER_CRT_2X4   10 /* needed for y-stretch */
 
 struct video_canvas_s;
 struct video_cbm_palette_s;
@@ -135,15 +142,37 @@ struct video_render_color_tables_s {
 };
 typedef struct video_render_color_tables_s video_render_color_tables_t;
 
+/* options for the color generator and crt emulation */ 
+typedef struct video_resources_s
+{
+    /* parameters for color generation */
+    int color_saturation;
+    int color_contrast;
+    int color_brightness;
+    int color_gamma;
+    int color_tint;
+    /* additional parameters for CRT emulation */
+    int pal_scanlineshade;      /* amount of scanline shade */
+    int pal_blur;               /* luma blur */
+    int pal_oddlines_phase;     /* oddlines UV phase offset */
+    int pal_oddlines_offset;    /* oddlines UV multiplier */
+
+    int audioleak;              /* flag: enable video->audio leak emulation */
+} video_resources_t;
+
+/* render config for a specific canvas and video chip */
 struct video_render_config_s {
-    video_chip_cap_t *cap;         /* Which renders are allowed?  */
-    int rendermode;                /* What render is active?  */
+    char *chip_name;               /* chip name prefix, (use to build resource names) */
+    video_resources_t video_resources; /* options for the color generator and crt emulation */
+    video_chip_cap_t *cap;         /* Which renderers are allowed?  */
+    int rendermode;                /* What renderer is active?  */
     int double_size_enabled;       /* Double size enabled?  */
-    int doublesizex;               /* Doublesizex enabled? (true if double size is enabled and screen is large enough in x direction) */
-    int doublesizey;               /* Doublesizey enabled? (true if double size is enabled and screen is large enough in y direction) */
+    int doublesizex;               /* contains the actual magnification factor - 1 (> 0 if double size is enabled and screen is large enough in x direction) */
+    int doublesizey;               /* contains the actual magnification factor - 1 (> 0 if double size is enabled and screen is large enough in y direction) */
     int doublescan;                /* Doublescan enabled?  */
     int hwscale;                   /* Hardware scaling enabled? */
     int scale2x;                   /* Scale2x enabled?  */
+    int filter;                    /* VIDEO_FILTER_NONE, VIDEO_FILTER_CRT, VIDEO_FILTER_SCALE2X */
     int external_palette;          /* Use an external palette?  */
     char *external_palette_name;   /* Name of the external palette.  */
     int double_buffer;             /* Double buffering enabled? */
@@ -164,7 +193,7 @@ extern void video_render_setphysicalcolor(video_render_config_t *config,
                                           int index, DWORD color, int depth);
 extern void video_render_setrawrgb(unsigned int index, DWORD r, DWORD g,
                                    DWORD b);
-extern void video_render_initraw(void);
+extern void video_render_initraw(struct video_render_config_s *videoconfig);
 
 /**************************************************************/
 
@@ -221,8 +250,6 @@ struct raster_s;
 
 extern int video_resources_init(void);
 extern void video_resources_shutdown(void);
-extern int video_resources_pal_init(void);
-extern int video_resources_crt_init(void);
 extern int video_resources_chip_init(const char *chipname,
                                      struct video_canvas_s **canvas,
                                      video_chip_cap_t *video_chip_cap);
@@ -253,9 +280,8 @@ extern void video_color_palette_internal(struct video_canvas_s *canvas,
             struct video_cbm_palette_s *cbm_palette);
 extern int video_color_update_palette(struct video_canvas_s *canvas);
 extern void video_color_palette_free(struct palette_s *palette);
-extern void video_color_set_canvas(struct video_canvas_s *canvas);
 
-extern int video_render_get_fake_pal_state(void);
+/* FIXME: implement a central function that inits the renderer(s) */
 extern void video_render_1x2_init(void);
 extern void video_render_2x2_init(void);
 extern void video_render_pal_init(void);

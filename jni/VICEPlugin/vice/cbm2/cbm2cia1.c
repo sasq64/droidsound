@@ -23,10 +23,19 @@
  *  02111-1307  USA.
  * */
 
+/* #define DEBUG_CIA1 */
+
+#ifdef DEBUG_CIA1
+#define DBG(_x_)        log_debug _x_
+#else
+#define DBG(_x_)
+#endif
+
 #include "vice.h"
 
 #include <stdio.h>
 
+#include "cbm2-resources.h"
 #include "cbm2.h"
 #include "cbm2cia.h"
 #include "cia.h"
@@ -36,26 +45,51 @@
 #include "keyboard.h"
 #include "lib.h"
 #include "log.h"
+#include "machine.h"
 #include "maincpu.h"
 #include "parallel.h"
 #include "printer.h"
 #include "tpi.h"
 #include "types.h"
+#include "userport_joystick.h"
 
-
-void REGPARM2 cia1_store(WORD addr, BYTE data)
+void cia1_store(WORD addr, BYTE data)
 {
+#ifdef DEBUG_CIA1
+    if (!((addr >= 0x08) && (addr <= 0x0b))) {
+        DBG(("cia1_store: %04x %02x", addr, data));
+    }
+#endif
     ciacore_store(machine_context.cia1, addr, data);
 }
 
-BYTE REGPARM1 cia1_read(WORD addr)
+BYTE cia1_read(WORD addr)
 {
+#ifdef DEBUG_CIA1
+    static int olddata, oldaddr;
+    BYTE data;
+    data = ciacore_read(machine_context.cia1, addr);
+/*    if (!((addr >= 0x08) && (addr <= 0x0b))) { */
+    if ((oldaddr != addr) || (olddata != data)) { 
+        DBG(("cia1_read: %04x %02x", addr, data));
+        oldaddr = addr; olddata = data;
+    }
+    return data;
+#else
     return ciacore_read(machine_context.cia1, addr);
+#endif
 }
 
-BYTE REGPARM1 cia1_peek(WORD addr)
+BYTE cia1_peek(WORD addr)
 {
     return ciacore_peek(machine_context.cia1, addr);
+}
+
+void cia1_update_model(void)
+{
+    if (machine_context.cia1) {
+        machine_context.cia1->model = cia1_model;
+    }
 }
 
 static void cia_set_int_clk(cia_context_t *cia_context, int value, CLOCK clk)
@@ -74,7 +108,6 @@ static void cia_restore_int(cia_context_t *cia_context, int value)
 
 #define cycles_per_sec               machine_get_cycles_per_second()
 
-
 static int cia1_ieee_is_output;
 
 void cia1_set_ieee_dir(cia_context_t *cia_context, int isout)
@@ -86,7 +119,6 @@ void cia1_set_ieee_dir(cia_context_t *cia_context, int isout)
         parallel_cpu_set_bus(0xff);
     }
 }
-
 
 static void do_reset_cia(cia_context_t *cia_context)
 {
@@ -120,9 +152,9 @@ static void store_ciapb(cia_context_t *cia_context, CLOCK rclk, BYTE byte)
     printer_userport_write_data(byte);
     printer_userport_write_strobe(0);
     printer_userport_write_strobe(1);
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA && !cbm2_is_c500()) {
-        extra_joystick_cga_store(byte);
-    }
+
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_pbx(byte);
 }
 
 /* read_* functions must return 0xff if nothing to read!!! */
@@ -141,7 +173,7 @@ static BYTE read_ciapa(cia_context_t *cia_context)
                     parallel_bus, cia_context->c_cia[CIA_PRA],
                     cia_context->c_cia[CIA_DDRA], byte);
     }
-    if (cbm2_is_c500()) {
+    if (machine_class == VICE_MACHINE_CBM5x0) {
         byte = ((byte & ~(cia_context->c_cia[CIA_DDRA]))
                | (cia_context->c_cia[CIA_PRA] & cia_context->c_cia[CIA_DDRA]))
                & ~( ((joystick_value[1] & 0x10) ? 0x40 : 0)
@@ -158,31 +190,15 @@ static BYTE read_ciapb(cia_context_t *cia_context)
 {
     BYTE byte = 0xff;
 
-    if (cbm2_is_c500()) {
+    if (machine_class == VICE_MACHINE_CBM5x0) {
         byte = ((0xff & ~(cia_context->c_cia[CIA_DDRB]))
                | (cia_context->c_cia[CIA_PRB] & cia_context->c_cia[CIA_DDRB]))
                & ~( (joystick_value[1] & 0x0f)
                | ((joystick_value[2] & 0x0f) << 4));
     } else {
-        if (extra_joystick_enable) {
-            switch (extra_joystick_type) {
-                case EXTRA_JOYSTICK_CGA:
-                    byte = extra_joystick_cga_read();
-                    break;
-                case EXTRA_JOYSTICK_PET:
-                    byte = extra_joystick_pet_read();
-                    break;
-                case EXTRA_JOYSTICK_HUMMER:
-                    byte = extra_joystick_hummer_read();
-                    break;
-                case EXTRA_JOYSTICK_OEM:
-                    byte = extra_joystick_oem_read();
-                    break;
-                default:
-                    byte = 0xff;
-                    break;
-            }
-        }
+        /* FIXME: in the upcoming userport system this call needs to be conditional */
+        byte = userport_joystick_read_pbx(byte);
+
         byte &= ((0xff & ~(cia_context->c_cia[CIA_DDRB]))
                | (cia_context->c_cia[CIA_PRB] & cia_context->c_cia[CIA_DDRB]));
     }
@@ -207,6 +223,12 @@ void cia1_init(cia_context_t *cia_context)
                  maincpu_int_status, maincpu_clk_guard);
 }
 
+void cia1_set_timing(cia_context_t *cia_context, int todticks)
+{
+    DBG(("cia1_set_timing: %d ticks", todticks));
+    cia_context->todticks = todticks;
+}
+
 void cia1_setup_context(machine_context_t *machine_context)
 {
     cia_context_t *cia;
@@ -220,9 +242,15 @@ void cia1_setup_context(machine_context_t *machine_context)
     cia->rmw_flag = &maincpu_rmw_flag;
     cia->clk_ptr = &maincpu_clk;
 
-    cia->todticks = C610_NTSC_CYCLES_PER_RFSH; /* FIXME */
+    if (machine_class == VICE_MACHINE_CBM5x0) {
+        cia1_set_timing(cia, C500_NTSC_CYCLES_PER_RFSH);
+    } else {
+        cia1_set_timing(cia, C610_NTSC_CYCLES_PER_RFSH);
+    }
 
     ciacore_setup_context(cia);
+
+    cia->model = cia1_model;
 
     cia->debugFlag = 0;
     cia->irq_line = IK_IRQ;
@@ -246,7 +274,3 @@ void cia1_setup_context(machine_context_t *machine_context)
     cia->pre_peek = NULL;
 }
 
-void cia1_set_timing(cia_context_t *cia_context, int todticks)
-{
-    cia_context->todticks = todticks;
-}

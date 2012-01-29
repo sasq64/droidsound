@@ -270,24 +270,22 @@ void vicii_handle_pending_alarms_external_write(void)
         vicii_handle_pending_alarms(maincpu_rmw_flag + 1);
 }
 
-/* return pixel aspect ratio for current video mode */
-/* FIXME: calculate proper values.
-   look at http://www.codebase64.org/doku.php?id=base:pixel_aspect_ratio&s[]=aspect
-   for an example calculation
-*/
+/* return pixel aspect ratio for current video mode
+ * based on http://codebase64.com/doku.php?id=base:pixel_aspect_ratio
+ */
 static float vicii_get_pixel_aspect(void)
 {
     int video;
     resources_get_int("MachineVideoStandard", &video);
     switch (video) {
         case MACHINE_SYNC_PAL:
-            return ((float)VICII_SCREEN_PAL_NORMAL_HEIGHT * 4.0f) / ((float)VICII_SCREEN_PAL_NORMAL_WIDTH * 3.0f);
+            return 0.93650794f;
         case MACHINE_SYNC_PALN:
-            return ((float)VICII_SCREEN_PALN_NORMAL_HEIGHT * 4.0f) / ((float)VICII_SCREEN_PALN_NORMAL_WIDTH * 3.0f);
+            return 0.90769231f;
         case MACHINE_SYNC_NTSC:
-            return ((float)VICII_SCREEN_NTSC_NORMAL_HEIGHT * 4.0f) / ((float)VICII_SCREEN_NTSC_NORMAL_WIDTH * 3.0f);
+            return 0.75000000f;
         case MACHINE_SYNC_NTSCOLD:
-            return ((float)VICII_SCREEN_NTSCOLD_NORMAL_HEIGHT * 4.0f) / ((float)VICII_SCREEN_NTSCOLD_NORMAL_WIDTH * 3.0f);
+            return 0.76171875f;
         default:
             return 1.0f;
     }
@@ -339,7 +337,6 @@ static int init_raster(void)
     raster_t *raster;
 
     raster = &vicii.raster;
-    video_color_set_canvas(raster->canvas);
 
     raster_sprite_status_new(raster, VICII_NUM_SPRITES, vicii_sprite_offset());
     raster_line_changes_sprite_init(raster);
