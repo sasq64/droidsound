@@ -60,11 +60,6 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public String getStringInfo(int what) {
-		return N_getStringInfo(currentSong, what);
-	}
-
-	@Override
 	public int getIntInfo(int what) {
 		return N_getIntInfo(currentSong, what);
 	}
@@ -78,21 +73,18 @@ public class ModPlugin extends DroidSoundPlugin {
 	public String[] getDetailedInfo() {
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
-		//Log.d(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo(currentSong, 101);
 
-		String[] info;
+		final String[] info;
 		if(instruments != null && instruments.length() > 0) {
-			info = new String [6];
-			info[4] = "Instruments";
-			info[5] = instruments;
+			info = new String[3];
+			info[1] = "";
+			info[2] = instruments;
 		} else {
-			info = new String [4];
+			info = new String[1];
 		}
-		info[0] = "Format";
-		info[1] = "MODPlug: " + fmt;
-		info[2] = "Channels";
-		info[3] = Integer.toString(channels);
+
+		info[0] = "Format:" + fmt + "(" + channels + " ch)";
 		return info;
 	}
 

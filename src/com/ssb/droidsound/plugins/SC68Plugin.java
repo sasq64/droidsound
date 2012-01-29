@@ -49,12 +49,12 @@ public class SC68Plugin extends DroidSoundPlugin {
 
 	@Override
 	public String[] getDetailedInfo() {
-		String replay = getStringInfo(52);
-		String hwname = getStringInfo(51);
+		String replay = N_getStringInfo(currentSong, 52);
+		String hwname = N_getStringInfo(currentSong, 51);
 		int hwbits = getIntInfo(50);
 		return new String[] {
-				"Format", String.format("SC68: %s", replay != null ? replay : "?"),
-				"Hardware", String.format("%s (%s)", hwname != null ? hwname : "?", HWS[hwbits])
+				String.format("Format: %s", replay != null ? replay : "?"),
+				String.format("Hardware: %s (%s)", hwname != null ? hwname : "?", HWS[hwbits])
 		};
 	}
 
@@ -69,11 +69,6 @@ public class SC68Plugin extends DroidSoundPlugin {
 	@Override
 	public int getSoundData(short[] dest) {
 		return N_getSoundData(currentSong, dest, dest.length);
-	}
-
-	@Override
-	public String getStringInfo(int what) {
-		return N_getStringInfo(currentSong, what);
 	}
 
 	@Override

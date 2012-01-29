@@ -47,17 +47,54 @@ public class PlayingFragment extends Fragment {
 		}
 
 		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			if (convertView == null) {
-				convertView = getActivity().getLayoutInflater().inflate(R.layout.songinfo_pair, null);
-			}
-			TextView key = (TextView) convertView.findViewById(R.id.key);
-			TextView value = (TextView) convertView.findViewById(R.id.value);
+		public int getViewTypeCount() {
+			return 2;
+		}
 
+		@Override
+		public int getItemViewType(int position) {
 			Entry e = getItem(position);
-			key.setText(e.key);
+			return e.key == null ? 0 : 1;
+		}
+
+		@Override
+		public View getView(int position, View view, ViewGroup parent) {
+			Entry e = getItem(position);
+			if (view == null) {
+				LayoutInflater li = getActivity().getLayoutInflater();
+				if (e.key != null) {
+					view = li.inflate(R.layout.songinfo_pair, null);
+				} else {
+					view = li.inflate(R.layout.songinfo_details, null);
+				}
+			}
+
+			TextView key = (TextView) view.findViewById(R.id.key);
+			if (key != null) {
+				key.setText(e.key);
+			}
+
+			TextView value = (TextView) view.findViewById(R.id.value);
 			value.setText(e.value);
-			return convertView;
+			return view;
+		}
+	}
+
+	protected String getString(String name) {
+		try {
+			return getString((Integer) R.string.class.getField(name).get(null));
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String dateFormat(int date) {
+		int year = date / 10000;
+		int month = (date / 100) % 100;
+		if (month != 0) {
+			return String.format("%04d/%02d", year, month);
+		} else {
+			return String.valueOf(year);
 		}
 	}
 
@@ -66,13 +103,30 @@ public class PlayingFragment extends Fragment {
 		public void onReceive(Context c, Intent i) {
 			myAdapter.clear();
 			Bundle b = i.getExtras();
-			for (String k : b.keySet()) {
-				Object v = b.get(k);
-				if (v == null) {
-					continue;
+
+			myAdapter.add(new Entry(getString("file_title"), b.getString("file.title")));
+			myAdapter.add(new Entry(getString("file_composer"), b.getString("file.composer")));
+			if (b.getInt("file.date") > 19000000) {
+				String date = dateFormat(b.getInt("file.date"));
+				if (date != null) {
+					myAdapter.add(new Entry(getString("file_date"), date));
 				}
-				Entry e = new Entry(k, String.valueOf(v));
-				myAdapter.add(e);
+			}
+			if (b.getInt("file.subsongs") > 0) {
+				int cur = b.getInt("plugin.currentSubsongs");
+				int max = b.getInt("file.subsongs");
+				myAdapter.add(new Entry(getString("file_subsongs"), String.format("%d/%d", cur, max)));
+			}
+
+			myAdapter.add(new Entry(getString("plugin_name"), b.getString("plugin.name")));
+
+			String[] di = b.getStringArray("plugin.detailedInfo");
+			if (di != null) {
+				String sv = "";
+				for (String s : di) {
+					sv += s + "\n";
+				}
+				myAdapter.add(new Entry(null, sv));
 			}
 
 			int length = i.getIntExtra("subsong.length", 0);

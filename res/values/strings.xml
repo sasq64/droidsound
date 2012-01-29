@@ -18,6 +18,12 @@
 <string name="delete_playlist">Remove playlist</string>
 <string name="confirm">Confirm deletion</string>
 
+<string name="file_title">Title</string>
+<string name="file_composer">Composer</string>
+<string name="file_date">Date</string>
+<string name="file_subsongs">Subsongs</string>
+<string name="plugin_name">Player</string>
+
 <string-array name="panning_opts">
 	<item>0 % (mono)</item>
 	<item>25 %</item>

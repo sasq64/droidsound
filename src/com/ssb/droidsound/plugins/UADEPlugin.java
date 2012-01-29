@@ -139,18 +139,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 			return null;
 		}
 
-		String [] details = new String [2];
-		details[0] = "Format";
-		details[1] = "UADE: " + N_getStringInfo(currentSong, INFO_TYPE);
+		String[] details = new String[1];
+		details[0] = N_getStringInfo(currentSong, INFO_TYPE);
 		return details;
-	}
-
-	@Override
-	public String getStringInfo(int what) {
-		if (currentSong == 0) {
-			return null;
-		}
-		return N_getStringInfo(currentSong, what);
 	}
 
 	@Override

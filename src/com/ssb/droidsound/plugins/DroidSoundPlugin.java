@@ -86,8 +86,6 @@ public abstract class DroidSoundPlugin {
 		return null;
 	}
 
-	public abstract String getStringInfo(int what);
-
 	public abstract void setOption(String string, Object val);
 
 	public boolean canSeek() {

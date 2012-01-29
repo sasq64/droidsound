@@ -235,24 +235,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public String getStringInfo(int what) {
-		if (songInfo == null) {
-			return null;
-		}
-
-		switch(what) {
-		case INFO_AUTHOR:
-			return songInfo.composer;
-		case INFO_COPYRIGHT:
-			return songInfo.copyright;
-		case INFO_TITLE:
-			return songInfo.name;
-		default:
-			return null;
-		}
-	}
-
-	@Override
 	protected boolean load(String name, byte[] module) {
 		throw new RuntimeException("This method should not be called.");
 	}

@@ -29,21 +29,8 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public String[] getDetailedInfo() {
-		String[] info = new String[2];
-		info[0] = "Format";
-		info[1] = "Hively/AHX";
-		return info;
-	}
-
-	@Override
 	public int getSoundData(short[] dest) {
 		return N_getSoundData(songRef, dest, dest.length);
-	}
-
-	@Override
-	public String getStringInfo(int what) {
-		return null;
 	}
 
 	@Override
