@@ -18,7 +18,7 @@ public class VisualizationView extends SurfaceView {
 	protected static final String TAG = VisualizationView.class.getSimpleName();
 
 	private final double minFreq = 110; /* A */
-	private final float[] fft = new float[BINS * 2];
+	private final float[] fft = new float[BINS * 3];
 	private Color[] colors;
 
 	private Queue<OverlappingFFT.Data> queue;
@@ -43,7 +43,7 @@ public class VisualizationView extends SurfaceView {
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-		fftPaint.setStrokeWidth((float) w / fft.length * 2f - 1f);
+		fftPaint.setStrokeWidth((float) w / fft.length * 3f - 1f);
 	}
 
 	/**
@@ -69,17 +69,17 @@ public class VisualizationView extends SurfaceView {
 		int width = getWidth();
 		int height = getHeight();
 
-		for (int i = 1; i < fft.length - 1; i += 2) {
+		for (int i = 1; i < fft.length - 1; i += 3) {
 			float dbPrev = fft[i-1];
 			float dbNorm = fft[i];
 			float dbNext = fft[i+1];
 
 			float hump = 2f * dbNorm - dbPrev - dbNext;
 			float saturation = Math.max(0, Math.min(1, hump * 4f));
-			fftPaint.setColor(colors[(i >> 1) % 12].toRGB((1f + saturation) * 0.5f, saturation));
+			fftPaint.setColor(colors[(i / 3) % 12].toRGB((1f + saturation) * 0.5f, saturation));
 
 			float x = (i + 0.5f) / (fft.length) * width;
-			canvas.drawLine(x, height, x, height * (1f - dbNorm), fftPaint);
+			canvas.drawLine(x, height, x, height * (1f - (dbNorm + dbPrev + dbNext) / 3), fftPaint);
 		}
 	}
 
@@ -121,8 +121,8 @@ public class VisualizationView extends SurfaceView {
 	private void updateFftData(short[] buf) {
 		/* Remap data bins into our freq-linear fft */
 		for (int i = 0; i < fft.length; i ++) {
-			final double startFreq = projectFft((i - 1 - 0.5) / 2);
-			final double endFreq = projectFft((i - 1 + 0.5) / 2);
+			final double startFreq = projectFft((i - 1 - 0.5) / 3);
+			final double endFreq = projectFft((i - 1 + 0.5) / 3);
 
 			final double startIdx = startFreq / 22050 * (buf.length >> 1);
 			final double endIdx = endFreq / 22050 * (buf.length >> 1);
