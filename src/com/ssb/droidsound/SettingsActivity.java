@@ -62,7 +62,7 @@ public class SettingsActivity extends PreferenceActivity {
 			if(newValue instanceof String) {
 				try {
 					int i = Integer.parseInt((String) newValue);
-					newValue = new Integer(i);
+					newValue = Integer.valueOf(i);
 				} catch (NumberFormatException e) {
 				}
 			}

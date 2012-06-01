@@ -12,16 +12,22 @@
 
 #include "com_ssb_droidsound_utils_NativeZipFile.h"
 
-jstring NewString(JNIEnv *env, const char *str)
+static jstring NewString(JNIEnv *env, const char *str)
 {
-	static char temp[256];
-	char *ptr = temp;
+	static jchar *temp, *ptr;
+
+	temp = (jchar *) malloc((strlen(str) + 1) * sizeof(jchar));
+
+	ptr = temp;
 	while(*str) {
-		char c = *str++;
-		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 ? c : '?';
+		unsigned char c = (unsigned char)*str++;
+		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
 	}
-	*ptr++ = 0;
-	jstring j = env->NewStringUTF(temp);
+	//*ptr++ = 0;
+	jstring j = env->NewString(temp, ptr - temp);
+
+	free(temp);
+
 	return j;
 }
 
@@ -37,7 +43,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_openZipFile(J
 	refField = env->GetFieldID(cl, "zipRef", "J");
 	env->SetLongField(obj, refField, (jlong)zipFile);
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "TinySidPlugin", "ZIPFile %p", zipFile);
+	__android_log_print(ANDROID_LOG_VERBOSE, "NateveZipFile", "ZIPFile %p", zipFile);
 
 	env->ReleaseStringUTFChars(fileName, fname);
 }
@@ -62,7 +68,9 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_getEntry(J
 	struct zip *zipFile = (struct zip*)env->GetLongField(obj, refField);
 
 	const char *name = zip_get_name(zipFile, e, 0 /* ZIP_FL_UNCHANGED */ );
-	return NewString(env, name);
+
+	return env->NewStringUTF(name);
+	//return NewString(env, name);
 }
 
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_NativeZipFile_getSize(JNIEnv *env, jobject obj, jint e)

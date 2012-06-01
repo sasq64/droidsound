@@ -9,13 +9,11 @@ import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Date;
 
-import android.content.Context;
 import android.os.Build;
 
 
 public class MyExceptionHandler implements UncaughtExceptionHandler {
 
-	private Context application;
 	private UncaughtExceptionHandler oldHandler;
 	private String targetDir;
 

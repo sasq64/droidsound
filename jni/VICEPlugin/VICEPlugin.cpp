@@ -24,16 +24,22 @@ extern void psid_play(short *buf, int size);
 
 }
 
-static jstring NewString(JNIEnv *env, unsigned char *str)
+static jstring NewString(JNIEnv *env, const char *str)
 {
-	static jchar temp[256];
-	jchar *ptr = temp;
-	while (*str) {
-		unsigned char c = *str++;
-		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 ? c : '?';
+	static jchar *temp, *ptr;
+
+	temp = (jchar *) malloc((strlen(str) + 1) * sizeof(jchar));
+
+	ptr = temp;
+	while(*str) {
+		unsigned char c = (unsigned char)*str++;
+		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
 	}
 	//*ptr++ = 0;
 	jstring j = env->NewString(temp, ptr - temp);
+
+	free(temp);
+
 	return j;
 }
 
@@ -97,7 +103,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1loadFile
 	int ret = psid_load_file(cname);
 	env->ReleaseStringUTFChars(name, cname);
         if (ret != 0) {
-	    return NewString(env, (unsigned char *) "failure code from psid_load_file()");
+	    return NewString(env, (const char *) "failure code from psid_load_file()");
         }
 
         c64_song_init();

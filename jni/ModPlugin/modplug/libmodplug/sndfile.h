@@ -5,6 +5,11 @@
  *          Adam Goode       <adam@evdebs.org> (endian and char fixes for PPC)
 */
 
+#if defined(HAVE_CONFIG_H) && !defined(CONFIG_H_INCLUDED)
+#include "config.h"
+#define CONFIG_H_INCLUDED 1
+#endif
+
 #ifndef __SNDFILE_H
 #define __SNDFILE_H
 
@@ -64,8 +69,10 @@ typedef const BYTE * LPCBYTE;
 #define MOD_TYPE_AMF0		0x200000
 #define MOD_TYPE_PSM		0x400000
 #define MOD_TYPE_J2B		0x800000
+#define MOD_TYPE_ABC		0x1000000
+#define MOD_TYPE_PAT		0x2000000
 #define MOD_TYPE_UMX		0x80000000 // Fake type
-#define MAX_MODTYPE		23
+#define MAX_MODTYPE		24
 
 
 
@@ -452,6 +459,7 @@ typedef struct _MODCOMMAND
 class IMixPlugin
 {
 public:
+	virtual ~IMixPlugin();
 	virtual int AddRef() = 0;
 	virtual int Release() = 0;
 	virtual void SaveAllParameters() = 0;
@@ -520,6 +528,7 @@ typedef struct MODMIDICFG
         char szMidiZXXExt[128*32]; // changed from CHAR
 } MODMIDICFG, *LPMODMIDICFG;
 
+#define NOTE_MAX                        120 //Defines maximum notevalue as well as maximum number of notes.
 
 typedef VOID (* LPSNDMIXHOOKPROC)(int *, unsigned long, unsigned long); // buffer, samples, channels
 
@@ -633,6 +642,12 @@ public:
 	BOOL ReadPSM(LPCBYTE lpStream, DWORD dwMemLength);
 	BOOL ReadJ2B(LPCBYTE lpStream, DWORD dwMemLength);
 	BOOL ReadUMX(LPCBYTE lpStream, DWORD dwMemLength);
+	BOOL ReadABC(LPCBYTE lpStream, DWORD dwMemLength);
+	BOOL TestABC(LPCBYTE lpStream, DWORD dwMemLength);
+	BOOL ReadMID(LPCBYTE lpStream, DWORD dwMemLength);
+	BOOL TestMID(LPCBYTE lpStream, DWORD dwMemLength);
+	BOOL ReadPAT(LPCBYTE lpStream, DWORD dwMemLength);
+	BOOL TestPAT(LPCBYTE lpStream, DWORD dwMemLength);
 	// Save Functions
 #ifndef MODPLUG_NO_FILESAVE
 	UINT WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMaxLen=0);
@@ -663,6 +678,7 @@ public:
 public:
 	// Mixer Config
 	static BOOL InitPlayer(BOOL bReset=FALSE);
+	static BOOL SetMixConfig(UINT nStereoSeparation, UINT nMaxMixChannels);
 	static BOOL SetWaveConfig(UINT nRate,UINT nBits,UINT nChannels,BOOL bMMX=FALSE);
 	static BOOL SetResamplingMode(UINT nMode); // SRCMODE_XXXX
 	static BOOL IsStereo() { return (gnChannels > 1) ? TRUE : FALSE; }
@@ -986,7 +1002,7 @@ ARM_get32(const void *data)
 #define bswapBE32(X) bswap_32(ARM_get32(&X))
 
 // From libsdl
-#elif WORDS_BIGENDIAN
+#elif defined(WORDS_BIGENDIAN) && WORDS_BIGENDIAN
 #define bswapLE16(X) bswap_16(X)
 #define bswapLE32(X) bswap_32(X)
 #define bswapBE16(X) (X)
@@ -997,29 +1013,5 @@ ARM_get32(const void *data)
 #define bswapBE16(X) bswap_16(X)
 #define bswapBE32(X) bswap_32(X)
 #endif
-
-static __inline unsigned int read32(const void *ptr)
-{
-	unsigned char *p = (unsigned char *)ptr;
-	return (p[0] | (p[1]<<8) | (p[2] << 16) | (p[3]<<24));
-}
-
-static __inline unsigned short read16(const void *ptr)
-{
-	unsigned char *p = (unsigned char *)ptr;
-	return (p[0] | (p[1]<<8));
-}
-
-static __inline unsigned int readBE32(const void *ptr)
-{
-	unsigned char *p = (unsigned char *)ptr;
-	return (p[3] | (p[2]<<8) | (p[1] << 16) | (p[0]<<24));
-}
-
-static __inline unsigned short readBE16(const void *ptr)
-{
-	unsigned char *p = (unsigned char *)ptr;
-	return (p[1] | (p[0]<<8));
-}
 
 #endif

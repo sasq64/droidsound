@@ -7,6 +7,7 @@ import java.util.Set;
 
 import android.database.Cursor;
 import android.database.CursorWrapper;
+import android.util.SparseArray;
 
 public class CursorTransform {
 	private static final String TAG = CursorTransform.class.getSimpleName();
@@ -25,14 +26,14 @@ public class CursorTransform {
 		//private Map<Integer, Map<String, Integer> > transformColMap;
 
 		
-		private Map<Integer, ColTransform> indexMap;
+		private SparseArray<ColTransform> indexMap;
 		private Cursor cursor;
 		private int colIndex = 100;
 
 		public TransformWrapper(Cursor cr, Map<String, ColTransform> txmap) {
 			super(cr);
 			transformMap = txmap;
-			indexMap = new HashMap<Integer, ColTransform>();
+			indexMap = new SparseArray<ColTransform>();
 			cursor = cr;
 			
 			Set<Entry<String, ColTransform>> es = txmap.entrySet();

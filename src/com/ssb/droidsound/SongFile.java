@@ -2,8 +2,6 @@ package com.ssb.droidsound;
 
 import java.io.File;
 
-import com.ssb.droidsound.utils.Log;
-
 public class SongFile {
 
 	private static final String TAG = SongFile.class.getSimpleName();

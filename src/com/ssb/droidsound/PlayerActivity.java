@@ -6,13 +6,10 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
-import java.util.HashMap;
-import java.util.Map;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -42,6 +39,7 @@ import android.speech.tts.TextToSpeech;
 import android.text.Html;
 import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
+import android.util.SparseArray;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
@@ -72,8 +70,8 @@ import android.widget.ViewFlipper;
 import com.ssb.droidsound.database.CSDBParser;
 import com.ssb.droidsound.database.MediaSource;
 import com.ssb.droidsound.database.SongDatabase;
-import com.ssb.droidsound.playlistview.PlayListView;
 import com.ssb.droidsound.playlistview.FileInfo;
+import com.ssb.droidsound.playlistview.PlayListView;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
@@ -195,7 +193,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private Config lastConfig;
 
-	private Map<Integer, Runnable> confirmables = new HashMap<Integer, Runnable>();
+	private SparseArray<Runnable> confirmables = new SparseArray<Runnable>();
 
 	private int songState;
 
@@ -238,8 +236,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private TextView lowText;
 
-	private Method startTrackingMethod;
-
 	private byte[] md5;
 
 	private SongFile clipBoardFile;
@@ -257,7 +253,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	protected int toneLength = 2;
 
 	private TextView toneNameText;
-	private static final Class[] startTrackingSignature = new Class[] {};
 
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "########## Activity finalize");
@@ -547,6 +542,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				if(music.startsWith("file:/")) {
 					music = music.substring(6);
 				}
+				
+				music = URLDecoder.decode(music);
+				
+				Log.d(TAG, "Moving %s", music);
 
 				File f = new File(music);
 
@@ -578,14 +577,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			finish();
 			return;
 		}
-		
-		
-		try {
-			startTrackingMethod = KeyEvent.class.getMethod("startTracking", startTrackingSignature);
-		} catch (NoSuchMethodException e) {
-			startTrackingMethod = null;
-		}
-		
 
 		setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
@@ -727,30 +718,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		boolean created = false;
 
 		if(songDatabase == null) {
-			Log.d(TAG, "############ CREATING static SongDatabase object ##############");
-
-			songDatabase = new SongDatabase(getApplicationContext());
-
-			CSDBParser csdb = new CSDBParser();
-			songDatabase.registerDataSource(CSDBParser.DUMP_NAME, csdb);
-			songDatabase.registerDataSource(CSDBParser.DUMP_NAME + ".ZIP", csdb);
-
-			MediaSource ms = new MediaSource(this);
-			songDatabase.registerDataSource(MediaSource.NAME, ms);
-
-			dbThread = new Thread(songDatabase);
-			dbThread.start();
-
-			while(!songDatabase.isReady()) {
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
-			}
-
+			setupSongDatabase();
 			created = true;
-			Log.d(TAG, "CREATED");
 		}
 
 		setDirectory(currentPath, null);
@@ -1095,6 +1064,32 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		
 		Log.d(TAG, "ON CREATE DONE");
 	}
+	
+	private void setupSongDatabase() {
+		Log.d(TAG, "############ CREATING static SongDatabase object ##############");
+
+		songDatabase = new SongDatabase(getApplicationContext());
+
+		CSDBParser csdb = new CSDBParser();
+		songDatabase.registerDataSource(CSDBParser.DUMP_NAME, csdb);
+		songDatabase.registerDataSource(CSDBParser.DUMP_NAME + ".ZIP", csdb);
+
+		MediaSource ms = new MediaSource(this);
+		songDatabase.registerDataSource(MediaSource.NAME, ms);
+
+		dbThread = new Thread(songDatabase);
+		dbThread.start();
+
+		while(!songDatabase.isReady()) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+		}
+
+		Log.d(TAG, "CREATED");
+	}
 
 	private void setupModsDir() {
 		
@@ -1330,9 +1325,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		return super.dispatchKeyEvent(event);
 	}
 
-	private static final Class[] mStartTracking = new Class[] {};
-    
-	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		Log.d(TAG, "%%%% DOWN %d", keyCode);
@@ -1421,8 +1413,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// break;
 		case KeyEvent.KEYCODE_Q:
 			player.stop();
-			songDatabase.quit();
-			songDatabase = null;
+			//songDatabase.quit();
+			//songDatabase = null;
 			finish();
 			break;
 		case KeyEvent.KEYCODE_A:
@@ -1459,19 +1451,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case KeyEvent.KEYCODE_BACK:
 		case KeyEvent.KEYCODE_DEL:
-			Log.d(TAG, ">>>>>>>>>>>>> BACK PRESSED");
-			
+			Log.d(TAG, ">>>>>>>>>>>>> BACK PRESSED");			
 			backPressed = true;
-			if(startTrackingMethod != null) {
-				try {
-					Log.d(TAG, "############### START TRACKING");
-					startTrackingMethod.invoke(event);
-				} catch (IllegalArgumentException e) {
-				} catch (IllegalAccessException e) {
-				} catch (InvocationTargetException e) {
-				}
-			}
-			 return true;
+			event.startTracking();
+			return true;
 		}
 
 		//backDown = 0;
@@ -1562,6 +1545,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Log.d(TAG, "#### onResume()");
 
 		player.bindService(this, this);
+		
+		//if(songDatabase == null) {
+		//	setupSongDatabase();
+		//}
 
 		if(!songDatabase.isScanning() && progressDialog != null) {
 			progressDialog.cancel();
@@ -1966,9 +1953,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case R.id.quit:
 			player.stop();
-			songDatabase.quit();
-			songDatabase = null;
-
+			//songDatabase.quit();
+			//songDatabase = null;
 			finish();
 			break;
 		case R.id.new_:
@@ -2029,30 +2015,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 	}
 
-	/*
-	 * 
-	 * I/EventHub( 2621): New keyboard: device->id=0x10004 devname='Broadcom
-	 * Bluetooth HID' propName='hw.keyboards.65540.devname'
-	 * keylayout='/system/usr/keylayout/qwerty.kl' I/EventHub( 2621): New
-	 * device: path=/dev/input/event4 name=Broadcom Bluetooth HID id=0x10004 (of
-	 * 0x5) index=5 fd=134 classes=0x3 I/KeyInputQueue( 2621): Device added:
-	 * id=0x10004, name=Broadcom Bluetooth HID, classes=3 I/ActivityManager(
-	 * 2621): Config changed: { scale=1.0 imsi=240/1 loc=en_GB touch=3
-	 * keys=2/1/2 nav=1/1 orien=1 layout=34 uiMode=17 seq=30 FlipFont=0}
-	 * 
-	 * 
-	 * W/KeyCharacterMap( 4666): Can't open keycharmap file W/KeyCharacterMap(
-	 * 4666): Error loading keycharmap file
-	 * '/system/usr/keychars/Broadcom_Bluetooth_HID.kcm.bin'.
-	 * hw.keyboards.65540.devname='Broadcom Bluetooth HID' W/KeyCharacterMap(
-	 * 4666): Using default keymap: /system/usr/keychars/qwerty.kcm.bin
-	 */
 	@Override
 	protected Dialog onCreateDialog(int id) {
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-		if(confirmables.containsKey(id)) {
+		if(confirmables.get(id) != null) {
 			final Runnable runnable = confirmables.get(id);
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -2126,7 +2094,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					File file = new File("/sdcard/droidsound/ringtones");
+					File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+					File file = new File(droidDir, "ringtones");
 					file.mkdir();
 					int tl = toneLength;
 					if(tl == 3) tl = 6;

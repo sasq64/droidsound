@@ -351,7 +351,7 @@ public abstract class DroidSoundPlugin {
 						if(val instanceof String) {
 							try {
 								int i = Integer.parseInt((String) val);
-								val = new Integer(i);
+								val = Integer.valueOf(i);
 							} catch (NumberFormatException e) {
 							}
 						}

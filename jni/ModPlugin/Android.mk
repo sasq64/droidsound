@@ -28,4 +28,6 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/modplug $(LOCAL_PATH)/modplug/libmodplug
 #LOCAL_CFLAGS := -I$(LOCAL_PATH)/modplug -I$(LOCAL_PATH)/modplug/libmodplug
 LOCAL_LDLIBS := -llog 
 
+LOCAL_CFLAGS := -DHAVE_SETENV -DHAVE_SINF
+
 include $(BUILD_SHARED_LIBRARY)

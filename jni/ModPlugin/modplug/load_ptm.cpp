@@ -59,12 +59,19 @@ typedef struct PTMSAMPLE
 #pragma pack()
 
 
+static uint32_t BS2WORD(uint16_t w[2]) {
+	uint32_t u32 = (w[1] << 16) + w[0];
+	return(bswapLE32(u32));
+}
+
 BOOL CSoundFile::ReadPTM(const BYTE *lpStream, DWORD dwMemLength)
 //---------------------------------------------------------------
 {
-	PTMFILEHEADER pfh = *(LPPTMFILEHEADER)lpStream;
 	DWORD dwMemPos;
 	UINT nOrders;
+
+	if ((!lpStream) || (dwMemLength < sizeof(PTMFILEHEADER))) return FALSE;
+	PTMFILEHEADER pfh = *(LPPTMFILEHEADER)lpStream;
 
 	pfh.norders = bswapLE16(pfh.norders);
 	pfh.nsamples = bswapLE16(pfh.nsamples);
@@ -78,7 +85,6 @@ BOOL CSoundFile::ReadPTM(const BYTE *lpStream, DWORD dwMemLength)
 	        pfh.patseg[j] = bswapLE16(pfh.patseg[j]);
 	}
 
-	if ((!lpStream) || (dwMemLength < 1024)) return FALSE;
 	if ((pfh.ptmf_id != 0x464d5450) || (!pfh.nchannels)
 	 || (pfh.nchannels > 32)
 	 || (pfh.norders > 256) || (!pfh.norders)
@@ -114,11 +120,10 @@ BOOL CSoundFile::ReadPTM(const BYTE *lpStream, DWORD dwMemLength)
 		if ((psmp->sampletype & 3) == 1)
 		{
 			UINT smpflg = RS_PCM8D;
-			DWORD samplepos;
-			pins->nLength = bswapLE32(*(LPDWORD)(psmp->length));
-			pins->nLoopStart = bswapLE32(*(LPDWORD)(psmp->loopbeg));
-			pins->nLoopEnd = bswapLE32(*(LPDWORD)(psmp->loopend));
-			samplepos = bswapLE32(*(LPDWORD)(&psmp->fileofs));
+			pins->nLength = BS2WORD(psmp->length);
+			pins->nLoopStart = BS2WORD(psmp->loopbeg);
+			pins->nLoopEnd = BS2WORD(psmp->loopend);
+			DWORD samplepos = BS2WORD(psmp->fileofs);
 			if (psmp->sampletype & 4) pins->uFlags |= CHN_LOOP;
 			if (psmp->sampletype & 8) pins->uFlags |= CHN_PINGPONGLOOP;
 			if (psmp->sampletype & 16)

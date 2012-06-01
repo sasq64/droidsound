@@ -15,8 +15,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -37,10 +37,8 @@ import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
-import com.ssb.droidsound.utils.Log;
-
-import com.ssb.droidsound.FileIdentifier.MusicInfo;
 import com.ssb.droidsound.plugins.UADEPlugin;
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 /**
@@ -1181,7 +1179,7 @@ public class SongDatabase implements Runnable {
 
 	public Cursor search(String query, String fromPath, int sorting) {
 		
-		if(!isReady) {
+		if(!isReady || query == null) {
 			return null;
 		}
 		

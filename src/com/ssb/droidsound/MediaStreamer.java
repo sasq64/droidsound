@@ -2,24 +2,19 @@ package com.ssb.droidsound;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnPreparedListener;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player;
 import com.ssb.droidsound.utils.ID3Tag;
-import com.ssb.droidsound.utils.StreamingHttpConnection;
-
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnPreparedListener;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.utils.StreamingHttpConnection;
 
 public class MediaStreamer implements Runnable {
 	private static final String TAG = MediaStreamer.class.getSimpleName();
@@ -39,9 +34,6 @@ public class MediaStreamer implements Runnable {
 	private volatile boolean started;
 	private volatile boolean prepared;
 	private volatile boolean loaded;
-	
-	private volatile int mplayerPos;
-
 	
 	//private String httpName;
 	private List<MetaString> metaStrings = new ArrayList<MetaString>();
@@ -253,7 +245,6 @@ V/MediaStreamer(12369): icy-metaint: 16000
 				hasQuit = false;
 				extraSize = 0;
 				
-				mplayerPos = 0;
 				bufferEnded = false;
 				
 				

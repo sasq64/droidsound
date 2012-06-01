@@ -7,7 +7,7 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 
 public class NativeZipFile {
-
+	private static final String TAG = NativeZipFile.class.getSimpleName();
 	static {
 		System.loadLibrary("nativezipfile");
 	}
@@ -91,10 +91,12 @@ public class NativeZipFile {
 		@Override
 		public MyZipEntry nextElement() {
 			String name = getEntry(currentIndex);
+			Log.d(TAG, "Next element:'%s'\n", name);
 			MyZipEntry entry = new MyZipEntry(name);
 			entry.setIndex(currentIndex);
 			entry.setSize(getSize(currentIndex));
 			currentIndex++;
+
 			return entry;
 		}
 	};

@@ -21,7 +21,7 @@
             />
             
 	<EditTextPreference
-			android:numeric="integer"
+			android:inputType="numberDecimal"
             android:key="default_length"
             android:title="Default song length"
             android:dialogTitle="Length (in seconds)"

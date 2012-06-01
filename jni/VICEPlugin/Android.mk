@@ -3,17 +3,16 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := resid
 LOCAL_ARM_MODE := arm
 LOCAL_CFLAGS := -ffast-math -fno-exceptions
-LOCAL_CPP_EXTENSION := cc
-MY_RESID_FILES = $(wildcard $(LOCAL_PATH)/vice/resid/*.cc)
+
+MY_RESID_FILES = $(wildcard $(LOCAL_PATH)/vice/resid/*.cpp)
 LOCAL_SRC_FILES := $(MY_RESID_FILES:$(LOCAL_PATH)%=%)
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 LOCAL_MODULE := vice
 LOCAL_ARM_MODE := arm
-LOCAL_CPP_EXTENSION := cc
-LOCAL_SRC_FILES := \
-	VICEPlugin.cc \
+
+LOCAL_SRC_FILES := VICEPlugin.cpp \
 	android/archdep.c \
 	android/console.c \
 	android/joy.c \
@@ -118,7 +117,7 @@ LOCAL_SRC_FILES := \
 	vice/sid/sid-cmdline-options.c \
 	vice/sid/sid-resources.c \
 	vice/sid/sid-snapshot.c \
-	vice/sid/resid.cc \
+	vice/sid/resid.cpp \
 	vice/sounddrv/soundaiff.c \
 	vice/sounddrv/sounddump.c \
 	vice/sounddrv/soundfs.c \

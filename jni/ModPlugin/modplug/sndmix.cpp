@@ -6,6 +6,7 @@
 
 #include <libmodplug/stdafx.h>
 #include <libmodplug/sndfile.h>
+#include "tables.h"
 
 #ifdef MODPLUG_TRACKER
 #define ENABLE_STEREOVU
@@ -17,10 +18,10 @@
 // VU-Meter
 #define VUMETER_DECAY		4
 
-// SNDMIX: These are global flags for playback control
+// SNDMIX: These are global flags for playback control (first two configurable via SetMixConfig)
 UINT CSoundFile::m_nStereoSeparation = 128;
-LONG CSoundFile::m_nStreamVolume = 0x8000;
 UINT CSoundFile::m_nMaxMixChannels = 32;
+LONG CSoundFile::m_nStreamVolume = 0x8000;
 // Mixing Configuration (SetWaveConfig)
 DWORD CSoundFile::gdwSysInfo = 0;
 DWORD CSoundFile::gnChannels = 1;
@@ -52,15 +53,6 @@ extern VOID MPPASMCALL X86_InterleaveFrontRear(int *pFrontBuf, int *pRearBuf, DW
 extern VOID MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs);
 extern VOID MPPASMCALL X86_MonoFromStereo(int *pMixBuf, UINT nSamples);
 
-extern short int ModSinusTable[64];
-extern short int ModRampDownTable[64];
-extern short int ModSquareTable[64];
-extern short int ModRandomTable[64];
-extern DWORD LinearSlideUpTable[256];
-extern DWORD LinearSlideDownTable[256];
-extern DWORD FineLinearSlideUpTable[16];
-extern DWORD FineLinearSlideDownTable[16];
-extern signed char ft2VibratoTable[256];	// -64 .. +64
 extern int MixSoundBuffer[MIXBUFFERSIZE*4];
 extern int MixRearBuffer[MIXBUFFERSIZE*2];
 UINT gnReverbSend;
@@ -127,7 +119,7 @@ rneg:
 	}
 	return result;
 #else
-	return ((unsigned long long) a * (unsigned long long) b ) / c;
+	return ((uint64_t) a * (uint64_t) b ) / c;
 #endif
 }
 
@@ -178,7 +170,7 @@ rneg:
 	}
 	return result;
 #else
-	return ((unsigned long long) a * (unsigned long long) b + (c >> 1)) / c;
+	return ((uint64_t) a * (uint64_t) b + (c >> 1)) / c;
 #endif
 }
 

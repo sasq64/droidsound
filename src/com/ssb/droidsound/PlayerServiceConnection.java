@@ -89,16 +89,16 @@ public class PlayerServiceConnection implements ServiceConnection {
 		Log.d(TAG, "Service Disconnected!");
 	}
 
-	public void bindService(Activity activity, Callback cb) {
+	public void bindService(Context ctx, Callback cb) {
 		callback = cb;
 		Log.d(TAG, "binding");
-		Intent i = new Intent(activity, PlayerService.class);
+		Intent i = new Intent(ctx, PlayerService.class);
 		bound = true;
-		activity.startService(i);
-		activity.bindService(i, this, Context.BIND_AUTO_CREATE);        		
+		ctx.startService(i);
+		ctx.bindService(i, this, Context.BIND_AUTO_CREATE);        		
 	}
 
-	public void unbindService(Activity activity) {
+	public void unbindService(Context ctx) {
 		Log.d(TAG, "Unbinding");
 		callback = null;
 		bound = false;
@@ -109,7 +109,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 				throw new RuntimeException(e);
 			}
 		}
-		activity.unbindService(this);
+		ctx.unbindService(this);
 	}
 	/*
 	public int getInt(int what) {

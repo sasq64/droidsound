@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -16,6 +15,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Environment;
 import android.provider.BaseColumns;
+import android.util.SparseArray;
 
 import com.ssb.droidsound.utils.Log;
 
@@ -28,7 +28,7 @@ public class CSDBParser implements DataSource {
 	private static String hvsc = null;
 	
 	//static Map<String, Integer> events = new HashMap<String, Integer>();
-	HashMap<Integer, String> groups = null;
+	SparseArray<String> groups = null;
 	String pathName = null;
 	
 	public void setPath(String p) {
@@ -364,7 +364,7 @@ public class CSDBParser implements DataSource {
 		}
 
 		if(groups == null) {
-			 groups = new HashMap<Integer, String>();
+			groups = new SparseArray<String>();
 			 Cursor c = rdb.rawQuery("select id, name from groups", null);
 			 c.moveToPosition(-1);
 			 while(c.moveToNext()) {
@@ -382,11 +382,8 @@ public class CSDBParser implements DataSource {
 				File extFile = Environment.getExternalStorageDirectory();
 				if(extFile != null) {
 					hvsc = extFile + "/C64Music.zip/C64Music";
-				} else {
-					hvsc = "/sdcard/MODS/C64Music.zip/C64Music";
-				}
-				
-				if(!(new File(hvsc).exists())) {
+				}				
+				if(hvsc == null || !(new File(hvsc).exists())) {
 					// TODO: This does not work since File() translates // to /
 					hvsc = "http://swimsuitboys.com/droidsound/dl/C64Music";
 				}

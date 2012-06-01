@@ -33,19 +33,20 @@ static char data_dir[1024];
 
 static jstring NewString(JNIEnv *env, const char *str)
 {
-	static jchar temp[256];
-	jchar *ptr = temp;
+	static jchar *temp, *ptr;
 
-	if(str == 0) {
-		*ptr++ = 0;
-	} else {
-		while(*str) {
-			unsigned char c = (unsigned char)*str++;
-			*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
-		}
+	temp = (jchar *) malloc((strlen(str) + 1) * sizeof(jchar));
+
+	ptr = temp;
+	while(*str) {
+		unsigned char c = (unsigned char)*str++;
+		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
 	}
 	//*ptr++ = 0;
 	jstring j = env->NewString(temp, ptr - temp);
+
+	free(temp);
+
 	return j;
 }
 

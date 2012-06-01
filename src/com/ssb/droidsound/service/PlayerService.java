@@ -1,8 +1,6 @@
 package com.ssb.droidsound.service;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,26 +9,25 @@ import java.util.Locale;
 import java.util.Map;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.os.PowerManager;
 import android.os.RemoteException;
 import android.speech.tts.TextToSpeech;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
-import com.ssb.droidsound.utils.Log;
-import android.view.KeyEvent;
 
 import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
@@ -38,15 +35,10 @@ import com.ssb.droidsound.R;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player.SongInfo;
+import com.ssb.droidsound.utils.Log;
 
-public class PlayerService extends Service {
+public class PlayerService extends Service implements OnAudioFocusChangeListener, PlayerInterface {
 	private static final String TAG = PlayerService.class.getSimpleName();
-	
-	// Flags
-	
-	// public static final int FLAG_CONTINUOUS = 1;
-	// public static final int FLAG_SHUFFLE = 2;
-	// public static final int FLAG_REPEAT = 4;
 	
 	// Information
 	
@@ -93,6 +85,7 @@ public class PlayerService extends Service {
 	
 	private Object info[];
     	
+	private static PlayerInterface playerInterface;
 	private Player player;
 	private Thread playerThread;
 	private List<IPlayerServiceCallback> callbacks; 	
@@ -105,6 +98,18 @@ public class PlayerService extends Service {
 	
 	private PhoneStateListener phoneStateListener;
 	private BroadcastReceiver mediaReceiver;
+	
+	private static boolean hasRemoteControl;
+	static {
+		try {
+			RemoteControlWrapper.checkAvailable();
+			hasRemoteControl = true;
+		} catch (Throwable t) {
+			hasRemoteControl = false;
+		}
+	}
+	
+	private RemoteControlWrapper remoteControl;
 
 	private int defaultRepeatMode = RM_CONTINUE;
 
@@ -115,6 +120,10 @@ public class PlayerService extends Service {
 	
 	private TextToSpeech textToSpeech;
 	private int ttsStatus = -1;
+	
+	public static PlayerInterface getPlayerInterface() {
+		return playerInterface;
+	}
 	
 	private void performCallback(int...what) {
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
@@ -304,6 +313,10 @@ public class PlayerService extends Service {
         			sa = (String [])msg.obj;
         			info[SONG_TITLE] = sa[0];
         			info[SONG_AUTHOR] = sa[1];
+        			
+					if(hasRemoteControl)
+						remoteControl.setMetaData((String) info[SONG_AUTHOR], (String) info[SONG_TITLE]);
+        			
         			speakTitle();
         			performCallback(SONG_TITLE, SONG_AUTHOR);
         			break;
@@ -321,7 +334,13 @@ public class PlayerService extends Service {
             			info[SONG_SUBTUNE_TITLE] = sa[0];
             			info[SONG_SUBTUNE_AUTHOR] = sa[1];
             			
+
+            			
             			if(msg.arg1 < 0) {
+
+        					if(hasRemoteControl)
+        						remoteControl.setMetaData((String) info[SONG_SUBTUNE_AUTHOR], (String) info[SONG_SUBTUNE_TITLE]);
+
             				speakTitle();
             			}
             			
@@ -369,6 +388,9 @@ public class PlayerService extends Service {
 							speakTitle();
 						}
 					}
+					
+					if(hasRemoteControl)
+						remoteControl.setMetaData((String) info[SONG_AUTHOR], (String) info[SONG_TITLE]);        			
 
 					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
                 	break;
@@ -479,7 +501,7 @@ public class PlayerService extends Service {
     	} */
     }
 
-    boolean playNextSong() {
+    public boolean playNextSong() {
     	if(playQueue == null) {
     		return false;
     	}
@@ -513,7 +535,7 @@ public class PlayerService extends Service {
 		return false;
     }
 
-    boolean playPrevSong() {
+    public boolean playPrevSong() {
     	if(playQueue == null) {
     		return false;
     	}
@@ -528,18 +550,7 @@ public class PlayerService extends Service {
     	}
 		return false;
     }
-    
-    private static final Class[] mStartForegroundSignature = new Class[] { int.class, Notification.class};
-    private static final Class[] mStopForegroundSignature = new Class[] { boolean.class};
-
-    private NotificationManager mNM;
-    private Method mStartForeground;
-    private Method mStopForeground;
-    private Object[] mStartForegroundArgs = new Object[2];
-    private Object[] mStopForegroundArgs = new Object[1];
-
-	//private PowerManager.WakeLock wakeLock;
-
+  
 	private Notification notification;
 
 	private PendingIntent contentIntent;
@@ -551,65 +562,6 @@ public class PlayerService extends Service {
 	protected String playListName;
 
 	protected int callState = TelephonyManager.CALL_STATE_IDLE;
-
-	//private boolean foreground;
-
-    /**
-     * This is a wrapper around the new startForeground method, using the older
-     * APIs if it is not available.
-     */
-    void startForegroundCompat(int id, Notification notification) {
-        // If we have the new startForeground API, then use it.
-        if (mStartForeground != null) {
-            mStartForegroundArgs[0] = Integer.valueOf(id);
-            mStartForegroundArgs[1] = notification;
-            try {
-                mStartForeground.invoke(this, mStartForegroundArgs);
-            } catch (InvocationTargetException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke startForeground", e);
-            } catch (IllegalAccessException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke startForeground", e);
-            }
-            //foreground = true;
-            return;
-        }
-
-        // Fall back on the old API.
-        setForeground(true);
-        mNM.notify(id, notification);
-        //foreground = true;
-    }
-
-    /**
-     * This is a wrapper around the new stopForeground method, using the older
-     * APIs if it is not available.
-     */
-    void stopForegroundCompat(int id) {
-        // If we have the new stopForeground API, then use it.
-        if (mStopForeground != null) {
-            mStopForegroundArgs[0] = Boolean.TRUE;
-            try {
-                mStopForeground.invoke(this, mStopForegroundArgs);
-            } catch (InvocationTargetException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke stopForeground", e);
-            } catch (IllegalAccessException e) {
-                // Should not happen.
-                Log.w(TAG, "Unable to invoke stopForeground", e);
-            }
-            //foreground = false;
-            return;
-        }
-
-        // Fall back on the old API.  Note to cancel BEFORE changing the
-        // foreground state, since we could be killed at that point.
-        mNM.cancel(id);
-        setForeground(false);
-        //foreground = false;
-    }
-
     
 	@Override
 	public void onCreate() {
@@ -657,115 +609,15 @@ public class PlayerService extends Service {
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
-        mediaReceiver = new BroadcastReceiver() {
-        	
-        	//boolean actionHandled = false;
-			private long downTime;
+        mediaReceiver = new BroadcastReceiver() {        	
 			private long unpluggedTime = -1;
 			private int lastState = -1;
-			//MediaPlayer mp;
-        	
+
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				Log.d(TAG, "##### GOT INTENT %s", intent.getAction());
 				
-				if(intent.getAction().equals(Intent.ACTION_MEDIA_BUTTON)) {
-					Log.d(TAG, "MEDIA BUTTON");
-					
-					Bundle b = intent.getExtras();
-					KeyEvent evt = (KeyEvent)b.get("android.intent.extra.KEY_EVENT");
-					
-					if(player.isActive()) {
-						if(evt != null) {
-							if(evt.getAction() == KeyEvent.ACTION_DOWN) {
-								
-								downTime = evt.getDownTime();
-								Log.d(TAG, "TIME %d %d", downTime, evt.getEventTime());
-								
-								/*if(!actionHandled) {
-									if(evt.getRepeatCount() > 2) {
-										playNextSong();
-										actionHandled = true;
-									}
-								} */
-							} else if(evt.getAction() == KeyEvent.ACTION_UP) {
-								
-								int keycode = evt.getKeyCode();
-								long t = 0;
-								if(downTime > 0) {
-									t = evt.getEventTime() - downTime;
-								}
-								downTime = -1;
-								Log.d(TAG, "DOWN TIME %d", t);							
-
-								switch (keycode) {							 
-				                case KeyEvent.KEYCODE_MEDIA_STOP:
-				                	player.stop();
-				                	whenStopped();
-				        			info[SONG_REPEAT] = defaultRepeatMode;
-				        			performCallback(SONG_REPEAT);
-				                    break;
-				                case KeyEvent.KEYCODE_MEDIA_NEXT:
-				                	playNextSong();
-				                    break;
-				                case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
-				                	playPrevSong();
-				                    break;
-				                case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
-				                	if(player.isPlaying()) {
-
-										player.paused(true);						
-									} else {
-										player.paused(false);
-									}
-				                	break;
-				                default:
-				                case KeyEvent.KEYCODE_HEADSETHOOK:
-				                	
-				                	// Dont read headset button if call is in progress
-				                	if(callState != TelephonyManager.CALL_STATE_IDLE)
-				                		return;
-				                	
-									if(t > 2000) {
-										if(textToSpeech == null) {
-											speakTitle();
-											//saySomething = "Speech on.";
-											activateSpeech(true);									
-										} else {
-											textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
-											try {
-												Thread.sleep(1000);
-											} catch (InterruptedException e) {
-												e.printStackTrace();
-											}
-											activateSpeech(false);
-										}
-									} else
-									if(t > 300) {
-										playNextSong();
-									} else  {
-										if(player.isPlaying()) {
-											player.paused(true);						
-										} else {
-											player.paused(false);
-										}
-									}
-									//actionHandled = false;
-									break;
-					            }							
-							}
-						} else {
-							
-							if(player.isPlaying()) {
-								player.paused(true);						
-							} else {
-								player.paused(false);
-							}
-						}
-						
-						abortBroadcast();
-					}
-				} else if(intent.getAction().equals(Intent.ACTION_HEADSET_PLUG)) {
+				if(intent.getAction().equals(Intent.ACTION_HEADSET_PLUG)) {
 					int state = intent.getIntExtra("state", -1);
 					
 					if(lastState  != -1 && lastState != state) {					
@@ -786,98 +638,101 @@ public class PlayerService extends Service {
 					}
 					lastState = state;
 				}
-				
-				//for(String s : b.keySet()) {
-				//	Log.d(TAG, "EXTRA %s -> %s", s, b.get(s).toString());
-				//}
 			}
 		};
-
+				
 		IntentFilter filter = new IntentFilter();
-		filter.addAction(Intent.ACTION_MEDIA_BUTTON);
 		filter.addAction(Intent.ACTION_HEADSET_PLUG);
-		filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY - 1);		
-		registerReceiver(mediaReceiver, filter);		
+		registerReceiver(mediaReceiver, filter);
+
+		ComponentName myEventReceiver = new ComponentName(getPackageName(), RemoteControlReceiver.class.getName());
+		getPackageManager().setComponentEnabledSetting(myEventReceiver, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP); 		
+
+		AudioManager myAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		myAudioManager.registerMediaButtonEventReceiver(myEventReceiver);
+
+		if(hasRemoteControl)
+			remoteControl = new RemoteControlWrapper(this, myEventReceiver); 
 		
-		Log.d(TAG, "PlayerService created");
-		
-		mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-		try {
-			mStartForeground = getClass().getMethod("startForeground", mStartForegroundSignature);
-			mStopForeground = getClass().getMethod("stopForeground", mStopForegroundSignature);
-		} catch (NoSuchMethodException e) {
-			// Running on an older platform.
-			mStartForeground = mStopForeground = null;
-		}
-	    
-		notification = new Notification(R.drawable.droidsound64x64, "Droidsound", System.currentTimeMillis());				
+		notification = new Notification(R.drawable.note36, "Droidsound", System.currentTimeMillis());				
 		Intent notificationIntent = new Intent(this, PlayerActivity.class);
 		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
 	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
-	    //PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-	    //wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "Droidsound");
-	    //wakeLock.acquire();
+	    
+	    playerInterface = this;
+	    
 	}
 	
 	void beforePlay(String name) {
 		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
-		//if(!foreground)
-			startForegroundCompat(R.string.notification, notification);
-	    
+		startForeground(R.string.notification, notification);
+		AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		am.requestAudioFocus(this, AudioManager.STREAM_MUSIC,  AudioManager.AUDIOFOCUS_GAIN);
+		
+		if(hasRemoteControl)
+			remoteControl.setState(RemoteControlWrapper.PLAYING);
 	}
 	
 	void whenStopped() {
-		//if(foreground)
-			stopForegroundCompat(R.string.notification);
+		if(hasRemoteControl)
+			remoteControl.setState(RemoteControlWrapper.STOPPED);
+		stopForeground(true);
+		AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		am.abandonAudioFocus(this);
+		
 	}
 	
 	@Override
-	public void onStart(Intent intent, int startId) {
-		super.onStart(intent, startId);
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		super.onStartCommand(intent, flags, startId);
 		Log.d(TAG, "Service started");
-		Log.d(TAG, "Intent %s / %s", intent.getAction(), intent.getDataString());		
-        if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
-			Uri uri = intent.getData();
-			if(uri == null) {
-				Bundle b = intent.getExtras();		
-				SongFile song = null;
-				String ff =  b.getString("musicFile");
-				if(ff != null) {
-					song = new SongFile(ff);
-				}
-				int index = b.getInt("musicPos");
-				String [] names = (String []) b.getSerializable("musicList");
-				
-				playQueue = new PlayQueue(names, index, shuffleSongs);
-				
-				if(song == null) {
-					song = playQueue.current();
-				}
-
-				createThread();
-				if(song == null) {
-					String modname = (String) info[SONG_FILENAME];
-					if(names != null && modname != null) {
-						Log.d(TAG, "Got playlist without song");
+		if(intent != null) {
+			String action = intent.getAction();
+			if(action != null)
+				Log.d(TAG, "Intent %s / %s", action, intent.getDataString());
+	        if(intent.getAction() != null && intent.getAction().contentEquals(Intent.ACTION_VIEW)) {
+				Uri uri = intent.getData();
+				if(uri == null) {
+					Bundle b = intent.getExtras();		
+					SongFile song = null;
+					String ff =  b.getString("musicFile");
+					if(ff != null) {
+						song = new SongFile(ff);
+					}
+					int index = b.getInt("musicPos");
+					String [] names = (String []) b.getSerializable("musicList");
+					
+					playQueue = new PlayQueue(names, index, shuffleSongs);
+					
+					if(song == null) {
+						song = playQueue.current();
+					}
+	
+					createThread();
+					if(song == null) {
+						String modname = (String) info[SONG_FILENAME];
+						if(names != null && modname != null) {
+							Log.d(TAG, "Got playlist without song");
+						}
+					} else {
+						Log.d(TAG, "Want to play list with " + song.getPath());
+						info[SONG_FILENAME] = song.getPath();
+						playListName = "";
+						beforePlay(song.getName());
+						player.playMod(song);
 					}
 				} else {
-					Log.d(TAG, "Want to play list with " + song.getPath());
-					info[SONG_FILENAME] = song.getPath();
+					Log.d(TAG, "Want to play " + intent.getDataString());
+					createThread();
 					playListName = "";
+					info[SONG_FILENAME] = uri.getLastPathSegment();
+					SongFile song = new SongFile(intent.getDataString());
 					beforePlay(song.getName());
 					player.playMod(song);
 				}
-			} else {
-				Log.d(TAG, "Want to play " + intent.getDataString());
-				createThread();
-				playListName = "";
-				info[SONG_FILENAME] = uri.getLastPathSegment();
-				SongFile song = new SongFile(intent.getDataString());
-				beforePlay(song.getName());
-				player.playMod(song);
 			}
 		}
-        
+        return Service.START_STICKY;
 	}
 	
 	@Override
@@ -886,8 +741,6 @@ public class PlayerService extends Service {
 		super.onDestroy();
 		
 		//wakeLock.release();
-		
-		//stopForegroundCompat(R.string.notification);
 		
 		TelephonyManager tm = (TelephonyManager)getSystemService(TELEPHONY_SERVICE);
 		tm.listen(phoneStateListener, 0);
@@ -1127,7 +980,7 @@ public class PlayerService extends Service {
 						
 
 			beforePlay(mod.getName());
-			player.playMod(mod, playQueue.getNextSong());
+			player.playMod(mod);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			//performCallback(SONG_SOURCE, SONG_REPEAT);
 
@@ -1181,6 +1034,7 @@ public class PlayerService extends Service {
 
 		@Override
 		public void playNext() throws RemoteException {
+			Log.d(TAG, "### PLAY NEXT");
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
 			playNextSong();
@@ -1259,4 +1113,66 @@ public class PlayerService extends Service {
     	Log.d(TAG, "UNBOUND");
     	return super.onUnbind(intent);
     }
+
+	@Override
+	public void onAudioFocusChange(int focusChange) {
+		if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+            // Pause playback
+			player.paused(true);
+		} else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
+            // Resume playback
+			player.paused(false);
+		} else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
+			//AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            //am.abandonAudioFocus(this);
+			player.stop();
+			whenStopped();
+        }
+	}
+
+	@Override
+	public boolean isActive() {
+		return player.isActive();
+	}
+
+	@Override
+	public void stop() {
+		player.stop();
+		whenStopped();
+		
+	}
+
+	@Override
+	public boolean isPlaying() {
+		return player.isPlaying();
+	}
+
+	@Override
+	public void paused(boolean b) {
+		
+		if(hasRemoteControl)
+			remoteControl.setState(b ? RemoteControlWrapper.PAUSED : RemoteControlWrapper.PLAYING);		
+		player.paused(b);		
+	}
+
+	@Override
+	public void speechOnOff() {
+		if(textToSpeech == null) {
+			speakTitle();
+			activateSpeech(true);									
+		} else {
+			textToSpeech.speak("Speech off.", TextToSpeech.QUEUE_FLUSH, null);
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			activateSpeech(false);
+		} 
+	}
+
+	@Override
+	public int getCallState() {
+		return callState;
+	}
 }

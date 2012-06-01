@@ -2,20 +2,16 @@ package com.ssb.droidsound.database;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.CursorWrapper;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.MediaStore;
 
-import com.ssb.droidsound.utils.Log;
-
 import com.ssb.droidsound.utils.CursorTransform;
 import com.ssb.droidsound.utils.DBFileSystem;
+import com.ssb.droidsound.utils.Log;
 
 public class MediaSource implements DataSource  {
 	private static final String TAG = MediaSource.class.getSimpleName();
