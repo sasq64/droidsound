@@ -3,7 +3,7 @@
 	  >
 		<com.ssb.droidsound.FontTextView android:id="@+id/seconds_text" style="@style/LEDText" font="led" android:text="00:00"
 		 android:textSize="26dp" android:layout_width="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginRight="8dp"  android:layout_marginLeft="5dp" />
- 		<SeekBar android:progressDrawable="@drawable/seekbar" android:id="@+id/song_seek" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1.0" />
+ 		<SeekBar android:progressDrawable="@drawable/seekbar" android:id="@+id/song_seek" android:layout_width="0dip" android:layout_height="wrap_content" android:layout_weight="1.0" />
 		<com.ssb.droidsound.FontTextView android:id="@+id/total_text" style="@style/LEDText" font="led" android:text="00:00" 
 		 android:textSize="26dp"  android:layout_width="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginLeft="8dp" android:layout_marginRight="5dp" />
 	</LinearLayout>	

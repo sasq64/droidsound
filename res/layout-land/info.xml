@@ -1,12 +1,12 @@
 <LinearLayout android:orientation="horizontal" xmlns:android="http://schemas.android.com/apk/res/android" 
-	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
+	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" android:baselineAligned="false">
 
 	<LinearLayout android:orientation="vertical"
 			android:layout_weight="0.6"
 		android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
 		<TextView android:text="@string/info" style="@style/InfoTitle" android:layout_marginRight="4dp" />
 		<TextView android:id="@+id/info_text" 
-			android:layout_width="fill_parent" android:layout_height="fill_parent"
+			android:layout_width="fill_parent" android:layout_height="0dip"
 			android:layout_weight="1.0"
 		/>
 	</LinearLayout>
@@ -21,7 +21,7 @@
 			 	android:gravity="right"
 			 	android:layout_marginRight="4dp"
 			 />		
-		<TextView android:layout_width="fill_parent" android:layout_height="fill_parent"
+		<TextView android:layout_width="fill_parent" android:layout_height="0dip"
 		android:layout_weight="1.0" android:text=""/>
 		<include layout="@layout/controls" />
 	</LinearLayout>
