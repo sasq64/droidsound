@@ -3,17 +3,16 @@ package com.ssb.droidsound;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ssb.droidsound.service.IPlayerService;
-import com.ssb.droidsound.service.IPlayerServiceCallback;
-import com.ssb.droidsound.service.PlayerService;
-
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.os.RemoteException;
+
+import com.ssb.droidsound.service.IPlayerService;
+import com.ssb.droidsound.service.IPlayerServiceCallback;
+import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
 
 public class PlayerServiceConnection implements ServiceConnection {
