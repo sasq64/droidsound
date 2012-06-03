@@ -4,7 +4,7 @@ import java.io.File;
 
 public class SongFile {
 
-	private static final String TAG = SongFile.class.getSimpleName();
+	//private static final String TAG = SongFile.class.getSimpleName();
 	private int subtune;
 	private int playtime;
 	private String fileName;

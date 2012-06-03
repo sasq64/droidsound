@@ -23,9 +23,9 @@ public class MediaSource implements DataSource  {
 			  MediaStore.Audio.Albums.LAST_YEAR,
 			  MediaStore.Audio.Albums.NUMBER_OF_SONGS
 			  };
-	private static String[] artistFields = { MediaStore.Audio.Albums._ID,
+	/*private static String[] artistFields = { MediaStore.Audio.Albums._ID,
 		  MediaStore.Audio.Artists.ARTIST
-		  };
+		  }; */
 	private static String[] fields = { MediaStore.Audio.Media._ID,
 			  MediaStore.Audio.Media.DISPLAY_NAME,
 			  MediaStore.Audio.Media.YEAR,

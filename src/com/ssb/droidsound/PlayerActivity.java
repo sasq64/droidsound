@@ -220,7 +220,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private File moveFileHere;
 
-	private int operationTune;
+	//private int operationTune;
 
 	private String operationTitle;
 
@@ -232,7 +232,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	protected boolean dialogShowing;
 
-	private TextView lowText;
+	//private TextView lowText;
 
 	private byte[] md5;
 
@@ -612,7 +612,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		plusText = (TextView) findViewById(R.id.plus_text);
 		wakeText = (TextView) findViewById(R.id.wake_text);
 
-		lowText = (TextView) findViewById(R.id.low_text);
+		//lowText = (TextView) findViewById(R.id.low_text);
 
 		plinfoText = (TextView) findViewById(R.id.plinfo_text);
 
@@ -953,7 +953,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					operationSong = new SongFile(songFile);
 					//operationSong.setSubTune(subTune);
 					
-					operationTune = subTune;
+					//operationTune = subTune;
 					operationTitle = null;
 					operationTuneCount = subTuneCount;
 					Log.d(TAG, "%s - %s ADD", songTitle != null ? songTitle : "null", subtuneTitle != null ? subtuneTitle : "null");
@@ -1437,7 +1437,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(songFile != null) {
 				//operationFile = songFile.getFile();
 				operationSong = new SongFile(songFile);
-				operationTune = subTune;
+				//operationTune = subTune;
 				operationTitle = null;
 				operationTuneCount = subTuneCount;
 				if(songTitle != null && subtuneTitle != null) {
@@ -1932,7 +1932,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		
-		MenuItem m = menu.getItem(0);
+		//MenuItem m = menu.getItem(0);
 		//if(songDatabase.getCurrentPlaylist() != null) {
 		//	m.setTitle("Edit");
 		//} else {
@@ -2348,7 +2348,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			type = cursor.getInt(t);
 		}
 
-		File file = currentPlaylistView.getFile(info.position);
+		//File file = currentPlaylistView.getFile(info.position);
 
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.songmenu, menu);

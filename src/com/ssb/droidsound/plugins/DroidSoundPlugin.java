@@ -96,6 +96,31 @@ public abstract class DroidSoundPlugin {
 	}
 	
 	
+	protected boolean loadTempFile(String name, byte[] module, int size) {
+		try {
+			File file;
+			int dot = name.indexOf('.');
+			int lastDot = name.lastIndexOf('.');
+			if(dot == -1) {
+				file = File.createTempFile(name, "");
+			}
+			else {
+				file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
+			}
+			
+			FileOutputStream fo = new FileOutputStream(file);
+			fo.write(module);
+			fo.close();
+			boolean rc = load(file);
+			file.delete();
+			return rc;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
 
 	public boolean loadInfo(String name, byte [] module, int size) {
 		return load(name, module, size);
@@ -130,7 +155,7 @@ public abstract class DroidSoundPlugin {
 	
 				// URLUtil.guessFileName(songName, );
 	
-				int dot = songName.lastIndexOf('.');
+				//int dot = songName.lastIndexOf('.');
 				String ext = DroidSoundPlugin.getExt(songName);
 				File f = File.createTempFile("music", ext);
 				FileOutputStream fos = new FileOutputStream(f);
@@ -262,7 +287,7 @@ public abstract class DroidSoundPlugin {
 			ext = ext.substring(0,e);
 			Log.d(TAG, "EXT NOW: " + ext);
 		}
-		return ext;
+		return ext.toUpperCase();
 	}
 	
 	

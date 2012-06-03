@@ -340,7 +340,7 @@ class PlayListAdapter extends BaseAdapter {
 		String fileName = mCursor.getString(mFileIndex);
 		String path = pathName;
 		Log.d(TAG, "FILENAME " + fileName);
-		File f;
+		
 		if(mPathIndex >= 0 && mCursor.getString(mPathIndex) != null) {
 			String p = mCursor.getString(mPathIndex);
 			if(p != null) {

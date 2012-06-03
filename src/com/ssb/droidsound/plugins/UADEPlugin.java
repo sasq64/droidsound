@@ -38,13 +38,13 @@ public class UADEPlugin extends DroidSoundPlugin {
 	
 	
 	public UADEPlugin() {
-
-		//Context ctx = getContext();
-
-		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-		//File filesDir = ctx.getFilesDir();
-		File eagleDir = new File(droidDir, "players");
+		extractFiles();
+	}
+	
+	public static void extractFiles() {
 		
+		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+		File eagleDir = new File(droidDir, "players");
 		File confFile = new File(droidDir, "eagleplayer.conf");
 		
 		boolean extract = true;
@@ -58,18 +58,15 @@ public class UADEPlugin extends DroidSoundPlugin {
 				}			
 			}
 			
-			if(extract) {
-				
+			if(extract) {				
 				droidDir.mkdir();				
-				unzipper = Unzipper.getInstance();				
+				Unzipper unzipper = Unzipper.getInstance();				
 				unzipper.unzipAssetAsync(getContext(), "eagleplayers.zip", droidDir);
 
 			}		
 
 		}
-		//for(String s : ex) {			
-		//	extensions.add(s);
-		//}
+		
 	}
 	
 	private void indexExtensions() {
@@ -207,30 +204,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
-	
-		try {
-			File file;
-			int dot = name.indexOf('.');
-			int lastDot = name.lastIndexOf('.');
-			if(dot == -1) {
-				file = File.createTempFile(name, "");
-			}
-			else {
-				file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
-			}
-			
-			FileOutputStream fo = new FileOutputStream(file);
-			fo.write(module);
-			fo.close();
-			boolean rc = load(file);
-			file.delete();
-			return rc;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+	public boolean load(String name, byte[] module, int size) {	
+		return loadTempFile(name, module, size);
 	}
 
 	@Override

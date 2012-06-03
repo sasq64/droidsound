@@ -7,7 +7,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -186,7 +185,7 @@ public class HttpSongSource {
 					 try {
 						 Object[] links = node.evaluateXPath("//a");
 						 
-						 Comparator<? super Object> comparator = new Comparator<Object>() {
+						 /* Comparator<? super Object> comparator = new Comparator<Object>() {
 							@Override
 							public int compare(Object object1, Object object2) {
 								 String n0 = ((TagNode)object1).getText().toString();
@@ -209,7 +208,7 @@ public class HttpSongSource {
 								 return n0.compareTo(n1);
 							}
 						 };
-						//Arrays.sort(links, comparator);
+						Arrays.sort(links, comparator); */
 						 
 						 for(int i=0; i<links.length; i++) {
 							 TagNode atag = (TagNode) links[i];

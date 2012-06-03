@@ -208,7 +208,6 @@ public class FileIdentifier {
 		if(plugins == null) {
 			plugins = DroidSoundPlugin.createPluginList();
 		}
-		List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 		for(DroidSoundPlugin plugin : plugins) {
 			if(plugin.canHandle(name)) {
 				return plugin.getClass().getSimpleName();

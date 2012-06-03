@@ -325,8 +325,7 @@ public class SongDatabase implements Runnable {
 		Intent intent = new Intent("com.sddb.droidsound.OPEN_DONE");
 		context.sendBroadcast(intent);
 		
-		UADEPlugin u = new UADEPlugin();
-		u = null;
+		UADEPlugin.extractFiles();
 
 		Looper.loop();
 		
@@ -1238,9 +1237,8 @@ public class SongDatabase implements Runnable {
 
 	private String pathTitle;
 
-	private boolean doQuit;
-
-	private String currentLink;
+	//private boolean doQuit;
+	//private String currentLink;
 
 	public Playlist getCurrentPlaylist() {
 		return currentPlaylist;

@@ -34,7 +34,7 @@ public class Playlist {
 	private boolean changed;
 
 	private String title;
-	private String subtitle;
+	//private String subtitle;
 
 	private boolean written;
 	private long fileModified;
@@ -469,43 +469,7 @@ public class Playlist {
 	synchronized public String getTitle() {
 		return title;
 	}
-	/*
-	public List<String> getLines() {
-		return lines;
-	}
 
-	public void addLine(String line) {
-		lines.add(line);
-		cursor = null;
-		changed = true;		
-	}*/
-
-	/*
-	synchronized public List<File> getFiles() {
-		List<File> files = new ArrayList<File>();
-		for(String line : lines) {
-			if(line.length() > 0) {
-				int tab = line.indexOf('\t');
-				if(tab > 0) {					
-					//int sc = line.indexOf(';');
-					//if(sc >= 0 && sc < tab) {
-					//	tab = sc;
-					//}
-					line = new File(line.substring(0, tab)).getPath();
-				}				
-				if(line.charAt(0) == '$') {
-					int slash = line.indexOf('/');
-					String var =line.substring(1, slash);
-					line = "/sdcard/MODS/C64Music.zip/C64Music" + line.substring(slash);
-				}
-				
-				files.add(new File(line));
-
-			}
-		}
-		return files;
-	}
-	*/
 	public boolean contains(SongFile songFile) {
 		for(String line : lines) {
 			if(line.length() > 0) {
@@ -565,36 +529,6 @@ public class Playlist {
 		for(String line : lines) {
 			songs.add(new SongFile(line));
 		}
-		/*
-		
-		Cursor c = getCursor();
-		
-		while(c.moveToNext()) {
-			
-			//Song song = new Song();
-			
-			String p = cursor.getString(cursor.getColumnIndex("PATH"));
-			String n = cursor.getString(cursor.getColumnIndex("FILENAME"));
-			song.startsong = -1;f
-			int sc = n.lastIndexOf(';');
-			if(sc >= 0) {
-				try {
-					song.startsong = Integer.parseInt(n.substring(sc+1));
-				} catch (NumberFormatException e) {
-				}
-				n = n.substring(0, sc);
-			}
-			
-			song.subtitle = cursor.getString(cursor.getColumnIndex("SUBTITLE"));
-
-			
-			song.file = new File(p, n);
-			song.title = cursor.getString(cursor.getColumnIndex("TITLE"));
-			//song.startsong = cursor.getInt(cursor.getColumnIndex("STARTSONG"));
-			//Log.d(TAG, "Songlist sentry %s %d",song.file.getPath(), song.startsong);
-			songs.add(song);
-			
-		} */
 		return songs;
 	}
 
