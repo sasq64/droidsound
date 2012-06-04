@@ -457,6 +457,12 @@ PSFINFO *sexy_load(char *path) {
 	return (ret);
 }
 
-void sexy_execute(void) {
-	psxCpu->Execute();
+int sexy_execute(void) {
+	int rc = psxCpu->Execute();
+	return rc;
 }
+
+void sexy_shutdown(void) {
+	psxShutdown();
+}
+

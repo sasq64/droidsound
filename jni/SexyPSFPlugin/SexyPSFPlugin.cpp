@@ -4,7 +4,6 @@
 #include <unistd.h>
 
 #include <jni.h>
-#include <pthread.h>
 #include <android/log.h>
 
 extern "C" {
@@ -23,12 +22,8 @@ extern "C" {
 #define INFO_STARTTUNE 7
 #define INFO_SUBTUNE_TITLE 8
 
-pthread_t play_thread;
-pthread_mutex_t mutex;
 unsigned char *outBuffer;
 unsigned char *outPtr;
-//PSFINFO* psfInfo;
-volatile bool doStop = false;
 
 static jstring NewString(JNIEnv *env, const char *str)
 {
@@ -49,62 +44,15 @@ static jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
-static void *execute_loop(void *arg) {
-
-	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Thread starting");
-	sexy_execute();
-	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Thread ending");
-	return NULL;
-}
 
 static bool playing = false;
-
-static void play() {
-	//if(psfInfo != NULL) {
-		if(pthread_create(&play_thread, 0, execute_loop, 0) == 0 ) {
-			playing = true;
-		}
-	//}
-}
-
-static void stop() {
-	void *ret_val;
-	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Waiting for thread");
-	doStop = true;
-	pthread_join(play_thread, &ret_val);
-	playing = false;
-}
-
 
 
 void sexyd_update(unsigned char *pSound, long lBytes)
 {
 	//__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "update with %d bytes", lBytes);
-
-	if(doStop) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Stopping");
-		sexy_stop();
-		doStop = false;
-		return;
-	}
-
-	pthread_mutex_lock(&mutex);
 	memcpy(outPtr, pSound, lBytes);
 	outPtr += lBytes;
-
-	while(outPtr - outBuffer > 1024 * 8) {
-		pthread_mutex_unlock(&mutex);
-		usleep(10000);
-		if(doStop) {
-			sexy_stop();
-			doStop = false;
-			return;
-		}
-
-		pthread_mutex_lock(&mutex);
-	}
-
-	pthread_mutex_unlock(&mutex);
 }
 
 
@@ -113,12 +61,11 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1load(JN
 	const char *filename = env->GetStringUTFChars(fname, NULL);
 	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Trying to load '%s'", filename);
 
-	doStop = false;
+	playing = false;
 
 	if(outBuffer == NULL) {
 		outBuffer = (unsigned char *)malloc(1024 * 1024);
 		outPtr = outBuffer;
-		pthread_mutex_init(&mutex, NULL);
 	}
 
 	char temp[1024];
@@ -133,26 +80,29 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1load(JN
 JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1unload(JNIEnv *env, jobject obj, jlong song)
 {
 	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Unload while %splaying", playing ? "" : "NOT ");
-	if(playing)
-		stop();
+
 	playing = false;
 
 	if(outBuffer != NULL) {
 		free(outBuffer);
 		outBuffer = NULL;
-		pthread_mutex_destroy(&mutex);
 	}
 
 	PSFINFO *psfInfo = (PSFINFO*)song;
 	sexy_freepsfinfo(psfInfo);
-	//psfInfo = NULL;
+	sexy_shutdown();
 }
 
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray sArray, jint size)
 {
-	if(!playing)
-		play();
 	playing = true;
+
+	while(outPtr - outBuffer < size*2) {
+		int rc = sexy_execute();
+		//__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Execute:%d", rc);
+		if(rc <= 0)
+			return rc;
+	}
 
 	if(outBuffer == NULL) {
 		return -1;
@@ -164,7 +114,6 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1getSound
 	jshort *dest = env->GetShortArrayElements(sArray, NULL);
 	int bytelen = size*2;
 
-	pthread_mutex_lock(&mutex);
 	int filled = outPtr - outBuffer;
 	if(bytelen > filled)
 		bytelen = filled;
@@ -175,7 +124,6 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1getSound
 	if(filled > bytelen)
 		memmove(outBuffer, &outBuffer[bytelen], filled - bytelen);
 	outPtr = &outBuffer[filled - bytelen];
-	pthread_mutex_unlock(&mutex);
 
 	env->ReleaseShortArrayElements(sArray, dest, 0);
 

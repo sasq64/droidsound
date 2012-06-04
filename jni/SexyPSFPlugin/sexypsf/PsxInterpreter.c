@@ -713,17 +713,25 @@ static void intReset() {
  branch=branch2=0;
 }
 
-static void intExecute() {
-	for (;;) 
-	{
-	 if(!CounterSPURun()) 
-	 {
-	  psxShutdown();
-	  return;
-	 }
-	 SPUendflush();
-	 execI();
+static int intExecute() {
+	int rc;
+	u32 count = 0;
+	for(;;) {
+		rc = SPUendflush();
+		if(rc > 0)
+			return rc;
+
+		u32 targetCycle = psxRegs.cycle + 16;
+		if(targetCycle < psxRegs.cycle) {
+			while(psxRegs.cycle > 0xff)
+				execI();
+		}
+		while(psxRegs.cycle < targetCycle)
+			execI();
+		if(!SPUasync(psxRegs.cycle - targetCycle + 16))
+			return -1;
 	}
+	return 0;
 }
 
 static void intExecuteBlock() {

@@ -26,7 +26,7 @@
 typedef struct {
 	int  (*Init)();
 	void (*Reset)();
-	void (*Execute)();		/* executes up to a break */
+	int (*Execute)();		/* executes up to a break */
 	void (*ExecuteBlock)();	/* executes up to a jump */
 	void (*Clear)(u32 Addr, u32 Size);
 	void (*Shutdown)();

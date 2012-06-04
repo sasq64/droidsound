@@ -17,7 +17,8 @@ typedef struct {
 
 int sexy_seek(u32 t);
 void sexy_stop(void);
-void sexy_execute(void);
+int sexy_execute(void);
+void sexy_shutdown(void);
 
 PSFINFO *sexy_load(char *path);
 PSFINFO *sexy_getpsfinfo(char *path);

@@ -489,18 +489,17 @@ void sexy_stop(void)
  decaybegin=decayend=0;
 }
 
-void SPUendflush(void)
-{
-   if((seektime!=~0) && seektime>sampcount)
-   {
-    pS=(s16 *)pSpuBuffer;
-    sexyd_update(0,0);
-   }
-   else if((u8*)pS>((u8*)pSpuBuffer+1024))
-   {
-    sexyd_update((u8*)pSpuBuffer,(u8*)pS-(u8*)pSpuBuffer);
-    pS=(s16 *)pSpuBuffer;
-   }
+int SPUendflush(void) {
+	int len = (u8*) pS - (u8*) pSpuBuffer;
+	if((seektime != ~0) && seektime > sampcount) {
+		pS = (s16 *) pSpuBuffer;
+		sexyd_update(0, 0);
+	} else if(len > 1024) {
+		sexyd_update((u8*) pSpuBuffer, len);
+		pS = (s16 *) pSpuBuffer;
+		return len;
+	}
+	return 0;
 }   
 
 #ifdef TIMEO

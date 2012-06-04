@@ -45,7 +45,12 @@ void psxReset() {
 	psxBiosInit();
 }
 
+#include <android/log.h>
 void psxShutdown() {
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "SHUTDOWN");
+	fprintf(stderr, "SURE");
+
 	psxMemShutdown();
 	psxBiosShutdown();
 
