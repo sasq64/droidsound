@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SexyPSFPlugin extends DroidSoundPlugin {
 
@@ -45,7 +47,14 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean load(String name, byte[] module, int size) {
-		return false;//loadTempFile(name, module, size);
+		
+		Map<String, String> tags = getTags(module, size);
+		
+		String libName = tags.get("_lib");
+		if(libName != null) {
+		}
+		//loadTempFile(name, module, size);
+		return false;//
 	}
 	
 	@Override
@@ -66,10 +75,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
 
-	
-	@Override
-	public boolean loadInfo(String name, byte [] module, int size) {
-		
+	private Map<String, String> getTags(byte [] module, int size) {
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
 		src.order(ByteOrder.LITTLE_ENDIAN);		
 		byte[] id = new byte[4];
@@ -85,7 +91,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 			
 			int resLen = src.getInt();
 			int comprLen = src.getInt();
-			int crc = src.getInt();
+
 			src.position(resLen + comprLen + 16);
 			
 			if(src.remaining() >= 5) {
@@ -103,33 +109,43 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 						
 						String [] lines = tags.split("\n");
 						
+						HashMap<String, String> tagMap = new HashMap<String, String>();
+						
 						for(String line : lines) {
 							String parts [] = line.split("=");
-							if(parts[0].equals("copyright")) {
-								info[INFO_COPYRIGHT] = parts[1];
-							} else
-							if(parts[0].equals("artist")) {
-								info[INFO_AUTHOR] = parts[1];
-							} else
-							if(parts[0].equals("title")) {
-								info[INFO_TITLE] = parts[1];
-							} else
-							if(parts[0].equals("game")) {
-								info[INFO_GAME] = parts[1];
-							} else
-							if(parts[0].equals("length")) {
-								info[INFO_LENGTH] = parts[1];
-							}
+							tagMap.put(parts[0], parts[1]);
 						}
-						
-						
-						
+						return tagMap;
 					} catch (UnsupportedEncodingException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				}					
+				}
 			}
+		}
+		return null;
+	}
+	
+	@Override
+	public boolean loadInfo(String name, byte [] module, int size) {
+		
+		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
+		src.order(ByteOrder.LITTLE_ENDIAN);		
+		byte[] id = new byte[4];
+		src.get(id);
+		
+		//for(int i=0; i<128; i++)
+		//	info[i] = null;
+		
+		info = new String [128];
+		 
+		Map<String, String> tagMap = getTags(module, size);
+		if(tagMap != null) {
+			info[INFO_TITLE] = tagMap.get("title");
+			info[INFO_AUTHOR] = tagMap.get("artist");
+			info[INFO_GAME] = tagMap.get("game");
+			info[INFO_COPYRIGHT] = tagMap.get("copyright");
+			info[INFO_LENGTH] = tagMap.get("length");
 			return true;
 		}
 		return false;
