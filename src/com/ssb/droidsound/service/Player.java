@@ -10,7 +10,6 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.zip.ZipEntry;
 
 import android.content.Context;
 import android.media.AudioFormat;
@@ -102,8 +101,8 @@ public class Player implements Runnable {
 
 	private int currentTune;
 
-	private File currentZipFile;
-	private NativeZipFile currentZip;
+//	private File currentZipFile;
+//	private NativeZipFile currentZip;
 
 	private volatile State currentState = State.STOPPED;
 	private int silentPosition;
@@ -130,7 +129,7 @@ public class Player implements Runnable {
 		samples = new short[bufSize / 2];
 	}
 
-	private File writeFile(String name, InputStream fs, boolean temp) throws IOException {
+	/* private File writeFile(String name, InputStream fs, boolean temp) throws IOException {
 		File file;
 		if(temp) {
 
@@ -160,7 +159,7 @@ public class Player implements Runnable {
 		}
 		fo.close();
 		return file;
-	}
+	} */
 
 	public static String makeSize(long fileSize) {
 		String s;
@@ -324,181 +323,30 @@ public class Player implements Runnable {
 
 		currentState = State.SWITCHING;
 
+		
+		FileSource songSource = new FileSource(song.getFile());
+		
+		
 		// SongFile sf = new SongFile(songName);
 
 		List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 
 		for(DroidSoundPlugin plugin : plugins) {
-			if(plugin.canHandle(song.getName())) {
+			if(plugin.canHandle(songSource)) {
 				list.add(plugin);
 				Log.d(TAG, "%s handled by %s", song.getName(), plugin.getClass().getSimpleName());
 			}
 		}
+		
+		if(currentPlugin != null)
+			currentPlugin.unload();
+		currentPlugin = null;
 
-		byte[] songBuffer = null;
-		long fileSize = 0;
-		long fileSize2 = 0;
-
-		File songFile = null;
-		File songFile2 = null;
-		String streamName = null;
-
-		String baseName = song.getName();
-
-		try {
-
-			if(song.getZipPath() != null) {
-
-				Log.d(TAG, "ZIP FILE");
-
-				File f = new File(song.getZipPath());
-	
-				if(currentZipFile != null && f.equals(currentZipFile)) {
-				} else {
-					if(currentZip != null) {
-						currentZip.close();
-					}
-					currentZipFile = f;
-					currentZip = new NativeZipFile(f);
-				}
-
-				String name = song.getZipName(); // songName.substring(zipExt+5);
-
-				Log.d(TAG, "Trying to open '%s' in zipfile '%s'\n", name, f.getPath());
-
-				if(currentZip != null) {
-
-					String name2 = DroidSoundPlugin.getSecondaryFile(name);
-
-					if(name2 != null) {
-
-						Log.d(TAG, "Got secondary file '%s'\n", name2);
-
-						ZipEntry entry = currentZip.getEntry(name);
-						if(entry != null) {
-							InputStream fs = currentZip.getInputStream(entry);
-							songFile = writeFile(name, fs, true);
-
-							Log.d(TAG, "Wrote '%s'\n", songFile.getPath());
-
-							fileSize = songFile.length();
-							fs.close();
-
-							String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
-
-							Log.d(TAG, "Writing '%s'\n", fname2);
-
-							entry = currentZip.getEntry(name2);
-
-							if(entry != null && fname2 != null) {
-								fs = currentZip.getInputStream(entry);
-								songFile2 = writeFile(fname2, fs, false);
-								fs.close();
-								fileSize2 = songFile2.length();
-							}
-						}
-
-					} else {
-
-						Log.d(TAG, "ENTRY");
-						ZipEntry entry = currentZip.getEntry(name);
-						if(entry != null) {
-							Log.d(TAG, "Entry  '%s' %d\n", entry.getName(), entry.getSize());
-							InputStream fs = currentZip.getInputStream(entry);
-							fileSize = entry.getSize();
-							songBuffer = new byte[(int) fileSize];
-							fs.read(songBuffer);
-							fs.close();
-						}
-					}
-				}
-			} else if(song.getPath().startsWith("http://")) {
-				streamName = song.getPath();
-			} else {
-				songFile = song.getFile(); // new File(songName);
-
-				Log.d(TAG, "Trying to read normal file " + songFile.getPath());
-
-				fileSize = songFile.length();
-				System.gc();
-
-				if(!songFile.exists())
-					songFile = null;
-				else {
-
-					String fname2 = DroidSoundPlugin.getSecondaryFile(songFile.getPath());
-					if(fname2 != null) {
-						File f2 = new File(fname2);
-						if(f2.exists()) {
-							fileSize2 = f2.length();
-						}
-					}
-				}
-			}
-
-		} catch (IOException e) {
-			Log.w(TAG, "Could not load music!");
-			e.printStackTrace();
-		}
-
-		if(songBuffer != null || songFile != null || streamName != null) {
-			boolean songLoaded = false;
-			for(DroidSoundPlugin plugin : list) {
-				Log.d(TAG, "Trying " + plugin.getClass().getName());
-				if(streamName != null) {
-					try {
-						songLoaded = plugin.loadStream(streamName);
-						fileSize = plugin.getStreamSize();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				} else if(songFile != null) {
-					try {
-						songLoaded = plugin.load(songFile);
-					} catch (IOException e) {
-					}
-				} else if(songBuffer != null) {
-					songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
-					if(songLoaded)
-						plugin.calcMD5(songBuffer, (int) fileSize);
-				}
-				if(songLoaded) {
-					if(currentPlugin != null && currentPlugin != plugin) {
-						currentPlugin.close();
-					}
-					currentPlugin = plugin;
-					break;
-				}
-			}
-
-			if(currentPlugin == null) {
-				for(DroidSoundPlugin plugin : plugins) {
-					if(!plugin.canHandle(song.getName())) {
-						/* if(streamName != null) {
-							try {
-								songLoaded = plugin.loadStream(streamName);
-								fileSize = plugin.getStreamSize();
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						} else  */ if(songFile != null) {
-							try {
-								songLoaded = plugin.load(songFile);
-							} catch (IOException e) {
-							}
-						} else if(songBuffer != null) {
-							songLoaded = plugin.load(baseName, songBuffer, (int) fileSize);
-							if(songLoaded)
-								plugin.calcMD5(songBuffer, (int) fileSize);
-
-						}
-						Log.d(TAG, "%s gave Songref %s", plugin.getClass().getName(), songLoaded ? "TRUE" : "FALSE");
-						if(songLoaded) {
-							currentPlugin = plugin;
-							break;
-						}
-					}
-				}
+		for(DroidSoundPlugin plugin : list) {
+			Log.d(TAG, "Trying " + plugin.getClass().getName());				
+			if(plugin.load(songSource)) {
+				currentPlugin = plugin;
+				break;
 			}
 		}
 
@@ -507,11 +355,8 @@ public class Player implements Runnable {
 
 			Log.d(TAG, "'%s' by '%s'", song.getTitle(), song.getComposer());
 
-
 			synchronized (this) {
-				currentSong.md5 = currentPlugin.getMD5();
 				currentSong.fileName = song.getPath(); // songName;
-				
 
 				if(song.getTitle() != null) {
 					currentSong.title = song.getTitle();
@@ -543,10 +388,7 @@ public class Player implements Runnable {
 				}
 				currentSong.details[info.length] = "Size";
 
-				String size = makeSize(fileSize);
-				if(fileSize2 > 0) {
-					size = size + " + " + makeSize(fileSize2);
-				}
+				String size = makeSize(songSource.getLength());
 				currentSong.details[info.length + 1] = size;
 				info = null;
 
@@ -650,14 +492,7 @@ public class Player implements Runnable {
 			}
 
 			lastPos = -1000;
-			if(songFile2 != null) {
-				Log.d(TAG, "Deleting temporary files %s and %s", songFile.getPath(), songFile2.getPath());
-
-				if(songFile2 != songFile)
-					songFile2.delete();
-				songFile.delete();
-				songFile2 = null;
-			}
+			
 			return;
 		}
 		currentState = State.STOPPED;

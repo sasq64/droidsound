@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 
@@ -33,16 +34,13 @@ public class ModPlugin extends DroidSoundPlugin {
 	long currentSong = 0;
 
 	@Override
-	public boolean canHandle(String name) {
-		int x = name.lastIndexOf('.');
-		if(x < 0) return false;
-		String ext = name.substring(x+1).toUpperCase();
-		return extensions.contains(ext);
+	public boolean canHandle(FileSource fs) {
+		return extensions.contains(fs.getExt());
 	}
 	
 	@Override
-	public boolean load(String name, byte [] module, int size) {
-		currentSong = N_load(module, size);
+	public boolean load(FileSource fs) {
+		currentSong = N_load(fs.getContents(), (int) fs.getLength());
 		if(currentSong != 0) {
 			author = guessAuthor(N_getStringInfo(currentSong, 100));
 		}
@@ -246,18 +244,9 @@ public class ModPlugin extends DroidSoundPlugin {
 	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
 
 	@Override
-	public boolean loadInfo(File file) throws IOException {
-		int l = (int)file.length();
-		byte [] songBuffer = null;
-		try {
-			songBuffer = new byte [l];
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
+	public boolean loadInfo(FileSource fs) {
 
-		long song = N_load(songBuffer, l);
+		long song = N_load(fs.getContents(), (int) fs.getLength());
 		if(song == 0)
 			return false;
 		else {

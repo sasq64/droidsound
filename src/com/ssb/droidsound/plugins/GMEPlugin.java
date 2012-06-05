@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.ssb.droidsound.service.FileSource;
+
 
 
 public class GMEPlugin extends DroidSoundPlugin {
@@ -29,11 +31,8 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public boolean canHandle(String name) {
-		int x = name.lastIndexOf('.');
-		if(x < 0) return false;
-		String ext = name.substring(x+1).toUpperCase();
-		return extensions.contains(ext);
+	public boolean canHandle(FileSource fs) {
+		return extensions.contains(fs.getExt());
 	}
 
 	
@@ -68,19 +67,17 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public boolean load(File file) throws IOException {
-		currentSong = N_loadFile(file.getPath());
+	public boolean load(FileSource fs) {
+		
+		if(fs.isFile()) 		
+			currentSong = N_loadFile(fs.getFile().getPath());
+		else
+			currentSong = N_load(fs.getContents(), (int) fs.getLength());
 		return (currentSong != 0);
 	}
 	
 	public boolean loadInfo(File file) throws IOException {
 		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
-	}
-
-	@Override
-	public boolean load(String name, byte [] module, int size) {
-		currentSong = N_load(module, size);
 		return (currentSong != 0);
 	}
 
