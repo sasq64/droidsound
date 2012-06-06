@@ -37,8 +37,10 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 		info[1] = "PSF (Playstation1)";
 		info[2] = "Game";
 		info[3] = getStringInfo(INFO_GAME);
+		if(info[3] == null) info[3] = "Unknown";
 		info[4] = "Copyright";
 		info[5] = getStringInfo(INFO_COPYRIGHT);
+		if(info[5] == null) info[5] = "";
 		return info;
 	}
 	
@@ -201,6 +203,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 				//int decimal = 0;
 				int seconds = 0;
 				String s = info[what];
+				if(s == null) return 0;
 				int lastSep = 0; 
 				for(int i = 0; ; i++) {
 					char c = (i < s.length()) ? s.charAt(i) : '.';

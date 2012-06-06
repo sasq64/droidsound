@@ -275,6 +275,15 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 	@Override
 	public boolean load(FileSource fs) {
+		
+		if(fs.isStream())
+			try {
+				return loadStream(fs.getStreamName());
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		
 		currentSong = -1;
 		description = null;
 		clearInfo();

@@ -1,10 +1,15 @@
 package com.ssb.droidsound.service;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.zip.ZipEntry;
 
 import com.ssb.droidsound.utils.Log;
@@ -21,6 +26,7 @@ public class FileSource {
 	private byte[] buffer;
 	int bufferPos;
 	long size;
+	private String streamName;
 
 	private File parentDir;
 
@@ -46,6 +52,17 @@ public class FileSource {
 		this.baseName = file.getName();
 		this.zipDir = null;
 		this.zipFile = null;
+	}
+	
+	public FileSource(String fileRef) {
+		
+		int slash = fileRef.lastIndexOf('/');
+		this.baseName = fileRef.substring(slash + 1);
+		
+		if(fileRef.startsWith("http:")) {
+			streamName = fileRef;
+		}
+		
 	}
 	
 	public FileSource(String zipPath, String entryName) {
@@ -112,6 +129,14 @@ public class FileSource {
 	public byte [] getContents() {
 
 		if(buffer == null) {
+			if(streamName != null) {
+				try {
+					loadStream();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			if(zipEntry != null) {
 				//Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
 				InputStream is = zipFile.getInputStream(zipEntry);
@@ -149,20 +174,18 @@ public class FileSource {
 		
 		if(file == null) {
 			
-			getContents();
-			
-			if(parentDir == null) {			
+			if(streamName != null) {
 				try {
-					parentDir = File.createTempFile("music", Long.toString(System.nanoTime()));
-					parentDir.delete();
-					parentDir.mkdir();
-				} catch (IOException e1) {
+					loadStream();
+				} catch (IOException e) {
 					// TODO Auto-generated catch block
-					e1.printStackTrace();
-					return null;
+					e.printStackTrace();
 				}
+				return file;
 			}
 			
+			getContents();			
+			createParentDir();
 			FileOutputStream fos;
 			try {
 				file = new File(parentDir, baseName);
@@ -180,14 +203,12 @@ public class FileSource {
 		
 		return file;
 	}
-		
-	public String getName() {
-		return baseName;
-	}
 	
-	public FileSource getRelative(String name) {
-		FileSource fs = null;
+	public boolean isStream() {
+		return (streamName != null);
+	}
 		
+	private void createParentDir() {
 		if(parentDir == null) {			
 			try {
 				parentDir = File.createTempFile("music", Long.toString(System.nanoTime()));
@@ -196,10 +217,18 @@ public class FileSource {
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
-				return null;
 			}
 		}
+	}
+
+	public String getName() {
+		return baseName;
+	}
+	
+	public FileSource getRelative(String name) {
+		FileSource fs = null;
 		
+		createParentDir();
 		if(isFile) {
 			File file2 = new File(file.getParentFile(), name);
 			fs = new FileSource(file2);			
@@ -280,12 +309,12 @@ public class FileSource {
 
 	}
 
-	/* private boolean loadStream(String songName) throws IOException {
+	private boolean loadStream() throws IOException {
 		
 		try {
-			URL url = new URL(songName);
+			URL url = new URL(streamName);
 	
-			Log.d(TAG, "Opening URL " + songName);
+			//Log.d(TAG, "Opening URL " + songName);
 	
 			URLConnection conn = url.openConnection();
 			if(!(conn instanceof HttpURLConnection))
@@ -302,40 +331,35 @@ public class FileSource {
 	
 			int response = httpConn.getResponseCode();
 			if(response == HttpURLConnection.HTTP_OK) {
-				int size;
-				byte[] buffer = new byte[16384];
+				int rc;
+				byte[] temp = new byte[16384];
 				Log.d(TAG, "HTTP connected");
 				InputStream in = httpConn.getInputStream();
 	
 				// URLUtil.guessFileName(songName, );
+				
+				createParentDir();
 	
-				//int dot = songName.lastIndexOf('.');
-				String ext = DroidSoundPlugin.getExt(songName);
-				File f = File.createTempFile("music", ext);
-				FileOutputStream fos = new FileOutputStream(f);
-				BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-				while((size = in.read(buffer)) != -1) {
-					bos.write(buffer, 0, size);
+				file = new File(parentDir, baseName);
+								
+				FileOutputStream fos = new FileOutputStream(file);
+				BufferedOutputStream bos = new BufferedOutputStream(fos, temp.length);
+				while((rc = in.read(temp)) != -1) {
+					bos.write(temp, 0, rc);
 				}
 				bos.flush();
 				bos.close();
 	
-				streamSize = (int) f.length();
+				size = (int) file.length();
 	
-				Log.d(TAG, "Bytes written: " + streamSize);
+				Log.d(TAG, "Bytes written: " + size);
 	
-				byte [] songBuffer = new byte[(int) streamSize];
-				FileInputStream fs = new FileInputStream(f);
-				fs.read(songBuffer);
+				buffer = new byte[(int) size];
+				FileInputStream fs = new FileInputStream(file);
+				fs.read(buffer);
 				fs.close();
-				// f.delete();
 				
-				//songName = new File(songName).getName();
-				
-				//boolean rc = load(songName, songBuffer, streamSize);
-				boolean rc = load(f);
-				f.delete();
-				return rc;
+				return true;
 			}
 			
 		} catch (MalformedURLException e) {
@@ -344,26 +368,11 @@ public class FileSource {
 		}
 		return false;
 	}
-		public void calcMD5(byte[] songBuffer, int size) {
-		
-		MessageDigest md = null;
-		Log.d(TAG, "MD5 CALCING TIME");
-		try {
-			md = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		}		
-		
-		md.update(songBuffer, 0, size);
-		md5 = md.digest();
-	}
-	public void calcMD5(byte[] songBuffer) {
-		calcMD5(songBuffer, songBuffer.length);
+
+	public String getStreamName() {
+		return streamName;
 	}
 
-	*
-	*/
+
 	
 }
