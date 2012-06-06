@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 
 import android.os.Environment;
+
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
@@ -44,9 +46,9 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public boolean canHandle(String name) {
-		String ext = name.substring(name.indexOf('.')+1).toLowerCase();
-		return(ext.equals("sndh") || ext.equals("sc68") || ext.equals("snd"));
+	public boolean canHandle(FileSource fs) {
+		String ext = fs.getExt();
+		return(ext.equals("SNDH") || ext.equals("SC68") || ext.equals("SND"));
 	}
 	
 	@Override
@@ -57,7 +59,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
+	public boolean load(FileSource fs) {
 		
 		
 		if(unzipper != null) {
@@ -72,9 +74,9 @@ public class SC68Plugin extends DroidSoundPlugin {
 			unzipper = null;
 		}
 		
-		Log.d(TAG, "Trying to load '%s'", name);
-		currentSong = N_load(module, size);
-		Log.d(TAG, "Trying to load '%s' -> %d", name, currentSong);
+		//Log.d(TAG, "Trying to load '%s'", name);
+		Log.d(TAG, "Trying to load '%s' -> %d", fs.getName(), currentSong);
+		currentSong = N_load(fs.getContents(), fs.getLength());
 		return (currentSong != 0);
 	}
 	
@@ -113,7 +115,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean loadInfo(String name, byte[] module, int size) {
+	public boolean loadInfo(FileSource fs) {
 
 		currentSong = 0;
 		title = null;
@@ -121,6 +123,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 		year = null;
 		type = null;
 
+		byte module [] = fs.getContents();
+		int size = fs.getLength();
 		byte data [] = module;
 		String head = new String(module, 0, 4);
 		if(head.equals("ICE!")) {

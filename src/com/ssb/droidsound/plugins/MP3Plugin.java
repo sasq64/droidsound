@@ -7,6 +7,8 @@ import java.util.List;
 
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
+
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.MediaStreamer;
@@ -52,10 +54,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 	public static boolean simpleStream = false;
 
 	@Override
-	public boolean canHandleExt(String ext) {		
-		ext = ext.toUpperCase();
+	public boolean canHandle(FileSource fs) {		
+		String ext = fs.getExt();
 		Log.d(TAG, "Checking ext '%s'", ext);
-		return ext.equals(".MP3") || ext.equals(".M3U") || ext.equals(".PLS");
+		return ext.equals("MP3") || ext.equals("M3U") || ext.equals("PLS");
 	}
 	
 	@Override
@@ -219,13 +221,6 @@ public class MP3Plugin extends DroidSoundPlugin {
 		mediaPlayer.seekTo(msec);
 		return true;
 	}
-
-	@Override
-	public boolean load(String name, byte[] module, int size) {
-		currentSong = -1;
-		return false;
-	}
-	
 	
 	void clearInfo() {
 		songAlbum = null;
@@ -239,7 +234,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		songYear = null;
 	}
 	
-	@Override
+	//@Override
 	public boolean loadStream(String songName) throws IOException {
 
 		currentSong = -1;
@@ -279,7 +274,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(File file) throws IOException {
+	public boolean load(FileSource fs) {
 		currentSong = -1;
 		description = null;
 		clearInfo();
@@ -288,6 +283,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 		started = false;
 		loaded = false;
 		songLength = -1;
+		
+		File file = fs.getFile();
 
 		PlaylistParser pls = null;
 		type = "MP3";
@@ -306,7 +303,17 @@ public class MP3Plugin extends DroidSoundPlugin {
 					Log.d(TAG, "LOAD %s", pls.getMedia(0));
 					description = pls.getDescription(0);
 					mediaPlayer = new MediaPlayer();
-					mediaPlayer.setDataSource(pls.getMedia(0));
+					try {
+						mediaPlayer.setDataSource(pls.getMedia(0));
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (SecurityException e) {
+						e.printStackTrace();
+					} catch (IllegalStateException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 					loaded = true;
 					mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
 						@Override
@@ -379,8 +386,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 		return true;
 	}
 
-	public boolean loadInfo(File file) throws IOException {
+	@Override
+	public boolean loadInfo(FileSource fs)  {
 
+		File file = fs.getFile();
 		Log.d(TAG, "LoadInfo %s", file.getPath());
 		type = "MP3";
 		if(file.getName().toUpperCase().endsWith(".M3U")) {

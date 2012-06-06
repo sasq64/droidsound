@@ -12,6 +12,8 @@ import java.util.Set;
 
 import android.content.Context;
 import android.os.Environment;
+
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.utils.Unzipper;
@@ -124,8 +126,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public boolean canHandle(String name) {
+	public boolean canHandle(FileSource fs) {
 
+		String name = fs.getName();
 		int x = name.lastIndexOf('.');
 		
 		if(x < 0) return false;
@@ -203,17 +206,49 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return N_getStringInfo(currentSong, what);
 	}
 
-	@Override
-	public boolean load(String name, byte[] module, int size) {	
-		return loadTempFile(name, module, size);
-	}
 
+	private static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
+	private static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
+
+	private static String getSecondaryFile(String name) {
+				
+		int dot = name.lastIndexOf('.');		
+		int firstDot = name.indexOf('.');
+		
+		String ext = name.substring(dot+1).toUpperCase();		
+		String pref = name.substring(0, firstDot).toUpperCase();
+
+		for(int i=0; i<pref0.length; i++) {
+			if(pref.equals(pref0[i])) {
+				return pref1[i] + name.substring(firstDot); 
+			} else
+			if(ext.equals(pref0[i])) {
+				return name.substring(0, dot+1) + pref1[i];
+			}
+		}
+		
+		return null;
+	}
+	
 	@Override
-	public boolean load(File file) throws IOException {
+	public boolean load(FileSource fs) {
 		
 		init();
 		
-		currentSong = N_loadFile(file.getPath());
+		FileSource fs2 = null;
+		
+		String name2 = getSecondaryFile(fs.getName());
+		if(name2 != null) {
+			Log.d(TAG, "File '%s' needs '%s'", fs.getName(), name2);
+			fs2 = fs.getRelative(name2);
+			String path = fs2.getFile().getPath();
+			Log.d(TAG, "Secondary file became '%s'", path);
+		}
+		
+		currentSong = N_loadFile(fs.getFile().getPath());	
+		fs.close();
+		if(fs2 != null)
+			fs2.close();
 		return (currentSong != 0);
 	}
 	
@@ -241,22 +276,10 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean loadInfo(File file) throws IOException {
+	public boolean loadInfo(FileSource fs) {
 		currentSong = 0;
 		return true;
 		//return load(file);
-	}
-
-	@Override
-	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
-		currentSong = 0;
-		return true;
-	}
-	
-	@Override
-	public boolean loadInfo(String name, byte[] module, int size) {
-		currentSong = 0;
-		return true;
 	}
 
 	@Override

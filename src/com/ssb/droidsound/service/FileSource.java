@@ -2,7 +2,6 @@ package com.ssb.droidsound.service;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,13 +13,13 @@ import com.ssb.droidsound.utils.NativeZipFile;
 public class FileSource {
 
 	
-	private static final String TAG = "";
+	private static final String TAG = FileSource.class.getSimpleName();
 	
 	private File file;
 	private NativeZipFile zipFile;
-	//private String zipPath;
-
+	private InputStream inputStream;
 	private byte[] buffer;
+	int bufferPos;
 	long size;
 
 	private File parentDir;
@@ -33,6 +32,13 @@ public class FileSource {
 
 	private String zipDir;
 
+	private String zipPath;
+
+	private boolean leaveParentDir;
+	
+	//private static NativeZipFile cachedZipFile;
+	//private static String cachedFileName;
+
 	public FileSource(File file) {
 		this.file = file;
 		this.size = file.length();
@@ -42,38 +48,77 @@ public class FileSource {
 		this.zipFile = null;
 	}
 	
-	public FileSource(NativeZipFile zip, String zipPath) {
+	public FileSource(String zipPath, String entryName) {
+	
+		this.zipPath = zipPath;
+		
+		try {
+			//if(cachedZipFile != null && cachedFileName.equals(zipPath)) {
+			//	zipFile = cachedZipFile;
+			//} else {
+				zipFile = new NativeZipFile(zipPath);
+				//cachedZipFile = zipFile;
+				//cachedFileName = zipPath;
+			//}
+			zipEntry = zipFile.getEntry(entryName);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		initZip();
+		
+	}
+
+	public FileSource(NativeZipFile zip, String entryName) {
 		this.zipFile = zip;
-		//this.zipPath = zipPath;
-		this.isFile = false;
-		if(zipFile != null) {
-			zipEntry = zipFile.getEntry(zipPath);
-			if(zipEntry != null) {
-				Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
-				size = zipEntry.getSize();
-			}
-			
-			int slash = zipPath.lastIndexOf('/');
-			this.baseName = zipPath.substring(slash + 1);
-			if(slash >= 0)
-				this.zipDir = zipPath.substring(0,slash);
-			else
-				this.zipDir = "";
-			
-		}	
+		this.zipPath = null;
+		zipEntry = zipFile.getEntry(entryName);
+		initZip();
 	}
 	
-	
+
+	public FileSource(NativeZipFile zip, ZipEntry ze) {
+		this.zipFile = zip;
+		this.zipEntry = ze;
+		this.zipPath = null;
+		initZip();
+			
+	}
+
+	void initZip() {
+		this.isFile = false;
+		if(zipFile != null && zipEntry != null) {
+			//Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
+			size = zipEntry.getSize();
+			String zname = zipEntry.getName();				
+			int slash = zname.lastIndexOf('/');
+			this.baseName = zname.substring(slash + 1);
+			if(slash >= 0)
+				this.zipDir = zname.substring(0,slash) + "/";
+			else
+				this.zipDir = "";
+		}
+	}	
+
+
+	public FileSource(String name, byte[] bs) {
+		buffer = bs;
+		this.baseName = name;
+		this.file = null;
+		this.size = bs.length;
+		this.isFile = false;		
+	}
+
+
 	public byte [] getContents() {
 
 		if(buffer == null) {
 			if(zipEntry != null) {
-				Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
-				InputStream fs = zipFile.getInputStream(zipEntry);
+				//Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
+				InputStream is = zipFile.getInputStream(zipEntry);
 				buffer = new byte[(int) size];
 				try {
-					fs.read(buffer);
-					fs.close();
+					is.read(buffer);
+					is.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -81,9 +126,9 @@ public class FileSource {
 				size = (int) file.length();
 				buffer = new byte[(int) size];
 				try {
-					FileInputStream fs = new FileInputStream(file);
-					fs.read(buffer);
-					fs.close();
+					FileInputStream fis = new FileInputStream(file);
+					fis.read(buffer);
+					fis.close();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -94,10 +139,10 @@ public class FileSource {
 		
 	}
 	
-	public long getLength() {
+	public int getLength() {
 		if(size == -1)
 			getContents();
-		return size;
+		return (int) size;
 	}
 	
 	public File getFile() {
@@ -106,15 +151,16 @@ public class FileSource {
 			
 			getContents();
 			
-			if(parentDir != null) {			
+			if(parentDir == null) {			
 				try {
 					parentDir = File.createTempFile("music", Long.toString(System.nanoTime()));
+					parentDir.delete();
+					parentDir.mkdir();
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
+					return null;
 				}
-				parentDir.delete();
-				parentDir.mkdir();
 			}
 			
 			FileOutputStream fos;
@@ -124,42 +170,51 @@ public class FileSource {
 				fos.write(buffer);
 				fos.flush();
 				fos.close();
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				return null;
 			}
 			
 		}
 		
 		return file;
 	}
-	
-	public void cleanUp() {
-		if(parentDir != null) {			
-			File [] files = parentDir.listFiles();
-			for(File f : files) {
-				f.delete();
-			}
-			parentDir.delete();			
-		}
-		parentDir = null;
-	}
-	
+		
 	public String getName() {
 		return baseName;
 	}
 	
 	public FileSource getRelative(String name) {
+		FileSource fs = null;
+		
+		if(parentDir == null) {			
+			try {
+				parentDir = File.createTempFile("music", Long.toString(System.nanoTime()));
+				parentDir.delete();
+				parentDir.mkdir();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				return null;
+			}
+		}
+		
 		if(isFile) {
 			File file2 = new File(file.getParentFile(), name);
-			return new FileSource(file2);			
+			fs = new FileSource(file2);			
 		} else if(zipFile != null) {			
-			return new FileSource(zipFile, zipDir + "/" + name);
+			fs = new FileSource(zipFile, zipDir + name);
 		}
-		return null;
+		if(fs != null) {
+			fs.setParentDir(parentDir);
+		}
+		return fs;
+	}
+
+	private void setParentDir(File pd) {
+		parentDir = pd;
+		leaveParentDir = true;
 	}
 
 	public String getExt() {
@@ -184,6 +239,45 @@ public class FileSource {
 
 	public boolean isFile() {
 		return isFile;
+	}
+
+	public void read(byte[] data) throws IOException {
+		if(buffer != null) {
+			System.arraycopy(buffer, bufferPos, data, 0, data.length);
+			bufferPos += data.length;
+		} else if(inputStream != null) {
+			inputStream.read(data);
+		} else if(file !=null) {
+			inputStream = new FileInputStream(file);
+			inputStream.read(data);
+		} else if(zipEntry != null) {
+			//Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
+			inputStream = zipFile.getInputStream(zipEntry);
+			inputStream.read(data);
+		}
+	}
+
+	public void close() {
+		if(inputStream != null)
+			try {
+				inputStream.close();
+			} catch (IOException e) {
+			}
+		inputStream = null;
+		if(parentDir != null && !leaveParentDir) {			
+			File [] files = parentDir.listFiles();
+			for(File f : files) {
+				f.delete();
+			}
+			parentDir.delete();			
+		}
+		parentDir = null;
+		
+		if(zipFile != null && zipPath != null)  {			
+			//if(zipFile != cachedZipFile)
+			zipFile.close();			
+		}
+
 	}
 
 	/* private boolean loadStream(String songName) throws IOException {

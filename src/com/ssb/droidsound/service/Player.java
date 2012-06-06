@@ -101,8 +101,8 @@ public class Player implements Runnable {
 
 	private int currentTune;
 
-//	private File currentZipFile;
-//	private NativeZipFile currentZip;
+	//private File currentZipFile;
+	private NativeZipFile currentZip;
 
 	private volatile State currentState = State.STOPPED;
 	private int silentPosition;
@@ -324,7 +324,16 @@ public class Player implements Runnable {
 		currentState = State.SWITCHING;
 
 		
-		FileSource songSource = new FileSource(song.getFile());
+		
+		FileSource songSource;
+		
+		
+//		if(*song.zipPat= new FileSource(song.getFile());
+		if(song.getZipPath() != null) {
+			songSource = new FileSource(song.getZipPath(), song.getZipName());
+		} else {
+			songSource = new FileSource(song.getFile());
+		}
 		
 		
 		// SongFile sf = new SongFile(songName);
@@ -342,6 +351,8 @@ public class Player implements Runnable {
 			currentPlugin.unload();
 		currentPlugin = null;
 
+		String sizeAsText = makeSize(songSource.getLength());
+
 		for(DroidSoundPlugin plugin : list) {
 			Log.d(TAG, "Trying " + plugin.getClass().getName());				
 			if(plugin.load(songSource)) {
@@ -349,6 +360,9 @@ public class Player implements Runnable {
 				break;
 			}
 		}
+		
+		songSource.close();
+		songSource = null;
 
 		if(currentPlugin != null) {
 			Log.d(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
@@ -388,8 +402,8 @@ public class Player implements Runnable {
 				}
 				currentSong.details[info.length] = "Size";
 
-				String size = makeSize(songSource.getLength());
-				currentSong.details[info.length + 1] = size;
+				
+				currentSong.details[info.length + 1] = sizeAsText;
 				info = null;
 
 				currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);

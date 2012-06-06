@@ -1,18 +1,6 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLDecoder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +11,6 @@ import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 
 import com.ssb.droidsound.service.FileSource;
-import com.ssb.droidsound.utils.Log;
 
 public abstract class DroidSoundPlugin {
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
@@ -81,8 +68,8 @@ public abstract class DroidSoundPlugin {
 		List<DroidSoundPlugin> pluginList;
 		synchronized (lock) {				
 			pluginList = new ArrayList<DroidSoundPlugin>();
-			//pluginList.add(new VICEPlugin());
-			//pluginList.add(new SidplayPlugin());
+			pluginList.add(new VICEPlugin());
+			pluginList.add(new SidplayPlugin());
 			pluginList.add(new SidPlugin());
 			pluginList.add(new ModPlugin());
 			pluginList.add(new GMEPlugin());
@@ -103,7 +90,7 @@ public abstract class DroidSoundPlugin {
 	}
 	public abstract boolean load(FileSource fs);
 	public abstract void unload();	
-	public abstract boolean canHandle(FileSource fs);
+	public boolean canHandle(FileSource fs) { return false; }
 
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
@@ -191,34 +178,6 @@ public abstract class DroidSoundPlugin {
 			}
 		}
 		
-	}
-	
-	static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
-	static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
-
-	public static String getSecondaryFile(String path) {
-				
-		int dot = path.lastIndexOf('.');
-		int slash = path.lastIndexOf('/');
-		
-		if(dot <= slash) {
-			return null;
-		}
-
-		int firstDot = path.indexOf('.', slash+1);				
-		String ext = path.substring(dot+1).toUpperCase();		
-		String pref = path.substring(slash+1, firstDot).toUpperCase();
-
-		for(int i=0; i<pref0.length; i++) {
-			if(pref.equals(pref0[i])) {
-				return path.substring(0, slash+1) + pref1[i] + path.substring(firstDot); 
-			} else
-			if(ext.equals(pref0[i])) {
-				return path.substring(0, dot+1) + pref1[i];
-			}
-		}
-		
-		return null;
 	}
 	
 	public MediaPlayer getMediaPlayer() { return null; }

@@ -8,7 +8,11 @@ import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.ssb.droidsound.service.FileSource;
+import com.ssb.droidsound.utils.Log;
+
 public class SexyPSFPlugin extends DroidSoundPlugin {
+	private static final String TAG = SexyPSFPlugin.class.getSimpleName();
 
 	static {
 		System.loadLibrary("sexypsf");
@@ -21,8 +25,9 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	
 
 	@Override
-	public boolean canHandleExt(String ext) {
-		return ext.equals(".PSF") || ext.equals(".MINIPSF");
+	public boolean canHandle(FileSource fs) {
+		String ext = fs.getExt();
+		return ext.equals("PSF") || ext.equals("MINIPSF");
 	}
 	
 	@Override
@@ -46,24 +51,31 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte[] module, int size) {
+	public boolean load(FileSource fs) {
 		
-		Map<String, String> tags = getTags(module, size);
-		
-		String libName = tags.get("_lib");
-		if(libName != null) {
+		Map<String, String> tagMap = getTags(fs.getContents(), fs.getLength());
+		if(tagMap != null) {
+			info[INFO_TITLE] = tagMap.get("title");
+			info[INFO_AUTHOR] = tagMap.get("artist");
+			info[INFO_GAME] = tagMap.get("game");
+			info[INFO_COPYRIGHT] = tagMap.get("copyright");
+			info[INFO_LENGTH] = tagMap.get("length");
 		}
-		//loadTempFile(name, module, size);
-		return false;//
-	}
-	
-	@Override
-	public boolean load(File file) throws IOException {		
-		songFile = N_load(file.getPath());
+		String libName = tagMap.get("_lib");
+		FileSource fs2 = null;
+		if(libName != null) {
+			fs2 = fs.getRelative(libName);
+			fs2.getFile();
+		}
+		songFile = N_load(fs.getFile().getPath());
+		fs.close();
+		if(fs2 != null)
+			fs2.close();
 		return true;
+		
+		
 	}
-	
-	
+		
 	private static String fromData(byte [] data, int start, int len) throws UnsupportedEncodingException {
 		int i = start;
 		for(; i<start+len; i++) {
@@ -107,13 +119,20 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 					try {
 						String tags = new String(tagData, "ISO-8859-1").trim();
 						
+						if(tags.contains("utf8=1")) {
+							tags = new String(tagData, "UTF-8").trim();
+						}
+						
+						
 						String [] lines = tags.split("\n");
 						
 						HashMap<String, String> tagMap = new HashMap<String, String>();
 						
 						for(String line : lines) {
+							Log.d(TAG, "TAG: %s", line);
 							String parts [] = line.split("=");
-							tagMap.put(parts[0], parts[1]);
+							if(parts.length >= 2)
+								tagMap.put(parts[0], parts[1]);
 						}
 						return tagMap;
 					} catch (UnsupportedEncodingException e) {
@@ -127,7 +146,10 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public boolean loadInfo(String name, byte [] module, int size) {
+	public boolean loadInfo(FileSource fs) {
+		
+		byte [] module = fs.getContents();
+		int size = fs.getLength();
 		
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
 		src.order(ByteOrder.LITTLE_ENDIAN);		
@@ -175,13 +197,23 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	@Override
 	public int getIntInfo(int what) {
 		if(info != null) {
-			
 			if(what == INFO_LENGTH) {
-				String [] parts = info[what].split("=");
-				int secs = 0;
-				if(parts != null && parts.length == 2)
-					secs = Integer.parseInt(parts[0]) * 60 + Integer.parseInt(parts[1]);
-				return secs;
+				//int decimal = 0;
+				int seconds = 0;
+				String s = info[what];
+				int lastSep = 0; 
+				for(int i = 0; ; i++) {
+					char c = (i < s.length()) ? s.charAt(i) : '.';
+					if(c == ':' || c == '.') {
+						seconds *= 60;
+						seconds += Integer.parseInt(s.substring(lastSep, i));
+						lastSep = i+1;
+						if(c == '.')
+							break;
+					}
+				}
+				return seconds * 1000;
+
 			}
 			return 0;
 		}

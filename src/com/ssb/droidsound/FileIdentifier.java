@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
@@ -131,31 +132,9 @@ public class FileIdentifier {
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
 	
-	
-	private static MusicInfo tryLoad(DroidSoundPlugin plugin, InputStream is, String name) throws IOException {
+	private static MusicInfo tryLoad(DroidSoundPlugin plugin, FileSource fs) {
 
-		if(plugin.loadInfo(name, is, is.available())) {
-			MusicInfo info = new MusicInfo();
-			info.title = plugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
-			info.composer = plugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
-			info.copyright = plugin.getStringInfo(DroidSoundPlugin.INFO_COPYRIGHT);
-			//info.game = plugin.getStringInfo(songRef, DroidSoundPlugin.INFO_GAME);
-			info.format = plugin.getStringInfo(DroidSoundPlugin.INFO_TYPE);
-			//info. = plugin.getIntInfo(songRef, DroidSoundPlugin.INFO_LENGTH);
-			info.date = -1;
-			plugin.unload();
-			
-			Log.d(TAG, "TITLE: %s -- COMPOSER: %s", info.title, info.composer);
-			
-			return info;
-		}		
-		return null;
-	}
-	
-	
-	private static MusicInfo tryLoad(DroidSoundPlugin plugin, File file) throws IOException {
-
-		if(plugin.loadInfo(file)) {
+		if(plugin.loadInfo(fs)) {
 			MusicInfo info = new MusicInfo();
 			info.title = plugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
 			info.composer = plugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
@@ -174,8 +153,9 @@ public class FileIdentifier {
 	}
 
 	
-	public static MusicInfo identify(File f) {
+	/* public static MusicInfo identify(File f) {
 		try {
+			
 			return identify(f.getName(), null, f);
 		} catch (Exception e) {
 			return null;
@@ -190,7 +170,7 @@ public class FileIdentifier {
 			e.printStackTrace();
 			return null;
 		}
-	}
+	} */
 
 	private static String getBaseName(String fname) {
 		int slash = fname.lastIndexOf('/');
@@ -204,12 +184,13 @@ public class FileIdentifier {
 		return fname;
 	}
 	
+	
 	public static String canHandle(String name) {
 		if(plugins == null) {
 			plugins = DroidSoundPlugin.createPluginList();
 		}
 		for(DroidSoundPlugin plugin : plugins) {
-			if(plugin.canHandle(name)) {
+			if(plugin.canHandle(new FileSource(name, new byte [0]))) {
 				return plugin.getClass().getSimpleName();
 			}
 		}
@@ -217,7 +198,11 @@ public class FileIdentifier {
 	}
 
 	
-	public static MusicInfo identify(String name, InputStream is, File file) {
+	public static MusicInfo identify(FileSource fs) {
+		return identify(fs.getName(), fs);
+	}
+
+	public static MusicInfo identify(String name, FileSource fs) {
 
 		byte data [];
 		String magic;
@@ -225,6 +210,7 @@ public class FileIdentifier {
 		if(plugins == null) {
 			plugins = DroidSoundPlugin.createPluginList();
 		}
+		
 
 		int dot = name.lastIndexOf('.');
 		
@@ -232,49 +218,21 @@ public class FileIdentifier {
 		//Log.d(TAG, "hash %s %d", extensions.toString(), extensions.size());
 		Integer i = extensions.get(ext);
 		if(i == null) {
-
 			
 			List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 			for(DroidSoundPlugin plugin : plugins) {
-				if(plugin.canHandle(name)) {
+				if(plugin.canHandle(fs)) {
 					list.add(plugin);
-					Log.d(TAG, "%s handled by %s", name, plugin.getClass().getSimpleName());
+					Log.d(TAG, "%s handled by %s", fs.getName(), plugin.getClass().getSimpleName());
 				}
 			}
 
-			int available = 0;
-
-			if(is != null) {				
-				try {
-					available = is.available();
-				} catch (IOException e1) {
-					return null;
-				}
-				
-				if(!is.markSupported() && (indexUnknown || list.size() > 1)) {
-					is = new BufferedInputStream(is, available);
-				}
-			}
-			
 			//Log.d(TAG, "MarkSupported " + is.markSupported());
 			
 			for(DroidSoundPlugin plugin : list) {
 				Log.d(TAG, "Trying " + plugin.getClass().getName());
 				MusicInfo info = null;
-				
-				try {
-					if(file != null) {
-						info = tryLoad(plugin, file);
-					} else {				
-							is.mark(is.available());
-							info = tryLoad(plugin, is, name);
-							is.reset();
-					}
-				} catch (IOException e) {
-					//e.printStackTrace();
-				} catch (Exception e2) {
-					e2.printStackTrace();
-				}
+				info = tryLoad(plugin, fs);
 				if(info != null) {
 					Log.d(TAG, "Got info");
 					name = plugin.getBaseName(name);
@@ -282,35 +240,6 @@ public class FileIdentifier {
 					return info;
 				}
 			}
-			
-			if(indexUnknown) {
-				Log.d(TAG, "Trying non-handling plugins");
-				for(DroidSoundPlugin plugin : plugins) {
-					if(!plugin.canHandle(name)) {
-						Log.d(TAG, "Trying " + plugin.getClass().getSimpleName());
-						MusicInfo info = null;
-						try {
-							if(file != null) {
-								info = tryLoad(plugin, file);
-							} else {
-									is.mark(is.available());
-									info = tryLoad(plugin, is, name);
-									is.reset();
-							}
-						} catch (IOException e) {
-							e.printStackTrace();
-						} catch (Exception e2) {
-							e2.printStackTrace();
-						}
-						if(info != null) {
-							name = plugin.getBaseName(name);
-							fixName(name, info);
-							return info;
-						}
-					}
-				}
-			}
-			
 			return null;
 		}
 		int extno = i;		
@@ -320,14 +249,6 @@ public class FileIdentifier {
 		info.type = extno;
 		info.date = -1;
 		
-		if(is == null) {
-			try {
-				is = new FileInputStream(file);
-			} catch (FileNotFoundException e) {
-				return null;
-			}
-		}
-
 		try {
 			switch(extno) {
 			case TYPE_PRG:
@@ -337,7 +258,7 @@ public class FileIdentifier {
 				return info;
 			case TYPE_SID:
 				data = new byte [0x80];
-				is.read(data);
+				fs.read(data);
 				magic = new String(data, 1, 3);
 				if(magic.equals("SID")) {
 					info.title = fromData(data, 0x16, 32); //new String(data, 0x16, o-0x15, "ISO-8859-1");
@@ -362,7 +283,7 @@ public class FileIdentifier {
 
 			case TYPE_MOD:
 				data = new byte [0x480];
-				is.read(data);
+				fs.read(data);
 				//magic = new String(data, 0x438,4);
 				//Log.d(TAG, "MOD MAGIC %s", magic);
 				//if(!modMagic.contains(magic)) {
@@ -373,7 +294,7 @@ public class FileIdentifier {
 				break;
 			case TYPE_S3M:
 				data = new byte [50];
-				is.read(data);
+				fs.read(data);
 				magic = new String(data, 44, 4);
 				if(!magic.equals("SCRM")) {
 					return null;
@@ -383,7 +304,7 @@ public class FileIdentifier {
 				break;
 			case TYPE_XM:
 				data = new byte [0x70];
-				is.read(data);
+				fs.read(data);
 				magic = new String(data, 0, 15);
 				if(!magic.equals("Extended Module")) {
 					return null;
@@ -394,7 +315,7 @@ public class FileIdentifier {
 				break;
 			case TYPE_IT:
 				data = new byte [32];
-				is.read(data);
+				fs.read(data);
 				magic = new String(data, 0, 4);
 				if(!magic.equals("IMPM")) {
 					return null;
@@ -404,7 +325,7 @@ public class FileIdentifier {
 				break;
 			case TYPE_NSF:
 				data = new byte [128];
-				is.read(data);
+				fs.read(data);
 				magic = new String(data, 0, 4);
 				if(!magic.equals("NESM")) {
 					return null;
@@ -416,7 +337,7 @@ public class FileIdentifier {
 				break;
 			case TYPE_SPC:				
 				data = new byte [0xd8];
-				is.read(data);
+				fs.read(data);
 				info.format = "SNES";
 				magic = new String(data, 0, 27);
 				if(!magic.equals("SNES-SPC700 Sound File Data")) {
@@ -456,12 +377,7 @@ public class FileIdentifier {
 			return null;
 		}
 		
-		if(file != null) {
-			try {
-				is.close();
-			} catch (IOException e) {
-			}
-		}
+		fs.close();
 		
 		if(dot > 0) {
 			name = name.substring(0, dot);
