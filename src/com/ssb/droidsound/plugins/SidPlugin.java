@@ -358,18 +358,25 @@ public class SidPlugin extends DroidSoundPlugin {
 
 			System.arraycopy(oldm, 0, module, 0x7c, oldm.length);
 			size += 0x7c;
-		}
 
-		loadInfo(fs);
-		
+			fs = new FileSource(name, module);
+			songInfo = new Info();
+			songInfo.name = name;
+			Log.d(TAG, "######################## PRG LOAD OK");
+			songInfo.format = "PRG";
+			currentTune = songInfo.startSong = 0;
+			
+			boolean rc = currentPlugin.load(fs);
+			fs.close();
+			return rc;
+			
+		} 
+		loadInfo(fs);		
 		currentTune = songInfo.startSong;
-		
-		boolean rc =  currentPlugin.load(fs);
-		
+		boolean rc = currentPlugin.load(fs);		
 		if(rc) {
 			findLength(module, size);		
-		}
-		
+		}		
 		return rc;
 		
 	}

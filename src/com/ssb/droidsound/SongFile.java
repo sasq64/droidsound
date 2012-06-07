@@ -1,6 +1,7 @@
 package com.ssb.droidsound;
 
 import java.io.File;
+import java.net.URLDecoder;
 
 public class SongFile {
 
@@ -52,7 +53,7 @@ public class SongFile {
 		playtime = -1;
 		protocol = "";
 		if(fname.startsWith("file://")) {
-			fname = fname.substring(7);
+			fname = URLDecoder.decode(fname.substring(7));			
 		} else if(fname.startsWith("http://")) {
 			fname = fname.substring(7);
 			protocol = "http://";

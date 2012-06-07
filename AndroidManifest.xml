@@ -59,7 +59,25 @@
 				<data android:mimeType="application/octet-stream" />
 			</intent-filter>		
 
-			<intent-filter>				
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />				
+				<data android:scheme="http" />
+				<data android:scheme="file" />
+        		<data android:mimeType="*/*" />
+        		<data android:pathPattern=".*\\.mod" />
+        		<data android:pathPattern=".*\\..*\\.mod" />
+        		<data android:pathPattern=".*\\.gbs" />
+        		<data android:pathPattern=".*\\..*\\.gbs" />
+        		<data android:pathPattern=".*\\.sid" />
+        		<data android:pathPattern=".*\\..*\\.sid" />
+        		<data android:pathPattern=".*\\.xm" />
+        		<data android:pathPattern=".*\\..*\\.xm" />
+        		<data android:host="*" />
+			</intent-filter>		
+			
+						<intent-filter>				
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
 				<data android:scheme="file" />
