@@ -69,10 +69,18 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 			fs2 = fs.getRelative(libName);
 			fs2.getFile();
 		}
+		libName = tagMap.get("_lib2");
+		FileSource fs3 = null;
+		if(libName != null) {
+			fs3 = fs.getRelative(libName);
+			fs3.getFile();
+		}
 		songFile = N_load(fs.getFile().getPath());
 		fs.close();
 		if(fs2 != null)
 			fs2.close();
+		if(fs3 != null)
+			fs3.close();
 		return true;
 		
 		
