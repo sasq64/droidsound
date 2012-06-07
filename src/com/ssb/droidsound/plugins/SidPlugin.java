@@ -1,6 +1,5 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,8 +20,8 @@ public class SidPlugin extends DroidSoundPlugin {
 	private static VICEPlugin vicePlugin = new VICEPlugin();
 	private static SidplayPlugin sidplayPlugin = new SidplayPlugin();
 
-	private static volatile DroidSoundPlugin currentPlugin = sidplayPlugin;
-	private static volatile DroidSoundPlugin nextPlugin = sidplayPlugin;
+	private static volatile DroidSoundPlugin currentPlugin = vicePlugin;
+	private static volatile DroidSoundPlugin nextPlugin = vicePlugin;
 	
 	private static class Info {
 		protected String name = "Unknown";
@@ -391,15 +390,15 @@ public class SidPlugin extends DroidSoundPlugin {
 	@Override
 	public void setOption(String opt, Object val) {
 		
-		if(opt.equals("engine")) {
+		if(opt.equals("sidengine")) {
 			String e = (String) val;
 			
-			if(e.equals("VICE")) {
-				Log.d(TAG, "################ USING ENGINE: VICE");
-				nextPlugin = vicePlugin;
-			} else {
+			if(e.equals("Sidplay2")) {
 				Log.d(TAG, "################ USING ENGINE: SIDPLAY2");
 				nextPlugin = sidplayPlugin;
+			} else {
+				Log.d(TAG, "################ USING ENGINE: VICE");
+				nextPlugin = vicePlugin;
 			}
 			return;			
 		}

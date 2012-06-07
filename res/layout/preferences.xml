@@ -61,9 +61,9 @@
 			android:key="SidPlugin"
 		>
 		<ListPreference
-	            android:key="SidPlugin.engine"
+	            android:key="SidPlugin.sidengine"
 	            android:title="SID Engine"
-	            android:defaultValue="Sidplay2"
+	            android:defaultValue="VICE"
 				android:entries="@array/engine_opts"
 				android:entryValues="@array/engine_opts"
 	            />
