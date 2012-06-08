@@ -1,0 +1,8 @@
+bin
+gen
+obj
+local.properties
+.project
+.cproject
+libs/armeabi
+libs/armeabi-v7a

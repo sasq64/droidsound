@@ -1,9 +1,7 @@
 package com.ssb.droidsound.service;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -12,9 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import android.content.Context;
-import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
@@ -77,7 +73,8 @@ public class Player implements Runnable {
 
 	// Audio data
 	private short[] samples;
-	private AudioTrack audioTrack;
+	//private AudioTrack audioTrack;
+	private AudioPlayer audioPlayer;
 	private int bufSize;
 
 	// Plugins
@@ -93,8 +90,8 @@ public class Player implements Runnable {
 	// private int currentPosition;
 	private int noPlayWait;
 	private int lastPos;
-	private int playPosOffset;
-	private int startPlaybackHead;
+	//private int playPosOffset;
+	//private int startPlaybackHead;
 	private SongInfo currentSong = new SongInfo();
 
 	// private Object songRef;
@@ -102,14 +99,14 @@ public class Player implements Runnable {
 	private int currentTune;
 
 	//private File currentZipFile;
-	private NativeZipFile currentZip;
+	//private NativeZipFile currentZip;
 
 	private volatile State currentState = State.STOPPED;
 	private int silentPosition;
 
 	int FREQ = 44100;
 	private boolean songEnded = false;
-	private boolean reinitAudio;
+	//private boolean reinitAudio;
 
 	private boolean startedFromSub;
 	private int lastLatency;
@@ -181,8 +178,9 @@ public class Player implements Runnable {
 		
 		startSong(song, true);
 		
-		audioTrack.stop();
-		audioTrack.flush();
+		///audioTrack.stop();
+		///audioTrack.flush();
+		audioPlayer.stop();
 
 		byte [] bbuffer = new byte [bufSize];
 		
@@ -292,6 +290,7 @@ public class Player implements Runnable {
 		
 		Log.d(TAG, "Wrote %d samples in %d bytes", numSamples, bytesWritten);
 				
+		/*
 		if(reinitAudio) {
 			audioTrack.release();
 			audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
@@ -299,7 +298,7 @@ public class Player implements Runnable {
 					AudioTrack.MODE_STREAM);
 			samples = new short[bufSize / 2];
 			reinitAudio = false;
-		}
+		}*/
 
 		currentPlugin.unload();		
 		currentPlugin = null;
@@ -316,7 +315,7 @@ public class Player implements Runnable {
 			currentPlugin.unload();
 		}
 		currentPlugin = null;
-		playPosOffset = 0;
+		//playPosOffset = 0;
 		songEnded = false;
 
 		boolean flush = true; // (currentState != State.SWITCHING);
@@ -477,8 +476,9 @@ public class Player implements Runnable {
 				mHandler.sendMessage(msg);
 	
 				if(flush) {
-					audioTrack.stop();					
-					audioTrack.flush();
+					audioPlayer.stop();
+					//audioTrack.stop();					
+					//audioTrack.flush();
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e) {
@@ -489,20 +489,22 @@ public class Player implements Runnable {
 					// audioTrack.flush();
 				}
 	
+				/*
 				if(reinitAudio) {
 					audioTrack.release();
 					audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_OUT_STEREO,
 							AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 					samples = new short[bufSize / 2];
 					reinitAudio = false;
-				}
+				} */
 	
-				audioTrack.play();
+				/// audioTrack.play();
+				audioPlayer.start();
 				currentState = State.PLAYING;
 
 				//Log.d(TAG, "PLAY, pos " + );
 
-				startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+				//startPlaybackHead = audioTrack.getPlaybackHeadPosition();
 				
 				// currentPosition = 0;
 			}
@@ -527,9 +529,10 @@ public class Player implements Runnable {
 
 		currentPlugin = null;
 
-		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_OUT_STEREO,
-				AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
-		reinitAudio = false;
+		audioPlayer = new AudioPlayer(bufSize);
+		
+		
+		//reinitAudio = false;
 		Log.d(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
 		int pos = 0;
@@ -568,9 +571,10 @@ public class Player implements Runnable {
 									mp.stop();
 								} else {
 
-									audioTrack.stop();
-									audioTrack.flush();
-
+									//audioTrack.stop();
+									//audioTrack.flush();
+									audioPlayer.stop();
+									/*
 									if(reinitAudio) {
 										audioTrack.release();
 										audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
@@ -578,7 +582,7 @@ public class Player implements Runnable {
 												AudioTrack.MODE_STREAM);
 										samples = new short[bufSize / 2];
 										reinitAudio = false;
-									}
+									}*/
 								}
 
 								currentPlugin.unload();
@@ -599,33 +603,38 @@ public class Player implements Runnable {
 								if(currentPlugin.seekTo(msec)) {
 
 									//
-									int playPos = (audioTrack.getPlaybackHeadPosition()  - startPlaybackHead) * 10 / (FREQ / 100);
-									Log.d(TAG, "Offset %d/1000 - %d", msec, playPos);
-									playPosOffset = msec - playPos;
+									//int playPos = (audioTrack.getPlaybackHeadPosition()  - startPlaybackHead) * 10 / (FREQ / 100);
+									//Log.d(TAG, "Offset %d/1000 - %d", msec, playPos);
+									//playPosOffset = msec - playPos;
+									audioPlayer.seekTo(msec);
 
 									// currentPosition = msec;
-									// lastPos = -1000;
+									lastPos = -1000;
 								}
 								break;
 							case SET_TUNE:
 								Log.d(TAG, "Setting tune");
 								if(currentPlugin.setTune((Integer) argument)) {
-									playPosOffset = 0;
+									//playPosOffset = 0;
 									// currentPosition = 0;
 									currentTune = (Integer) argument;
 									lastPos = -1000;
 									// Log.d(TAG, "TUNE, pos " +
 									// audioTrack.getPlaybackHeadPosition());
-									audioTrack.pause();
-									audioTrack.flush();
+									//audioTrack.pause();
+									//audioTrack.flush();
+									/*audioPlayer.pause();
+									audioPlayer.flush();
 									try {
 										Thread.sleep(100);
 									} catch (InterruptedException e) {
 										e.printStackTrace();
-									}
+									}*/
+									audioPlayer.stop();
 									// Log.d(TAG, "TUNE, pos " +
 									// audioTrack.getPlaybackHeadPosition());
 
+									/*
 									if(reinitAudio) {
 										audioTrack.release();
 										audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ,
@@ -633,7 +642,7 @@ public class Player implements Runnable {
 												AudioTrack.MODE_STREAM);
 										samples = new short[bufSize / 2];
 										reinitAudio = false;
-									}
+									} */
 
 									if(currentState == State.SWITCHING) {
 										currentState = State.PLAYING;
@@ -647,9 +656,9 @@ public class Player implements Runnable {
 									Message msg = mHandler.obtainMessage(MSG_SUBTUNE, (Integer) argument, currentSong.length, new String[] {
 											currentSong.subtuneTitle, currentSong.subtuneAuthor });
 									mHandler.sendMessage(msg);
-									audioTrack.play();
-									
-									startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+									//audioTrack.play();
+									//startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+									audioPlayer.start(); //start(false);
 								}
 								break;
 							case PAUSE:
@@ -661,7 +670,7 @@ public class Player implements Runnable {
 									if(mp != null)
 										mp.pause();
 									else
-										audioTrack.pause();
+										audioPlayer.pause(); //audioTrack.pause();
 								}
 
 								break;
@@ -674,7 +683,7 @@ public class Player implements Runnable {
 									if(mp != null)
 										mp.start();
 									else
-										audioTrack.play();
+										audioPlayer.play(); //audioTrack.play();
 								}
 
 								break;
@@ -814,7 +823,7 @@ public class Player implements Runnable {
 						Thread.sleep(100);
 					}
 
-					pos = audioTrack.getPlaybackHeadPosition() - startPlaybackHead;
+					//pos = audioTrack.getPlaybackHeadPosition() - startPlaybackHead;
 
 					// currentPosition += ((len * 1000) / (FREQ*2));
 					// Log.d(TAG, "pos " + currentPosition);
@@ -828,13 +837,14 @@ public class Player implements Runnable {
 					} */
 
 					//pos = p;
-					int playPos = pos * 10 / (FREQ / 100);
+					//int playPos = pos * 10 / (FREQ / 100);
+					int playPos = audioPlayer.getPlaybackPosition();
 
-					if(pos >= lastPos + FREQ / 2) {
+					if(playPos >= lastPos + 500) {
 
-						Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos + playPosOffset, -1);
+						Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos /*+ playPosOffset*/, -1);
 						mHandler.sendMessage(msg);
-						lastPos = pos;
+						lastPos = playPos;
 
 						if(currentPlugin.isSilent()) {
 							if(silentPosition < 0) {
@@ -860,7 +870,8 @@ public class Player implements Runnable {
 						Arrays.fill(samples, 0, len, (short) 0);
 					}
 					if(len > 0) {
-						audioTrack.write(samples, 0, len);
+						//audioTrack.write(samples, 0, len);
+						audioPlayer.update(samples, len);
 					}
 
 					// Log.d(TAG, "loop");
@@ -888,8 +899,9 @@ public class Player implements Runnable {
 			}
 		}
 
-		audioTrack.release();
-		audioTrack = null;
+		//audioTrack.release();
+		//audioTrack = null;
+		audioPlayer.release();
 
 		for(DroidSoundPlugin plugin : plugins) {
 			plugin.exit();
@@ -899,9 +911,9 @@ public class Player implements Runnable {
 
 	}
 
-	synchronized int getPosition() {
+	/*synchronized int getPosition() {
 		return audioTrack.getPlaybackHeadPosition();
-	}
+	}*/
 
 	synchronized public boolean getSongInfo(SongInfo target) {
 		target.title = currentSong.title == null ? null : new String(currentSong.title);
@@ -978,7 +990,9 @@ public class Player implements Runnable {
 			if(bufSize != bs) {
 				bufSize = bs;
 				Log.d(TAG, "Buffersize now " + bs);
-				reinitAudio = true;
+				//reinitAudio = true;
+				if(audioPlayer != null)
+					audioPlayer.setBufferSize(bufSize);
 			}
 		}
 	}
