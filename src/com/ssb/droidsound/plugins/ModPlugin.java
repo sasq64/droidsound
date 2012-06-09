@@ -1,9 +1,7 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.ssb.droidsound.service.FileSource;
@@ -261,26 +259,21 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public String[] getDetailedInfo() {
+	public void getDetailedInfo(List<String> list) {
 		
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
-		//Log.d(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo(currentSong, 101);
+		
+		list.add("Format");
+		list.add("MODPlug: " + fmt);
+		list.add("Channels");
+		list.add(Integer.toString(channels));
 
-		String[] info;
 		if(instruments != null && instruments.length() > 0) {
-			info = new String [6];
-			info[4] = "Instruments";
-			info[5] = instruments;
-		} else {
-			info = new String [4];
+			list.add("Instruments");
+			list.add(instruments);
 		}
-		info[0] = "Format";
-		info[1] = "MODPlug: " + fmt;
-		info[2] = "Channels";
-		info[3] = Integer.toString(channels);
-		return info;
 	}
 	
 	@Override

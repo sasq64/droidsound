@@ -2,18 +2,16 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 
-import com.ssb.droidsound.service.FileSource;
-import com.ssb.droidsound.utils.Log;
-
 import com.ssb.droidsound.MediaStreamer;
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.CueFile;
 import com.ssb.droidsound.utils.ID3Tag;
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.M3UParser;
 import com.ssb.droidsound.utils.PLSParser;
 import com.ssb.droidsound.utils.PlaylistParser;
@@ -61,14 +59,14 @@ public class MP3Plugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public String[] getDetailedInfo() {
+	public void getDetailedInfo(List<String> info) {
 		
 		if(streamer != null) {
-			return streamer.getDetailedInfo();
+			streamer.getDetailedInfo(info);
+			return;
 		}
 
 		Log.d(TAG, "getDetailedInfo");
-		List<String> info = new ArrayList<String>();
 		
 		info.add("Format");
 		info.add("MP3");
@@ -88,15 +86,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		if(songComment != null && songComment.length() > 0) {
 			info.add("Comment");
 			info.add(songComment);
-		}
-		
-		if(info.size() == 0) return null;
-		
-		String[] strArray = new String[info.size()];
-		info.toArray(strArray);
-		return strArray;
-
-
+		}		
 	}
 
 	@Override

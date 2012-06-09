@@ -330,22 +330,23 @@ public class Player implements Runnable {
 				// currentSong.game = getPluginInfo(DroidSoundPlugin.INFO_GAME);
 				currentSong.subTunes = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
 				currentSong.startTune = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE);
-				String[] info = currentPlugin.getDetailedInfo();
-				if(info == null) {
-					info = new String[0];
-				}
+				
+				ArrayList<String> info = new ArrayList<String>();
+				
+				currentPlugin.getDetailedInfo(info);				
+				info.add("Size");
+				info.add(sizeAsText);
+				currentSong.details = (String[]) info.toArray(new String[info.size()]);
+				
+				//currentSong.details = new String[info.size() + 2];
+				//for(int i = 0; i < info.size(); i++) {
+				//	currentSong.details[i] = info.get(i);
+				//}
+				//currentSong.details[info.size()] = "Size";				
+				//currentSong.details[info.size() + 1] = sizeAsText;
+				//info = null;
 
 				currentSong.canSeek = currentPlugin.canSeek();
-
-				currentSong.details = new String[info.length + 2];
-				for(int i = 0; i < info.length; i++) {
-					currentSong.details[i] = info[i];
-				}
-				currentSong.details[info.length] = "Size";
-
-				
-				currentSong.details[info.length + 1] = sizeAsText;
-				info = null;
 
 				currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 
@@ -596,11 +597,12 @@ public class Player implements Runnable {
 								mHandler.sendMessage(msg);
 							}
 							
-							String[] info = currentPlugin.getDetailedInfo();
+							List<String> info = currentPlugin.getDetailedInfo();
 							if(info != null) {
+								 
 								Log.d(TAG, "########################################### GOT DETAILS");
-								currentSong.details = info;
-								Message msg = mHandler.obtainMessage(MSG_DETAILS, info);
+								currentSong.details = (String[]) info.toArray(new String[info.size()]);
+								Message msg = mHandler.obtainMessage(MSG_DETAILS, currentSong.details);
 								mHandler.sendMessage(msg);
 							}
 							firstData = false;

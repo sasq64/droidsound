@@ -113,10 +113,15 @@ public abstract class DroidSoundPlugin {
 	// "Channels" - Number of channels
 	// "Copyright" - Same as INFO_COPYRIGHT
 	// "Game" - Same as INFO_GAME
-	public String [] getDetailedInfo() {
-		return null;
+	public void getDetailedInfo(List<String> details) {
 	}
 	
+	public List<String> getDetailedInfo() {
+		List<String> details = new ArrayList<String>();
+		getDetailedInfo(details);
+		return details;
+	}
+
 	public abstract String getStringInfo(int what);
 	public abstract int getIntInfo( int what);
 	

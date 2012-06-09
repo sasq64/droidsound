@@ -8,6 +8,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.List;
 
 import android.content.Context;
 
@@ -58,11 +60,11 @@ public class SidPlugin extends DroidSoundPlugin {
 		src.get(id);
 		int version = src.getShort();
 		src.position(8);
-		short loadAdress = src.getShort();
+		/*short loadAdress =*/ src.getShort();
 		short initAdress = src.getShort();
 		short playAdress = src.getShort();
 		short songs = src.getShort();
-		short startSong = src.getShort();
+		/*short startSong =*/ src.getShort();
 		int speedBits = src.getInt();
 		src.position(0x76);
 		int flags = src.getShort();
@@ -249,10 +251,10 @@ public class SidPlugin extends DroidSoundPlugin {
 	
 
 	@Override
-	public String[] getDetailedInfo() {
+	public void getDetailedInfo(List<String> list) {
 		final String sids[] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
 		final String videoModes[] = { "UNKNOWN", "PAL", "NTSC", "PAL & NTSC" };
-		return new String[] {
+		String[] info = new String[] {
 			"Format",
 			songInfo.format,
 			"Copyright",
@@ -261,7 +263,8 @@ public class SidPlugin extends DroidSoundPlugin {
 			sids[songInfo.sidModel],
 			"Video Mode",
 			videoModes[songInfo.videoMode],
-		};
+		};		
+		list.addAll(Arrays.asList(info));
 	}
 	
 	@Override

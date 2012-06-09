@@ -2,6 +2,7 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 import android.os.Environment;
 
@@ -97,9 +98,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
 	
 	@Override
-	public String[] getDetailedInfo() {
-		
-		String [] info = new String [4];
+	public void getDetailedInfo(List<String> info) {
 		
 		String replay = getStringInfo(52);
 		String hwname = getStringInfo(51);
@@ -107,11 +106,10 @@ public class SC68Plugin extends DroidSoundPlugin {
 		if(replay == null) replay = "?";
 		if(hwname == null) hwname = "?";
 		
-		info[0] = "Format";
-		info[1] = String.format("SC68: %s", replay);
-		info[2] = "Hardware";
-		info[3] = String.format("%s (%s)", hwname, hws[hwbits]);
-		return info;
+		info.add("Format");
+		info.add(String.format("SC68: %s", replay));
+		info.add("Hardware");
+		info.add(String.format("%s (%s)", hwname, hws[hwbits]));
 	}
 
 	@Override
@@ -147,7 +145,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 			Log.d(TAG, "Found SNDH");
 			type = "SNDH";
 			int offset = 16;
-			boolean done = false;
+			//boolean done = false;
 			
 			while(offset < 1024) {
 				String tag = new String(data, offset, 4);

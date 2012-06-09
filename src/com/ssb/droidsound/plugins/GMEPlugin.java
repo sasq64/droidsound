@@ -2,7 +2,6 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,10 +36,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	
 	@Override
-	public String[] getDetailedInfo() {
-		
-		List<String> list = new ArrayList<String>();
-		//String instruments = N_getStringInfo((Long)song, 100);
+	public void getDetailedInfo(List<String> list) {
 		
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
 		if(s != null & s.length() > 0) {
@@ -56,14 +52,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 		if(s != null & s.length() > 0) {
 			list.add("Game");
 			list.add(s);
-		}
-		
-		String [] info = new String [list.size()];
-		for(int i=0; i<info.length; i++) {
-			info[i] = list.get(i);
-		}
-		
-		return info;
+		}		
 	}
 	
 	@Override

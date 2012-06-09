@@ -2,20 +2,17 @@ package com.ssb.droidsound.plugins;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import android.content.Context;
 import android.os.Environment;
 
 import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
-
 import com.ssb.droidsound.utils.Unzipper;
 
 public class UADEPlugin extends DroidSoundPlugin {
@@ -121,6 +118,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				
+				Log.d(TAG, "Added %d extensions to UADE", extensions.size());
+				
 			}
 		}
 	}
@@ -186,16 +186,13 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public String[] getDetailedInfo() {
+	public void getDetailedInfo(List<String> list) {
 
 		if(currentSong == 0) {
-			return null;
+			return;
 		}
-
-		String [] details = new String [2];
-		details[0] = "Format";
-		details[1] = "UADE: " + N_getStringInfo(currentSong, INFO_TYPE);
-		return details;
+		list.add("Format");
+		list.add("UADE: " + N_getStringInfo(currentSong, INFO_TYPE));
 	}
 
 	@Override
@@ -254,7 +251,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 	
 	private void init() {
 		if(!inited) {			
-			Context context = getContext();
+			//Context context = getContext();
 			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 
 			if(!libLoaded) {

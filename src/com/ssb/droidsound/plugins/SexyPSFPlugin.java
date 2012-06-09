@@ -1,11 +1,10 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.ssb.droidsound.service.FileSource;
@@ -31,17 +30,21 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public String[] getDetailedInfo() {
-		String[] info = new String[6];
-		info[0] = "Format";
-		info[1] = "PSF (Playstation1)";
-		info[2] = "Game";
-		info[3] = getStringInfo(INFO_GAME);
-		if(info[3] == null) info[3] = "Unknown";
-		info[4] = "Copyright";
-		info[5] = getStringInfo(INFO_COPYRIGHT);
-		if(info[5] == null) info[5] = "";
-		return info;
+	public void getDetailedInfo(List<String> info) {
+
+		String game = getStringInfo(INFO_GAME);
+		String copyright = getStringInfo(INFO_COPYRIGHT);
+
+		info.add("Format");
+		info.add("PSF (Playstation1)");
+		if(game != null) {
+			info.add("Game");
+			info.add(game);
+		}
+		if(copyright != null) {
+			info.add("Copyright");
+			info.add(copyright);
+		}
 	}
 	
 	@Override
