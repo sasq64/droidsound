@@ -287,12 +287,7 @@ public class Player implements Runnable {
 				Log.d(TAG, "%s handled by %s", song.getName(), plugin.getClass().getSimpleName());
 			}
 		}
-		
-		if(currentPlugin != null)
-			currentPlugin.unload();
-		currentPlugin = null;
 
-		String sizeAsText = makeSize(songSource.getLength());
 
 		for(DroidSoundPlugin plugin : list) {
 			Log.d(TAG, "Trying " + plugin.getClass().getName());				
@@ -302,6 +297,7 @@ public class Player implements Runnable {
 			}
 		}
 		
+		String sizeAsText = makeSize(songSource.getLength());
 		songSource.close();
 		songSource = null;
 

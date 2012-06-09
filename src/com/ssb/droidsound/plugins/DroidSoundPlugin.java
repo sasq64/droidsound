@@ -54,7 +54,7 @@ public abstract class DroidSoundPlugin {
 
 	private byte[] md5;
 
-	private int streamSize;
+	//private int streamSize;
 
 	
 	

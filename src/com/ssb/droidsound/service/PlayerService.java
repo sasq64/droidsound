@@ -703,8 +703,9 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		super.onStartCommand(intent, flags, startId);
-		Log.d(TAG, "Service started: %s %x %d", intent.toString(), flags, startId);
+		Log.d(TAG, "Service started: %x %d", flags, startId);
 		if(intent != null) {
+			Log.d(TAG, "Intent: %s", intent.toString());
 			String action = intent.getAction();
 			if(action != null)
 				Log.d(TAG, "Intent %s / %s", action, intent.getDataString());
@@ -750,7 +751,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 				}
 			}
 		}
-        return Service.START_STICKY;
+        return Service.START_NOT_STICKY;
 	}
 	
 	@Override
