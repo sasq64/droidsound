@@ -508,6 +508,7 @@ public class Player implements Runnable {
 							case SET_TUNE:
 								Log.d(TAG, "Setting tune");
 								if(currentPlugin.setTune((Integer) argument)) {
+									songEnded = false;
 									currentTune = (Integer) argument;
 									lastPos = -1000;
 									audioPlayer.stop();
@@ -568,7 +569,7 @@ public class Player implements Runnable {
 
 						int playPos = currentPlugin.getSoundData(null, 0);
 						
-						if(playPos < -0) { // !mp.isPlaying()) {
+						if(playPos < 0) { // !mp.isPlaying()) {
 							// songEnded = true;
 							Log.d(TAG, "SOUNDDATA DONE");
 							currentState = State.SWITCHING;
@@ -676,10 +677,11 @@ public class Player implements Runnable {
 					}
 
 					if(!songEnded) {
-						//Log.d(TAG, "Get sound data");
+						Log.d(TAG, "Get sound data");
 						len = currentPlugin.getSoundData(samples, bufSize / 16);
 						//Log.d(TAG, "DONE");
 					} else {
+						Log.d(TAG, "SLEEP");
 						Thread.sleep(100);
 					}
 
@@ -709,7 +711,13 @@ public class Player implements Runnable {
 
 					if(len < 0) {
 						if(playPos > 5000) {
+							Log.d(TAG, "SONG ENDED HERE");
 							songEnded = true;
+							
+							currentState = State.SWITCHING;
+							Message msg = mHandler.obtainMessage(MSG_DONE);
+							mHandler.sendMessage(msg);							
+
 						}
 						len = bufSize / 16;
 						Arrays.fill(samples, 0, len, (short) 0);
