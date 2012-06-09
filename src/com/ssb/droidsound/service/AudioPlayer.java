@@ -73,8 +73,8 @@ public class AudioPlayer {
 				reinitAudio = false;
 			}
 			
-			startPlaybackHead = 0;//audioTrack.getPlaybackHeadPosition();
-			playPosOffset = 0;
+			//startPlaybackHead = 0;//audioTrack.getPlaybackHeadPosition();
+			//playPosOffset = 0;
 		}
 	}
 
@@ -95,9 +95,10 @@ public class AudioPlayer {
 
 		audioTrack.play();
 
-		//Log.d(TAG, "PLAY, pos " + );
+		
 		playPosOffset = 0;
 		startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+		Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
 	}
 
 	public void pause() {
@@ -109,6 +110,7 @@ public class AudioPlayer {
 		audioTrack.flush();
 		startPlaybackHead = audioTrack.getPlaybackHeadPosition();
 		playPosOffset = 0;
+		Log.d(TAG, "PLAYBACK AFTER FLUSH " + startPlaybackHead);
 		
 	}
 
