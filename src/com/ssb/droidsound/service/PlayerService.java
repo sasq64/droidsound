@@ -751,7 +751,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 				}
 			}
 		}
-        return Service.START_NOT_STICKY;
+        return Service.START_STICKY_COMPATIBILITY;
 	}
 	
 	@Override
