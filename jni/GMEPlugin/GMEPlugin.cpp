@@ -206,7 +206,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getSoundData
 	}
 
 	jshort *ptr = env->GetShortArrayElements(bArray, NULL);
-	//__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Getting %d shorts from %p", size, emu);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Getting %d shorts from %p", size, info->emu);
 	gme_err_t err = gme_play(info->emu, size, ptr);
 	//__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Result %d", err);
 	env->ReleaseShortArrayElements(bArray, ptr, 0);

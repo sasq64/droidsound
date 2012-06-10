@@ -906,7 +906,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 		}
 		
 		private int BUFSIZE(double sec) {			
-			return (int)(sec*44100*2) & 0xfffffff0;			
+			return (int)(sec*44100*2) & 0xffffffe0;			
 		}
 		
 		@Override

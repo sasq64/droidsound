@@ -673,11 +673,8 @@ public class Player implements Runnable {
 					}
 
 					if(!songEnded) {
-						Log.d(TAG, "Get sound data");
 						len = currentPlugin.getSoundData(samples, bufSize / 16);
-						//Log.d(TAG, "DONE");
 					} else {
-						Log.d(TAG, "SLEEP");
 						Thread.sleep(100);
 					}
 
@@ -719,6 +716,7 @@ public class Player implements Runnable {
 						Arrays.fill(samples, 0, len, (short) 0);
 					}
 					if(len > 0) {
+						
 						audioPlayer.update(samples, len);
 					}
 
@@ -833,6 +831,9 @@ public class Player implements Runnable {
 				Log.d(TAG, "Buffersize now " + bs);
 				if(audioPlayer != null)
 					audioPlayer.setBufferSize(bufSize);
+				
+				samples = new short [bufSize / 2];
+				
 			}
 		}
 	}
