@@ -12,6 +12,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.zip.ZipEntry;
 
+import android.os.Environment;
+
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 
@@ -210,14 +212,12 @@ public class FileSource {
 		
 	private void createParentDir() {
 		if(parentDir == null) {			
-			try {
-				parentDir = File.createTempFile("music", Long.toString(System.nanoTime()));
-				parentDir.delete();
-				parentDir.mkdir();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+			File tempDir = new File(droidDir, "tempmusic");
+			//if(!tempDir.exists())
+			//	tempDir.mkdir();
+			parentDir = new File(tempDir, "music" + Long.toString(System.nanoTime()));
+			parentDir.mkdirs();
 		}
 	}
 
