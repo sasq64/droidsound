@@ -3,6 +3,8 @@ package com.ssb.droidsound.plugins;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import com.ssb.droidsound.service.FileSource;
+
 public class SidplayPlugin extends DroidSoundPlugin {
 	private static final String TAG = SidplayPlugin.class.getSimpleName();
 
@@ -85,7 +87,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 	native public static void N_setOption(int what, int val);
 	
 	@Override
-	public boolean load(String name, byte [] module, int size) {
+	public boolean load(FileSource fs) {
 		
 		if(!libraryLoaded) {
 			System.loadLibrary("sidplay2");
@@ -96,7 +98,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 			libraryLoaded = true;
 		}		
 		
-		currentSong = N_load(module, size);
+		currentSong = N_load(fs.getContents(), fs.getLength());
 		
 		if(currentSong == 0) {
 			return false;

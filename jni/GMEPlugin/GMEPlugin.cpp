@@ -118,6 +118,7 @@ jlong setUp(Music_Emu *emu)
 		info->started = false;
 		info->emu = emu;
 		info->currentSong = 0;
+		//info->emu->ignore_silence(true);
 		info->lastTrack = track0;
 		info->trackCount = track_count;
 		return (jlong)info;
@@ -201,11 +202,11 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GMEPlugin_N_1getSoundData
 	}
 
 	if(gme_track_ended(info->emu)) {
-		return 0;
+		return -1;
 	}
 
 	jshort *ptr = env->GetShortArrayElements(bArray, NULL);
-	//__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Getting %d shorts from %p", size, emu);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Getting %d shorts from %p", size, info->emu);
 	gme_err_t err = gme_play(info->emu, size, ptr);
 	//__android_log_print(ANDROID_LOG_VERBOSE, "GMEPlugin", "Result %d", err);
 	env->ReleaseShortArrayElements(bArray, ptr, 0);

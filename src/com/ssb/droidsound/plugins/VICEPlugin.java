@@ -1,13 +1,12 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
 import android.os.Environment;
 
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
@@ -146,7 +145,7 @@ public class VICEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean load(String name, byte [] module, int size) {
+	public boolean load(FileSource fs) {
 		
 		//currentTune = 0;
 		
@@ -175,22 +174,24 @@ public class VICEPlugin extends DroidSoundPlugin {
 		}
 
 		final String error;
-		try {
-			File file = File.createTempFile("tmp-XXXXX", "sid");
-			FileOutputStream fo = new FileOutputStream(file);
-			fo.write(module);
-			fo.close();
-			error = N_loadFile(file.getAbsolutePath());
-			file.delete();
-		}
-		catch (IOException ie) {
-			throw new RuntimeException(ie);
-		}
+		//try {
+			//File file = File.createTempFile("tmp-XXXXX", "sid");
+			//FileOutputStream fo = new FileOutputStream(file);
+			//fo.write(fs.getContents());
+			//fo.close();
+			error = N_loadFile(fs.getFile().getAbsolutePath());
+			//file.delete();
+		//}
+		//catch (IOException ie) {
+		//	throw new RuntimeException(ie);
+		//}
 		
 		if (error != null) {
 			Log.i(TAG, "Native code error: " + error);
 			return false;
 		}
+		
+		fs.close();
 
 		return true; 
 	}

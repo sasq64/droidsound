@@ -2,18 +2,17 @@ package com.ssb.droidsound.plugins;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
-import android.content.Context;
 import android.os.Environment;
-import com.ssb.droidsound.utils.Log;
 
+import com.ssb.droidsound.service.FileSource;
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 
 public class UADEPlugin extends DroidSoundPlugin {
@@ -119,13 +118,17 @@ public class UADEPlugin extends DroidSoundPlugin {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				
+				Log.d(TAG, "Added %d extensions to UADE", extensions.size());
+				
 			}
 		}
 	}
 	
 	@Override
-	public boolean canHandle(String name) {
+	public boolean canHandle(FileSource fs) {
 
+		String name = fs.getName();
 		int x = name.lastIndexOf('.');
 		
 		if(x < 0) return false;
@@ -183,16 +186,13 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public String[] getDetailedInfo() {
+	public void getDetailedInfo(List<String> list) {
 
 		if(currentSong == 0) {
-			return null;
+			return;
 		}
-
-		String [] details = new String [2];
-		details[0] = "Format";
-		details[1] = "UADE: " + N_getStringInfo(currentSong, INFO_TYPE);
-		return details;
+		list.add("Format");
+		list.add("UADE: " + N_getStringInfo(currentSong, INFO_TYPE));
 	}
 
 	@Override
@@ -203,23 +203,55 @@ public class UADEPlugin extends DroidSoundPlugin {
 		return N_getStringInfo(currentSong, what);
 	}
 
-	@Override
-	public boolean load(String name, byte[] module, int size) {	
-		return loadTempFile(name, module, size);
-	}
 
+	private static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
+	private static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
+
+	private static String getSecondaryFile(String name) {
+				
+		int dot = name.lastIndexOf('.');		
+		int firstDot = name.indexOf('.');
+		
+		String ext = name.substring(dot+1).toUpperCase();		
+		String pref = name.substring(0, firstDot).toUpperCase();
+
+		for(int i=0; i<pref0.length; i++) {
+			if(pref.equals(pref0[i])) {
+				return pref1[i] + name.substring(firstDot); 
+			} else
+			if(ext.equals(pref0[i])) {
+				return name.substring(0, dot+1) + pref1[i];
+			}
+		}
+		
+		return null;
+	}
+	
 	@Override
-	public boolean load(File file) throws IOException {
+	public boolean load(FileSource fs) {
 		
 		init();
 		
-		currentSong = N_loadFile(file.getPath());
+		FileSource fs2 = null;
+		
+		String name2 = getSecondaryFile(fs.getName());
+		if(name2 != null) {
+			Log.d(TAG, "File '%s' needs '%s'", fs.getName(), name2);
+			fs2 = fs.getRelative(name2);
+			String path = fs2.getFile().getPath();
+			Log.d(TAG, "Secondary file became '%s'", path);
+		}
+		
+		currentSong = N_loadFile(fs.getFile().getPath());	
+		fs.close();
+		if(fs2 != null)
+			fs2.close();
 		return (currentSong != 0);
 	}
 	
 	private void init() {
 		if(!inited) {			
-			Context context = getContext();
+			//Context context = getContext();
 			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 
 			if(!libLoaded) {
@@ -241,22 +273,10 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public boolean loadInfo(File file) throws IOException {
+	public boolean loadInfo(FileSource fs) {
 		currentSong = 0;
 		return true;
 		//return load(file);
-	}
-
-	@Override
-	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
-		currentSong = 0;
-		return true;
-	}
-	
-	@Override
-	public boolean loadInfo(String name, byte[] module, int size) {
-		currentSong = 0;
-		return true;
 	}
 
 	@Override

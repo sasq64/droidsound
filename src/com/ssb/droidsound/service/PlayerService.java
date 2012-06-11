@@ -69,11 +69,13 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
-	public static final int OPTION_RESPECT_LENGTH = 2;
+	//public static final int OPTION_RESPECT_LENGTH = 2;
 	public static final int OPTION_PLAYBACK_ORDER = 3;
 	public static final int OPTION_REPEATMODE = 4;
 	public static final int OPTION_BUFFERSIZE = 5;
 	public static final int OPTION_DEFAULT_LENGTH = 6;
+	public static final int OPTION_CYCLE_SUBTUNES = 7;
+
 
 
 	public static final int RM_CONTINUE = 0;
@@ -93,7 +95,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	private SongInfo currentSongInfo = new SongInfo();
 	
 	//private boolean silenceDetect;
-	private boolean respectLength = true;
+	//private boolean respectLength = true;
 	private boolean shuffleSongs;
 	
 	private PhoneStateListener phoneStateListener;
@@ -120,6 +122,9 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	
 	private TextToSpeech textToSpeech;
 	private int ttsStatus = -1;
+	
+	private boolean cycleSubTunes = false;
+
 	
 	public static PlayerInterface getPlayerInterface() {
 		return playerInterface;
@@ -151,7 +156,6 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	
 	final static Map<String, String> composerTranslation = new HashMap<String, String>();
 
-	
 	static {
 		
 		Map<String, String> ct = composerTranslation;
@@ -396,12 +400,12 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
                 	break;
                 case Player.MSG_DONE:
                 	Log.d(TAG, "Music done");
-                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
+                	//if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
                 		playNextSong();
-                	} else {
-                		info[SONG_STATE] = 0;
-                		performCallback(SONG_STATE);
-                	}
+                	//} else {
+                	//	info[SONG_STATE] = 0;
+                	//	performCallback(SONG_STATE);
+                	//}
                     break;
                 case Player.MSG_PROGRESS:
                 	int l = (Integer)info[SONG_LENGTH];
@@ -409,7 +413,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
                 		l = defaultLength;
                 	}
                 	//Log.d(TAG, "%d vs %d", msg.arg1, l);
-                	if(l > 0 && (msg.arg1 >= l) && respectLength && ((Integer)info[SONG_REPEAT] == RM_CONTINUE)) {
+                	if(l > 0 && (msg.arg1 >= l) && ((Integer)info[SONG_REPEAT] == RM_CONTINUE)) {
                 		playNextSong();
                 	} else {                	
                     	int pos = (Integer)msg.arg1;
@@ -502,26 +506,24 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
     }
 
     public boolean playNextSong() {
+    	
+    	if(cycleSubTunes) {
+	    	int next = (Integer)info[SONG_SUBSONG] + 1;
+	    	if(next < (Integer)info[SONG_TOTALSONGS]) {
+	        	player.setSubSong(next);
+	    		info[SONG_SUBSONG] = (Integer)next;			
+	    		return true;
+	    	}
+    	}
+    	return playNextFile();
+    }
+    
+    public boolean playNextFile() {
+    	
     	if(playQueue == null) {
     		return false;
     	}
     	SongFile song = playQueue.next();
-    	/*
-    	int sc = song.indexOf(';');
-		if(sc > 0) {
-			int subtune = -2;
-			try {
-				subtune = Integer.parseInt(song.substring(sc+1));
-			} catch (NumberFormatException e) {
-			}			
-			if((Integer)info[SONG_SUBSONG] + 1 == subtune && currentSongInfo.fileName.equals(song.substring(0, sc))) {
-				createThread();
-				player.setSubSong(subtune);
-				info[SONG_SUBSONG] = (Integer)subtune;
-				return true;
-			}
-		} */
-        	
     	
 		if(song != null) {    			
        		song = playQueue.current();       		
@@ -536,6 +538,21 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
     }
 
     public boolean playPrevSong() {
+    	
+    	
+    	if(cycleSubTunes) {
+	    	int next = (Integer)info[SONG_SUBSONG] - 1;
+	    	if(next >= 0) {
+	        	player.setSubSong(next);
+	    		info[SONG_SUBSONG] = (Integer)next;			
+	    		return true;
+	    	}
+    	}
+    	return playPrevFile();
+    }
+
+   public boolean playPrevFile() {
+	   
     	if(playQueue == null) {
     		return false;
     	}
@@ -562,6 +579,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	protected String playListName;
 
 	protected int callState = TelephonyManager.CALL_STATE_IDLE;
+
     
 	@Override
 	public void onCreate() {
@@ -685,8 +703,9 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		super.onStartCommand(intent, flags, startId);
-		Log.d(TAG, "Service started");
+		Log.d(TAG, "Service started: %x %d", flags, startId);
 		if(intent != null) {
+			Log.d(TAG, "Intent: %s", intent.toString());
 			String action = intent.getAction();
 			if(action != null)
 				Log.d(TAG, "Intent %s / %s", action, intent.getDataString());
@@ -732,7 +751,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 				}
 			}
 		}
-        return Service.START_STICKY;
+        return Service.START_STICKY_COMPATIBILITY;
 	}
 	
 	@Override
@@ -886,6 +905,10 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 			
 		}
 		
+		private int BUFSIZE(double sec) {			
+			return (int)(sec*44100*2) & 0xffffffe0;			
+		}
+		
 		@Override
 		public void setOption(int opt, String arg) throws RemoteException {
 
@@ -893,6 +916,9 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 			
 			try {
 				switch(opt) {
+				case OPTION_CYCLE_SUBTUNES:
+					cycleSubTunes  = on;
+					break;
 				case OPTION_DEFAULT_LENGTH:
 					defaultLength  = Integer.parseInt(arg) * 1000;
 					Log.d(TAG, "Default length set to " + defaultLength);
@@ -915,23 +941,23 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 						playQueue.setShuffle(shuffleSongs);
 					}
 					break;
-				case OPTION_RESPECT_LENGTH:
-					Log.d(TAG, "Respect length " + arg);
-					respectLength = on;
-					break;
+				//case OPTION_RESPECT_LENGTH:
+				//	Log.d(TAG, "Respect length " + arg);
+				//	respectLength = on;
+				//	break;
 				case OPTION_SPEECH:
 					activateSpeech(on);
 					break;
 				case OPTION_BUFFERSIZE:
-			 		bufSize = 176384; // 2s
+			 		bufSize = BUFSIZE(2.0);
 			 		if(arg.equals("Short")) {
-			 			bufSize = 66144; // 0.75s
+			 			bufSize = BUFSIZE(0.5);
 			 		} else
 			 		if(arg.equals("Medium")) {
-			 			bufSize = 132288; // 1.5s
+			 			bufSize = BUFSIZE(1.0);
 			 		} else
 			 		if(arg.equals("Very Long")) {
-			 			bufSize = 352768; // 4s
+			 			bufSize = BUFSIZE(4.0);
 			 		}
 					player.setBufSize(bufSize);
 					break;
@@ -1037,14 +1063,14 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 			Log.d(TAG, "### PLAY NEXT");
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
-			playNextSong();
+			playNextFile();
 		}
 
 		@Override
 		public void playPrev() throws RemoteException {
 	    	info[SONG_REPEAT] = defaultRepeatMode;
 			performCallback(SONG_REPEAT);
-			playPrevSong();
+			playPrevFile();
 		}
 
 		@Override

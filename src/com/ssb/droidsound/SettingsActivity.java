@@ -50,7 +50,7 @@ public class SettingsActivity extends PreferenceActivity {
 			
 			Log.d(TAG, "CHANGED " + k);
 			
-			if(k.equals("SidPlugin.engine")) {
+			if(k.equals("SidPlugin.sidengine")) {
 				boolean isVice = ((String) newValue).startsWith("VICE");
 				/* FIXME: Both sid model and resampling actually could be done
 				 * also in sidplayplugin, but it's not currently supported. */
@@ -82,13 +82,13 @@ public class SettingsActivity extends PreferenceActivity {
 
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		modsDir = prefs.getString("modsDir", null);
-		
-		String s = prefs.getString("SidPlugin.engine", null);
+				
+		String s = prefs.getString("SidPlugin.sidengine", null);
 		Preference p = findPreference("SidPlugin.resampling");
-		if(s.startsWith("VICE")) {
-			p.setEnabled(true);
-		} else {
+		if(s.startsWith("Sidplay")) {
 			p.setEnabled(false);
+		} else {
+			p.setEnabled(true);
 		}
 		
 		Preference pref = findPreference("rescan_pref");

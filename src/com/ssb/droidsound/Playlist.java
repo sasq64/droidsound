@@ -16,6 +16,7 @@ import android.database.AbstractCursor;
 import android.database.Cursor;
 
 import com.ssb.droidsound.database.EditableCursor;
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 public class Playlist {
@@ -315,7 +316,9 @@ public class Playlist {
 		if(s.startsWith("http://")) {			
 			songFile.setTitle(URLDecoder.decode(songFile.getName()));
 		} else {
-			minfo = FileIdentifier.identify(songFile.getFile());
+			FileSource fs = new FileSource(songFile.getFile());
+			minfo = FileIdentifier.identify(fs);
+			fs.close();
 		}
 		
 		String title = songFile.getTitle();

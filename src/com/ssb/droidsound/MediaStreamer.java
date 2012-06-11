@@ -716,10 +716,8 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		return 0;
 	}
 
-	public String[] getDetailedInfo() {
-		
-		List<String> info = new ArrayList<String>();
-		
+	public void getDetailedInfo(List<String> info) {
+				
 		info.add("Format");
 		if(parseMp3)
 			info.add("MP3 Stream");
@@ -780,9 +778,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			info.add("Bitrate");
 			info.add(icyBitrate);
 		}
-		String[] strArray = new String[info.size()];
-		info.toArray(strArray);
-		return strArray;
+
 	}
 	
 	public boolean isBufferDone() {

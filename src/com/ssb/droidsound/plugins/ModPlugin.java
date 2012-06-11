@@ -1,11 +1,10 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 
@@ -33,16 +32,13 @@ public class ModPlugin extends DroidSoundPlugin {
 	long currentSong = 0;
 
 	@Override
-	public boolean canHandle(String name) {
-		int x = name.lastIndexOf('.');
-		if(x < 0) return false;
-		String ext = name.substring(x+1).toUpperCase();
-		return extensions.contains(ext);
+	public boolean canHandle(FileSource fs) {
+		return extensions.contains(fs.getExt());
 	}
 	
 	@Override
-	public boolean load(String name, byte [] module, int size) {
-		currentSong = N_load(module, size);
+	public boolean load(FileSource fs) {
+		currentSong = N_load(fs.getContents(), (int) fs.getLength());
 		if(currentSong != 0) {
 			author = guessAuthor(N_getStringInfo(currentSong, 100));
 		}
@@ -246,18 +242,9 @@ public class ModPlugin extends DroidSoundPlugin {
 	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
 
 	@Override
-	public boolean loadInfo(File file) throws IOException {
-		int l = (int)file.length();
-		byte [] songBuffer = null;
-		try {
-			songBuffer = new byte [l];
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
+	public boolean loadInfo(FileSource fs) {
 
-		long song = N_load(songBuffer, l);
+		long song = N_load(fs.getContents(), (int) fs.getLength());
 		if(song == 0)
 			return false;
 		else {
@@ -272,26 +259,21 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public String[] getDetailedInfo() {
+	public void getDetailedInfo(List<String> list) {
 		
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
-		//Log.d(TAG, "INSTRUMENTS: " + instruments);
 		int channels = N_getIntInfo(currentSong, 101);
+		
+		list.add("Format");
+		list.add("MODPlug: " + fmt);
+		list.add("Channels");
+		list.add(Integer.toString(channels));
 
-		String[] info;
 		if(instruments != null && instruments.length() > 0) {
-			info = new String [6];
-			info[4] = "Instruments";
-			info[5] = instruments;
-		} else {
-			info = new String [4];
+			list.add("Instruments");
+			list.add(instruments);
 		}
-		info[0] = "Format";
-		info[1] = "MODPlug: " + fmt;
-		info[2] = "Channels";
-		info[3] = Integer.toString(channels);
-		return info;
 	}
 	
 	@Override

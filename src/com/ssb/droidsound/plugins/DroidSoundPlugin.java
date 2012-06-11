@@ -1,18 +1,6 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLDecoder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +10,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 
-import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.service.FileSource;
 
 public abstract class DroidSoundPlugin {
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
@@ -66,7 +54,7 @@ public abstract class DroidSoundPlugin {
 
 	private byte[] md5;
 
-	private int streamSize;
+	//private int streamSize;
 
 	
 	
@@ -97,209 +85,12 @@ public abstract class DroidSoundPlugin {
 	}
 	
 	
-	protected boolean loadTempFile(String name, byte[] module, int size) {
-		try {
-			File file;
-			int dot = name.indexOf('.');
-			int lastDot = name.lastIndexOf('.');
-			if(dot == -1) {
-				file = File.createTempFile(name, "");
-			}
-			else {
-				file = File.createTempFile(name.substring(0,dot+1), name.substring(lastDot));
-			}
-			
-			FileOutputStream fo = new FileOutputStream(file);
-			fo.write(module);
-			fo.close();
-			boolean rc = load(file);
-			file.delete();
-			return rc;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
+	public boolean loadInfo(FileSource fs) {
+		return load(fs);
 	}
-	
-
-	public boolean loadInfo(String name, byte [] module, int size) {
-		return load(name, module, size);
-	}
-	
-	public boolean loadStream(String songName) throws IOException {
-		
-		try {
-			URL url = new URL(songName);
-	
-			Log.d(TAG, "Opening URL " + songName);
-	
-			URLConnection conn = url.openConnection();
-			if(!(conn instanceof HttpURLConnection))
-				throw new IOException("Not a HTTP connection");
-	
-			HttpURLConnection httpConn = (HttpURLConnection) conn;
-			httpConn.setAllowUserInteraction(false);
-			httpConn.setInstanceFollowRedirects(true);
-			httpConn.setRequestMethod("GET");
-	
-			Log.d(TAG, "Connecting");
-	
-			httpConn.connect();
-	
-			int response = httpConn.getResponseCode();
-			if(response == HttpURLConnection.HTTP_OK) {
-				int size;
-				byte[] buffer = new byte[16384];
-				Log.d(TAG, "HTTP connected");
-				InputStream in = httpConn.getInputStream();
-	
-				// URLUtil.guessFileName(songName, );
-	
-				//int dot = songName.lastIndexOf('.');
-				String ext = DroidSoundPlugin.getExt(songName);
-				File f = File.createTempFile("music", ext);
-				FileOutputStream fos = new FileOutputStream(f);
-				BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-				while((size = in.read(buffer)) != -1) {
-					bos.write(buffer, 0, size);
-				}
-				bos.flush();
-				bos.close();
-	
-				streamSize = (int) f.length();
-	
-				Log.d(TAG, "Bytes written: " + streamSize);
-	
-				byte [] songBuffer = new byte[(int) streamSize];
-				FileInputStream fs = new FileInputStream(f);
-				fs.read(songBuffer);
-				fs.close();
-				// f.delete();
-				
-				//songName = new File(songName).getName();
-				
-				//boolean rc = load(songName, songBuffer, streamSize);
-				boolean rc = load(f);
-				f.delete();
-				return rc;
-			}
-			
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
-	}
-	
-	public int getStreamSize() { return streamSize; }
-	
-	public boolean load(String name, InputStream is, int size) throws IOException {
-		Log.d(TAG, "PLUGIN LOAD STREAM");
-		boolean rc = false;
-		try {
-			byte [] songBuffer = new byte [size];
-			is.read(songBuffer);			
-			calcMD5(songBuffer);
-			
-			rc = load(name, songBuffer, songBuffer.length);
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		return rc;
-	}
-	
-	public void calcMD5(byte[] songBuffer, int size) {
-		
-		MessageDigest md = null;
-		Log.d(TAG, "MD5 CALCING TIME");
-		try {
-			md = MessageDigest.getInstance("MD5");
-		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return;
-		}		
-		
-		md.update(songBuffer, 0, size);
-		md5 = md.digest();
-	}
-	public void calcMD5(byte[] songBuffer) {
-		calcMD5(songBuffer, songBuffer.length);
-	}
-
-	public boolean loadInfo(String name, InputStream is, int size) throws IOException {
-		boolean rc = false;
-		try {
-			byte [] songBuffer = new byte [size];
-			is.read(songBuffer);
-			rc = loadInfo(name, songBuffer, songBuffer.length);
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		return rc;
-	}
-	
-	public boolean load(File file) throws IOException {
-		Log.d(TAG, "PLUGIN LOAD FILE");
-		int l = (int)file.length();
-		byte [] songBuffer = null;
-		try {
-			songBuffer = new byte [l];			
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}		
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
-		calcMD5(songBuffer);
-		return load(file.getName(), songBuffer, songBuffer.length);
-	}
-
-	public boolean loadInfo(File file) throws IOException {
-		int l = (int)file.length();
-		byte [] songBuffer = null;
-		try {
-			songBuffer = new byte [l];
-		} catch (OutOfMemoryError e) {
-			e.printStackTrace();
-		}
-		FileInputStream fs = new FileInputStream(file);
-		fs.read(songBuffer);
-		return loadInfo(file.getName(), songBuffer, songBuffer.length);
-	}
-
-	public abstract void unload();
-	
-	
-	public static String getExt(String name) {
-		String ext = "";
-		int dot = name.lastIndexOf('.');
-		if(dot > 0) {
-			ext = name.substring(dot);
-			Log.d(TAG, "EXT: " + ext);
-			char c = 'X';
-			int e = 0;
-			while(e < ext.length() && Character.isLetterOrDigit(c)) {
-				e++;
-				if(e == ext.length())
-						break;
-				c = ext.charAt(e);
-			}
-			ext = ext.substring(0,e);
-			Log.d(TAG, "EXT NOW: " + ext);
-		}
-		return ext.toUpperCase();
-	}
-	
-	
-	public boolean canHandle(String name) { 
-		return canHandleExt(getExt(name));
-	}
-	
-	public boolean canHandleExt(String ext) { return false; }
-	
-	
-	public abstract boolean load(String name, byte [] module, int size);
+	public abstract boolean load(FileSource fs);
+	public abstract void unload();	
+	public boolean canHandle(FileSource fs) { return false; }
 
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
@@ -322,10 +113,15 @@ public abstract class DroidSoundPlugin {
 	// "Channels" - Number of channels
 	// "Copyright" - Same as INFO_COPYRIGHT
 	// "Game" - Same as INFO_GAME
-	public String [] getDetailedInfo() {
-		return null;
+	public void getDetailedInfo(List<String> details) {
 	}
 	
+	public List<String> getDetailedInfo() {
+		List<String> details = new ArrayList<String>();
+		getDetailedInfo(details);
+		return details;
+	}
+
 	public abstract String getStringInfo(int what);
 	public abstract int getIntInfo( int what);
 	
@@ -387,34 +183,6 @@ public abstract class DroidSoundPlugin {
 			}
 		}
 		
-	}
-	
-	static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM" };
-	static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS" };
-
-	public static String getSecondaryFile(String path) {
-				
-		int dot = path.lastIndexOf('.');
-		int slash = path.lastIndexOf('/');
-		
-		if(dot <= slash) {
-			return null;
-		}
-
-		int firstDot = path.indexOf('.', slash+1);				
-		String ext = path.substring(dot+1).toUpperCase();		
-		String pref = path.substring(slash+1, firstDot).toUpperCase();
-
-		for(int i=0; i<pref0.length; i++) {
-			if(pref.equals(pref0[i])) {
-				return path.substring(0, slash+1) + pref1[i] + path.substring(firstDot); 
-			} else
-			if(ext.equals(pref0[i])) {
-				return path.substring(0, dot+1) + pref1[i];
-			}
-		}
-		
-		return null;
 	}
 	
 	public MediaPlayer getMediaPlayer() { return null; }

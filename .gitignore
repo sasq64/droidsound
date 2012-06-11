@@ -5,3 +5,7 @@ local.properties
 .project
 .cproject
 libs/armeabi
+<<<<<<< HEAD
+=======
+libs/armeabi-v7a
+>>>>>>> simplify

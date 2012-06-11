@@ -67,7 +67,7 @@
 <string name="sort_author">Sorting on Composer</string>
 <string name="sort_date">Sorting on Date</string>
 
-<string name="unpack_examples">Since this looks like the first time you are running Droidsound I have extracted some example
+<string name="unpack_examples">Since this looks like the first time you are running this version of Droidsound I have extracted some example
 music for you.\n\nIf you do not want it, simply long click \'Examples\' and select Delete.\n\nAlso check out \'Download\' in the Settings
 to download more music from the web.</string>
 
@@ -107,8 +107,8 @@ to download more music from the web.</string>
 </string-array>
 
 <string-array name="engine_opts">
-<item>Sidplay2</item>
 <item>VICE</item>
+<item>Sidplay2</item>
 </string-array>
 
 

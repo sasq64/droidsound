@@ -79,7 +79,7 @@ import com.ssb.droidsound.utils.Unzipper;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
-	public static final int VERSION = 17;
+	public static final int VERSION = 18;
 
 	private static class Config {
 		int ttsStatus;
@@ -722,7 +722,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		setDirectory(currentPath, null);
 
-		if(foundVersion == -1) {
+		if(foundVersion != VERSION) {
 			dialogShowing = true;
 			showDialog(R.string.unpack_examples);
 		}
@@ -1138,33 +1138,32 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		foundVersion = prefs.getInt("version", -1);
-		if(foundVersion == -1) {
+		if(foundVersion != VERSION) {
 			File tempFile = new File(modsDir, "Examples.zip");
-			if(!tempFile.exists()) {
-				try {
-					InputStream is = getAssets().open("Examples.zip");
-					if(is != null) {
+			if(tempFile.exists()) {
+				tempFile.delete();
+			}
+			try {
+				InputStream is = getAssets().open("Examples.zip");
+				if(is != null) {
 
-						FileOutputStream os = new FileOutputStream(tempFile);
+					FileOutputStream os = new FileOutputStream(tempFile);
 
-						byte[] buffer = new byte[1024 * 64];
+					byte[] buffer = new byte[1024 * 64];
 
-						int rc = 0;
-						while(rc >= 0) {
-							rc = is.read(buffer);
-							if(rc > 0) {
-								os.write(buffer, 0, rc);
-							}
+					int rc = 0;
+					while(rc >= 0) {
+						rc = is.read(buffer);
+						if(rc > 0) {
+							os.write(buffer, 0, rc);
 						}
-						os.close();
-						is.close();
 					}
-
-				} catch (IOException e) {
-					e.printStackTrace();
+					os.close();
+					is.close();
 				}
-			} else {
-				foundVersion = 0;
+
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	
@@ -1575,6 +1574,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
 		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));
+		
+		player.setOption(PlayerService.OPTION_CYCLE_SUBTUNES, prefs.getBoolean("subtunes", false) ? "on" : "off");
+		
 
 		String b = prefs.getString("buffer", "Long");
 		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);

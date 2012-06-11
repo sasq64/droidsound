@@ -37,7 +37,8 @@ import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
-import com.ssb.droidsound.plugins.UADEPlugin;
+//import com.ssb.droidsound.plugins.UADEPlugin;
+import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 
@@ -325,7 +326,7 @@ public class SongDatabase implements Runnable {
 		Intent intent = new Intent("com.sddb.droidsound.OPEN_DONE");
 		context.sendBroadcast(intent);
 		
-		UADEPlugin.extractFiles();
+		//UADEPlugin.extractFiles();
 
 		Looper.loop();
 		
@@ -565,9 +566,12 @@ public class SongDatabase implements Runnable {
 				pathSet.add(path);
 			} else {
 									
-				InputStream is = zfile.getInputStream(ze);
-				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, is);
-				is.close();
+				//InputStream is = zfile.getInputStream(ze);
+				
+				FileSource fs = new FileSource(zfile, ze);
+				
+				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, fs);
+				fs.close();
 	
 				if(info != null) {
 					
@@ -766,6 +770,7 @@ public class SongDatabase implements Runnable {
 						ContentValues values = new ContentValues();
 						values.put("PATH", f.getParentFile().getPath());
 						values.put("FILENAME", f.getName());
+						FileSource fs = new FileSource(f);
 						
 						Log.d(TAG, "%s isfile %s", f.getPath(), String.valueOf(f.isFile()));
 	
@@ -803,7 +808,7 @@ public class SongDatabase implements Runnable {
 								//InputStream is = new BufferedInputStream(new FileInputStream(f), 256);
 								//FileIdentifier.MusicInfo info = FileIdentifier.identify(f.getName(), is);
 								//is.close();
-								FileIdentifier.MusicInfo info = FileIdentifier.identify(f);
+								FileIdentifier.MusicInfo info = FileIdentifier.identify(fs);
 								boolean ok = false;
 								if(info != null) {
 									values.put("TITLE", info.title);
@@ -831,6 +836,9 @@ public class SongDatabase implements Runnable {
 							Log.d(TAG, "Inserting FILE... (%s)", s);
 							scanDb.insert("FILES", "PATH", values);
 						}
+						
+						fs.close();
+						fs = null;
 						
 						count++;
 						if(count % reportPeriod == 0) {

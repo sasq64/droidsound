@@ -2,10 +2,11 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import com.ssb.droidsound.service.FileSource;
 
 
 
@@ -29,19 +30,13 @@ public class GMEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public boolean canHandle(String name) {
-		int x = name.lastIndexOf('.');
-		if(x < 0) return false;
-		String ext = name.substring(x+1).toUpperCase();
-		return extensions.contains(ext);
+	public boolean canHandle(FileSource fs) {
+		return extensions.contains(fs.getExt());
 	}
 
 	
 	@Override
-	public String[] getDetailedInfo() {
-		
-		List<String> list = new ArrayList<String>();
-		//String instruments = N_getStringInfo((Long)song, 100);
+	public void getDetailedInfo(List<String> list) {
 		
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
 		if(s != null & s.length() > 0) {
@@ -57,30 +52,21 @@ public class GMEPlugin extends DroidSoundPlugin {
 		if(s != null & s.length() > 0) {
 			list.add("Game");
 			list.add(s);
-		}
-		
-		String [] info = new String [list.size()];
-		for(int i=0; i<info.length; i++) {
-			info[i] = list.get(i);
-		}
-		
-		return info;
+		}		
 	}
 	
 	@Override
-	public boolean load(File file) throws IOException {
-		currentSong = N_loadFile(file.getPath());
+	public boolean load(FileSource fs) {
+		
+		if(fs.isFile()) 		
+			currentSong = N_loadFile(fs.getFile().getPath());
+		else
+			currentSong = N_load(fs.getContents(), (int) fs.getLength());
 		return (currentSong != 0);
 	}
 	
 	public boolean loadInfo(File file) throws IOException {
 		currentSong = N_loadFile(file.getPath());
-		return (currentSong != 0);
-	}
-
-	@Override
-	public boolean load(String name, byte [] module, int size) {
-		currentSong = N_load(module, size);
 		return (currentSong != 0);
 	}
 
