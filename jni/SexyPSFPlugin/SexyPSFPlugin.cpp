@@ -12,47 +12,19 @@ extern "C" {
 
 #include "com_ssb_droidsound_plugins_SexyPSFPlugin.h"
 
-#define INFO_TITLE 0
-#define INFO_AUTHOR 1
-#define INFO_LENGTH 2
-#define INFO_TYPE 3
-#define INFO_COPYRIGHT 4
-#define INFO_GAME 5
-#define INFO_SUBTUNES 6
-#define INFO_STARTTUNE 7
-#define INFO_SUBTUNE_TITLE 8
 
-unsigned char *outBuffer;
-unsigned char *outPtr;
-
-static jstring NewString(JNIEnv *env, const char *str)
-{
-	static jchar *temp, *ptr;
-
-	temp = (jchar *) malloc((strlen(str) + 1) * sizeof(jchar));
-
-	ptr = temp;
-	while(*str) {
-		unsigned char c = (unsigned char)*str++;
-		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
-	}
-	//*ptr++ = 0;
-	jstring j = env->NewString(temp, ptr - temp);
-
-	free(temp);
-
-	return j;
-}
+#include "../common/Fifo.h"
+#include "../common/Misc.h"
 
 
+static Fifo *fifo = NULL;
 static bool playing = false;
 
 
 void sexyd_update(unsigned char *pSound, long lBytes)
 {
-	//__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "update with %d bytes", lBytes);
-	memcpy(outPtr, pSound, lBytes);
-	outPtr += lBytes;
+	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "update with %d bytes", lBytes);
+	fifo->putBytes((char*)pSound, lBytes);
 }
 
 
@@ -63,10 +35,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1load(JN
 
 	playing = false;
 
-	if(outBuffer == NULL) {
-		outBuffer = (unsigned char *)malloc(1024 * 1024);
-		outPtr = outBuffer;
-	}
+	if(fifo == NULL)
+		fifo = new Fifo(1024 * 128);
 
 	char temp[1024];
 	strcpy(temp, filename);
@@ -83,10 +53,9 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1unload(J
 
 	playing = false;
 
-	if(outBuffer != NULL) {
-		free(outBuffer);
-		outBuffer = NULL;
-	}
+	if(fifo != NULL)
+		delete fifo;
+	fifo = NULL;
 
 	PSFINFO *psfInfo = (PSFINFO*)song;
 	sexy_freepsfinfo(psfInfo);
@@ -97,37 +66,21 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_SexyPSFPlugin_N_1getSound
 {
 	playing = true;
 
-	while(outPtr - outBuffer < size*2) {
+	while(fifo->filled() < size*2) {
 		int rc = sexy_execute();
 		//__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Execute:%d", rc);
 		if(rc <= 0)
 			return rc;
 	}
 
-	if(outBuffer == NULL) {
-		return -1;
-	}
-
-	if(outPtr == outBuffer)
+	if(fifo->filled() == 0)
 		return 0;
 
 	jshort *dest = env->GetShortArrayElements(sArray, NULL);
-	int bytelen = size*2;
-
-	int filled = outPtr - outBuffer;
-	if(bytelen > filled)
-		bytelen = filled;
-
-	//__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Copying %d bytes sound", bytelen);
-	memcpy(dest, outBuffer, bytelen);
-	//__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "Copying %d bytes from offset %d", filled - bytelen, bytelen);
-	if(filled > bytelen)
-		memmove(outBuffer, &outBuffer[bytelen], filled - bytelen);
-	outPtr = &outBuffer[filled - bytelen];
-
+	int len = fifo->getShorts(dest, size);
 	env->ReleaseShortArrayElements(sArray, dest, 0);
 
-	return bytelen / 2;
+	return len;
 }
 
 

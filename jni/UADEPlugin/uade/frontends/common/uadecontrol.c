@@ -90,7 +90,7 @@ void uade_send_filter_command(struct uade_state *state)
 static void send_resampling_command(struct uade_ipc *ipc,
 				    struct uade_config *uadeconf)
 {
-	char *mode = uadeconf->resampler;
+	const char *mode = uadeconf->resampler;
 	if (mode != NULL) {
 		if (strlen(mode) == 0) {
 			__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Resampling mode may not be empty.\n");

@@ -60,6 +60,7 @@ static jstring NewString(JNIEnv *env, const char *str)
 	return j;
 }
 
+/*
 JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandle(JNIEnv *env, jobject obj, jstring name)
 {
 	const char spaces[] = "      ";
@@ -101,7 +102,7 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandl
 
 	return ok;
 }
-
+*/
 
 struct ModInfo {
 	ModPlugFile *mod;

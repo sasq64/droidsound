@@ -13,20 +13,10 @@ extern "C" {
 #include "gsf.h"
 }
 
-//#include "com_ssb_droidsound_plugins_SexyPSFPlugin.h"
+#include "com_ssb_droidsound_plugins_GSFPlugin.h"
 
-#define INFO_TITLE 0
-#define INFO_AUTHOR 1
-#define INFO_LENGTH 2
-#define INFO_TYPE 3
-#define INFO_COPYRIGHT 4
-#define INFO_GAME 5
-#define INFO_SUBTUNES 6
-#define INFO_STARTTUNE 7
-#define INFO_SUBTUNE_TITLE 8
-
-unsigned char *outBuffer;
-unsigned char *outPtr;
+#include "../common/Fifo.h"
+#include "../common/Misc.h"
 
 extern "C" {
 int defvolume=1000;
@@ -45,19 +35,24 @@ int sndBitsPerSample=16;
 
 int deflen=120,deffade=4;
 
-double decode_pos_ms; // current decoding position, in milliseconds
+int decode_pos_ms; // current decoding position, in milliseconds
 
 extern unsigned short soundFinalWave[2304];
 
 extern int soundBufferLen;
+
+/*
 extern char soundEcho;
 extern char soundLowPass;
 extern char soundReverse;
-extern char soundQuality;
+extern char soundQuality;*/
+
+static Fifo *fifo = NULL;
 
 extern "C" void end_of_track()
 {
-	//g_playing = 0;
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "GSF", "END OF TRACK");
 }
 
 extern "C" void writeSound(void)
@@ -66,40 +61,79 @@ extern "C" void writeSound(void)
 	//int ret = soundBufferLen;
 	//ao_play(snd_ao, (char*)soundFinalWave, ret);
 	//decode_pos_ms += (ret/(2*sndNumChannels) * 1000)/(float)sndSamplesPerSec;
+
+	//__android_log_print(ANDROID_LOG_VERBOSE, "GSF", "%d/%d", sndNumChannels, sndSamplesPerSec);
+
+
+	fifo->putShorts((short*)soundFinalWave, soundBufferLen/2);
+
+	decode_pos_ms += (soundBufferLen/(2*sndNumChannels) * 1000)/sndSamplesPerSec;
+
 }
 
 
-static jstring NewString(JNIEnv *env, const char *str)
-{
-	static jchar *temp, *ptr;
-
-	temp = (jchar *) malloc((strlen(str) + 1) * sizeof(jchar));
-
-	ptr = temp;
-	while(*str) {
-		unsigned char c = (unsigned char)*str++;
-		*ptr++ = (c < 0x7f && c >= 0x20) || c >= 0xa0 || c == 0xa ? c : '?';
-	}
-	//*ptr++ = 0;
-	jstring j = env->NewString(temp, ptr - temp);
-
-	free(temp);
-
-	return j;
-}
 
 
-void play()
+JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_GSFPlugin_N_1loadFile(JNIEnv *env, jobject obj, jstring fname)
 {
 
 	decode_pos_ms = 0;
 	//seek_needed = -1;
 	TrailingSilence=1000;
+	IgnoreTrackLength=1;
+	DetectSilence=1;
+	silencedetected=0;
+	playforever=0;
 
-	int r = GSFRun("file.gsf");
+	const char *file_name = env->GetStringUTFChars(fname, NULL);
 
-	while(true) {
+	if(fifo == NULL)
+		fifo = new Fifo(128 * 1024);
+
+	int r = GSFRun((char*)file_name);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "GSF", "LOAD: %d, bufSize: %d", r, soundBufferLen);
+
+	return 1;
+}
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_GSFPlugin_N_1unload(JNIEnv *, jobject, jlong)
+{
+	GSFClose();
+	if(fifo != NULL)
+		delete fifo;
+	fifo = NULL;
+}
+
+
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_GSFPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray sArray, jint size)
+{
+	int lastTL = TrackLength;
+	while(fifo->filled() < size*2) {
 		EmulationLoop();
+		//if(silencedetected != 0 || TrackLength != lastTL)
+		//	break;
 	}
+
+	//__android_log_print(ANDROID_LOG_VERBOSE, "GSF", "TL: %d, SILENCE: %d, decode_pos_ms %d", TrackLength, silencedetected, decode_pos_ms);
+
+	//if(silencedetected > 100000)
+	//	return -1;
+
+	if(decode_pos_ms > TrackLength)
+		return -1;
+
+	if(fifo->filled() == 0)
+		return 0;
+
+
+
+	jshort *dest = env->GetShortArrayElements(sArray, NULL);
+	int len = fifo->getShorts(dest, size);
+	env->ReleaseShortArrayElements(sArray, dest, 0);
+
+
+
+	return len;
 }
 

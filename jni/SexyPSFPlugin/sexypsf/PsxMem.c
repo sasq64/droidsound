@@ -72,11 +72,11 @@ int psxMemInit() {
 	memcpy(psxMemLUT + 0x8000, psxMemLUT, 0x80 * sizeof *psxMemLUT);
 	memcpy(psxMemLUT + 0xa000, psxMemLUT, 0x80 * sizeof *psxMemLUT);
 
-	for (i=0; i<0x01; i++) psxMemLUT[i + 0x1f00] = (u32)&psxP[i << 16];
+	for (i=0; i<0x01; i++) psxMemLUT[i + 0x1f00] = &psxP[i << 16];
 
-	for (i=0; i<0x01; i++) psxMemLUT[i + 0x1f80] = (u32)&psxH[i << 16];
+	for (i=0; i<0x01; i++) psxMemLUT[i + 0x1f80] = &psxH[i << 16];
 
-	for (i=0; i<0x08; i++) psxMemLUT[i + 0xbfc0] = (u32)&psxR[i << 16];
+	for (i=0; i<0x08; i++) psxMemLUT[i + 0xbfc0] = &psxR[i << 16];
 
 	return 0;
 }

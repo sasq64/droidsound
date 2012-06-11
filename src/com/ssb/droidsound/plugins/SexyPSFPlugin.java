@@ -58,7 +58,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean load(FileSource fs) {
 		
-		Map<String, String> tagMap = getTags(fs.getContents(), fs.getLength());
+		Map<String, String> tagMap = PSFFile.getTags(fs.getContents(), fs.getLength());
 		if(tagMap != null) {
 			info[INFO_TITLE] = tagMap.get("title");
 			info[INFO_AUTHOR] = tagMap.get("artist");
@@ -99,7 +99,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 		}
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
-
+/*
 	private Map<String, String> getTags(byte [] module, int size) {
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
 		src.order(ByteOrder.LITTLE_ENDIAN);		
@@ -156,7 +156,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 			}
 		}
 		return null;
-	}
+	} */
 	
 	@Override
 	public boolean loadInfo(FileSource fs) {
@@ -164,17 +164,17 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 		byte [] module = fs.getContents();
 		int size = fs.getLength();
 		
-		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
-		src.order(ByteOrder.LITTLE_ENDIAN);		
-		byte[] id = new byte[4];
-		src.get(id);
+		//ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
+		//src.order(ByteOrder.LITTLE_ENDIAN);		
+		//byte[] id = new byte[4];
+		//src.get(id);
 		
 		//for(int i=0; i<128; i++)
 		//	info[i] = null;
 		
 		info = new String [128];
 		 
-		Map<String, String> tagMap = getTags(module, size);
+		Map<String, String> tagMap = PSFFile.getTags(module, size);
 		if(tagMap != null) {
 			info[INFO_TITLE] = tagMap.get("title");
 			info[INFO_AUTHOR] = tagMap.get("artist");
@@ -210,24 +210,8 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	@Override
 	public int getIntInfo(int what) {
 		if(info != null) {
-			if(what == INFO_LENGTH) {
-				//int decimal = 0;
-				int seconds = 0;
-				String s = info[what];
-				if(s == null) return 0;
-				int lastSep = 0; 
-				for(int i = 0; ; i++) {
-					char c = (i < s.length()) ? s.charAt(i) : '.';
-					if(c == ':' || c == '.') {
-						seconds *= 60;
-						seconds += Integer.parseInt(s.substring(lastSep, i));
-						lastSep = i+1;
-						if(c == '.')
-							break;
-					}
-				}
-				return seconds * 1000;
-
+			if(what == INFO_LENGTH) {				
+				return PSFFile.parseLength(info[what]);
 			}
 			return 0;
 		}
