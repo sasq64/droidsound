@@ -240,17 +240,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private boolean backPressed;
 
-	private int dumpingWav = 0;
-
-	private TextView toneLenText;
-
-	protected boolean toneHQ = false;
-	protected String toneName = "Droidsound Ringtone";
-	protected boolean toneSet = true;
-
-	protected int toneLength = 2;
-
-	private TextView toneNameText;
+	private RingToneCreator.RingTone currentRingTone;
+	private RingToneCreator ringToneCreator;
 
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "########## Activity finalize");
@@ -267,9 +258,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(p != null) {
 				path = p; //f = new File(p);
 			} else if(currentPlaylistView == searchListView) {
-				searchCursor.requery();
-				searchListView.setCursor(searchCursor, null);
-				flipTo(SEARCH_VIEW);
+				if(searchCursor != null) {
+					searchCursor.requery();
+					searchListView.setCursor(searchCursor, null);
+					flipTo(SEARCH_VIEW);
+				}
 				return;
 			} else {
 				return;
@@ -1001,27 +994,19 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					if(searchCursor != null) {
 						searchCursor.realClose();
 					}
-					searchCursor = new SearchCursor(songDatabase.search(searchQuery, currentPath, sortOrder));
-					//searchDirDepth = 0;
-					if(searchCursor != null) {
+					Cursor cr = songDatabase.search(searchQuery, currentPath, sortOrder);
+					if(cr != null) {
+						searchCursor = new SearchCursor(cr);
 						searchListView.setCursor(searchCursor, null);
 						//currentPlaylistView = searchListView;
 						flipTo(SAME_VIEW);
-					}
+					} else
+						searchCursor = null;
 				}
 				Log.d(TAG, "TB Sortorder now %d", sortOrder);
 			}
 		});
 
-		/*
-		 * songSecondsText.setOnClickListener(new OnClickListener() {
-		 * 
-		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
-		 * 
-		 * seekFlipper.setOnClickListener(new OnClickListener() {
-		 * 
-		 * @Override public void onClick(View v) { seekFlipper.showNext(); } });
-		 */
 
 		songSeeker.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 			@Override
@@ -1505,34 +1490,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			return true;
 		}
 		
-		
-		// if(keyCode == KeyEvent.KEYCODE_HEADSETHOOK) {
-		// Log.d(TAG, String.format("MEDIA BUTTON UP %d",
-		// event.getRepeatCount()));
-		// return true;
-		// }
-		/* if(keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_DEL) {
-			if(backDown > 0 && backDown < 3) {
-				backDown = 0;
-				if(currentPlaylistView != playListView) {
-					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
-						flipTo(FILE_VIEW);
-						if(songFile != null) {
-							playListView.setScrollPosition(songFile.getFile());
-						}
-						return true;
-					}
-				}
 
-				if(atTop) {
-					finish();
-				} else {
-					gotoParent(null);
-				}
-			}
-			backDown = 0;
-			return true;
-		} */
 		return super.onKeyUp(keyCode, event);
 	}
 
@@ -1794,8 +1752,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break; */
 		case PlayerService.SONG_FILENAME:
 			
-			Log.d(TAG, "DW %d, value '%s'", dumpingWav, value);
-			if(dumpingWav > 0) { //&& value.endsWith("RINGTONE.WAV")) {
+			//Log.d(TAG, "DW %d, value '%s'", currentRingTone.seconds, value);
+			if(currentRingTone != null) {
 				
 				File f = new File(value);
 				
@@ -1803,11 +1761,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				
 				ContentValues values = new ContentValues();
 				values.put(MediaStore.MediaColumns.DATA, value);
-				values.put(MediaStore.MediaColumns.TITLE, toneName);
+				values.put(MediaStore.MediaColumns.TITLE, currentRingTone.name);
 				values.put(MediaStore.MediaColumns.SIZE, f.length());
 				values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/x-wav");
 				values.put(MediaStore.Audio.Media.ARTIST, "Droidsound");
-				values.put(MediaStore.Audio.Media.DURATION, dumpingWav/1000);
+				values.put(MediaStore.Audio.Media.DURATION, currentRingTone.seconds);
 				values.put(MediaStore.Audio.Media.IS_RINGTONE, true);
 				values.put(MediaStore.Audio.Media.IS_NOTIFICATION, false);
 				values.put(MediaStore.Audio.Media.IS_ALARM, false);
@@ -1818,7 +1776,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				Uri newUri = null;
 				Log.d(TAG, "URI " + uri.toString());
 				try {
-					int rows = getContentResolver().delete(uri, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { toneName });
+					int rows = getContentResolver().delete(uri, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { currentRingTone.name });
 					Log.d(TAG, "ROWS " + rows);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -1829,25 +1787,24 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 					e.printStackTrace();
 				}
 				if(newUri == null) {
-					int rows = getContentResolver().update(uri, values, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { toneName });
+					int rows = getContentResolver().update(uri, values, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { currentRingTone.name });
 					Log.d(TAG, "UPDATE ROWS " + rows);
 					newUri = uri;
 				} else {
 					Log.d(TAG, "NEWURI " + uri.getPath());
 				}
 				Toast toast;
-				if(toneSet) {
+				if(currentRingTone.setDefault) {
 					RingtoneManager.setActualDefaultRingtoneUri(PlayerActivity.this, RingtoneManager.TYPE_RINGTONE, newUri);				
 					toast = Toast.makeText(this, R.string.ringtone_set, Toast.LENGTH_LONG);
 				} else {
 					toast = Toast.makeText(this, R.string.ringtone_created, Toast.LENGTH_LONG);
 				}
 				toast.show();
-				dumpingWav = 0;
+				currentRingTone = null;
 				break;
 				
 			}
-			dumpingWav = 0;
 			
 			songFile = new SongFile(value);
 			String path = songFile.getFile().getPath();
@@ -2042,101 +1999,22 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		switch(id) {
 		case R.string.make_wav:
 		{
-			//Dialog dialog = new Dialog(this);
-			//dialog.setContentView(R.layout.ringtone_dialog);
-			//dialog.setTitle(id);
-			final String [] progressNames = new String [] { "0:10", "0:20", "0:30", "1:00", "5:00", "10:00" };
-			LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-			View dialog = inflater.inflate(R.layout.ringtone_dialog, (ViewGroup) findViewById(R.layout.player));
-			builder.setView(dialog);			
-			builder.setTitle(id);
-			
-			toneNameText = (TextView) dialog.findViewById(R.id.tone_name);
-			toneNameText.setText(toneName);
-			
-			CheckBox hqCheck = (CheckBox) dialog.findViewById(R.id.tone_hq);
-			hqCheck.setChecked(toneHQ);
-			hqCheck.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
+			if(ringToneCreator == null)
+				ringToneCreator = new RingToneCreator(this);
+			ringToneCreator.onCreateWav(new RingToneCreator.Callback() {
 				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					toneHQ = isChecked;
-				}
-			});
-			CheckBox setCheck = (CheckBox) dialog.findViewById(R.id.tone_set);
-			setCheck.setChecked(toneSet);
-			setCheck.setOnCheckedChangeListener(new CheckBox.OnCheckedChangeListener() {
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					toneSet = isChecked;
-				}
-			});
-			
-			toneLenText =  (TextView) dialog.findViewById(R.id.tone_lentext);
-			toneLenText.setText(progressNames[toneLength]);
-			SeekBar seekBar = (SeekBar) dialog.findViewById(R.id.tone_length);
-			seekBar.setProgress(toneLength);
-			seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-				@Override
-				public void onStopTrackingTouch(SeekBar seekBar) {
-				}
-				
-				@Override
-				public void onStartTrackingTouch(SeekBar seekBar) {
-				}
-				
-				@Override
-				public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-					Log.d(TAG, "SEEK " + progress);
-					toneLenText.setText(progressNames[progress]);	
-					toneLength = progress;
-				}
-			});
-			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
+				public void createWav(RingToneCreator.RingTone rt) {
 					File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 					File file = new File(droidDir, "ringtones");
 					file.mkdir();
-					int tl = toneLength;
-					if(tl == 3) tl = 6;
-					else if(tl == 4) tl = 6*5;
-					else if(tl == 5) tl = 6*10;
-					else tl += 1;
-					dumpingWav = tl * 10000;//30000;
-					toneName = (String) toneNameText.getText().toString();
-					file = new File(file, toneName + ".wav"); 
-					
+					file = new File(file, rt.name + ".wav"); 
 					int flags = 0;
-					if(toneHQ) flags |= 2;
-					player.dumpWav(operationSong.getPath(), file.getPath(), dumpingWav, flags);
+					if(rt.HQ) flags |= 2;
+					currentRingTone = rt;
+					player.dumpWav(operationSong.getPath(), file.getPath(), currentRingTone.seconds * 1000, flags);
 				}
 			});
-			builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					dialog.cancel();
-				}
-			});
-			/*
-			Button okButton = (Button) dialog.findViewById(R.id.ok_button);
-			okButton.setOnClickListener(new OnClickListener() {				
-				@Override
-				public void onClick(View v) {
-					File file = new File("/sdcard/droidsound/RINGTONE.WAV");
-					dumpingWav = 10000 + toneLength * 1000;//30000;
-					int flags = 0;
-					if(toneHQ) flags |= 2;
-					player.dumpWav(operationSong.getPath(), file.getPath(), dumpingWav, flags);
-				}
-			});
-			Button cancelButton = (Button) dialog.findViewById(R.id.cancel_button);
-			cancelButton.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-				}
-			}); */
-			break;
-			//return dialog;			
+			return ringToneCreator.createDialog();		
 		}	
 		case R.string.new_:
 			builder.setTitle(id);
