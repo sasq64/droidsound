@@ -28,4 +28,5 @@ include $(X)/HivelyPlugin/Android.mk
 include $(X)/SexyPSFPlugin/Android.mk
 include $(X)/GSFPlugin/Android.mk
 include $(X)/NativeZipFile/Android.mk
+include $(X)/UnRar/Android.mk
 include $(X)/ID3Tag/Android.mk
