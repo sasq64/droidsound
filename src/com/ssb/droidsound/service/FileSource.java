@@ -251,7 +251,7 @@ public class FileSource {
 		int dot = baseName.lastIndexOf('.');
 		if(dot > 0) {
 			ext = baseName.substring(dot+1);
-			Log.d(TAG, "EXT: " + ext);
+			//Log.d(TAG, "EXT: " + ext);
 			char c = 'X';
 			int e = 0;
 			while(e < ext.length() && Character.isLetterOrDigit(c)) {
@@ -261,7 +261,7 @@ public class FileSource {
 				c = ext.charAt(e);
 			}
 			ext = ext.substring(0,e);
-			Log.d(TAG, "EXT NOW: " + ext);
+			//Log.d(TAG, "EXT NOW: " + ext);
 		}
 		return ext.toUpperCase();
 	}

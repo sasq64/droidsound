@@ -1,7 +1,12 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.ssb.droidsound.service.FileCache;
 import com.ssb.droidsound.service.FileSource;
@@ -18,6 +23,39 @@ public class RSNPlugin extends DroidSoundPlugin {
 	private File targetFile;
 
 	private String title;
+	
+	private static Map<String, String> lookup = new HashMap<String, String>();
+	
+	RSNPlugin() {
+		
+		synchronized (lookup) {
+			if(lookup.size() == 0) {
+				try {
+					InputStream is = getContext().getAssets().open("rsnsets.dat");
+					DataInputStream dis = new DataInputStream(is);
+					while(true) {
+						String line = dis.readLine();
+						if(line == null)
+							break;
+						int sc = line.lastIndexOf(';');
+						if(sc > 0) {
+							String title = line.substring(0,sc);
+							String name = line.substring(sc+1);
+							Log.d(TAG, "Found %s = %s", name, title);
+							lookup.put(name, title);
+						}
+					}
+					dis.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		
+	}
+	
 
 	@Override
 	public boolean canHandle(FileSource fs) {
@@ -30,7 +68,13 @@ public class RSNPlugin extends DroidSoundPlugin {
 		if(plugin == null)
 			plugin = new GMEPlugin();
 		
-		title = fs.getName();
+		title = FileCache.getBaseName(fs.getName());
+		
+		if(lookup.containsKey(title)) {
+			title = lookup.get(title);
+		}
+		Log.d(TAG, "Found title %s", title);
+		
 	
 		Log.d(TAG, "Unrar RSN");
 		rarFile = new UnRar(fs.getFile().getPath());
@@ -52,6 +96,13 @@ public class RSNPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public boolean loadInfo(FileSource fs) {
+		
+		title = FileCache.getBaseName(fs.getName());
+		
+		if(lookup.containsKey(title)) {
+			title = lookup.get(title);
+		}
+		
 		return true;
 	}
 
@@ -61,8 +112,9 @@ public class RSNPlugin extends DroidSoundPlugin {
 			plugin.unload();
 			loaded = false;
 		}
-			
-		FileCache.removeDir(targetFile);
+		
+		if(targetFile != null)
+			FileCache.removeDir(targetFile);
 	}
 
 	@Override
@@ -89,11 +141,11 @@ public class RSNPlugin extends DroidSoundPlugin {
 	@Override
 	public String getStringInfo(int what) {
 		
-		if(spcFiles == null)
-			return null;
-		
 		if(what == INFO_TITLE)
 			return title;
+
+		if(spcFiles == null)
+			return null;
 		
 		if(what == INFO_SUBTUNE_TITLE)
 			what = INFO_TITLE;
