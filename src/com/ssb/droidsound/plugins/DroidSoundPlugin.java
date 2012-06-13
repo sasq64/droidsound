@@ -76,6 +76,7 @@ public abstract class DroidSoundPlugin {
 			pluginList.add(new HivelyPlugin());
 			pluginList.add(new SC68Plugin());
 			pluginList.add(new SexyPSFPlugin());
+			pluginList.add(new RSNPlugin());
 			pluginList.add(new GSFPlugin());
 			pluginList.add(new MP3Plugin());
 

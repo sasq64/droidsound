@@ -1,7 +1,5 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -11,6 +9,7 @@ import com.ssb.droidsound.service.FileSource;
 
 
 public class GMEPlugin extends DroidSoundPlugin {
+	private static final String TAG = GMEPlugin.class.getSimpleName();
 	
 	static {
 		System.loadLibrary("gme");
@@ -57,7 +56,6 @@ public class GMEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public boolean load(FileSource fs) {
-		
 		if(fs.isFile()) 		
 			currentSong = N_loadFile(fs.getFile().getPath());
 		else
@@ -65,14 +63,19 @@ public class GMEPlugin extends DroidSoundPlugin {
 		return (currentSong != 0);
 	}
 	
-	public boolean loadInfo(File file) throws IOException {
-		currentSong = N_loadFile(file.getPath());
+	@Override
+	public boolean loadInfo(FileSource fs)  {
+		if(fs.isFile()) 		
+			currentSong = N_loadFile(fs.getFile().getPath());
+		else
+			currentSong = N_load(fs.getContents(), (int) fs.getLength());
 		return (currentSong != 0);
 	}
 
 	@Override
 	public void unload() {
-		N_unload(currentSong);
+		if(currentSong > 0)
+			N_unload(currentSong);
 		currentSong = 0;
 	}
 	
@@ -87,11 +90,24 @@ public class GMEPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
-	public boolean setTune(int tune) { return N_setTune(currentSong, tune); }
+	public boolean setTune(int tune) {
+		return N_setTune(currentSong, tune);
+	}
 	@Override
-	public String getStringInfo(int what) { return N_getStringInfo(currentSong, what); }
+	public String getStringInfo(int what) {
+		if(currentSong <= 0) {
+			return null;
+		}
+		return N_getStringInfo(currentSong, what);
+	}
 	@Override
-	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
+	public int getIntInfo(int what) {
+		
+		if(currentSong <= 0) {
+			return 0;
+		}
+		return N_getIntInfo(currentSong, what);
+	}
 
 	native public boolean N_canHandle(String name);
 	native public long N_load(byte [] module, int size);

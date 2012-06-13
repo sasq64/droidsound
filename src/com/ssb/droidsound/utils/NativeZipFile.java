@@ -23,8 +23,8 @@ public class NativeZipFile {
 		
 		private int index;
 
-		public void setIndex(int i) { index = i; }
-		public int getIndex() { return index; }
+		protected void setIndex(int i) { index = i; }
+		protected int getIndex() { return index; }
 	};
 	
 	private long zipRef;	
