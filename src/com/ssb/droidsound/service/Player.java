@@ -17,7 +17,10 @@ import android.os.Message;
 
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.utils.Archive;
+import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.utils.Unpacker;
 
 /*
  * The Player thread 
@@ -271,7 +274,14 @@ public class Player implements Runnable {
 			songSource = new FileSource(path);
 		else
 		if(song.getZipPath() != null) {
-			songSource = new FileSource(song.getZipPath(), song.getZipName());
+			
+			Archive archive = Unpacker.openArchive(new File(song.getZipPath()));
+			Archive.Entry entry = archive.getEntry(song.getZipName());
+			songSource = archive.getFileSource(entry);
+			
+			//songSource = new FileSource(song.getZipPath(), song.getZipName());
+			
+			
 		} else {
 			songSource = new FileSource(song.getFile());
 		}

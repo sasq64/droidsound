@@ -8,8 +8,8 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
 
 import com.ssb.droidsound.MediaStreamer;
-import com.ssb.droidsound.service.FileSource;
 import com.ssb.droidsound.utils.CueFile;
+import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.ID3Tag;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.M3UParser;

@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import com.ssb.droidsound.service.FileSource;
+import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 import com.ssb.droidsound.plugins.DroidSoundPlugin;

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,10 +38,10 @@ import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
-//import com.ssb.droidsound.plugins.UADEPlugin;
-import com.ssb.droidsound.service.FileSource;
+import com.ssb.droidsound.utils.Archive;
+import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
-import com.ssb.droidsound.utils.NativeZipFile;
+import com.ssb.droidsound.utils.Unpacker;
 
 /**
  * 
@@ -503,7 +504,7 @@ public class SongDatabase implements Runnable {
 	}
 	
 	
-	private boolean scanZip(File zipFile) throws ZipException, IOException {
+	private boolean scanZip(File zipFile) throws IOException {
 		
 		Log.d(TAG, "Scanning %s", zipFile.getPath());
 		
@@ -512,8 +513,10 @@ public class SongDatabase implements Runnable {
 		scanDb.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
 		
 		Log.d(TAG, "OPEN");
-		//ZipFile zfile = new ZipFile(zipFile);		
-		NativeZipFile zfile = new NativeZipFile(zipFile);
+		//ZipFile zfile = new ZipFile(zipFile);
+		
+		Archive archive = Unpacker.openArchive(zipFile);		
+		//NativeZipFile zfile = new NativeZipFile(zipFile);
 		Log.d(TAG, "ENTRY");
 		
 		String baseNameNoSlash = zipFile.getPath();
@@ -526,15 +529,16 @@ public class SongDatabase implements Runnable {
 		//}		
 		
 		Log.d(TAG, "ENUM");
-		Enumeration<? extends ZipEntry> entries = zfile.entries();
+		//Enumeration<? extends ZipEntry> entries = zfile.entries();
+		Iterator<Archive.Entry> entries = archive.getIerator();
 		
 		Set<String> pathSet = new HashSet<String>();
 		
-		Log.d(TAG, "Scanning %d zip entries", zfile.size());
+		//Log.d(TAG, "Scanning %d zip entries", zfile.size());
 		int count = 0;
-		int total = zfile.size();
-		
-		int reportPeriod = total / 100;
+		//int total = zfile.size();
+		int total = 0;
+		int reportPeriod = 100; //total / 100;
 		if(reportPeriod < 100) {
 			reportPeriod = 100;
 		}
@@ -542,17 +546,20 @@ public class SongDatabase implements Runnable {
 		ContentValues values = new ContentValues();
 		//values.put("LENGTH", 0);
 		values.put("TYPE", TYPE_FILE);
-				
-		while(entries.hasMoreElements()) {
+			
+		while(entries.hasNext()) {
+		//while(entries.hasMoreElements()) {
 			
 			if(stopScanning) {
-				zfile.close();
+				//zfile.close();
+				archive.close();
 				return false;
 			}
 			
-			ZipEntry ze = entries.nextElement();
+			//ZipEntry ze = entries.nextElement();
+			Archive.Entry ze = entries.next();
 			
-			String n = ze.getName();			
+			String n = ze.getPath(); //ze.getName();			
 			int slash = n.lastIndexOf('/');				
 			String fileName = n.substring(slash+1);
 			String path;
@@ -568,7 +575,8 @@ public class SongDatabase implements Runnable {
 									
 				//InputStream is = zfile.getInputStream(ze);
 				
-				FileSource fs = new FileSource(zfile, ze);
+				//FileSource fs = new FileSource(zfile, ze);
+				FileSource fs = archive.getFileSource(ze);
 				
 				FileIdentifier.MusicInfo info = FileIdentifier.identify(n, fs);
 				fs.close();
@@ -595,7 +603,7 @@ public class SongDatabase implements Runnable {
 				if((count % reportPeriod) == 0) {
 					isReady = false;
 					if(scanCallback != null) {
-						scanCallback.notifyScan(null, count * 100 / total);
+						scanCallback.notifyScan(null, total >= 0 ? count * 100 / total : count);
 					}
 				}
 					
@@ -604,7 +612,8 @@ public class SongDatabase implements Runnable {
 			}			
 		}
 		
-		zfile.close();
+		//zfile.close();
+		archive.close();
 
 		Log.d(TAG, "Adding %d paths", pathSet.size());
 		
@@ -877,9 +886,9 @@ public class SongDatabase implements Runnable {
 							scanDb.setTransactionSuccessful();
 							Log.d(TAG, "ZIP TRANSATION SUCCESSFUL");
 						}
-					} catch (ZipException e) {
+					} /*catch (ZipException e) {
 						Log.d(TAG, "Broken zip");
-					} catch (IOException e) {
+					} */ catch (IOException e) {
 						Log.d(TAG, "IO Error");
 					}
 					scanDb.endTransaction();

@@ -4,15 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.zip.ZipEntry;
 
-public class NativeZipFile {
+public class NativeZipFile implements Archive {
 	private static final String TAG = NativeZipFile.class.getSimpleName();
 	static {
 		System.loadLibrary("nativezipfile");
 	}
 	
-	static class MyZipEntry extends ZipEntry {
+	static class MyZipEntry extends ZipEntry implements Archive.Entry {
 
 		public MyZipEntry(String name) {
 			super(name);
@@ -25,25 +26,32 @@ public class NativeZipFile {
 
 		protected void setIndex(int i) { index = i; }
 		protected int getIndex() { return index; }
+
+		@Override
+		public String getPath() {
+			return this.getName();
+		}
 	};
 	
-	private long zipRef;	
+	private long zipRef;
+	private String zipName;	
 	
 	private native void openZipFile(String fileName);
 	
-	native void closeZipFile();
-	native int getCount();
-	native String getEntry(int i);
-	native int getSize(int i);
-	native int findEntry(String name);
-	native int readData(int i, byte [] target);
+	private native void closeZipFile();
+	private native int getCount();
+	private native String getEntry(int i);
+	private native int getSize(int i);
+	private native int findEntry(String name);
+	private native int readData(int i, byte [] target);
 
-	native long open(int index);
-	native int read(long fd, byte [] target, int offs, int len);
-	native void close(long fd);
+	private native long open(int index);
+	private native int read(long fd, byte [] target, int offs, int len);
+	private native void close(long fd);
 	
 	
 	public NativeZipFile(String fileName) throws IOException {
+		zipName = fileName;
 		openZipFile(fileName);
 		if(zipRef == 0) {
 			throw new IOException();
@@ -51,13 +59,18 @@ public class NativeZipFile {
 	}
 	
 	public NativeZipFile(File file) throws IOException {
+		zipName = file.getPath();
 		openZipFile(file.getPath());
 		if(zipRef == 0) {
 			throw new IOException();
 		}
 	}
 	
-	public ZipEntry getEntry(String entryName) {
+	public String getZipName() {
+		return zipName;
+	}
+	
+	public Archive.Entry getEntry(String entryName) {
 		
 		int e = findEntry(entryName);
 		if(e >= 0) {
@@ -185,5 +198,52 @@ public class NativeZipFile {
 	
 	public void close() {
 		closeZipFile();
+	}
+	
+	private static class MyIterator implements Iterator<Archive.Entry> {
+
+		
+		private NativeZipFile zipFile;
+		private int currentIndex;
+		private int total;
+
+		public MyIterator(NativeZipFile zf){
+			zipFile = zf;
+			currentIndex = 0;
+			total = zf.getCount();
+		}
+		
+		@Override
+		public boolean hasNext() {
+			return (currentIndex < total);
+		}
+
+		@Override
+		public Entry next() {
+			
+			String name = zipFile.getEntry(currentIndex);
+			Log.d(TAG, "Next element:'%s'\n", name);
+			MyZipEntry entry = new MyZipEntry(name);
+			entry.setIndex(currentIndex);
+			entry.setSize(zipFile.getSize(currentIndex));
+			currentIndex++;
+			return entry;
+		}
+
+		@Override
+		public void remove() {
+		}
+	}
+	
+
+	@Override
+	public Iterator<Archive.Entry> getIerator() {
+		return new MyIterator(this);
+	}
+
+	@Override
+	public FileSource getFileSource(Entry entry) {
+		FileSource fs = new FileSource(this, (MyZipEntry) entry);
+		return fs;
 	}	
 }

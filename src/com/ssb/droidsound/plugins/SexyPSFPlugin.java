@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ssb.droidsound.service.FileSource;
+import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 public class SexyPSFPlugin extends DroidSoundPlugin {

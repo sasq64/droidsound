@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.ssb.droidsound.service.FileCache;
-import com.ssb.droidsound.service.FileSource;
+import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.UnRar;
 

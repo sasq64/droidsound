@@ -1,4 +1,4 @@
-package com.ssb.droidsound.service;
+package com.ssb.droidsound.utils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -14,8 +14,6 @@ import java.util.zip.ZipEntry;
 
 import android.os.Environment;
 
-import com.ssb.droidsound.utils.Log;
-import com.ssb.droidsound.utils.NativeZipFile;
 
 public class FileSource {
 
@@ -79,7 +77,7 @@ public class FileSource {
 				//cachedZipFile = zipFile;
 				//cachedFileName = zipPath;
 			//}
-			zipEntry = zipFile.getEntry(entryName);
+			zipEntry = (ZipEntry) zipFile.getEntry(entryName);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -90,7 +88,7 @@ public class FileSource {
 	public FileSource(NativeZipFile zip, String entryName) {
 		this.zipFile = zip;
 		this.zipPath = null;
-		zipEntry = zipFile.getEntry(entryName);
+		zipEntry = (ZipEntry) zipFile.getEntry(entryName);
 		initZip();
 	}
 	

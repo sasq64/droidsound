@@ -13,7 +13,7 @@ import java.util.List;
 
 import android.content.Context;
 
-import com.ssb.droidsound.service.FileSource;
+import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 public class SidPlugin extends DroidSoundPlugin {
