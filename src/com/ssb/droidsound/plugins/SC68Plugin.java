@@ -270,7 +270,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	
 	@Override
 	public String getVersion() {
-		return "Version 3.0.0\nCopyright (C) 2009 Benjamin Gerard";
+		return "Version 3.0.0a\nCopyright (C) 2009 Benjamin Gerard";
 	}
 
 	native public long N_load(byte [] module, int size);

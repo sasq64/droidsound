@@ -1,25 +1,28 @@
 /*
- *                    file68 - ICE! file loader
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    ice68.c
+ * @brief   ICE! file loader
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-02 16:04:06 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: ice68.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -94,12 +97,12 @@ void * ice68_load(istream68_t *is, int *ulen)
     goto success;
   }
 
-  error:
+error:
 
   free68(outbuf);
   outbuf = 0;
   dsize = 0;
-  success:
+success:
   free68(inbuf);
   if (ulen) {
     *ulen = dsize;
@@ -141,13 +144,13 @@ int ice68_is_magic(const void * buffer)
 void * ice68_load(istream68_t * is, int * ulen)
 {
   const char * fname = istream68_filename(is);
-  error68("ice68: load stream '%s' [ICE! not supported]", fname);
+  error68("ice68: *NOT SUPPORTED*");
   return 0;
 }
 
 void * ice68_load_file(const char * fname, int * ulen)
 {
-  error68("ice68: load file '%s' [ICE! not supported]", fname);
+  error68("ice68: *NOT SUPPORTED*");
   return 0;
 }
 

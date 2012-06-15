@@ -1,25 +1,28 @@
 /*
- *                      file68 - debug message
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    msg68.c
+ * @brief   message logging
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-27 12:29:07 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: msg68.c 126 2009-07-15 08:58:51Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -30,7 +33,9 @@
 
 static msg68_t   output = 0;           /* Output function.  */
 static void    * cookie = 0;           /* User data.        */
+#if 0
 static int       curcat = msg68_DEBUG; /* Current category. */
+#endif
 
 /** Default message filter mask.
  *
@@ -40,12 +45,12 @@ static int       curcat = msg68_DEBUG; /* Current category. */
 static unsigned int msg68_bitmsk =
 #if defined(DEBUGMSG_MASK)
   DEBUGMSG_MASK
-#elif defined(DEBUG_FILE68)
-  ~0
-#elif defined(NDEBUG_FILE68)
-  (1<<msg68_CRITICAL)|(1<<msg68_ERROR)|(1<<msg68_INFO)
+#elif defined(DEBUG)
+  (1 << msg68_TRACE) - 1
+#elif defined(NDEBUG)
+  (1 << msg68_NOTICE) - 1
 #else
-  (1<<msg68_CRITICAL)|(1<<msg68_ERROR)|(1<<msg68_WARNING)|(1<<msg68_INFO)
+  (1 << msg68_DEBUG) -1
 #endif
   ;
 
@@ -60,6 +65,7 @@ struct struct_cat_bit {
   { msg68_ERROR   , "error"   , "error message"          },
   { msg68_WARNING , "warning" , "warning message"        },
   { msg68_INFO    , "info"    , "informational message"  },
+  { msg68_NOTICE  , "notice"  , "notice message"         },
   { msg68_DEBUG   , "debug"   , "debug message"          },
   { msg68_TRACE   , "trace"   , "trace message"          }
 };
@@ -79,25 +85,21 @@ void * msg68_set_cookie(void * userdata)
 }
 
 /* Print message (variable argument). */
-void msg68x_va(int bit, void * cookie, const char * fmt, va_list list)
+void msg68x_va(int cat, void * cookie, const char * fmt, va_list list)
 {
   if (output) {
-    const int category = (bit == msg68_CURRENT)
-      ? curcat
-      : bit
-      ;
-
-    switch (category) {
+    switch (cat) {
+    default:
+      if (cat >= 0) {
+        const int bit = cat & (MAX_CATEGORIES-1);
+        const int msk = (1 << bit) | ( (bit > msg68_TRACE) << msg68_TRACE);
+        if ( ! (msg68_bitmsk & msk ) )
+          break;
+      } else break;
+    case msg68_ALWAYS:
+      output(cat, cookie, fmt, list);
     case msg68_NEVER:
       break;
-    default:
-      if ( ! ( msg68_bitmsk & ( 1 << category ) ) )
-        break;
-      if ( category > msg68_TRACE &&
-          ! ( msg68_bitmsk & ( 1 << msg68_TRACE ) ) )
-        break;
-    case msg68_ALWAYS:
-      output(category, cookie, fmt, list);
     }
   }
 }
@@ -125,7 +127,7 @@ void msg68(const int bit, const char * fmt, ...)
 
 void msg68_trace(const char * fmt, ...)
 {
-  va_list list; 
+  va_list list;
   va_start(list, fmt);
   msg68_va(msg68_TRACE, fmt, list);
   va_end(list);
@@ -141,7 +143,7 @@ void msg68x_trace(void * userdata, const char * fmt, ...)
 
 void msg68_debug(const char * fmt, ...)
 {
-  va_list list; 
+  va_list list;
   va_start(list, fmt);
   msg68_va(msg68_DEBUG, fmt, list);
   va_end(list);
@@ -168,6 +170,22 @@ void msg68x_info(void * userdata, const char * fmt, ...)
   va_list list;
   va_start(list, fmt);
   msg68x_va(msg68_INFO, userdata, fmt, list);
+  va_end(list);
+}
+
+void msg68_notice(const char * fmt, ...)
+{
+  va_list list;
+  va_start(list, fmt);
+  msg68_va(msg68_NOTICE, fmt, list);
+  va_end(list);
+}
+
+void msg68x_notice(void * userdata, const char * fmt, ...)
+{
+  va_list list;
+  va_start(list, fmt);
+  msg68x_va(msg68_NOTICE, userdata, fmt, list);
   va_end(list);
 }
 
@@ -215,21 +233,6 @@ void msg68x_critical(void * userdata, const char * fmt, ...)
 {
   va_list list; va_start(list, fmt);
   msg68x_va(msg68_CRITICAL, userdata, fmt, list);
-  va_end(list);
-}
-
-void msg68_current(const char * fmt, ...)
-{
-  va_list list;
-  va_start(list, fmt);
-  msg68_va(msg68_CURRENT, fmt, list);
-  va_end(list);
-}
-
-void msg68x_current(void * userdata, const char * fmt, ...)
-{
-  va_list list; va_start(list, fmt);
-  msg68x_va(msg68_CURRENT, userdata, fmt, list);
   va_end(list);
 }
 
@@ -315,19 +318,6 @@ void msg68_cat_free(const int category)
   }
 }
 
-/* Get/Set current category. */
-int msg68_cat_current(const int category)
-{
-  int old = curcat;
-
-  /* Allow always or never or any other existing category */
-  if (category == msg68_ALWAYS || category == msg68_NEVER ||
-      (is_valid_category(category) && !is_free_category(category))) {
-    curcat = category;
-  }
-  return old;
-}
-
 /* Set all predefined categories mask according to given level. */
 int msg68_cat_level(const int category)
 {
@@ -342,7 +332,7 @@ int msg68_cat_level(const int category)
 
 /* Get info on category */
 int msg68_cat_info(const int category, const char **pname,
-                       const char **pdesc, int *pnext)
+                   const char **pdesc, int *pnext)
 {
   int ret = -1, next = category;
   if (is_valid_category(category)) {

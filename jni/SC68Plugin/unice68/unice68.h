@@ -7,7 +7,8 @@
  *
  */
 
-/* $Id: unice68.h 102 2009-03-14 17:21:58Z benjihan $ */
+/* Copyright (C) 1998-2011 Benjamin Gerard
+ * <http://sourceforge.net/users/benjihan> */
 
 #ifndef _UNICE68_H_
 #define _UNICE68_H_

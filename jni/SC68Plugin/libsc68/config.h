@@ -11,7 +11,7 @@
 #define HAVE_ASSERT_H 1
 
 /* Support __declspec() */
-/* #undef HAVE_DECLSPEC */
+#define HAVE_DECLSPEC 1
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -45,6 +45,8 @@
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
+/* Define to 1 if you have the `stpcpy' function. */
+#define HAVE_STPCPY 1
 
 /* Define to 1 if you have the <strings.h> header file. */
 #define HAVE_STRINGS_H 1
@@ -96,28 +98,28 @@
 #define PACKAGE "libsc68"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "SC68_EMAIL"
+#define PACKAGE_BUGREPORT "benjihan -4t- sourceforge"
 
 /* Package short description */
-#define PACKAGE_DESC "sc68 engine library. It is part of the sc68 project. Visit <SC68_URL>"
+#define PACKAGE_DESC "sc68 engine library. It is part of the sc68 project. Visit <http://sc68.atari.org>"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "libsc68"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "libsc68 3.0.0"
+#define PACKAGE_STRING "libsc68 3.0.0a"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "libsc68"
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL "SC68_URL"
+#define PACKAGE_URL "http://sc68.atari.org"
 
 /* Version number */
 #define PACKAGE_VERNUM 300
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.0.0"
+#define PACKAGE_VERSION "3.0.0a"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
@@ -148,11 +150,10 @@
 
 
 /* Version number of package */
-#define VERSION "3.0.0"
+#define VERSION "3.0.0a"
 
 /* set default YM engine */
 /* #undef YM_ENGINE */
-#define YM_ENGINE YM_ENGINE_BLEP
 
 /* Define to 1 if on MINIX. */
 /* #undef _MINIX */

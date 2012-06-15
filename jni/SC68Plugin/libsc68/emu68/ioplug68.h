@@ -7,9 +7,7 @@
  *
  */
 
-/* $Id: ioplug68.h 116 2009-06-18 14:09:54Z benjihan $ */
-
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2011 Benjamin Gerard */
 
 #ifndef _EMU68_IOPLUG68_H_
 #define _EMU68_IOPLUG68_H_

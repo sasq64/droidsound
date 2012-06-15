@@ -1,25 +1,28 @@
 /*
- *                     file68 - Resource access
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    rsc68.c
+ * @brief   resource functions
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-12 13:22:58 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: rsc68.c 124 2009-07-02 18:51:52Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -86,11 +89,6 @@ static struct {
 
 static void rsc68_init_table(void)
 {
-  static int init = 0;
-  if (init) {
-    return;
-  }
-  init = 1;
   memset(rsc68_table, 0, sizeof(rsc68_table));
 
   rsc68_table[rsc68_replay].type = rsc68_replay;
@@ -389,7 +387,7 @@ static char * convert_music_path(char * newname, int max,
 
   return newname;
 
-  error:
+error:
   *newname = 0;
   return 0;
 }
@@ -631,7 +629,9 @@ istream68_t * rsc68_open_url(const char *url, int mode, rsc68_info_t * info)
     }
   }
 
-  rsc68_init_table();
+  /* Table should be initialized by proper library initialization. */
+  /* rsc68_init_table(); */
+
   for (i=0; i<rsc68_last && strcmp68(rsc68_table[i].name, protocol); ++i)
     ;
   if (i >= rsc68_last) {
@@ -642,7 +642,7 @@ istream68_t * rsc68_open_url(const char *url, int mode, rsc68_info_t * info)
   TRACE68(rsc68_cat,"rsc68: resource type #%d '%s'\n", i, protocol);
   is =  rsc68(i, url, mode, info);
 
-  error:
+error:
   TRACE68(rsc68_cat,"rsc68: open => [%s,'%s']\n",
           strok68(!is),istream68_filename(is));
   return is;
@@ -682,6 +682,7 @@ int rsc68_init(void)
     TRACE68(rsc68_cat,"rsc68: lmusic_path = '%s'\n",lmusic_path);
     TRACE68(rsc68_cat,"rsc68: rmusic_path = '%s'\n",rmusic_path);
 
+    init = 1;
     err = 0;
   }
   return err;
@@ -696,7 +697,7 @@ void rsc68_shutdown(void)
     rsc68_set_music(0);
     rsc68_set_remote_music(0);
     rsc68 = default_open;
-    init = 0;
+    init  = 0;
   }
-  TRACE68(rsc68_cat,"rsc68: shutdown\n");
+  TRACE68(rsc68_cat,"rsc68: *%s*\n","SHUTDOWN");
 }

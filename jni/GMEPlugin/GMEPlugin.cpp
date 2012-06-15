@@ -64,7 +64,7 @@ jlong setUp(Music_Emu *emu)
 {
 	gme_err_t err;
 
-	gme_info_t* track0;
+    gme_info_t* track0;
     gme_info_t* track1;
 	err = gme_track_info(emu, &track0, 0);
 

@@ -1,25 +1,28 @@
 /*
- *                      file - gzip file loader
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    gzip68.c
+ * @brief   gzip file loader
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-02 16:04:11 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: gzip68.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -101,7 +104,7 @@ static int is_gz(int fd, int len)
       inflate_len = -1;
     }
   }
-  error:
+error:
 
   /* Rewind */
   lseek(fd, 0, SEEK_SET);
@@ -169,14 +172,14 @@ void *gzip68_load(const char *fname, int *ptr_ulen)
   }
   goto end;
 
-  error:
+error:
   if (uncompr) {
     free68(uncompr);
     uncompr = 0;
     ulen = 0;
   }
 
-  end:
+end:
   if (fd) {
     close(fd);
   }
@@ -197,9 +200,8 @@ void *gzip68_load(const char *fname, int *ptr_ulen)
 void *gzip68_load(const char *fname, int *ptr_ulen)
 {
   if (ptr_ulen) *ptr_ulen=0;
-  error68("gzip68: load '%s' -- zlib not supported", fname);
+  error68("gzip68: *NOT SUPPORTED*");
   return 0;
 }
 
 #endif /* #ifdef HAVE_ZLIB_H */
-
