@@ -22,17 +22,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "uadecontrol.h"
-#include "ossupport.h"
-#include "uadeconfig.h"
-#include "uadeconf.h"
-#include "sysincludes.h"
-#include "songdb.h"
-#include "uadestate.h"
+#include <uade/uade.h>
 #include "uadesimple.h"
 #include "playloop.h"
 #include "audio.h"
-#include "amigafilter.h"
 
 int uade_song_end_trigger;
 
@@ -55,152 +48,150 @@ int main(int argc, char *argv[])
 
     memset(&state, 0, sizeof state);
 
-    uadeconf_loaded = uade_load_initial_config(uadeconfname,
-					       sizeof uadeconfname,
-					       &state.config, NULL);
+    uadeconf_loaded = uade_load_initial_config(&state, uadeconfname, sizeof uadeconfname, NULL);
 
     if (uadeconf_loaded == 0) {
-	debug(state.config.verbose,
-	      "Not able to load uade.conf from ~/.uade2/ or %s/.\n",
-	      state.config.basedir.name);
+    debug(state.config.verbose,
+          "Not able to load uade.conf from ~/.uade2/ or %s/.\n",
+          state.config.basedir.name);
     } else {
-	debug(state.config.verbose, "Loaded configuration: %s\n", uadeconfname);
+    debug(state.config.verbose, "Loaded configuration: %s\n", uadeconfname);
     }
 
     do {
-	DIR *bd;
-	if ((bd = opendir(state.config.basedir.name)) == NULL) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not access dir %s: %s\n",
-		    state.config.basedir.name, strerror(errno));
-	    exit(1);
-	}
-	closedir(bd);
+    DIR *bd;
+    if ((bd = opendir(state.config.basedir.name)) == NULL) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not access dir %s: %s\n",
+            state.config.basedir.name, strerror(errno));
+        exit(1);
+    }
+    closedir(bd);
 
-	snprintf(configname, sizeof configname, "%s/uaerc",
-		 state.config.basedir.name);
+    snprintf(configname, sizeof configname, "%s/uaerc",
+         state.config.basedir.name);
 
-	if (scorename[0] == 0)
-	    snprintf(scorename, sizeof scorename, "%s/score",
-		     state.config.basedir.name);
+    if (scorename[0] == 0)
+        snprintf(scorename, sizeof scorename, "%s/score",
+             state.config.basedir.name);
 
-	if (uadename[0] == 0)
-	    strlcpy(uadename, UADE_CONFIG_UADE_CORE, sizeof uadename);
+    if (uadename[0] == 0)
+        strlcpy(uadename, UADE_CONFIG_UADE_CORE, sizeof uadename);
 
-	if (access(configname, R_OK)) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not read %s: %s\n", configname,
-		    strerror(errno));
-	    exit(1);
-	}
-	if (access(scorename, R_OK)) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not read %s: %s\n", scorename,
-		    strerror(errno));
-	    exit(1);
-	}
-	if (access(uadename, X_OK)) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not execute %s: %s\n", uadename,
-		    strerror(errno));
-	    exit(1);
-	}
+    if (access(configname, R_OK)) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not read %s: %s\n", configname,
+            strerror(errno));
+        exit(1);
+    }
+    if (access(scorename, R_OK)) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not read %s: %s\n", scorename,
+            strerror(errno));
+        exit(1);
+    }
+    if (access(uadename, X_OK)) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Could not execute %s: %s\n", uadename,
+            strerror(errno));
+        exit(1);
+    }
     } while (0);
 
     uade_spawn(&state, uadename, configname);
 
     if (!audio_init(state.config.frequency, state.config.buffer_time))
-	goto cleanup;
+    goto cleanup;
 
     for (songindex = 1; songindex < argc; songindex++) {
-	/* modulename and songname are a bit different. modulename is the name
-	   of the song from uadecore's point of view and songname is the
-	   name of the song from user point of view. Sound core considers all
-	   custom songs to be players (instead of modules) and therefore modulename
-	   will become a zero-string with custom songs. */
-	char modulename[PATH_MAX];
-	char songname[PATH_MAX];
+    /* modulename and songname are a bit different. modulename is the name
+       of the song from uadecore's point of view and songname is the
+       name of the song from user point of view. Sound core considers all
+       custom songs to be players (instead of modules) and therefore modulename
+       will become a zero-string with custom songs. */
+    char modulename[PATH_MAX];
+    char songname[PATH_MAX];
 
-	strlcpy(modulename, argv[songindex], sizeof modulename);
+    strlcpy(modulename, argv[songindex], sizeof modulename);
 
-	state.song = NULL;
-	state.ep = NULL;
+    state.song = NULL;
+    state.ep = NULL;
 
-	if (!uade_is_our_file(modulename, 0, &state)) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown format: %s\n", modulename);
-	    continue;
-	}
+    if (!uade_is_our_file(modulename, 0, &state)) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown format: %s\n", modulename);
+        continue;
+    }
 
-	debug(state.config.verbose, "Player candidate: %s\n", state.ep->playername);
+    debug(state.config.verbose, "Player candidate: %s\n", state.ep->playername);
 
-	if (strcmp(state.ep->playername, "custom") == 0) {
-	    strlcpy(playername, modulename, sizeof playername);
-	    modulename[0] = 0;
-	} else {
-	  snprintf(playername, sizeof playername, "%s/players/%s", state.config.basedir.name, state.ep->playername);
-	}
+    if (strcmp(state.ep->playername, "custom") == 0) {
+        strlcpy(playername, modulename, sizeof playername);
+        modulename[0] = 0;
+    } else {
+      snprintf(playername, sizeof playername, "%s/players/%s", state.config.basedir.name, state.ep->playername);
+    }
 
-	if (strlen(playername) == 0) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: an empty player name given\n");
-	    goto cleanup;
-	}
+    if (strlen(playername) == 0) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: an empty player name given\n");
+        goto cleanup;
+    }
 
-	/* If no modulename given, try the playername as it can be a custom
-	   song */
-	strlcpy(songname, modulename[0] ? modulename : playername,
-		sizeof songname);
+    /* If no modulename given, try the playername as it can be a custom
+       song */
+    strlcpy(songname, modulename[0] ? modulename : playername,
+        sizeof songname);
 
-	if (!uade_alloc_song(&state, songname)) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not read %s: %s\n", songname,
-		    strerror(errno));
-	    continue;
-	}
+    if (!uade_alloc_song(&state, songname)) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not read %s: %s\n", songname,
+            strerror(errno));
+        continue;
+    }
 
-	/* The order of parameter processing is important:
-	 * 0. set uade.conf options (done before this)
-	 * 1. set eagleplayer attributes
-	 * 2. set song attributes
-	 * 3. set command line options
-	 */
+    /* The order of parameter processing is important:
+     * 0. set uade.conf options (done before this)
+     * 1. set eagleplayer attributes
+     * 2. set song attributes
+     * 3. set command line options
+     */
 
-	if (state.ep != NULL)
-	    uade_set_ep_attributes(&state);
+    if (state.ep != NULL)
+        uade_set_ep_attributes(&state);
 
-	/* Now we have the final configuration in "uc". */
-	uade_set_effects(&state);
+    /* Now we have the final configuration in "uc". */
+    uade_set_effects(&state);
 
-	playerfile = fopen(playername, "r");
-	if (playerfile == NULL) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not find player: %s (%s)\n", playername,
-		    strerror(errno));
-	    uade_unalloc_song(&state);
-	    continue;
-	}
-	fclose(playerfile);
+    playerfile = fopen(playername, "r");
+    if (playerfile == NULL) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not find player: %s (%s)\n", playername,
+            strerror(errno));
+        uade_unalloc_song(&state);
+        continue;
+    }
+    fclose(playerfile);
 
-	debug(state.config.verbose, "Player: %s\n", playername);
+    debug(state.config.verbose, "Player: %s\n", playername);
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song: %s (%zd bytes)\n",
-		state.song->module_filename, state.song->bufsize);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song: %s (%zd bytes)\n",
+        state.song->module_filename, state.song->bufsize);
 
-	ret = uade_song_initialization(scorename, playername, modulename,
-				       &state);
-	if (ret) {
-	    if (ret == UADECORE_INIT_ERROR) {
-		uade_unalloc_song(&state);
-		goto cleanup;
+    ret = uade_song_initialization(scorename, playername, modulename,
+                       &state);
+    if (ret) {
+        if (ret == UADECORE_INIT_ERROR) {
+        uade_unalloc_song(&state);
+        goto cleanup;
 
-	    } else if (ret == UADECORE_CANT_PLAY) {
-		debug(state.config.verbose, "Uadecore refuses to play the song.\n");
-		uade_unalloc_song(&state);
-		continue;
-	    }
+        } else if (ret == UADECORE_CANT_PLAY) {
+        debug(state.config.verbose, "Uadecore refuses to play the song.\n");
+        uade_unalloc_song(&state);
+        continue;
+        }
 
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown error from uade_song_initialization()\n");
-	    exit(1);
-	}
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown error from uade_song_initialization()\n");
+        exit(1);
+    }
 
-	play_loop(&state);
+    play_loop(&state);
 
-	uade_unalloc_song(&state);
+    uade_unalloc_song(&state);
 
-	uade_song_end_trigger = 0;
+    uade_song_end_trigger = 0;
     }
 
     cleanup();

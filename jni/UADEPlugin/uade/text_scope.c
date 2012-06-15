@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <android/log.h>
 #include "sysconfig.h"
 #include "sysdeps.h"
 #include "custom.h"
@@ -19,12 +18,12 @@ static void print_tab(int v)
     memset(spaces, ' ', sizeof spaces);
 
     for (i = 0; i < v; i++)
-	fwrite(spaces, sizeof spaces, 1, stdout);
+    fwrite(spaces, sizeof spaces, 1, stdout);
 }
 
 
 void text_scope(unsigned long cycles, int voice, enum PaulaEventType e,
-		int value)
+        int value)
 {
     unsigned int sec = cycles / SOUNDTICKS;
     unsigned int usec = ((uint64_t) (cycles % SOUNDTICKS) * 1000000) / SOUNDTICKS;

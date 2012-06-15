@@ -59,21 +59,21 @@ static void do_cycles_slow (unsigned long cycles_to_add) {
   if ((nextevent - cycles) <= cycles_to_add) {
     for (; cycles_to_add != 0; cycles_to_add--) {
       if (++cycles == nextevent) {
-	/* HSYNC */
-	if(eventtab[ev_hsync].active && eventtab[ev_hsync].evtime == cycles) {
-	  (*eventtab[ev_hsync].handler)();
-	}
-	/* AUDIO */
+    /* HSYNC */
+    if(eventtab[ev_hsync].active && eventtab[ev_hsync].evtime == cycles) {
+      (*eventtab[ev_hsync].handler)();
+    }
+    /* AUDIO */
 #if 0
-	if(eventtab[ev_audio].active && eventtab[ev_audio].evtime == cycles) {
-	  (*eventtab[ev_audio].handler)();
-	}
+    if(eventtab[ev_audio].active && eventtab[ev_audio].evtime == cycles) {
+      (*eventtab[ev_audio].handler)();
+    }
 #endif
-	/* CIA */
-	if(eventtab[ev_cia].active && eventtab[ev_cia].evtime == cycles) {
-	  (*eventtab[ev_cia].handler)();
-	}
-	events_schedule();
+    /* CIA */
+    if(eventtab[ev_cia].active && eventtab[ev_cia].evtime == cycles) {
+      (*eventtab[ev_cia].handler)();
+    }
+    events_schedule();
       }
     }
   }

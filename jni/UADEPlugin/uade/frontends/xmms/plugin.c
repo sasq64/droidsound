@@ -16,21 +16,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "uadeipc.h"
-#include "eagleplayer.h"
-#include "uadeconfig.h"
-#include "uadecontrol.h"
-#include "uadeconstants.h"
-#include "ossupport.h"
-#include "uadeconf.h"
-#include "effects.h"
-#include "sysincludes.h"
-#include "songdb.h"
+#include <uade/uade.h>
 #include "plugin.h"
 #include "subsongseek.h"
 #include "fileinfo.h"
-#include "songinfo.h"
-#include "uadestate.h"
 
 
 #define PLUGIN_DEBUG 0
@@ -90,7 +79,6 @@ static struct uade_state state;
 
 static char configname[PATH_MAX];
 static pthread_t decode_thread;
-static struct uade_config config_backup;
 static char gui_filename[PATH_MAX];
 static char gui_formatname[256];
 static int gui_info_set;
@@ -115,73 +103,60 @@ int uade_thread_running;      /* Trigger type */
 int uade_seek_forward;        /* Lock before use */
 int uade_select_sub;          /* Lock before use */
 
-
-static int uade_config_optimization;
-
-
 static pthread_mutex_t vlock = PTHREAD_MUTEX_INITIALIZER;
-
-
-static void test_uade_conf(void)
-{
-  struct stat st;
-
-  if (stat(configname, &st))
-    return;
-
-  /* Read only newer files */
-  if (st.st_mtime <= config_load_time)
-    return;
-
-  config_load_time = st.st_mtime;
-
-  uade_load_config(&config_backup, configname);
-}
 
 
 static void load_config(void)
 {
-  test_uade_conf();
+  struct stat st;
+
+  /* Read only newer files */
+  if (stat(configname, &st) != 0 || st.st_mtime <= config_load_time)
+    return;
+
+  config_load_time = st.st_mtime;
+
+  uade_load_config(&state.permconfig, configname);
 }
 
 
 static void load_content_db(void)
 {
-	struct stat st;
-	char name[PATH_MAX];
-	int ret;
+    struct stat st;
+    char name[PATH_MAX];
+    int ret;
 
-	if (contentname[0] == 0) {
-		char *home = uade_open_create_home();
-		if (home)
-			snprintf(contentname, sizeof contentname, "%s/.uade2/contentdb", home);
-	}
+    if (contentname[0] == 0) {
+        char *home = uade_open_create_home();
+        if (home)
+            snprintf(contentname, sizeof contentname, "%s/.uade2/contentdb", home);
+    }
 
-	/* User database has priority over global database, so we read it
-	 * first */
-	if (contentname[0]) {
-		if (stat(contentname, &st) == 0) {
-			if (content_mtime < st.st_mtime) {
-				ret = uade_read_content_db(contentname);
-				if (stat(contentname, &st) == 0)
-					content_mtime = st.st_mtime;
-				if (ret)
-					return;
-			}
-		} else {
-			FILE *f = fopen(contentname, "w");
-			if (f)
-				fclose(f);
-			uade_read_content_db(contentname);
-		}
-	}
+    /* User database has priority over global database, so we read it
+     * first */
+    if (contentname[0]) {
+        if (stat(contentname, &st) == 0) {
+            if (content_mtime < st.st_mtime) {
+                ret = uade_read_content_db(contentname, &state);
+                if (stat(contentname, &st) == 0)
+                    content_mtime = st.st_mtime;
+                if (ret)
+                    return;
+            }
+        } else {
+            FILE *f = fopen(contentname, "w");
+            if (f)
+                fclose(f);
+            uade_read_content_db(contentname, &state);
+        }
+    }
 
-	snprintf(name, sizeof name, "%s/contentdb.conf", config_backup.basedir.name);
-	if (stat(name, &st) == 0 && content_mtime < st.st_mtime) {
-		uade_read_content_db(name);
-		if (stat(name, &st) == 0)
-			content_mtime = st.st_mtime;
-	}
+    snprintf(name, sizeof name, "%s/contentdb.conf", state.permconfig.basedir.name);
+    if (stat(name, &st) == 0 && content_mtime < st.st_mtime) {
+        uade_read_content_db(contentname, &state);
+        if (stat(name, &st) == 0)
+            content_mtime = st.st_mtime;
+    }
 }
 
 
@@ -193,7 +168,7 @@ static void uade_cleanup(void)
   if (contentname[0]) {
     struct stat st;
     if (stat(contentname, &st) == 0 && content_mtime >= st.st_mtime)
-      uade_save_content_db(contentname);
+      uade_save_content_db(contentname, &state);
   }
 }
 
@@ -218,7 +193,7 @@ int uade_get_cur_subsong(int def)
       subsong = state.song->cur_subsong;
     uade_unlock();
     if (subsong == -1)
-	subsong = def;
+    subsong = def;
     return subsong;
 }
 
@@ -232,7 +207,7 @@ int uade_get_max_subsong(int def)
       subsong = state.song->max_subsong;
     uade_unlock();
     if (subsong == -1)
-	subsong = def;
+    subsong = def;
     return subsong;
 }
 
@@ -246,7 +221,7 @@ int uade_get_min_subsong(int def)
       subsong = state.song->min_subsong;
     uade_unlock();
     if (subsong == -1)
-	subsong = def;
+    subsong = def;
     return subsong;
 }
 
@@ -255,7 +230,7 @@ void uade_lock(void)
 {
   if (pthread_mutex_lock(&vlock)) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 locking error.\n");
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -264,7 +239,7 @@ void uade_unlock(void)
 {
   if (pthread_mutex_unlock(&vlock)) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE2 unlocking error.\n");
-    exit(-1);
+    exit(1);
   }
 }
 
@@ -280,28 +255,21 @@ InputPlugin *get_iplugin_info(void)
 static void uade_init(void)
 {
   char *home;
-  int config_loaded;
-
+  
   config_load_time = time(NULL);
 
-  config_loaded = uade_load_initial_config(configname, sizeof configname,
-					   &config_backup, NULL);
+  if (!uade_load_initial_config(&state, configname, sizeof configname, NULL))
+      fprintf(stderr, "No config file found for UADE XMMS plugin. Will try to load config from $HOME/.uade2/uade.conf in the future.\n");
 
   load_content_db();
 
-  uade_load_initial_song_conf(songconfname, sizeof songconfname,
-			      &config_backup, NULL);
+  uade_load_initial_song_conf(songconfname, sizeof songconfname, &state.permconfig, NULL, &state);
 
   home = uade_open_create_home();
 
   if (home != NULL) {
     /* If config exists in home, ignore global uade.conf. */
     snprintf(configname, sizeof configname, "%s/.uade2/uade.conf", home);
-  }
-
-  if (config_loaded == 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "No config file found for UADE XMMS plugin. Will try to load config from\n");
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "$HOME/.uade2/uade.conf in the future.\n");
   }
 }
 
@@ -347,7 +315,7 @@ static int initialize_song(char *filename)
 
   uade_lock();
 
-  state.config = config_backup;
+  state.config = state.permconfig;
   state.validconfig = 1;
 
   state.ep = NULL;
@@ -430,260 +398,259 @@ static void *play_loop(void *arg)
       assert(left == 0);
 
       if (abort_playing) {
-	uade_lock();
-	record_playtime = 0;
-	uade_unlock();
-	break;
+    uade_lock();
+    record_playtime = 0;
+    uade_unlock();
+    break;
       }
 
       uade_lock();
       if (uade_seek_forward) {
-	skip_bytes += uade_seek_forward * UADE_BYTES_PER_FRAME * state.config.frequency;
-	uade_ip.output->flush(uade_ip.output->written_time() + uade_seek_forward * 1000);
-	uade_seek_forward = 0;
+    skip_bytes += uade_seek_forward * UADE_BYTES_PER_FRAME * state.config.frequency;
+    uade_ip.output->flush(uade_ip.output->written_time() + uade_seek_forward * 1000);
+    uade_seek_forward = 0;
       }
       if (uade_select_sub != -1) {
-	state.song->cur_subsong = uade_select_sub;
+    state.song->cur_subsong = uade_select_sub;
 
-	uade_change_subsong(&state);
+    uade_change_subsong(&state);
 
-	uade_ip.output->flush(0);
-	uade_select_sub = -1;
-	subsong_end = 0;
-	subsong_bytes = 0;
+    uade_ip.output->flush(0);
+    uade_select_sub = -1;
+    subsong_end = 0;
+    subsong_bytes = 0;
 
-	/* we do this to avoid timeout, and to not record playtime */
-	state.song->out_bytes = 0;
-	record_playtime = 0;
+    /* we do this to avoid timeout, and to not record playtime */
+    state.song->out_bytes = 0;
+    record_playtime = 0;
 
-	uade_info_string();
+    uade_info_string();
       }
 
       if (subsong_end && song_end_trigger == 0) {
 
-	if (state.song->cur_subsong == -1 || state.song->max_subsong == -1) {
-	  song_end_trigger = 1;
+    if (state.song->cur_subsong == -1 || state.song->max_subsong == -1) {
+      song_end_trigger = 1;
 
-	} else {
+    } else {
 
-	  state.song->cur_subsong++;
+      state.song->cur_subsong++;
 
-	  if (state.song->cur_subsong > state.song->max_subsong) {
-	    song_end_trigger = 1;
-	  } else {
-	    int x = 0;
+      if (state.song->cur_subsong > state.song->max_subsong) {
+        song_end_trigger = 1;
+      } else {
+        int x = 0;
 
-	    uade_change_subsong(&state);
+        uade_change_subsong(&state);
 
-	    while (uade_ip.output->buffer_playing()) {
-	      /* Sleep at most 5 secs */
-	      if (x >= 500) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: blocking work-around activated.\n");
-		break;
-	      }
-	      x++;
-	      xmms_usleep(10000);
-	    }
-	    uade_ip.output->flush(0);
-	    subsong_end = 0;
-	    subsong_bytes = 0;
+        while (uade_ip.output->buffer_playing()) {
+          /* Sleep at most 5 secs */
+          if (x >= 500) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: blocking work-around activated.\n");
+        break;
+          }
+          x++;
+          xmms_usleep(10000);
+        }
+        uade_ip.output->flush(0);
+        subsong_end = 0;
+        subsong_bytes = 0;
 
-	    uade_gui_subsong_changed(state.song->cur_subsong);
+        uade_gui_subsong_changed(state.song->cur_subsong);
 
-	    uade_info_string();
-	  }
-	}
+        uade_info_string();
+      }
+    }
       }
       uade_unlock();
 
       if (song_end_trigger) {
-	/* We must drain the audio fast if abort_playing happens (e.g.
-	   the user changes song when we are here waiting the sound device) */
-	while (uade_ip.output->buffer_playing() && abort_playing == 0)
+    /* We must drain the audio fast if abort_playing happens (e.g.
+       the user changes song when we are here waiting the sound device) */
+    while (uade_ip.output->buffer_playing() && abort_playing == 0)
 
-	  xmms_usleep(10000);
-	break;
+      xmms_usleep(10000);
+    break;
       }
 
       left = uade_read_request(&state.ipc);
 
       if (uade_send_short_message(UADE_COMMAND_TOKEN, &state.ipc)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send token.\n");
-	return NULL;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not send token.\n");
+    return NULL;
       }
       controlstate = UADE_R_STATE;
 
     } else {
 
       if (uade_receive_message(um, sizeof(space), &state.ipc) <= 0) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive events from uade\n");
-	exit(-1);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not receive events from uade\n");
+    exit(1);
       }
 
       switch (um->msgtype) {
 
       case UADE_COMMAND_TOKEN:
-	controlstate = UADE_S_STATE;
-	break;
+    controlstate = UADE_S_STATE;
+    break;
 
       case UADE_REPLY_DATA:
-	sm = (uint16_t *) um->data;
-	for (i = 0; i < um->size; i += 2) {
-	  *sm = ntohs(*sm);
-	  sm++;
-	}
+    sm = (uint16_t *) um->data;
+    for (i = 0; i < um->size; i += 2) {
+      *sm = ntohs(*sm);
+      sm++;
+    }
 
-	if (subsong_end) {
-	  play_bytes = tailbytes;
-	  tailbytes = 0;
-	} else {
-	  play_bytes = um->size;
-	}
+    if (subsong_end) {
+      play_bytes = tailbytes;
+      tailbytes = 0;
+    } else {
+      play_bytes = um->size;
+    }
 
-	if (subsong_end == 0 && song_end_trigger == 0 &&
-	    uade_test_silence(um->data, play_bytes, &state)) {
-	  subsong_end = 1;
-	}
+    if (subsong_end == 0 && song_end_trigger == 0 &&
+        uade_test_silence(um->data, play_bytes, &state)) {
+      subsong_end = 1;
+    }
 
-	subsong_bytes += play_bytes;
-	uade_lock();
-	state.song->out_bytes += play_bytes;
-	uade_unlock();
+    subsong_bytes += play_bytes;
+    uade_lock();
+    state.song->out_bytes += play_bytes;
+    uade_unlock();
 
-	if (skip_bytes > 0) {
-	  if (play_bytes <= skip_bytes) {
-	    skip_bytes -= play_bytes;
-	    play_bytes = 0;
-	  } else {
-	    play_bytes -= skip_bytes;
-	    skip_bytes = 0;
-	  }
-	}
+    if (skip_bytes > 0) {
+      if (play_bytes <= skip_bytes) {
+        skip_bytes -= play_bytes;
+        play_bytes = 0;
+      } else {
+        play_bytes -= skip_bytes;
+        skip_bytes = 0;
+      }
+    }
 
-	uade_effect_run(&state.effects, (int16_t *) um->data, play_bytes / framesize);
-	uade_ip.add_vis_pcm(uade_ip.output->written_time(), sample_format, UADE_CHANNELS, play_bytes, um->data);
+    uade_effect_run(&state.effects, (int16_t *) um->data, play_bytes / framesize);
+    uade_ip.add_vis_pcm(uade_ip.output->written_time(), sample_format, UADE_CHANNELS, play_bytes, um->data);
 
-	writeoffs = 0;
-	while (writeoffs < play_bytes) {
-	  int writable;
-	  while ((writable = uade_ip.output->buffer_free()) <= 0) {
-	    if (abort_playing)
-	      goto nowrite;
-	    xmms_usleep(10000);
-	  }
+    writeoffs = 0;
+    while (writeoffs < play_bytes) {
+      int writable;
+      while ((writable = uade_ip.output->buffer_free()) <= 0) {
+        if (abort_playing)
+          goto nowrite;
+        xmms_usleep(10000);
+      }
 
-	  if (writable > (play_bytes - writeoffs))
-	    writable = play_bytes - writeoffs;
+      if (writable > (play_bytes - writeoffs))
+        writable = play_bytes - writeoffs;
 
-	  uade_ip.output->write_audio(&um->data[writeoffs], writable);
+      uade_ip.output->write_audio(&um->data[writeoffs], writable);
 
-	  writeoffs += writable;
-	}
+      writeoffs += writable;
+    }
 
 
       nowrite:
 
-	if (state.config.timeout != -1 && state.config.use_timeouts) {
-	  if (song_end_trigger == 0) {
-	    uade_lock();
-	    if (state.song->out_bytes / (UADE_BYTES_PER_FRAME * state.config.frequency) >= state.config.timeout) {
-	      song_end_trigger = 1;
-	      record_playtime = 0;
-	    }
-	    uade_unlock();
-	  }
-	}
+    if (state.config.timeout != -1 && state.config.use_timeouts) {
+      if (song_end_trigger == 0) {
+        uade_lock();
+        if (state.song->out_bytes / (UADE_BYTES_PER_FRAME * state.config.frequency) >= state.config.timeout) {
+          song_end_trigger = 1;
+          record_playtime = 0;
+        }
+        uade_unlock();
+      }
+    }
 
-	if (state.config.subsong_timeout != -1 && state.config.use_timeouts) {
-	  if (subsong_end == 0 && song_end_trigger == 0) {
-	    if (subsong_bytes / (UADE_BYTES_PER_FRAME * state.config.frequency) >= state.config.subsong_timeout) {
-	      subsong_end = 1;
-	      record_playtime = 0;
-	    }
-	  }
-	}
+    if (state.config.subsong_timeout != -1 && state.config.use_timeouts) {
+      if (subsong_end == 0 && song_end_trigger == 0) {
+        if (subsong_bytes / (UADE_BYTES_PER_FRAME * state.config.frequency) >= state.config.subsong_timeout) {
+          subsong_end = 1;
+          record_playtime = 0;
+        }
+      }
+    }
 
-	assert (left >= um->size);
-	left -= um->size;
-	break;
+    assert (left >= um->size);
+    left -= um->size;
+    break;
 
       case UADE_REPLY_FORMATNAME:
-	uade_check_fix_string(um, 128);
-	strlcpy(gui_formatname, (char *) um->data, sizeof gui_formatname);
-	strlcpy(state.song->formatname, (char *) um->data, sizeof state.song->formatname);
-	break;
+    uade_check_fix_string(um, 128);
+    strlcpy(gui_formatname, (char *) um->data, sizeof gui_formatname);
+    strlcpy(state.song->formatname, (char *) um->data, sizeof state.song->formatname);
+    break;
 
       case UADE_REPLY_MODULENAME:
-	uade_check_fix_string(um, 128);
-	strlcpy(gui_modulename, (char *) um->data, sizeof gui_modulename);
-	strlcpy(state.song->modulename, (char *) um->data, sizeof state.song->modulename);
-	break;
+    uade_check_fix_string(um, 128);
+    strlcpy(gui_modulename, (char *) um->data, sizeof gui_modulename);
+    strlcpy(state.song->modulename, (char *) um->data, sizeof state.song->modulename);
+    break;
 
       case UADE_REPLY_MSG:
-	uade_check_fix_string(um, 128);
-	plugindebug("Message: %s\n", (char *) um->data);
-	break;
+    uade_check_fix_string(um, 128);
+    plugindebug("Message: %s\n", (char *) um->data);
+    break;
 
       case UADE_REPLY_PLAYERNAME:
-	uade_check_fix_string(um, 128);
-	strlcpy(gui_playername, (char *) um->data, sizeof gui_playername);
-	strlcpy(state.song->playername, (char *) um->data, sizeof state.song->playername);
-	break;
+    uade_check_fix_string(um, 128);
+    strlcpy(gui_playername, (char *) um->data, sizeof gui_playername);
+    strlcpy(state.song->playername, (char *) um->data, sizeof state.song->playername);
+    break;
 
       case UADE_REPLY_SONG_END:
-	if (um->size < 9) {
-	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song end reply\n");
-	  exit(-1);
-	}
-	tailbytes = ntohl(((uint32_t *) um->data)[0]);
-	/* next ntohl() is only there for a principle. it is not useful */
-	if (ntohl(((uint32_t *) um->data)[1]) == 0) {
-	  /* normal happy song end. go to next subsong if any */
-	  subsong_end = 1;
-	} else {
-	  /* unhappy song end (error in the 68k side). skip to next song
-	     ignoring possible subsongs */
-	  song_end_trigger = 1;
-	}
-	i = 0;
-	reason = (char *) &um->data[8];
-	while (reason[i] && i < (um->size - 8))
-	  i++;
-	if (reason[i] != 0 || (i != (um->size - 9))) {
-	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Broken reason string with song end notice\n");
-	  exit(-1);
-	}
-	/* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Song end (%s)\n", reason); */
-	break;
+    if (um->size < 9) {
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid song end reply\n");
+      exit(1);
+    }
+    tailbytes = ntohl(((uint32_t *) um->data)[0]);
+    /* next ntohl() is only there for a principle. it is not useful */
+    if (ntohl(((uint32_t *) um->data)[1]) == 0) {
+      /* normal happy song end. go to next subsong if any */
+      subsong_end = 1;
+    } else {
+      /* unhappy song end (error in the 68k side). skip to next song
+         ignoring possible subsongs */
+      song_end_trigger = 1;
+    }
+    i = 0;
+    reason = (char *) &um->data[8];
+    while (reason[i] && i < (um->size - 8))
+      i++;
+    if (reason[i] != 0 || (i != (um->size - 9))) {
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Broken reason string with song end notice\n");
+      exit(1);
+    }
+    break;
 
       case UADE_REPLY_SUBSONG_INFO:
-	if (um->size != 12) {
-	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "subsong info: too short a message\n");
-	  exit(-1);
-	}
-	u32ptr = (uint32_t *) um->data;
-	uade_lock();
-	state.song->min_subsong = ntohl(u32ptr[0]);
-	state.song->max_subsong = ntohl(u32ptr[1]);
-	state.song->cur_subsong = ntohl(u32ptr[2]);
+    if (um->size != 12) {
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "subsong info: too short a message\n");
+      exit(1);
+    }
+    u32ptr = (uint32_t *) um->data;
+    uade_lock();
+    state.song->min_subsong = ntohl(u32ptr[0]);
+    state.song->max_subsong = ntohl(u32ptr[1]);
+    state.song->cur_subsong = ntohl(u32ptr[2]);
 
-	if (!(-1 <= state.song->min_subsong && state.song->min_subsong <= state.song->cur_subsong && state.song->cur_subsong <= state.song->max_subsong)) {
-	  int tempmin = state.song->min_subsong, tempmax = state.song->max_subsong;
-	  __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: The player is broken. Subsong info does not match with %s.\n", gui_filename);
-	  state.song->min_subsong = tempmin <= tempmax ? tempmin : tempmax;
-	  state.song->max_subsong = tempmax >= tempmin ? tempmax : tempmin;
-	  if (state.song->cur_subsong > state.song->max_subsong)
-	    state.song->max_subsong = state.song->cur_subsong;
-	  else if (state.song->cur_subsong < state.song->min_subsong)
-	    state.song->min_subsong = state.song->cur_subsong;
-	}
-	uade_unlock();
-	break;
+    if (!(-1 <= state.song->min_subsong && state.song->min_subsong <= state.song->cur_subsong && state.song->cur_subsong <= state.song->max_subsong)) {
+      int tempmin = state.song->min_subsong, tempmax = state.song->max_subsong;
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: The player is broken. Subsong info does not match with %s.\n", gui_filename);
+      state.song->min_subsong = tempmin <= tempmax ? tempmin : tempmax;
+      state.song->max_subsong = tempmax >= tempmin ? tempmax : tempmin;
+      if (state.song->cur_subsong > state.song->max_subsong)
+        state.song->max_subsong = state.song->cur_subsong;
+      else if (state.song->cur_subsong < state.song->min_subsong)
+        state.song->min_subsong = state.song->cur_subsong;
+    }
+    uade_unlock();
+    break;
 
       default:
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Expected sound data. got %d.\n", um->msgtype);
-	plugin_disabled = 1;
-	return NULL;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Expected sound data. got %d.\n", um->msgtype);
+    plugin_disabled = 1;
+    return NULL;
       }
     }
   }
@@ -755,11 +722,11 @@ static void uade_play_file(char *filename)
 
   if (!state.pid) {
     char configname[PATH_MAX];
-    snprintf(configname, sizeof configname, "%s/uaerc", config_backup.basedir.name);
+    snprintf(configname, sizeof configname, "%s/uaerc", state.permconfig.basedir.name);
     uade_spawn(&state, UADE_CONFIG_UADE_CORE, configname);
   }
 
-  if (!uade_ip.output->open_audio(sample_format, config_backup.frequency, UADE_CHANNELS)) {
+  if (!uade_ip.output->open_audio(sample_format, state.permconfig.frequency, UADE_CHANNELS)) {
     abort_playing = 1;
     return;
   }
@@ -778,9 +745,9 @@ static void uade_play_file(char *filename)
     time_t curtime = time(NULL);
     if (curtime >= (content_mtime + 3600)) {
       struct stat st;
-      uade_save_content_db(contentname);
+      uade_save_content_db(contentname, &state);
       if (stat(contentname, &st) == 0)
-	content_mtime = st.st_mtime;
+    content_mtime = st.st_mtime;
     }
   }
 
@@ -828,7 +795,7 @@ static void uade_stop(void)
     if (record_playtime) {
       int play_time = (state.song->out_bytes * 1000) / (UADE_BYTES_PER_FRAME * state.config.frequency);
       if (state.song->md5[0] != 0)
-	uade_add_playtime(state.song->md5, play_time);
+    uade_add_playtime(&state, state.song->md5, play_time);
 
       state.song->playtime = play_time;
       state.song->cur_subsong = state.song->max_subsong;
@@ -922,5 +889,5 @@ static void uade_info_string(void)
     strlcpy(info, gui_filename, sizeof info);
 
   uade_ip.set_info(info, playtime, UADE_BYTES_PER_FRAME * state.config.frequency,
-		   state.config.frequency, UADE_CHANNELS);
+           state.config.frequency, UADE_CHANNELS);
 }

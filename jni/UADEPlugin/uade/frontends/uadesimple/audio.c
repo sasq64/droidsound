@@ -4,7 +4,7 @@
 
 #include <ao/ao.h>
 
-#include <uadeconstants.h>
+#include <uade/uadeconstants.h>
 
 #include "audio.h"
 #include "uadesimple.h"

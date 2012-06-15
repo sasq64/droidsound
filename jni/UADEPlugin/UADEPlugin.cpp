@@ -10,11 +10,11 @@
 #include "com_ssb_droidsound_plugins_UADEPlugin.h"
 
 extern "C" {
-#include "eagleplayer.h"
-#include "uadeipc.h"
-#include "uadecontrol.h"
-#include "uadeconf.h"
-#include "songdb.h"
+#include <uade/eagleplayer.h>
+#include <uade/uadeipc.h>
+#include <uade/uadecontrol.h>
+#include <uade/uadeconf.h>
+#include <uade/songdb.h>
 
 // int uade_init();
 // void uade_go();
@@ -42,7 +42,6 @@ char current_format[80] = "";
 
 
 static struct uade_ipc uadeipc;
-
 
 static struct uade_config uadeconf;
 
@@ -377,7 +376,7 @@ int init()
 	   memset(&state, 0, sizeof state);
 	    __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "baseDir os '%s'", baseDir);
 
-		uadeconf_loaded = uade_load_initial_config(uadeconfname, sizeof(uadeconfname), &main_config, NULL);
+		uadeconf_loaded = uade_load_initial_config(&state, uadeconfname, sizeof(uadeconfname), NULL);
 
 		strcpy(main_config.basedir.name, baseDir);
 

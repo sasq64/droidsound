@@ -20,8 +20,9 @@
 #include <limits.h>
 #include <ctype.h>
 #include <android/log.h>
-#include "uade.h"
-#include "unixatomic.h"
+
+/*#include <uadectl.h>*/
+#include <uade/unixatomic.h>
 
 
 static int url_to_fd(const char *url, int flags, mode_t mode)
@@ -69,8 +70,8 @@ void *uade_ipc_set_input(const char *input)
 {
   int fd;
   if ((fd = url_to_fd(input, O_RDONLY, 0)) < 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not open input file %s: %s\n", input, strerror(errno));
-    exit(-1);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Cannot open input file %s: %s\n", input, strerror(errno));
+    exit(1);
   }
   return (void *) ((intptr_t) fd);
 }
@@ -80,8 +81,8 @@ void *uade_ipc_set_output(const char *output)
 {
   int fd;
   if ((fd = url_to_fd(output, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not open output file %s: %s\n", output, strerror(errno));
-    exit(-1);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Cannot open output file %s: %s\n", output, strerror(errno));
+    exit(1);
   }
   return (void *) ((intptr_t) fd);
 }
@@ -92,15 +93,15 @@ static int uade_amiga_scandir(char *real, char *dirname, char *fake, int ml)
   DIR *dir;
   struct dirent *direntry;
   if (!(dir = opendir(dirname))) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't open dir (%s) (amiga scandir)\n", dirname);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Can't open dir (%s) (amiga scandir)\n", dirname);
     return 0;
   }
   while ((direntry = readdir(dir))) {
     if (!strcmp(fake, direntry->d_name)) {
       if (((int) strlcpy(real, direntry->d_name, ml)) >= ml) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s does not fit real", direntry->d_name);
-	closedir(dir);
-	return 0;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: %s does not fit real", direntry->d_name);
+    closedir(dir);
+    return 0;
       }
       break;
     }
@@ -113,9 +114,9 @@ static int uade_amiga_scandir(char *real, char *dirname, char *fake, int ml)
   while ((direntry = readdir(dir))) {
     if (!strcasecmp(fake, direntry->d_name)) {
       if (((int) strlcpy(real, direntry->d_name, ml)) >= ml) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s does not fit real", direntry->d_name);
-	closedir(dir);
-	return 0;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: %s does not fit real", direntry->d_name);
+    closedir(dir);
+    return 0;
       }
       break;
     }
@@ -150,11 +151,10 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
   FILE *file;
 
   if (strlcpy(copy, aname, sizeof(copy)) >= sizeof(copy)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: error: amiga tried to open a very long filename\nplease REPORT THIS!\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: error: Amiga tried to open a very long filename\nplease REPORT THIS!\n");
     return NULL;
   }
   ptr = copy;
-  /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: opening %s\n", ptr); */
   if ((separator = strchr(ptr, (int) ':'))) {
     len = (int) (separator - ptr);
     memcpy(dirname, ptr, len);
@@ -164,15 +164,14 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
     } else if (!strcasecmp(dirname, "S")) {
       snprintf(dirname, sizeof(dirname), "%s/S/", playerdir);
     } else {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: open_amiga_file: unknown amiga volume (%s)\n", aname);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: open_amiga_file: unknown amiga volume (%s)\n", aname);
       return NULL;
     }
     if (!(dir = opendir(dirname))) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't open dir (%s) (volume parsing)\n", dirname);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Can't open dir (%s) (volume parsing)\n", dirname);
       return NULL;
     }
     closedir(dir);
-    /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: opening from dir %s\n", dirname); */
     ptr = separator + 1;
   } else {
     if (*ptr == '/') {
@@ -196,24 +195,22 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
     if (uade_amiga_scandir(real, dirname, fake, sizeof(real))) {
       /* found matching entry */
       if (strlcat(dirname, real, sizeof(dirname)) >= sizeof(dirname)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: too long dir path (%s + %s)\n", dirname, real);
-	return NULL;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Too long dir path (%s + %s)\n", dirname, real);
+    return NULL;
       }
       if (strlcat(dirname, "/", sizeof(dirname)) >= sizeof(dirname)) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: too long dir path (%s + %s)\n", dirname, "/");
-	return NULL;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Too long dir path (%s + %s)\n", dirname, "/");
+    return NULL;
       }
     } else {
       /* didn't find entry */
-      /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s not found from (%s) (dir scanning)\n", fake, dirname); */
       return NULL;
     }
     ptr = separator + 1;
   }
-  /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: pass 3: (%s) (%s)\n", dirname, ptr); */
 
   if (!(dir = opendir(dirname))) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can't open dir (%s) (after dir scanning)\n", dirname);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can't open dir (%s) (after dir scanning)\n", dirname);
     return NULL;
   }
   closedir(dir);
@@ -221,16 +218,15 @@ FILE *uade_open_amiga_file(char *aname, const char *playerdir)
   if (uade_amiga_scandir(real, dirname, ptr, sizeof(real))) {
     /* found matching entry */
     if (strlcat(dirname, real, sizeof(dirname)) >= sizeof(dirname)) {
-      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: too long dir path (%s + %s)\n", dirname, real);
+      __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Too long dir path (%s + %s)\n", dirname, real);
       return NULL;
     }
   } else {
     /* didn't find entry */
-    /* __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: %s not found from %s\n", ptr, dirname); */
     return NULL;
   }
   if (!(file = fopen(dirname, "r"))) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: couldn't open file (%s) induced by (%s)\n", dirname, aname);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Couldn't open file (%s) induced by (%s)\n", dirname, aname);
   }
   return file;
 }
@@ -247,10 +243,10 @@ void uade_portable_initializations(void)
   while (*signum != -1) {
     while (1) {
       if ((sigaction(*signum, &act, NULL)) < 0) {
-	if (errno == EINTR)
-	  continue;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "can not ignore signal %d: %s\n", *signum, strerror(errno));
-	exit(-1);
+    if (errno == EINTR)
+      continue;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Cannot ignore signal %d: %s\n", *signum, strerror(errno));
+    exit(1);
       }
       break;
     }
@@ -260,13 +256,13 @@ void uade_portable_initializations(void)
 
 
 void uade_arch_spawn(struct uade_ipc *ipc, pid_t *uadepid,
-		     const char *uadename)
+             const char *uadename)
 {
   int fds[2];
   char input[32], output[32];
 
   if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds)) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Can not create socketpair: %s\n", strerror(errno));
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Cannot create socketpair: %s\n", strerror(errno));
     abort();
   }
 
@@ -289,7 +285,7 @@ void uade_arch_spawn(struct uade_ipc *ipc, pid_t *uadepid,
     /* close everything else but stdin, stdout, stderr, and in/out fds */
     for (fd = 3; fd < maxfds; fd++) {
       if (fd != fds[1])
-	atomic_close(fd);
+    atomic_close(fd);
     }
 
     /* give in/out fds as command line parameters to the uade process */
@@ -297,7 +293,7 @@ void uade_arch_spawn(struct uade_ipc *ipc, pid_t *uadepid,
     snprintf(output, sizeof(output), "fd://%d", fds[1]);
 
     execlp(uadename, uadename, "-i", input, "-o", output, (char *) NULL);
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade execlp failed: %s\n", strerror(errno));
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade execlp (%s) failed: %s\n", uadename, strerror(errno));
     abort();
   }
 

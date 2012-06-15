@@ -25,7 +25,7 @@
 #include "audio.h"
 #include "osemu.h"
 
-#include "uade.h"
+#include "uadectl.h"
 
 static unsigned int n_consecutive_skipped = 0;
 static unsigned int total_skipped = 0;
@@ -195,11 +195,11 @@ int rpt_available = 0;
 void reset_frame_rate_hack (void)
 {
     if (currprefs.m68k_speed != -1)
-	return;
+    return;
 
     if (! rpt_available) {
-	currprefs.m68k_speed = 0;
-	return;
+    currprefs.m68k_speed = 0;
+    return;
     }
 
     rpt_did_reset = 1;
@@ -210,10 +210,10 @@ void reset_frame_rate_hack (void)
 static inline void prepare_copper (void)
 {
     if (cop_state.vpos > vpos
-	|| cop_state.state == COP_stop)
+    || cop_state.state == COP_stop)
     {
-	eventtab[ev_copper].active = 0;
-	return;
+    eventtab[ev_copper].active = 0;
+    return;
     }
     prepare_copper_1 ();
 }
@@ -223,21 +223,21 @@ void check_prefs_changed_custom (void)
     currprefs.gfx_framerate = changed_prefs.gfx_framerate;
     /* Not really the right place... */
     if (currprefs.jport0 != changed_prefs.jport0
-	|| currprefs.jport1 != changed_prefs.jport1) {
-	currprefs.jport0 = changed_prefs.jport0;
-	currprefs.jport1 = changed_prefs.jport1;
+    || currprefs.jport1 != changed_prefs.jport1) {
+    currprefs.jport0 = changed_prefs.jport0;
+    currprefs.jport1 = changed_prefs.jport1;
     }
     currprefs.immediate_blits = changed_prefs.immediate_blits;
     currprefs.blits_32bit_enabled = changed_prefs.blits_32bit_enabled;
-	
+    
 }
 
 static inline void setclr (uae_u16 *p, uae_u16 val)
 {
     if (val & 0x8000)
-	*p |= val & 0x7FFF;
+    *p |= val & 0x7FFF;
     else
-	*p &= ~val;
+    *p &= ~val;
 }
 
 inline int current_hpos (void)
@@ -258,17 +258,17 @@ static void init_hz (void)
     isntsc = beamcon0 & 0x20 ? 0 : 1;
 
     if (!isntsc) {
-	maxvpos = MAXVPOS_PAL;
-	maxhpos = MAXHPOS_PAL;
-	minfirstline = MINFIRSTLINE_PAL;
-	vblank_endline = VBLANK_ENDLINE_PAL;
-	vblank_hz = VBLANK_HZ_PAL;
+    maxvpos = MAXVPOS_PAL;
+    maxhpos = MAXHPOS_PAL;
+    minfirstline = MINFIRSTLINE_PAL;
+    vblank_endline = VBLANK_ENDLINE_PAL;
+    vblank_hz = VBLANK_HZ_PAL;
     } else {
-	maxvpos = MAXVPOS_NTSC;
-	maxhpos = MAXHPOS_NTSC;
-	minfirstline = MINFIRSTLINE_NTSC;
-	vblank_endline = VBLANK_ENDLINE_NTSC;
-	vblank_hz = VBLANK_HZ_NTSC;
+    maxvpos = MAXVPOS_NTSC;
+    maxhpos = MAXHPOS_NTSC;
+    minfirstline = MINFIRSTLINE_NTSC;
+    vblank_endline = VBLANK_ENDLINE_NTSC;
+    vblank_hz = VBLANK_HZ_NTSC;
     }
     // write_log ("Using %s timing\n", isntsc ? "NTSC" : "PAL");
 }
@@ -298,7 +298,7 @@ static uae_u32 timehack_helper (void)
 #ifdef HAVE_GETTIMEOFDAY
     struct timeval tv;
     if (m68k_dreg (regs, 0) == 0)
-	return timehack_alive;
+    return timehack_alive;
 
     timehack_alive = 10;
 
@@ -317,9 +317,9 @@ static uae_u32 timehack_helper (void)
 static inline uae_u16 DENISEID (void)
 {
     if (currprefs.chipset_mask & CSMASK_AGA)
-	return 0xF8;
+    return 0xF8;
     if (currprefs.chipset_mask & CSMASK_ECS_DENISE)
-	return 0xFC;
+    return 0xFC;
     return 0xFFFF;
 }
 static inline uae_u16 DMACONR (void)
@@ -348,7 +348,7 @@ static inline uae_u16 VPOSR (void)
 static void VPOSW (uae_u16 v)
 {
     if (lof != (v & 0x8000))
-	lof_changed = 1;
+    lof_changed = 1;
     lof = v & 0x8000;
     /*
      * This register is much more fun on a real Amiga. You can program
@@ -377,7 +377,7 @@ static void COPJMP1 (uae_u16 a)
     cop_state.count = current_hpos () & ~1;
     prepare_copper ();
     if (eventtab[ev_copper].evtime == cycles && eventtab[ev_copper].active)
-	abort ();
+    abort ();
     events_schedule ();
 }
 
@@ -392,7 +392,7 @@ static void COPJMP2 (uae_u16 a)
     cop_state.count = current_hpos () & ~1;
     prepare_copper ();
     if (eventtab[ev_copper].evtime == cycles && eventtab[ev_copper].active)
-	abort ();
+    abort ();
     events_schedule ();
 }
 
@@ -412,40 +412,40 @@ static void DMACON (uae_u16 v)
     /* FIXME? Maybe we need to think a bit more about the master DMA enable
      * bit in these cases. */
     if ((dmacon & DMA_COPPER) > (oldcon & DMA_COPPER)) {
-	cop_state.ip = cop1lc;
-	cop_state.do_move = 0;
-	cop_state.ignore_next = 0;
-	cop_state.state = COP_read1;
-	cop_state.vpos = vpos;
-	cop_state.hpos = current_hpos () & ~1;
-	cop_state.count = current_hpos () & ~1;
-	prepare_copper ();
-	if (eventtab[ev_copper].evtime == cycles && eventtab[ev_copper].active)
-	    abort ();
+    cop_state.ip = cop1lc;
+    cop_state.do_move = 0;
+    cop_state.ignore_next = 0;
+    cop_state.state = COP_read1;
+    cop_state.vpos = vpos;
+    cop_state.hpos = current_hpos () & ~1;
+    cop_state.count = current_hpos () & ~1;
+    prepare_copper ();
+    if (eventtab[ev_copper].evtime == cycles && eventtab[ev_copper].active)
+        abort ();
     }
 
     update_audio ();
 
     for (i = 0; i < 4; i++) {
-	struct audio_channel_data *cdp = audio_channel + i;
+    struct audio_channel_data *cdp = audio_channel + i;
 
-	cdp->dmaen = (dmacon & 0x200) && (dmacon & (1<<i));
-	if (cdp->dmaen) {
-	    if (cdp->state == 0) {
-		cdp->state = 1;
-		cdp->pt = cdp->lc;
-		cdp->ptend = cdp->lc + 2 * (cdp->len ? cdp->len : 65536);
-		cdp->wper = cdp->per;
-		cdp->wlen = cdp->len;
-		cdp->data_written = 2;
-		cdp->evtime = eventtab[ev_hsync].evtime - cycles;
-	    }
-	} else {
-	    if (cdp->state == 1 || cdp->state == 5) {
-		cdp->state = 0;
-		cdp->current_sample = 0;
-	    }
-	}
+    cdp->dmaen = (dmacon & 0x200) && (dmacon & (1<<i));
+    if (cdp->dmaen) {
+        if (cdp->state == 0) {
+        cdp->state = 1;
+        cdp->pt = cdp->lc;
+        cdp->ptend = cdp->lc + 2 * (cdp->len ? cdp->len : 65536);
+        cdp->wper = cdp->per;
+        cdp->wlen = cdp->len;
+        cdp->data_written = 2;
+        cdp->evtime = eventtab[ev_hsync].evtime - cycles;
+        }
+    } else {
+        if (cdp->state == 1 || cdp->state == 5) {
+        cdp->state = 0;
+        cdp->current_sample = 0;
+        }
+    }
     }
 
     events_schedule();
@@ -456,7 +456,7 @@ static void DMACON (uae_u16 v)
 static inline void INTENA (uae_u16 v)
 {
 /*    if (trace_intena)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "INTENA: %04x\n", v);*/
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "INTENA: %04x\n", v);*/
     setclr(&intena,v); regs.spcflags |= SPCFLAG_INT;
 }
 void INTREQ (uae_u16 v)
@@ -667,19 +667,19 @@ static uae_u16 POTGOR (void)
     v |= v >> 1;
 
     if (JSEM_ISMOUSE (0, &currprefs)) {
-	if (buttonstate[2])
-	    v &= 0xFBFF;
+    if (buttonstate[2])
+        v &= 0xFBFF;
 
-	if (buttonstate[1])
-	    v &= 0xFEFF;
+    if (buttonstate[1])
+        v &= 0xFEFF;
     } else if (JSEM_ISJOY0 (0, &currprefs) || JSEM_ISJOY1 (0, &currprefs)) {
-	if (joy0button & 2) v &= 0xfbff;
-	if (joy0button & 4) v &= 0xfeff;
+    if (joy0button & 2) v &= 0xfbff;
+    if (joy0button & 4) v &= 0xfeff;
     }
 
     if (JSEM_ISJOY0 (1, &currprefs) || JSEM_ISJOY1 (1, &currprefs)) {
-	if (joy1button & 2) v &= 0xbfff;
-	if (joy1button & 4) v &= 0xefff;
+    if (joy1button & 2) v &= 0xbfff;
+    if (joy1button & 4) v &= 0xefff;
     }
 
     return v;
@@ -689,10 +689,10 @@ static uae_u16 POT0DAT (void)
 {
     static uae_u16 cnt = 0;
     if (JSEM_ISMOUSE (0, &currprefs)) {
-	if (buttonstate[2])
-	    cnt = ((cnt + 1) & 0xFF) | (cnt & 0xFF00);
-	if (buttonstate[1])
-	    cnt += 0x100;
+    if (buttonstate[2])
+        cnt = ((cnt + 1) & 0xFF) | (cnt & 0xFF00);
+    if (buttonstate[1])
+        cnt += 0x100;
     }
 
     return cnt;
@@ -716,9 +716,9 @@ static void JOYTEST (uae_u16 v)
 static inline void copper_adjust_diw (struct copper *cst)
 {
     if (cst->vdiw == DIW_waiting_start && vpos == plffirstline)
-	cst->vdiw = DIW_waiting_stop;
+    cst->vdiw = DIW_waiting_stop;
     if (cst->vdiw == DIW_waiting_stop && vpos == plflastline)
-	cst->vdiw = DIW_waiting_start;
+    cst->vdiw = DIW_waiting_start;
 }
 
 /* Determine which cycles are available for the copper in a display
@@ -750,19 +750,19 @@ static inline int copper_cant_read (enum diw_states diw, int hpos, int planes)
     int t;
 
     if (hpos >= ((maxhpos - 2) & ~1))
-	return 1;
+    return 1;
 
     if (currprefs.chipset_mask & CSMASK_AGA)
-	/* FIXME */
-	return 0;
+    /* FIXME */
+    return 0;
 
     if (! copper_in_playfield (diw, hpos))
-	return 0;
+    return 0;
 
     t = cycles_for_plane[planes][hpos & 7];
 #if 0
     if (t == -1)
-	abort ();
+    abort ();
 #endif
     return t;
 }
@@ -779,160 +779,160 @@ static void update_copper_1 (int until_hpos)
     hcmp = (cop_state.i1 & cop_state.i2 & 0xFE);
 
     if (cop_state.state == COP_wait2)
-	cop_state.state = COP_wait1b;
+    cop_state.state = COP_wait1b;
 
     for (;;) {
-	if (c_hpos == (maxhpos & ~1)) {
-	    c_hpos = 0;
-	    cop_state.count = 0;
-	    c_vpos++;
-	}
+    if (c_hpos == (maxhpos & ~1)) {
+        c_hpos = 0;
+        cop_state.count = 0;
+        c_vpos++;
+    }
 
-	if (! dmaen (DMA_COPPER))
-	    cop_state.state = COP_stop;
+    if (! dmaen (DMA_COPPER))
+        cop_state.state = COP_stop;
 
-	if (c_vpos > vpos
-	    || c_hpos > until_hpos
-	    || cop_state.state == COP_stop)
-	    break;
+    if (c_vpos > vpos
+        || c_hpos > until_hpos
+        || cop_state.state == COP_stop)
+        break;
 
-	if (c_hpos - COP_OFFSET == plfstrt)
-	    copper_adjust_diw (&cop_state);
+    if (c_hpos - COP_OFFSET == plfstrt)
+        copper_adjust_diw (&cop_state);
 
-	switch (cop_state.state) {
-	 case COP_rdelay1:
-	    cop_state.state = COP_read1;
-	    break;
+    switch (cop_state.state) {
+     case COP_rdelay1:
+        cop_state.state = COP_read1;
+        break;
 
-	 case COP_read1:
-	    if (copper_cant_read (cop_state.vdiw, c_hpos, corrected_nr_planes_from_bplcon0))
-		break;
+     case COP_read1:
+        if (copper_cant_read (cop_state.vdiw, c_hpos, corrected_nr_planes_from_bplcon0))
+        break;
 
-	    if (cop_state.do_move) {
-		cop_state.do_move = 0;
-		if (cop_state.i1 < (copcon & 2 ? ((currprefs.chipset_mask & CSMASK_AGA) ? 0 : 0x40u) : 0x80u)) {
-		    cop_state.state = COP_stop;
-		    break;
-		}
-		switch (cop_state.i1) {
-		 case 0x088:
-		    cop_state.ip = cop1lc;
-		    cop_state.state = COP_rdelay1;
-		    break;
-		 case 0x08A:
-		    cop_state.ip = cop2lc;
-		    cop_state.state = COP_rdelay1;
-		    break;
-		 default:
-		    custom_wput_1 (c_hpos, cop_state.i1, cop_state.i2);
-		    break;
-		}
-		if (cop_state.state != COP_read1)
-		    break;
-	    }
-	    cop_state.i1 = chipmem_bank.wget (cop_state.ip);
-	    cop_state.ip += 2;
-	    cop_state.state = COP_read2;
-	    break;
+        if (cop_state.do_move) {
+        cop_state.do_move = 0;
+        if (cop_state.i1 < (copcon & 2 ? ((currprefs.chipset_mask & CSMASK_AGA) ? 0 : 0x40u) : 0x80u)) {
+            cop_state.state = COP_stop;
+            break;
+        }
+        switch (cop_state.i1) {
+         case 0x088:
+            cop_state.ip = cop1lc;
+            cop_state.state = COP_rdelay1;
+            break;
+         case 0x08A:
+            cop_state.ip = cop2lc;
+            cop_state.state = COP_rdelay1;
+            break;
+         default:
+            custom_wput_1 (c_hpos, cop_state.i1, cop_state.i2);
+            break;
+        }
+        if (cop_state.state != COP_read1)
+            break;
+        }
+        cop_state.i1 = chipmem_bank.wget (cop_state.ip);
+        cop_state.ip += 2;
+        cop_state.state = COP_read2;
+        break;
 
-	 case COP_read2:
-	    if (copper_cant_read (cop_state.vdiw, c_hpos, corrected_nr_planes_from_bplcon0))
-		break;
-	    cop_state.i2 = chipmem_bank.wget (cop_state.ip);
-	    cop_state.ip += 2;
-	    if (cop_state.ignore_next) {
-		cop_state.ignore_next = 0;
-		cop_state.state = COP_read1;
-		break;
-	    }
-	    if ((cop_state.i1 & 1) == 0) {
-		cop_state.state = COP_read1;
-		cop_state.do_move = 1;
-	    } else {
-		vp = vpos & (((cop_state.i2 >> 8) & 0x7F) | 0x80);
-		hp = cop_state.count & (cop_state.i2 & 0xFE);
-		vcmp = ((cop_state.i1 & (cop_state.i2 | 0x8000)) >> 8);
-		hcmp = (cop_state.i1 & cop_state.i2 & 0xFE);
+     case COP_read2:
+        if (copper_cant_read (cop_state.vdiw, c_hpos, corrected_nr_planes_from_bplcon0))
+        break;
+        cop_state.i2 = chipmem_bank.wget (cop_state.ip);
+        cop_state.ip += 2;
+        if (cop_state.ignore_next) {
+        cop_state.ignore_next = 0;
+        cop_state.state = COP_read1;
+        break;
+        }
+        if ((cop_state.i1 & 1) == 0) {
+        cop_state.state = COP_read1;
+        cop_state.do_move = 1;
+        } else {
+        vp = vpos & (((cop_state.i2 >> 8) & 0x7F) | 0x80);
+        hp = cop_state.count & (cop_state.i2 & 0xFE);
+        vcmp = ((cop_state.i1 & (cop_state.i2 | 0x8000)) >> 8);
+        hcmp = (cop_state.i1 & cop_state.i2 & 0xFE);
 
-		if ((cop_state.i2 & 1) == 0) {
-		    cop_state.state = COP_wait1;
-		    if (cop_state.i1 == 0xFFFF && cop_state.i2 == 0xFFFE)
-			cop_state.state = COP_stop;
-		} else {
-		    /* Skip instruction.  */
-		    if ((vp > vcmp || (vp == vcmp && hp >= hcmp))
-			&& ((cop_state.i2 & 0x8000) != 0 || ! (DMACONR() & 0x4000)))
-			cop_state.ignore_next = 1;
-		    cop_state.state = COP_read1;
-		}
-	    }
-	    break;
+        if ((cop_state.i2 & 1) == 0) {
+            cop_state.state = COP_wait1;
+            if (cop_state.i1 == 0xFFFF && cop_state.i2 == 0xFFFE)
+            cop_state.state = COP_stop;
+        } else {
+            /* Skip instruction.  */
+            if ((vp > vcmp || (vp == vcmp && hp >= hcmp))
+            && ((cop_state.i2 & 0x8000) != 0 || ! (DMACONR() & 0x4000)))
+            cop_state.ignore_next = 1;
+            cop_state.state = COP_read1;
+        }
+        }
+        break;
 
-	 case COP_wait1:
-	    if (copper_cant_read (cop_state.vdiw, c_hpos, corrected_nr_planes_from_bplcon0))
-		break;
+     case COP_wait1:
+        if (copper_cant_read (cop_state.vdiw, c_hpos, corrected_nr_planes_from_bplcon0))
+        break;
 
-	    /* fall through */
+        /* fall through */
 
-	 case COP_wait1b:
-	    {
-		int do_wait2 = cop_state.state == COP_wait1b;
-		cop_state.state = COP_wait2;
-		if (vp == vcmp && corrected_nr_planes_from_bplcon0 < 8) {
-		    int t = cop_state.count + 2;
-		    int next_count = (t & waitmasktab[cop_state.i2 & 0xfe]) | hcmp;
-		    int nexthpos;
-		    if (next_count < t)
-			next_count = t;
-		    nexthpos = c_hpos + next_count - cop_state.count;
-		    if (nexthpos < (maxhpos & ~1)) {
-			if (c_hpos - COP_OFFSET < plfstrt && nexthpos - COP_OFFSET >= plfstrt)
-			    copper_adjust_diw (&cop_state);
-			c_hpos = nexthpos;
-			cop_state.count = next_count;
-			do_wait2 = 1;
-		    }
-		}
-		if (! do_wait2)
-		    break;
-	    }
+     case COP_wait1b:
+        {
+        int do_wait2 = cop_state.state == COP_wait1b;
+        cop_state.state = COP_wait2;
+        if (vp == vcmp && corrected_nr_planes_from_bplcon0 < 8) {
+            int t = cop_state.count + 2;
+            int next_count = (t & waitmasktab[cop_state.i2 & 0xfe]) | hcmp;
+            int nexthpos;
+            if (next_count < t)
+            next_count = t;
+            nexthpos = c_hpos + next_count - cop_state.count;
+            if (nexthpos < (maxhpos & ~1)) {
+            if (c_hpos - COP_OFFSET < plfstrt && nexthpos - COP_OFFSET >= plfstrt)
+                copper_adjust_diw (&cop_state);
+            c_hpos = nexthpos;
+            cop_state.count = next_count;
+            do_wait2 = 1;
+            }
+        }
+        if (! do_wait2)
+            break;
+        }
 
-	    /* fall through */
+        /* fall through */
 
-	 case COP_wait2:
-	    if (vp < vcmp) {
-		if (c_hpos - COP_OFFSET < plfstrt)
-		    copper_adjust_diw (&cop_state);
+     case COP_wait2:
+        if (vp < vcmp) {
+        if (c_hpos - COP_OFFSET < plfstrt)
+            copper_adjust_diw (&cop_state);
 
-		c_vpos++;
-		c_hpos = 0;
-		cop_state.count = 0;
-		continue;
-	    }
-	    hp = cop_state.count & (cop_state.i2 & 0xFE);
-	    if (vp == vcmp && hp < hcmp)
-		break;
-	    /* Now we know that the comparisons were successful.  */
-	    if ((cop_state.i2 & 0x8000) == 0x8000 || ! (DMACONR() & 0x4000))
-		cop_state.state = COP_read1;
-	    else {
-		/* We need to wait for the blitter.  It won't stop while
-		 * we're in update_copper, so we _could_ as well proceed to
-		 * until_hpos in one big step.  There are some tricky
-		 * issues to be considered, though, so use the slow method
-		 * for now.  */
-		cop_state.state = COP_bltwait;
-	    }
-	    break;
+        c_vpos++;
+        c_hpos = 0;
+        cop_state.count = 0;
+        continue;
+        }
+        hp = cop_state.count & (cop_state.i2 & 0xFE);
+        if (vp == vcmp && hp < hcmp)
+        break;
+        /* Now we know that the comparisons were successful.  */
+        if ((cop_state.i2 & 0x8000) == 0x8000 || ! (DMACONR() & 0x4000))
+        cop_state.state = COP_read1;
+        else {
+        /* We need to wait for the blitter.  It won't stop while
+         * we're in update_copper, so we _could_ as well proceed to
+         * until_hpos in one big step.  There are some tricky
+         * issues to be considered, though, so use the slow method
+         * for now.  */
+        cop_state.state = COP_bltwait;
+        }
+        break;
 
-	 default:
-	    /* Delay cycles.  */
-	    break;	    
-	}
+     default:
+        /* Delay cycles.  */
+        break;	    
+    }
 
-	c_hpos += 2;
-	if (corrected_nr_planes_from_bplcon0 < 8 || ! copper_in_playfield (cop_state.vdiw, c_hpos))
-	    cop_state.count += 2;
+    c_hpos += 2;
+    if (corrected_nr_planes_from_bplcon0 < 8 || ! copper_in_playfield (cop_state.vdiw, c_hpos))
+        cop_state.count += 2;
     }
     cop_state.hpos = c_hpos;
     cop_state.vpos = c_vpos;
@@ -941,9 +941,9 @@ static void update_copper_1 (int until_hpos)
 static inline void update_copper (int until_hpos)
 {
     if (cop_state.vpos > vpos
-	|| cop_state.hpos > until_hpos
-	|| cop_state.state == COP_stop)
-	return;
+    || cop_state.hpos > until_hpos
+    || cop_state.state == COP_stop)
+    return;
     update_copper_1 (until_hpos);
 }
 
@@ -954,7 +954,7 @@ static int dangerous_reg (int reg)
      * Sprite pointers, control registers, and data.
      * Color registers.  */
     if (reg >= 0xE0 && reg < 0x1C0)
-	return 0;
+    return 0;
     return 1;
 }
 
@@ -969,160 +969,160 @@ static void prepare_copper_1 (void)
     hcmp = (cop_state.i1 & cop_state.i2 & 0xFE);
 
     if (cst.state == COP_wait2)
-	cst.state = COP_wait1b;
+    cst.state = COP_wait1b;
 
     for (;;) {
-	if (cst.hpos == (maxhpos & ~1)) {
-	    cst.hpos = 0;
-	    cst.count = 0;
-	    cst.vpos++;
-	}
+    if (cst.hpos == (maxhpos & ~1)) {
+        cst.hpos = 0;
+        cst.count = 0;
+        cst.vpos++;
+    }
 
-	if (! dmaen (DMA_COPPER))
-	    cst.state = COP_stop;
+    if (! dmaen (DMA_COPPER))
+        cst.state = COP_stop;
 
-	if (cst.vpos > vpos
-	    || cst.state == COP_stop)
-	{
-	    eventtab[ev_copper].active = 0;
-	    return;
-	}
+    if (cst.vpos > vpos
+        || cst.state == COP_stop)
+    {
+        eventtab[ev_copper].active = 0;
+        return;
+    }
 
-	if (cst.hpos - COP_OFFSET == plfstrt)
-	    copper_adjust_diw (&cst);
+    if (cst.hpos - COP_OFFSET == plfstrt)
+        copper_adjust_diw (&cst);
 
-	switch (cst.state) {
-	 case COP_rdelay1:
-	    cst.state = COP_read1;
-	    break;
+    switch (cst.state) {
+     case COP_rdelay1:
+        cst.state = COP_read1;
+        break;
 
-	 case COP_read1:
-	    if (copper_cant_read (cst.vdiw, cst.hpos, corrected_nr_planes_from_bplcon0))
-		break;
+     case COP_read1:
+        if (copper_cant_read (cst.vdiw, cst.hpos, corrected_nr_planes_from_bplcon0))
+        break;
 
-	    if (cst.do_move) {
-		cst.do_move = 0;
-		if (cst.i1 < (copcon & 2 ? ((currprefs.chipset_mask & CSMASK_AGA) ? 0 : 0x40u) : 0x80u)) {
-		    cst.state = COP_stop;
-		    eventtab[ev_copper].active = 0;
-		    return;
-		} else if (dangerous_reg (cst.i1)) {
-		    eventtab[ev_copper].active = 1;
-		    eventtab[ev_copper].oldcycles = cycles;
-		    eventtab[ev_copper].evtime = cycles + cst.hpos - current_hpos () + (cst.vpos - cop_state.vpos) * maxhpos;
-		    return;
-		}
-	    }
+        if (cst.do_move) {
+        cst.do_move = 0;
+        if (cst.i1 < (copcon & 2 ? ((currprefs.chipset_mask & CSMASK_AGA) ? 0 : 0x40u) : 0x80u)) {
+            cst.state = COP_stop;
+            eventtab[ev_copper].active = 0;
+            return;
+        } else if (dangerous_reg (cst.i1)) {
+            eventtab[ev_copper].active = 1;
+            eventtab[ev_copper].oldcycles = cycles;
+            eventtab[ev_copper].evtime = cycles + cst.hpos - current_hpos () + (cst.vpos - cop_state.vpos) * maxhpos;
+            return;
+        }
+        }
 
-	    cst.i1 = chipmem_bank.wget (cst.ip);
-	    cst.ip += 2;
-	    cst.state = COP_read2;
-	    break;
+        cst.i1 = chipmem_bank.wget (cst.ip);
+        cst.ip += 2;
+        cst.state = COP_read2;
+        break;
 
-	 case COP_read2:
-	    if (copper_cant_read (cst.vdiw, cst.hpos, corrected_nr_planes_from_bplcon0))
-		break;
-	    cst.i2 = chipmem_bank.wget (cst.ip);
-	    cst.ip += 2;
-	    if (cst.ignore_next) {
-		cst.ignore_next = 0;
-		cst.state = COP_read1;
-		break;
-	    }
-	    if ((cst.i1 & 1) == 0) {
-		cst.state = COP_read1;
-		cst.do_move = 1;
-	    } else {
-		vp = vpos & (((cst.i2 >> 8) & 0x7F) | 0x80);
-		hp = cst.count & (cst.i2 & 0xFE);
-		vcmp = ((cst.i1 & (cst.i2 | 0x8000)) >> 8);
-		hcmp = (cst.i1 & cst.i2 & 0xFE);
+     case COP_read2:
+        if (copper_cant_read (cst.vdiw, cst.hpos, corrected_nr_planes_from_bplcon0))
+        break;
+        cst.i2 = chipmem_bank.wget (cst.ip);
+        cst.ip += 2;
+        if (cst.ignore_next) {
+        cst.ignore_next = 0;
+        cst.state = COP_read1;
+        break;
+        }
+        if ((cst.i1 & 1) == 0) {
+        cst.state = COP_read1;
+        cst.do_move = 1;
+        } else {
+        vp = vpos & (((cst.i2 >> 8) & 0x7F) | 0x80);
+        hp = cst.count & (cst.i2 & 0xFE);
+        vcmp = ((cst.i1 & (cst.i2 | 0x8000)) >> 8);
+        hcmp = (cst.i1 & cst.i2 & 0xFE);
 
-		if ((cst.i2 & 1) == 0) {
-		    cst.state = COP_wait1;
-		    if (cst.i1 == 0xFFFF && cst.i2 == 0xFFFE)
-			cst.state = COP_stop;
-		} else {
-		    /* Skip instruction.  */
-		    if ((vp > vcmp || (vp == vcmp && hp >= hcmp))
-			&& ((cst.i2 & 0x8000) != 0 || ! (DMACONR() & 0x4000)))
-			cst.ignore_next = 1;
-		    cst.state = COP_read1;
-		}
-	    }
-	    break;
+        if ((cst.i2 & 1) == 0) {
+            cst.state = COP_wait1;
+            if (cst.i1 == 0xFFFF && cst.i2 == 0xFFFE)
+            cst.state = COP_stop;
+        } else {
+            /* Skip instruction.  */
+            if ((vp > vcmp || (vp == vcmp && hp >= hcmp))
+            && ((cst.i2 & 0x8000) != 0 || ! (DMACONR() & 0x4000)))
+            cst.ignore_next = 1;
+            cst.state = COP_read1;
+        }
+        }
+        break;
 
-	 case COP_wait1:
-	    if (copper_cant_read (cst.vdiw, cst.hpos, corrected_nr_planes_from_bplcon0))
-		break;
+     case COP_wait1:
+        if (copper_cant_read (cst.vdiw, cst.hpos, corrected_nr_planes_from_bplcon0))
+        break;
 
-	    /* fall through */
+        /* fall through */
 
-	 case COP_wait1b:
-	    {
-		int do_wait2 = cst.state == COP_wait1b;
-		cst.state = COP_wait2;
-		if (vp == vcmp && corrected_nr_planes_from_bplcon0 < 8) {
-		    int t = cst.count + 2;
-		    int next_count = (t & waitmasktab[cst.i2 & 0xfe]) | hcmp;
-		    int nexthpos;
-		    if (next_count < t)
-			next_count = t;
-		    nexthpos = cst.hpos + next_count - cst.count;
-		    if (nexthpos < (maxhpos & ~1)) {
-			if (cst.hpos - COP_OFFSET < plfstrt && nexthpos - COP_OFFSET >= plfstrt)
-			    copper_adjust_diw (&cst);
-			cst.hpos = nexthpos;
-			cst.count = next_count;
-			do_wait2 = 1;
-		    }
-		}
-		if (! do_wait2)
-		    break;
-	    }
+     case COP_wait1b:
+        {
+        int do_wait2 = cst.state == COP_wait1b;
+        cst.state = COP_wait2;
+        if (vp == vcmp && corrected_nr_planes_from_bplcon0 < 8) {
+            int t = cst.count + 2;
+            int next_count = (t & waitmasktab[cst.i2 & 0xfe]) | hcmp;
+            int nexthpos;
+            if (next_count < t)
+            next_count = t;
+            nexthpos = cst.hpos + next_count - cst.count;
+            if (nexthpos < (maxhpos & ~1)) {
+            if (cst.hpos - COP_OFFSET < plfstrt && nexthpos - COP_OFFSET >= plfstrt)
+                copper_adjust_diw (&cst);
+            cst.hpos = nexthpos;
+            cst.count = next_count;
+            do_wait2 = 1;
+            }
+        }
+        if (! do_wait2)
+            break;
+        }
 
-	    /* fall through */
-	    
-	 case COP_wait2:
-	    if (vp < vcmp) {
-		if (cst.hpos - COP_OFFSET < plfstrt)
-		    copper_adjust_diw (&cst);
+        /* fall through */
+        
+     case COP_wait2:
+        if (vp < vcmp) {
+        if (cst.hpos - COP_OFFSET < plfstrt)
+            copper_adjust_diw (&cst);
 
-		cst.vpos++;
-		cst.count = 0;
-		cst.hpos = 0;
-		continue;
-	    }
-	    hp = cst.count & (cst.i2 & 0xFE);
-	    if (vp == vcmp && hp < hcmp)
-		break;
+        cst.vpos++;
+        cst.count = 0;
+        cst.hpos = 0;
+        continue;
+        }
+        hp = cst.count & (cst.i2 & 0xFE);
+        if (vp == vcmp && hp < hcmp)
+        break;
 #if 0
-	    if (nexthpos != -1)
-		if (nexthpos != cst.count)
-		    __android_log_print(ANDROID_LOG_VERBOSE, "UADE","ERROR\n");
-	    nexthpos = -1;
+        if (nexthpos != -1)
+        if (nexthpos != cst.count)
+            __android_log_print(ANDROID_LOG_VERBOSE, "UADE","ERROR\n");
+        nexthpos = -1;
 #endif
-	    /* Now we know that the comparisons were successful.  */
-	    if ((cst.i2 & 0x8000) == 0x8000 || ! (DMACONR() & 0x4000))
-		cst.state = COP_read1;
-	    else {
-		/* We need to wait for the blitter.  It won't stop while
-		 * we're in update_copper, so we _could_ as well proceed to
-		 * until_hpos in one big step.  There are some tricky
-		 * issues to be considered, though, so use the slow method
-		 * for now.  */
-		cst.state = COP_bltwait;
-	    }
-	    break;
+        /* Now we know that the comparisons were successful.  */
+        if ((cst.i2 & 0x8000) == 0x8000 || ! (DMACONR() & 0x4000))
+        cst.state = COP_read1;
+        else {
+        /* We need to wait for the blitter.  It won't stop while
+         * we're in update_copper, so we _could_ as well proceed to
+         * until_hpos in one big step.  There are some tricky
+         * issues to be considered, though, so use the slow method
+         * for now.  */
+        cst.state = COP_bltwait;
+        }
+        break;
 
-	 default:
-	    /* Delay cycles.  */
-	    break;	    
-	}
+     default:
+        /* Delay cycles.  */
+        break;	    
+    }
 
-	cst.hpos += 2;
-	if (corrected_nr_planes_from_bplcon0 < 8 || ! copper_in_playfield (cst.vdiw, cst.hpos))
-	    cst.count += 2;
+    cst.hpos += 2;
+    if (corrected_nr_planes_from_bplcon0 < 8 || ! copper_in_playfield (cst.vdiw, cst.hpos))
+        cst.count += 2;
     }
 }
 
@@ -1141,41 +1141,41 @@ static void adjust_array_sizes (void)
 {
 #ifdef OS_WITHOUT_MEMORY_MANAGEMENT
     if (delta_sprite_draw) {
-	void *p1,*p2;
-	int mcc = max_sprite_draw + 200 + delta_sprite_draw;
-	delta_sprite_draw = 0;
-	p1 = realloc (sprite_positions[0], mcc * sizeof (struct sprite_draw));
-	p2 = realloc (sprite_positions[1], mcc * sizeof (struct sprite_draw));
-	if (p1) sprite_positions[0] = p1;
-	if (p2) sprite_positions[1] = p2;
-	if (p1 && p2) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_sprite_draw=%d\n",mcc);
-	    max_sprite_draw = mcc;
-	}
+    void *p1,*p2;
+    int mcc = max_sprite_draw + 200 + delta_sprite_draw;
+    delta_sprite_draw = 0;
+    p1 = realloc (sprite_positions[0], mcc * sizeof (struct sprite_draw));
+    p2 = realloc (sprite_positions[1], mcc * sizeof (struct sprite_draw));
+    if (p1) sprite_positions[0] = p1;
+    if (p2) sprite_positions[1] = p2;
+    if (p1 && p2) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_sprite_draw=%d\n",mcc);
+        max_sprite_draw = mcc;
+    }
     }
     if (delta_color_change) {
-	void *p1,*p2;
-	int mcc = max_color_change + 200 + delta_color_change;
-	delta_color_change = 0;
-	p1 = realloc (color_changes[0], mcc * sizeof (struct color_change));
-	p2 = realloc (color_changes[1], mcc * sizeof (struct color_change));
-	if (p1) color_changes[0] = p1;
-	if (p2) color_changes[1] = p2;
-	if (p1 && p2) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_color_change=%d\n",mcc);
-	    max_color_change = mcc;
-	}
+    void *p1,*p2;
+    int mcc = max_color_change + 200 + delta_color_change;
+    delta_color_change = 0;
+    p1 = realloc (color_changes[0], mcc * sizeof (struct color_change));
+    p2 = realloc (color_changes[1], mcc * sizeof (struct color_change));
+    if (p1) color_changes[0] = p1;
+    if (p2) color_changes[1] = p2;
+    if (p1 && p2) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_color_change=%d\n",mcc);
+        max_color_change = mcc;
+    }
     }
     if (delta_delay_change) {
-	void *p;
-	int mcc = max_delay_change + 200 + delta_delay_change;
-	delta_delay_change = 0;
-	p = realloc (delay_changes, mcc * sizeof (struct delay_change));
-	if (p) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_delay_change=%d\n",mcc);
-	    delay_changes = p;
-	    max_delay_change = mcc;
-	}
+    void *p;
+    int mcc = max_delay_change + 200 + delta_delay_change;
+    delta_delay_change = 0;
+    p = realloc (delay_changes, mcc * sizeof (struct delay_change));
+    if (p) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "new max_delay_change=%d\n",mcc);
+        delay_changes = p;
+        max_delay_change = mcc;
+    }
     }
 #endif
 }
@@ -1183,19 +1183,19 @@ static void adjust_array_sizes (void)
 static void vsync_handler (void)
 {
     if (currprefs.m68k_speed == -1)
-	rpt_did_reset = 0;
+    rpt_did_reset = 0;
 
     INTREQ (0x8020);
     if (bplcon0 & 4)
-	lof ^= 0x8000;
+    lof ^= 0x8000;
 
     if (quit_program > 0)
-	return;
+    return;
 
     /* For now, let's only allow this to change at vsync time.  It gets too
      * hairy otherwise.  */
     if (beamcon0 != new_beamcon0)
-	init_hz ();
+    init_hz ();
 
     lof_changed = 0;
 
@@ -1210,25 +1210,25 @@ static void vsync_handler (void)
 
 #ifdef HAVE_GETTIMEOFDAY
     {
-	struct timeval tv;
-	unsigned long int newtime;
+    struct timeval tv;
+    unsigned long int newtime;
 
-	gettimeofday(&tv,NULL);
-	newtime = (tv.tv_sec-seconds_base) * 1000 + tv.tv_usec / 1000;
+    gettimeofday(&tv,NULL);
+    newtime = (tv.tv_sec-seconds_base) * 1000 + tv.tv_usec / 1000;
 
-	if (!bogusframe) {
-	    lastframetime = newtime - msecs;
-	    frametime += lastframetime;
-	    timeframes++;
-	}
-	msecs = newtime;
-	bogusframe = 0;
+    if (!bogusframe) {
+        lastframetime = newtime - msecs;
+        frametime += lastframetime;
+        timeframes++;
+    }
+    msecs = newtime;
+    bogusframe = 0;
     }
 #endif
     if (ievent_alive > 0)
-	ievent_alive--;
+    ievent_alive--;
     if (timehack_alive > 0)
-	timehack_alive--;
+    timehack_alive--;
     CIA_vsync_handler();
 }
 
@@ -1245,41 +1245,41 @@ static void hsync_handler (void)
     
     /* Sound data is fetched at the beginning of each line */
     for (nr = 0; nr < 4; nr++) {
-	struct audio_channel_data *cdp = audio_channel + nr;
+    struct audio_channel_data *cdp = audio_channel + nr;
 
-	if (cdp->data_written == 2) {
-	    cdp->data_written = 0;
+    if (cdp->data_written == 2) {
+        cdp->data_written = 0;
 
 #if AUDIO_DEBUG	   
-	    if (cdp->state != 0 && cdp->pt >= cdp->ptend) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio DMA fetch overrun on channel %d: %.8x/%.8x\n", nr, cdp->pt, cdp->ptend);
-	    }
+        if (cdp->state != 0 && cdp->pt >= cdp->ptend) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio DMA fetch overrun on channel %d: %.8x/%.8x\n", nr, cdp->pt, cdp->ptend);
+        }
 #endif
 
-	    cdp->nextdat = chipmem_bank.wget(cdp->pt);
+        cdp->nextdat = chipmem_bank.wget(cdp->pt);
 
-	    cdp->nextdatpt = cdp->pt;
-	    cdp->nextdatptend = cdp->ptend;
+        cdp->nextdatpt = cdp->pt;
+        cdp->nextdatptend = cdp->ptend;
 
-	    if (cdp->wlen != 1)
-		cdp->pt += 2;
+        if (cdp->wlen != 1)
+        cdp->pt += 2;
 
-	    if (cdp->state == 2 || cdp->state == 3) {
-		if (cdp->wlen == 1) {
-		    cdp->pt = cdp->lc;
-		    cdp->ptend = cdp->lc + 2 * (cdp->len ? cdp->len : 65536);
-		    cdp->wlen = cdp->len;
-		    cdp->intreq2 = 1;
-		} else {
-		    cdp->wlen = (cdp->wlen - 1) & 0xFFFF;
-		}
-	    }
-	}
+        if (cdp->state == 2 || cdp->state == 3) {
+        if (cdp->wlen == 1) {
+            cdp->pt = cdp->lc;
+            cdp->ptend = cdp->lc + 2 * (cdp->len ? cdp->len : 65536);
+            cdp->wlen = cdp->len;
+            cdp->intreq2 = 1;
+        } else {
+            cdp->wlen = (cdp->wlen - 1) & 0xFFFF;
+        }
+        }
+    }
     }
   
     if (++vpos == (maxvpos + (lof != 0))) {
-	vpos = 0;
-	vsync_handler();
+    vpos = 0;
+    vsync_handler();
     }
   
     is_lastline = vpos + 1 == maxvpos + (lof != 0) && currprefs.m68k_speed == -1 && ! rpt_did_reset;
@@ -1290,8 +1290,8 @@ static void init_eventtab (void)
     int i;
 
     for(i = 0; i < ev_max; i++) {
-	eventtab[i].active = 0;
-	eventtab[i].oldcycles = 0;
+    eventtab[i].active = 0;
+    eventtab[i].oldcycles = 0;
     }
 
     eventtab[ev_cia].handler = CIA_handler;
@@ -1353,13 +1353,13 @@ void customreset (void)
 void dumpcustom (void)
 {
     write_log ("DMACON: %x INTENA: %x INTREQ: %x VPOS: %x HPOS: %x CYCLES: %ld\n", DMACONR(),
-	       (unsigned int)intena, (unsigned int)intreq, (unsigned int)vpos, (unsigned int)current_hpos(), cycles);
+           (unsigned int)intena, (unsigned int)intreq, (unsigned int)vpos, (unsigned int)current_hpos(), cycles);
     write_log ("COP1LC: %08lx, COP2LC: %08lx\n", (unsigned long)cop1lc, (unsigned long)cop2lc);
     if (timeframes) {
-	write_log ("Average frame time: %d ms [frames: %d time: %d]\n",
-		   frametime / timeframes, timeframes, frametime);
-	if (total_skipped)
-	    write_log ("Skipped frames: %d\n", total_skipped);
+    write_log ("Average frame time: %d ms [frames: %d time: %d]\n",
+           frametime / timeframes, timeframes, frametime);
+    if (total_skipped)
+        write_log ("Skipped frames: %d\n", total_skipped);
     }
 }
 
@@ -1367,12 +1367,12 @@ int intlev (void)
 {
     uae_u16 imask = intreq & intena;
     if (imask && (intena & 0x4000)){
-	if (imask & 0x2000) return 6;
-	if (imask & 0x1800) return 5;
-	if (imask & 0x0780) return 4;
-	if (imask & 0x0070) return 3;
-	if (imask & 0x0008) return 2;
-	if (imask & 0x0007) return 1;
+    if (imask & 0x2000) return 6;
+    if (imask & 0x1800) return 5;
+    if (imask & 0x0780) return 4;
+    if (imask & 0x0070) return 3;
+    if (imask & 0x0008) return 2;
+    if (imask & 0x0007) return 1;
     }
     return -1;
 }
@@ -1381,19 +1381,19 @@ static void gen_custom_tables (void)
 {
     int i;
     for (i = 0; i < 256; i++) {
-	unsigned int j;
-	sprtaba[i] = ((((i >> 7) & 1) << 0)
-		      | (((i >> 6) & 1) << 2)
-		      | (((i >> 5) & 1) << 4)
-		      | (((i >> 4) & 1) << 6)
-		      | (((i >> 3) & 1) << 8)
-		      | (((i >> 2) & 1) << 10)
-		      | (((i >> 1) & 1) << 12)
-		      | (((i >> 0) & 1) << 14));
-	sprtabb[i] = sprtaba[i] * 2;
-	for (j = 0; j < 511; j = (j << 1) | 1)
-	    if ((i & ~j) == 0)
-		waitmasktab[i] = ~j;
+    unsigned int j;
+    sprtaba[i] = ((((i >> 7) & 1) << 0)
+              | (((i >> 6) & 1) << 2)
+              | (((i >> 5) & 1) << 4)
+              | (((i >> 4) & 1) << 6)
+              | (((i >> 3) & 1) << 8)
+              | (((i >> 2) & 1) << 10)
+              | (((i >> 1) & 1) << 12)
+              | (((i >> 0) & 1) << 14));
+    sprtabb[i] = sprtaba[i] * 2;
+    for (j = 0; j < 511; j = (j << 1) | 1)
+        if ((i & ~j) == 0)
+        waitmasktab[i] = ~j;
     }
 }
 
@@ -1439,8 +1439,8 @@ static uae_u32 REGPARAM2 custom_wget (uaecptr addr)
      case 0x07C: return DENISEID();
      default:
        //        __android_log_print(ANDROID_LOG_VERBOSE, "UADE","Non-read register read in custom chipset ($dff%x)",addr);
-	custom_wput(addr,0);
-	return 0xffff;
+    custom_wput(addr,0);
+    return 0xffff;
     }
 }
 
@@ -1581,32 +1581,32 @@ static void REGPARAM2 custom_wput_1 (int hpos, uaecptr addr, uae_u32 value)
      case 0x1A4: case 0x1A6: case 0x1A8: case 0x1AA: case 0x1AC: case 0x1AE:
      case 0x1B0: case 0x1B2: case 0x1B4: case 0x1B6: case 0x1B8: case 0x1BA:
      case 0x1BC: case 0x1BE:
-	COLOR (hpos, value & 0xFFF, (addr & 0x3E) / 2);
-	break;
+    COLOR (hpos, value & 0xFFF, (addr & 0x3E) / 2);
+    break;
      case 0x120: case 0x124: case 0x128: case 0x12C:
      case 0x130: case 0x134: case 0x138: case 0x13C:
-	SPRxPTH (hpos, value, (addr - 0x120) / 4);
-	break;
+    SPRxPTH (hpos, value, (addr - 0x120) / 4);
+    break;
      case 0x122: case 0x126: case 0x12A: case 0x12E:
      case 0x132: case 0x136: case 0x13A: case 0x13E:
-	SPRxPTL (hpos, value, (addr - 0x122) / 4);
-	break;
+    SPRxPTL (hpos, value, (addr - 0x122) / 4);
+    break;
      case 0x140: case 0x148: case 0x150: case 0x158:
      case 0x160: case 0x168: case 0x170: case 0x178:
-	SPRxPOS (hpos, value, (addr - 0x140) / 8);
-	break;
+    SPRxPOS (hpos, value, (addr - 0x140) / 8);
+    break;
      case 0x142: case 0x14A: case 0x152: case 0x15A:
      case 0x162: case 0x16A: case 0x172: case 0x17A:
-	SPRxCTL (hpos, value, (addr - 0x142) / 8);
-	break;
+    SPRxCTL (hpos, value, (addr - 0x142) / 8);
+    break;
      case 0x144: case 0x14C: case 0x154: case 0x15C:
      case 0x164: case 0x16C: case 0x174: case 0x17C:
-	SPRxDATA (hpos, value, (addr - 0x144) / 8);
-	break;
+    SPRxDATA (hpos, value, (addr - 0x144) / 8);
+    break;
      case 0x146: case 0x14E: case 0x156: case 0x15E:
      case 0x166: case 0x16E: case 0x176: case 0x17E:
-	SPRxDATB (hpos, value, (addr - 0x146) / 8);
-	break;
+    SPRxDATB (hpos, value, (addr - 0x146) / 8);
+    break;
 
      case 0x36: JOYTEST (value); break;
      case 0x5A: BLTCON0L (value); break;
@@ -1639,7 +1639,7 @@ static void REGPARAM2 custom_bput (uaecptr addr, uae_u32 value)
     custom_wput(addr, rval);
     if (!warned) {
         warned++;
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Byte put to custom register (0x%x to $%x)\n", rval, addr);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: Byte put to custom register (0x%x to $%x)\n", rval, addr);
     }
 }
 

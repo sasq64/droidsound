@@ -15,7 +15,9 @@
 #include "gensound.h"
 #include "sd-sound.h"
 #include "audio.h"
-#include "uade.h"
+
+#include "uadectl.h"
+#include <uade/uadeconstants.h>
 
 uae_u16 sndbuffer[MAX_SOUND_BUF_SIZE / 2];
 uae_u16 *sndbufpt;
@@ -61,15 +63,15 @@ void init_sound (void)
 
   if (dspbits != (UADE_BYTES_PER_SAMPLE * 8)) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Only 16 bit sounds supported.\n");
-    exit(-1);
+    exit(1);
   }
   if (rate < 1 || rate > SOUNDTICKS_NTSC) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Too small or high a rate: %u\n", rate);
-    exit(-1);
+    exit(1);
   }
   if (channels != UADE_CHANNELS) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Only stereo supported.\n");
-    exit(-1);
+    exit(1);
   }
 
   sound_bytes_per_second = (dspbits / 8) *  channels * rate;

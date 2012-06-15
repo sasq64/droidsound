@@ -4,8 +4,11 @@
 #include <string.h>
 #include <ctype.h>
 #include <android/log.h>
+
+#include <uade/ossupport.h>
+
 #include "support.h"
-#include "ossupport.h"
+
 
 /* Zero terminate the current word. Returns -1 is *s == 0 or the next word
    does not exist. Otherwise returns offset to the beginning of next word. */

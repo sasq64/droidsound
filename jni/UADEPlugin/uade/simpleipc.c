@@ -12,7 +12,7 @@
 //  #include <ipcsupport.h>
 #include <android/log.h>
 
-#include "unixsupport.h"
+#include <uade/unixsupport.h>
 
 extern int get_write_mutex(volatile void **);
 extern int release_write_mutex(volatile void **);
