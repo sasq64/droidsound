@@ -52,10 +52,10 @@ static inline void destroy_comm_pipe (smp_comm_pipe *p)
 static inline void maybe_wake_reader (smp_comm_pipe *p, int no_buffer)
 {
     if (p->reader_waiting
-	&& (no_buffer || ((p->wrp - p->rdp + p->size) % p->size) >= p->chunks))
+    && (no_buffer || ((p->wrp - p->rdp + p->size) % p->size) >= p->chunks))
     {
-	p->reader_waiting = 0;
-	uae_sem_post (&p->reader_wait);
+    p->reader_waiting = 0;
+    uae_sem_post (&p->reader_wait);
     }
 }
 
@@ -64,23 +64,23 @@ static inline void write_comm_pipe_pt (smp_comm_pipe *p, uae_pt data, int no_buf
     int nxwrp = (p->wrp + 1) % p->size;
 
     if (p->reader_waiting) {
-	/* No need to do all the locking */
-	p->data[p->wrp] = data;
-	p->wrp = nxwrp;
-	maybe_wake_reader (p, no_buffer);
-	return;
+    /* No need to do all the locking */
+    p->data[p->wrp] = data;
+    p->wrp = nxwrp;
+    maybe_wake_reader (p, no_buffer);
+    return;
     }
     
     uae_sem_wait (&p->lock);
     if (nxwrp == p->rdp) {
-	/* Pipe full! */
-	p->writer_waiting = 1;
-	uae_sem_post (&p->lock);
-	/* Note that the reader could get in between here and do a
-	 * sem_post on writer_wait before we wait on it. That's harmless.
-	 * There's a similar case in read_comm_pipe_int_blocking. */
-	uae_sem_wait (&p->writer_wait);
-	uae_sem_wait (&p->lock);
+    /* Pipe full! */
+    p->writer_waiting = 1;
+    uae_sem_post (&p->lock);
+    /* Note that the reader could get in between here and do a
+     * sem_post on writer_wait before we wait on it. That's harmless.
+     * There's a similar case in read_comm_pipe_int_blocking. */
+    uae_sem_wait (&p->writer_wait);
+    uae_sem_wait (&p->lock);
     }
     p->data[p->wrp] = data;
     p->wrp = nxwrp;
@@ -94,18 +94,18 @@ static inline uae_pt read_comm_pipe_pt_blocking (smp_comm_pipe *p)
 
     uae_sem_wait (&p->lock);
     if (p->rdp == p->wrp) {
-	p->reader_waiting = 1;
-	uae_sem_post (&p->lock);
-	uae_sem_wait (&p->reader_wait);
-	uae_sem_wait (&p->lock);
+    p->reader_waiting = 1;
+    uae_sem_post (&p->lock);
+    uae_sem_wait (&p->reader_wait);
+    uae_sem_wait (&p->lock);
     }
     data = p->data[p->rdp];
     p->rdp = (p->rdp + 1) % p->size;
 
     /* We ignore chunks here. If this is a problem, make the size bigger in the init call. */
     if (p->writer_waiting) {
-	p->writer_waiting = 0;
-	uae_sem_post (&p->writer_wait);
+    p->writer_waiting = 0;
+    uae_sem_post (&p->writer_wait);
     }
     uae_sem_post (&p->lock);
     return data;

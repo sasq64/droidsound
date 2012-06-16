@@ -1,7 +1,11 @@
 /*
  *                     emu68 - 68000 IO manager
- *             Copyright (C) 2001-2009 Benjamin Gerard
+ *
+ *             Copyright (C) 2001-2011 Benjamin Gerard
+ *
  *           <benjihan -4t- users.sourceforge -d0t- net>
+ *
+ *              Time-stamp: <2011-08-23 02:49:53 ben>
  *
  * This  program is  free  software: you  can  redistribute it  and/or
  * modify  it under the  terms of  the GNU  General Public  License as
@@ -19,12 +23,11 @@
  *
  */
 
-/* $Id: ioplug68.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
- 
+
 #include "ioplug68.h"
 #include "mem68.h"
 
@@ -54,13 +57,15 @@ static void _ioplug_unplug_all(emu68_t * const emu68, const int destroy)
 /* Unplug all IO */
 void emu68_ioplug_unplug_all(emu68_t * const emu68)
 {
-  _ioplug_unplug_all(emu68, 0);
+  if (emu68)
+    _ioplug_unplug_all(emu68, 0);
 }
 
 /* Unplug and destroy all IO */
 void emu68_ioplug_destroy_all(emu68_t * const emu68)
 {
-  _ioplug_unplug_all(emu68, 1);
+  if (emu68)
+    _ioplug_unplug_all(emu68, 1);
 }
 
 /*  Unplug an IO :
@@ -73,19 +78,20 @@ int emu68_ioplug_unplug(emu68_t * const emu68, io68_t *this_io)
 {
   io68_t *io,**pio;
 
-  if(!this_io) {
-    return 0;
-  }
-
-  for (io = emu68->iohead, pio = &emu68->iohead;
-       io;
-       pio=&io->next, io=io->next) {
-    /* Find it ??? */
-    if (io==this_io) {
-      *pio = io->next;
-      --emu68->nio;
-      do_io_unplug(emu68, io);
+  if (emu68) {
+    if (!this_io) {
       return 0;
+    }
+    for (io = emu68->iohead, pio = &emu68->iohead;
+         io;
+         pio=&io->next, io=io->next) {
+      /* Find it ??? */
+      if (io==this_io) {
+        *pio = io->next;
+        --emu68->nio;
+        do_io_unplug(emu68, io);
+        return 0;
+      }
     }
   }
   return -1;

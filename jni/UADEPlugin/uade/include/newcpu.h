@@ -108,14 +108,14 @@ extern struct regstruct
 static inline uae_u32 get_ibyte_prefetch (uae_s32 o)
 {
     if (o > 3 || o < 0)
-	return do_get_mem_byte((uae_u8 *)(regs.pc_p + o + 1));
+    return do_get_mem_byte((uae_u8 *)(regs.pc_p + o + 1));
 
     return do_get_mem_byte((uae_u8 *)(((uae_u8 *)&regs.prefetch) + o + 1));
 }
 static inline uae_u32 get_iword_prefetch (uae_s32 o)
 {
     if (o > 3 || o < 0)
-	return do_get_mem_word((uae_u16 *)(regs.pc_p + o));
+    return do_get_mem_word((uae_u16 *)(regs.pc_p + o));
 
     return do_get_mem_word((uae_u16 *)(((uae_u8 *)&regs.prefetch) + o));
 }
@@ -127,9 +127,9 @@ static inline uae_u32 get_ilong_prefetch (uae_s32 o)
     } prefetch_u;
 
     if (o > 3 || o < 0)
-	return do_get_mem_long((uae_u32 *)(regs.pc_p + o));
+    return do_get_mem_long((uae_u32 *)(regs.pc_p + o));
     if (o == 0)
-	return do_get_mem_long(&regs.prefetch);
+    return do_get_mem_long(&regs.prefetch);
 
     prefetch_u.u32 = &regs.prefetch;
 
@@ -219,7 +219,7 @@ static inline void m68k_setstopped (int stop)
 {
     regs.stopped = stop;
     if (stop)
-	regs.spcflags |= SPCFLAG_STOP;
+    regs.spcflags |= SPCFLAG_STOP;
 }
 
 extern uae_u32 get_disp_ea_020 (uae_u32 base, uae_u32 dp);

@@ -1,25 +1,28 @@
 /*
- *                      file68 - libao stream
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    istream68_ao.c
+ * @brief   implements istream68 for libao
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-15 16:52:56 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: istream68_ao.c 126 2009-07-15 08:58:51Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -33,7 +36,6 @@
 # define DEBUG_AO68_O 0
 #endif
 int ao68_cat = msg68_DEFAULT;
-
 
 /* Define this if you want xiph libao support. */
 #ifdef USE_AO
@@ -90,34 +92,46 @@ unsigned int audio68_sampling_rate(const unsigned int rate)
   return f;
 }
 
+/* Init does not actually initialize aolib. That task will be
+   performed on the fly only if needed. */
 int istream68_ao_init(void)
+{
+  if (ao68_cat == msg68_DEFAULT) {
+    ao68_cat =
+      msg68_cat("audio","Xiph AO audio stream",DEBUG_AO68_O);
+    if (ao68_cat == -1)
+      ao68_cat = msg68_DEFAULT;
+  }
+  return - ( ao68_cat == msg68_DEFAULT );
+}
+
+static int init_aolib(void)
 {
   int err = -1;
 
-  if (ao68_cat != msg68_DEFAULT) {
-    ao68_cat =
-      msg68_cat("audio","Xiph AO audio stream",DEBUG_AO68_O);
-    if (ao68_cat == -1)  ao68_cat = msg68_DEFAULT;
-  }
-
   if (init) {
-    msg68_critical("libao68: init -- *already done*\n");
+    msg68_critical("libao68: init -- *%s*\n","already done");
   } else {
     ao_initialize();
     err = 0;
     init = 1;
-    TRACE68(ao68_cat,"libao68: initialized\n");
+    TRACE68(ao68_cat,"libao68: init -- *%s*\n","initialized");
   }
   return err;
 }
 
-void istream68_ao_shutdown(void)
+static void shutdown_aolib(void)
 {
   if (init) {
     init = 0;
     ao_shutdown();
-    TRACE68(ao68_cat,"libao68: shutdowned\n");
+    TRACE68(ao68_cat,"libao68: *%s*\n","shutdowned");
   }
+}
+
+void istream68_ao_shutdown(void)
+{
+  shutdown_aolib();
   if (ao68_cat != msg68_DEFAULT) {
     msg68_cat_free(ao68_cat);
     ao68_cat = msg68_DEFAULT;
@@ -205,61 +219,52 @@ static int isao_open(istream68_t * istream)
         while (*val>='0' && *val<='9') frq = frq*10 + *val++ - '0';
         if (frq > 0) {
           TRACE68(ao68_cat,"libao68: open -- *SAMPLING-RATE* %d\n",frq);
-          is->ao.format.rate = frq;
-        }
+          is->ao.format.rate = frq; 
+       }
       } else if (!strcmp68(key,"format")) {
         while(*val) {
           switch (*val++) {
 
             /* ENDIANESS */
           case 'n': /* native (same as cpu) */
-            TRACE68(ao68_cat,"libao68: open -- *NATIVE-ENDIAN*\n");
             is->ao.format.byte_format = AO_FMT_NATIVE;
             break;
           case 'l': /* little */
-            TRACE68(ao68_cat,"libao68: open -- *LITTLE-ENDIAN*\n");
             is->ao.format.byte_format = AO_FMT_LITTLE;
             break;
           case 'b': /* big    */
-            TRACE68(ao68_cat,"libao68: open -- *BIG-ENDIAN*\n");
             is->ao.format.byte_format = AO_FMT_BIG;
             break;
 
-            /* SIGNE */
+            /* SIGN */
           case '+': /* unsigned */
-            TRACE68(ao68_cat,"libao68: open -- *UNSIGNED*\n");
-            break;
+            msg68_warning("libao68: ignoring -- *%s* request\n", "UNSIGNED");
           case '-': /*   signed */
-            TRACE68(ao68_cat,"libao68: open -- *SIGNED*\n");
             break;
 
             /* CHANNELS */
           case '1': /* mono, 1 channel */
-            TRACE68(ao68_cat,"libao68: open -- *MONO*\n");
             is->ao.format.channels = 1;
             break;
           case '2': /* stereo, 2 channels */
-            TRACE68(ao68_cat,"libao68: open -- *STEREO*\n");
             is->ao.format.channels = 2;
             break;
 
             /* FORMAT */
           case 'W': /* 16 bit */
-            TRACE68(ao68_cat,"libao68: open -- *16-BIT*\n");
             is->ao.format.bits = 16;
             break;
           case 'B': /*  8 bit */
-            TRACE68(ao68_cat,"libao68: open -- *8-BIT*\n");
             is->ao.format.bits = 8;
             break;
           case 'F': /* float  */
-            TRACE68(ao68_cat,"libao68: open -- ignoring *FLOAT* request\n");
+            msg68_warning("libao68: open -- ignoring *%s* request\n","FLOAT");
             break;
-          } /* switch */
+        } /* switch */
         } /* while */
       } else {
         /* Unknown options -> append to driver */
-        int res = ao_append_option(&is->ao.options, key, val);
+        int res = ao_append_option(&is->ao.options, key, val); res = res;
         TRACE68(ao68_cat,"libao68: open -- append option [%s]='%s' => [%s]\n",
                 key, val, strok68(!res));
       }
@@ -294,10 +299,9 @@ static int isao_open(istream68_t * istream)
   dump_ao_info(is->ao.driver_id,info,1);
 
   if (!is->outname) {
-/*     char * ext = ao_file_extension(is->ao.driver_id); */
-    /* $$$ ao_file_extension() is missing in action !!!
-     *
-     */
+#ifdef HAVE_AO_FILE_EXTENSION
+    char * ext = ao_file_extension(is->ao.driver_id);
+#else
     char * ext = ".out";
     if (!strcmp68(info->short_name,"wav")) {
       ext = ".wav";
@@ -312,6 +316,7 @@ static int isao_open(istream68_t * istream)
     } else if (!strcmp68(info->short_name,"raw")) {
       ext = ".raw";
     }
+#endif
 
     strcpy(is->defoutname,"sc68");
     strcat68(is->defoutname,ext,sizeof(is->defoutname)-1);
@@ -349,16 +354,16 @@ static int isao_close(istream68_t * istream)
   istream68_ao_t * is = (istream68_ao_t *)istream;
   int err = -1;
 
-  if (!is || !is->ao.device) {
-    goto error;
+  if (is->ao.options) {
+    ao_free_options(is->ao.options);
+    is->ao.options = 0;
   }
-  ao_close(is->ao.device);
-  is->ao.device = 0;
-  istream68_ao_shutdown();
-
-  err = 0;
-  error:
-  TRACE68(ao68_cat, "libao68: close -- *%s*\n",strok68(err));
+  if (is->ao.device) {
+    ao_close(is->ao.device);
+    is->ao.device = 0;
+    err = 0;
+  }
+  TRACE68(ao68_cat, "libao68: close -- *%s*\n", strok68(err));
   return err;
 }
 
@@ -388,19 +393,27 @@ static int isao_write(istream68_t * istream, const void * data, int n)
   }
 }
 
+static int isao_flush(istream68_t * istream)
+{
+  istream68_ao_t * isao = (istream68_ao_t *)istream;
+  return !isao->ao.device
+    ? -1
+    : 0
+    ;
+}
+
 static int isao_length(istream68_t * istream)
 {
   istream68_ao_t * isao = (istream68_ao_t *)istream;
-
-  return (isao) ? isao->count : -1;
+  return !isao->ao.device
+    ? -1
+    : isao->count
+    ;
 }
 
 static int isao_tell(istream68_t * istream)
 {
-  istream68_ao_t * isao = (istream68_ao_t *)istream;
-  return (!isao || !isao->ao.device)
-    ? -1
-    : isao->count;
+  return isao_length(istream);
 }
 
 static int isao_seek(istream68_t * istream, int offset)
@@ -418,7 +431,7 @@ static void isao_destroy(istream68_t * istream)
 static const istream68_t istream68_ao = {
   isao_name,
   isao_open, isao_close,
-  isao_read, isao_write,
+  isao_read, isao_write, isao_flush,
   isao_length, isao_tell, isao_seek, isao_seek,
   isao_destroy
 };
@@ -427,7 +440,7 @@ static const istream68_t istream68_ao = {
  *
  * Specific keys are:
  *
- *  - driver=[null|alsa|oss|esd|au|raw|wav....]
+ *  - driver=[null|alsa|pulse|oss|esd|au|raw|wav ...]
  *  - rate=hz
  *  - format=[endianess][sign][channels][format]
  *    with (first value is the default)
@@ -449,8 +462,10 @@ istream68_t * istream68_ao_create(const char * fname, int mode)
           strnevernull68(fname), mode);
 
   if (!init) {
-    msg68_critical("libao68: create error -- *libao*\n");
-    goto error;
+    if (init_aolib() || !init) {
+      msg68_critical("libao68: create error -- *libao*\n");
+      goto error;
+    }
   }
 
   if (!fname || !fname[0]) {
@@ -473,15 +488,17 @@ istream68_t * istream68_ao_create(const char * fname, int mode)
   }
 
   /* -- Setup for default driver -- */
+  memset(&ao,0,sizeof(ao));
   ao.default_id         = ao_default_driver_id();
   ao.driver_id          = ao.default_id;
-  ao.device             = 0;
-  ao.default_device     = 0;
+  /* ao.device             = 0; */
+  /* ao.default_device     = 0; */
   ao.format.bits        = 16;
   ao.format.channels    = 2;
   ao.format.rate        = istream68_ao_defaut_rate;
   ao.format.byte_format = AO_FMT_NATIVE;
-  ao.options            = 0;
+  /* ao.format.matrix      = "L,R"; */
+  /* ao.options            = 0; */
 
   /* Copy istream functions. */
   memcpy(&isf->istream, &istream68_ao, sizeof(istream68_ao));
@@ -489,7 +506,7 @@ istream68_t * istream68_ao_create(const char * fname, int mode)
   isf->ao   = ao;
   strcpy(isf->name, fname);
 
-  error:
+error:
   fname = istream68_filename(&isf->istream);
   TRACE68(ao68_cat,"libao68: create -- *%s* -- '%s'\n",
           strok68(!isf),strnevernull68(fname));
@@ -507,7 +524,7 @@ istream68_t * istream68_ao_create(const char * fname, int mode)
 
 istream68_t * istream68_ao_create(const char * fname, int mode)
 {
-  msg68_error("libao68: create error -- *NOT SUPPORTED*\n");
+  msg68_error("libao68: create -- *%s*\n","NOT SUPPORTED");
   return 0;
 }
 

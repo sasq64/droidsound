@@ -82,7 +82,7 @@ void *vplist_pop_head(struct vplist *v)
   void *item;
 
   if (v->head == v->tail) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: can not pop head from an empty vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: Cannot pop head from an empty vplist.\n");
     exit(-1);
   }
 
@@ -101,7 +101,7 @@ void *vplist_pop_tail(struct vplist *v)
   void *item;
 
   if (v->head == v->tail) {
-    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: can not pop tail from an empty vplist.\n");
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: Cannot pop tail from an empty vplist.\n");
     exit(-1);
   }
 

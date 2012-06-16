@@ -1,25 +1,28 @@
 /*
- *          sc68 - YM-2149 emulator - Linear Volume Table
- *             Copyright (C) 2001-2009 Benjamin Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    ym_linear_table.c
+ * @brief   YM-2149 emulator - Linear Volume Table
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-27 11:57:09 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: ym_linear_table.c 127 2009-09-14 02:51:23Z benjihan $ */
 
 /* Table of 5 bit D/A output level for 1 channel. */
 static const u16 ymout1c5bit[32] =
@@ -59,6 +62,6 @@ void ym_create_5bit_linear_table(s16 * out, unsigned int level)
          3u * min ) / 3u * level / div;
     out[i] = tmp - center;
   }
-  msg68_info("ym-2149: volume model -- *linear* -- [%d..%d]\n",
-             out[0],out[0x7FFF]);
+  msg68_notice("ym-2149: volume model -- *linear* -- [%d..%d]\n",
+               out[0],out[0x7FFF]);
 }

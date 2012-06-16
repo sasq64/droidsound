@@ -1,25 +1,28 @@
 /*
- *                        sc68 - config file
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    conf68.c
+ * @brief   sc68 config file
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-06 14:23:19 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: conf68.c 121 2009-06-30 17:30:22Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -839,14 +842,24 @@ int config68_init(void)
 
 void config68_shutdown()
 {
+  /* release options */
+  if (config68_options) {
+    int i;
+    for (i=0; i<config68_option_count; ++i) {
+      if (config68_options[i].next) {
+        msg68_critical("config68: option #%d '%s' still attached\n", i, config68_options[i].name);
+        break;
+      }
+    }
+    if (i == config68_option_count)
+      free68(config68_options);
+    config68_options = 0;
+    config68_option_count = 0;
+  }
+
   /* release debug feature. */
   if (config68_cat != msg68_DEFAULT) {
     msg68_cat_free(config68_cat);
     config68_cat = msg68_DEFAULT;
   }
-
-  /* release options */
-  free68(config68_options);
-  config68_options = 0;
-  config68_option_count = 0;
 }

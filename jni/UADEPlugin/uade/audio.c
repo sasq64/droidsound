@@ -13,6 +13,7 @@
 #include "sysconfig.h"
 #include "sysdeps.h"
 
+#include <uade/amigafilter.h>
 #include "options.h"
 #include "include/uadememory.h"
 #include "custom.h"
@@ -21,8 +22,7 @@
 #include "events.h"
 #include "cia.h"
 #include "audio.h"
-#include "amigafilter.h"
-#include "uade.h"
+#include "uadectl.h"
 #include "compilersupport.h"
 
 #include "sinctable.h"
@@ -44,7 +44,7 @@ static int use_text_scope;
 
 static int sound_use_filter = FILTER_MODEL_A500;
 
-/* denormals are very small floating point numbers that force FPUs into slow
+/* Denormals are very small floating point numbers that force FPUs into slow
    mode. All lowpass filters using floats are suspectible to denormals unless
    a small offset is added to avoid very small floating point numbers. */
 #define DENORMAL_OFFSET (1E-10)
@@ -65,11 +65,11 @@ static float filter_a0; /* a500 and a1200 use the same */
 static inline int clamp_sample(int o)
 {
     if (unlikely(o > 32767 || o < -32768)) {
-	if (o > 32767) {
-	    return 32767;
-	} else {
-	    return -32768;
-	}
+    if (o > 32767) {
+        return 32767;
+    } else {
+        return -32768;
+    }
     }
     return o;
 }
@@ -97,15 +97,15 @@ static int filter(int input, struct filter_state *fs)
 
     switch (sound_use_filter) {
     case FILTER_MODEL_A500: 
-	fs->rc1 = a500e_filter1_a0 * input + (1 - a500e_filter1_a0) * fs->rc1 + DENORMAL_OFFSET;
-	fs->rc2 = a500e_filter2_a0 * fs->rc1 + (1-a500e_filter2_a0) * fs->rc2;
-	normal_output = fs->rc2;
+    fs->rc1 = a500e_filter1_a0 * input + (1 - a500e_filter1_a0) * fs->rc1 + DENORMAL_OFFSET;
+    fs->rc2 = a500e_filter2_a0 * fs->rc1 + (1-a500e_filter2_a0) * fs->rc2;
+    normal_output = fs->rc2;
 
-	fs->rc3 = filter_a0 * normal_output + (1 - filter_a0) * fs->rc3;
-	fs->rc4 = filter_a0 * fs->rc3       + (1 - filter_a0) * fs->rc4;
-	fs->rc5 = filter_a0 * fs->rc4       + (1 - filter_a0) * fs->rc5;
+    fs->rc3 = filter_a0 * normal_output + (1 - filter_a0) * fs->rc3;
+    fs->rc4 = filter_a0 * fs->rc3       + (1 - filter_a0) * fs->rc4;
+    fs->rc5 = filter_a0 * fs->rc4       + (1 - filter_a0) * fs->rc5;
 
-	led_output = fs->rc5;
+    led_output = fs->rc5;
         break;
 
     case FILTER_MODEL_A1200:
@@ -119,8 +119,8 @@ static int filter(int input, struct filter_state *fs)
         break;
 
     default:
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter mode\n");
-	exit(-1);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown filter mode\n");
+    exit(1);
     }
 
     return clamp_sample(gui_ledstate ? led_output : normal_output);
@@ -132,26 +132,26 @@ static void check_sound_buffers (void)
     intptr_t bytes;
 
     if (uade_reboot)
-	return;
+    return;
 
     assert(uade_read_size > 0);
 
     bytes = ((intptr_t) sndbufpt) - ((intptr_t) sndbuffer);
 
     if (uade_audio_output) {
-	if (bytes == uade_read_size) {
-	    uade_check_sound_buffers(uade_read_size);
-	    sndbufpt = sndbuffer;
-	}
+    if (bytes == uade_read_size) {
+        uade_check_sound_buffers(uade_read_size);
+        sndbufpt = sndbuffer;
+    }
     } else {
-	uade_audio_skip += bytes;
-	/* if sound core doesn't report audio output start in 3 seconds from
-	   the reboot, begin audio output anyway */
-	if (uade_audio_skip >= (sound_bytes_per_second * 3)) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "involuntary audio output start\n");
-	    uade_audio_output = 1;
-	}
-	sndbufpt = sndbuffer;
+    uade_audio_skip += bytes;
+    /* if sound core doesn't report audio output start in 3 seconds from
+       the reboot, begin audio output anyway */
+    if (uade_audio_skip >= (sound_bytes_per_second * 3)) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Involuntary audio output start\n");
+        uade_audio_output = 1;
+    }
+    sndbufpt = sndbuffer;
     }
 }
 
@@ -161,10 +161,10 @@ static inline void sample_backend(int left, int right)
 #if AUDIO_DEBUG
     int nr;
     for (nr = 0; nr < 4; nr++) {
-	struct audio_channel_data *cdp = audio_channel + nr;
-	if (cdp->state != 0 && cdp->datpt != 0 && (dmacon & (1 << nr)) && cdp->datpt >= cdp->datptend) {
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
-	}
+    struct audio_channel_data *cdp = audio_channel + nr;
+    if (cdp->state != 0 && cdp->datpt != 0 && (dmacon & (1 << nr)) && cdp->datpt >= cdp->datptend) {
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Audio output overrun on channel %d: %.8x/%.8x\n", nr, cdp->datpt, cdp->datptend);
+    }
     }
 #endif
 
@@ -174,8 +174,8 @@ static inline void sample_backend(int left, int right)
     /* [-32768, 32512] */
 
     if (sound_use_filter) {
-	left = filter(left, &sound_filter_state[0]);
-	right = filter(right, &sound_filter_state[1]);
+    left = filter(left, &sound_filter_state[0]);
+    right = filter(right, &sound_filter_state[1]);
     }
 
     *(sndbufpt++) = left;
@@ -191,8 +191,8 @@ static void sample16s_handler (void)
     int i;
 
     for (i = 0; i < 4; i++) {
-	datas[i] = audio_channel[i].current_sample * audio_channel[i].vol;
-	datas[i] &= audio_channel[i].adk_mask;
+    datas[i] = audio_channel[i].current_sample * audio_channel[i].vol;
+    datas[i] &= audio_channel[i].adk_mask;
     }
 
     sample_backend(datas[0] + datas[3], datas[1] + datas[2]);
@@ -209,7 +209,7 @@ static void sample16si_anti_handler (void)
     for (i = 0; i < 4; i += 1) {
         datas[i] = audio_channel[i].sample_accum / audio_channel[i].sample_accum_time;
         audio_channel[i].sample_accum = 0;
-	audio_channel[i].sample_accum_time = 0;
+    audio_channel[i].sample_accum_time = 0;
     }
 
     sample_backend(datas[0] + datas[3], datas[1] + datas[2]);
@@ -225,11 +225,11 @@ static void sample16si_sinc_handler (void)
     int datas[4];
 
     if (sound_use_filter) {
-	n = (sound_use_filter == FILTER_MODEL_A500) ? 0 : 2;
+    n = (sound_use_filter == FILTER_MODEL_A500) ? 0 : 2;
         if (gui_ledstate)
             n += 1;
     } else {
-	n = 4;
+    n = 4;
     }
     winsinc = winsinc_integral[n];
     
@@ -237,7 +237,7 @@ static void sample16si_sinc_handler (void)
         int j;
         struct audio_channel_data *acd = &audio_channel[i];
         /* The sum rings with harmonic components up to infinity... */
-	int sum = acd->output_state << 17;
+    int sum = acd->output_state << 17;
         /* ...but we cancel them through mixing in BLEPs instead */
         int offsetpos = acd->sinc_queue_head & (SINC_QUEUE_LENGTH - 1);
         for (j = 0; j < SINC_QUEUE_LENGTH; j += 1) {
@@ -264,10 +264,10 @@ static void anti_prehandler(unsigned long best_evtime)
 
     /* Handle accumulator antialiasiation */
     for (i = 0; i < 4; i++) {
-	acd = &audio_channel[i];
-	output = (acd->current_sample * acd->vol) & acd->adk_mask;
-	acd->sample_accum += output * best_evtime;
-	acd->sample_accum_time += best_evtime;
+    acd = &audio_channel[i];
+    output = (acd->current_sample * acd->vol) & acd->adk_mask;
+    acd->sample_accum += output * best_evtime;
+    acd->sample_accum_time += best_evtime;
     }
 }
 
@@ -278,8 +278,8 @@ static void sinc_prehandler(unsigned long best_evtime)
     struct audio_channel_data *acd;
 
     for (i = 0; i < 4; i++) {
-	acd = &audio_channel[i];
-	output = (acd->current_sample * acd->vol) & acd->adk_mask;
+    acd = &audio_channel[i];
+    output = (acd->current_sample * acd->vol) & acd->adk_mask;
 
         /* if output state changes, record the state change and also
          * write data into sinc queue for mixing in the BLEP */
@@ -301,119 +301,119 @@ static void audio_handler (int nr)
 
     switch (cdp->state) {
      case 0:
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bug in sound code\n");
-	break;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Bug in sound code\n");
+    break;
 
      case 1:
-	/* We come here at the first hsync after DMA was turned on. */
-	cdp->evtime = maxhpos;
+    /* We come here at the first hsync after DMA was turned on. */
+    cdp->evtime = maxhpos;
 
-	cdp->state = 5;
-	INTREQ(0x8000 | (0x80 << nr));
-	if (cdp->wlen != 1)
-	    cdp->wlen = (cdp->wlen - 1) & 0xFFFF;
-	cdp->nextdat = chipmem_bank.wget(cdp->pt);
+    cdp->state = 5;
+    INTREQ(0x8000 | (0x80 << nr));
+    if (cdp->wlen != 1)
+        cdp->wlen = (cdp->wlen - 1) & 0xFFFF;
+    cdp->nextdat = chipmem_bank.wget(cdp->pt);
 
-	cdp->nextdatpt = cdp->pt;
-	cdp->nextdatptend = cdp->ptend;
+    cdp->nextdatpt = cdp->pt;
+    cdp->nextdatptend = cdp->ptend;
 
-	/* BUG in UAE. Only hsync handler should increase DMA pointer
-	   cdp->pt += 2;
-	*/
-	break;
+    /* BUG in UAE. Only hsync handler should increase DMA pointer
+       cdp->pt += 2;
+    */
+    break;
 
      case 5:
-	/* We come here at the second hsync after DMA was turned on. */
-	cdp->evtime = cdp->per;
-	cdp->dat = cdp->nextdat;
+    /* We come here at the second hsync after DMA was turned on. */
+    cdp->evtime = cdp->per;
+    cdp->dat = cdp->nextdat;
 
-	cdp->datpt = cdp->nextdatpt;
-	cdp->datptend = cdp->nextdatptend;
+    cdp->datpt = cdp->nextdatpt;
+    cdp->datptend = cdp->nextdatptend;
 
-	cdp->current_sample = (uae_s8)(cdp->dat >> 8);
+    cdp->current_sample = (uae_s8)(cdp->dat >> 8);
 
-	cdp->state = 2;
-	{
-	    int audav = adkcon & (1 << nr);
-	    int audap = adkcon & (16 << nr);
-	    int napnav = (!audav && !audap) || audav;
-	    if (napnav)
-		cdp->data_written = 2;
-	}
-	break;
+    cdp->state = 2;
+    {
+        int audav = adkcon & (1 << nr);
+        int audap = adkcon & (16 << nr);
+        int napnav = (!audav && !audap) || audav;
+        if (napnav)
+        cdp->data_written = 2;
+    }
+    break;
 
      case 2:
-	/* We come here when a 2->3 transition occurs */
-	cdp->current_sample = (uae_s8)(cdp->dat & 0xFF);
-	cdp->evtime = cdp->per;
+    /* We come here when a 2->3 transition occurs */
+    cdp->current_sample = (uae_s8)(cdp->dat & 0xFF);
+    cdp->evtime = cdp->per;
 
-	cdp->state = 3;
+    cdp->state = 3;
 
-	/* Period attachment? */
-	if (adkcon & (0x10 << nr)) {
-	    if (cdp->intreq2 && cdp->dmaen) {
-		INTREQ(0x8000 | (0x80 << nr));
-	    }
-	    cdp->intreq2 = 0;
+    /* Period attachment? */
+    if (adkcon & (0x10 << nr)) {
+        if (cdp->intreq2 && cdp->dmaen) {
+        INTREQ(0x8000 | (0x80 << nr));
+        }
+        cdp->intreq2 = 0;
 
-	    cdp->dat = cdp->nextdat;
+        cdp->dat = cdp->nextdat;
 
-	    cdp->datpt = cdp->nextdatpt;
-	    cdp->datptend = cdp->nextdatptend;
+        cdp->datpt = cdp->nextdatpt;
+        cdp->datptend = cdp->nextdatptend;
 
-	    if (cdp->dmaen)
-		cdp->data_written = 2;
-	    if (nr < 3) {
-		if (cdp->dat == 0)
-		    (cdp+1)->per = 65535;
-		else
-		    (cdp+1)->per = cdp->dat;
-	    }
-	}
-	break;
+        if (cdp->dmaen)
+        cdp->data_written = 2;
+        if (nr < 3) {
+        if (cdp->dat == 0)
+            (cdp+1)->per = 65535;
+        else
+            (cdp+1)->per = cdp->dat;
+        }
+    }
+    break;
 
      case 3:
-	/* We come here when a 3->2 transition occurs */
-	cdp->evtime = cdp->per;
+    /* We come here when a 3->2 transition occurs */
+    cdp->evtime = cdp->per;
 
-	if ((INTREQR() & (0x80 << nr)) && !cdp->dmaen) {
-	    cdp->state = 0;
-	    cdp->current_sample = 0;
-	    break;
-	} else {
-	    int audav = adkcon & (1 << nr);
-	    int audap = adkcon & (16 << nr);
-	    int napnav = (!audav && !audap) || audav;
-	    cdp->state = 2;
+    if ((INTREQR() & (0x80 << nr)) && !cdp->dmaen) {
+        cdp->state = 0;
+        cdp->current_sample = 0;
+        break;
+    } else {
+        int audav = adkcon & (1 << nr);
+        int audap = adkcon & (16 << nr);
+        int napnav = (!audav && !audap) || audav;
+        cdp->state = 2;
 
-	    if ((cdp->intreq2 && cdp->dmaen && napnav)
-		|| (napnav && !cdp->dmaen)) {
-	      INTREQ(0x8000 | (0x80 << nr));
-	    }
-	    cdp->intreq2 = 0;
+        if ((cdp->intreq2 && cdp->dmaen && napnav)
+        || (napnav && !cdp->dmaen)) {
+          INTREQ(0x8000 | (0x80 << nr));
+        }
+        cdp->intreq2 = 0;
 
-	    cdp->dat = cdp->nextdat;
+        cdp->dat = cdp->nextdat;
 
-	    cdp->datpt = cdp->nextdatpt;
-	    cdp->datptend = cdp->nextdatptend;
+        cdp->datpt = cdp->nextdatpt;
+        cdp->datptend = cdp->nextdatptend;
 
-	    cdp->current_sample = (uae_s8)(cdp->dat >> 8);
+        cdp->current_sample = (uae_s8)(cdp->dat >> 8);
 
-	    if (cdp->dmaen && napnav)
-		cdp->data_written = 2;
+        if (cdp->dmaen && napnav)
+        cdp->data_written = 2;
 
-	    /* Volume attachment? */
-	    if (audav) {
-		if (nr < 3) {
-		    (cdp+1)->vol = cdp->dat;
-		}
-	    }
-	}
-	break;
+        /* Volume attachment? */
+        if (audav) {
+        if (nr < 3) {
+            (cdp+1)->vol = cdp->dat;
+        }
+        }
+    }
+    break;
 
      default:
-	cdp->state = 0;
-	break;
+    cdp->state = 0;
+    break;
     }
 }
 
@@ -464,7 +464,7 @@ void audio_set_filter(int filter_type, int filter_force)
      non-zero, it contains the filter type (a500 or a1200) */
   if (filter_type < 0 || filter_type >= FILTER_MODEL_UPPER_BOUND) {
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Invalid filter number: %d\n", filter_type);
-    exit(-1);
+    exit(1);
   }
   sound_use_filter = filter_type;
 
@@ -500,16 +500,16 @@ void audio_set_resampler(char *name)
     sample_prehandler = anti_prehandler;
 
     if (name == NULL || strcasecmp(name, "default") == 0)
-	return;
+    return;
 
     if (strcasecmp(name, "sinc") == 0) {
-	sample_handler = sample16si_sinc_handler;
-	sample_prehandler = sinc_prehandler;
+    sample_handler = sample16si_sinc_handler;
+    sample_prehandler = sinc_prehandler;
     } else if (strcasecmp(name, "none") == 0) {
-	sample_handler = sample16s_handler;
-	sample_prehandler = NULL;
+    sample_handler = sample16s_handler;
+    sample_prehandler = NULL;
     } else {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nUnknown resampling method: %s. Using the default.\n", name);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "\nUnknown resampling method: %s. Using the default.\n", name);
     }
 }
 
@@ -529,54 +529,54 @@ void update_audio (void)
     unsigned long n_cycles = cycles - last_audio_cycles;
 
     while (n_cycles > 0) {
-	unsigned long best_evtime = n_cycles + 1;
-	int i;
-	unsigned long rounded;
-	float f;
+    unsigned long best_evtime = n_cycles + 1;
+    int i;
+    unsigned long rounded;
+    float f;
 
-	for (i = 0; i < 4; i++) {
-	    if (audio_channel[i].state != 0 && best_evtime > audio_channel[i].evtime)
-		best_evtime = audio_channel[i].evtime;
-	}
+    for (i = 0; i < 4; i++) {
+        if (audio_channel[i].state != 0 && best_evtime > audio_channel[i].evtime)
+        best_evtime = audio_channel[i].evtime;
+    }
 
-	/* next_sample_evtime >= 0 so floor() behaves as expected */
-	rounded = floorf(next_sample_evtime);
-	if ((next_sample_evtime - rounded) >= 0.5)
-	    rounded++;
+    /* next_sample_evtime >= 0 so floor() behaves as expected */
+    rounded = floorf(next_sample_evtime);
+    if ((next_sample_evtime - rounded) >= 0.5)
+        rounded++;
 
-	if (best_evtime > rounded)
-	    best_evtime = rounded;
+    if (best_evtime > rounded)
+        best_evtime = rounded;
 
-	if (best_evtime > n_cycles)
-	    best_evtime = n_cycles;
-	
-	/* Decrease time-to-wait counters */
-	next_sample_evtime -= best_evtime;
+    if (best_evtime > n_cycles)
+        best_evtime = n_cycles;
+    
+    /* Decrease time-to-wait counters */
+    next_sample_evtime -= best_evtime;
 
-	/* sample_prehandler makes it possible to compute effects with
-	   accuracy of one bus cycle. sample_handler is only called when
-	   a sample is outputted. */
-	if (sample_prehandler != NULL)
-	    sample_prehandler(best_evtime);
+    /* sample_prehandler makes it possible to compute effects with
+       accuracy of one bus cycle. sample_handler is only called when
+       a sample is outputted. */
+    if (sample_prehandler != NULL)
+        sample_prehandler(best_evtime);
 
-	for (i = 0; i < 4; i++)
-	    audio_channel[i].evtime -= best_evtime;
+    for (i = 0; i < 4; i++)
+        audio_channel[i].evtime -= best_evtime;
 
-	n_cycles -= best_evtime;
+    n_cycles -= best_evtime;
 
-	/* Test if new sample needs to be outputted */
-	if (rounded == best_evtime) {
-	    /* Before the following addition, next_sample_evtime is in range
-	       [-0.5, 0.5) */
-	    next_sample_evtime += sample_evtime_interval;
-	    (*sample_handler) ();
-	}
+    /* Test if new sample needs to be outputted */
+    if (rounded == best_evtime) {
+        /* Before the following addition, next_sample_evtime is in range
+           [-0.5, 0.5) */
+        next_sample_evtime += sample_evtime_interval;
+        (*sample_handler) ();
+    }
 
-	/* Call audio state machines if needed */
-	for (i = 0; i < 4; i++) {
-	    if (audio_channel[i].evtime == 0 && audio_channel[i].state != 0)
-		audio_handler(i);
-	}
+    /* Call audio state machines if needed */
+    for (i = 0; i < 4; i++) {
+        if (audio_channel[i].evtime == 0 && audio_channel[i].state != 0)
+        audio_handler(i);
+    }
     }
 
     last_audio_cycles = cycles - n_cycles;
@@ -595,10 +595,10 @@ void AUDxDAT (int nr, uae_u16 v)
     cdp->datpt = 0;
 
     if (cdp->state == 0 && !(INTREQR() & (0x80 << nr))) {
-	cdp->state = 2;
-	INTREQ(0x8000 | (0x80 << nr));
-	/* data_written = 2 ???? */
-	cdp->evtime = cdp->per;
+    cdp->state = 2;
+    INTREQ(0x8000 | (0x80 << nr));
+    /* data_written = 2 ???? */
+    cdp->evtime = cdp->per;
     }
 }
 
@@ -630,16 +630,16 @@ void AUDxPER (int nr, uae_u16 v)
     update_audio ();
 
     if (v == 0)
-	v = 65535;
+    v = 65535;
     else if (v < 16) {
-	/* With the risk of breaking super-cool players,
-	   we limit the value to 16 to save cpu time on not so powerful
-	   machines. robocop customs use low values for example. */
-	if (!audperhack) {
-	    audperhack = 1;
-	    uade_send_debug("Eagleplayer inserted %d into aud%dper.", v, nr);
-	}
-	v = 16;
+    /* With the risk of breaking super-cool players,
+       we limit the value to 16 to save cpu time on not so powerful
+       machines. robocop customs use low values for example. */
+    if (!audperhack) {
+        audperhack = 1;
+        uade_send_debug("Eagleplayer inserted %d into aud%dper.", v, nr);
+    }
+    v = 16;
     }
     audio_channel[nr].per = v;
 }

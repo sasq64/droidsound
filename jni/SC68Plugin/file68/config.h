@@ -6,12 +6,23 @@
 
 /* debug facilities for file68 */
 /* #undef DEBUG_FILE68 */
+/* Defined if file68 supports audio (via libao) */
+/* #undef FILE68_AO */
+
+/* Defined if file68 supports remote files (via libcurl) */
+/* #undef FILE68_CURL */
+
+/* Defined if file68 supports !ice depacker (via unice68) */
+#define FILE68_UNICE68 1
+
+/* Defined if file68 supports deflate (via zlib) */
+#define FILE68_Z 1
 
 /* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
 
 /* Support __declspec() */
-/* #undef HAVE_DECLSPEC */
+#define HAVE_DECLSPEC 1
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #define HAVE_DLFCN_H 1
@@ -102,31 +113,31 @@
 /* #undef NO_MINUS_C_MINUS_O */
 
 /* Name of package */
-#define PACKAGE "sc68-libfile68"
+#define PACKAGE "libfile68"
 
 /* Define to the address where bug reports for this package should be sent. */
-#define PACKAGE_BUGREPORT "SC68_EMAIL"
+#define PACKAGE_BUGREPORT "benjihan -4t- sourceforge"
 
 /* Package short description */
-#define PACKAGE_DESC "sc68 file and utility library. It is part of the sc68 project. Visit <SC68_URL>"
+#define PACKAGE_DESC "sc68 file and utility library. It is part of the sc68 project. Visit <http://sc68.atari.org>"
 
 /* Define to the full name of this package. */
 #define PACKAGE_NAME "file68"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "file68 3.0.0"
+#define PACKAGE_STRING "file68 3.0.0a"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "sc68-libfile68"
+#define PACKAGE_TARNAME "libfile68"
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL "SC68_URL"
+#define PACKAGE_URL "http://sc68.atari.org"
 
 /* Version number */
 #define PACKAGE_VERNUM 300
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.0.0"
+#define PACKAGE_VERSION "3.0.0a"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
@@ -169,7 +180,7 @@
 #define USE_Z 1
 
 /* Version number of package */
-#define VERSION "3.0.0"
+#define VERSION "3.0.0a"
 
 /* Define to 1 if on MINIX. */
 /* #undef _MINIX */

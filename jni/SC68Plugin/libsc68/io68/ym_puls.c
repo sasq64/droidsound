@@ -1,27 +1,28 @@
 /*
- *                   sc68 - YM-2149 pulse engine
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    ym_puls.c
+ * @brief   YM-2149 emulator - YM-2149 pulse engine
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-27 12:01:21 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: ym_puls.c 127 2009-09-14 02:51:23Z benjihan $ */
-
-/* Copyright (C) 1998-2009 Benjamin Gerard */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -41,13 +42,13 @@
 #include <sc68/string68.h>
 #include <sc68/option68.h>
 
-extern int ym_cat;          /* defined in ymemul.c */
+extern int ym_cat;                      /* defined in ymemul.c */
 
 #ifndef INTMSB
 # define INTMSB (sizeof(int)*8-1)
 #endif
 
-#define YM_PULS_FILTER 1        /* 0:none 1:fast 2:slow */
+#define YM_PULS_FILTER 1                /* 0:none 1:fast 2:slow */
 
 #define YM_OUT_MSK(C,B,A)                       \
   (((((C)&0x1F)<<10))                           \
@@ -64,7 +65,6 @@ const int ym_smsk_table[8] = {
   /* 110 */ YM_OUT_MSK(-1,-1,00),
   /* 111 */ YM_OUT_MSK(-1,-1,-1)
 };
-
 
 /*********************/
 /* Filters functions */
@@ -1075,7 +1075,7 @@ int run(ym_t * const ym, s32 * output, const cycle68_t ymcycles)
   do_envelop(ym,ymcycles);
   do_tone_and_mixer(ym,ymcycles);
 
-  ym->waccess = ym->static_waccess;
+  ym->waccess     = ym->static_waccess;
   ym->waccess_nxt = ym->waccess;
 
   filters[ym->emu.puls.ifilter].filter(ym);
@@ -1109,7 +1109,7 @@ int ym_puls_setup(ym_t * const ym)
 
   /* use default filter */
   puls->ifilter        = default_filter;
-  msg68_info("ym-2149: filter -- *%s*\n", filters[puls->ifilter].name);
+  msg68_notice("ym-2149: filter -- *%s*\n", filters[puls->ifilter].name);
 
   return err;
 }
@@ -1147,8 +1147,8 @@ int ym_puls_options(int argc, char ** argv)
       msg68_warning("ym-2149: invalid filter -- *%s*\n", opt->val.str);
     }
   }
-  msg68_info("ym-2149: default filter -- *%s* \n",
-             filters[default_filter].name);
+  msg68_notice("ym-2149: default filter -- *%s* \n",
+               filters[default_filter].name);
 
   return argc;
 }

@@ -1,25 +1,28 @@
 /*
- *                 file68 - String utility functions
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    string68.c
+ * @brief   string manipulation
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-11-07 10:58:23 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: string68.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -62,6 +65,25 @@ int strcmp68(const char *a, const char *b)
   }
   return av - bv;
 }
+
+/*  Compare two string without case (compare at most max chars) .
+ */
+int strncmp68(const char *a, const char *b, int max)
+{
+  int av, bv;
+  if (a == b || max <= 0)
+    return 0;
+  if (!a)
+    return -1;
+  if (!b)
+    return 1;
+  for (av = toupper68(*a), bv = toupper68(*b); --max && av && av == bv; a++, b++) {
+    av = toupper68(*a);
+    bv = toupper68(*b);
+  }
+  return av - bv;
+}
+
 
 /*  "a+b" with sizeof("a+b") <= l
  */

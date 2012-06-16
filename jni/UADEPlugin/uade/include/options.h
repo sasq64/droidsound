@@ -212,26 +212,26 @@ static inline void fuzzy_memset_1 (void *p, uae_u32 c, int offset, int len)
     }
 
     for (;;) {
-	p2[0] = c;
-	l1:
-	p2[1] = c;
-	l2:
-	p2[2] = c;
-	l3:
-	p2[3] = c;
-	l4:
-	p2[4] = c;
-	l5:
-	p2[5] = c;
-	l6:
-	p2[6] = c;
-	l7:
-	p2[7] = c;
+    p2[0] = c;
+    l1:
+    p2[1] = c;
+    l2:
+    p2[2] = c;
+    l3:
+    p2[3] = c;
+    l4:
+    p2[4] = c;
+    l5:
+    p2[5] = c;
+    l6:
+    p2[6] = c;
+    l7:
+    p2[7] = c;
 
-	if (!len)
-	    break;
-	len--;
-	p2 += 8;
+    if (!len)
+        break;
+    len--;
+    p2 += 8;
     }
 }
 

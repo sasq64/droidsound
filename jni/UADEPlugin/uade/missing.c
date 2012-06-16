@@ -28,8 +28,8 @@ void *xmalloc(size_t n)
 {
     void *a = malloc (n);
     if (a == NULL) {
-	fprintf (stderr, "virtual memory exhausted\n");
-	abort ();
+    fprintf (stderr, "virtual memory exhausted\n");
+    abort ();
     }
     return a;
 }

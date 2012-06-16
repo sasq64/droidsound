@@ -1,4 +1,4 @@
-// Game_Music_Emu 0.5.2. http://www.slack.net/~ant/
+// Game_Music_Emu 0.5.5. http://www.slack.net/~ant/
 
 #include "Nsf_Emu.h"
 
@@ -127,8 +127,8 @@ struct Nsf_File : Gme_Info_
 static Music_Emu* new_nsf_emu () { return BLARGG_NEW Nsf_Emu ; }
 static Music_Emu* new_nsf_file() { return BLARGG_NEW Nsf_File; }
 
-gme_type_t_ const gme_nsf_type [1] = { "Nintendo NES", 0, &new_nsf_emu, &new_nsf_file, "NSF", 1 };
-
+static gme_type_t_ const gme_nsf_type_ = { "Nintendo NES", 0, &new_nsf_emu, &new_nsf_file, "NSF", 1 };
+gme_type_t const gme_nsf_type = &gme_nsf_type_;
 // Setup
 
 void Nsf_Emu::set_tempo_( double t )
@@ -440,7 +440,7 @@ void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 		// memory mapper?
 		if ( addr == 0xFFF8 ) return;
 		
-		dprintf( "write_unmapped( 0x%04X, 0x%02X )\n", (unsigned) addr, (unsigned) data );
+		debug_printf( "write_unmapped( 0x%04X, 0x%02X )\n", (unsigned) addr, (unsigned) data );
 	}
 	#endif
 }

@@ -1,25 +1,28 @@
 /*
- *                        file68 - Null stream
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    istream68_null.c
+ * @brief   implements istream68 VFS for for null
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-15 16:18:03 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: istream68_null.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -44,112 +47,120 @@ typedef struct {
   char name[1];        /**< filename (null://filename). */
 } istream68_null_t;
 
-static const char * ism_name(istream68_t * istream)
+static const char * isn_name(istream68_t * istream)
 {
-  istream68_null_t * ism = (istream68_null_t *)istream;
+  istream68_null_t * isn = (istream68_null_t *)istream;
 
-  return (!ism || !ism->name[0])
+  return (!isn->name[0])
     ? 0
-    : ism->name;
+    : isn->name
+    ;
 }
 
-static int ism_open(istream68_t * istream)
+static int isn_open(istream68_t * istream)
 {
-  istream68_null_t * ism = (istream68_null_t *)istream;
+  istream68_null_t * isn = (istream68_null_t *)istream;
 
-  if (!ism || ism->open) {
+  if (isn->open) {
     return -1;
   }
-  ism->open = 1;
-  ism->pos = 0;
-  ism->size = 0;
+  isn->open = 1;
+  isn->pos  = 0;
+  isn->size = 0;
   return 0;
 }
 
-static int ism_close(istream68_t * istream)
+static int isn_close(istream68_t * istream)
 {
-  istream68_null_t * ism = (istream68_null_t *)istream;
+  istream68_null_t * isn = (istream68_null_t *)istream;
 
-  if (!ism || !ism->open) {
+  if (!isn->open) {
     return -1;
   }
-  ism->open = 0;
+  isn->open = 0;
   return 0;
 }
 
-static int ism_read_or_write(istream68_t * istream, int n)
+static int isn_read_or_write(istream68_t * istream, int n)
 {
-  istream68_null_t * ism = (istream68_null_t *)istream;
+  istream68_null_t * isn = (istream68_null_t *)istream;
 
-  if (!ism || !ism->open || n < 0) {
+  if (!isn->open || n < 0) {
     return -1;
   }
   if (n) {
     /* No op: do not update size */
-    ism->pos += n;
-    if (ism->pos > ism->size) {
-      ism->size = ism->pos;
+    isn->pos += n;
+    if (isn->pos > isn->size) {
+      isn->size = isn->pos;
     }
   }
   return n;
 }
 
-static int ism_read(istream68_t * istream, void * data, int n)
+static int isn_read(istream68_t * istream, void * data, int n)
 {
-  return ism_read_or_write(istream, n);
+  return isn_read_or_write(istream, n);
 }
 
-static int ism_write(istream68_t * istream, const void * data, int n)
+static int isn_write(istream68_t * istream, const void * data, int n)
 {
-  return ism_read_or_write(istream, n);
+  return isn_read_or_write(istream, n);
 }
 
-static int ism_length(istream68_t * istream)
+static int isn_flush(istream68_t * istream)
 {
-  istream68_null_t * ism = (istream68_null_t *)istream;
-
-  return (ism) ? ism->size : -1;
+  istream68_null_t * isn = (istream68_null_t *)istream;
+  return -!isn->open;
 }
 
-static int ism_tell(istream68_t * istream)
+static int isn_length(istream68_t * istream)
 {
-  istream68_null_t * ism = (istream68_null_t *)istream;
+  istream68_null_t * isn = (istream68_null_t *)istream;
 
-  return (!ism || !ism->open)
+  return isn->size;
+}
+
+static int isn_tell(istream68_t * istream)
+{
+  istream68_null_t * isn = (istream68_null_t *)istream;
+
+  return !isn->open
     ? -1
-    : ism->pos;
+    : isn->pos
+    ;
 }
 
-static int ism_seek(istream68_t * istream, int offset)
+static int isn_seek(istream68_t * istream, int offset)
 {
-  istream68_null_t * ism = (istream68_null_t *)istream;
+  istream68_null_t * isn = (istream68_null_t *)istream;
 
-  if (ism) {
-    offset += ism->pos;
+  if (isn) {
+    offset += isn->pos;
     if (offset >= 0) {
-      ism->pos = offset;
+      isn->pos = offset;
       return 0;
     }
   }
   return -1;
 }
 
-static void ism_destroy(istream68_t * istream)
+static void isn_destroy(istream68_t * istream)
 {
   free68(istream);
 }
 
 static const istream68_t istream68_null = {
-  ism_name,
-  ism_open, ism_close,
-  ism_read, ism_write,
-  ism_length, ism_tell, ism_seek, ism_seek,
-  ism_destroy
+  isn_name,
+  isn_open, isn_close,
+  isn_read, isn_write, isn_flush,
+  isn_length, isn_tell, isn_seek, isn_seek,
+  isn_destroy
 };
 
 istream68_t * istream68_null_create(const char * name)
 {
-  istream68_null_t *ism;
+  istream68_null_t *isn;
   int size;
   static const char hd[] = "null://";
 
@@ -159,19 +170,19 @@ istream68_t * istream68_null_create(const char * name)
 
   size = sizeof(istream68_null_t) + sizeof(hd)-1 + strlen(name);
 
-  ism = alloc68(size);
-  if (!ism) {
+  isn = alloc68(size);
+  if (!isn) {
     return 0;
   }
 
-  ism->istream = istream68_null;
-  ism->size    = 0;
-  ism->pos     = 0;
-  ism->open    = 0;
-  strcpy(ism->name,hd);
-  strcat(ism->name,name);
+  isn->istream = istream68_null;
+  isn->size    = 0;
+  isn->pos     = 0;
+  isn->open    = 0;
+  strcpy(isn->name,hd);
+  strcat(isn->name,name);
 
-  return &ism->istream;
+  return &isn->istream;
 }
 
 #else /* #ifndef ISTREAM68_NO_NULL */
@@ -184,7 +195,7 @@ istream68_t * istream68_null_create(const char * name)
 
 istream68_t * istream68_null_create(const char * name)
 {
-  error68_add("istream68_null_create(%s) : not supported", name);
+  msg68_error("null68: create -- *NOT SUPPORTED*\n");
   return 0;
 }
 

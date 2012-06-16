@@ -1,25 +1,28 @@
 /*
- *                 file68 - file descriptor stream
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    istream68_fd.c
+ * @brief   implements istream68 VFS for file descriptor
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-20 13:15:29 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: istream68_fd.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -65,7 +68,7 @@ static const char * ifdname(istream68_t * istream)
 {
   istream68_fd_t * isf = (istream68_fd_t *)istream;
 
-  return (!isf || !isf->name[0])
+  return (!isf->name[0])
     ? 0
     : isf->name;
 }
@@ -75,7 +78,7 @@ static int ifdopen(istream68_t * istream)
   int imode;
   istream68_fd_t * isf = (istream68_fd_t *)istream;
 
-  if (!isf || !isf->name || isf->fd != -1) {
+  if (!isf->name || isf->fd != -1) {
     return -1;
   }
 
@@ -110,7 +113,7 @@ static int ifdclose(istream68_t * istream)
   istream68_fd_t * isf = (istream68_fd_t *)istream;
   int fd;
 
-  if (!isf || isf->fd == -1) {
+  if (isf->fd == -1) {
     return -1;
   }
   fd = isf->fd;
@@ -122,7 +125,7 @@ static int ifdclose(istream68_t * istream)
 static int ifdread(istream68_t * istream, void * data, int n)
 {
   istream68_fd_t * isf = (istream68_fd_t *)istream;
-  return  (!isf || isf->fd == -1)
+  return  (isf->fd == -1)
     ? -1
     : read(isf->fd, data, n);
 }
@@ -130,12 +133,28 @@ static int ifdread(istream68_t * istream, void * data, int n)
 static int ifdwrite(istream68_t * istream, const void * data, int n)
 {
   istream68_fd_t * isf = (istream68_fd_t *)istream;
-
-  return (!isf || isf->fd == -1)
+  return isf->fd == -1
     ? -1
-    : write(isf->fd, data, n);
+    : write(isf->fd, data, n)
+    ;
 }
 
+#if defined(HAVE_FDATASYNC)
+# define MY_FSYNC(fd) fdatasync(fd)
+#elif defined(HAVE_FSYNC)
+# define MY_FSYNC(fd) fsync(fd)
+#else
+# define MY_FSYNC(fd) 0
+#endif
+
+static int ifdflush(istream68_t * istream)
+{
+  istream68_fd_t * isf = (istream68_fd_t *)istream;
+  return isf->fd == -1
+    ? -1
+    : MY_FSYNC(isf->fd)
+    ;
+}
 
 /* We could have store the length value at opening, but this way it handles
  * dynamic changes of file size.
@@ -145,7 +164,7 @@ static int ifdlength(istream68_t * istream)
   istream68_fd_t * isf = (istream68_fd_t *)istream;
   off_t pos,len = -1;
 
-  if (!isf || isf->fd == -1) {
+  if (isf->fd == -1) {
     return -1;
   }
 
@@ -164,18 +183,20 @@ static int ifdtell(istream68_t * istream)
 {
   istream68_fd_t * isf = (istream68_fd_t *)istream;
 
-  return (!isf || isf->fd == -1)
+  return isf->fd == -1
     ? -1
-    : lseek(isf->fd,0,SEEK_CUR);
+    : lseek(isf->fd,0,SEEK_CUR)
+    ;
 }
 
 static int ifdseek(istream68_t * istream, int offset)
 {
   istream68_fd_t * isf = (istream68_fd_t *)istream;
 
-  return (!isf || isf->fd == -1)
+  return isf->fd == -1
     ? -1
-    : lseek(isf->fd, offset, SEEK_CUR);
+    : lseek(isf->fd, offset, SEEK_CUR)
+    ;
 }
 
 static void ifddestroy(istream68_t * istream)
@@ -184,8 +205,12 @@ static void ifddestroy(istream68_t * istream)
 }
 
 static const istream68_t istream68_fd = {
-  ifdname, ifdopen, ifdclose, ifdread, ifdwrite,
-  ifdlength, ifdtell, ifdseek, ifdseek, ifddestroy
+  ifdname,
+  ifdopen, ifdclose,
+  ifdread, ifdwrite, ifdflush,
+  ifdlength, ifdtell,
+  ifdseek, ifdseek,
+  ifddestroy
 };
 
 istream68_t * istream68_fd_create(const char * fname, int fd, int mode)
@@ -230,9 +255,9 @@ istream68_t * istream68_fd_create(const char * fname, int fd, int mode)
  * still exist but it always returns error.
  */
 
-istream68_t * istream68_fd_create(context68_t * context,
-                                  const char * fname, int fd, int mode)
+istream68_t * istream68_fd_create(const char * fname, int fd, int mode)
 {
+  msg68_error("fd68: create -- *NOT SUPPORTED*");
   return 0;
 }
 

@@ -1,25 +1,28 @@
 /*
- *                       info68 - FILE stream
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    istream68_file.c
+ * @brief   implements istream68 VFS for FILE
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-15 16:25:54 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: istream68_file.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -55,9 +58,10 @@ static const char * isf_name(istream68_t * istream)
 {
   istream68_file_t * isf = (istream68_file_t *)istream;
 
-  return (!isf || !isf->name[0])
+  return !isf->name[0]
     ? 0
-    : isf->name;
+    : isf->name
+    ;
 }
 
 static int isf_open(istream68_t * istream)
@@ -66,13 +70,9 @@ static int isf_open(istream68_t * istream)
   char mode[8];
   istream68_file_t * isf = (istream68_file_t *)istream;
 
-  if (!isf || !isf->name[0] || isf->f) {
+  if (!isf->name[0] || isf->f) {
     return -1;
   }
-
-/*   SC68os_pdebug("istream68_file::open(%s,%c%c)\n",isf->name, */
-/*              isf->mode.read?'R':'r', */
-/*              isf->mode.write?'W':'w'); */
 
   imode = 0;
   if (ISTREAM68_IS_OPEN_READ(isf->mode)) {
@@ -83,14 +83,11 @@ static int isf_open(istream68_t * istream)
     ++imode;
   }
   if (!imode) {
-    /* No open mode.. */
-/*     SC68os_pdebug("istream68_file::open(%s) : no open mode\n",isf->name); */
     return -1;
   }
   mode[imode++] = 'b';
   mode[imode] = 0;
 
-/*   SC68os_pdebug("istream68_file::open(%s,%s)\n",isf->name,mode); */
   isf->f = fopen(isf->name, mode);
 #ifdef _O_BINARY
   if (isf->f) {
@@ -103,32 +100,43 @@ static int isf_open(istream68_t * istream)
 static int isf_close(istream68_t * istream)
 {
   istream68_file_t * isf = (istream68_file_t *)istream;
-  int err;
+  FILE * f = isf->f;
 
-  if (!isf) {
-    return -1;
-  }
-  err = isf->f ? fclose(isf->f) : -1;
   isf->f = 0;
-  return err;
+  return !f
+    ? -1
+    : fclose(f)
+    ;
 }
 
 static int isf_read(istream68_t * istream, void * data, int n)
 {
   istream68_file_t * isf = (istream68_file_t *)istream;
 
-  return (!isf || !isf->f)
+  return !isf->f
     ? -1
-    : fread(data, 1, n, isf->f);
+    : fread(data, 1, n, isf->f)
+    ;
 }
 
 static int isf_write(istream68_t * istream, const void * data, int n)
 {
   istream68_file_t * isf = (istream68_file_t *)istream;
 
-  return (!isf || !isf->f)
+  return !isf->f
     ? -1
-    : fwrite(data, 1, n, isf->f);
+    : fwrite(data, 1, n, isf->f)
+    ;
+}
+
+static int isf_flush(istream68_t * istream)
+{
+  istream68_file_t * isf = (istream68_file_t *)istream;
+
+  return !isf->f
+    ? -1
+    : fflush(isf->f)
+    ;
 }
 
 
@@ -140,7 +148,7 @@ static int isf_length(istream68_t * istream)
   istream68_file_t * isf = (istream68_file_t *)istream;
   int pos,len;
 
-  if (!isf || !isf->f) {
+  if (!isf->f) {
     return -1;
   }
   /* save current position. */
@@ -163,18 +171,20 @@ static int isf_tell(istream68_t * istream)
 {
   istream68_file_t * isf = (istream68_file_t *)istream;
 
-  return (!isf || !isf->f)
+  return !isf->f
     ? -1
-    : ftell(isf->f);
+    : ftell(isf->f)
+    ;
 }
 
 static int isf_seek(istream68_t * istream, int offset)
 {
   istream68_file_t * isf = (istream68_file_t *)istream;
 
-  return (!isf || !isf->f)
+  return !isf->f
     ? -1
-    : fseek(isf->f, offset, SEEK_CUR);
+    : fseek(isf->f, offset, SEEK_CUR)
+    ;
 }
 
 static void isf_destroy(istream68_t * istream)
@@ -185,7 +195,7 @@ static void isf_destroy(istream68_t * istream)
 static const istream68_t istream68_file = {
   isf_name,
   isf_open, isf_close,
-  isf_read, isf_write,
+  isf_read, isf_write, isf_flush,
   isf_length, isf_tell, isf_seek, isf_seek,
   isf_destroy
 };
@@ -230,6 +240,7 @@ istream68_t * istream68_file_create(const char * fname, int mode)
 istream68_t * istream68_file_create(context68_t * context,
                                     const char * fname, int mode)
 {
+  msg68_error("file68: create -- *NOT SUPPORTED*");
   return 0;
 }
 

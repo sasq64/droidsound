@@ -1,23 +1,26 @@
 /*
- *             sc68 - Paula emulator (Amiga soundchip)
- *             Copyright (C) 2001-2009 Benjamin Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    paulaemul.c
+ * @brief   Paula emulator (Amiga soundchip)
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-27 12:13:51 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
- * If not, see <http://www.gnu.org/licenses/>.
  *
- * $Id: paulaemul.c 126 2009-07-15 08:58:51Z benjihan $
+ * If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -31,8 +34,8 @@
 # include "default_option68.h"
 #endif
 
-#include <io68/paulaemul.h>
-#include <emu68/assert68.h>
+#include "io68/paulaemul.h"
+#include "emu68/assert68.h"
 #include <sc68/msg68.h>
 
 #ifndef DEBUG_PL_O
@@ -42,7 +45,7 @@ int pl_cat = msg68_DEFAULT;
 
 /* Define this once to calculate and copy past the volume table. This
  * is required only if PL_VOL_FIX or Tvol[] are modified.
- */ 
+ */
 #undef PAULA_CALCUL_TABLE
 
 #ifdef PAULA_CALCUL_TABLE
@@ -170,8 +173,8 @@ static int set_clock(paula_t * const paula, int clock_type, uint68_t f)
     tmp >>= fix - ct_fix;
   else
     tmp <<= ct_fix - fix;
-  msg68(pl_cat,"paula  : clock -- *%s*\n",
-        clock_type == PAULA_CLOCK_PAL ? "PAL" : "NTSC");
+  TRACE68(pl_cat, "paula  : clock -- *%s*\n",
+          clock_type == PAULA_CLOCK_PAL ? "PAL" : "NTSC");
   paula->clkperspl = (plct_t) tmp;
   return f;
 }
@@ -188,11 +191,9 @@ int paula_sampling_rate(paula_t * const paula, int hz)
 
   default:
     if (hz < SAMPLING_RATE_MIN) {
-      msg68(pl_cat,"paula  : sampling rate out of range -- *%dhz*\n", hz);
       hz = SAMPLING_RATE_MIN;
     }
     if (hz > SAMPLING_RATE_MAX) {
-      msg68(pl_cat,"paula  : sampling rate out of range -- *%dhz*\n", hz);
       hz = SAMPLING_RATE_MAX;
     }
     if (!paula) {
@@ -200,8 +201,8 @@ int paula_sampling_rate(paula_t * const paula, int hz)
     } else {
       set_clock(paula, paula->clock, hz);
     }
-    msg68(pl_cat,"paula  : %s sampling rate -- *%dhz*\n",
-          paula ? "select" : "default", hz);
+    TRACE68(pl_cat,"paula  : %s sampling rate -- *%dhz*\n",
+            paula ? "select" : "default", hz);
     break;
   }
   return hz;
@@ -219,7 +220,17 @@ const char * pl_engine_name(const int engine)
   case PAULA_ENGINE_SIMPLE: return "SIMPLE";
   case PAULA_ENGINE_LINEAR: return "LINEAR";
   }
-  return 0;
+  return "INVALID";
+}
+
+static
+const char * pl_clock_name(const int clock)
+{
+  switch (clock) {
+  case PAULA_CLOCK_PAL:  return "PAL";
+  case PAULA_CLOCK_NTSC: return "NTSC";
+  }
+  return "INVALID";
 }
 
 int paula_engine(paula_t * const paula, int engine)
@@ -236,9 +247,9 @@ int paula_engine(paula_t * const paula, int engine)
   case PAULA_ENGINE_SIMPLE:
   case PAULA_ENGINE_LINEAR:
     *(paula ? &paula->engine : &default_parms.engine) = engine;
-    msg68(pl_cat, "paula  : %s engine -- *%s*\n",
-          paula ? "select" : "default",
-          pl_engine_name(engine));
+    TRACE68(pl_cat, "paula  : %s engine -- *%s*\n",
+            paula ? "select" : "default",
+            pl_engine_name(engine));
     break;
   }
   return engine;
@@ -301,16 +312,10 @@ void paula_cleanup(paula_t * const paula) {}
 
 static void pl_info(paula_t * const paula)
 {
-  const char * clock = (paula->clock == PAULA_CLOCK_PAL)
-    ? "PAL"
-    : "NTSC"
-    ;
-  
-  msg68_info("paula  : engine -- *%s*\n", pl_engine_name(paula->engine));
-  msg68_info("paula  : clock -- *%s*\n", clock);
-  msg68_info("paula  : sampling rate -- *%dhz*\n", (int)paula->hz);
+  msg68_notice("paula  : engine -- *%s*\n", pl_engine_name(paula->engine));
+  msg68_notice("paula  : clock -- *%s*\n", pl_clock_name(paula->clock));
+  msg68_notice("paula  : sampling rate -- *%dhz*\n", (int)paula->hz);
 }
-
 
 int paula_setup(paula_t * const paula,
                 paula_setup_t * const setup)
@@ -437,7 +442,7 @@ static void mix_one(paula_t * const paula,
     low = adr & imask;
     idx = adr >> ct_fix;                /* current index         */
     last = mem[idx++];                  /* save last sample read */
-    
+
     if ( ( (plct_t) idx << ct_fix ) >= end )
       idx = readr >> ct_fix;            /* loop index     */
     v1 = (s8) mem[idx];                 /* next sample    */

@@ -7,9 +7,7 @@
  *
  */
 
-/* $Id: sc68.h 126 2009-07-15 08:58:51Z benjihan $ */
-
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2011 Benjamin Gerard */
 
 #ifndef _SC68_SC68_H_
 #define _SC68_SC68_H_
@@ -61,9 +59,11 @@
  *
  *  @code
  *  #include <sc68/sc68.h>
+ *  #include <FILE.h> // for fwrite()
  *
  *  sc68_t * sc68 = 0;
  *  char buffer[512*4];
+ *  int  n;
  *
  *  // Initialise the library.
  *  // You should consider using sc68_init_t struct.
@@ -78,14 +78,14 @@
  *    goto error;
  *  }
  *
- *  // Set a track (optionnal).
- *  sc68_play(sc68, track, 1);
+ *  // Set track and loop (optionnal).
+ *  sc68_play(sc68, 1, 1);
  *
  *  // Loop until the end of disk. You can use SC68_LOOP to wait the end
  *  // of the track. Notice that SC68_ERROR set all bits and make the loop
  *  // break too.
- *  while ( ! (sc68_process(sc68, buffer, sizeof(buffer) >> 2) & SC68_END)) {
- *    // Do something with buffer[] here.
+ *  while ( (n=sizeof(buffer)>>2), ! (sc68_process(sc68, buffer, &n) & SC68_END) ) {
+ *    fwrite(buffer, 1, n, stdout); // copy PCM to stdout
  *  }
  *
  *  // Close eject the current disk.
@@ -105,7 +105,8 @@
  */
 
 #ifndef SC68_API
-/** sc68 exported symbol.
+/**
+ *  sc68 exported symbol.
  *
  *  Define special atribut for exported symbol.
  *
@@ -123,7 +124,8 @@ typedef struct _sc68_s sc68_t;
 /** API disk. */
 typedef void * sc68_disk_t;
 
-/** message function.
+/**
+ *  Message function.
  *
  *  @param  cat   @ref msg68_cat_e "message category"
  *  @param  sc68  sc68 instance
@@ -132,17 +134,12 @@ typedef void * sc68_disk_t;
  * */
 typedef void (*sc68_msg_t)();
 
-/** API initialization parameters.
+/**
+ *  API initialization parameters.
  *
  *    The sc68_init_t must be properly filled before calling the
  *    sc68_init() function.
  *
- * @code
- * // Minimum code zeroes init structure.
- * sc68_init_t init;
- * memset(&init,0,sizeof(init));
- * sc68_init(&init);
- * @endcode
  */
 typedef struct {
 
@@ -163,7 +160,8 @@ typedef struct {
 
 } sc68_init_t;
 
-/** Instance creation parameters.
+/**
+ *  Instance creation parameters.
  */
 typedef struct {
   /** sampling rate in hz (non 0 value overrides config default).
@@ -185,79 +183,94 @@ typedef struct {
 
 } sc68_create_t;
 
-/** Music information.
- *
- * @warning  Most string in this structure point on disk and must not be used
- *           after the sc68_close() call.
- *
+/**
+ * metatag struct.
+ * @warning  MUST match the tag68_t struct defined in tag68.h.
  */
 typedef struct {
-  int track;             /**< Track number (default or current).  */
-  int tracks;            /**< Number of track.                    */
-  const char * title;    /**< Disk or track title.                */
-  const char * author;   /**< Author name.                        */
-  const char * composer; /**< Composer name.                      */
-  const char * ripper;   /**< Ripper name.                        */
-  const char * converter;/**< Converter name.                     */
-  const char * replay;   /**< Replay name.                        */
-  const char * hwname;   /**< Hardware description.               */
-  char time[12];         /**< Time in format TT MM:SS.            */
-  /** Hardware used. */
-  struct {
-    unsigned ym:1;        /**< Music uses YM-2149 (ST).           */
-    unsigned ste:1;       /**< Music uses STE specific hardware.  */
-    unsigned amiga:1;     /**< Music uses Paula Amiga hardware.   */
-  } hw;
-  unsigned int time_ms;   /**< Duration in ms.                    */
-  unsigned int start_ms;  /**< Absolute start time in disk in ms. */
-  unsigned int rate;      /**< Replay rate.                       */
-  unsigned int addr;      /**< Load address.                      */
+  char * key;                     /**< Tag name.  */
+  char * val;                     /**< Tag value. */
+} sc68_tag_t;
+
+/**
+ * Music common information.
+ */
+typedef struct {
+  unsigned track;       /**< Current/Default track [1..99].     */
+  unsigned time_ms;     /**< Track/Disk duration.               */
+  char     time[12];    /**< Time in format TT MM:SS.           */
+  unsigned ym:1;        /**< Music uses YM-2149 (ST).           */
+  unsigned ste:1;       /**< Music uses STE specific hardware.  */
+  unsigned amiga:1;     /**< Music uses Paula Amiga hardware.   */
+  const char * hw;      /**< Hardware name.                     */
+  int          tags;    /**< Number of tags.                    */
+  sc68_tag_t * tag;
+} sc68_cinfo_t;
+
+/**
+ * Music information.
+ */
+typedef struct {
+  int tracks;            /**< number of tracks [1..99].          */
+  unsigned start_ms;     /**< Absolute start time in disk in ms. */
+  unsigned loop_ms;      /**< Length of track loop in ms.        */
+
+  unsigned int addr;     /**< Laod address.                      */
+  unsigned int rate;     /**< Replay rate.                       */
+  char * replay;         /**< replay name.                       */
+
+  sc68_cinfo_t dsk;      /**< disk info.                         */
+  sc68_cinfo_t trk;      /**< track info (MUST BE just after dsk.*/
+
+  char * album;          /**< Points to album's title tag.       */
+  char * title;          /**< Points to track's title tag.       */
+  char * artist;         /**< Points to track's artist tag.      */
 } sc68_music_info_t;
 
 
-/** @name  Process status (as returned by sc68_process() function)
- *  @{
+/**
+ * Return code (as returned by sc68_process() function)
  */
+enum sc68_code_e {
+  SC68_IDLE   = (1<<0),   /**< Set if no emulation has been runned. */
+  SC68_CHANGE = (1<<1),   /**< Set if track has changed.            */
+  SC68_LOOP   = (1<<2),   /**< Set if track has looped.             */
+  SC68_END    = (1<<3),   /**< Set if track(s) has ended.           */
+  SC68_SEEK   = (1<<4),   /**< Set if currently seeking.            */
+  /* */
+  SC68_OK     =  0,                     /**< Success return code.  */
+  SC68_ERROR  = ~0                      /**< Failure return code.  */
+};
 
-#define SC68_IDLE_BIT   1 /**< Set if no emulation pass has been runned. */
-#define SC68_CHANGE_BIT 2 /**< Set when track has changed.               */
-#define SC68_LOOP_BIT   4 /**< Set when track has loop.                  */
-#define SC68_END_BIT    5 /**< Set when finish with all tracks.          */
-
-#define SC68_IDLE       (1<<SC68_IDLE_BIT)   /**< @see SC68_IDLE_BIT   */
-#define SC68_CHANGE     (1<<SC68_CHANGE_BIT) /**< @see SC68_CHANGE_BIT */
-#define SC68_LOOP       (1<<SC68_LOOP_BIT)   /**< @see SC68_LOOP_BIT   */
-#define SC68_END        (1<<SC68_END_BIT)    /**< @see SC68_END_BIT    */
-
-#define SC68_MIX_OK     0  /**< Not really used. */
-#define SC68_MIX_ERROR  -1 /**< Error.           */
-
-/** @} */
-
-/** sc68 sampling rate values in hertz (hz). */
+/**
+ * sc68 sampling rate values in hertz (hz).
+ */
 enum sc68_spr_e {
   SC68_SPR_QUERY   = -1, /**< Query default or current sampling rate. */
   SC68_SPR_DEFAULT =  0  /**< Default sampling rate.                  */
 };
 
-/** @name API control functions.
+/**
+ * @name API control functions.
  *  @{
  */
 
 SC68_API
-/** Get version number
- *
+/**
+ * Get version number
  */
 int sc68_version(void);
 
 SC68_API
-/** Get version string
+/**
+ * Get version string
  *
  */
 const char * sc68_versionstr(void);
 
 SC68_API
-/** Initialise sc68 API.
+/**
+ * Initialise sc68 API.
  *
  * @param   init  Initialization parameters.
  *
@@ -270,13 +283,15 @@ SC68_API
 int sc68_init(sc68_init_t * init);
 
 SC68_API
-/** Destroy sc68 API.
+/**
+ * Destroy sc68 API.
  *
  */
 void sc68_shutdown(void);
 
 SC68_API
-/** Create sc68 instance.
+/**
+ * Create sc68 instance.
  *
  * @param   creation  Creation parameters.
  *
@@ -288,7 +303,8 @@ SC68_API
 sc68_t * sc68_create(sc68_create_t * create);
 
 SC68_API
-/** Destroy sc68 instance.
+/**
+ * Destroy sc68 instance.
  *
  * @param   sc68  sc68 instance to destroy.
  *
@@ -298,7 +314,17 @@ SC68_API
 void sc68_destroy(sc68_t * sc68);
 
 SC68_API
-/** Get user private data pointer.
+/**
+ * Get instance name.
+ *
+ * @param   sc68  sc68 instance to destroy.
+ * @return  sc68 instance name.
+ */
+const char * sc68_name(sc68_t * sc68);
+
+SC68_API
+/**
+ * Get user private data pointer.
  *
  *   The sc68_cookie_ptr() function get a pointer to the user private
  *   data. This pointer can be use to get a modify this sc68 instance
@@ -311,7 +337,8 @@ SC68_API
 void ** sc68_cookie_ptr(sc68_t * sc68);
 
 SC68_API
-/** Set/Get sampling rate.
+/**
+ * Set/Get sampling rate.
  *
  * @param   sc68  sc68 api or 0 for library default.
  * @param   hz    @ref sc68_spr_e "sampling rate" (in hz).
@@ -323,7 +350,8 @@ SC68_API
 int sc68_sampling_rate(sc68_t * sc68, int hz);
 
 SC68_API
-/** Set share data path.
+/**
+ * Set share data path.
  *
  * @param   sc68  sc68 instance.
  * @param   path  New shared data path.
@@ -331,7 +359,8 @@ SC68_API
 void sc68_set_share(sc68_t * sc68, const char * path);
 
 SC68_API
-/** Set user data path.
+/**
+ * Set user data path.
  *
  * @param   sc68  sc68 instance.
  * @param   path  New user data path.
@@ -340,7 +369,8 @@ void sc68_set_user(sc68_t * sc68, const char * path);
 
 
 SC68_API
-/** Empty error message stack.
+/**
+ * Empty error message stack.
  *
  * @param   sc68   sc68 instance or 0 for library messages.
  */
@@ -348,7 +378,8 @@ void sc68_error_flush(sc68_t * sc68);
 
 
 SC68_API
-/** Pop and return last stacked error message.
+/**
+ * Pop and return last stacked error message.
  *
  * @param   sc68   sc68 instance or 0 for library messages.
  * @return  Error string.
@@ -358,7 +389,8 @@ const char * sc68_error_get(sc68_t * sc68);
 
 
 SC68_API
-/** Stack an error Add Pop and return last stacked error message.
+/**
+ * Stack an error Add Pop and return last stacked error message.
  *
  * @param   sc68   sc68 instance or 0 for library messages.
  * @return  Error string.
@@ -368,7 +400,8 @@ int sc68_error_add(sc68_t * sc68, const char * fmt, ...);
 
 
 SC68_API
-/** Display debug message.
+/**
+ * Display debug message.
  *
  *  @param  sc68  sc68 instance.
  *  @param  fmt   printf() like format string.
@@ -378,15 +411,19 @@ SC68_API
  */
 void sc68_debug(sc68_t * sc68, const char * fmt, ...);
 
-/** @} */
+/**
+ * @}
+ */
 
 
-/** @name Music control functions.
+/**
+ * @name Music control functions.
  *  @{
  */
 
 SC68_API
-/** Fill PCM buffer.
+/**
+ * Fill PCM buffer.
  *
  *    The sc68_process() function fills the PCM buffer with the current
  *    music data. If the current track is finished and it is not the last
@@ -394,16 +431,17 @@ SC68_API
  *    value that report events that have occured during this pass.
  *
  * @param  sc68  sc68 instance.
- * @param  buf   PCM buffer (must be at leat 4*n bytes).
- * @param  n     Number of sample to fill.
+ * @param  buf   PCM buffer (must be at least 4*n bytes).
+ * @param  n     Pointer to number of PCM sample to fill.
  *
  * @return Process status
  *
  */
-int sc68_process(sc68_t * sc68, void * buf, int n);
+int sc68_process(sc68_t * sc68, void * buf, int * n);
 
 SC68_API
-/** Set/Get current track.
+/**
+ * Set/Get current track.
  *
  *   The sc68_play() function get or set current track.
  *
@@ -422,7 +460,7 @@ SC68_API
  *   function. If loop is -1 the default music loop is used. If loop
  *   is 0 does an infinite loop.
  *
- * @param  sc68    sc68 instance.
+ * @param  sc68   sc68 instance.
  * @param  track  track number [-1:read current, 0:set disk default]
  * @param  loop   number of loop [-1:default 0:infinite]
  *
@@ -435,7 +473,8 @@ SC68_API
 int sc68_play(sc68_t * sc68, int track, int loop);
 
 SC68_API
-/** Stop playing.
+/**
+ * Stop playing.
  *
  *     The sc68_stop() function stop current playing track. Like the
  *     sc68_play() function the sc68_stop() function does not really
@@ -450,7 +489,8 @@ SC68_API
 int sc68_stop(sc68_t * sc68);
 
 SC68_API
-/** Set/Get current play position.
+/**
+ * Set/Get current play position.
  *
  *    The sc68_seek() functions get or set the current play position.
  *
@@ -481,41 +521,47 @@ SC68_API
 int sc68_seek(sc68_t * sc68, int time_ms, int * is_seeking);
 
 SC68_API
-/** Get disk/track information.
+/**
+ * Get disk/track information.
  *
- * @param  sc68   sc68 instance
- * @param  info  track/disk information structure to be filled.
- * @param  track track number (-1:current/default 0:disk-info).
- * @param  disk  disk to get information from (0 means API disk).
+ * @param  info  pointer to a sc68_music_info_t struct to be fill.
+ * @param  sc68  sc68 instance
+ * @param  track track number (-1 or 0:current/default).
+ * @param  disk  disk to get information from (0 for current disk).
  *
  * @return error code
- * @retval 0  Success.
- * @retval -1 Failure.
- *
- * @warning API disk informations are valid as soon as the disk is loaded and
- *          must not be used after api_load() or api_close() function call.
- *          If disk was given the information are valid until the disk is
- *          freed.
+ * @retval  0  Success.
+ * @retval -1  Failure.
  *
  */
-int sc68_music_info(sc68_t * sc68, sc68_music_info_t * info, int track,
-                    sc68_disk_t disk);
+int sc68_music_info(sc68_t * sc68, sc68_music_info_t * info,
+                    int track, sc68_disk_t disk);
 
-/** @} */
+/**
+ * @}
+ */
 
 
-/** @name File functions.
+/**
+ * @name File functions.
  *  @{
  */
 
+/**
+ * Get official sc68 mime-type.
+ * @retval  "audio/x-sc68"
+ */
+const char * sc68_mimetype(void);
 
 #ifdef _FILE68_ISTREAM68_H_
 SC68_API
-/** Create a stream from url. */
+/**
+ * Create a stream from url. */
 istream68_t *  sc68_stream_create(const char * url, int mode);
 #endif
 
-/** Verify an sc68 disk. */
+/**
+ * Verify an sc68 disk. */
 #ifdef _FILE68_ISTREAM68_H_
 SC68_API
 int sc68_verify(istream68_t * is);
@@ -528,7 +574,8 @@ SC68_API
 int sc68_is_our_url(const char * url,
                     const char *exts, int * is_remote);
 
-/** Load an sc68 disk for playing. */
+/**
+ * Load an sc68 disk for playing. */
 #ifdef _FILE68_ISTREAM68_H_
 SC68_API
 int sc68_load(sc68_t * sc68, istream68_t * is);
@@ -538,7 +585,11 @@ int sc68_load_url(sc68_t * sc68, const char * url);
 SC68_API
 int sc68_load_mem(sc68_t * sc68, const void * buffer, int len);
 
-/** Load an sc68 disk outside the API. Free it with sc68_free() function. */
+/**
+ * Load an sc68 disk outside the API.
+ *
+ *  @notice Free it with sc68_disk_free() function.
+ */
 #ifdef _FILE68_ISTREAM68_H_
 SC68_API
 sc68_disk_t sc68_load_disk(istream68_t * is);
@@ -547,10 +598,12 @@ SC68_API
 sc68_disk_t sc68_load_disk_url(const char * url);
 SC68_API
 sc68_disk_t sc68_disk_load_mem(const void * buffer, int len);
-
+SC68_API
+void sc68_disk_free(sc68_disk_t disk);
 
 SC68_API
-/** Change current disk.
+/**
+ * Change current disk.
  *
  * @param  sc68   sc68 instance
  * @param  disk  New disk (0 does a sc68_close())
@@ -567,7 +620,8 @@ SC68_API
 int sc68_open(sc68_t * sc68, sc68_disk_t disk);
 
 SC68_API
-/** Close current disk.
+/**
+ * Close current disk.
  *
  * @param  sc68  sc68 instance
  *
@@ -576,7 +630,8 @@ SC68_API
 void sc68_close(sc68_t * sc68);
 
 SC68_API
-/** Get number of tracks.
+/**
+ * Get number of tracks.
  *
  * @param  sc68  sc68 instance
  *
@@ -587,115 +642,102 @@ SC68_API
  */
 int sc68_tracks(sc68_t * sc68);
 
-/** @} */
+/**
+ * @}
+ */
 
 
-/** @name Configuration functions
+/**
+ * @name Configuration functions
  *  @{
  */
 
 SC68_API
-/** Load config.
+/**
+ * Load config.
  *
  * @param  sc68  sc68 instance
  */
 int sc68_config_load(sc68_t * sc68);
 
 SC68_API
-/** Save config.
+/**
+ * Save config.
  *
  * @param  sc68  sc68 instance
  */
 int sc68_config_save(sc68_t * sc68);
 
-#if 0
 SC68_API
-/** Get config variable idex.
- *
- * @param  sc68   sc68 instance
- * @param  name  name of config variable
- *
- * @return  config index
- * @retval -1 Error
- */
-int sc68_config_idx(sc68_t * sc68, const char * name);
-
-SC68_API
-/** Get config variable value.
- *
- * @param  sc68  sc68 instance
- * @see config68_get()
- */
-config68_type_t sc68_config_get(sc68_t * sc68,
-                                int * idx,
-                                const char ** name);
-
-SC68_API
-/** Get type and range of a config entry.
- *
- * @param  sc68  sc68 instance
- *
- * @see config68_range()
- */
-config68_type_t sc68_config_range(sc68_t * sc68, int idx,
-                                  int * min, int * max, int * def);
-
-SC68_API
-/** Set config variable value.
- *
- * @param  sc68  sc68 instance
- * @see config68_set()
- */
-config68_type_t sc68_config_set(sc68_t * sc68,
-                                int idx,
-                                const char * name,
-                                int v,
-                                const char * s);
-#endif
-
-SC68_API
-/** Apply current configuration to sc68.
+/**
+ * Apply current configuration to sc68.
  *
  * @param  sc68  sc68 instance
  */
 void sc68_config_apply(sc68_t * sc68);
 
-/** @} */
+/**
+ * @}
+ */
 
 
-/** @name Dynamic memory access.
+/**
+ * @name Dynamic memory access.
  *  @{
  */
 
 SC68_API
-/** Allocate dynamic memory.
+/**
+ * Allocate dynamic memory.
  *
- *   The sc68_alloc() function calls the SC68alloc() function.
+ *   The sc68_alloc() function calls the alloc68() function.
  *
  * @param  n  Size of buffer to allocate.
  *
  * @return pointer to allocated memory buffer.
  * @retval 0 error
  *
- * @see SC68alloc()
- *
+ * @see sc68_calloc()
+ * @see sc68_free()
  */
-void * sc68_alloc(/* sc68_t * api,  */unsigned int n);
+void * sc68_alloc(unsigned int n);
 
 SC68_API
-/** Free dynamic memory.
+/**
+ * Allocate zeroed dynamic memory.
  *
- *   The sc68_free() function calls the SC68free() function.
+ *   The sc68_calloc() function calls the calloc68() function.
+ *
+ * @param  n  Size of buffer to allocate.
+ *
+ * @return pointer to allocated memory buffer.
+ * @retval 0 error
+ *
+ * @see sc68_alloc()
+ * @see sc68_free()
+ */
+void * sc68_calloc(unsigned int n);
+
+
+SC68_API
+/**
+ * Free dynamic memory.
+ *
+ *   The sc68_free() function calls the free68() function.
  *
  * @param  data  Previously allocated memory buffer.
  *
+ * @see sc68_alloc()
+ * @see sc68_calloc()
  */
-void sc68_free(/* sc68_t * api,  */void * data);
-
-/** @} */
+void sc68_free(void * data);
 
 /**
- *  @}
+ * @}
+ */
+
+/**
+ * @}
  */
 
 #endif /* #ifndef _SC68_SC68_H_ */

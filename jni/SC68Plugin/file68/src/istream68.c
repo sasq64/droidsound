@@ -1,20 +1,25 @@
 /*
- *                    file68 - stream operations
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    istream68.c
+ * @brief   VFS functions
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-15 16:40:36 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -31,7 +36,8 @@ const char * istream68_filename(istream68_t * istream)
   const char * name =
     (!istream || !istream->name)
     ? 0
-    : istream->name(istream);
+    : istream->name(istream)
+    ;
   return name ? name : "<nul>";
 }
 
@@ -39,14 +45,21 @@ int istream68_open(istream68_t *istream)
 {
   return (!istream || !istream->open)
     ? -1
-    : istream->open(istream);
+    : istream->open(istream)
+    ;
 }
 
 int istream68_close(istream68_t *istream)
 {
-  return (!istream || !istream->close)
-    ? -1
-    : istream->close(istream);
+  int err = -1;
+
+  if (istream) {
+    if (istream->flush)
+      istream->flush(istream);
+    if (istream->close)
+      err = istream->close(istream);
+  }
+  return err;
 }
 
 int istream68_read(istream68_t *istream, void * data, int len)
@@ -60,21 +73,32 @@ int istream68_write(istream68_t *istream, const void * data, int len)
 {
   return (!istream || !istream->write)
     ? -1
-    : istream->write(istream, data, len);
+    : istream->write(istream, data, len)
+    ;
 }
 
 int istream68_length(istream68_t *istream)
 {
   return (!istream || !istream->length)
     ? -1
-    : istream->length(istream);
+    : istream->length(istream)
+    ;
 }
 
 int istream68_tell(istream68_t *istream)
 {
   return (!istream || !istream->tell)
     ? -1
-    : istream->tell(istream);
+    : istream->tell(istream)
+    ;
+}
+
+int istream68_flush(istream68_t *istream)
+{
+  return (!istream || !istream->flush)
+    ? -1
+    : istream->flush(istream)
+    ;
 }
 
 static int isseek(istream68_t *istream, int pos, int offset)

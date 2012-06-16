@@ -1,27 +1,28 @@
 /*
- *            sc68 - MicroWire IO plugin (STE soundchip)
- *             Copyright (C) 2001-2009 Benjamin Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    mw_io.c
+ * @brief   MicroWire I/O plugin (STE soundchip)
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-06 14:15:44 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: mw_io.c 126 2009-07-15 08:58:51Z benjihan $ */
-
-/* Copyright (C) 1998-2009 Benjamin Gerard */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -43,10 +44,10 @@ static int68_t _mw_readB(mw_io68_t * const mwio, const u8 addr)
 {
   const uint_t ct = mwio->mw.ct >> mwio->mw.ct_fix;
 
-  /* Just need to be sure no one reads these word registers in byte */ 
+  /* Just need to be sure no one reads these word registers in byte */
   assert(addr != MW_DATA);
   assert(addr != MW_CTRL);
-  
+
   switch (addr) {
   case MW_CTH:
     return (u8) ( ct >> 16 );
@@ -103,7 +104,7 @@ static void mwio_readL(io68_t * const io)
 
 static void _mw_writeB(mw_io68_t * const mwio, const u8 addr, int68_t v)
 {
-  /* Just need to be sure no one writes these word registers in byte */ 
+  /* Just need to be sure no one writes these word registers in byte */
   assert(addr != MW_DATA);
   assert(addr != MW_CTRL);
 
@@ -116,7 +117,7 @@ static void _mw_writeB(mw_io68_t * const mwio, const u8 addr, int68_t v)
 
   case MW_ACTI:
     v &= 3;                             /* ??? should we ? */
-    
+
     /* Reload internal counters
      *
      * $$$ Should we do this whatever the value or only if dma is
@@ -128,7 +129,7 @@ static void _mw_writeB(mw_io68_t * const mwio, const u8 addr, int68_t v)
 
   case MW_CTH: case MW_CTM: case MW_CTL:
     return;
-    
+
   }
 
   if (addr >= 0 && addr < 64)
@@ -220,6 +221,7 @@ static void mwio_destroy(io68_t * const io)
 {
   if (io) {
     mw_cleanup(&((mw_io68_t *)io)->mw);
+    emu68_free(io);
   }
 }
 

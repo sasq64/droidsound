@@ -7,9 +7,7 @@
  *
  */
 
-/* $Id: alloc68.h 126 2009-07-15 08:58:51Z benjihan $ */
-
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2011 Benjamin Gerard */
 
 #ifndef _FILE68_ALLOC68_H_
 #define _FILE68_ALLOC68_H_
