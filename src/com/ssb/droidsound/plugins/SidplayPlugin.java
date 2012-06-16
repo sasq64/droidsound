@@ -98,7 +98,7 @@ public class SidplayPlugin extends DroidSoundPlugin {
 			libraryLoaded = true;
 		}		
 		
-		currentSong = N_load(fs.getContents(), fs.getLength());
+		currentSong = N_load(fs.getContents(), (int) fs.getLength());
 		
 		if(currentSong == 0) {
 			return false;

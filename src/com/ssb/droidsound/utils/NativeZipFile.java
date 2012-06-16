@@ -3,7 +3,7 @@ package com.ssb.droidsound.utils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Enumeration;
+//import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.zip.ZipEntry;
 
@@ -82,7 +82,7 @@ public class NativeZipFile implements Archive {
 		}
 		return null;
 	}
-	
+	/*
 	class MyEnumeration implements Enumeration<MyZipEntry> {
 
 		@SuppressWarnings("unused")
@@ -116,7 +116,7 @@ public class NativeZipFile implements Archive {
 	
 	public Enumeration<? extends ZipEntry> entries() {
 		return new MyEnumeration(this);
-	}
+	}*/
 	
 	static class NZInputStream extends InputStream {
 		@SuppressWarnings("unused")
@@ -243,7 +243,12 @@ public class NativeZipFile implements Archive {
 
 	@Override
 	public FileSource getFileSource(Entry entry) {
-		FileSource fs = new FileSource(this, (MyZipEntry) entry);
+		FileSource fs = new ZipFileSource(this, (MyZipEntry) entry);
 		return fs;
+	}
+
+	@Override
+	public int getFileCount() {
+		return getCount();
 	}	
 }

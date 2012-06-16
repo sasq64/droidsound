@@ -87,7 +87,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 			if(dot >= 0) {
 				String ext = f.getName().substring(dot+1).toUpperCase();
 				if(ext.equals("SPC")) {
-					spcFiles.add(new FileSource(f));
+					spcFiles.add(FileSource.fromFile(f));
 				}
 			}
 		}

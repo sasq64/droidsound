@@ -10,111 +10,71 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.zip.ZipEntry;
 
 import android.os.Environment;
 
-
-public class FileSource {
+public abstract class FileSource {
 
 	
 	private static final String TAG = FileSource.class.getSimpleName();
 	
 	private File file;
-	private NativeZipFile zipFile;
 	private InputStream inputStream;
 	private byte[] buffer;
 	int bufferPos;
 	long size;
-	private String streamName;
 
 	private File parentDir;
 
-	private ZipEntry zipEntry;
 
 	private boolean isFile;
 
 	private String baseName;
 
-	private String zipDir;
-
-	private String zipPath;
-
 	private boolean leaveParentDir;
-	
-	//private static NativeZipFile cachedZipFile;
-	//private static String cachedFileName;
 
-	public FileSource(File file) {
-		this.file = file;
-		this.size = file.length();
-		this.isFile = true;
-		this.baseName = file.getName();
-		this.zipDir = null;
-		this.zipFile = null;
-	}
+	private String reference;
 	
-	public FileSource(String fileRef) {
+
+	public FileSource(String ref) {
+		reference = ref;
+		int slash = ref.lastIndexOf('/');
+		baseName = ref.substring(slash + 1);		
+	}
+
+	public static FileSource create(String ref) {
+
+		FileSource fs;
 		
-		int slash = fileRef.lastIndexOf('/');
-		this.baseName = fileRef.substring(slash + 1);
-		
-		if(fileRef.startsWith("http:")) {
-			streamName = fileRef;
+
+		if(ref.toLowerCase().contains(".zip/")) {
+			fs = new ZipFileSource(ref);
+		} else if(ref.toLowerCase().startsWith("http")) {
+			fs = new StreamSource(ref);
+		} else {
+			fs = new RealFileSource(new File(ref));
 		}
-		
+
+		return fs;		
 	}
 	
-	public FileSource(String zipPath, String entryName) {
-	
-		this.zipPath = zipPath;
-		
-		try {
-			//if(cachedZipFile != null && cachedFileName.equals(zipPath)) {
-			//	zipFile = cachedZipFile;
-			//} else {
-				zipFile = new NativeZipFile(zipPath);
-				//cachedZipFile = zipFile;
-				//cachedFileName = zipPath;
-			//}
-			zipEntry = (ZipEntry) zipFile.getEntry(entryName);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		initZip();
-		
-	}
-
-	public FileSource(NativeZipFile zip, String entryName) {
-		this.zipFile = zip;
-		this.zipPath = null;
-		zipEntry = (ZipEntry) zipFile.getEntry(entryName);
-		initZip();
+	public static FileSource fromFile(File f) {
+		return new RealFileSource(f);
 	}
 	
-
-	public FileSource(NativeZipFile zip, ZipEntry ze) {
-		this.zipFile = zip;
-		this.zipEntry = ze;
-		this.zipPath = null;
-		initZip();
-			
+	public static FileSource fromData(String name, byte[] bs) {
+		return new DataFileSource(name, bs);
 	}
 
-	void initZip() {
-		this.isFile = false;
-		if(zipFile != null && zipEntry != null) {
-			//Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
-			size = zipEntry.getSize();
-			String zname = zipEntry.getName();				
-			int slash = zname.lastIndexOf('/');
-			this.baseName = zname.substring(slash + 1);
-			if(slash >= 0)
-				this.zipDir = zname.substring(0,slash) + "/";
-			else
-				this.zipDir = "";
-		}
-	}	
+	
+	//protected boolean init(String fileRef) { return false; }	
+	protected File intGetFile() { return null; }
+	protected byte [] intGetContents() { return null; }
+	protected InputStream intGetStream() { return null; }
+	protected FileSource intGetRelative(String name) { return null; }
+
+	
+
 
 
 	public FileSource(String name, byte[] bs) {
@@ -129,66 +89,66 @@ public class FileSource {
 	public byte [] getContents() {
 
 		if(buffer == null) {
-			if(streamName != null) {
-				try {
-					loadStream();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+			
+			buffer = intGetContents();
+			long size = getLength();
+			if(buffer == null) {
+				InputStream is = intGetStream();
+				if(is != null) {
+					buffer = new byte[(int) size];
+					try {
+						is.read(buffer);
+						is.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				} else {
+					File f = intGetFile();
+					if(f != null) {
+						buffer = new byte[(int) size];
+						try {
+							FileInputStream fis = new FileInputStream(f);
+							fis.read(buffer);
+							fis.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
 				}
-			}
-			if(zipEntry != null) {
-				//Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
-				InputStream is = zipFile.getInputStream(zipEntry);
-				buffer = new byte[(int) size];
-				try {
-					is.read(buffer);
-					is.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} else {
-				size = (int) file.length();
-				buffer = new byte[(int) size];
-				try {
-					FileInputStream fis = new FileInputStream(file);
-					fis.read(buffer);
-					fis.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+			}	
 
-			}
 		}
 		return buffer;
 		
 	}
 	
-	public int getLength() {
-		if(size == -1)
-			getContents();
-		return (int) size;
+	public long getLength() {
+		return -1;
 	}
 	
 	public File getFile() {
 		
 		if(file == null) {
 			
-			if(streamName != null) {
-				try {
-					loadStream();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+			// First see if we can get the file directly
+			file = intGetFile();
+			if(file != null) {
 				return file;
 			}
-			
-			getContents();			
+
 			createParentDir();
+
+			file = new File(parentDir, baseName);
+			
+			if(buffer == null)
+				buffer = intGetContents();
+			
+			if(buffer == null)
+				getContents();
+				
 			FileOutputStream fos;
 			try {
-				file = new File(parentDir, baseName);
+				
 				fos = new FileOutputStream(file);
 				fos.write(buffer);
 				fos.flush();
@@ -204,10 +164,7 @@ public class FileSource {
 		return file;
 	}
 	
-	public boolean isStream() {
-		return (streamName != null);
-	}
-		
+	
 	private void createParentDir() {
 		if(parentDir == null) {			
 			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
@@ -226,16 +183,23 @@ public class FileSource {
 	public FileSource getRelative(String name) {
 		FileSource fs = null;
 		
+		// First try the internal function
+		fs = intGetRelative(name);
+		
 		createParentDir();
-		if(isFile) {
-			File file2 = new File(file.getParentFile(), name);
-			fs = new FileSource(file2);			
-		} else if(zipFile != null) {			
-			fs = new FileSource(zipFile, zipDir + name);
+		
+		if(fs == null) {
+			// Otherwise, try creating a relative file manually
+			if(file == null)
+				file = intGetFile();
+			if(file != null) {
+				fs = fromFile(new File(file.getParentFile(), name));
+			}
 		}
-		if(fs != null) {
+
+		if(fs != null)
 			fs.setParentDir(parentDir);
-		}
+		
 		return fs;
 	}
 
@@ -268,20 +232,24 @@ public class FileSource {
 		return isFile;
 	}
 
-	public void read(byte[] data) throws IOException {
+	public int read(byte[] data) throws IOException {
 		if(buffer != null) {
 			System.arraycopy(buffer, bufferPos, data, 0, data.length);
 			bufferPos += data.length;
-		} else if(inputStream != null) {
-			inputStream.read(data);
-		} else if(file !=null) {
-			inputStream = new FileInputStream(file);
-			inputStream.read(data);
-		} else if(zipEntry != null) {
-			//Log.d(TAG, "Entry  '%s' %d\n", zipEntry.getName(), zipEntry.getSize());
-			inputStream = zipFile.getInputStream(zipEntry);
-			inputStream.read(data);
+			return data.length;
+		} 
+		
+		inputStream = intGetStream();		
+		if(inputStream != null) {
+			return inputStream.read(data);
 		}
+			
+		file = intGetFile();
+		if(file !=null) {
+			inputStream = new FileInputStream(file);
+			return inputStream.read(data);
+		}
+		return -1;
 	}
 
 	public void close() {
@@ -291,26 +259,23 @@ public class FileSource {
 			} catch (IOException e) {
 			}
 		inputStream = null;
+		/*
 		if(parentDir != null && !leaveParentDir) {			
 			File [] files = parentDir.listFiles();
 			for(File f : files) {
 				f.delete();
 			}
 			parentDir.delete();			
-		}
-		parentDir = null;
+		}*/
 		
-		if(zipFile != null && zipPath != null)  {			
-			//if(zipFile != cachedZipFile)
-			zipFile.close();			
-		}
+		parentDir = null;
 
 	}
 
 	private boolean loadStream() throws IOException {
 		
 		try {
-			URL url = new URL(streamName);
+			URL url = new URL("");
 	
 			//Log.d(TAG, "Opening URL " + songName);
 	
@@ -367,10 +332,10 @@ public class FileSource {
 		return false;
 	}
 
-	public String getStreamName() {
-		return streamName;
+
+	public String getReference() {
+		return reference;
 	}
 
 
-	
 }

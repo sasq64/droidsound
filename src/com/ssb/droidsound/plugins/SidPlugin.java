@@ -331,7 +331,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		
 		byte [] module = fs.getContents();
 		String name = fs.getName();
-		int size = fs.getLength();
+		int size = (int) fs.getLength();
 		
 		String s = new String(module, 0, 4);
 		if((s.equals("PSID") || s.equals("RSID"))) {
@@ -362,7 +362,7 @@ public class SidPlugin extends DroidSoundPlugin {
 			System.arraycopy(oldm, 0, module, 0x7c, oldm.length);
 			size += 0x7c;
 
-			fs = new FileSource(name, module);
+			fs = FileSource.fromData(name, module);
 			songInfo = new Info();
 			songInfo.name = name;
 			Log.d(TAG, "######################## PRG LOAD OK");

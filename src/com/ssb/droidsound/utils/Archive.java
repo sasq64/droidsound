@@ -13,5 +13,6 @@ public interface Archive {
 	Entry getEntry(String path);	
 	FileSource getFileSource(Entry entry);
 	void close();
+	int getFileCount();
 	
 }

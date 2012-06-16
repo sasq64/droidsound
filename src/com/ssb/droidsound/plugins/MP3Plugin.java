@@ -266,9 +266,11 @@ public class MP3Plugin extends DroidSoundPlugin {
 	@Override
 	public boolean load(FileSource fs) {
 		
-		if(fs.isStream())
+		String ref = fs.getReference();
+		
+		if(ref.toLowerCase().startsWith("http"))
 			try {
-				return loadStream(fs.getStreamName());
+				return loadStream(ref);
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();

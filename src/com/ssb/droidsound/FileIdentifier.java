@@ -190,7 +190,7 @@ public class FileIdentifier {
 			plugins = DroidSoundPlugin.createPluginList();
 		}
 		for(DroidSoundPlugin plugin : plugins) {
-			if(plugin.canHandle(new FileSource(name, new byte [0]))) {
+			if(plugin.canHandle(FileSource.fromData(name, new byte [0]))) {
 				return plugin.getClass().getSimpleName();
 			}
 		}

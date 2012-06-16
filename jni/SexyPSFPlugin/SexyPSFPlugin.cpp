@@ -23,7 +23,7 @@ static bool playing = false;
 
 void sexyd_update(unsigned char *pSound, long lBytes)
 {
-	__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "update with %d bytes", lBytes);
+	//__android_log_print(ANDROID_LOG_VERBOSE, "SexyPSF", "update with %d bytes", lBytes);
 	fifo->putBytes((char*)pSound, lBytes);
 }
 

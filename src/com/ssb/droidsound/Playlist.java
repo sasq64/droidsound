@@ -316,7 +316,7 @@ public class Playlist {
 		if(s.startsWith("http://")) {			
 			songFile.setTitle(URLDecoder.decode(songFile.getName()));
 		} else {
-			FileSource fs = new FileSource(songFile.getFile());
+			FileSource fs = FileSource.fromFile(songFile.getFile());
 			minfo = FileIdentifier.identify(fs);
 			fs.close();
 		}

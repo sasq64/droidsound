@@ -77,7 +77,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		
 		//Log.d(TAG, "Trying to load '%s'", name);
 		Log.d(TAG, "Trying to load '%s' -> %d", fs.getName(), currentSong);
-		currentSong = N_load(fs.getContents(), fs.getLength());
+		currentSong = N_load(fs.getContents(), (int) fs.getLength());
 		return (currentSong != 0);
 	}
 	
@@ -122,7 +122,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		type = null;
 
 		byte module [] = fs.getContents();
-		int size = fs.getLength();
+		int size = (int) fs.getLength();
 		byte data [] = module;
 		String head = new String(module, 0, 4);
 		if(head.equals("ICE!")) {

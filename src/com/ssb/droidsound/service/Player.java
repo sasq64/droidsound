@@ -271,7 +271,7 @@ public class Player implements Runnable {
 		
 		String path = song.getPath();
 		if(path.startsWith("http:"))
-			songSource = new FileSource(path);
+			songSource = FileSource.create(path);
 		else
 		if(song.getZipPath() != null) {
 			
@@ -283,7 +283,7 @@ public class Player implements Runnable {
 			
 			
 		} else {
-			songSource = new FileSource(song.getFile());
+			songSource = FileSource.fromFile(song.getFile());
 		}
 		
 		

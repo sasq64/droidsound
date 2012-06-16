@@ -58,7 +58,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean load(FileSource fs) {
 		
-		Map<String, String> tagMap = PSFFile.getTags(fs.getContents(), fs.getLength());
+		Map<String, String> tagMap = PSFFile.getTags(fs.getContents(), (int) fs.getLength());
 		info = new String [128];
 		if(tagMap != null) {
 			info[INFO_TITLE] = tagMap.get("title");
@@ -163,7 +163,7 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	public boolean loadInfo(FileSource fs) {
 		
 		byte [] module = fs.getContents();
-		int size = fs.getLength();
+		int size = (int) fs.getLength();
 		
 		//ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
 		//src.order(ByteOrder.LITTLE_ENDIAN);		

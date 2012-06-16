@@ -536,9 +536,9 @@ public class SongDatabase implements Runnable {
 		
 		//Log.d(TAG, "Scanning %d zip entries", zfile.size());
 		int count = 0;
-		//int total = zfile.size();
-		int total = 0;
-		int reportPeriod = 100; //total / 100;
+		int total = archive.getFileCount();
+		// total == -1 means archive does not support getting number of files
+		int reportPeriod = total / 100;
 		if(reportPeriod < 100) {
 			reportPeriod = 100;
 		}
@@ -779,7 +779,7 @@ public class SongDatabase implements Runnable {
 						ContentValues values = new ContentValues();
 						values.put("PATH", f.getParentFile().getPath());
 						values.put("FILENAME", f.getName());
-						FileSource fs = new FileSource(f);
+						FileSource fs = FileSource.fromFile(f);
 						
 						Log.d(TAG, "%s isfile %s", f.getPath(), String.valueOf(f.isFile()));
 	
