@@ -59,7 +59,6 @@ static pthread_t thread = 0;
 
 char baseDir[256] = "";
 struct uade_state state;
-struct uade_config main_config;
 
 int uadeconf_loaded;
 char uadeconfname[256];
@@ -361,7 +360,6 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1exit(JNIEnv
 
 int init()
 {
-
 	char temp[256];
 
 
@@ -370,21 +368,18 @@ int init()
 			//		       &state.config, NULL);
 
 
-
 	if(eaglestore == 0) {
 
 	   memset(&state, 0, sizeof state);
 	    __android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "baseDir os '%s'", baseDir);
 
-		uadeconf_loaded = uade_load_initial_config(&state, uadeconfname, sizeof(uadeconfname), NULL);
+		uadeconf_loaded = uade_load_initial_config(&state, uadeconfname, sizeof(uadeconfname), baseDir);
 
-		strcpy(main_config.basedir.name, baseDir);
+		strcpy(state.permconfig.basedir.name, baseDir);
 
-		state.config = main_config;
+		state.config = state.permconfig;
 
 		// state.config.no_filter = 1;
-
-
 
 		uade_set_peer(&uadeipc, 1, "client", "server");
 		state.ipc = uadeipc;
@@ -417,7 +412,6 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1init(JNIEnv
 	env->ReleaseStringUTFChars(basedir, s);
 
 	init();
-
 }
 
 
@@ -498,7 +492,6 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1canHand
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(JNIEnv *env, jobject obj, jstring fname)
 {
-
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "in load()");
 
 	jboolean iscopy;
@@ -506,7 +499,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1loadFile(J
 
 	__android_log_print(ANDROID_LOG_VERBOSE, "UADEPlugin", "Getting player for %s", filename);
 
-	state.config = main_config;
+	state.config = state.permconfig;
 	state.song = NULL;
 	state.ep = NULL;
 
@@ -646,7 +639,6 @@ JNIEXPORT void Java_com_ssb_droidsound_plugins_UADEPlugin_N_1unload(JNIEnv *env,
 
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1getSoundData(JNIEnv *env, jobject obj, jlong song, jshortArray sArray, jint size)
 {
-
 	Player *player = (Player*)song;
 
 	jshort *dest = env->GetShortArrayElements(sArray, NULL);
@@ -749,12 +741,12 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(J
 	case OPT_FILTER:
 		state.config.no_filter = (val ? 0 : 1);
 		state.config.no_filter_set = 1;
-		main_config.no_filter = state.config.no_filter;
+		state.permconfig.no_filter = state.config.no_filter;
 		break;
 	case OPT_NTSC:
 		state.config.use_ntsc = (val ? 1 : 0);
 		state.config.use_ntsc_set = true;
-		main_config.use_ntsc = state.config.use_ntsc;
+		state.permconfig.use_ntsc = state.config.use_ntsc;
 		break;
 	case OPT_RESAMPLING:
 		state.config.resampler = "none";
@@ -763,7 +755,7 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(J
 		else if(val == 2)
 			state.config.resampler = "sinc";
 		state.config.resampler_set = true;
-		main_config.resampler = state.config.resampler;
+		state.permconfig.resampler = state.config.resampler;
 		break;
 	//case OPT_SPEEDHACK:
 	//	state.config.speed_hack = (val ? 1 : 0);
@@ -778,8 +770,8 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_UADEPlugin_N_1setOption(J
 		}
 		state.config.panning_enable_set = 1;
 		state.config.panning_set = 1;
-		main_config.panning = state.config.panning;
-		main_config.panning_enable = state.config.panning_enable;
+		state.permconfig.panning = state.config.panning;
+		state.permconfig.panning_enable = state.config.panning_enable;
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Panning now %1.2f", state.config.panning);
 		break;
 	}
