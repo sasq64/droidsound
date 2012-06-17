@@ -5,11 +5,11 @@
 #include <assert.h>
 #include <ao/ao.h>
 
-#include "uadeconstants.h"
+#include <uade/uadeconstants.h>
 #include "audio.h"
 #include "uade123.h"
 
-ao_sample_format format;
+static ao_sample_format format;
 
 static ao_device *libao_device = NULL;
 
@@ -27,7 +27,7 @@ void audio_close(void)
   }
 }
 
-void process_config_options(const struct uade_config *uc)
+static void process_config_options(const struct uade_config *uc)
 {
   char *s;
   char *key;

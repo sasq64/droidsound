@@ -1,25 +1,28 @@
 /*
- *                     sc68 - YM-2149 emulator
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    ym_atarist_oldtable.c
+ * @brief   YM-2149 emulator
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-11-05 11:39:38 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: ymemul.c 127 2009-09-14 02:51:23Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -53,7 +56,6 @@ int ym_default_chans = 7;
 #include "ym_linear_table.inc"
 #include "ym_atarist_table.inc"
 
-
 /** 3 channels output table.
  *  Using a table for non linear mixing.
  */
@@ -82,7 +84,7 @@ static void access_list_add(ym_t * const ym,
     /* No more free entries. */
     /* $$$ TODO: realloc buffer, reloc all lists ... */
     TRACE68(msg68_CRITICAL,
-            "ym-2148: access list *%s* -- *OVERFLOW*", access_list->name);
+            "ym-2149: access list *%s* -- *OVERFLOW*\n", access_list->name);
     return;
   }
   ym->waccess_nxt = free_access+1;
@@ -157,16 +159,17 @@ int ym_reset(ym_t * const ym, const cycle68_t ymcycle)
   return ret;
 }
 
+
 /******************************************************
  *                  Yamaha init                        *
  ******************************************************/
 
-/* -DYM_ENGINE=YM_ENGINE_BLEP choose BLEP as default engine */
+/* Select default engine */
 #ifndef YM_ENGINE
-# define YM_ENGINE YM_ENGINE_PULS
+# define YM_ENGINE YM_ENGINE_BLEP
 #endif
 
-/* -DYM_VOL_TABLE=YM_VOL_LINEAR choose linear volume table */
+/* Select default volume table */
 #ifndef YM_VOL_TABLE
 # define YM_VOL_TABLE YM_VOL_ATARIST
 #endif
@@ -175,7 +178,7 @@ int ym_reset(ym_t * const ym, const cycle68_t ymcycle)
 static ym_parms_t default_parms;
 
 /* Max output level for volume tables. */
-static const int output_level = 0xDEAD;
+static const int output_level = 0xCAFE;
 
 /* Command line options */
 static const char prefix[] = "sc68-";
@@ -302,7 +305,6 @@ int ym_run(ym_t * const ym, s32 * output, const cycle68_t ymcycles)
 }
 
 
-
 /* ,-----------------------------------------------------------------.
  * |                         Write YM register                       |
  * `-----------------------------------------------------------------'
@@ -347,6 +349,7 @@ void ym_writereg(ym_t * const ym,
   }
 }
 
+
 /* ,-----------------------------------------------------------------.
  * |                  Adjust YM-2149 cycle counters                  |
  * `-----------------------------------------------------------------'
@@ -359,6 +362,7 @@ void ym_adjust_cycle(ym_t * const ym, const cycle68_t ymcycles)
     access_adjust_cycle(&ym->env_regs, ymcycles);
   }
 }
+
 
 /* ,-----------------------------------------------------------------.
  * |                  Yamaha get activated voices                    |
@@ -374,11 +378,12 @@ int ym_active_channels(ym_t * const ym, const int clr, const int set)
     v = ( voice_mute & 1 ) | ( (voice_mute>>5) & 2 ) | ( (voice_mute>>10) & 4);
     v = ( (v & ~clr ) | set ) & 7;
     ym->voice_mute = ym_smsk_table[v];
-    msg68_info("ym-2149: active channels -- *%c%c%c*\n",
+    msg68_notice("ym-2149: active channels -- *%c%c%c*\n",
                (v&1)?'A':'.', (v&2)?'B':'.', (v&4)?'C':'.');
   }
   return v;
 }
+
 
 /* ,-----------------------------------------------------------------.
  * |                        Engine selection                         |
@@ -417,10 +422,10 @@ int ym_engine(ym_t * const ym, int engine)
     /* Valid values */
     if (!ym) {
       default_parms.engine = engine;
-      msg68_info("ym-2149: default engine -- *%s*\n",
+      msg68_notice("ym-2149: default engine -- *%s*\n",
                  ym_engine_name(engine));
     } else {
-      engine = ym->engine;
+      ym->engine = engine;
     }
     break;
   }
@@ -452,7 +457,7 @@ int ym_clock(ym_t * const ym, int clock)
     clock = YM_CLOCK_ATARIST;
     if (!ym) {
       default_parms.clock = clock;
-      msg68_info("ym-2149: default clock -- *ATARI-ST*\n",
+      msg68_notice("ym-2149: default clock -- *ATARI-ST*\n",
                  (unsigned int)clock);
     } else {
       clock = ym->clock;
@@ -461,6 +466,7 @@ int ym_clock(ym_t * const ym, int clock)
   }
   return clock;
 }
+
 
 /* ,-----------------------------------------------------------------.
  * |                           Volume model                          |
@@ -481,7 +487,7 @@ int ym_volume_model(ym_t * const ym, int model)
 {
   /* Set volume table (unique for all instance) */
   switch (model) {
-    
+
   case YM_VOL_QUERY:
     model = default_parms.volmodel;
     break;
@@ -502,7 +508,7 @@ int ym_volume_model(ym_t * const ym, int model)
       } else {
         ym_create_5bit_atarist_table(ymout5, output_level);
       }
-      msg68_info("ym-2149: default volume model -- *%s*\n",
+      msg68_notice("ym-2149: default volume model -- *%s*\n",
                  ym_volmodel_name(model));
     }
     break;
@@ -526,7 +532,7 @@ int ym_sampling_rate(ym_t * const ym, int hz)
 
   case YM_VOL_DEFAULT:
     hz = default_parms.hz;
-    
+
   default:
     if (hz < SAMPLING_RATE_MIN) hz = SAMPLING_RATE_MIN;
     if (hz > SAMPLING_RATE_MAX) hz = SAMPLING_RATE_MAX;
@@ -539,7 +545,7 @@ int ym_sampling_rate(ym_t * const ym, int hz)
     } else {
       default_parms.hz = hz;
     }
-    msg68_info("ym-2149: %ssampling rate -- *%dhz*\n",
+    msg68_notice("ym-2149: %ssampling rate -- *%dhz*\n",
                ym ? "" : "default ", hz);
   }
   return hz;
@@ -641,7 +647,7 @@ int ym_setup(ym_t * const ym, ym_parms_t * const parms)
       err = -1;
     }
     if (!err)
-      msg68_info("ym-2149: engine -- *%s*\n", ym_engine_name(ym->engine));
+      msg68_notice("ym-2149: engine -- *%s*\n", ym_engine_name(ym->engine));
 
 
     /* at this point specific sampling rate callback can be call */
@@ -661,11 +667,12 @@ int ym_setup(ym_t * const ym, ym_parms_t * const parms)
  */
 void ym_cleanup(ym_t * const ym)
 {
-  TRACE68(ym_cat,"ym-2149: cleanup\n");
+  TRACE68(ym_cat,"%s","ym-2149: cleanup\n");
   if (ym && ym->cb_cleanup) {
     ym->cb_cleanup(ym);
   }
 }
+
 
 /** Get required output buffer size.
  */

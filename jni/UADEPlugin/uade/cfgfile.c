@@ -82,7 +82,7 @@ static const char *linemode1[] = { "none", "double", "scanlines", NULL};
 static const char *linemode2[] = { "n", "d", "s", NULL};
 static const char *speedmode[] = { "max", "real", NULL};
 static const char *cpumode[] = { "68000", "68000", "68010", "68010",
-				 "68ec020", "68020", "68ec020/68881", "68020/68881", NULL};
+                 "68ec020", "68020", "68ec020/68881", "68020/68881", NULL};
 static const char *portmode[] = { "joy0", "joy1", "mouse", "kbd1", "kbd2", "kbd3", NULL};
 static const char *colormode1[] = { "8bit", "15bit", "16bit", "8bit_dither", "4bit_dither", "32bit", NULL};
 static const char *colormode2[] = { "8", "15", "16", "8d", "4d", "32", NULL};
@@ -99,8 +99,8 @@ static int match_string (const char *table[], const char *str)
 {
     int i;
     for (i = 0; table[i] != NULL; i++)
-	if (strcasecmp (table[i], str) == 0)
-	    return i;
+    if (strcasecmp (table[i], str) == 0)
+        return i;
     return -1;
 }
 
@@ -108,17 +108,17 @@ char *cfgfile_subst_path (const char *path, const char *subst, const char *file)
 {
     /* @@@ use strcasecmp for some targets.  */
     if (strlen (path) > 0 && strncmp (file, path, strlen (path)) == 0) {
-	int l;
-	char *p = xmalloc (strlen (file) + strlen (subst) + 2);
-	strcpy (p, subst);
-	l = strlen (p);
-	while (l > 0 && p[l - 1] == '/')
-	    p[--l] = '\0';
-	l = strlen (path);
-	while (file[l] == '/')
-	    l++;
-	strcat (p, "/"); strcat (p, file + l);
-	return p;
+    int l;
+    char *p = xmalloc (strlen (file) + strlen (subst) + 2);
+    strcpy (p, subst);
+    l = strlen (p);
+    while (l > 0 && p[l - 1] == '/')
+        p[--l] = '\0';
+    l = strlen (path);
+    while (file[l] == '/')
+        l++;
+    strcat (p, "/"); strcat (p, file + l);
+    return p;
     }
     return my_strdup (file);
 }
@@ -132,7 +132,7 @@ void save_options (FILE *f, struct uae_prefs *p)
     fprintf (f, "config_description=%s\n", p->description);
 
     for (sl = p->unknown_lines; sl; sl = sl->next)
-	fprintf (f, "%s\n", sl->str);
+    fprintf (f, "%s\n", sl->str);
 
     fprintf (f, "%s.rom_path=%s\n", TARGET_NAME, p->path_rom);
     fprintf (f, "%s.floppy_path=%s\n", TARGET_NAME, p->path_floppy);
@@ -150,9 +150,9 @@ void save_options (FILE *f, struct uae_prefs *p)
     free (str);
 
     for (i = 0; i < 4; i++) {
-	str = cfgfile_subst_path (p->path_floppy, UNEXPANDED, p->df[i]);
-	fprintf (f, "floppy%d=%s\n", i, str);
-	free (str);
+    str = cfgfile_subst_path (p->path_floppy, UNEXPANDED, p->df[i]);
+    fprintf (f, "floppy%d=%s\n", i, str);
+    free (str);
     }
     fprintf (f, "parallel_on_demand=%s\n", p->parallel_demand ? "true" : "false");
     fprintf (f, "serial_on_demand=%s\n", p->serial_demand ? "true" : "false");
@@ -188,15 +188,15 @@ void save_options (FILE *f, struct uae_prefs *p)
     fprintf (f, "immediate_blits=%s\n", p->immediate_blits ? "true" : "false");
     fprintf (f, "ntsc=%s\n", p->ntscmode ? "true" : "false");
     if (p->chipset_mask & CSMASK_AGA)
-	fprintf (f, "chipset=aga\n");
+    fprintf (f, "chipset=aga\n");
     else if ((p->chipset_mask & CSMASK_ECS_AGNUS) && (p->chipset_mask & CSMASK_ECS_AGNUS))
-	fprintf (f, "chipset=ecs\n");
+    fprintf (f, "chipset=ecs\n");
     else if (p->chipset_mask & CSMASK_ECS_AGNUS)
-	fprintf (f, "chipset=ecs_agnus\n");
+    fprintf (f, "chipset=ecs_agnus\n");
     else if (p->chipset_mask & CSMASK_ECS_DENISE)
-	fprintf (f, "chipset=ecs_denise\n");
+    fprintf (f, "chipset=ecs_denise\n");
     else
-	fprintf (f, "chipset=ocs\n");
+    fprintf (f, "chipset=ocs\n");
 
     fprintf (f, "fastmem_size=%d\n", p->fastmem_size / 0x100000);
     fprintf (f, "a3000mem_size=%d\n", p->a3000mem_size / 0x100000);
@@ -206,9 +206,9 @@ void save_options (FILE *f, struct uae_prefs *p)
     fprintf (f, "chipmem_size=%d\n", p->chipmem_size / 0x80000);
 
     if (p->m68k_speed > 0)
-	fprintf (f, "cpu_speed=%d\n", p->m68k_speed);
+    fprintf (f, "cpu_speed=%d\n", p->m68k_speed);
     else
-	fprintf (f, "cpu_speed=%s\n", p->m68k_speed == -1 ? "max" : "real");
+    fprintf (f, "cpu_speed=%s\n", p->m68k_speed == -1 ? "max" : "real");
 
     fprintf (f, "cpu_type=%s\n", cpumode[p->cpu_level * 2 + !p->address_space_24]);
     fprintf (f, "cpu_compatible=%s\n", p->cpu_compatible ? "true" : "false");
@@ -218,12 +218,12 @@ void save_options (FILE *f, struct uae_prefs *p)
     fprintf (f, "log_illegal_mem=%s\n", p->illegal_mem ? "true" : "false");
 
     fprintf (f, "kbd_lang=%s\n", (p->keyboard_lang == KBD_LANG_DE ? "de"
-				  : p->keyboard_lang == KBD_LANG_ES ? "es"
-				  : p->keyboard_lang == KBD_LANG_US ? "us"
-				  : p->keyboard_lang == KBD_LANG_SE ? "se"
-				  : p->keyboard_lang == KBD_LANG_FR ? "fr"
-				  : p->keyboard_lang == KBD_LANG_IT ? "it"
-				  : "FOO"));
+                  : p->keyboard_lang == KBD_LANG_ES ? "es"
+                  : p->keyboard_lang == KBD_LANG_US ? "us"
+                  : p->keyboard_lang == KBD_LANG_SE ? "se"
+                  : p->keyboard_lang == KBD_LANG_FR ? "fr"
+                  : p->keyboard_lang == KBD_LANG_IT ? "it"
+                  : "FOO"));
 
     /* Don't write gfxlib/gfx_test_speed options.  */
 }
@@ -231,15 +231,15 @@ void save_options (FILE *f, struct uae_prefs *p)
 int cfgfile_yesno (char *option, char *value, char *name, int *location)
 {
     if (strcmp (option, name) != 0)
-	return 0;
+    return 0;
     if (strcasecmp (value, "yes") == 0 || strcasecmp (value, "y") == 0
-	|| strcasecmp (value, "true") == 0 || strcasecmp (value, "t") == 0)
-	*location = 1;
+    || strcasecmp (value, "true") == 0 || strcasecmp (value, "t") == 0)
+    *location = 1;
     else if (strcasecmp (value, "no") == 0 || strcasecmp (value, "n") == 0
-	|| strcasecmp (value, "false") == 0 || strcasecmp (value, "f") == 0)
-	*location = 0;
+    || strcasecmp (value, "false") == 0 || strcasecmp (value, "f") == 0)
+    *location = 0;
     else
-	write_log ("Option `%s' requires a value of either `yes' or `no'.\n", option);
+    write_log ("Option `%s' requires a value of either `yes' or `no'.\n", option);
     return 1;
 }
 
@@ -248,14 +248,14 @@ int cfgfile_intval (char *option, char *value, char *name, int *location, int sc
     int base = 10;
     char *endptr;
     if (strcmp (option, name) != 0)
-	return 0;
+    return 0;
     /* I guess octal isn't popular enough to worry about here...  */
     if (value[0] == '0' && value[1] == 'x')
-	value += 2, base = 16;
+    value += 2, base = 16;
     *location = strtol (value, &endptr, base) * scale;
 
     if (*endptr != '\0' || *value == '\0')
-	write_log ("Option `%s' requires a numeric argument.\n", option);
+    write_log ("Option `%s' requires a numeric argument.\n", option);
     return 1;
 }
 
@@ -263,12 +263,12 @@ int cfgfile_strval (char *option, char *value, char *name, int *location, const 
 {
     int val;
     if (strcmp (option, name) != 0)
-	return 0;
+    return 0;
     val = match_string (table, value);
     if (val == -1) {
-	if (! more)
-	    write_log ("Unknown value for option `%s'.\n", option);
-	return 1;
+    if (! more)
+        write_log ("Unknown value for option `%s'.\n", option);
+    return 1;
     }
     *location = val;
     return 1;
@@ -277,7 +277,7 @@ int cfgfile_strval (char *option, char *value, char *name, int *location, const 
 int cfgfile_string (char *option, char *value, char *name, char *location, int maxsz)
 {
     if (strcmp (option, name) != 0)
-	return 0;
+    return 0;
     strncpy (location, value, maxsz - 1);
     location[maxsz - 1] = '\0';
     return 1;
@@ -291,17 +291,17 @@ static int getintval (char **p, int *result, int delim)
     char *p2 = strchr (*p, delim);
 
     if (p2 == NULL)
-	return 0;
+    return 0;
 
     *p2++ = '\0';
 
     if (value[0] == '0' && value[1] == 'x')
-	value += 2, base = 16;
+    value += 2, base = 16;
     *result = strtol (value, &endptr, base);
     *p = p2;
 
     if (*endptr != '\0' || *value == '\0')
-	return 0;
+    return 0;
 
     return 1;
 }
@@ -313,161 +313,161 @@ int cfgfile_parse_option (struct uae_prefs *p, char *option, char *value)
     char *tmpp;
 
     for (tmpp = option; *tmpp != '\0'; tmpp++)
-	if (isupper (*tmpp))
-	    *tmpp = tolower (*tmpp);
+    if (isupper (*tmpp))
+        *tmpp = tolower (*tmpp);
     tmpp = strchr (option, '.');
     if (tmpp) {
-	section = option;
-	option = tmpp + 1;
-	*tmpp = '\0';
-	return 0;
+    section = option;
+    option = tmpp + 1;
+    *tmpp = '\0';
+    return 0;
     }
     if (cfgfile_yesno (option, value, "use_debugger", &p->start_debugger)
-	|| cfgfile_yesno (option, value, "use_gui", &p->start_gui)
-	|| cfgfile_yesno (option, value, "bsdsocket_emu", &p->socket_emu)
-	|| cfgfile_yesno (option, value, "immediate_blits", &p->immediate_blits)
-	|| cfgfile_yesno (option, value, "32bit_blits", &p->blits_32bit_enabled)
-	|| cfgfile_yesno (option, value, "gfx_lores", &p->gfx_lores)
-	|| cfgfile_yesno (option, value, "gfx_correct_aspect", &p->gfx_correct_aspect)
-	|| cfgfile_yesno (option, value, "gfx_fullscreen_amiga", &p->gfx_afullscreen)
-	|| cfgfile_yesno (option, value, "gfx_fullscreen_picasso", &p->gfx_pfullscreen)
-	|| cfgfile_yesno (option, value, "ntsc", &p->ntscmode)
-	|| cfgfile_yesno (option, value, "cpu_compatible", &p->cpu_compatible)
-	|| cfgfile_yesno (option, value, "cpu_24bit_addressing", &p->address_space_24)
-	|| cfgfile_yesno (option, value, "autoconfig", &p->automount_uaedev)
-	|| cfgfile_yesno (option, value, "parallel_on_demand", &p->parallel_demand)
-	|| cfgfile_yesno (option, value, "serial_on_demand", &p->serial_demand)
-	|| cfgfile_yesno (option, value, "log_illegal_mem", &p->illegal_mem))
-	return 1;
+    || cfgfile_yesno (option, value, "use_gui", &p->start_gui)
+    || cfgfile_yesno (option, value, "bsdsocket_emu", &p->socket_emu)
+    || cfgfile_yesno (option, value, "immediate_blits", &p->immediate_blits)
+    || cfgfile_yesno (option, value, "32bit_blits", &p->blits_32bit_enabled)
+    || cfgfile_yesno (option, value, "gfx_lores", &p->gfx_lores)
+    || cfgfile_yesno (option, value, "gfx_correct_aspect", &p->gfx_correct_aspect)
+    || cfgfile_yesno (option, value, "gfx_fullscreen_amiga", &p->gfx_afullscreen)
+    || cfgfile_yesno (option, value, "gfx_fullscreen_picasso", &p->gfx_pfullscreen)
+    || cfgfile_yesno (option, value, "ntsc", &p->ntscmode)
+    || cfgfile_yesno (option, value, "cpu_compatible", &p->cpu_compatible)
+    || cfgfile_yesno (option, value, "cpu_24bit_addressing", &p->address_space_24)
+    || cfgfile_yesno (option, value, "autoconfig", &p->automount_uaedev)
+    || cfgfile_yesno (option, value, "parallel_on_demand", &p->parallel_demand)
+    || cfgfile_yesno (option, value, "serial_on_demand", &p->serial_demand)
+    || cfgfile_yesno (option, value, "log_illegal_mem", &p->illegal_mem))
+    return 1;
     if (cfgfile_intval (option, value, "accuracy", &p->emul_accuracy, 1)
-	|| cfgfile_intval (option, value, "sound_min_buff", &p->sound_minbsiz, 1)
-	|| cfgfile_intval (option, value, "sound_max_buff", &p->sound_maxbsiz, 1)
-	|| cfgfile_intval (option, value, "sound_frequency", &p->sound_freq, 1)
-	|| cfgfile_intval (option, value, "sound_bits", &p->sound_bits, 1)
-	|| cfgfile_intval (option, value, "sound_pri_cutoff", &p->sound_pri_cutoff, 1)
-	|| cfgfile_intval (option, value, "sound_pri_time", &p->sound_pri_time, 1)
-	|| cfgfile_intval (option, value, "sound_interpol", &p->sound_interpol, 1)
-	|| cfgfile_intval (option, value, "gfx_framerate", &p->gfx_framerate, 1)
-	|| cfgfile_intval (option, value, "gfx_width", &p->gfx_width, 1)
-	|| cfgfile_intval (option, value, "gfx_height", &p->gfx_height, 1)
-	|| cfgfile_intval (option, value, "fastmem_size", (int *) &p->fastmem_size, 0x100000)
-	|| cfgfile_intval (option, value, "a3000mem_size", (int *) &p->a3000mem_size, 0x100000)
-	|| cfgfile_intval (option, value, "z3mem_size", (int *) &p->z3fastmem_size, 0x100000)
-	|| cfgfile_intval (option, value, "bogomem_size", (int *) &p->bogomem_size, 0x40000)
-	|| cfgfile_intval (option, value, "gfxcard_size", (int *) &p->gfxmem_size, 0x100000)
-	|| cfgfile_intval (option, value, "chipmem_size", (int *) &p->chipmem_size, 0x80000))
-	return 1;
+    || cfgfile_intval (option, value, "sound_min_buff", &p->sound_minbsiz, 1)
+    || cfgfile_intval (option, value, "sound_max_buff", &p->sound_maxbsiz, 1)
+    || cfgfile_intval (option, value, "sound_frequency", &p->sound_freq, 1)
+    || cfgfile_intval (option, value, "sound_bits", &p->sound_bits, 1)
+    || cfgfile_intval (option, value, "sound_pri_cutoff", &p->sound_pri_cutoff, 1)
+    || cfgfile_intval (option, value, "sound_pri_time", &p->sound_pri_time, 1)
+    || cfgfile_intval (option, value, "sound_interpol", &p->sound_interpol, 1)
+    || cfgfile_intval (option, value, "gfx_framerate", &p->gfx_framerate, 1)
+    || cfgfile_intval (option, value, "gfx_width", &p->gfx_width, 1)
+    || cfgfile_intval (option, value, "gfx_height", &p->gfx_height, 1)
+    || cfgfile_intval (option, value, "fastmem_size", (int *) &p->fastmem_size, 0x100000)
+    || cfgfile_intval (option, value, "a3000mem_size", (int *) &p->a3000mem_size, 0x100000)
+    || cfgfile_intval (option, value, "z3mem_size", (int *) &p->z3fastmem_size, 0x100000)
+    || cfgfile_intval (option, value, "bogomem_size", (int *) &p->bogomem_size, 0x40000)
+    || cfgfile_intval (option, value, "gfxcard_size", (int *) &p->gfxmem_size, 0x100000)
+    || cfgfile_intval (option, value, "chipmem_size", (int *) &p->chipmem_size, 0x80000))
+    return 1;
     if (cfgfile_strval (option, value, "sound_output", &p->produce_sound, soundmode, 0)
-	|| cfgfile_strval (option, value, "sound_channels", &p->stereo, stereomode1, 1)
-	|| cfgfile_strval (option, value, "sound_channels", &p->stereo, stereomode2, 1)
-	|| cfgfile_strval (option, value, "sound_channels", &p->stereo, stereomode3, 0)
-	|| cfgfile_strval (option, value, "joyport0", &p->jport0, portmode, 0)
-	|| cfgfile_strval (option, value, "joyport1", &p->jport1, portmode, 0)
-	|| cfgfile_strval (option, value, "gfx_linemode", &p->gfx_linedbl, linemode1, 1)
-	|| cfgfile_strval (option, value, "gfx_linemode", &p->gfx_linedbl, linemode2, 0)
-	|| cfgfile_strval (option, value, "gfx_center_horizontal", &p->gfx_xcenter, centermode1, 1)
-	|| cfgfile_strval (option, value, "gfx_center_vertical", &p->gfx_ycenter, centermode1, 1)
-	|| cfgfile_strval (option, value, "gfx_center_horizontal", &p->gfx_xcenter, centermode2, 0)
-	|| cfgfile_strval (option, value, "gfx_center_vertical", &p->gfx_ycenter, centermode2, 0)
-	|| cfgfile_strval (option, value, "gfx_colour_mode", &p->color_mode, colormode1, 1)
-	|| cfgfile_strval (option, value, "gfx_colour_mode", &p->color_mode, colormode2, 0)
-	|| cfgfile_strval (option, value, "gfx_color_mode", &p->color_mode, colormode1, 1)
-	|| cfgfile_strval (option, value, "gfx_color_mode", &p->color_mode, colormode2, 0))
-	return 1;
+    || cfgfile_strval (option, value, "sound_channels", &p->stereo, stereomode1, 1)
+    || cfgfile_strval (option, value, "sound_channels", &p->stereo, stereomode2, 1)
+    || cfgfile_strval (option, value, "sound_channels", &p->stereo, stereomode3, 0)
+    || cfgfile_strval (option, value, "joyport0", &p->jport0, portmode, 0)
+    || cfgfile_strval (option, value, "joyport1", &p->jport1, portmode, 0)
+    || cfgfile_strval (option, value, "gfx_linemode", &p->gfx_linedbl, linemode1, 1)
+    || cfgfile_strval (option, value, "gfx_linemode", &p->gfx_linedbl, linemode2, 0)
+    || cfgfile_strval (option, value, "gfx_center_horizontal", &p->gfx_xcenter, centermode1, 1)
+    || cfgfile_strval (option, value, "gfx_center_vertical", &p->gfx_ycenter, centermode1, 1)
+    || cfgfile_strval (option, value, "gfx_center_horizontal", &p->gfx_xcenter, centermode2, 0)
+    || cfgfile_strval (option, value, "gfx_center_vertical", &p->gfx_ycenter, centermode2, 0)
+    || cfgfile_strval (option, value, "gfx_colour_mode", &p->color_mode, colormode1, 1)
+    || cfgfile_strval (option, value, "gfx_colour_mode", &p->color_mode, colormode2, 0)
+    || cfgfile_strval (option, value, "gfx_color_mode", &p->color_mode, colormode1, 1)
+    || cfgfile_strval (option, value, "gfx_color_mode", &p->color_mode, colormode2, 0))
+    return 1;
     if (cfgfile_string (option, value, "floppy0", p->df[0], 256)
-	|| cfgfile_string (option, value, "floppy1", p->df[1], 256)
-	|| cfgfile_string (option, value, "floppy2", p->df[2], 256)
-	|| cfgfile_string (option, value, "floppy3", p->df[3], 256)
-	|| cfgfile_string (option, value, "kickstart_rom_file", p->romfile, 256)
-	|| cfgfile_string (option, value, "kickstart_key_file", p->keyfile, 256)
-	|| cfgfile_string (option, value, "config_description", p->description, 256))
-	return 1;
+    || cfgfile_string (option, value, "floppy1", p->df[1], 256)
+    || cfgfile_string (option, value, "floppy2", p->df[2], 256)
+    || cfgfile_string (option, value, "floppy3", p->df[3], 256)
+    || cfgfile_string (option, value, "kickstart_rom_file", p->romfile, 256)
+    || cfgfile_string (option, value, "kickstart_key_file", p->keyfile, 256)
+    || cfgfile_string (option, value, "config_description", p->description, 256))
+    return 1;
 
     /* Tricky ones... */
     if (cfgfile_strval (option, value, "chipset", &tmpval, csmode, 0)) {
-	p->chipset_mask = (tmpval == 0 ? 0
-			   : tmpval == 1 ? CSMASK_ECS_AGNUS
-			   : tmpval == 2 ? CSMASK_ECS_DENISE
-			   : tmpval == 3 ? CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS
-			   : CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS);
-	return 1;
+    p->chipset_mask = (tmpval == 0 ? 0
+               : tmpval == 1 ? CSMASK_ECS_AGNUS
+               : tmpval == 2 ? CSMASK_ECS_DENISE
+               : tmpval == 3 ? CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS
+               : CSMASK_AGA | CSMASK_ECS_DENISE | CSMASK_ECS_AGNUS);
+    return 1;
     }
-	
+    
     if (cfgfile_strval (option, value, "cpu_type", &p->cpu_level, cpumode, 0)) {
-	p->address_space_24 = !(p->cpu_level & 1);
-	p->cpu_level >>= 1;
-	return 1;
+    p->address_space_24 = !(p->cpu_level & 1);
+    p->cpu_level >>= 1;
+    return 1;
     }
     if (cfgfile_strval (option, value, "cpu_speed", &p->m68k_speed, speedmode, 1)) {
-	p->m68k_speed--;
-	return 1;
+    p->m68k_speed--;
+    return 1;
     }
     if (cfgfile_intval (option, value, "cpu_speed", &p->m68k_speed, 1))
-	return 1;
+    return 1;
 
     if (strcmp (option, "kbd_lang") == 0) {
-	KbdLang l;
-	if ((l = KBD_LANG_DE, strcasecmp (value, "de") == 0)
-	    || (l = KBD_LANG_SE, strcasecmp (value, "se") == 0)
-	    || (l = KBD_LANG_US, strcasecmp (value, "us") == 0)
-	    || (l = KBD_LANG_FR, strcasecmp (value, "fr") == 0)
-	    || (l = KBD_LANG_IT, strcasecmp (value, "it") == 0)
-	    || (l = KBD_LANG_ES, strcasecmp (value, "es") == 0))
-	    p->keyboard_lang = l;
-	else
-	    write_log ("Unknown keyboard language\n");
-	return 1;
+    KbdLang l;
+    if ((l = KBD_LANG_DE, strcasecmp (value, "de") == 0)
+        || (l = KBD_LANG_SE, strcasecmp (value, "se") == 0)
+        || (l = KBD_LANG_US, strcasecmp (value, "us") == 0)
+        || (l = KBD_LANG_FR, strcasecmp (value, "fr") == 0)
+        || (l = KBD_LANG_IT, strcasecmp (value, "it") == 0)
+        || (l = KBD_LANG_ES, strcasecmp (value, "es") == 0))
+        p->keyboard_lang = l;
+    else
+        write_log ("Unknown keyboard language\n");
+    return 1;
     }
 
     if (strcmp (option, "filesystem") == 0
-	|| strcmp (option, "hardfile") == 0)
+    || strcmp (option, "hardfile") == 0)
     {
-	int secs, heads, reserved, bs, ro;
-	char *aname, *root;
-	char *tmpp = strchr (value, ',');
-	char *str;
-	if (tmpp == NULL)
-	    goto invalid_fs;
+    int secs, heads, reserved, bs, ro;
+    char *aname, *root;
+    char *tmpp = strchr (value, ',');
+    char *str;
+    if (tmpp == NULL)
+        goto invalid_fs;
 
-	*tmpp++ = '\0';
-	if (strcmp (value, "0") == 0 || strcasecmp (value, "ro") == 0
-	    || strcasecmp (value, "readonly") == 0
-	    || strcasecmp (value, "read-only") == 0)
-	    ro = 1;
-	else if (strcmp (value, "1") == 0 || strcasecmp (value, "rw") == 0
-		 || strcasecmp (value, "readwrite") == 0
-		 || strcasecmp (value, "read-write") == 0)
-	    ro = 0;
-	else
-	    goto invalid_fs;
-	secs = 0; heads = 0; reserved = 0; bs = 0;
+    *tmpp++ = '\0';
+    if (strcmp (value, "0") == 0 || strcasecmp (value, "ro") == 0
+        || strcasecmp (value, "readonly") == 0
+        || strcasecmp (value, "read-only") == 0)
+        ro = 1;
+    else if (strcmp (value, "1") == 0 || strcasecmp (value, "rw") == 0
+         || strcasecmp (value, "readwrite") == 0
+         || strcasecmp (value, "read-write") == 0)
+        ro = 0;
+    else
+        goto invalid_fs;
+    secs = 0; heads = 0; reserved = 0; bs = 0;
 
-	value = tmpp;
-	if (strcmp (option, "filesystem") == 0) {
-	    tmpp = strchr (value, ':');
-	    if (tmpp == NULL)
-		goto invalid_fs;
-	    *tmpp++ = '\0';
-	    aname = value;
-	    root = tmpp;
-	} else {
-	    if (! getintval (&value, &secs, ',')
-		|| ! getintval (&value, &heads, ',')
-		|| ! getintval (&value, &reserved, ',')
-		|| ! getintval (&value, &bs, ','))
-		goto invalid_fs;
-	    root = value;
-	    aname = NULL;
-	}
-	str = cfgfile_subst_path (UNEXPANDED, p->path_hardfile, root);
-	free (str);
-	if (tmpp)
-	    write_log ("Error: %s\n", tmpp);
-	return 1;
+    value = tmpp;
+    if (strcmp (option, "filesystem") == 0) {
+        tmpp = strchr (value, ':');
+        if (tmpp == NULL)
+        goto invalid_fs;
+        *tmpp++ = '\0';
+        aname = value;
+        root = tmpp;
+    } else {
+        if (! getintval (&value, &secs, ',')
+        || ! getintval (&value, &heads, ',')
+        || ! getintval (&value, &reserved, ',')
+        || ! getintval (&value, &bs, ','))
+        goto invalid_fs;
+        root = value;
+        aname = NULL;
+    }
+    str = cfgfile_subst_path (UNEXPANDED, p->path_hardfile, root);
+    free (str);
+    if (tmpp)
+        write_log ("Error: %s\n", tmpp);
+    return 1;
 
       invalid_fs:
-	write_log ("Invalid filesystem/hardfile specification.\n");
-	return 1;
+    write_log ("Invalid filesystem/hardfile specification.\n");
+    return 1;
     }
 
     return 0;
@@ -482,8 +482,8 @@ void cfgfile_parse_line (struct uae_prefs *p, char *line)
     line1 = line;
     line2 = strchr (line, '=');
     if (! line2) {
-	write_log ("CFGFILE: line was incomplete with only %s\n", line1);
-	return;
+    write_log ("CFGFILE: line was incomplete with only %s\n", line1);
+    return;
     }
 
     *line2++ = '\0';
@@ -491,22 +491,22 @@ void cfgfile_parse_line (struct uae_prefs *p, char *line)
     /* Get rid of whitespace.  */
     i = strlen (line2);
     while (i > 0 && (line2[i - 1] == '\t' || line2[i - 1] == ' '
-		     || line2[i - 1] == '\r' || line2[i - 1] == '\n'))
-	line2[--i] = '\0';
+             || line2[i - 1] == '\r' || line2[i - 1] == '\n'))
+    line2[--i] = '\0';
     line2 += strspn (line2, "\t \r\n");
     i = strlen (line);
     while (i > 0 && (line[i - 1] == '\t' || line[i - 1] == ' '
-		     || line[i - 1] == '\r' || line[i - 1] == '\n'))
-	line[--i] = '\0';
+             || line[i - 1] == '\r' || line[i - 1] == '\n'))
+    line[--i] = '\0';
     line += strspn (line, "\t \r\n");
 
     if (! cfgfile_parse_option (p, line, line2)) {
-	struct strlist *u = xmalloc (sizeof (struct strlist));
-	u->str = orig_line;
-	u->next = p->unknown_lines;
-	p->unknown_lines = u;
+    struct strlist *u = xmalloc (sizeof (struct strlist));
+    u->str = orig_line;
+    u->next = p->unknown_lines;
+    p->unknown_lines = u;
     } else
-	free (orig_line);
+    free (orig_line);
 }
 
 static void subst (char *p, char *f, int n)
@@ -532,24 +532,24 @@ int cfgfile_load (struct uae_prefs *p, const char *filename)
     fh = fopen (filename, "rt");
 #endif
     if (! fh)
-	return 0;
+    return 0;
 
     while (1) {
-	if (fgets (line, 256, fh) == NULL) {
-	    if (feof(fh) || ferror(fh))
-		break;
+    if (fgets (line, 256, fh) == NULL) {
+        if (feof(fh) || ferror(fh))
+        break;
 
-	    continue;
-	}
+        continue;
+    }
 
-	line[strcspn (line, "\t \r\n")] = '\0';
-	if (strlen (line) > 0)
-	    cfgfile_parse_line (p, line);
+    line[strcspn (line, "\t \r\n")] = '\0';
+    if (strlen (line) > 0)
+        cfgfile_parse_line (p, line);
     }
     fclose (fh);
 
     for (i = 0; i < 4; i++)
-	subst (p->path_floppy, p->df[i], sizeof p->df[i]);
+    subst (p->path_floppy, p->df[i], sizeof p->df[i]);
     subst (p->path_rom, p->romfile, sizeof p->romfile);
     subst (p->path_rom, p->keyfile, sizeof p->keyfile);
 
@@ -560,7 +560,7 @@ int cfgfile_save (struct uae_prefs *p, const char *filename)
 {
     FILE *fh = fopen (filename, "w");
     if (! fh)
-	return 0;
+    return 0;
 
     save_options (fh, p);
     fclose (fh);
@@ -574,8 +574,8 @@ int cfgfile_get_description (const char *filename, char *description)
     default_prefs (&p);
     strcpy (p.description, "");
     if (cfgfile_load (&p, filename) && strlen (p.description) != 0) {
-	result = 1;
-	strcpy (description, p.description);
+    result = 1;
+    strcpy (description, p.description);
     }
     discard_prefs (&p);
     return result;
@@ -585,7 +585,7 @@ void cfgfile_show_usage (void)
 {
     unsigned int i;
     __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UAE Configuration Help:\n" \
-	       "=======================\n");
+           "=======================\n");
     for (i = 0; i < sizeof opttable / sizeof *opttable; i++)
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s: %s\n", opttable[i].config_label, opttable[i].config_help);
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s: %s\n", opttable[i].config_label, opttable[i].config_help);
 }

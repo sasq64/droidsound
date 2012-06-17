@@ -1,32 +1,28 @@
 /*
  *         unice68 - ice depacker library (native version)
+ *             Copyright (C) 1998-2011 Benjamin Gerard
+ *             <http://sourceforge.net/users/benjihan>
  *
- *             Copyright (C) 2003-2009 Benjamin Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License as
- *  published by the Free Software Foundation; either version 2 of the
- *  License, or (at your option) any later version.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
- *  02111-1307 USA
+ * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: unice68_native.c 102 2009-03-14 17:21:58Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-
 #ifndef PACKAGE_NAME
 # define PACKAGE_NAME "unice68"
 #endif
@@ -165,7 +161,7 @@ static inline int get_1_bit(all_regs_t *R)
   check_crange(R,R->a5-1,R->a5-1);
 
   r = (r>>8) + (*(--R->a5) << 1);
-  bitfound:
+bitfound:
   R->d7 = (R->d7 & ~0xFF) | (r & 0xFF);
   return r >> 8;
 }
@@ -252,13 +248,13 @@ static int ice_decrunch(all_regs_t *R)
 /*      movem.w d0-d3,(a3) */
 /*      dbra    d7,ice_00 */
 
-  ice_00:
+ice_00:
   R->d6 = 3;
-  ice_01:
+ice_01:
   R->a3 -= 2;
   R->d4 = (R->a3[0]<<8) | R->a3[1];
   R->d5 = 3;
-  ice_02:
+ice_02:
   R->d4 += R->d4;
   R->d0 += R->d0 + (R->d4>>16);
   R->d4 &= 0xFFFF;
@@ -296,7 +292,7 @@ static int ice_decrunch(all_regs_t *R)
 
   DBF(R->d7,ice_00);
 
-  not_packed:
+not_packed:
   return -!!R->overflow;
 }
 
@@ -334,7 +330,7 @@ static void normal_bytes(all_regs_t *R)
 
     tab = direkt_tab + (20>>2);
     R->d3 = 4;
-    nextgb:
+ nextgb:
     R->d0 = * (--tab);
     R->d1 = get_d0_bits(R, R->d0);
     R->d0 = (R->d0 >> 16) | ~0xFFFF;
@@ -342,7 +338,7 @@ static void normal_bytes(all_regs_t *R)
 /*   no_more: */
     R->d1 += tab[(20>>2)];
 
-    copy_direkt:
+ copy_direkt:
     {
       const int cnt = DBF_COUNT(R->d1);
       if (check_drange(R, R->a6-cnt, R->a6-1) |
@@ -350,11 +346,11 @@ static void normal_bytes(all_regs_t *R)
         break;
       }
     }
-    lp_copy:
+ lp_copy:
     *(--R->a6) = *(--R->a5);
     DBF(R->d1,lp_copy);
 
-    test_if_end:
+ test_if_end:
     if (R->a6 <= R->a4) {
       if (R->a6 < R->a4) {
         check_drange(R, R->a6, R->a6);
@@ -389,14 +385,14 @@ static int get_d0_bits(all_regs_t *R, int r0)
     return 0;
   }
 
-  hole_bit_loop:
+hole_bit_loop:
   r7 = (r7 & 255) << 1;
   B_CC(r7 & 255, on_d0);
 
   check_crange(R,R->a5-1,R->a5-1);
 
   r7 = (*(--R->a5) << 1) + (r7>>8);
-  on_d0:
+on_d0:
   r1 += r1 + (r7>>8);
   DBF(r0,hole_bit_loop);
   R->d7 = (R->d7 &~0xFF) | (r7 & 0xFF);
@@ -425,7 +421,7 @@ static void strings(all_regs_t *R)
 
   R->a1 = (areg_t)length_tab;
   R->d2 = 3;
-  get_length_bit:
+get_length_bit:
   DB_CC(get_1_bit(R)==0, R->d2, get_length_bit);
 /* no_length_bit:        */
   R->d4 = R->d1 = 0; /* $$$ d4 is not needed here. */
@@ -434,7 +430,7 @@ static void strings(all_regs_t *R)
 /*  get_Ober: */
   R->d1 = get_d0_bits(R, R->d0);
   R->d0 |= 0xFFFF;
-  no_Ober:
+no_Ober:
   R->d4 = R->a1 [ 6 + (s16)R->d2 ];
   R->d4 += R->d1;
   B_CC(R->d4==0,get_offset_2);
@@ -455,7 +451,7 @@ static void strings(all_regs_t *R)
 
   R->a1 = (areg_t)more_offset;
   R->d2 = 1;
-  getoffs:
+getoffs:
   DB_CC(get_1_bit(R)==0,R->d2,getoffs);
 
   R->d1 = get_d0_bits(R,(int)(s8)more_offset[1+(s16)R->d2]);
@@ -478,14 +474,14 @@ static void strings(all_regs_t *R)
   /* less_40:   bsr.s   get_d0_bits */
   /*    add.w   d2,d1 */
 
-  get_offset_2:
+get_offset_2:
   R->d1 = 0;
   R->d0 = 5;
   R->d2 = -1;
   GET_1_BIT_BCC(less_40);
   R->d0 = 8;
   R->d2 = 0x3f;
-  less_40:
+less_40:
   R->d1 = get_d0_bits(R, R->d0);
   R->d0 |= 0xFFFF;
   R->d1 += R->d2;
@@ -498,11 +494,11 @@ static void strings(all_regs_t *R)
   /*    dbf     d4,dep_b */
   /*    bra     normal_bytes */
 
-  depack_bytes:
+depack_bytes:
   R->a1 = R->a6 + 2 + (s16)R->d4 + (s16)R->d1;
   check_drange(R, R->a6 - DBF_COUNT(R->d4) - 1, R->a6-1);
   if (R->a6>R->a4) *(--R->a6) = *(--R->a1);
-  dep_b:
+dep_b:
   if (R->a6>R->a4) *(--R->a6) = *(--R->a1);
   DBF(R->d4,dep_b);
 }

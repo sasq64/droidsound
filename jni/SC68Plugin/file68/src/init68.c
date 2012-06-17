@@ -1,34 +1,36 @@
 /*
- *                init68 - initialization functions
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    init68.c
+ * @brief   library initialization
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2012-01-28 16:45:05 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-/* $Id: init68.c 126 2009-07-15 08:58:51Z benjihan $ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
 
 #include "file68_api.h"
-#include "init68.h"
+#include "file68.h"
 #include "option68.h"
-
 #include "msg68.h"
 #include "error68.h"
 #include "alloc68.h"
@@ -42,14 +44,16 @@
 
 static volatile int init;
 
-void istream68_ao_shutdown(void); /* defined in istream68_ao.c */
-int istream68_z_init(void);       /* defined in istream68_z.c  */
-void istream68_z_shutdown(void);  /* defined in istream68_z.c  */
-int option68_init(void);          /* defined int option68.c    */
-void option68_shutdown(void);     /* defined void option68.c   */
-int file68_o_init(void);          /* defined in file68.c       */
-void file68_o_shutdown(void);     /* defined in file68.c       */
-int istream68_ao_init(void);      /* defined in istream68_ao.c */
+extern int aSIDify;                     /* defined in file68.c */
+
+void istream68_ao_shutdown(void);  /* defined in istream68_ao.c */
+int  istream68_z_init(void);       /* defined in istream68_z.c  */
+void istream68_z_shutdown(void);   /* defined in istream68_z.c  */
+int  option68_init(void);          /* defined in option68.c     */
+void option68_shutdown(void);      /* defined in option68.c     */
+int  file68_loader_init(void);     /* defined in file68.c       */
+void file68_loader_shutdown(void); /* defined in file68.c       */
+int  istream68_ao_init(void);      /* defined in istream68_ao.c */
 
 static char * mygetenv(const char *name)
 {
@@ -103,7 +107,8 @@ static option68_t opts[] = {
   { option68_STR,prefix,"data"    ,rsccat,"shared (system) resource path" },
   { option68_STR,prefix,"home"    ,rsccat,"private (user) resource path"  },
   { option68_STR,prefix,"music"   ,rsccat,"music database path"           },
-  { option68_STR,prefix,"rmusic"  ,rsccat,"online music base URI"         }
+  { option68_STR,prefix,"rmusic"  ,rsccat,"online music base URI"         },
+  { option68_STR,prefix,"asid"    ,rsccat,"create aSID tracks [no*|safe|force]" }
 };
 
 int file68_init(int argc, char **argv)
@@ -122,6 +127,9 @@ int file68_init(int argc, char **argv)
   }
   init = 3;
 
+  /* Options */
+  option68_init();
+
   /* Zlib */
   istream68_z_init();
 
@@ -135,10 +143,7 @@ int file68_init(int argc, char **argv)
   rsc68_init();
 
   /* Loader */
-  file68_o_init();
-
-  /* Options */
-  option68_init();
+  file68_loader_init();
 
   option68_append(opts,sizeof(opts)/sizeof(*opts));
   argc = option68_parse(argc, argv, 1);
@@ -148,6 +153,18 @@ int file68_init(int argc, char **argv)
   if (opt && opt->val.num) {
     /* Remove all debug messages whatsoever. */
     msg68_set_handler(0);
+  }
+
+  /* Check for --sc68-asid=off|safe|force */
+  if (opt = option68_get("asid",1), opt) {
+    if (!strcmp68(opt->val.str,"no"))
+      aSIDify = 0;
+    else if (!strcmp68(opt->val.str,"safe"))
+      aSIDify = 1;
+    else if (!strcmp68(opt->val.str,"force"))
+      aSIDify = 2;
+    else
+      msg68_notice("file68: ignore invalid mode for --sc68-asid -- *%s*\n", opt->val.str);
   }
 
   /* Check for --sc68-debug= */
@@ -183,15 +200,30 @@ int file68_init(int argc, char **argv)
     /* Setup new data path */
     if (option68_isset(opt)) {
       rsc68_set_share(opt->val.str);
+#if 0 /* not needed anynore since option68 properly alloc strings */
       if (opt->val.str == tmp)
         option68_unset(opt);    /* Must release tmp ! */
+#endif
     }
 
   }
 
-  /* Get user path from registry (prior to HOME) */
-  opt=option68_get("home", 0);
+  /* Get user path  */
+  opt = option68_get("home", 0);
   if (opt) {
+
+    /* Get user path from HOME */
+    if (!option68_isset(opt)) {
+      const char path[] = "/.sc68";
+      const char * env = mygetenv("HOME");
+      if(env && strlen(env)+sizeof(path) < sizeof(tmp)) {
+        strncpy(tmp,env,sizeof(tmp));
+        strcat68(tmp,path,sizeof(tmp));
+        /* $$$ We should test if this directory actually exists */
+        option68_set(opt,tmp);
+      }
+    }
+
 
     /* Get user path from registry */
     if (!option68_isset(opt)) {
@@ -206,17 +238,6 @@ int file68_init(int argc, char **argv)
       }
     }
 
-    /* Get user path from HOME */
-    if (!option68_isset(opt)) {
-      const char path[] = "/.sc68";
-      const char * env = mygetenv("HOME");
-      if(env && strlen(env)+sizeof(path) < sizeof(tmp)) {
-        strncpy(tmp,env,sizeof(tmp));
-        strcat68(tmp,path,sizeof(tmp));
-        /* $$$ We should test if this directory actually exists */
-        option68_set(opt,tmp);
-      }
-    }
 
     /* Setup new user path */
     if (option68_isset(opt)) {
@@ -240,7 +261,7 @@ int file68_init(int argc, char **argv)
   }
 
   init = 1;
-  out_no_init:
+out_no_init:
   return argc;
 }
 
@@ -253,7 +274,7 @@ void file68_shutdown(void)
     option68_shutdown();
 
     /* Loader */
-    file68_o_shutdown();
+    file68_loader_shutdown();
 
     /* Shutdown resource */
     rsc68_shutdown();
@@ -271,3 +292,12 @@ void file68_shutdown(void)
   }
 }
 
+int file68_version(void)
+{
+  return PACKAGE_VERNUM;
+}
+
+const char * file68_versionstr()
+{
+  return PACKAGE_STRING;
+}

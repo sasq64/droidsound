@@ -1,6 +1,6 @@
 /*
  *            sc68 - MicroWire - STE soundchip emulator
- *             Copyright (C) 2001-2009 Benjamin Gerard
+ *             Copyright (C) 2001-2010 Benjamin Gerard
  *           <benjihan -4t- users.sourceforge -d0t- net>
  *
  * This  program is  free  software: you  can  redistribute it  and/or
@@ -17,13 +17,12 @@
  * along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  *
- * $Id: mwemul.c 126 2009-07-15 08:58:51Z benjihan $
+ * $Id: mwemul.c 202 2011-10-16 01:14:21Z benjihan $
  *
  */
 
 /** @todo
  *
- * - Stereo !!
  * - Check overflow in mix routine.
  * - Verify STE / YM volume ratio
  * - Special case for not mixing in Db_alone.
@@ -144,7 +143,7 @@ static void init_volume(void)
   fprintf(stderr, "\n");
   for(i=0; i<MW_N_DECIBEL; i++) {
     Db_alone[i] = calc_volume(-i,256<<MW_MIX_FIX);
-    Db_mix[i] = calc_volume(-i,MW_STE_MULT*256);
+    Db_mix[i]   = calc_volume(-i,MW_STE_MULT*256);
     Db_mix12[i] = calc_volume(-i-12,MW_STE_MULT*256);
     fprintf(stderr, "AAA:%x\n", Db_alone[i]);
     fprintf(stderr, "BBB:%x\n", Db_mix[i]);
@@ -376,14 +375,14 @@ int mw_command(mw_t * const mw)
   ctrl = ( mw->map[MW_CTRL] << 8 ) + mw->map[MW_CTRL+1];
   data = ( mw->map[MW_DATA] << 8 ) + mw->map[MW_DATA+1];
 
-  TRACE68(mw_cat,"microwire: shiting -- %04x:%04x\n", ctrl, data);
+  TRACE68(mw_cat,"microwire: shifting -- %04x:%04x\n", ctrl, data);
 
   /* Find first address */
   for(; ctrl && ( ctrl & 0xC000 ) != 0xC000; ctrl<<=1, data<<=1)
     ;
 
   if (!ctrl) {
-    TRACE68(mw_cat,"microwire: address -- not found\n");
+    TRACE68(mw_cat,"%s","microwire: address -- not found\n");
     return -1;
   } else {
     const uint_t addr = ( data >> 14 ) & 3;
@@ -403,7 +402,7 @@ int mw_command(mw_t * const mw)
     TRACE68(mw_cat,"microwire: command -- %04o\n", cmd);
     return command_dispatcher(mw, cmd);
   } else {
-    TRACE68(mw_cat,"microwire: command -- not found\n");
+    TRACE68(mw_cat,"%s","microwire: command -- not found\n");
   }
 
   return -1;
@@ -556,11 +555,14 @@ out:
   mw->end = end;
 }
 
+#define _VOL(LR) \
+  (mw->db_conv[mw->lmc.master+mw->lmc.LR] * 0xC0 >> 8)
+
 static void mix_ste(mw_t * const mw, s32 *b, int n)
 {
   mwct_t base, end2, ct, end, stp;
-  const int          vl = mw->db_conv[mw->lmc.master+mw->lmc.left];
-  const int          vr = mw->db_conv[mw->lmc.master+mw->lmc.right];
+  const int          vl = _VOL(left);
+  const int          vr = _VOL(right);
   const int        loop = mw->map[MW_ACTI] & 2;
   const int        mono = (mw->map[MW_MODE]>>7) & 1;
   const uint_t      frq = 50066u >> ((mw->map[MW_MODE]&3)^3);
@@ -687,7 +689,6 @@ void mw_mix(mw_t * const mw, s32 * b, int n)
   if ( n <= 0 ) {
     return;
   }
-
   if ( !b ) {
     if ( mw->map[MW_ACTI] & 1 ) {
       /* no buffer and active : advance counters only */

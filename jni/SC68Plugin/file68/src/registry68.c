@@ -1,25 +1,29 @@
 /*
- *                sc68 - M$-Windows registry access
- *            Copyright (C) 2001-2009 Ben(jamin) Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    registry68.c
+ * @brief   ms-Windows registry
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 2001-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-02 16:04:51 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
-/* $Id: registry68.c 126 2009-07-15 08:58:51Z benjihan $ */
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -86,8 +90,8 @@ static HKEY keyhandle(const enum registry68_key_e const key)
 registry68_key_t registry68_rootkey(enum registry68_key_e rootkey)
 {
   registry68_key_t key = (registry68_key_t) keyhandle(rootkey);
-  msg68_debug("registry68: rootkey %d '%s' => %p '%s'\n",
-              rootkey, keyname(rootkey), (void*)key, keyhdlname(key));
+  /* msg68_debug("registry68: rootkey %d '%s' => %p '%s'\n", */
+  /*             rootkey, keyname(rootkey), (void*)key, keyhdlname(key)); */
   return key;
 }
 
@@ -204,7 +208,7 @@ registry68_key_t registry68_open(registry68_key_t hkey, const char *kname_cst)
     hdl = HKEY_INVALID;
   }
 
-  error:
+error:
   msg68_trace("registry68: open '%s::%s' => [%s]\n",
               keyhdlname(hdl), kname_cst, strok68(hdl==HKEY_INVALID));
 
@@ -283,12 +287,12 @@ int registry68_gets(registry68_key_t rootkey,
   if (name) {
     *--name = '/';
   }
-  error_out:
+error_out:
 
-  msg68_debug("registry68: gets '%s' => [%s,'%s']\n",
-              strnevernull68(kname_save),
-              strok68(!kdata),
-              strnevernull68(kdata));
+  /* msg68_debug("registry68: gets '%s' => [%s,'%s']\n", */
+  /*             strnevernull68(kname_save), */
+  /*             strok68(!kdata), */
+  /*             strnevernull68(kdata)); */
   return -!kdata;
 }
 

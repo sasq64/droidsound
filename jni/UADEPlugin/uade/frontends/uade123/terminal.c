@@ -42,7 +42,7 @@ void pause_terminal(void)
     ret = select(terminal_fd + 1, &rfds, NULL, NULL, NULL);
     if (ret < 0) {
       if (errno == EINTR)
-	continue;
+    continue;
       perror("\nuade123: poll error");
       exit(1);
     }
@@ -53,7 +53,7 @@ void pause_terminal(void)
     ret = read(terminal_fd, &c, 1);
     if (ret < 0) {
       if (errno == EINTR || errno == EAGAIN)
-	continue;
+    continue;
     }
 
     break;

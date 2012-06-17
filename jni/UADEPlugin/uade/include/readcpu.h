@@ -60,8 +60,8 @@ struct instr_def {
     int cpulevel;
     int plevel;
     struct {
-	unsigned int flaguse:3;
-	unsigned int flagset:3;
+    unsigned int flaguse:3;
+    unsigned int flagset:3;
     } flaginfo[5];
     unsigned char sduse;
     const char *opcstr;

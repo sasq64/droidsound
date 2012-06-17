@@ -13,7 +13,7 @@
 #include "uae.h"
 #include "include/uadememory.h"
 
-#include "uade.h"
+#include "uadectl.h"
 
 #ifdef USE_MAPPED_MEMORY
 #include <sys/mman.h>
@@ -76,7 +76,7 @@ static int dummy_check (uaecptr addr, uae_u32 size) REGPARAM;
 static uae_u32 REGPARAM2 dummy_lget (uaecptr addr)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal lget at %08lx\n", addr);
+    write_log ("Illegal lget at %08lx\n", addr);
 
     return 0;
 }
@@ -84,7 +84,7 @@ static uae_u32 REGPARAM2 dummy_lget (uaecptr addr)
 static uae_u32 REGPARAM2 dummy_wget (uaecptr addr)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal wget at %08lx\n", addr);
+    write_log ("Illegal wget at %08lx\n", addr);
 
     return 0;
 }
@@ -92,7 +92,7 @@ static uae_u32 REGPARAM2 dummy_wget (uaecptr addr)
 static uae_u32 REGPARAM2 dummy_bget (uaecptr addr)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal bget at %08lx\n", addr);
+    write_log ("Illegal bget at %08lx\n", addr);
 
     return 0;
 }
@@ -100,23 +100,23 @@ static uae_u32 REGPARAM2 dummy_bget (uaecptr addr)
 static void REGPARAM2 dummy_lput (uaecptr addr, uae_u32 l)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal lput at %08lx\n", addr);
+    write_log ("Illegal lput at %08lx\n", addr);
 }
 static void REGPARAM2 dummy_wput (uaecptr addr, uae_u32 w)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal wput at %08lx\n", addr);
+    write_log ("Illegal wput at %08lx\n", addr);
 }
 static void REGPARAM2 dummy_bput (uaecptr addr, uae_u32 b)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal bput at %08lx\n", addr);
+    write_log ("Illegal bput at %08lx\n", addr);
 }
 
 static int REGPARAM2 dummy_check (uaecptr addr, uae_u32 size)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal check at %08lx\n", addr);
+    write_log ("Illegal check at %08lx\n", addr);
 
     return 0;
 }
@@ -135,7 +135,7 @@ static int mbres_val = 0;
 static uae_u32 REGPARAM2 mbres_lget (uaecptr addr)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal lget at %08lx\n", addr);
+    write_log ("Illegal lget at %08lx\n", addr);
 
     return 0;
 }
@@ -143,7 +143,7 @@ static uae_u32 REGPARAM2 mbres_lget (uaecptr addr)
 static uae_u32 REGPARAM2 mbres_wget (uaecptr addr)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal wget at %08lx\n", addr);
+    write_log ("Illegal wget at %08lx\n", addr);
 
     return 0;
 }
@@ -151,7 +151,7 @@ static uae_u32 REGPARAM2 mbres_wget (uaecptr addr)
 static uae_u32 REGPARAM2 mbres_bget (uaecptr addr)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal bget at %08lx\n", addr);
+    write_log ("Illegal bget at %08lx\n", addr);
 
     return (addr & 0xFFFF) == 3 ? mbres_val : 0;
 }
@@ -159,26 +159,26 @@ static uae_u32 REGPARAM2 mbres_bget (uaecptr addr)
 static void REGPARAM2 mbres_lput (uaecptr addr, uae_u32 l)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal lput at %08lx\n", addr);
+    write_log ("Illegal lput at %08lx\n", addr);
 }
 static void REGPARAM2 mbres_wput (uaecptr addr, uae_u32 w)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal wput at %08lx\n", addr);
+    write_log ("Illegal wput at %08lx\n", addr);
 }
 static void REGPARAM2 mbres_bput (uaecptr addr, uae_u32 b)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal bput at %08lx\n", addr);
+    write_log ("Illegal bput at %08lx\n", addr);
 
     if ((addr & 0xFFFF) == 3)
-	mbres_val = b;
+    mbres_val = b;
 }
 
 static int REGPARAM2 mbres_check (uaecptr addr, uae_u32 size)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal check at %08lx\n", addr);
+    write_log ("Illegal check at %08lx\n", addr);
 
     return 0;
 }
@@ -455,19 +455,19 @@ static uae_u32 REGPARAM2 kickmem_bget (uaecptr addr)
 static void REGPARAM2 kickmem_lput (uaecptr addr, uae_u32 b)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal kickmem lput at %08lx\n", addr);
+    write_log ("Illegal kickmem lput at %08lx\n", addr);
 }
 
 static void REGPARAM2 kickmem_wput (uaecptr addr, uae_u32 b)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal kickmem wput at %08lx\n", addr);
+    write_log ("Illegal kickmem wput at %08lx\n", addr);
 }
 
 static void REGPARAM2 kickmem_bput (uaecptr addr, uae_u32 b)
 {
     if (currprefs.illegal_mem)
-	write_log ("Illegal kickmem lput at %08lx\n", addr);
+    write_log ("Illegal kickmem lput at %08lx\n", addr);
 }
 
 static int REGPARAM2 kickmem_check (uaecptr addr, uae_u32 size)
@@ -542,7 +542,7 @@ static void init_mem_banks (void)
 {
     int i;
     for (i = 0; i < 65536; i++)
-	put_mem_bank (i<<16, &dummy_bank);
+    put_mem_bank (i<<16, &dummy_bank);
 }
 
 #define MAKE_USER_PROGRAMS_BEHAVE 1
@@ -564,15 +564,15 @@ void memory_init (void)
      * as a decrunch routine tries to do color register hacks. */
     address_space = mmap (NULL, 1 << 24, PROT_READ | (USER_PROGRAMS_BEHAVE || MAKE_USER_PROGRAMS_BEHAVE? PROT_WRITE : 0), MAP_PRIVATE, fd, 0);
     if ((int)address_space < 0 || (int)good_address_map < 0) {
-	write_log ("Your system does not have enough virtual memory - increase swap.\n");
-	abort ();
+    write_log ("Your system does not have enough virtual memory - increase swap.\n");
+    abort ();
     }
 #ifdef MAKE_USER_PROGRAMS_BEHAVE
     memset (address_space + 0xDFF180, 0xFF, 32*2);
 #else
     /* Likewise. This is mostly for mouse button checks. */
     if (USER_PROGRAMS_BEHAVE)
-	memset (address_space + 0xA00000, 0xFF, 0xF00000 - 0xA00000);
+    memset (address_space + 0xA00000, 0xFF, 0xF00000 - 0xA00000);
 #endif
     chipmemory = mmap (address_space, 0x200000, PROT_READ|PROT_WRITE, MAP_PRIVATE | MAP_FIXED, fd, 0);
     kickmemory = mmap (address_space + 0xF80000, 0x80000, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED, fd, 0);
@@ -585,24 +585,24 @@ void memory_init (void)
     unlink (nam);
 
     for (i = 0; i < allocated_chipmem; i += 4096)
-	mmap (good_address_map + i, 4096, PROT_READ, MAP_FIXED | MAP_PRIVATE,
-	      good_address_fd, 0);
+    mmap (good_address_map + i, 4096, PROT_READ, MAP_FIXED | MAP_PRIVATE,
+          good_address_fd, 0);
     for (i = 0; i < kickmem_size; i += 4096)
-	mmap (good_address_map + i + 0x1000000 - kickmem_size, 4096, PROT_READ,
-	      MAP_FIXED | MAP_PRIVATE, good_address_fd, 0);
+    mmap (good_address_map + i + 0x1000000 - kickmem_size, 4096, PROT_READ,
+          MAP_FIXED | MAP_PRIVATE, good_address_fd, 0);
 #else
     kickmemory = (uae_u8 *)xmalloc (kickmem_size);
     chipmemory = (uae_u8 *) calloc (1, allocated_chipmem);
 
     while (! chipmemory && allocated_chipmem > 512*1024) {
-	allocated_chipmem >>= 1;
-	chipmemory = (uae_u8 *) calloc (1, allocated_chipmem);
-	if (chipmemory)
-	    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Reducing chipmem size to %dkb\n", allocated_chipmem >> 10);
+    allocated_chipmem >>= 1;
+    chipmemory = (uae_u8 *) calloc (1, allocated_chipmem);
+    if (chipmemory)
+        __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Reducing chipmem size to %dkb\n", allocated_chipmem >> 10);
     }
     if (! chipmemory) {
-	write_log ("virtual memory exhausted (chipmemory)!\n");
-	abort ();
+    write_log ("virtual memory exhausted (chipmemory)!\n");
+    abort ();
     }
 #endif
 
@@ -621,29 +621,29 @@ void memory_init (void)
      * range on an Amiga without expansion memory?  */
     custom_start = allocated_chipmem >> 16;
     if (custom_start < 0x20)
-	custom_start = 0x20;
+    custom_start = 0x20;
     map_banks (&dummy_bank, custom_start, 0xA0 - custom_start);
     /*map_banks (&mbres_bank, 0xDE, 1);*/
 
     if (allocated_bogomem > 0)
-	bogomemory = (uae_u8 *)xmalloc (allocated_bogomem);
+    bogomemory = (uae_u8 *)xmalloc (allocated_bogomem);
     if (bogomemory != NULL)
-	map_banks (&bogomem_bank, 0xC0, allocated_bogomem >> 16);
+    map_banks (&bogomem_bank, 0xC0, allocated_bogomem >> 16);
     else
-	allocated_bogomem = 0;
+    allocated_bogomem = 0;
 
     if (allocated_a3000mem > 0)
-	a3000memory = (uae_u8 *)xmalloc (allocated_a3000mem);
+    a3000memory = (uae_u8 *)xmalloc (allocated_a3000mem);
     if (a3000memory != NULL)
-	map_banks (&a3000mem_bank, a3000mem_start >> 16, allocated_a3000mem >> 16);
+    map_banks (&a3000mem_bank, a3000mem_start >> 16, allocated_a3000mem >> 16);
     else
-	allocated_a3000mem = 0;
+    allocated_a3000mem = 0;
 
     map_banks (&kickmem_bank, 0xF8, 8);
     //    map_banks (&expamem_bank, 0xE8, 1);
 
     if (cloanto_rom)
-	map_banks (&kickmem_bank, 0xE0, 8);
+    map_banks (&kickmem_bank, 0xE0, 8);
 
     chipmem_mask = allocated_chipmem - 1;
     kickmem_mask = kickmem_size - 1;
@@ -658,14 +658,14 @@ void map_banks (addrbank *bank, int start, int size)
     unsigned long int hioffs = 0, endhioffs = 0x100;
 
     if (start >= 0x100) {
-	for (bnr = start; bnr < start + size; bnr++)
-	    put_mem_bank (bnr << 16, bank);
-	return;
+    for (bnr = start; bnr < start + size; bnr++)
+        put_mem_bank (bnr << 16, bank);
+    return;
     }
     /* Some '020 Kickstarts apparently require a 24 bit address space... */
     if (currprefs.address_space_24)
-	endhioffs = 0x10000;
+    endhioffs = 0x10000;
     for (hioffs = 0; hioffs < endhioffs; hioffs += 0x100)
-	for (bnr = start; bnr < start+size; bnr++)
-	    put_mem_bank ((bnr + hioffs) << 16, bank);
+    for (bnr = start; bnr < start+size; bnr++)
+        put_mem_bank ((bnr + hioffs) << 16, bank);
 }

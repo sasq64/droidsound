@@ -22,14 +22,15 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "eagleplayer.h"
-#include "ossupport.h"
-#include "amifilemagic.h"
-#include "uadeconf.h"
-#include "unixatomic.h"
-#include "songdb.h"
+#include <uade/eagleplayer.h>
+#include <uade/amifilemagic.h>
+#include <uade/uadeconf.h>
+#include <uade/songdb.h>
+#include <uade/uadestate.h>
+#include <uade/ossupport.h>
+#include <uade/unixatomic.h>
 #include "support.h"
-#include "uadestate.h"
+
 
 
 #define OPTION_DELIMITER ","
@@ -103,7 +104,7 @@ static int load_playerstore(struct uade_state *state)
 		state->playerstore = read_eagleplayer_conf(formatsfile);
 		if (state->playerstore == NULL) {
 			if (warnings) {
-				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"Tried to load eagleplayer.conf from %s, but failed\n",	formatsfile);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Tried to load eagleplayer.conf from %s, but failed\n",	formatsfile);
 			}
 			warnings = 0;
 			return 0;
@@ -200,7 +201,7 @@ static struct eagleplayer *analyze_file_format(int *content,
 			}
 		} else {
 			if (state->config.verbose)
-				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",	"%s not in eagleplayer.conf\n", ext);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "%s not in eagleplayer.conf\n", ext);
 		}
 	}
 

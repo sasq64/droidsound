@@ -10,10 +10,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "songinfo.h"
-#include "uadeutils.h"
-#include "ossupport.h"
-#include "amifilemagic.h"
+#include <uade/songinfo.h>
+#include <uade/uadeutils.h>
+#include <uade/amifilemagic.h>
+#include <uade/ossupport.h>
 #include "support.h"
 
 
@@ -157,7 +157,7 @@ static void process_WTWT_mod(char *credits, size_t credits_len,
 	int offset, txt_offset, chunk;
 	char tmpstr[256];
 
-	/* check for Magic ID */
+	/* Check for Magic ID */
 	offset = find_tag((uint8_t *) buf, 0, len, (uint8_t *) lo, 4);
 	if (offset == -1)
 		return;
@@ -168,8 +168,8 @@ static void process_WTWT_mod(char *credits, size_t credits_len,
 	if (offset == -1)
 		return;
 
-	chunk = offset - 8;	/* here's where our first chunk should be */
-	offset = offset + rel;	/* offset to our info pointers */
+	chunk = offset - 8;     /* Here's where our first chunk should be */
+	offset = offset + rel;	/* Offset to our info pointers */
 
 	if (chunk < len && offset < len) {
 		txt_offset = read_be_u32(buf + offset) + chunk;
@@ -373,8 +373,7 @@ static void process_custom(char *credits, size_t credits_len,
 		    ((size_t) hunk_size))
 			return;
 
-		snprintf(tmpstr, sizeof tmpstr, "\nVERSION:\n%s\n\n",
-			 hunk + offset);
+		snprintf(tmpstr, sizeof tmpstr, "\nVERSION:\n%s\n\n", hunk + offset);
 		strlcat(credits, tmpstr, credits_len);
 	}
 
@@ -408,8 +407,7 @@ static void process_custom(char *credits, size_t credits_len,
 			if ((y + strlen((char *)hunk + y) + 1) >
 			    ((size_t) hunk_size))
 				return;
-			snprintf(tmpstr, sizeof tmpstr, "\nCREDITS:\n%s\n\n",
-				 hunk + y);
+			snprintf(tmpstr, sizeof tmpstr, "\nCREDITS:\n%s\n\n", hunk + y);
 			strlcat(credits, tmpstr, credits_len);
 			break;
 		default:
@@ -450,7 +448,7 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	modfilelen = st.st_size;
 
 	if ((buf = malloc(modfilelen)) == NULL) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: can't allocate mem in process_module()");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Can't allocate mem in process_module()");
 		fclose(modfile);
 		return 0;
 	}
@@ -466,7 +464,7 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	fclose(modfile);
 
 	if (rb < modfilelen) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "uade: song info could not read %s fully\n",
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "UADE: Song info could not read %s fully\n",
 			filename);
 		free(buf);
 		return 0;
@@ -559,8 +557,7 @@ static int process_module(char *credits, size_t credits_len, char *filename)
 	return 0;
 }
 
-int uade_generate_song_title(char *title, size_t dstlen,
-			     struct uade_state *state)
+int uade_generate_song_title(char *title, size_t dstlen, struct uade_state *state)
 {
 	size_t srcoffs;
 	size_t dstoffs;
@@ -590,7 +587,7 @@ int uade_generate_song_title(char *title, size_t dstlen,
 		format = default_format;
 
 	if ((srclen = strlen(format)) == 0) {
-		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Warning: empty song_title format string.\n");
+		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Warning: Empty song_title format string.\n");
 		return 1;
 	}
 
@@ -637,7 +634,7 @@ int uade_generate_song_title(char *title, size_t dstlen,
 			char tmp[32];
 
 			if ((srcoffs + 1) >= srclen) {
-				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: no identifier given in song title format: %s\n", format);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Error: No identifier given in song title format: %s\n", format);
 				title[dstoffs] = 0;
 				return 1;
 			}
@@ -684,9 +681,7 @@ int uade_generate_song_title(char *title, size_t dstlen,
 				dat = tmp;
 				break;
 			default:
-				__android_log_print(ANDROID_LOG_VERBOSE, "UADE",
-					"Unknown identifier %%%c in song_title format: %s\n",
-					c, format);
+				__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Unknown identifier %%%c in song_title format: %s\n", c, format);
 				title[dstoffs] = 0;
 				return 1;
 			}
@@ -715,7 +710,7 @@ int uade_song_info(char *info, size_t maxlen, char *filename,
 		return hexdump(info, maxlen, filename, 2048);
 	default:
 		__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "Illegal info requested.\n");
-		exit(-1);
+		exit(1);
 	}
 	return 0;
 }

@@ -5,8 +5,6 @@
 #include <stdio.h>
 
 #include "playlist.h"
-#include <effects.h>
-
 
 #define debug(verbose, fmt, args...) if (verbose) { __android_log_print(ANDROID_LOG_VERBOSE, "UADE", fmt, ## args); }
 #define tprintf(fmt, args...) do {fprintf(uade_terminal_file ? uade_terminal_file : stdout, fmt, ## args); } while (0)

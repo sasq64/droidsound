@@ -7,14 +7,12 @@ DEBUGFLAGS={DEBUGFLAGS}
 AUDACIOUSFLAGS={AUDACIOUSFLAGS}
 AUDACIOUSLIBS={AUDACIOUSLIBS}
 SHAREDLIBRARYFLAGS={SHAREDLIBRARYFLAGS}
-CFLAGS = -Wall -O2 $(SHAREDLIBRARYFLAGS) $(AUDACIOUSFLAGS) $(ARCHFLAGS) $(DEBUGFLAGS) -I../common -I../../include
+CFLAGS = -Wall -O2 $(SHAREDLIBRARYFLAGS) $(AUDACIOUSFLAGS) $(ARCHFLAGS) $(DEBUGFLAGS) -I../common -I../include
 CLIBS = $(XMLIBS) -lm
 
 all:	libuade2.so
 
-include ../common/Makefile.common
-
-MODULES = plugin.o subsongseek.o fileinfo.o $(COMMONMODULES)
+MODULES = plugin.o subsongseek.o fileinfo.o ../libuade/libuade.a
 
 libuade2.so:	$(MODULES)
 	$(CC) $(CFLAGS) -o $@ $(MODULES) $(CLIBS)
@@ -23,7 +21,7 @@ libuade2.so:	$(MODULES)
 fileinfo.o:	fileinfo.c fileinfo.h
 	$(CC) $(CFLAGS) -c $<
 
-plugin.o:	plugin.c plugin.h subsongseek.h fileinfo.h ../common/uadecontrol.h ../../include/uadeipc.h ../../include/uadeconstants.h subsongseek.h ../common/effects.h ../common/md5.h $(PLAYERHEADERS)
+plugin.o:	plugin.c plugin.h subsongseek.h fileinfo.h ../include/uade/uadecontrol.h ../include/uade/uadeipc.h ../include/uade/uadeconstants.h subsongseek.h ../include/uade/effects.h ../common/md5.h $(PLAYERHEADERS)
 	$(CC) $(CFLAGS) -c $<
 
 subsongseek.o:	subsongseek.c subsongseek.h plugin.h
@@ -31,7 +29,7 @@ subsongseek.o:	subsongseek.c subsongseek.h plugin.h
 
 install:	
 	mkdir -p "$(AUDACIOUSPLUGINDIR)"
-	install libuade2.so "$(AUDACIOUSPLUGINDIR)"
+	install -m 644 libuade2.so "$(AUDACIOUSPLUGINDIR)"
 
 clean:	
 	rm -f *.so *.o

@@ -7,9 +7,9 @@
  *
  */
 
-/* $Id: macro68.h 121 2009-06-30 17:30:22Z benjihan $ */
+/* $Id: macro68.h 141 2011-08-07 23:30:20Z benjihan $ */
 
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2010 Benjamin Gerard */
 
 #ifndef _EMU68_MACRO68_H_
 #define _EMU68_MACRO68_H_
@@ -324,7 +324,7 @@
 # define TRAP(N)          inl_trap68(emu68,N)
 # define TRAPV            inl_trapv68(emu68)
 # define NOP              inl_nop68(emu68)
-# define RESET            emu68_reset(emu68)
+# define RESET            while (0) /* emu68_reset(emu68) */
 # define STOP             inl_stop68(emu68)
 # define LINK(R)          inl_link68(emu68,R)
 # define UNLK(R)          inl_unlk68(emu68,R)

@@ -7,9 +7,7 @@
  *
  */
 
-/* $Id: ymemul.h 127 2009-09-14 02:51:23Z benjihan $ */
-
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2011 Benjamin Gerard */
 
 #ifndef _IO68_YM_EMUL_H_
 #define _IO68_YM_EMUL_H_
@@ -309,7 +307,7 @@ IO68_EXTERN
  *    @warning The requested output buffer size may seem larger than
  *    neccessary but it is not. Internally the emulator may need some
  *    extra place (for oversampling...). Always call ym_buffersize()
- *    to allocate this buffer large enougth.
+ *    to allocate this buffer large enough.
  *
  *  @param  ym        YM-2149 emulator instance.
  *  @param  output    Output sample buffer.

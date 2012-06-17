@@ -7,9 +7,7 @@
  *
  */
 
-/* $Id: mfpemul.h 126 2009-07-15 08:58:51Z benjihan $ */
-
-/* Copyright (C) 1998-2009 Benjamin Gerard */
+/* Copyright (C) 1998-2011 Benjamin Gerard */
 
 #ifndef _IO68_MFPEMUL_H_
 #define _IO68_MFPEMUL_H
@@ -17,7 +15,8 @@
 #include "io68_api.h"
 #include "emu68/struct68.h"
 
-/** @defgroup  io68_mfp_devel  MFP-68901 emulator
+/**
+ *  @defgroup  io68_mfp_devel  MFP-68901 emulator
  *  @ingroup   io68_devel
  *  @brief     MFP-68901 (Atari-ST timers) emulator.
  *
@@ -219,10 +218,38 @@ typedef struct
 
 /** @} */
 
+/** MFP register name. */
+enum {
+  GPIP  = 0x01,
+  AER   = 0x03,
+  DDR   = 0x05,
+  IERA  = 0x07,
+  IERB  = 0x09,
+  IPRA  = 0x0B,
+  IPRB  = 0x0D,
+  ISRA  = 0x0F,
+  ISRB  = 0x11,
+  IMRA  = 0x13,
+  IMRB  = 0x15,
+  VR    = 0x17,
+  TACR  = 0x19,
+  TBCR  = 0x1B,
+  TCDCR = 0x1D,
+  TADR  = 0x1F,
+  TBDR  = 0x21,
+  TCDR  = 0x23,
+  TDDR  = 0x25,
+  SCR   = 0x27,
+  UCR   = 0x29,
+  RSR   = 0x2B,
+  TSR   = 0x2D,
+  UDR   = 0x2F,
+};
+
 /** MFP-68901 emulator. */
 typedef struct {
-  u8 map[0x40];          /**< Registers map.        */
-  mfp_timer_t timers[4]; /**< Timers.               */
+  u8 map[0x40];                       /**< Registers map.        */
+  mfp_timer_t timers[4];              /**< Timers.               */
 } mfp_t;
 
 /** @name  MFP-68901 emulator library.

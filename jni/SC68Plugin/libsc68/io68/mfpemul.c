@@ -1,31 +1,32 @@
 /*
- *                    sc68 - MFP 68901 emulator
- *             Copyright (C) 2001-2009 Benjamin Gerard
- *           <benjihan -4t- users.sourceforge -d0t- net>
+ * @file    mfpemul.c
+ * @brief   MFP 68901 emulator (Atari ST timers)
+ * @author  http://sourceforge.net/users/benjihan
  *
- * This  program is  free  software: you  can  redistribute it  and/or
- * modify  it under the  terms of  the GNU  General Public  License as
- * published by the Free Software  Foundation, either version 3 of the
+ * Copyright (C) 1998-2011 Benjamin Gerard
+ *
+ * Time-stamp: <2011-10-22 15:31:06 ben>
+ *
+ * This program is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful, but
- * WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
- * MERCHANTABILITY or  FITNESS FOR A PARTICULAR PURPOSE.   See the GNU
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
  *
- * You should have  received a copy of the  GNU General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.
+ *
  * If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
-/* $Id: mfpemul.c 126 2009-07-15 08:58:51Z benjihan $ */
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
-
-/* #include <stdio.h> //$$$DEBUG */
 
 #include "mfpemul.h"
 #include "emu68/assert68.h"
@@ -165,7 +166,7 @@ void reconf_timer(mfp_timer_t * const ptimer, int tcr, const bogoc68_t bogoc)
   const cycle68_t new_psw = prediv_width[(int)tcr];
 
   if (bogoc > ptimer->cti) {
-    msg68(mfp_cat,
+    TRACE68(mfp_cat,
           "mfp: timer-%c -- reconf out of range -- @%u > cti:%u\n",
           ptimer->def.letter, bogoc, ptimer->cti);
     ptimer->cti = bogoc + psw * ptimer->tdr_res;
@@ -176,7 +177,7 @@ void reconf_timer(mfp_timer_t * const ptimer, int tcr, const bogoc68_t bogoc)
 
   ptimer->tcr = tcr;
 
-  msg68(mfp_cat,
+  TRACE68(mfp_cat,
         "mfp: timer-%c -- reconf @%u cti:%u cpp:%u -- %d:%dhz\n",
         ptimer->def.letter, bogoc,
         ptimer->cti, cpp(ptimer->tdr_res),
@@ -220,7 +221,7 @@ void resume_timer(mfp_timer_t * const ptimer, int tcr, bogoc68_t bogoc)
   ptimer->tcr = tcr;
   ptimer->cti = bogoc + ptimer->tdr_cur * prediv_width[tcr] - ptimer->psc;
 
-  msg68(mfp_cat,
+  TRACE68(mfp_cat,
         "mfp: timer-%c  -- resume @%u cti:%u cpp:%u "
         "tdr:%u/%u psw:%u(%u) -- %dhz\n",
         ptimer->def.letter, bogoc, ptimer->cti,
@@ -285,12 +286,12 @@ void mfp_put_tdr(mfp_t * const mfp, int timer, int68_t v, bogoc68_t bogoc)
 
   if (!ptimer->tcr) {
     ptimer->tdr_cur = v;
-    msg68(mfp_cat,
+    TRACE68(mfp_cat,
           "mfp: timer-%c -- reload TDR @%u -- %u\n",
           ptimer->def.letter, bogoc, ptimer->tdr_res);
   } else if (ptimer->tcr && v != old_tdr) {
     uint_t old_frq = timerfrq(old_tdr);
-    msg68(mfp_cat,
+    TRACE68(mfp_cat,
           "mfp: timer-%c -- change @%u cti:%u psw:%u(%u) cpp:%u"
           " -- %u(%u) -> %u(%u)hz\n",
           ptimer->def.letter, bogoc, ptimer->cti,
@@ -334,7 +335,8 @@ void mfp_put_tcr(mfp_t * const mfp,
     mfp->map[0x19+2*timer] = v;
     /* $$$ Event mode + Pulse mode not emulate */
     if (v&0x10) {
-      msg68(mfp_cat,
+
+      TRACE68(mfp_cat,
             "mfp: timer-%c -- mode not supported --  %02x\n",
             timer_def[timer].letter,(int)(u8)v);
     }
@@ -437,7 +439,7 @@ void mfp_adjust_bogoc(mfp_t * const mfp, const bogoc68_t bogoc)
   for (ptimer = mfp->timers; ptimer != mfp->timers+4; ++ptimer) {
     if (ptimer->tcr) {
       if (ptimer->cti < bogoc) {
-        msg68(mfp_cat,
+        TRACE68(mfp_cat,
               "mfp: timer-%c -- adjust -- cti:%u cycle:%u\n",
               ptimer->def.letter,ptimer->cti, bogoc);
       }

@@ -15,13 +15,15 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <uade/ossupport.h>
+#include <uade/uadeoptions.h>
+#include <uade/unixatomic.h>
+#include <uade/unixsupport.h>
+
 #include "unixwalkdir.h"
-#include "uadeconfig.h"
-#include "unixatomic.h"
 #include "playlist.h"
 #include "uade123.h"
-#include "ossupport.h"
-#include "unixsupport.h"
+
 
 static int random_fd = -1;
 #ifdef UADE_CONFIG_HAVE_URANDOM
@@ -46,9 +48,9 @@ static int get_random(int max)
     if (random_fd == -1) {
       random_fd = open("/dev/urandom", O_RDONLY);
       if (random_fd < 0) {
-	__android_log_print(ANDROID_LOG_VERBOSE, "UADE", "not using urandom anymore: %s\n", strerror(errno));
-	using_urandom = 0;
-	goto nourandom;
+    __android_log_print(ANDROID_LOG_VERBOSE, "UADE", "not using urandom anymore: %s\n", strerror(errno));
+    using_urandom = 0;
+    goto nourandom;
       }
     }
     ret = atomic_read(random_fd, buf, sizeof(buf));
@@ -182,7 +184,7 @@ static void *recursive_func(const char *file, enum uade_wtype wtype, void *pl)
 
 
 int playlist_add(struct playlist *pl, const char *name, int recursive,
-		 int cygwin)
+         int cygwin)
 {
   int ret = 0;
   struct stat st;
@@ -214,13 +216,13 @@ int playlist_add(struct playlist *pl, const char *name, int recursive,
       size_t len = strlen(path);
 
       if (strippedpath == NULL)
-	die("Not enough memory for directory path.\n");
+    die("Not enough memory for directory path.\n");
 
       while (len > 0) {
-	len--;
-	if (strippedpath[len] != '/')
-	  break;
-	strippedpath[len] = 0;
+    len--;
+    if (strippedpath[len] != '/')
+      break;
+    strippedpath[len] = 0;
       }
 
       /* walk directory hierarchy */
@@ -325,10 +327,10 @@ int playlist_get(char *name, size_t maxlen, struct playlist *pl, int dir)
   if (dir == UADE_PLAY_NEXT) {
     if (pl->randomize) {
       if (pl_get_random(&s, &len, pl) == 0)
-	return 0;
+    return 0;
     } else {
       if (pl_get_next(&s, &len, pl) == 0)
-	return 0;
+    return 0;
     }
   } else if (dir == UADE_PLAY_PREVIOUS) {
     pl_get_prev(&s, &len, pl);
