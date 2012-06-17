@@ -6,9 +6,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.security.auth.Subject;
+
 import android.os.Environment;
 
 import com.ssb.droidsound.utils.DataFileSource;
+import com.ssb.droidsound.utils.Log;
 
 public abstract class FileSource {
 	@SuppressWarnings("unused") private static final String TAG = FileSource.class.getSimpleName();
@@ -86,7 +89,7 @@ public abstract class FileSource {
 		if(buffer == null) {
 			
 			buffer = intGetContents();
-			long size = getLength();
+			size = getLength();
 			if(buffer == null) {
 				InputStream is = null;
 				try {
@@ -102,11 +105,11 @@ public abstract class FileSource {
 						e.printStackTrace();
 					}
 				} else {
-					File f = intGetFile();
-					if(f != null) {
+					getFile();
+					if(buffer == null) {
 						buffer = new byte[(int) size];
 						try {
-							FileInputStream fis = new FileInputStream(f);
+							FileInputStream fis = new FileInputStream(file);
 							fis.read(buffer);
 							fis.close();
 						} catch (IOException e) {
@@ -122,16 +125,24 @@ public abstract class FileSource {
 	}
 	
 	public long getLength() {
-		return -1;
+		return size;
 	}
 	
 	public File getFile() {
 		
 		if(file == null) {
 			
+			/*file = FileCache.getInstance().getFile(reference);
+			if(file != null) {
+				size = file.length();
+				Log.d(TAG, "Found %s in cache: %s (%d)", reference, file.getPath(), file.length());
+				return file;
+			}*/
+			
 			// First see if we can get the file directly
 			file = intGetFile();
 			if(file != null) {
+				size = file.length();
 				return file;
 			}
 
@@ -141,6 +152,11 @@ public abstract class FileSource {
 			createParentDir();
 
 			file = new File(parentDir, baseName);
+			
+			if(file.exists()) {
+				Log.d(TAG, "LUCKY! File '%s' exists already\n", file.getPath());
+				return file;
+			}
 			
 			if(buffer == null)
 				buffer = intGetContents();
@@ -161,6 +177,8 @@ public abstract class FileSource {
 				return null;
 			}
 			
+			//FileCache.getInstance().putFile(reference, file);
+			
 		}
 		
 		return file;
@@ -168,12 +186,31 @@ public abstract class FileSource {
 	
 	
 	private void createParentDir() {
+
+		String exDir = Environment.getExternalStorageDirectory().getPath();
+		
+		String path = reference;
+		if(path.indexOf("http://") == 0) {
+			path = path.substring(7);
+		}
+		if(path.indexOf(exDir) == 0) {
+			path = path.substring(exDir.length());
+		}
+		if(path.indexOf("/") == 0) {
+			path = path.substring(1);
+		}
+		
+		int slash = path.lastIndexOf('/');
+		path = path.substring(0, slash);
+		
 		if(parentDir == null) {			
-			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-			File tempDir = new File(droidDir, "tempmusic");
+			//File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+			//File tempDir = new File(droidDir, "tempmusic");
 			//if(!tempDir.exists())
 			//	tempDir.mkdir();
-			parentDir = new File(tempDir, "music" + Long.toString(System.nanoTime()));
+			//parentDir = new File(tempDir, "music" + Long.toString(System.nanoTime()));
+			parentDir = new File(exDir + "/droidsound/tempmusic/" + path);
+			Log.d(TAG, "Created dir '%s'", parentDir.getPath());
 			parentDir.mkdirs();
 		}
 	}
@@ -262,13 +299,13 @@ public abstract class FileSource {
 			}
 		inputStream = null;
 		
-		if(parentDir != null && !leaveParentDir) {			
+		/*if(parentDir != null && !leaveParentDir) {			
 			File [] files = parentDir.listFiles();
 			for(File f : files) {
 				f.delete();
 			}
 			parentDir.delete();			
-		}
+		}*/
 		
 		parentDir = null;
 

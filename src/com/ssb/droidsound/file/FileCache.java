@@ -1,5 +1,6 @@
 package com.ssb.droidsound.file;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,7 +10,7 @@ public class FileCache {
 	
 	private static FileCache _instance = null;
 	
-	private Map<String, FileSource> cache;
+	private Map<String, File> cache;
 	
 	public static synchronized FileCache getInstance() {
 		if(_instance == null) {
@@ -19,15 +20,16 @@ public class FileCache {
 	}
 		
 	public FileCache() {
-		cache = new HashMap<String, FileSource>();
+		cache = new HashMap<String, File>();
 	}
 
-	public void add(FileSource fs) {
-		add(fs.getName(), fs);
+
+	public void putFile(String reference, File file) {
+		cache.put(reference, file);
 	}
-	
-	public void add(String name, FileSource fs) {
-		cache.put(name, fs);
+
+	public File getFile(String reference) {
+		return cache.get(reference);
 	}
 	
 	
