@@ -16,9 +16,9 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.ssb.droidsound.SongFile;
+import com.ssb.droidsound.file.FileSource;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.utils.Archive;
-import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unpacker;
 

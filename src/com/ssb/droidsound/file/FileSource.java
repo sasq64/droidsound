@@ -1,22 +1,17 @@
-package com.ssb.droidsound.utils;
+package com.ssb.droidsound.file;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 
 import android.os.Environment;
 
-public abstract class FileSource {
+import com.ssb.droidsound.utils.DataFileSource;
 
-	
-	private static final String TAG = FileSource.class.getSimpleName();
+public abstract class FileSource {
+	@SuppressWarnings("unused") private static final String TAG = FileSource.class.getSimpleName();
 	
 	private File file;
 	private InputStream inputStream;
@@ -47,10 +42,10 @@ public abstract class FileSource {
 		FileSource fs;
 		
 
-		if(ref.toLowerCase().contains(".zip/")) {
-			fs = new ZipFileSource(ref);
-		} else if(ref.toLowerCase().startsWith("http")) {
+		if(ref.toLowerCase().startsWith("http")) {
 			fs = new StreamSource(ref);
+		} else if(ref.toLowerCase().contains(".zip/")) {
+			fs = new ZipFileSource(ref);
 		} else {
 			fs = new RealFileSource(new File(ref));
 		}
@@ -70,7 +65,7 @@ public abstract class FileSource {
 	//protected boolean init(String fileRef) { return false; }	
 	protected File intGetFile() { return null; }
 	protected byte [] intGetContents() { return null; }
-	protected InputStream intGetStream() { return null; }
+	protected InputStream intGetStream() throws IOException { return null; }
 	protected FileSource intGetRelative(String name) { return null; }
 
 	
@@ -93,7 +88,11 @@ public abstract class FileSource {
 			buffer = intGetContents();
 			long size = getLength();
 			if(buffer == null) {
-				InputStream is = intGetStream();
+				InputStream is = null;
+				try {
+					is = intGetStream();
+				} catch (IOException e1) {
+				}
 				if(is != null) {
 					buffer = new byte[(int) size];
 					try {
@@ -136,6 +135,9 @@ public abstract class FileSource {
 				return file;
 			}
 
+			
+			//file = FileCache.getInstance().createFile(baseName);
+			
 			createParentDir();
 
 			file = new File(parentDir, baseName);
@@ -259,79 +261,18 @@ public abstract class FileSource {
 			} catch (IOException e) {
 			}
 		inputStream = null;
-		/*
+		
 		if(parentDir != null && !leaveParentDir) {			
 			File [] files = parentDir.listFiles();
 			for(File f : files) {
 				f.delete();
 			}
 			parentDir.delete();			
-		}*/
+		}
 		
 		parentDir = null;
 
 	}
-
-	private boolean loadStream() throws IOException {
-		
-		try {
-			URL url = new URL("");
-	
-			//Log.d(TAG, "Opening URL " + songName);
-	
-			URLConnection conn = url.openConnection();
-			if(!(conn instanceof HttpURLConnection))
-				throw new IOException("Not a HTTP connection");
-	
-			HttpURLConnection httpConn = (HttpURLConnection) conn;
-			httpConn.setAllowUserInteraction(false);
-			httpConn.setInstanceFollowRedirects(true);
-			httpConn.setRequestMethod("GET");
-	
-			Log.d(TAG, "Connecting");
-	
-			httpConn.connect();
-	
-			int response = httpConn.getResponseCode();
-			if(response == HttpURLConnection.HTTP_OK) {
-				int rc;
-				byte[] temp = new byte[16384];
-				Log.d(TAG, "HTTP connected");
-				InputStream in = httpConn.getInputStream();
-	
-				// URLUtil.guessFileName(songName, );
-				
-				createParentDir();
-	
-				file = new File(parentDir, baseName);
-								
-				FileOutputStream fos = new FileOutputStream(file);
-				BufferedOutputStream bos = new BufferedOutputStream(fos, temp.length);
-				while((rc = in.read(temp)) != -1) {
-					bos.write(temp, 0, rc);
-				}
-				bos.flush();
-				bos.close();
-	
-				size = (int) file.length();
-	
-				Log.d(TAG, "Bytes written: " + size);
-	
-				buffer = new byte[(int) size];
-				FileInputStream fs = new FileInputStream(file);
-				fs.read(buffer);
-				fs.close();
-				
-				return true;
-			}
-			
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return false;
-	}
-
 
 	public String getReference() {
 		return reference;

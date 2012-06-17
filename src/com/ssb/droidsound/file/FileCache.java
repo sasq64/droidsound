@@ -1,11 +1,11 @@
-package com.ssb.droidsound.utils;
+package com.ssb.droidsound.file;
 
 import java.util.HashMap;
 import java.util.Map;
 
 
 public class FileCache {
-	private static final String TAG = FileCache.class.getSimpleName();
+	@SuppressWarnings("unused") private static final String TAG = FileCache.class.getSimpleName();
 	
 	private static FileCache _instance = null;
 	

@@ -1,5 +1,7 @@
 package com.ssb.droidsound.utils;
 
+import com.ssb.droidsound.file.FileSource;
+
 public class DataFileSource extends FileSource {
 
 	private byte[] contents;

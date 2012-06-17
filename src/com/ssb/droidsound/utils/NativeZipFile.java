@@ -7,6 +7,9 @@ import java.io.InputStream;
 import java.util.Iterator;
 import java.util.zip.ZipEntry;
 
+import com.ssb.droidsound.file.FileSource;
+import com.ssb.droidsound.file.ZipFileSource;
+
 public class NativeZipFile implements Archive {
 	private static final String TAG = NativeZipFile.class.getSimpleName();
 	static {

@@ -2,6 +2,8 @@ package com.ssb.droidsound.utils;
 
 import java.util.Iterator;
 
+import com.ssb.droidsound.file.FileSource;
+
 public interface Archive {
 
 	public interface Entry {

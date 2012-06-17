@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 
 import android.os.Environment;
 
-import com.ssb.droidsound.utils.FileSource;
+import com.ssb.droidsound.file.FileSource;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
 

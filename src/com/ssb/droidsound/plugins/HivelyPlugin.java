@@ -2,7 +2,7 @@ package com.ssb.droidsound.plugins;
 
 import java.util.List;
 
-import com.ssb.droidsound.utils.FileSource;
+import com.ssb.droidsound.file.FileSource;
 
 public class HivelyPlugin extends DroidSoundPlugin {
 

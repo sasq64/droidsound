@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.ssb.droidsound.utils.FileSource;
+import com.ssb.droidsound.file.FileSource;
 
 
 

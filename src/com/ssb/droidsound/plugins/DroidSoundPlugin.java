@@ -10,7 +10,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 
-import com.ssb.droidsound.utils.FileSource;
+import com.ssb.droidsound.file.FileSource;
 
 public abstract class DroidSoundPlugin {
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();

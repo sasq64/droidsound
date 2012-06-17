@@ -38,8 +38,8 @@ import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
+import com.ssb.droidsound.file.FileSource;
 import com.ssb.droidsound.utils.Archive;
-import com.ssb.droidsound.utils.FileSource;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unpacker;
 

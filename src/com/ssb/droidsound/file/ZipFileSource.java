@@ -1,13 +1,14 @@
-package com.ssb.droidsound.utils;
+package com.ssb.droidsound.file;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.ZipEntry;
 
+import com.ssb.droidsound.utils.NativeZipFile;
 
-public class ZipFileSource extends FileSource {
-	
-	private static final String TAG = ZipFileSource.class.getSimpleName();
+
+public class ZipFileSource extends FileSource {	
+	@SuppressWarnings("unused") private static final String TAG = ZipFileSource.class.getSimpleName();
 	
 	private NativeZipFile zipFile;
 	int bufferPos;

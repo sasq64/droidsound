@@ -1,13 +1,11 @@
 package com.ssb.droidsound.service;
 
-import com.ssb.droidsound.service.Player.State;
-import com.ssb.droidsound.utils.Log;
-
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaPlayer;
-import android.os.Message;
+
+import com.ssb.droidsound.utils.Log;
 
 public class AudioPlayer {	
 	private static final String TAG = AudioPlayer.class.getSimpleName();

@@ -16,7 +16,7 @@ import android.database.AbstractCursor;
 import android.database.Cursor;
 
 import com.ssb.droidsound.database.EditableCursor;
-import com.ssb.droidsound.utils.FileSource;
+import com.ssb.droidsound.file.FileSource;
 import com.ssb.droidsound.utils.Log;
 
 public class Playlist {

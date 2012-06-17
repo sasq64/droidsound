@@ -1,14 +1,10 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.ssb.droidsound.utils.FileSource;
-import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.file.FileSource;
 
 public class SexyPSFPlugin extends DroidSoundPlugin {
 	private static final String TAG = SexyPSFPlugin.class.getSimpleName();
