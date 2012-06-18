@@ -11,7 +11,10 @@ import android.test.InstrumentationTestCase;
 
 import com.ssb.droidsound.file.FileSource;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
+import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
+import com.ssb.droidsound.plugins.SC68Plugin;
+import com.ssb.droidsound.plugins.SexyPSFPlugin;
 import com.ssb.droidsound.plugins.SidPlugin;
 import com.ssb.droidsound.plugins.UADEPlugin;
 
@@ -35,28 +38,7 @@ public class SongTest extends InstrumentationTestCase {
 	protected void tearDown() throws Exception {
 		super.tearDown();
 		Utils.removeDir(tempDir);
-	}
-	 
-	
-	private File dumpFile(String name, InputStream is) throws IOException {
-		
-		File tempFile = new File(tempDir, name);		
-		FileOutputStream os = new FileOutputStream(tempFile);
-		byte[] buffer = new byte[1024 * 64];
-
-		int rc = 0;
-		while(rc >= 0) {
-			rc = is.read(buffer);
-			if(rc > 0) {
-				os.write(buffer, 0, rc);
-			}
-		}
-		os.close();
-		is.close();
-		
-		return tempFile;
-	}
-	
+	}	
 	
 	public void testMOD() throws IOException {		
 		ModPlugin plugin = new ModPlugin();		
@@ -76,9 +58,34 @@ public class SongTest extends InstrumentationTestCase {
 		playSong(plugin, FileSource.fromStream("music.sid", is));
 	}
 
+	public void testPSF() throws IOException {		
+		SexyPSFPlugin plugin = new SexyPSFPlugin();		
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/music.psf");
+		playSong(plugin, FileSource.fromStream("music.psf", is));
+	}
+
+	public void testSNDH() throws IOException {		
+		SC68Plugin plugin = new SC68Plugin();		
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/music.sndh");
+		playSong(plugin, FileSource.fromStream("music.sndh", is));
+	}
+	
+	public void testNSFE() throws IOException {		
+		GMEPlugin plugin = new GMEPlugin();		
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/music.nsfe");
+		playSong(plugin, FileSource.fromStream("music.nsfe", is));
+	}
+
+	public void testCUST() throws IOException {		
+		UADEPlugin plugin = new UADEPlugin();		
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/cust.music");
+		playSong(plugin, FileSource.fromStream("cust.music", is));
+	}
+
+	
 	public void testTFMX() throws IOException {	
-		File m0 = dumpFile("MDAT.music", assets.open("music/MDAT.music")); 
-		dumpFile("SMPL.music", assets.open("music/SMPL.music"));
+		File m0 = Utils.dumpFile(new File(tempDir, "MDAT.music"), assets.open("music/MDAT.music")); 
+		Utils.dumpFile(new File(tempDir, "SMPL.music"), assets.open("music/SMPL.music"));
 		UADEPlugin plugin = new UADEPlugin();
 		playSong(plugin, FileSource.fromFile(m0));
 	}
@@ -101,8 +108,10 @@ public class SongTest extends InstrumentationTestCase {
 			for(int i=0; i<size; i++) {
 				check += samples[i];
 			}
-		}		
+		}
 		assertTrue(check != 0);
+		
+		plugin.unload();
 	}
 
 }

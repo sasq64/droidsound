@@ -5,12 +5,15 @@ import java.io.IOException;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.database.Cursor;
 import android.os.Environment;
 import android.test.InstrumentationTestCase;
 
 import com.ssb.droidsound.database.CSDBParser;
 import com.ssb.droidsound.database.MediaSource;
+import com.ssb.droidsound.database.ScanCallback;
 import com.ssb.droidsound.database.SongDatabase;
+import com.ssb.droidsound.plugins.DroidSoundPlugin;
 
 public class SongDatabaseTest extends InstrumentationTestCase {
 
@@ -20,12 +23,15 @@ public class SongDatabaseTest extends InstrumentationTestCase {
 	private File modsDir;
 	private AssetManager assets;
 	private File tempDir;
+	private volatile boolean scanDone;
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		
 		Context ctx = getInstrumentation().getContext();
+		
+		DroidSoundPlugin.setContext(ctx);
 		
 		assets = ctx.getAssets();
 		
@@ -68,7 +74,7 @@ public class SongDatabaseTest extends InstrumentationTestCase {
 		Utils.removeDir(tempDir);		
 	}
 	
-	public void testScan() throws IOException {
+	public void testScan() throws IOException, InterruptedException {
 		
 		String [] mods = assets.list("music");
 		
@@ -76,9 +82,29 @@ public class SongDatabaseTest extends InstrumentationTestCase {
 			Utils.dumpFile(new File(modsDir, m), assets.open("music/" + m));
 		}
 		
-		songDatabase.scan(false, modsDir.getPath());
+		scanDone = false;
 		
-		// TODO: Wait for completion!
+		songDatabase.setScanCallback(new ScanCallback() {
+			@Override
+			public void notifyScan(String path, int percent) {
+				if(percent == -1)
+					scanDone = true;
+			}
+		});
+		
+		songDatabase.scan(false, modsDir.getPath());
+		while(!scanDone) {
+			Thread.sleep(100);
+		}
+		
+		Cursor cursor;
+		int count;
+		
+		cursor = songDatabase.getFilesInPath(modsDir.getPath(), 0);
+		count = cursor.getCount();
+		
+		cursor = songDatabase.search("music", "", 0);
+		count = cursor.getCount();
 	}
 	
 }
