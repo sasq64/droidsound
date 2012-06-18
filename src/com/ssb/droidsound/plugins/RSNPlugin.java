@@ -26,7 +26,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 	
 	private static Map<String, String> lookup = new HashMap<String, String>();
 	
-	RSNPlugin() {
+	public RSNPlugin() {
 		
 		synchronized (lookup) {
 			if(lookup.size() == 0) {
@@ -41,7 +41,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 						if(sc > 0) {
 							String title = line.substring(0,sc);
 							String name = line.substring(sc+1);
-							Log.d(TAG, "Found %s = %s", name, title);
+							//Log.d(TAG, "Found %s = %s", name, title);
 							lookup.put(name, title);
 						}
 					}

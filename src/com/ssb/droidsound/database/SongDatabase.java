@@ -94,8 +94,6 @@ public class SongDatabase implements Runnable {
 
 	protected static final int MSG_SCAN = 0;
 	protected static final int MSG_OPEN = 1;
-	//protected static final int MSG_RESTORE = 2;
-	protected static final int MSG_DOWNLOAD = 3;
 	protected static final int MSG_QUIT = 4;
 	protected static final int MSG_INDEXMODE = 5;
 	
@@ -109,12 +107,41 @@ public class SongDatabase implements Runnable {
 	}
 	
 	public SongDatabase(Context ctx) {		
-		context = ctx;		
+		context = ctx;
+		setDefaultCallback();
 	}
-	
+
 	public SongDatabase(Context ctx, File db) {		
 		context = ctx;		
 		dbFile = db;
+		setDefaultCallback();
+	}
+
+	private void setDefaultCallback() {
+		setScanCallback(new ScanCallback() {
+			String oldPath;
+			@Override
+			public void notifyScan(String path, int percent) {
+				Intent intent;
+				
+				if(path == null) {
+					path = oldPath;
+				} else {
+					oldPath = path;
+				}
+				
+				Log.d(TAG, "PATH %s %d\n", path, percent);
+				
+				if(percent >= 0) {
+					intent = new Intent("com.sddb.droidsound.SCAN_UPDATE");
+					intent.putExtra("PATH", path);
+					intent.putExtra("PERCENT", percent);
+				} else {
+					intent = new Intent("com.sddb.droidsound.SCAN_DONE");
+				}
+				context.sendBroadcast(intent);				
+			}
+		});
 	}
 
 	private SQLiteDatabase getReadableDatabase() {
@@ -172,40 +199,10 @@ public class SongDatabase implements Runnable {
 	            	Log.d(TAG, "Telling looper to quit");
 	            	Looper.myLooper().quit();
 	            	break;
-	          /*  case MSG_DOWNLOAD:
-	            	doDownload();
-	            	break; */
 	            } 
 			}
 		};
 		
-		
-		
-		setScanCallback(new ScanCallback() {
-			String oldPath;
-			@Override
-			public void notifyScan(String path, int percent) {
-				Intent intent;
-				
-				if(path == null) {
-					path = oldPath;
-				} else {
-					oldPath = path;
-				}
-				
-				Log.d(TAG, "PATH %s %d\n", path, percent);
-				
-				if(percent >= 0) {
-					intent = new Intent("com.sddb.droidsound.SCAN_UPDATE");
-					intent.putExtra("PATH", path);
-					intent.putExtra("PERCENT", percent);
-				} else {
-					intent = new Intent("com.sddb.droidsound.SCAN_DONE");
-				}
-				context.sendBroadcast(intent);				
-			}
-		});
-
 		doOpen(false);
 
 		Intent intent = new Intent("com.sddb.droidsound.OPEN_DONE");
@@ -258,13 +255,7 @@ public class SongDatabase implements Runnable {
 		
 		try {
 			if(drop) {
-				if(scanCallback != null) {
-					scanCallback.notifyScan("Clearing tables", 0);
-					try {
-						Thread.sleep(1500);
-					} catch (InterruptedException e) {
-					}
-				}
+				scanCallback.notifyScan("Clearing tables", 0);
 				Log.d(TAG, "Deleting file tables!");
 				
 				// try {
@@ -282,9 +273,7 @@ public class SongDatabase implements Runnable {
 			}
 	
 			if(drop) {
-				if(scanCallback != null) {
-					scanCallback.notifyScan("Creating tables", 0);
-				}
+				scanCallback.notifyScan("Creating tables", 0);
 			}
 			
 			/*
@@ -332,9 +321,7 @@ public class SongDatabase implements Runnable {
 	private void createIndex(SQLiteDatabase db) {
 		
 			
-			if(scanCallback != null) {
-				scanCallback.notifyScan("Updating indexes", 0);
-			}
+			scanCallback.notifyScan("Updating indexes", 0);
 			
 			Log.d(TAG, "Updating indexes to mode " + indexMode);
 			
@@ -363,9 +350,7 @@ public class SongDatabase implements Runnable {
 				ds.getValue().createIndex(indexMode, db);			
 			}
 			
-			//if(scanCallback != null) {
-			//	scanCallback.notifyScan(null, -1);
-			//}
+			//scanCallback.notifyScan(null, -1);
 			
 			//db.close();
 			
@@ -474,9 +459,7 @@ public class SongDatabase implements Runnable {
 				count++;
 				if((count % reportPeriod) == 0) {
 					isReady = false;
-					if(scanCallback != null) {
-						scanCallback.notifyScan(null, total >= 0 ? count * 100 / total : count);
-					}
+					scanCallback.notifyScan(null, total >= 0 ? count * 100 / total : count);
 				}
 					
 				//if(count == 4000)
@@ -532,9 +515,7 @@ public class SongDatabase implements Runnable {
 
 		if(hasChanged) {
 			
-			if(scanCallback != null) {
-				scanCallback.notifyScan(parentDir.getPath(), 0);
-			}
+			scanCallback.notifyScan(parentDir.getPath(), 0);
 			
 			// All files and directories
 			Set<String> files = new HashSet<String>();
@@ -724,9 +705,7 @@ public class SongDatabase implements Runnable {
 						count++;
 						if(count % reportPeriod == 0) {
 							isReady = false;
-							if(scanCallback != null) {
-								scanCallback.notifyScan(null, count * 100 / total);
-							}
+							scanCallback.notifyScan(null, count * 100 / total);
 						}
 					}
 					Log.d(TAG, "TRANSACTION SUCCESSFUL");
@@ -742,9 +721,7 @@ public class SongDatabase implements Runnable {
 				for(File f : zipFiles) {
 					try {
 						isReady = false;
-						if(scanCallback != null) {
-							scanCallback.notifyScan(f.getPath(), 0);
-						}
+						scanCallback.notifyScan(f.getPath(), 0);
 						scanDb.beginTransaction();
 						if(scanZip(f)) {
 							ContentValues values = new ContentValues();
@@ -770,9 +747,7 @@ public class SongDatabase implements Runnable {
 			for(File dump : foundDumps) {
 				DataSource ds = dbsources.get(dump.getName().toUpperCase());
 				isReady = false;
-				if(scanCallback != null) {
-					scanCallback.notifyScan(dump.getPath(), 0);
-				}
+				scanCallback.notifyScan(dump.getPath(), 0);
 				
 				InputStream is = null;
 				int size = -1;
@@ -834,18 +809,14 @@ public class SongDatabase implements Runnable {
 			for(String s : foundDirs) {
 				File f = new File(parentDir, s);
 				isReady = false;
-				if(scanCallback != null) {
-					scanCallback.notifyScan(f.getPath(), 0);
-				}
+				scanCallback.notifyScan(f.getPath(), 0);
 				scanFiles(f, alwaysScan, lastScan);
 			}			
 			
 			for(String s : foundDirsNew) {
 				File f = new File(parentDir, s);
 				isReady = false;
-				if(scanCallback != null) {
-					scanCallback.notifyScan(f.getPath(), 0);
-				}
+				scanCallback.notifyScan(f.getPath(), 0);
 				scanFiles(f, true, lastScan);
 			}
 	
@@ -892,8 +863,6 @@ public class SongDatabase implements Runnable {
 		
 		 Log.d(TAG, "INDEX MODE " + mode);
 		 indexMode = mode;
-		 
-		 
 		/*
 		if(indexMode != mode) {
 			Message msg = mHandler.obtainMessage(MSG_INDEXMODE, mode, 0);
@@ -901,33 +870,6 @@ public class SongDatabase implements Runnable {
 		} */
 		
 	}
-
-	
-/*
-	public void download(String url) {
-
-		synchronized (this) {
-	    	dlList.add((String)url);	    	
-		}		
-		Message msg = mHandler.obtainMessage(MSG_DOWNLOAD, url);
-		mHandler.sendMessage(msg);
-	}
-	
-	public boolean isQueued(String url) {
-		boolean rc;
-		synchronized (this) {
-	    	rc = dlList.contains(url);	    	
-		}
-		return rc;
-	}
-	
-	public void cancelDownload(String url) {
-		synchronized (this) {
-			cancelUrl = url;
-	    	dlList.remove(url);
-		}
-	}
-*/
 	
 	private void doScan(String modsDir, boolean full) {
 
@@ -973,9 +915,7 @@ public class SongDatabase implements Runnable {
 			limit = 5000;
 			offset = 1;
 						
-			if(scanCallback != null) {
-				scanCallback.notifyScan("Checking orphans", 0);
-			}					
+			scanCallback.notifyScan("Checking orphans", 0);
 			
 			while(true) {
 				
@@ -1056,9 +996,7 @@ public class SongDatabase implements Runnable {
 		scanDb = null;
 		scanning = false;
 
-		if(scanCallback != null) {
-			scanCallback.notifyScan(null, -1);
-		}
+		scanCallback.notifyScan(null, -1);
 
 		//rdb.close();
 	}
