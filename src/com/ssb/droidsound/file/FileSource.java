@@ -63,6 +63,11 @@ public abstract class FileSource {
 	public static FileSource fromData(String name, byte[] bs) {
 		return new DataFileSource(name, bs);
 	}
+	
+	public static FileSource fromStream(String name, InputStream is) {
+		return new StreamFileSource(name, is);
+	}
+
 
 	
 	//protected boolean init(String fileRef) { return false; }	
@@ -97,8 +102,9 @@ public abstract class FileSource {
 				} catch (IOException e1) {
 				}
 				if(is != null) {
-					buffer = new byte[(int) size];
 					try {
+						size = is.available();
+						buffer = new byte[(int) size];
 						is.read(buffer);
 						is.close();
 					} catch (IOException e) {
@@ -201,7 +207,8 @@ public abstract class FileSource {
 		}
 		
 		int slash = path.lastIndexOf('/');
-		path = path.substring(0, slash);
+		if(slash >= 0)
+			path = path.substring(0, slash);
 		
 		if(parentDir == null) {			
 			//File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
@@ -314,6 +321,7 @@ public abstract class FileSource {
 	public String getReference() {
 		return reference;
 	}
+
 
 
 }

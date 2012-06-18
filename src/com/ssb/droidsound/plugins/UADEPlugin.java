@@ -128,6 +128,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean canHandle(FileSource fs) {
 
+		init();
+		
 		String name = fs.getName();
 		int x = name.lastIndexOf('.');
 		

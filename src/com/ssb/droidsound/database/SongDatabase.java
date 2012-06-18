@@ -35,7 +35,6 @@ import android.os.Message;
 import android.provider.BaseColumns;
 
 import com.ssb.droidsound.FileIdentifier;
-import com.ssb.droidsound.PlayerActivity;
 import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.file.FileSource;
@@ -80,6 +79,8 @@ public class SongDatabase implements Runnable {
 
 	private int indexMode = -1;
 	private int lastIndexMode = -1;
+
+	private File dbFile;
 	
 	public static final int TYPE_ARCHIVE = 0x100;
 	public static final int TYPE_DIR = 0x200;
@@ -111,6 +112,11 @@ public class SongDatabase implements Runnable {
 		context = ctx;		
 	}
 	
+	public SongDatabase(Context ctx, File db) {		
+		context = ctx;		
+		dbFile = db;
+	}
+
 	private SQLiteDatabase getReadableDatabase() {
 		if(dbName == null) {
 			return null;
@@ -140,129 +146,7 @@ public class SongDatabase implements Runnable {
 		String s = dumpname.toUpperCase();
 		dbsources.put(s, ds);
 	}
-/*
-	private volatile String cancelUrl;
-	
-	
-	private boolean downloadURL(String ref, File target) throws IOException, InterruptedException {
-		
-		URL url = new URL(ref);
-		
-		Log.d(TAG, "Opening URL " + ref);
-		
-		URLConnection conn = url.openConnection();
-		if (!(conn instanceof HttpURLConnection))
-			throw new IOException("Not a HTTP connection");
 
-		HttpURLConnection httpConn = (HttpURLConnection) conn;
-		httpConn.setAllowUserInteraction(false);
-		httpConn.setInstanceFollowRedirects(true);
-		httpConn.setRequestMethod("GET");
-		
-		Log.d(TAG, "Connecting");
-		Intent intent;
-		
-		httpConn.connect();
-
-		int response = httpConn.getResponseCode();
-		if(response == HttpURLConnection.HTTP_OK)
-		{			
-			int size;
-			byte[] buffer = new byte[64*1024];
-			Log.d(TAG, "HTTP connected");
-			InputStream in = httpConn.getInputStream();
-			//File f = File.createTempFile("music", null);
-			
-			intent = new Intent("com.sddb.droidsound.DOWNLOAD_START");
-			intent.putExtra("PATH", target.getPath());
-			intent.putExtra("SIZE", httpConn.getContentLength());
-			context.sendBroadcast(intent);
-			intent = new Intent("com.sddb.droidsound.DOWNLOAD");
-			intent.putExtra("PATH", target.getPath());
-			intent.putExtra("SIZE", httpConn.getContentLength());
-			
-			FileOutputStream fos = new FileOutputStream(target);
-			BufferedOutputStream bos = new BufferedOutputStream(fos, buffer.length);
-			int count = 0;
-			int totalBytes = 0;
-			while ((size = in.read(buffer)) != -1) {
-				bos.write(buffer, 0, size);
-				totalBytes += size;
-				if(count++ == 50) {
-					count = 0;
-					intent.putExtra("BYTES", totalBytes);
-					context.sendBroadcast(intent);
-					Thread.sleep(100);
-					
-					if(cancelUrl != null && cancelUrl.equals(ref)) {
-						cancelUrl = null;
-						Log.d(TAG, "Cancelling download");
-						return false;
-					}
-				}
-				
-				
-				
-			}
-			bos.flush();
-			bos.close();
-			
-			return true;
-		}
-		return false;
-		
-	}
-	
-	
-	private List<String> dlList = new ArrayList<String>();
-	private String targetDir = "/sdcard/MODS";
-
-	private void doDownload() {
-
-		while(true) {
-			String url;
-			File f;
-			synchronized (this) {
-				cancelUrl = null;
-				if(dlList.size() < 1) {
-					break;
-				}
-				url = dlList.get(0);				
-				f = new File(url);
-				dlList.remove(0);			
-			}
-			
-			File target = new File(targetDir, f.getName() + ".temp");		
-			try {
-				if(downloadURL(url, target)) {
-					File nf = new File(targetDir, f.getName());
-					target.renameTo(nf);
-					Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
-					intent.putExtra("PATH", nf.getPath());
-					intent.putExtra("RESULT", true);
-					context.sendBroadcast(intent);
-				} else {
-					target.delete();
-					File nf = new File(targetDir, f.getName());
-					Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
-					intent.putExtra("PATH", nf);
-					intent.putExtra("RESULT", false);
-					context.sendBroadcast(intent);
-				}
-			} catch (IOException e) {
-				target.delete();
-				Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
-				intent.putExtra("PATH", "");
-				context.sendBroadcast(intent);
-			} catch (InterruptedException e) {
-				target.delete();
-				Intent intent = new Intent("com.sddb.droidsound.DOWNLOAD_DONE");
-				intent.putExtra("PATH", "");
-				context.sendBroadcast(intent);
-			}
-		}
-	}
-*/
 	@Override
 	public void run() {
 				
@@ -335,15 +219,18 @@ public class SongDatabase implements Runnable {
 	}
 
 	private void doOpen(boolean drop) {	
-		File myDir = context.getFilesDir();
-		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
 
-		droidDir.mkdir();
-		
-		if(!droidDir.exists()) {
-			return;
-		}
-		
+		if(dbFile == null) {
+			File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+	
+			droidDir.mkdir();
+			
+			if(!droidDir.exists()) {
+				throw new RuntimeException("Droidsound directory could not be created");
+			}
+			
+			dbFile  = new File(droidDir, "songs.db");
+		}		
 		
 		isReady = false;
 		
@@ -352,20 +239,6 @@ public class SongDatabase implements Runnable {
 			rdb = null;
 		}
 
-		File dbFile  = new File(droidDir, "songs.db");
-		
-		File oldDb = new File(myDir, "songs.db");
-		if(oldDb.exists()) {
-			scanning = true;
-			if(scanCallback != null) {
-				scanCallback.notifyScan("Moving database", 0);
-			}
-
-			if(!PlayerActivity.moveFile(oldDb, new File(droidDir, "songs.db"))) {
-				dbFile = oldDb;
-			}
-			scanning = false;
-		}
 		
 
 		dbName = dbFile.getAbsolutePath();
@@ -403,7 +276,6 @@ public class SongDatabase implements Runnable {
 				
 				db.execSQL("DROP TABLE IF EXISTS FILES ;");
 				db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
-
 				db.execSQL("DROP TABLE IF EXISTS LINKS ;");
 				//db.execSQL("DROP TABLE IF EXISTS SONGINFO");
 				db.setVersion(DB_VERSION);
