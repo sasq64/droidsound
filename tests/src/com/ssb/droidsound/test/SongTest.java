@@ -20,22 +20,6 @@ public class SongTest extends InstrumentationTestCase {
 	private File tempDir;
 	private AssetManager assets; 
 	
-	private static void removeDir(File dir) {		
-		File [] files = dir.listFiles();
-		if(files != null) {
-			for(File f : files) {
-				if(f.isFile())
-					f.delete();
-				else
-					removeDir(f);
-			}
-			dir.delete();
-		}
-		
-	}
-	
-
-	
 	@Override
     protected void setUp() throws Exception {
         super.setUp();
@@ -50,7 +34,7 @@ public class SongTest extends InstrumentationTestCase {
 	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
-		removeDir(tempDir);
+		Utils.removeDir(tempDir);
 	}
 	 
 	
@@ -76,25 +60,25 @@ public class SongTest extends InstrumentationTestCase {
 	
 	public void testMOD() throws IOException {		
 		ModPlugin plugin = new ModPlugin();		
-		InputStream is = getInstrumentation().getContext().getAssets().open("music.mod");
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/music.mod");
 		playSong(plugin, FileSource.fromStream("music.mod", is));
 	}
 	
 	public void testXM() throws IOException {		
 		ModPlugin plugin = new ModPlugin();		
-		InputStream is = getInstrumentation().getContext().getAssets().open("music.xm");
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/music.xm");
 		playSong(plugin, FileSource.fromStream("music.xm", is));
 	}
 
 	public void testSID() throws IOException {		
 		SidPlugin plugin = new SidPlugin();		
-		InputStream is = getInstrumentation().getContext().getAssets().open("music.sid");
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/music.sid");
 		playSong(plugin, FileSource.fromStream("music.sid", is));
 	}
 
 	public void testTFMX() throws IOException {	
-		File m0 = dumpFile("MDAT.music", assets.open("MDAT.music")); 
-		dumpFile("SMPL.music", assets.open("SMPL.music"));
+		File m0 = dumpFile("MDAT.music", assets.open("music/MDAT.music")); 
+		dumpFile("SMPL.music", assets.open("music/SMPL.music"));
 		UADEPlugin plugin = new UADEPlugin();
 		playSong(plugin, FileSource.fromFile(m0));
 	}
