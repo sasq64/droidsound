@@ -22,14 +22,14 @@ public abstract class FileSource {
 	int bufferPos;
 	long size;
 
-	private File parentDir;
+	//private File parentDir;
 
 
 	private boolean isFile;
 
 	private String baseName;
 
-	private boolean leaveParentDir;
+	//private boolean leaveParentDir;
 
 	private String reference;
 	
@@ -155,9 +155,9 @@ public abstract class FileSource {
 			
 			//file = FileCache.getInstance().createFile(baseName);
 			
-			createParentDir();
-
-			file = new File(parentDir, baseName);
+			//createParentDir();
+			//file = new File(parentDir, baseName);
+			file = FileCache.getInstance().getFile(reference);			
 			
 			if(file.exists()) {
 				Log.d(TAG, "LUCKY! File '%s' exists already\n", file.getPath());
@@ -190,7 +190,7 @@ public abstract class FileSource {
 		return file;
 	}
 	
-	
+	/*
 	private void createParentDir() {
 
 		String exDir = Environment.getExternalStorageDirectory().getPath();
@@ -220,7 +220,7 @@ public abstract class FileSource {
 			Log.d(TAG, "Created dir '%s'", parentDir.getPath());
 			parentDir.mkdirs();
 		}
-	}
+	}*/
 
 	public String getName() {
 		return baseName;
@@ -232,7 +232,7 @@ public abstract class FileSource {
 		// First try the internal function
 		fs = intGetRelative(name);
 		
-		createParentDir();
+		//createParentDir();
 		
 		if(fs == null) {
 			// Otherwise, try creating a relative file manually
@@ -243,16 +243,16 @@ public abstract class FileSource {
 			}
 		}
 
-		if(fs != null)
-			fs.setParentDir(parentDir);
+		//if(fs != null)
+		//	fs.setParentDir(parentDir);
 		
 		return fs;
 	}
 
-	private void setParentDir(File pd) {
-		parentDir = pd;
-		leaveParentDir = true;
-	}
+	//private void setParentDir(File pd) {
+	//	parentDir = pd;
+	//	leaveParentDir = true;
+	//}
 
 	public String getExt() {
 		String ext = "";
@@ -314,7 +314,7 @@ public abstract class FileSource {
 			parentDir.delete();			
 		}*/
 		
-		parentDir = null;
+		//parentDir = null;
 
 	}
 
