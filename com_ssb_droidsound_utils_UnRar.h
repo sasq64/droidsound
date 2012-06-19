@@ -44,7 +44,7 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_UnRar_N_1extract
  * Method:    N_getFileName
  * Signature: ()I
  */
-JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_UnRar_N_1getFileName
+JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_UnRar_N_1getFileName
   (JNIEnv *, jobject);
 
 /*
