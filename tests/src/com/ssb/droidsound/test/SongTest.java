@@ -13,6 +13,7 @@ import com.ssb.droidsound.file.FileSource;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.plugins.GMEPlugin;
 import com.ssb.droidsound.plugins.ModPlugin;
+import com.ssb.droidsound.plugins.RSNPlugin;
 import com.ssb.droidsound.plugins.SC68Plugin;
 import com.ssb.droidsound.plugins.SexyPSFPlugin;
 import com.ssb.droidsound.plugins.SidPlugin;
@@ -90,9 +91,17 @@ public class SongTest extends InstrumentationTestCase {
 		playSong(plugin, FileSource.fromFile(m0));
 	}
 
-
+	public void testRMU() throws IOException {	
+		RSNPlugin plugin = new RSNPlugin();		
+		InputStream is = getInstrumentation().getContext().getAssets().open("music/music.rmu");
+		playSong(plugin, FileSource.fromStream("music.rmu", is), 3);
+	}
 
 	private void playSong(DroidSoundPlugin plugin, FileSource fs) {
+		playSong(plugin, fs, 1);
+	}
+
+	private void playSong(DroidSoundPlugin plugin, FileSource fs, int subtunes) {
 
 		assertTrue(plugin.canHandle(fs));
 		
@@ -100,16 +109,23 @@ public class SongTest extends InstrumentationTestCase {
 		
 		short [] samples = new short [8820]; // 0.1s
 		int size;
-		long check = 0;
-
-		for(int j=0; j<20; j++) { // Run for 2 seconds
-			size = plugin.getSoundData(samples, samples.length);
-			assertTrue(size > 0); // All songs should be at least 2 seconds long
-			for(int i=0; i<size; i++) {
-				check += samples[i];
+		
+		for(int k=0; k<subtunes; k++) {
+			long check = 0;
+	
+			for(int j=0; j<20; j++) { // Run for 2 seconds
+				size = plugin.getSoundData(samples, samples.length);
+				assertTrue(size > 0); // All songs should be at least 2 seconds long
+				for(int i=0; i<size; i++) {
+					check += samples[i];
+				}
 			}
+			assertTrue(check != 0);
+			
+			if(k<subtunes) {
+				plugin.setTune(k+1);
+			}			
 		}
-		assertTrue(check != 0);
 		
 		plugin.unload();
 	}

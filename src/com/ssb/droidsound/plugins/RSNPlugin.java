@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.ssb.droidsound.file.FileSource;
@@ -16,13 +17,24 @@ import com.ssb.droidsound.utils.UnRar;
 public class RSNPlugin extends DroidSoundPlugin {
 	private static final String TAG = RSNPlugin.class.getSimpleName();
 
-	GMEPlugin plugin;
+	private static class SongHandler {
+		public SongHandler(FileSource fs, DroidSoundPlugin p) {
+			source = fs;
+			plugin = p;
+		}
+		public FileSource source;
+		public DroidSoundPlugin plugin;
+	}
+	
+	//GMEPlugin plugin;
 	private UnRar rarFile;
-	private ArrayList<FileSource> spcFiles;
-	private boolean loaded;
+	private ArrayList<SongHandler> handlers;
+	//private boolean loaded;
 	private File targetFile;
 
 	private String title;
+	private List<DroidSoundPlugin> plugins;
+	private DroidSoundPlugin currentPlugin;
 	
 	private static Map<String, String> lookup = new HashMap<String, String>();
 	
@@ -58,17 +70,20 @@ public class RSNPlugin extends DroidSoundPlugin {
 	
 
 	@Override
-	public boolean canHandle(FileSource fs) {
-		return fs.getExt().equals("RSN");
+	public boolean canHandle(FileSource source) {
+		String ext = source.getExt();
+		return ext.equals("RSN") || ext.equals("RMU");
 	}
 	
 	@Override
-	public boolean load(FileSource fs) {
+	public boolean load(FileSource source) {
 		
-		if(plugin == null)
-			plugin = new GMEPlugin();
+		if(plugins == null) {
+			plugins = DroidSoundPlugin.createPluginList();
+		}
+		//	plugin = new GMEPlugin();
 		
-		title = FileCache.getBaseName(fs.getName());
+		title = FileCache.getBaseName(source.getName());
 		
 		if(lookup.containsKey(title)) {
 			title = lookup.get(title);
@@ -77,20 +92,26 @@ public class RSNPlugin extends DroidSoundPlugin {
 		
 	
 		Log.d(TAG, "Unrar RSN");
-		rarFile = new UnRar(fs.getFile().getPath());
+		rarFile = new UnRar(source.getFile().getPath());
 		targetFile = FileCache.getTempDir();//fs.getFile().getParentFile();
 		rarFile.extractTo(targetFile.getPath());		
 		File [] files = targetFile.listFiles();
-		spcFiles = new ArrayList<FileSource>();
+		handlers = new ArrayList<SongHandler>();
 		for(File f : files) {
 			int dot = f.getName().lastIndexOf('.');
 			if(dot >= 0) {
-				String ext = f.getName().substring(dot+1).toUpperCase();
-				if(ext.equals("SPC")) {
-					spcFiles.add(FileSource.fromFile(f));
-				}
+				FileSource fs = FileSource.fromFile(f);
+				for(DroidSoundPlugin p : plugins) {
+					if(p.canHandle(fs)) {
+						handlers.add(new SongHandler(fs, p));
+						break;
+					}
+				}				
 			}
 		}
+		
+		
+		
 		return true;
 	}
 	
@@ -108,9 +129,9 @@ public class RSNPlugin extends DroidSoundPlugin {
 
 	@Override
 	public void unload() {
-		if(loaded) {
-			plugin.unload();
-			loaded = false;
+		if(currentPlugin != null) {
+			currentPlugin.unload();
+			currentPlugin = null;
 		}
 		
 		if(targetFile != null)
@@ -119,21 +140,21 @@ public class RSNPlugin extends DroidSoundPlugin {
 
 	@Override
 	public int getSoundData(short[] dest, int size) {
-		if(!loaded) {
-			plugin.load(spcFiles.get(0));
-			loaded = true;
+		if(currentPlugin == null) {
+			currentPlugin = handlers.get(0).plugin;
+			currentPlugin.load(handlers.get(0).source);
 		}
-		return plugin.getSoundData(dest, size);
+		return currentPlugin.getSoundData(dest, size);
 	}
 	
 	@Override
 	public boolean setTune(int tune) {
 
-		if(loaded) {
-			plugin.unload();
-			loaded = true;
+		if(currentPlugin != null) {
+			currentPlugin.unload();
 		}
-		plugin.load(spcFiles.get(tune));
+		currentPlugin = handlers.get(tune).plugin;
+		currentPlugin.load(handlers.get(tune).source);
 		
 		return true;
 	}
@@ -144,7 +165,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 		if(what == INFO_TITLE)
 			return title;
 
-		if(spcFiles == null)
+		if(handlers == null)
 			return null;
 		
 		if(what == INFO_SUBTUNE_TITLE)
@@ -152,30 +173,30 @@ public class RSNPlugin extends DroidSoundPlugin {
 		else if(what == INFO_SUBTUNE_AUTHOR)
 			what = INFO_AUTHOR;
 		
-		if(!loaded) {
-			plugin.load(spcFiles.get(0));
-			loaded = true;
+		if(currentPlugin == null) {
+			currentPlugin = handlers.get(0).plugin;
+			currentPlugin.load(handlers.get(0).source);
 		}		
 		
-		return plugin.getStringInfo(what);
+		return currentPlugin.getStringInfo(what);
 	}
 
 	@Override
 	public int getIntInfo(int what) {
 
-		if(spcFiles == null)
+		if(handlers == null)
 			return 0;
 		
 		if(what == INFO_SUBTUNE_COUNT) {
-			return spcFiles.size();
+			return handlers.size();
 		}
 				
-		if(!loaded) {
-			plugin.load(spcFiles.get(0));
-			loaded = true;
+		if(currentPlugin == null) {
+			currentPlugin = handlers.get(0).plugin;
+			currentPlugin.load(handlers.get(0).source);
 		}
 
-		return plugin.getIntInfo(what);
+		return currentPlugin.getIntInfo(what);
 	}
 
 }
