@@ -32,14 +32,33 @@
 
 #include "crtc-cmdline-options.h"
 #include "crtctypes.h"
+#include "cmdline.h"
 #include "raster-cmdline-options.h"
+#include "resources.h"
+#include "translate.h"
 
+/* CRTC command-line options.  */
+static const cmdline_option_t cmdline_options[] =
+{
+    { "-CRTCstretchvertical", SET_RESOURCE, 0,
+      NULL, NULL, "CrtcStretchVertical", (resource_value_t)1,
+      USE_PARAM_STRING, USE_DESCRIPTION_ID,
+      IDCLS_UNUSED, IDCLS_ENABLE_STRETCH_VERTICAL,
+      NULL, NULL },
+    { "+CRTCstretchvertical", SET_RESOURCE, 0,
+      NULL, NULL, "CrtcStretchVertical", (resource_value_t)0,
+      USE_PARAM_STRING, USE_DESCRIPTION_ID,
+      IDCLS_UNUSED, IDCLS_DISABLE_STRETCH_VERTICAL,
+      NULL, NULL },
+    CMDLINE_LIST_END
+};
 
 int crtc_cmdline_options_init(void)
 {
-    if (raster_cmdline_options_chip_init("Crtc", crtc.video_chip_cap) < 0)
+    if (raster_cmdline_options_chip_init("Crtc", crtc.video_chip_cap) < 0) {
         return -1;
+    }
 
-    return 0;
+    return cmdline_register_options(cmdline_options);
 }
 

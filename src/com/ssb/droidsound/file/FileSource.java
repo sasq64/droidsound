@@ -6,10 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.security.auth.Subject;
-
-import android.os.Environment;
-
 import com.ssb.droidsound.utils.DataFileSource;
 import com.ssb.droidsound.utils.Log;
 

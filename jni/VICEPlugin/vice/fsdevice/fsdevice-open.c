@@ -9,7 +9,7 @@
  *  Jarkko Sonninen <sonninen@lut.fi>
  *  Jouko Valta <jopi@stekt.oulu.fi>
  *  Olaf Seibert <rhialto@mbfys.kun.nl>
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  pottendo <pottendo@gmx.net>
  *
@@ -34,6 +34,8 @@
  */
 
 #include "vice.h"
+
+/* #define DEBUG_DRIVE */
 
 #include <ctype.h>
 #include <stdio.h>
@@ -146,7 +148,7 @@ static int fsdevice_open_directory(vdrive_t *vdrive, unsigned int secondary,
     *p++ = ' ';
     *p++ = 0;
 
-    bufinfo[secondary].buflen = p - bufinfo[secondary].name;
+    bufinfo[secondary].buflen = (int)(p - bufinfo[secondary].name);
     bufinfo[secondary].bufp = bufinfo[secondary].name;
     bufinfo[secondary].mode = Directory;
     bufinfo[secondary].ioutil_dir = ioutil_dir;
@@ -291,6 +293,10 @@ int fsdevice_open(vdrive_t *vdrive, const BYTE *name, unsigned int length,
     cbmdos_cmd_parse_t cmd_parse;
     bufinfo_t *bufinfo;
 
+#ifdef DEBUG_DRIVE
+    log_debug("fsdevice_open name:'%s'", name);
+#endif
+    
     bufinfo = fsdevice_dev[vdrive->unit - 8].bufinfo;
 
     if (bufinfo[secondary].fileio_info != NULL) {
@@ -363,9 +369,6 @@ int fsdevice_open(vdrive_t *vdrive, const BYTE *name, unsigned int length,
         goto out;
     }
 
-#ifdef __riscos
-    archdep_set_drive_leds(vdrive->unit - 8, 1);
-#endif
     fsdevice_error(vdrive, CBMDOS_IPE_OK);
 
 out:

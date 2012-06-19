@@ -38,6 +38,9 @@ extern void mouse_init(void);
 
 extern void mouse_button_left(int pressed);
 extern void mouse_button_right(int pressed);
+extern void mouse_button_middle(int pressed);
+extern void mouse_button_up(int pressed);
+extern void mouse_button_down(int pressed);
 
 extern void mouse_set_input(int port);
 
@@ -48,14 +51,21 @@ extern int _mouse_enabled;
 extern int mouse_type;
 extern int mouse_port;
 
+extern int mouse_kind;
+
 extern void neos_mouse_store(BYTE val);
 extern BYTE neos_mouse_read(void);
-extern BYTE amiga_mouse_read(void);
+extern BYTE mouse_poll(void);
 
 #define MOUSE_TYPE_1351   0
 #define MOUSE_TYPE_NEOS   1
 #define MOUSE_TYPE_AMIGA  2
 #define MOUSE_TYPE_PADDLE 3
-#define MOUSE_TYPE_NUM    4
+#define MOUSE_TYPE_CX22   4
+#define MOUSE_TYPE_ST     5
+#define MOUSE_TYPE_NUM    6
+
+#define MOUSE_KIND_POLLED 0
+#define MOUSE_KIND_OTHER 1
 
 #endif

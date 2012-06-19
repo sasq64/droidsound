@@ -78,6 +78,7 @@ Revision History:
 
 #include "fmopl.h"
 #include "lib.h"
+#include "snapshot.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -1425,6 +1426,7 @@ static void OPLResetChip(FM_OPL *OPL)
             CH->SLOT[s].wavetable = 0;
             CH->SLOT[s].state = EG_OFF;
             CH->SLOT[s].volume = MAX_ATT_INDEX;
+            CH->SLOT[s].connect1 = &output[0];
         }
     }
 }
@@ -1536,6 +1538,23 @@ FM_OPL *ym3812_init(UINT32 clock, UINT32 rate)
         ym3812_reset_chip(YM3812);
     }
     return YM3812;
+}
+
+int connect1_is_output0(int *connect)
+{
+    if (connect == &output[0]) {
+        return 1;
+    }
+    return 0;
+}
+
+void set_connect1(int *connect, int output0)
+{
+    if (output0) {
+        connect = &output[0];
+    } else {
+        connect = &phase_modulation;
+    }
 }
 
 void ym3812_shutdown(FM_OPL *chip)
@@ -1728,4 +1747,61 @@ void ym3526_update_one(FM_OPL *chip, OPLSAMPLE *buffer, int length)
 
         advance(OPL);
     }
+}
+
+/* ---------------------------------------------------------------------*/
+/*    snapshot support functions                                             */
+
+#define CART_DUMP_VER_MAJOR   0
+#define CART_DUMP_VER_MINOR   0
+#define SNAP_MODULE_NAME  "YM3526"
+
+/* FIXME: implement snapshot support */
+int ym3526_snapshot_write_module(snapshot_t *s)
+{
+    return -1;
+#if 0
+    snapshot_module_t *m;
+
+    m = snapshot_module_create(s, SNAP_MODULE_NAME,
+                          CART_DUMP_VER_MAJOR, CART_DUMP_VER_MINOR);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if (0) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+    return 0;
+#endif
+}
+
+int ym3526_snapshot_read_module(snapshot_t *s)
+{
+    return -1;
+#if 0
+    BYTE vmajor, vminor;
+    snapshot_module_t *m;
+
+    m = snapshot_module_open(s, SNAP_MODULE_NAME, &vmajor, &vminor);
+    if (m == NULL) {
+        return -1;
+    }
+
+    if ((vmajor != CART_DUMP_VER_MAJOR) || (vminor != CART_DUMP_VER_MINOR)) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    if (0) {
+        snapshot_module_close(m);
+        return -1;
+    }
+
+    snapshot_module_close(m);
+    return 0;
+#endif
 }

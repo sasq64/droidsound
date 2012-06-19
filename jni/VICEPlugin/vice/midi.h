@@ -65,16 +65,20 @@ extern void midi_init(void);
 extern void midi_reset(void);
 extern int midi_set_mode(int new_mode, void *param);
 
-extern BYTE REGPARM1 midi_read(WORD a);
-extern BYTE REGPARM1 midi_peek(WORD a);
-extern void REGPARM2 midi_store(WORD a, BYTE b);
+extern BYTE midi_read(WORD a);
+extern BYTE midi_peek(WORD a);
+extern void midi_store(WORD a, BYTE b);
 /* returns 1 if address is a readable MIDI register */
-extern int REGPARM1 midi_test_read(WORD a);
+extern int midi_test_read(WORD a);
 /* returns 1 if address is any MIDI register */
-extern int REGPARM1 midi_test_peek(WORD a);
+extern int midi_test_peek(WORD a);
 
 extern int midi_resources_init(void);
 extern void midi_resources_shutdown(void);
 extern int midi_cmdline_options_init(void);
+
+struct snapshot_s;
+extern int midi_snapshot_read_module(struct snapshot_s *s);
+extern int midi_snapshot_write_module(struct snapshot_s *s);
 
 #endif

@@ -3,22 +3,22 @@
 
 unsigned monitor_mask[NUM_MEMSPACES];
 struct break_list_s *breakpoints[NUM_MEMSPACES];
-MEMSPACE caller_space;
 struct break_list_s *watchpoints_load[NUM_MEMSPACES];
 struct break_list_s *watchpoints_store[NUM_MEMSPACES];
-
+static int set_keep_monitor_open(int val, void *param) { return 0; }
+int monitor_resources_init(void) { return 0; }
 void monitor_init(monitor_interface_t *maincpu_interface,
                          monitor_interface_t *drive_interface_init[],
                          struct monitor_cpu_type_s **asmarray) {}
 void monitor_shutdown(void) {}
 int monitor_cmdline_options_init(void) { return 0; }
-void monitor_startup(void) {}
+void monitor_startup(MEMSPACE mem) {}
 void monitor_startup_trap(void) {}
 void monitor_abort(void) {}
 int monitor_force_import(MEMSPACE mem) { return 0; }
 void monitor_check_icount(WORD a) {}
 void monitor_check_icount_interrupt(void) {}
-void monitor_check_watchpoints(WORD a) {}
+void monitor_check_watchpoints(unsigned int lastpc, unsigned int pc) {}
 
 void monitor_cpu_type_set(const char *cpu_type) {}
 
@@ -35,6 +35,7 @@ int mon_out(const char *format, ...) { return 0; }
 
 /* Prototypes */
 int monitor_breakpoint_check_checkpoint(MEMSPACE mem, WORD addr, struct break_list_s *list) { return 0; }
+int monitor_check_breakpoints(MEMSPACE mem, WORD addr) { return 0; }
 
 const char *mon_disassemble_to_string(MEMSPACE mem, unsigned int addr, unsigned int x, unsigned int p1, unsigned int p2, unsigned int p3, int hex_mode, const char *cpu_type) { return NULL; }
 

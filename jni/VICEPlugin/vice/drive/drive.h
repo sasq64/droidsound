@@ -30,6 +30,8 @@
 #define VICE_DRIVE_H
 
 #include "types.h"
+#include "rtc/ds1216e.h"
+#include "p64.h"
 
 #define DRIVE_NUM 4
 #define MAX_PWM 1000
@@ -49,6 +51,7 @@
 
 /* Drive type.  */
 #define DRIVE_TYPE_NONE      0
+/* #define DRIVE_TYPE_1540   1540 */ /* FIXME: we should emulate 1540 */
 #define DRIVE_TYPE_1541   1541
 #define DRIVE_TYPE_1541II 1542
 #define DRIVE_TYPE_1551   1551
@@ -56,6 +59,8 @@
 #define DRIVE_TYPE_1571   1571
 #define DRIVE_TYPE_1571CR 1573
 #define DRIVE_TYPE_1581   1581
+#define DRIVE_TYPE_2000   2000
+#define DRIVE_TYPE_4000   4000
 #define DRIVE_TYPE_2031   2031
 #define DRIVE_TYPE_2040   2040  /* DOS 1 dual floppy drive, 170k/disk */
 #define DRIVE_TYPE_3040   3040  /* DOS 2.0 dual floppy drive, 170k/disk */
@@ -83,8 +88,11 @@
 
 /* Parallel cables available.  */
 #define DRIVE_PC_NONE     0
-#define DRIVE_PC_STANDARD 1
-#define DRIVE_PC_DD3      2
+#define DRIVE_PC_STANDARD 1  /* speed-dos userport cable */
+#define DRIVE_PC_DD3      2  /* dolphin-dos 3 userport cable */
+#define DRIVE_PC_FORMEL64 3  /* formel 64 cartridge */
+
+#define DRIVE_PC_NUM 4
 
 /* ------------------------------------------------------------------------- */
 
@@ -119,11 +127,13 @@ typedef struct drive_s {
     /* What idling method?  (See `DRIVE_IDLE_*')  */
     int idling_method;
 
+    /* pointers for detecting dual drives and finding the other one */
+    /* (only needed as long as we abuse the odd devices for drive 1:) */
+    struct drive_s *drive0;
+    struct drive_s *drive1;
     /* Original ROM code is saved here.  */
     BYTE rom_idle_trap[4];
-
-    /* Original ROM code of the checksum routine is saved here.  */
-    BYTE rom_checksum[4];
+    int trap, trapcont;
 
     /* Byte ready line.  */
     unsigned int byte_ready_level;
@@ -177,6 +187,24 @@ typedef struct drive_s {
     int snap_bit_counter;
     int snap_zero_count;
     int snap_seed;
+    DWORD snap_speed_zone;
+    DWORD snap_ue7_dcba;
+    DWORD snap_ue7_counter;
+    DWORD snap_uf4_counter;
+    DWORD snap_fr_randcount;
+    DWORD snap_filter_counter;
+    DWORD snap_filter_state;
+    DWORD snap_filter_last_state;
+    DWORD snap_write_flux;
+    DWORD snap_PulseHeadPosition;
+    DWORD snap_xorShift32;
+    DWORD snap_so_delay;
+    DWORD snap_cycle_index;
+    DWORD snap_ref_advance;
+    DWORD snap_req_ref_cycles;
+
+	  /* IF: requested additional R cycles */
+	  int req_ref_cycles;
 
     /* UI stuff.  */
     int old_led_status;
@@ -184,6 +212,12 @@ typedef struct drive_s {
 
     /* Is a GCR image loaded?  */
     int GCR_image_loaded;
+
+    /* Is a P64 image loaded?  */
+    int P64_image_loaded;
+
+    /* Is P64 image dirty?  */
+    int P64_dirty;
 
     /* is this disk read only?  */
     int read_only;
@@ -207,6 +241,8 @@ typedef struct drive_s {
     /* Pointer to the gcr image.  */
     struct gcr_s *gcr;
 
+    PP64Image p64;
+
     /* Pointer to 8KB RAM expansion.  */
     BYTE *drive_ram_expand2, *drive_ram_expand4, *drive_ram_expand6,
          *drive_ram_expand8, *drive_ram_expanda;
@@ -217,6 +253,10 @@ typedef struct drive_s {
 
     /* Are the Professional DOS extentions enabled?  */
     int profdos;
+
+    /* RTC context */
+    rtc_ds1216e_t *ds1216;
+    time_t rtc_offset;
 
     /* Drive ROM starts here.  */
     WORD rom_start;
@@ -270,7 +310,6 @@ extern int drive_check_expansion8000(int drive_type);
 extern int drive_check_expansionA000(int drive_type);
 extern int drive_check_parallel_cable(int drive_type);
 extern int drive_check_extend_policy(int drive_type);
-extern int drive_check_idle_method(int drive_type);
 extern int drive_check_profdos(int drive_type);
 
 extern int drive_num_leds(unsigned int dnr);
@@ -280,4 +319,3 @@ extern void drive_setup_context(void);
 extern int drive_resources_type_init(unsigned int default_type);
 
 #endif
-

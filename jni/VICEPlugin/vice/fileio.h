@@ -33,6 +33,7 @@
 #define FILEIO_COMMAND_WRITE       1
 #define FILEIO_COMMAND_APPEND      2
 #define FILEIO_COMMAND_APPEND_READ 3
+#define FILEIO_COMMAND_STAT        4  /* works with directories */
 #define FILEIO_COMMAND_MASK        15
 #define FILEIO_COMMAND_FSNAME      16
 
@@ -45,6 +46,7 @@
 #define FILEIO_TYPE_USR 3
 #define FILEIO_TYPE_REL 4
 #define FILEIO_TYPE_CBM 5
+#define FILEIO_TYPE_DIR 6
 #define FILEIO_TYPE_ANY 255
 
 #define FILEIO_FILE_OK         0
@@ -80,4 +82,3 @@ extern unsigned int fileio_scratch(const char *file_name, const char *path,
 extern unsigned int fileio_get_bytes_left(fileio_info_t *info);
 
 #endif
-

@@ -27,6 +27,19 @@
  *
  */
 
+/*
+    FIXME: test new code for regressions, remove old code
+*/
+#define OLDCODE 0    /* set to 1 to use the old ca2/cb2 handling code */
+
+/* #define DEBUG_VIA2 */
+
+#ifdef DEBUG_VIA2
+#define DBG(_x_) log_debug _x_
+#else
+#define DBG(_x_)
+#endif
+
 #include "vice.h"
 
 #include <stdio.h>
@@ -36,24 +49,51 @@
 #include "drivetypes.h"
 #include "interrupt.h"
 #include "lib.h"
+#include "log.h"
 #include "rotation.h"
 #include "types.h"
 #include "via.h"
 #include "viad.h"
-
+#include "drive-sound.h"
 
 typedef struct drivevia2_context_s {
     unsigned int number;
     struct drive_s *drive;
 } drivevia2_context_t;
 
-
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
+#if !OLDCODE
+    int curr;
+    drivevia2_context_t *via2p;
+    drive_t *drv;
+    via2p = (drivevia2_context_t *)(via_context->prv);
+    drv = via2p->drive;
+    curr = ((drv->byte_ready_active >> 1) & 1);
+    if (state != curr) {
+        DBG(("VIA2: set_ca2 (%d to %d) (byte rdy)", curr, state));
+        rotation_rotate_disk(drv);
+        drv->byte_ready_active &= ~(1 << 1);
+        drv->byte_ready_active |= state << 1;
+    }
+#endif
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
+#if !OLDCODE
+    int curr;
+    drivevia2_context_t *via2p;
+    drive_t *drv;
+    via2p = (drivevia2_context_t *)(via_context->prv);
+    drv = via2p->drive;
+    curr = ((drv->read_write_mode >> 5) & 1);
+    if (state != curr) {
+        DBG(("VIA2: set_cb2 (%d to %d) (head mode)", curr, state));
+        rotation_rotate_disk(drv);
+        drv->read_write_mode = state << 5;
+    }
+#endif
 }
 
 /* see interrupt.h; ugly, but more efficient... */
@@ -77,21 +117,26 @@ static void restore_int(via_context_t *via_context, unsigned int int_num,
     interrupt_restore_irq(drive_context->cpu->int_status, int_num, value);
 }
 
-void REGPARM3 via2d_store(drive_context_t *ctxptr, WORD addr, BYTE data)
+void via2d_store(drive_context_t *ctxptr, WORD addr, BYTE data)
 {
     viacore_store(ctxptr->via2, addr, data);
 }
 
-BYTE REGPARM2 via2d_read(drive_context_t *ctxptr, WORD addr)
+BYTE via2d_read(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_read(ctxptr->via2, addr);
 }
 
-BYTE REGPARM2 via2d_peek(drive_context_t *ctxptr, WORD addr)
+BYTE via2d_peek(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_peek(ctxptr->via2, addr);
 }
 
+/*
+    pcrval
+      bit 5:  1: reading, 0: writing
+      bit 1:  1: byte ready active
+*/
 void via2d_update_pcr(int pcrval, drive_t *dptr)
 {
     int bra = dptr->byte_ready_active;
@@ -123,7 +168,7 @@ static void store_prb(via_context_t *via_context, BYTE byte, BYTE poldpb,
 {
     drivevia2_context_t *via2p;
     int bra;
- 
+
     via2p = (drivevia2_context_t *)(via_context->prv);
 
     rotation_rotate_disk(via2p->drive);
@@ -136,14 +181,20 @@ static void store_prb(via_context_t *via_context, BYTE byte, BYTE poldpb,
 
     if (((poldpb ^ byte) & 0x3) && (byte & 0x4)) {
         /* Stepper motor */
+#if 0
+        /* FIXME: this code is supposed to be more correct, but breaks the AR loader */
+        drive_move_head(((byte - via2p->drive->current_half_track + 3) & 3) - 1, via2p->drive);
+#else
         if ((poldpb & 0x3) == ((byte + 1) & 0x3))
             drive_move_head(-1, via2p->drive);
         else if ((poldpb & 0x3) == ((byte - 1) & 0x3))
             drive_move_head(+1, via2p->drive);
+#endif
     }
     if ((poldpb ^ byte) & 0x60)     /* Zone bits */
         rotation_speed_zone_set((byte >> 5) & 0x3, via2p->number);
     if ((poldpb ^ byte) & 0x04) {   /* Motor on/off */
+        drive_sound_update((byte & 4) ? DRIVE_SOUND_MOTOR_ON : DRIVE_SOUND_MOTOR_OFF, via2p->number);
         bra = via2p->drive->byte_ready_active;
         via2p->drive->byte_ready_active = (bra & ~0x04) | (byte & 0x04);
         if ((byte & 0x04) != 0) {
@@ -173,19 +224,25 @@ static BYTE store_pcr(via_context_t *via_context, BYTE byte, WORD addr)
     via2p = (drivevia2_context_t *)(via_context->prv);
     rotation_rotate_disk(via2p->drive);
 
+#if OLDCODE
     /* FIXME: this should use via_set_ca2() and via_set_cb2() */
     if (byte != via_context->via[VIA_PCR]) {
         BYTE tmp = byte;
         /* first set bit 1 and 5 to the real output values */
-        if ((tmp & 0x0c) != 0x0c)
-            tmp |= 0x02;
-        if ((tmp & 0xc0) != 0xc0)
-            tmp |= 0x20;
+        if ((byte & 0x0c) != 0x0c) { /* CA2 not lo or hi output */
+            tmp |= 0x02; /* byte ready */
+        }
+        if ((byte & 0xc0) != 0xc0) { /* CB2 not lo or hi output */
+            tmp |= 0x20; /* reading */
+        }
         /* insert_your_favourite_drive_function_here(tmp);
         bit 5 is the write output to the analog circuitry:
-        0 = writing, 0x20 = reading */
+        0 = writing, 0x20 = reading
+        bit 1 is the "byte ready" signal
+        */
         via2d_update_pcr(tmp, via2p->drive);
     }
+#endif
     return byte;
 }
 
@@ -231,6 +288,9 @@ static BYTE read_pra(via_context_t *via_context, WORD addr)
 
     via2p = (drivevia2_context_t *)(via_context->prv);
 
+    /* IF: add bus read delay */
+    via2p->drive->req_ref_cycles = BUS_READ_DELAY;
+
     rotation_byte_read(via2p->drive);
 
     byte = ((via2p->drive->GCR_read & ~(via_context->via[VIA_DDRA]))
@@ -247,6 +307,9 @@ static BYTE read_prb(via_context_t *via_context)
     drivevia2_context_t *via2p;
 
     via2p = (drivevia2_context_t *)(via_context->prv);
+
+    /* IF: add bus read delay */
+    via2p->drive->req_ref_cycles = BUS_READ_DELAY;
 
     rotation_rotate_disk(via2p->drive);
     byte = ((rotation_sync_found(via2p->drive)
@@ -313,4 +376,3 @@ void via2d_setup_context(drive_context_t *ctxptr)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-

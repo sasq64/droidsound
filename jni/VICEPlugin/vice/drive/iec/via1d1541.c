@@ -59,26 +59,26 @@ typedef struct drivevia1_context_s {
 } drivevia1_context_t;
 
 
-void REGPARM3 via1d1541_store(drive_context_t *ctxptr, WORD addr, BYTE data)
+void via1d1541_store(drive_context_t *ctxptr, WORD addr, BYTE data)
 {
     viacore_store(ctxptr->via1d1541, addr, data);
 }
 
-BYTE REGPARM2 via1d1541_read(drive_context_t *ctxptr, WORD addr)
+BYTE via1d1541_read(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_read(ctxptr->via1d1541, addr);
 }
 
-BYTE REGPARM2 via1d1541_peek(drive_context_t *ctxptr, WORD addr)
+BYTE via1d1541_peek(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_peek(ctxptr->via1d1541, addr);
 }
 
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
 }
 
@@ -117,10 +117,16 @@ static void undump_pra(via_context_t *via_context, BYTE byte)
         glue1571_side_set((byte >> 2) & 1, via1p->drive);
     } else
 
-    if (via1p->drive->parallel_cable == DRIVE_PC_STANDARD
-        && (via1p->drive->type == DRIVE_TYPE_1541
-        || via1p->drive->type == DRIVE_TYPE_1541II))
-        parallel_cable_drive_write(byte, PARALLEL_WRITE, via1p->number);
+    switch (via1p->drive->parallel_cable) {
+        case DRIVE_PC_STANDARD:
+        case DRIVE_PC_FORMEL64:
+            if (via1p->drive->type == DRIVE_TYPE_1541
+                || via1p->drive->type == DRIVE_TYPE_1541II) {
+                parallel_cable_drive_write(via1p->drive->parallel_cable, byte, 
+                                           PARALLEL_WRITE, via1p->number);
+            }
+            break;
+    }
 }
 
 static void store_pra(via_context_t *via_context, BYTE byte, BYTE oldpa_value,
@@ -142,13 +148,18 @@ static void store_pra(via_context_t *via_context, BYTE byte, BYTE oldpa_value,
         if ((oldpa_value ^ byte) & 0x02)
             iec_fast_drive_direction(byte & 2, via1p->number);
     } else {
-        if (via1p->drive->parallel_cable == DRIVE_PC_STANDARD
-            && (via1p->drive->type == DRIVE_TYPE_1541
-            || via1p->drive->type == DRIVE_TYPE_1541II))
-            parallel_cable_drive_write(byte,
-                (((addr == VIA_PRA) && ((via_context->via[VIA_PCR]
-                & 0xe) == 0xa)) ? PARALLEL_WRITE_HS : PARALLEL_WRITE),
-                via1p->number);
+        switch (via1p->drive->parallel_cable) {
+            case DRIVE_PC_STANDARD:
+            case DRIVE_PC_FORMEL64:
+                if (via1p->drive->type == DRIVE_TYPE_1541
+                    || via1p->drive->type == DRIVE_TYPE_1541II) {
+                    parallel_cable_drive_write(via1p->drive->parallel_cable, byte,
+                        (((addr == VIA_PRA) && ((via_context->via[VIA_PCR]
+                        & 0xe) == 0xa)) ? PARALLEL_WRITE_HS : PARALLEL_WRITE),
+                        via1p->number);
+                }
+                break;
+        }
     }
 }
 
@@ -224,10 +235,11 @@ static void store_prb(via_context_t *via_context, BYTE byte, BYTE p_oldpb,
 
 static void undump_pcr(via_context_t *via_context, BYTE byte)
 {
+#if 0
     drivevia1_context_t *via1p;
 
     via1p = (drivevia1_context_t *)(via_context->prv);
-#if 0
+
     /* FIXME: Is this correct? */
     if (via1p->number != 0)
         via2d_update_pcr(byte, &drive[0]);
@@ -277,12 +289,17 @@ static BYTE read_pra(via_context_t *via_context, WORD addr)
             | (via_context->via[VIA_PRA] & via_context->via[VIA_DDRA]);
     }
 
-    byte = (via1p->drive->parallel_cable == DRIVE_PC_STANDARD
-            ? parallel_cable_drive_read((((addr == VIA_PRA) &&
-                                        (via_context->via[VIA_PCR]
-                                        & 0xe) == 0xa)) ? 1 : 0)
-            : ((via_context->via[VIA_PRA] & via_context->via[VIA_DDRA])
-               | (0xff & ~(via_context->via[VIA_DDRA]))));
+    switch (via1p->drive->parallel_cable) {
+        case DRIVE_PC_STANDARD:
+        case DRIVE_PC_FORMEL64:
+            byte = parallel_cable_drive_read(via1p->drive->parallel_cable, 
+                    (((addr == VIA_PRA) && (via_context->via[VIA_PCR] & 0xe) == 0xa)) ? 1 : 0);
+            break;
+        default:
+            byte = ((via_context->via[VIA_PRA] & via_context->via[VIA_DDRA])
+                    | (0xff & ~(via_context->via[VIA_DDRA])));
+            break;
+    }
 
     return byte;
 }
@@ -291,15 +308,12 @@ static BYTE read_prb(via_context_t *via_context)
 {
     BYTE byte;
     BYTE orval;
-    BYTE andval;
     drivevia1_context_t *via1p;
 
     via1p = (drivevia1_context_t *)(via_context->prv);
 
     /* 0 for drive0, 0x20 for drive 1 */
     orval = (via1p->number << 5);
-    /* 0xfe for drive0, 0xff for drive 1 */
-    andval = (0xfe | via1p->number);
 
     if (iecbus != NULL) {
         byte = (((via_context->via[VIA_PRB] & 0x1a)
@@ -371,4 +385,3 @@ void via1d1541_setup_context(drive_context_t *ctxptr)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-

@@ -37,13 +37,13 @@
 #include "c64_256k.h"
 #include "c64cart.h"
 #include "c64cia.h"
-#include "c64io.h"
 #include "c64mem.h"
 #include "c64meminit.h"
 #include "c64memlimit.h"
 #include "c64memrom.h"
 #include "c64pla.h"
 #include "c64cartmem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cia.h"
 #include "clkguard.h"
@@ -121,15 +121,18 @@ static int mem_config;
 /* Tape sense status: 1 = some button pressed, 0 = no buttons pressed.  */
 static int tape_sense = 0;
 
+/* Current watchpoint state. 1 = watchpoints active, 0 = no watchpoints */
+static int watchpoints_active;
+
 /* ------------------------------------------------------------------------- */
 
-static BYTE REGPARM1 read_watch(WORD addr)
+static BYTE read_watch(WORD addr)
 {
     monitor_watch_push_load_addr(addr, e_comp_space);
     return mem_read_tab[mem_config][addr >> 8](addr);
 }
 
-static void REGPARM2 store_watch(WORD addr, BYTE value)
+static void store_watch(WORD addr, BYTE value)
 {
     monitor_watch_push_store_addr(addr, e_comp_space);
     mem_write_tab[mem_config][addr >> 8](addr, value);
@@ -144,6 +147,7 @@ void mem_toggle_watchpoints(int flag, void *context)
         _mem_read_tab_ptr = mem_read_tab[mem_config];
         _mem_write_tab_ptr = mem_write_tab[mem_config];
     }
+    watchpoints_active = flag;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -197,7 +201,7 @@ void mem_pla_config_changed(void)
 
     c64pla_config_changed(tape_sense, 1, 0x17);
 
-    if (any_watchpoints(e_comp_space)) {
+    if (watchpoints_active) {
         _mem_read_tab_ptr = mem_read_tab_watch;
         _mem_write_tab_ptr = mem_write_tab_watch;
     } else {
@@ -217,7 +221,7 @@ void mem_pla_config_changed(void)
     }
 }
 
-BYTE REGPARM1 zero_read(WORD addr)
+BYTE zero_read(WORD addr)
 {
     addr &= 0xff;
 
@@ -243,7 +247,7 @@ BYTE REGPARM1 zero_read(WORD addr)
     }
 }
 
-void REGPARM2 zero_store(WORD addr, BYTE value)
+void zero_store(WORD addr, BYTE value)
 {
     addr &= 0xff;
 
@@ -328,27 +332,27 @@ void REGPARM2 zero_store(WORD addr, BYTE value)
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 chargen_read(WORD addr)
+BYTE chargen_read(WORD addr)
 {
     return mem_chargen_rom[addr & 0xfff];
 }
 
-void REGPARM2 chargen_store(WORD addr, BYTE value)
+void chargen_store(WORD addr, BYTE value)
 {
     mem_chargen_rom[addr & 0xfff] = value;
 }
 
-BYTE REGPARM1 ram_read(WORD addr)
+BYTE ram_read(WORD addr)
 {
     return mem_ram[addr];
 }
 
-void REGPARM2 ram_store(WORD addr, BYTE value)
+void ram_store(WORD addr, BYTE value)
 {
     mem_ram[addr] = value;
 }
 
-void REGPARM2 ram_hi_store(WORD addr, BYTE value)
+void ram_hi_store(WORD addr, BYTE value)
 {
     mem_ram[addr] = value;
 
@@ -361,27 +365,27 @@ void REGPARM2 ram_hi_store(WORD addr, BYTE value)
 
 /* Generic memory access.  */
 
-void REGPARM2 mem_store(WORD addr, BYTE value)
+void mem_store(WORD addr, BYTE value)
 {
     _mem_write_tab_ptr[addr >> 8](addr, value);
 }
 
-BYTE REGPARM1 mem_read(WORD addr)
+BYTE mem_read(WORD addr)
 {
     return _mem_read_tab_ptr[addr >> 8](addr);
 }
 
-void REGPARM2 mem_store_without_ultimax(WORD addr, BYTE value)
+void mem_store_without_ultimax(WORD addr, BYTE value)
 {
     mem_write_tab[mem_config & 7][addr >> 8](addr, value);
 }
 
-BYTE REGPARM1 mem_read_without_ultimax(WORD addr)
+BYTE mem_read_without_ultimax(WORD addr)
 {
     return mem_read_tab[mem_config & 7][addr >> 8](addr);
 }
 
-void REGPARM2 mem_store_without_romlh(WORD addr, BYTE value)
+void mem_store_without_romlh(WORD addr, BYTE value)
 {
     mem_write_tab[0][addr >> 8](addr, value);
 }
@@ -389,12 +393,12 @@ void REGPARM2 mem_store_without_romlh(WORD addr, BYTE value)
 
 /* ------------------------------------------------------------------------- */
 
-void REGPARM2 colorram_store(WORD addr, BYTE value)
+void colorram_store(WORD addr, BYTE value)
 {
     mem_color_ram[addr & 0x3ff] = value & 0xf;
 }
 
-BYTE REGPARM1 colorram_read(WORD addr)
+BYTE colorram_read(WORD addr)
 {
     return mem_color_ram[addr & 0x3ff] | (vicii_read_phi1() & 0xf0);
 }
@@ -473,25 +477,12 @@ void plus256k_init_config(void)
                     }
                 }
 
-                if (mem_write_tab[i][j] == vicii_store && j == 0xd1) {
-                    mem_write_tab[i][j] = plus256k_vicii_store;
-                }
-                if (mem_write_tab[i][j] == vicii_store && j > 0xd1) {
-                    mem_write_tab[i][j] = plus256k_vicii_store0;
-                }
-
                 if (mem_read_tab[i][j] == ram_read) {
                     if (j < 0x10) {
                         mem_read_tab[i][j] = plus256k_ram_low_read;
                     } else {
                         mem_read_tab[i][j] = plus256k_ram_high_read;
                     }
-                }
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd1) {
-                    mem_read_tab[i][j] = plus256k_vicii_read;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j > 0xd1) {
-                    mem_read_tab[i][j] = plus256k_vicii_read0;
                 }
             }
         }
@@ -511,34 +502,10 @@ static void plus60k_init_config(void)
                 if (mem_write_tab[i][j] == ram_hi_store) {
                     mem_write_tab[i][j] = plus60k_ram_hi_store;
                 }
-                if (mem_write_tab[i][j] == vicii_store && j == 0xd0 && plus60k_base == 0xd040) {
-                    mem_write_tab[i][j] = plus60k_vicii_store_old;
-                }
-                if (mem_write_tab[i][j] == vicii_store && j == 0xd1 && plus60k_base == 0xd100) {
-                    mem_write_tab[i][j] = plus60k_vicii_store;
-                }
-                if (mem_write_tab[i][j] == vicii_store && j == 0xd1 && plus60k_base == 0xd040) {
-                    mem_write_tab[i][j] = plus60k_vicii_store0;
-                }
-                if (mem_write_tab[i][j] == vicii_store && j > 0xd1) {
-                    mem_write_tab[i][j] = plus60k_vicii_store0;
-                }
                 if (mem_write_tab[i][j] == ram_store) {
                     mem_write_tab[i][j] = plus60k_ram_store;
                 }
 
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd0 && plus60k_base == 0xd040) {
-                    mem_read_tab[i][j] = plus60k_vicii_read_old;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd1 && plus60k_base == 0xd100) {
-                    mem_read_tab[i][j] = plus60k_vicii_read;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j == 0xd1 && plus60k_base == 0xd040) {
-                    mem_read_tab[i][j] = plus60k_vicii_read0;
-                }
-                if (mem_read_tab[i][j] == vicii_read && j > 0xd1) {
-                    mem_read_tab[i][j] = plus60k_vicii_read0;
-                }
                 if (mem_read_tab[i][j] == ram_read) {
                     mem_read_tab[i][j] = plus60k_ram_read;
                 }
@@ -739,20 +706,32 @@ int mem_rom_trap_allowed(WORD addr)
 
 /* Banked memory access functions for the monitor.  */
 
-void REGPARM2 store_bank_io(WORD addr, BYTE byte)
+void store_bank_io(WORD addr, BYTE byte)
 {
     switch (addr & 0xff00) {
         case 0xd000:
+            c64io_d000_store(addr, byte);
+            break;
         case 0xd100:
+            c64io_d100_store(addr, byte);
+            break;
         case 0xd200:
+            c64io_d200_store(addr, byte);
+            break;
         case 0xd300:
-            vicii_store(addr, byte);
+            c64io_d300_store(addr, byte);
             break;
         case 0xd400:
+            c64io_d400_store(addr, byte);
+            break;
         case 0xd500:
+            c64io_d500_store(addr, byte);
+            break;
         case 0xd600:
+            c64io_d600_store(addr, byte);
+            break;
         case 0xd700:
-            sid_store(addr, byte);
+            c64io_d700_store(addr, byte);
             break;
         case 0xd800:
         case 0xd900:
@@ -767,28 +746,34 @@ void REGPARM2 store_bank_io(WORD addr, BYTE byte)
             cia2_store(addr, byte);
             break;
         case 0xde00:
-            c64io1_store(addr, byte);
+            c64io_de00_store(addr, byte);
             break;
         case 0xdf00:
-            c64io2_store(addr, byte);
+            c64io_df00_store(addr, byte);
             break;
     }
     return;
 }
 
-BYTE REGPARM1 read_bank_io(WORD addr)
+BYTE read_bank_io(WORD addr)
 {
     switch (addr & 0xff00) {
         case 0xd000:
+            return c64io_d000_read(addr);
         case 0xd100:
+            return c64io_d100_read(addr);
         case 0xd200:
+            return c64io_d200_read(addr);
         case 0xd300:
-            return vicii_read(addr);
+            return c64io_d300_read(addr);
         case 0xd400:
+            return c64io_d400_read(addr);
         case 0xd500:
+            return c64io_d500_read(addr);
         case 0xd600:
+            return c64io_d600_read(addr);
         case 0xd700:
-            return sid_read(addr);
+            return c64io_d700_read(addr);
         case 0xd800:
         case 0xd900:
         case 0xda00:
@@ -799,9 +784,9 @@ BYTE REGPARM1 read_bank_io(WORD addr)
         case 0xdd00:
             return cia2_read(addr);
         case 0xde00:
-            return c64io1_read(addr);
+            return c64io_de00_read(addr);
         case 0xdf00:
-            return c64io2_read(addr);
+            return c64io_df00_read(addr);
     }
     return 0xff;
 }
@@ -810,15 +795,21 @@ static BYTE peek_bank_io(WORD addr)
 {
     switch (addr & 0xff00) {
         case 0xd000:
+            return c64io_d000_peek(addr);
         case 0xd100:
+            return c64io_d100_peek(addr);
         case 0xd200:
+            return c64io_d200_peek(addr);
         case 0xd300:
-            return vicii_peek(addr);
+            return c64io_d300_peek(addr);
         case 0xd400:
+            return c64io_d400_peek(addr);
         case 0xd500:
+            return c64io_d500_peek(addr);
         case 0xd600:
+            return c64io_d600_peek(addr);
         case 0xd700:
-            return sid_read(addr);
+            return c64io_d700_peek(addr);
         case 0xd800:
         case 0xd900:
         case 0xda00:
@@ -829,9 +820,9 @@ static BYTE peek_bank_io(WORD addr)
         case 0xdd00:
             return cia2_peek(addr);
         case 0xde00:
-            return c64io1_peek(addr);
+            return c64io_de00_peek(addr);
         case 0xdf00:
-            return c64io2_peek(addr);
+            return c64io_df00_peek(addr);
     }
     return 0xff;
 }
@@ -950,11 +941,7 @@ void mem_bank_write(int bank, WORD addr, BYTE byte, void *context)
 
 static int mem_dump_io(WORD addr)
 {
-    if ((addr >= 0xd000) && (addr <= 0xd03f)) {
-        return vicii_dump();
-    } else if ((addr >= 0xd400) && (addr <= 0xd43f)) {
-        /* return sidcore_dump(machine_context.sid); */ /* FIXME */
-    } else if ((addr >= 0xdc00) && (addr <= 0xdc3f)) {
+    if ((addr >= 0xdc00) && (addr <= 0xdc3f)) {
         return ciacore_dump(machine_context.cia1);
     } else if ((addr >= 0xdd00) && (addr <= 0xdd3f)) {
         return ciacore_dump(machine_context.cia2);
@@ -966,12 +953,10 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
 {
     mem_ioreg_list_t *mem_ioreg_list = NULL;
 
-    mon_ioreg_add_list(&mem_ioreg_list, "VIC-II", 0xd000, 0xd02e, mem_dump_io);
-    mon_ioreg_add_list(&mem_ioreg_list, "SID", 0xd400, 0xd41f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "CIA1", 0xdc00, 0xdc0f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "CIA2", 0xdd00, 0xdd0f, mem_dump_io);
 
-    c64io_ioreg_add_list(&mem_ioreg_list);
+    io_source_ioreg_add_list(&mem_ioreg_list);
 
     return mem_ioreg_list;
 }

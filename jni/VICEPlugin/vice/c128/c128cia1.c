@@ -30,6 +30,7 @@
 
 #include <stdio.h>
 
+#include "c128-resources.h"
 #include "c128fastiec.h"
 #include "c64.h"
 #include "c64cia.h"
@@ -41,8 +42,10 @@
 #include "keyboard.h"
 #include "lib.h"
 #include "log.h"
+#include "machine.h"
 #include "maincpu.h"
 #include "types.h"
+#include "userport_joystick.h"
 #include "vicii.h"
 
 #ifdef HAVE_RS232
@@ -53,19 +56,26 @@
 #include "mouse.h"
 #endif
 
-void REGPARM2 cia1_store(WORD addr, BYTE data)
+void cia1_store(WORD addr, BYTE data)
 {
     ciacore_store(machine_context.cia1, addr, data);
 }
 
-BYTE REGPARM1 cia1_read(WORD addr)
+BYTE cia1_read(WORD addr)
 {
     return ciacore_read(machine_context.cia1, addr);
 }
 
-BYTE REGPARM1 cia1_peek(WORD addr)
+BYTE cia1_peek(WORD addr)
 {
     return ciacore_peek(machine_context.cia1, addr);
+}
+
+void cia1_update_model(void)
+{
+    if (machine_context.cia1) {
+        machine_context.cia1->model = cia1_model;
+    }
 }
 
 static void cia_set_int_clk(cia_context_t *cia_context, int value, CLOCK clk)
@@ -90,7 +100,7 @@ void cia1_set_extended_keyboard_rows_mask(BYTE value)
     extended_keyboard_rows_mask = value;
 }
 
-static inline void pulse_ciapc(cia_context_t *cia_context, CLOCK rclk)
+static void pulse_ciapc(cia_context_t *cia_context, CLOCK rclk)
 {
 }
 
@@ -187,21 +197,45 @@ static BYTE read_ciapa(cia_context_t *cia_context)
     byte = (val & (cia_context->c_cia[CIA_PRA] | ~(cia_context->c_cia[CIA_DDRA]))) & ~joystick_value[2];
 
 #ifdef HAVE_MOUSE
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_NEOS) && (mouse_port == 2)) {
-        byte &= neos_mouse_read();
-    }
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_AMIGA) && (mouse_port == 2)) {
-        byte &= amiga_mouse_read();
+    if (_mouse_enabled && (mouse_port == 2)) {
+        if (mouse_type == MOUSE_TYPE_NEOS) {
+            byte &= neos_mouse_read();
+        }
+        if (mouse_kind == MOUSE_KIND_POLLED) {
+            byte &= mouse_poll();
+        }
     }
 #endif
 
     return byte;
 }
 
+inline static int ciapb_forcelow(int i)
+{
+    BYTE v;
+
+    /* Check for shift lock.
+       FIXME: keyboard_shiftlock state may be inconsistent
+              with the (rev_)keyarr state. */
+    if ((i == 7) && keyboard_shiftlock) {
+        return 1;
+    }
+
+    /* Check if two or more keys are pressed. */
+    v = rev_keyarr[i];
+    if ((v & (v - 1)) != 0) {
+        return 1;
+    }
+
+    /* TODO: check joysticks? */
+    return 0;
+}
+
 static BYTE read_ciapb(cia_context_t *cia_context)
 {
     BYTE byte;
     BYTE val = 0xff;
+    BYTE val_outhi = ((cia_context->c_cia[CIA_DDRA]) & (cia_context->c_cia[CIA_DDRB])) & (cia_context->c_cia[CIA_PRB]);
     BYTE msk = cia_context->old_pa & ~joystick_value[2];
     BYTE m;
     int i;
@@ -209,23 +243,43 @@ static BYTE read_ciapb(cia_context_t *cia_context)
     for (m = 0x1, i = 0; i < 8; m <<= 1, i++) {
         if (!(msk & m)) {
             val &= ~keyarr[i];
+            /*
+                Handle the special case when both port A and port B are programmed as output,
+                port A outputs (active) low, and port B outputs high.
+
+                In this case pressing either shift-lock or two or more keys of the same column
+                is required to drive port B low, pressing a single key is not enough (and the
+                port will read back as high). (see testprogs/CIA/ciaports)
+
+                The initial value for val_outhi will drive the respective port B
+                bits high if the above mentioned condition is met, which gives the
+                expected result for single key presses.
+            */
+            if (ciapb_forcelow(i)) {
+                val_outhi &= ~m;
+            }
         }
     }
 
     for (m = 0x1, i = 8; i < 11; m <<= 1, i++) {
         if (!(extended_keyboard_rows_mask & m)) {
             val &= ~keyarr[i];
+            /* FIXME: what about the above mentioned case here? */
         }
     }
 
-    byte = (val & (cia_context->c_cia[CIA_PRB] | ~(cia_context->c_cia[CIA_DDRB]))) & ~joystick_value[1];
+    byte = val & (cia_context->c_cia[CIA_PRB] | ~(cia_context->c_cia[CIA_DDRB]));
+    byte |= val_outhi;
+    byte &= ~joystick_value[1];
 
 #ifdef HAVE_MOUSE
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_NEOS) && (mouse_port == 1)) {
-        byte &= neos_mouse_read();
-    }
-    if (_mouse_enabled && (mouse_type == MOUSE_TYPE_AMIGA) && (mouse_port == 1)) {
-        byte &= amiga_mouse_read();
+    if (_mouse_enabled && (mouse_port == 1)) {
+        if (mouse_type == MOUSE_TYPE_NEOS) {
+            byte &= neos_mouse_read();
+        }
+        if (mouse_kind == MOUSE_KIND_POLLED) {
+            byte &= mouse_poll();
+        }
     }
 #endif
 
@@ -244,15 +298,14 @@ static void read_sdr(cia_context_t *cia_context)
 
 static void store_sdr(cia_context_t *cia_context, BYTE byte)
 {
-    c128fastiec_fast_cpu_write((BYTE)byte);
+    c128fastiec_fast_cpu_write(byte);
 #ifdef HAVE_RS232
     if (rsuser_enabled) {
-        rsuser_tx_byte((BYTE)byte);
+        rsuser_tx_byte(byte);
     }
 #endif
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_HIT) {
-        extra_joystick_hit_store(byte);
-    }
+    /* FIXME: in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_sdr(byte);
 }
 
 void cia1_init(cia_context_t *cia_context)
@@ -264,7 +317,7 @@ void cia1_setup_context(machine_context_t *machine_context)
 {
     cia_context_t *cia;
 
-    machine_context->cia1 = lib_malloc(sizeof(cia_context_t));
+    machine_context->cia1 = lib_calloc(1, sizeof(cia_context_t));
     cia = machine_context->cia1;
 
     cia->prv = NULL;
@@ -276,6 +329,8 @@ void cia1_setup_context(machine_context_t *machine_context)
     cia->todticks = C64_PAL_CYCLES_PER_RFSH;
 
     ciacore_setup_context(cia);
+
+    cia->model = cia1_model;
 
     cia->debugFlag = 0;
     cia->irq_line = IK_IRQ;

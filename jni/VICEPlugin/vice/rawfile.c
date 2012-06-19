@@ -52,13 +52,16 @@ rawfile_info_t *rawfile_open(const char *file_name, const char *path,
     char *complete;
     FILE *fd;
     const char *mode = NULL;
+    unsigned int isdir, len;
 
-    if (path == NULL)
+    if (path == NULL) {
         complete = lib_stralloc(file_name);
-    else
+    } else {
         complete = util_concat(path, FSDEV_DIR_SEP_STR, file_name, NULL);
+    }
 
     switch (command) {
+      case FILEIO_COMMAND_STAT:
       case FILEIO_COMMAND_READ:
         mode = MODE_READ;
         break;
@@ -75,18 +78,31 @@ rawfile_info_t *rawfile_open(const char *file_name, const char *path,
         return NULL;
     }
 
-    fd = fopen(complete, mode);
-
-    if (fd == NULL) {
-        lib_free(complete);
-        return NULL;
+    if (ioutil_stat(complete, &len, &isdir) != 0) {
+        /* if stat failed exit early, except in write mode
+           (since opening a non existing file creates a new file) */
+        if (command != FILEIO_COMMAND_WRITE) {
+            lib_free(complete);
+            return NULL;
+        }
     }
 
     info = lib_malloc(sizeof(rawfile_info_t));
+    if ((isdir) && (command == FILEIO_COMMAND_STAT)) {
+        info->fd = NULL;
+        info->read_only = 1;
+    } else {
+        fd = fopen(complete, mode);
+        if (fd == NULL) {
+            lib_free(complete);
+            lib_free(info);
+            return NULL;
+        }
+        info->fd = fd;
+        info->read_only = 0;
+    }
 
-    info->fd = fd;
     util_fname_split(complete, &(info->path), &(info->name));
-    info->read_only = 0;
 
     lib_free(complete);
 
@@ -96,7 +112,9 @@ rawfile_info_t *rawfile_open(const char *file_name, const char *path,
 void rawfile_destroy(rawfile_info_t *info)
 {
     if (info != NULL) {
-        fclose(info->fd);
+        if (info->fd) {
+            fclose(info->fd);
+        }
         lib_free(info->name);
         lib_free(info->path);
         lib_free(info);
@@ -105,12 +123,18 @@ void rawfile_destroy(rawfile_info_t *info)
 
 unsigned int rawfile_read(rawfile_info_t *info, BYTE *buf, unsigned int len)
 {
-    return (unsigned int)fread(buf, 1, len, info->fd);
+    if (info->fd) {
+        return (unsigned int)fread(buf, 1, len, info->fd);
+    }
+    return -1;
 }
 
 unsigned int rawfile_write(rawfile_info_t *info, BYTE *buf, unsigned int len)
 {
-    return (unsigned int)fwrite(buf, 1, len, info->fd);
+    if (info->fd) {
+        return (unsigned int)fwrite(buf, 1, len, info->fd);
+    }
+    return -1;
 }
 
 int rawfile_seek_set(rawfile_info_t *info, int offset)
@@ -181,4 +205,3 @@ unsigned int rawfile_remove(const char *src_name, const char *path)
 
     return FILEIO_FILE_SCRATCHED;
 }
-

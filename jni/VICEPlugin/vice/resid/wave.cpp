@@ -26,7 +26,7 @@ namespace reSID
 {
 
 // Waveform lookup tables.
-reg12 WaveformGenerator::model_wave[2][8][1 << 12] = {
+unsigned short WaveformGenerator::model_wave[2][8][1 << 12] = {
   {
     {0},
     {0},
@@ -51,7 +51,7 @@ reg12 WaveformGenerator::model_wave[2][8][1 << 12] = {
 
 
 // DAC lookup tables.
-reg12 WaveformGenerator::model_dac[2][1 << 12] = {
+unsigned short WaveformGenerator::model_dac[2][1 << 12] = {
   {0},
   {0},
 };
@@ -72,7 +72,7 @@ WaveformGenerator::WaveformGenerator()
 
       // Noise mask, triangle, sawtooth, pulse mask.
       // The triangle calculation is made branch-free, just for the hell of it.
-      model_wave[0][0][i] = model_wave[1][0][i] = 0xfff;
+      model_wave[0][0][i] = model_wave[1][0][i] = 0xffe;
       model_wave[0][1][i] = model_wave[1][1][i] =
 	((accumulator ^ -!!msb) >> 11) & 0xfff;
       model_wave[0][2][i] = model_wave[1][2][i] = accumulator >> 12;

@@ -143,14 +143,20 @@ IDGS_FFMPEG_CANNOT_OPEN_ASTREAM
 /* gfxoutputdrv/ffmpegdrv.c */
 IDGS_FFMPEG_CANNOT_OPEN_S
 
-/* c64/c64io.c */
+/* c64/c64io.c, vic20/vic20io.c */
 IDGS_IO_READ_COLL_AT_X_FROM
 
-/* c64/c64io.c */
+/* c64/c64io.c, vic20/vic20io.c */
 IDGS_AND
 
-/* c64/c64io.c */
+/* c64/c64io.c, vic20/vic20io.c */
 IDGS_ALL_DEVICES_DETACHED
+
+/* c64/c64io.c, vic20/vic20io.c */
+IDGS_ALL_DEVICES_EXCEPT
+
+/* c64/c64io.c, vic20/vic20io.c */
+IDGS_WILL_BE_DETACHED
 
 /* c64dtv/c64dtvflash.c */
 IDGS_NO_FILENAME
@@ -204,6 +210,15 @@ IDCLS_SET_AUTOSTART_MODE_FOR_PRG
 
 /* autostart.c */
 IDCLS_SET_DISK_IMAGE_FOR_AUTOSTART_PRG
+
+/* autostart.c */
+IDCLS_SET_AUTOSTART_DELAY
+
+/* autostart.c */
+IDCLS_ENABLE_AUTOSTART_RANDOM_DELAY
+
+/* autostart.c */
+IDCLS_DISABLE_AUTOSTART_RANDOM_DELAY
 
 /* c128/c128-cmdline-options.c, c64/c64-cmdline-options.c,
    c64/psid.c, plus4/plus4-cmdline-options.c,
@@ -302,6 +317,12 @@ IDCLS_ENABLE_DEXX_ACIA_RS232_EMU
 IDCLS_DISABLE_DEXX_ACIA_RS232_EMU
 #endif   /* HAVE_RS232 */
 
+/* plus4/plus4acia.c */
+IDCLS_ENABLE_ACIA_EMU
+
+/* plus4/plus4acia.c */
+IDCLS_DISABLE_ACIA_EMU
+
 /* c128/c128-cmdline-options.c, c64/c64-cmdline-options.c,
    c64/psid.c, cbm2/cbm2-cmdline-options.c,
    pet/pet-cmdline-options.c, plus4/plus4-cmdline-options.c,
@@ -370,8 +391,20 @@ IDCLS_SET_CIA2_MODEL
 /* c64/c64-cmdline-options.c */
 IDCLS_SET_C64_MODEL
 
+/* c128/c128-cmdline-options.c */
+IDCLS_SET_C128_MODEL
+
+/* plus4/plus4-cmdline-options.c */
+IDCLS_SET_PLUS4_MODEL
+
+/* c64dtv/c64dtv-cmdline-options.c */
+IDCLS_SET_DTV_MODEL
+
 /* c64/c64-cmdline-options.c */
 IDCLS_USE_PALN_SYNC_FACTOR
+
+/* c64/c64-cmdline-options.c */
+IDCLS_SET_BURST_MOD
 
 /* c64/c64-cmdline-options.c, cbm2/cbm2-cmdline-options.c,
    pet/pet-cmdline-options.c, plus4/plus4-cmdline-options.c,
@@ -404,6 +437,9 @@ IDCLS_ENABLE_HUMMER_ADC
 /* c64dtv/c64dtv-cmdline-options.c */
 IDCLS_DISABLE_HUMMER_ADC
 
+/* c64/c64io.c, vic20/vic20io.c */
+IDCLS_SELECT_CONFLICT_HANDLING
+
 /* c64/cart/c64tpi.c */
 IDCLS_ENABLE_IEEE488_INTERFACE
 
@@ -433,6 +469,20 @@ IDCLS_P_SIZE_IN_KB
 
 /* c64/cart/georam.c */
 IDCLS_GEORAM_SIZE
+
+/* c64/cart/georam.c */
+IDCLS_SWAP_CART_IO
+
+/* c64/cart/georam.c */
+IDCLS_DONT_SWAP_CART_IO
+
+/* c64/cart/sfx_soundexpander.c, c64/cart/sfx_soundsampler.c,
+   c64/cart/tfe.c */
+IDCLS_MAP_CART_IO_2
+
+/* c64/cart/sfx_soundexpander.c, c64/cart/sfx_soundsampler.c,
+   c64/cart/tfe.c */
+IDCLS_MAP_CART_IO_3
 
 /* initcmdline.c */
 IDCLS_SID_PLAYER_MODE
@@ -680,6 +730,9 @@ IDCLS_ATTACH_RAW_EXOS_CART
 IDCLS_ATTACH_RAW_EXPERT_CART
 
 /* c64/cart/c64cart.c */
+IDCLS_ATTACH_RAW_F64_CART
+
+/* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_FC1_CART
 
 /* c64/cart/c64cart.c */
@@ -711,6 +764,9 @@ IDCLS_ATTACH_RAW_ISEPIC_CART
 
 /* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_KCS_CART
+
+/* c64/cart/c64cart.c */
+IDCLS_ATTACH_RAW_KINGSOFT_CART
 
 /* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_MACH5_CART
@@ -761,6 +817,9 @@ IDCLS_ALLOW_WRITING_TO_EXPERT_IMAGE
 IDCLS_DO_NOT_WRITE_TO_EXPERT_IMAGE
 
 /* c64/cart/c64cart.c */
+IDCLS_ATTACH_RAW_PAGEFOX_CART
+
+/* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_P64_CART
 
 /* c64/cart/c64cart.c */
@@ -786,6 +845,9 @@ IDCLS_ATTACH_RAW_GAME_SYSTEM_CART
 
 /* c64/cart/c64cart.c */
 IDCLS_DISABLE_CART
+
+/* plus4/plus4cart.c */
+IDCLS_SMART_ATTACH_CART
 
 /* c64/cart/ide64.c */
 IDCLS_SPECIFY_IDE64_NAME
@@ -916,9 +978,18 @@ IDCLS_ENABLE_TRUE_DRIVE
 /* drive/drive-cmdline-options.c */
 IDCLS_DISABLE_TRUE_DRIVE
 
+/* drive/drive-cmdline-options.c */
+IDCLS_ENABLE_DRIVE_SOUND
+
+/* drive/drive-cmdline-options.c */
+IDCLS_DISABLE_DRIVE_SOUND
+
 /* drive/drive-cmdline-options.c, printerdrv/interface-serial.c,
    attach.c, drive/iec/iec-cmdline-options.c */
 IDCLS_P_TYPE
+
+/* monitor/mon_command.c */
+IDGS_TYPE
 
 /* drive/drive-cmdline-options.c */
 IDCLS_SET_DRIVE_TYPE
@@ -958,6 +1029,12 @@ IDCLS_SPECIFY_1571_DOS_ROM_NAME
 
 /* drive/iec/iec-cmdline-options.c */
 IDCLS_SPECIFY_1581_DOS_ROM_NAME
+
+/* drive/iec/iec-cmdline-options.c */
+IDCLS_SPECIFY_2000_DOS_ROM_NAME
+
+/* drive/iec/iec-cmdline-options.c */
+IDCLS_SPECIFY_4000_DOS_ROM_NAME
 
 /* drive/iec/iec-cmdline-options.c */
 IDCLS_SET_IDLE_METHOD
@@ -1147,6 +1224,12 @@ IDCLS_SET_ODDLINES_PHASE
 /* vicii/vicii-cmdline-options.c */
 IDCLS_SET_ODDLINES_OFFSET
 
+/* vicii/vicii-cmdline-options.c */
+IDCLS_SET_BLUR
+
+/* vicii/vicii-cmdline-options.c */
+IDCLS_SET_SCANLINE_SHADE
+
 /* viciisc/vicii-cmdline-options.c */
 IDCLS_SET_VICII_MODEL
 
@@ -1267,6 +1350,12 @@ IDCLS_DISABLE_IEC_11
 IDCLS_P_ENGINE_MODEL
 
 /* sid/sid-cmdline-options.c */
+IDCLS_P_AMOUNT
+
+/* sid/sid-cmdline-options.c */
+IDCLS_AMOUNT_EXTRA_SIDS
+
+/* sid/sid-cmdline-options.c */
 IDCLS_FASTSID_ENGINE_MODEL
 
 #ifdef HAVE_RESID
@@ -1298,9 +1387,6 @@ IDCLS_RESIDFP_ENGINE_MODEL
 #endif
 
 /* sid/sid-cmdline-options.c */
-IDCLS_ENABLE_SECOND_SID
-
-/* sid/sid-cmdline-options.c */
 IDCLS_ENABLE_SIDCART
 
 /* sid/sid-cmdline-options.c */
@@ -1311,6 +1397,9 @@ IDCLS_P_BASE_ADDRESS
 
 /* sid/sid-cmdline-options.c */
 IDCLS_SPECIFY_SID_2_ADDRESS
+
+/* sid/sid-cmdline-options.c */
+IDCLS_SPECIFY_SID_3_ADDRESS
 
 /* sid/sid-cmdline-options.c */
 IDCLS_ENABLE_SID_FILTERS
@@ -1331,6 +1420,12 @@ IDCLS_P_PERCENT
 IDCLS_PASSBAND_PERCENTAGE
 IDCLS_RESID_FILTER_BIAS
 #endif   /* HAVE_RESID */
+
+/* vdc/vdc-cmdline-options.c, crtc/crtc-cmdline-options.c */
+IDCLS_ENABLE_STRETCH_VERTICAL
+
+/* vdc/vdc-cmdline-options.c, crtc/crtc-cmdline-options.c */
+IDCLS_DISABLE_STRETCH_VERTICAL
 
 /* vdc/vdc-cmdline-options.c */
 IDCLS_SET_VDC_MEMORY_16KB
@@ -1435,16 +1530,19 @@ IDCLS_ENABLE_DOUBLE_SCAN
 IDCLS_DISABLE_DOUBLE_SCAN
 
 /* video/video-cmdline-options.c */
+IDCLS_ENABLE_AUDIO_LEAK
+
+/* video/video-cmdline-options.c */
+IDCLS_DISABLE_AUDIO_LEAK
+
+/* video/video-cmdline-options.c */
 IDCLS_ENABLE_HARDWARE_SCALING
 
 /* video/video-cmdline-options.c */
 IDCLS_DISABLE_HARDWARE_SCALING
 
 /* video/video-cmdline-options.c */
-IDCLS_ENABLE_SCALE2X
-
-/* video/video-cmdline-options.c */
-IDCLS_DISABLE_SCALE2X
+IDCLS_SET_VIDEO_FILTER
 
 /* video/video-cmdline-options.c */
 IDCLS_USE_INTERNAL_CALC_PALETTE
@@ -1706,6 +1804,12 @@ IDCLS_P_SYNC
 /* sound.c */
 IDCLS_SET_SOUND_SPEED_ADJUST
 
+/* sound.c */
+IDCLS_P_OUTPUT_MODE
+
+/* sound.c */
+IDCLS_SOUND_OUTPUT_MODE
+
 /* sysfile.c */
 IDCLS_P_PATH
 
@@ -1761,6 +1865,9 @@ IDCLS_ATTACH_RAW_SUPER_GAMES_CART
 
 /* c64/cart/c64cart.c */
 IDCLS_ATTACH_RAW_SIMONS_BASIC_CART
+
+/* c64/cart/c64cart.c */
+IDCLS_ATTACH_RAW_SILVERROCK_128_CART
 
 /* c64/plus60k.c */
 IDCLS_PLUS60K_BASE
@@ -1931,7 +2038,10 @@ IDGS_AVAILABLE_COMMANDS_ARE
 IDGS_MACHINE_STATE_COMMANDS
 
 /* monitor/mon_command.c */
-IDGS_RP_MEMSPACE_R_BANKNAME
+IDGS_MEMSPACE
+
+/* monitor/mon_command.c */
+IDGS_BANKNAME
 
 /* monitor/mon_command.c */
 IDGS_MON_BANK_DESCRIPTION
@@ -1942,19 +2052,19 @@ IDGS_MON_BACKTRACE_DESCRIPTION
 IDGS_MON_CPU_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_COUNT
+IDGS_COUNT
 
 /* monitor/mon_command.c */
 IDGS_MON_CPUHISTORY_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_FILENAME
+IDGS_FILENAME
 
 /* monitor/mon_command.c */
 IDGS_MON_DUMP_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_ADDRESS
+IDGS_ADDRESS
 
 /* monitor/mon_command.c */
 IDGS_MON_GOTO_DESCRIPTION
@@ -1969,13 +2079,13 @@ IDGS_MON_EXPORT_DESCRIPTION
 IDGS_MON_NEXT_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_REG_NAME_P_NUMBER
+IDGS_REG_NAME
+
+/* monitor/mon_command.c */
+IDGS_NUMBER
 
 /* monitor/mon_command.c */
 IDGS_MON_REGISTERS_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_RP_TYPE
 
 /* monitor/mon_command.c */
 IDGS_MON_RESET_DESCRIPTION
@@ -1990,25 +2100,22 @@ IDGS_MON_SCREEN_DESCRIPTION
 IDGS_MON_STEP_DESCRIPTION
 
 /* monitor/mon_command.c */
+IDGS_MON_STOPWATCH_DESCRIPTION
+
+/* monitor/mon_command.c */
 IDGS_MON_UNDUMP_DESCRIPTION
 
 /* monitor/mon_command.c */
 IDGS_SYMBOL_TABLE_COMMANDS
 
 /* monitor/mon_command.c */
-IDGS_RP_MEMSPACE_P_ADDRESS_P_LABEL
+IDGS_LABEL
 
 /* monitor/mon_command.c */
 IDGS_MON_ADD_LABEL_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_MEMSPACE_P_LABEL
-
-/* monitor/mon_command.c */
 IDGS_MON_DELETE_LABEL_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_RP_MEMSPACE_QP_FILENAME
 
 /* monitor/mon_command.c */
 IDGS_MON_LOAD_LABELS_DESCRIPTION
@@ -2017,46 +2124,37 @@ IDGS_MON_LOAD_LABELS_DESCRIPTION
 IDGS_MON_SAVE_LABELS_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_MEMSPACE
-
-/* monitor/mon_command.c */
 IDGS_MON_SHOW_LABELS_DESCRIPTION
 
 /* monitor/mon_command.c */
 IDGS_ASSEMBLER_AND_MEMORY_COMMANDS
 
 /* monitor/mon_command.c */
-IDGS_RP_ADDRESS_P_DATA_LIST
+IDGS_DATA_LIST
 
 /* monitor/mon_command.c */
 IDGS_MON_WRITE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_ADDRESS_RP_INSTRUCTION
+IDGS_INSTRUCTION
 
 /* monitor/mon_command.c */
 IDGS_MON_ASSEMBLE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_ADDRESS_RANGE_P_ADDRESS
+IDGS_ADDRESS_RANGE
 
 /* monitor/mon_command.c */
 IDGS_MON_COMPARE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_CHECKNUM
+IDGS_CHECKNUM
 
 /* monitor/mon_command.c */
 IDGS_MON_DELETE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_ADDRESS_RP_ADDRESS
-
-/* monitor/mon_command.c */
 IDGS_MON_DISASS_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_P_ADDRESS_RANGE_P_DATA_LIST
 
 /* monitor/mon_command.c */
 IDGS_MON_FILL_DESCRIPTION
@@ -2065,7 +2163,7 @@ IDGS_MON_FILL_DESCRIPTION
 IDGS_MON_HUNT_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_ADDRESS_OPT_RANGE
+IDGS_ADDRESS_OPT_RANGE
 
 /* monitor/mon_command.c */
 IDGS_MON_I_DESCRIPTION
@@ -2074,7 +2172,7 @@ IDGS_MON_I_DESCRIPTION
 IDGS_MON_II_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_DATA_TYPE_RP_ADDRESS_OPT_RANGE
+IDGS_DATA_TYPE
 
 /* monitor/mon_command.c */
 IDGS_MON_MEM_DESCRIPTION
@@ -2083,13 +2181,13 @@ IDGS_MON_MEM_DESCRIPTION
 IDGS_MON_MEMCHAR_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_FILENAME_P_FORMAT
+IDGS_FORMAT
 
 /* monitor/mon_command.c */
 IDGS_MON_MEMMAPSAVE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_MASK_RP_ADDRESS_OPT_RANGE
+IDGS_MASK
 
 /* monitor/mon_command.c */
 IDGS_MON_MEMMAPSHOW_DESCRIPTION
@@ -2107,19 +2205,16 @@ IDGS_MON_MOVE_DESCRIPTION
 IDGS_CHECKPOINT_COMMANDS
 
 /* monitor/mon_command.c */
-IDGS_RP_ADDRESS_RP_COND_EXPR
+IDGS_COND_EXPR
 
 /* monitor/mon_command.c */
 IDGS_MON_BREAK_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_CHECKNUM_QP_COMMAND
+IDGS_COMMAND
 
 /* monitor/mon_command.c */
 IDGS_MON_COMMAND_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_P_CHECKNUM_IF_P_COND_EXPR
 
 /* monitor/mon_command.c */
 IDGS_MON_CONDITION_DESCRIPTION
@@ -2131,25 +2226,13 @@ IDGS_MON_DISABLE_DESCRIPTION
 IDGS_MON_ENABLE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_CHECKNUM_RP_COUNT
-
-/* monitor/mon_command.c */
 IDGS_MON_IGNORE_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_RP_ADDRESS
 
 /* monitor/mon_command.c */
 IDGS_MON_UNTIL_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_R_LOADSTORE_R_ADDRESS_R_ADDRESS
-
-/* monitor/mon_command.c */
 IDGS_MON_WATCH_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_R_ADDRESS_R_ADDRESS
 
 /* monitor/mon_command.c */
 IDGS_MON_TRACE_DESCRIPTION
@@ -2170,49 +2253,52 @@ IDGS_MON_QUIT_DESCRIPTION
 IDGS_MON_RADIX_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_R_ON_R_OFF_R_TOGGLE
-
-/* monitor/mon_command.c */
 IDGS_MON_SIDEFX_DESCRIPTION
 
 /* monitor/mon_command.c */
 IDGS_DISK_COMMANDS
 
 /* monitor/mon_command.c */
-IDGS_P_DISK_COMMAND
+IDGS_DISK_COMMAND
 
 /* monitor/mon_command.c */
 IDGS_MON_AT_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_FILENAME_P_DEVICE
+IDGS_DEVICE
+
+/* monitor/mon_command.c */
+IDGS_FILE_INDEX
+
+/* monitor/mon_command.c */
+IDGS_MON_AUTOSTART_DESCRIPTION
+
+/* monitor/mon_command.c */
+IDGS_MON_AUTOLOAD_DESCRIPTION
 
 /* monitor/mon_command.c */
 IDGS_MON_ATTACH_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_FILENAME_P_DEVICE_P_ADDRESS
-
-/* monitor/mon_command.c */
 IDGS_MON_BLOAD_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_TRACK_P_SECTOR_RP_ADDRESS
+IDGS_TRACK
+
+/* monitor/mon_command.c */
+IDGS_SECTOR
 
 /* monitor/mon_command.c */
 IDGS_MON_BLOCK_READ_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_FILENAME_P_DEVICE_P_ADDRESS1_P_ADDRESS2
-
-/* monitor/mon_command.c */
 IDGS_MON_BSAVE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_TRACK_P_SECTOR_P_ADDRESS
+IDGS_MON_BLOCK_WRITE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_MON_BLOCK_WRITE_DESCRIPTION
+IDGS_DIRECTORY
 
 /* monitor/mon_command.c */
 IDGS_P_DIRECTORY
@@ -2224,19 +2310,10 @@ IDGS_MON_CD_DESCRIPTION
 IDGS_MON_DETACH_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_DIRECTORY
-
-/* monitor/mon_command.c */
-IDGS_RP_DEVICE
-
-/* monitor/mon_command.c */
 IDGS_MON_DIR_DESCRIPTION
 
 /* monitor/mon_command.c */
 IDGS_MON_LIST_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_QP_FILENAME_P_DEVICE_RP_ADDRESS
 
 /* monitor/mon_command.c */
 IDGS_MON_LOAD_DESCRIPTION
@@ -2257,13 +2334,10 @@ IDGS_MON_DISPLAY_NUMBER_DESCRIPTION
 IDGS_MON_CARTFREEZE_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_RP_COMMAND
-
-/* monitor/mon_command.c */
 IDGS_MON_HELP_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_STRING
+IDGS_STRING
 
 /* monitor/mon_command.c */
 IDGS_MON_KEYBUF_DESCRIPTION
@@ -2272,7 +2346,7 @@ IDGS_MON_KEYBUF_DESCRIPTION
 IDGS_MON_PLAYBACK_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_P_EXPRESSION
+IDGS_EXPRESSION
 
 /* monitor/mon_command.c */
 IDGS_MON_PRINT_DESCRIPTION
@@ -2281,13 +2355,13 @@ IDGS_MON_PRINT_DESCRIPTION
 IDGS_MON_RECORD_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_RESOURCE
+IDGS_RESOURCE
 
 /* monitor/mon_command.c */
 IDGS_MON_RESOURCEGET_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_RESOURCE_QP_VALUE
+IDGS_VALUE
 
 /* monitor/mon_command.c */
 IDGS_MON_RESOURCESET_DESCRIPTION
@@ -2296,13 +2370,7 @@ IDGS_MON_RESOURCESET_DESCRIPTION
 IDGS_MON_STOP_DESCRIPTION
 
 /* monitor/mon_command.c */
-IDGS_QP_FILENAME_RP_FORMAT
-
-/* monitor/mon_command.c */
 IDGS_MON_SCREENSHOT_DESCRIPTION
-
-/* monitor/mon_command.c */
-IDGS_P_COMMAND
 
 /* monitor/mon_command.c */
 IDGS_MON_TAPECTRL_DESCRIPTION

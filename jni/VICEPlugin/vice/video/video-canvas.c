@@ -24,12 +24,21 @@
  *
  */
 
+/* #define DEBUG_VIDEO */
+
+#ifdef DEBUG_VIDEO
+#define DBG(_x_) log_debug _x_
+#else
+#define DBG(_x_)
+#endif
+
 #include "vice.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "lib.h"
+#include "log.h"
 #include "machine.h"
 #include "types.h"
 #include "video-canvas.h"
@@ -45,12 +54,13 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
-
+/* called from raster/raster-resources.c:raster_resources_chip_init */
 video_canvas_t *video_canvas_init(void)
 {
     video_canvas_t *canvas;
 
     canvas = lib_calloc(1, sizeof(video_canvas_t));
+    DBG(("video_canvas_init %p", canvas));
 
     canvas->videoconfig = lib_calloc(1, sizeof(video_render_config_t));
 
@@ -82,10 +92,10 @@ void video_canvas_render(video_canvas_t *canvas, BYTE *trg, int width,
     viewport_t *viewport = canvas->viewport;
 #ifdef VIDEO_SCALE_SOURCE
     if (canvas->videoconfig->doublesizex) {
-        xs /= 2;
+        xs /= (canvas->videoconfig->doublesizex + 1);
     }
     if (canvas->videoconfig->doublesizey) {
-        ys /= 2;
+        ys /= (canvas->videoconfig->doublesizey + 1);
     }
 #endif
     video_render_main(canvas->videoconfig, canvas->draw_buffer->draw_buffer,
@@ -117,25 +127,6 @@ void video_canvas_refresh_all(video_canvas_t *canvas)
                      geometry->screen_size.width - viewport->first_x),
                  MIN(canvas->draw_buffer->canvas_height,
                      viewport->last_line - viewport->first_line + 1));
-}
-
-void video_canvas_redraw_size(video_canvas_t *canvas, unsigned int width,
-                              unsigned int height)
-{
-    if (canvas->videoconfig->doublesizex) {
-        width /= 2;
-    }
-    if (canvas->videoconfig->doublesizey) {
-        height /= 2;
-    }
-
-    if (width != canvas->draw_buffer->canvas_width
-        || height != canvas->draw_buffer->canvas_height) {
-        canvas->draw_buffer->canvas_width = width;
-        canvas->draw_buffer->canvas_height = height;
-        video_viewport_resize(canvas);
-    }
-    video_canvas_refresh_all(canvas);
 }
 
 int video_canvas_palette_set(struct video_canvas_s *canvas,
@@ -172,4 +163,3 @@ void video_canvas_create_set(struct video_canvas_s *canvas)
 {
     canvas->created = 1;
 }
-

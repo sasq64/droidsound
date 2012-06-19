@@ -33,7 +33,7 @@
 
 #include "dma.h"
 #include "maincpu.h"
-#include "raster.h"
+#include "raster-changes.h"
 #include "types.h"
 #include "vicii-badline.h"
 #include "vicii-fetch.h"
@@ -193,4 +193,3 @@ void vicii_badline_check_state(BYTE value, const int cycle,
             line_becomes_bad(cycle);
     }
 }
-

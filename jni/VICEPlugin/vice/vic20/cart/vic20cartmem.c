@@ -28,17 +28,29 @@
 
 #include <stdio.h>
 
+#include "c64acia.h"
 #include "cartridge.h"
+#include "digimax.h"
 #include "finalexpansion.h"
-#include "generic.h"
-#include "vic-fp.h"
+#include "georam.h"
 #include "megacart.h"
 #include "machine.h"
 #include "mem.h"
 #include "resources.h"
+#include "sfx_soundexpander.h"
+#include "sfx_soundsampler.h"
+#ifdef HAVE_TFE
+#define CARTRIDGE_INCLUDE_PRIVATE_API
+#define CARTRIDGE_INCLUDE_PUBLIC_API
+#include "tfe.h"
+#undef CARTRIDGE_INCLUDE_PRIVATE_API
+#undef CARTRIDGE_INCLUDE_PUBLIC_API
+#endif
 #include "types.h"
 #include "vic20mem.h"
 #include "vic20cartmem.h"
+#include "vic20-generic.h"
+#include "vic-fp.h"
 
 /* ------------------------------------------------------------------------- */
 
@@ -47,7 +59,7 @@ int mem_cart_blocks = 0;
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 cartridge_read_ram123(WORD addr)
+BYTE cartridge_read_ram123(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -70,7 +82,7 @@ BYTE REGPARM1 cartridge_read_ram123(WORD addr)
     return vic20_cpu_last_data;
 }
 
-BYTE REGPARM1 cartridge_peek_ram123(WORD addr)
+BYTE cartridge_peek_ram123(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -87,7 +99,7 @@ BYTE REGPARM1 cartridge_peek_ram123(WORD addr)
     return 0;
 }
 
-void REGPARM2 cartridge_store_ram123(WORD addr, BYTE value)
+void cartridge_store_ram123(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     switch (mem_cartridge_type) {
@@ -107,7 +119,7 @@ void REGPARM2 cartridge_store_ram123(WORD addr, BYTE value)
     vic20_mem_v_bus_store(addr);
 }
 
-BYTE REGPARM1 cartridge_read_blk1(WORD addr)
+BYTE cartridge_read_blk1(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -126,7 +138,7 @@ BYTE REGPARM1 cartridge_read_blk1(WORD addr)
     return vic20_cpu_last_data;
 }
 
-BYTE REGPARM1 cartridge_peek_blk1(WORD addr)
+BYTE cartridge_peek_blk1(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -141,7 +153,7 @@ BYTE REGPARM1 cartridge_peek_blk1(WORD addr)
     return 0;
 }
 
-void REGPARM2 cartridge_store_blk1(WORD addr, BYTE value)
+void cartridge_store_blk1(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     switch (mem_cartridge_type) {
@@ -160,7 +172,7 @@ void REGPARM2 cartridge_store_blk1(WORD addr, BYTE value)
     }
 }
 
-BYTE REGPARM1 cartridge_read_blk2(WORD addr)
+BYTE cartridge_read_blk2(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -179,7 +191,7 @@ BYTE REGPARM1 cartridge_read_blk2(WORD addr)
     return vic20_cpu_last_data;
 }
 
-BYTE REGPARM1 cartridge_peek_blk2(WORD addr)
+BYTE cartridge_peek_blk2(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -194,7 +206,7 @@ BYTE REGPARM1 cartridge_peek_blk2(WORD addr)
     return 0;
 }
 
-void REGPARM2 cartridge_store_blk2(WORD addr, BYTE value)
+void cartridge_store_blk2(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     switch (mem_cartridge_type) {
@@ -213,7 +225,7 @@ void REGPARM2 cartridge_store_blk2(WORD addr, BYTE value)
     }
 }
 
-BYTE REGPARM1 cartridge_read_blk3(WORD addr)
+BYTE cartridge_read_blk3(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -232,7 +244,7 @@ BYTE REGPARM1 cartridge_read_blk3(WORD addr)
     return vic20_cpu_last_data;
 }
 
-BYTE REGPARM1 cartridge_peek_blk3(WORD addr)
+BYTE cartridge_peek_blk3(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -247,7 +259,7 @@ BYTE REGPARM1 cartridge_peek_blk3(WORD addr)
     return 0;
 }
 
-void REGPARM2 cartridge_store_blk3(WORD addr, BYTE value)
+void cartridge_store_blk3(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     switch (mem_cartridge_type) {
@@ -266,7 +278,7 @@ void REGPARM2 cartridge_store_blk3(WORD addr, BYTE value)
     }
 }
 
-BYTE REGPARM1 cartridge_read_blk5(WORD addr)
+BYTE cartridge_read_blk5(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -285,7 +297,7 @@ BYTE REGPARM1 cartridge_read_blk5(WORD addr)
     return vic20_cpu_last_data;
 }
 
-BYTE REGPARM1 cartridge_peek_blk5(WORD addr)
+BYTE cartridge_peek_blk5(WORD addr)
 {
     switch (mem_cartridge_type) {
     case CARTRIDGE_VIC20_GENERIC:
@@ -300,7 +312,7 @@ BYTE REGPARM1 cartridge_peek_blk5(WORD addr)
     return 0;
 }
 
-void REGPARM2 cartridge_store_blk5(WORD addr, BYTE value)
+void cartridge_store_blk5(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     switch (mem_cartridge_type) {
@@ -319,111 +331,6 @@ void REGPARM2 cartridge_store_blk5(WORD addr, BYTE value)
     }
 }
 
-BYTE REGPARM1 cartridge_read_io2(WORD addr)
-{
-    switch (mem_cartridge_type) {
-    case CARTRIDGE_VIC20_FP:
-        vic20_cpu_last_data = vic_fp_io2_read(addr);
-        break;
-    case CARTRIDGE_VIC20_MEGACART:
-        vic20_cpu_last_data = megacart_io2_read(addr);
-        break;
-    default:
-        break;
-    }
-    vic20_mem_v_bus_read(addr);
-    return vic20_cpu_last_data;
-}
-
-BYTE REGPARM1 cartridge_peek_io2(WORD addr)
-{
-    switch (mem_cartridge_type) {
-    case CARTRIDGE_VIC20_FP:
-        return vic_fp_io2_peek(addr);
-    case CARTRIDGE_VIC20_MEGACART:
-        return megacart_io2_read(addr);
-    default:
-        break;
-    }
-    return 0;
-}
-
-void REGPARM2 cartridge_store_io2(WORD addr, BYTE value)
-{
-    vic20_cpu_last_data = value;
-    switch (mem_cartridge_type) {
-    case CARTRIDGE_VIC20_FP:
-        vic_fp_io2_store(addr, value);
-        break;
-    case CARTRIDGE_VIC20_MEGACART:
-        megacart_io2_store(addr, value);
-        break;
-    }
-    vic20_mem_v_bus_store(addr);
-}
-
-BYTE REGPARM1 cartridge_read_io3(WORD addr)
-{
-    switch (mem_cartridge_type) {
-    case CARTRIDGE_VIC20_MEGACART:
-        vic20_cpu_last_data = megacart_io3_read(addr);
-        break;
-    case CARTRIDGE_VIC20_FINAL_EXPANSION:
-        vic20_cpu_last_data = finalexpansion_io3_read(addr);
-        break;
-    default:
-        break;
-    }
-    vic20_mem_v_bus_read(addr);
-    return vic20_cpu_last_data;
-}
-
-BYTE REGPARM1 cartridge_peek_io3(WORD addr)
-{
-    switch (mem_cartridge_type) {
-    case CARTRIDGE_VIC20_MEGACART:
-        return megacart_io3_peek(addr);
-    case CARTRIDGE_VIC20_FINAL_EXPANSION:
-        return finalexpansion_io3_peek(addr);
-    default:
-        break;
-    }
-    return 0;
-}
-
-void REGPARM2 cartridge_store_io3(WORD addr, BYTE value)
-{
-    vic20_cpu_last_data = value;
-    switch (mem_cartridge_type) {
-    case CARTRIDGE_VIC20_MEGACART:
-        megacart_io3_store(addr, value);
-        break;
-    case CARTRIDGE_VIC20_FINAL_EXPANSION:
-        finalexpansion_io3_store(addr, value);
-        break;
-    }
-    vic20_mem_v_bus_store(addr);
-}
-
-/* ------------------------------------------------------------------------- */
-
-void cartridge_ioreg_add_list(struct mem_ioreg_list_s **mem_ioreg_list)
-{
-    switch (mem_cartridge_type) {
-    case CARTRIDGE_VIC20_FP:
-        vic_fp_ioreg_add_list(mem_ioreg_list);
-        break;
-    case CARTRIDGE_VIC20_MEGACART:
-        megacart_ioreg_add_list(mem_ioreg_list);
-        break;
-    case CARTRIDGE_VIC20_FINAL_EXPANSION:
-        finalexpansion_ioreg_add_list(mem_ioreg_list);
-        break;
-    default:
-        break;
-    }
-}
-
 /* ------------------------------------------------------------------------- */
 
 void cartridge_init(void)
@@ -432,6 +339,11 @@ void cartridge_init(void)
     megacart_init();
     finalexpansion_init();
     vic_fp_init();
+#ifdef HAVE_TFE
+    tfe_init();
+#endif
+    aciacart_init();
+    georam_init();
 }
 
 void cartridge_reset(void)
@@ -449,6 +361,26 @@ void cartridge_reset(void)
     case CARTRIDGE_VIC20_FINAL_EXPANSION:
         finalexpansion_reset();
         break;
+    }
+#ifdef HAVE_TFE
+    if (tfe_cart_enabled()) {
+        tfe_reset();
+    }
+#endif
+    if (aciacart_cart_enabled()) {
+        aciacart_reset();
+    }
+    if (digimax_cart_enabled()) {
+        digimax_reset();
+    }
+    if (sfx_soundexpander_cart_enabled()) {
+        sfx_soundexpander_reset();
+    }
+    if (sfx_soundsampler_cart_enabled()) {
+        sfx_soundsampler_reset();
+    }
+    if (georam_cart_enabled()) {
+        georam_reset();
     }
 }
 
@@ -517,3 +449,10 @@ void cartridge_detach(int type)
 }
 
 /* ------------------------------------------------------------------------- */
+
+void cartridge_sound_chip_init(void)
+{
+    digimax_sound_chip_init();
+    sfx_soundexpander_sound_chip_init();
+    sfx_soundsampler_sound_chip_init();
+}

@@ -34,15 +34,15 @@ extern int easyflash_resources_init(void);
 extern void easyflash_resources_shutdown(void);
 extern int easyflash_cmdline_options_init(void);
 
-extern BYTE REGPARM1 easyflash_roml_read(WORD addr);
-extern void REGPARM2 easyflash_roml_store(WORD addr, BYTE value);
-extern BYTE REGPARM1 easyflash_romh_read(WORD addr);
-extern void REGPARM2 easyflash_romh_store(WORD addr, BYTE value);
+extern BYTE easyflash_roml_read(WORD addr);
+extern void easyflash_roml_store(WORD addr, BYTE value);
+extern BYTE easyflash_romh_read(WORD addr);
+extern void easyflash_romh_store(WORD addr, BYTE value);
 
 extern void easyflash_config_init(void);
 extern void easyflash_config_setup(BYTE *rawcart);
 extern int easyflash_bin_attach(const char *filename, BYTE *rawcart);
-extern int easyflash_crt_attach(FILE *fd, BYTE *rawcart, BYTE *header, const char *filename);
+extern int easyflash_crt_attach(FILE *fd, BYTE *rawcart, const char *filename);
 extern void easyflash_detach(void);
 extern int easyflash_bin_save(const char *filename);
 extern int easyflash_crt_save(const char *filename);

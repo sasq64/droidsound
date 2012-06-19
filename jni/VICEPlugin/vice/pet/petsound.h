@@ -27,6 +27,7 @@
 #ifndef VICE_PETSOUND_H
 #define VICE_PETSOUND_H
 
+#include "sound.h"
 #include "types.h"
 
 extern void petsound_store_onoff(int value);
@@ -34,7 +35,9 @@ extern void petsound_store_rate(CLOCK t);
 extern void petsound_store_sample(BYTE value);
 extern void petsound_store_manual(int value);
 
-extern void petsound_reset(void);
+extern void petsound_reset(sound_t *psid, CLOCK cpu_clk);
+
+extern void pet_sound_chip_init(void);
 
 #endif
 

@@ -35,7 +35,7 @@
 #include "lib.h"
 #include "rotation.h"
 #include "types.h"
-
+#include "drive-sound.h"
 
 /*-----------------------------------------------------------------------*/
 
@@ -63,14 +63,12 @@ static void glue_pport_update(drive_context_t *drv)
 
     /* Stepper motor.  */
     if (((old_output ^ output) & 0x3) && (output & 0x4)) {
-        if ((old_output & 0x3) == ((output + 1) & 0x3))
-            drive_move_head(-1, drv->drive);
-        else if ((old_output & 0x3) == ((output - 1) & 0x3))
-            drive_move_head(+1, drv->drive);
+        drive_move_head(((output - drv->drive->current_half_track + 3) & 3) - 1, drv->drive);
     }
 
     /* Motor on/off.  */
     if ((old_output ^ output) & 0x04) {
+        drive_sound_update((output & 4) ? DRIVE_SOUND_MOTOR_ON : DRIVE_SOUND_MOTOR_OFF, drv->mynumber);
         drv->drive->byte_ready_active = (output & 0x04) ? 0x06 : 0;
         if (drv->drive->byte_ready_active == 0x06) {
             rotation_begins(drv->drive);

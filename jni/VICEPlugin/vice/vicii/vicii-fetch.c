@@ -41,6 +41,7 @@
 #include "log.h"
 #include "maincpu.h"
 #include "mem.h"
+#include "raster-changes.h"
 #include "raster-sprite-status.h"
 #include "raster-sprite.h"
 #include "raster.h"
@@ -599,4 +600,3 @@ void vicii_fetch_init(void)
                                          "VicIIRasterFetch",
                                          vicii_fetch_alarm_handler, NULL);
 }
-

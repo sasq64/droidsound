@@ -31,17 +31,12 @@
 
 #include "types.h"
 
-extern BYTE REGPARM1 megacart_ram123_read(WORD addr);
-extern void REGPARM2 megacart_ram123_store(WORD addr, BYTE value);
-extern BYTE REGPARM1 megacart_blk123_read(WORD addr);
-extern void REGPARM2 megacart_blk123_store(WORD addr, BYTE value);
-extern BYTE REGPARM1 megacart_blk5_read(WORD addr);
-extern void REGPARM2 megacart_blk5_store(WORD addr, BYTE value);
-extern BYTE REGPARM1 megacart_io2_read(WORD addr);
-extern void REGPARM2 megacart_io2_store(WORD addr, BYTE value);
-extern BYTE REGPARM1 megacart_io3_read(WORD addr);
-extern BYTE REGPARM1 megacart_io3_peek(WORD addr);
-extern void REGPARM2 megacart_io3_store(WORD addr, BYTE value);
+extern BYTE megacart_ram123_read(WORD addr);
+extern void megacart_ram123_store(WORD addr, BYTE value);
+extern BYTE megacart_blk123_read(WORD addr);
+extern void megacart_blk123_store(WORD addr, BYTE value);
+extern BYTE megacart_blk5_read(WORD addr);
+extern void megacart_blk5_store(WORD addr, BYTE value);
 
 extern void megacart_init(void);
 extern void megacart_reset(void);
@@ -60,8 +55,5 @@ struct snapshot_s;
 
 extern int megacart_snapshot_write_module(struct snapshot_s *s);
 extern int megacart_snapshot_read_module(struct snapshot_s *s);
-
-struct mem_ioreg_list_s;
-extern void megacart_ioreg_add_list(struct mem_ioreg_list_s **mem_ioreg_list);
 
 #endif

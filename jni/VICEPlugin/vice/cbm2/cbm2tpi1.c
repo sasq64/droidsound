@@ -2,7 +2,7 @@
  * cbm2tpi1.c - TPI 1 for CBM-II
  *
  * Written by
- *  André Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -34,7 +34,6 @@
 #include "cbm2mem.h"
 #include "cbm2tpi.h"
 #include "cia.h"
-#include "crtc.h"
 #include "datasette.h"
 #include "drivecpu.h"
 #include "interrupt.h"
@@ -46,17 +45,17 @@
 #include "types.h"
 
 
-void REGPARM2 tpi1_store(WORD addr, BYTE data)
+void tpi1_store(WORD addr, BYTE data)
 {
     tpicore_store(machine_context.tpi1, addr, data);
 }
 
-BYTE REGPARM1 tpi1_read(WORD addr)
+BYTE tpi1_read(WORD addr)
 {
     return tpicore_read(machine_context.tpi1, addr);
 }
 
-BYTE REGPARM1 tpi1_peek(WORD addr)
+BYTE tpi1_peek(WORD addr)
 {
     return tpicore_peek(machine_context.tpi1, addr);
 }
@@ -250,4 +249,3 @@ void tpi1_setup_context(machine_context_t *machine_context)
     tpi_context->set_int = set_int;
     tpi_context->restore_int = restore_int;
 }
-

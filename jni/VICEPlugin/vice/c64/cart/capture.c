@@ -33,15 +33,16 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
 #include "c64meminit.h"
 #include "c64memrom.h"
 #include "capture.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     Jason Ranheim "Capture" Cartridge
@@ -134,7 +135,7 @@ static void capture_romhflip(WORD addr)
     }
 }
 
-BYTE REGPARM1 capture_romh_read(WORD addr)
+BYTE capture_romh_read(WORD addr)
 {
     capture_reg(addr);
     capture_romhflip(addr);
@@ -147,7 +148,7 @@ BYTE REGPARM1 capture_romh_read(WORD addr)
     return mem_read_without_ultimax(addr);
 }
 
-void REGPARM2 capture_romh_store(WORD addr, BYTE value)
+void capture_romh_store(WORD addr, BYTE value)
 {
     capture_reg(addr);
     /* capture_romhflip(addr); */
@@ -159,7 +160,7 @@ void REGPARM2 capture_romh_store(WORD addr, BYTE value)
 /*
     there is Cartridge RAM at 0x6000..0x7fff
 */
-BYTE REGPARM1 capture_1000_7fff_read(WORD addr)
+BYTE capture_1000_7fff_read(WORD addr)
 {
     if (cart_enabled) {
         if (addr>=0x6000) {
@@ -170,7 +171,7 @@ BYTE REGPARM1 capture_1000_7fff_read(WORD addr)
     return mem_read_without_ultimax(addr);
 }
 
-void REGPARM2 capture_1000_7fff_store(WORD addr, BYTE value)
+void capture_1000_7fff_store(WORD addr, BYTE value)
 {
     if (cart_enabled) {
         if (addr>=0x6000) {
@@ -181,6 +182,32 @@ void REGPARM2 capture_1000_7fff_store(WORD addr, BYTE value)
     }
 }
 
+int capture_romh_phi1_read(WORD addr, BYTE *value)
+{
+    return CART_READ_C64MEM;
+}
+
+int capture_romh_phi2_read(WORD addr, BYTE *value)
+{
+    return capture_romh_phi1_read(addr, value);
+}
+
+int capture_peek_mem(struct export_s *export, WORD addr, BYTE *value)
+{
+    if (cart_enabled == 1) {
+        if (addr >= 0x6000 && addr <= 0x7fff) {
+            *value = export_ram0[addr-0x6000];
+            return CART_READ_VALID;
+        }
+        if (romh_enabled) {
+            if (addr >= 0xe000) {
+                *value = romh_banks[addr & 0x1fff];
+                return CART_READ_VALID;
+            }
+        }
+    }
+    return CART_READ_THROUGH;
+}
 /******************************************************************************/
 
 void capture_freeze(void)
@@ -237,13 +264,17 @@ int capture_bin_attach(const char *filename, BYTE *rawcart)
 
 int capture_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (fread(rawcart, 0x2000, 1, fd) < 1) {
+    if (chip.size != 0x2000) {
+        return -1;
+    }
+
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 

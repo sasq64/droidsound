@@ -29,10 +29,18 @@
 /* #undef CEGCC_COMPILE */
 
 /* NLS datadirname. */
-#define DATADIRNAME "share"
+/* #define DATADIRNAME "" */
+
+/* Enable debugging code */
+/* #undef DEBUG */
 
 /* Use debugging of the zfile */
 /* #undef DEBUG_ZFILE */
+/* Enable DINGOO compilation */
+/* #undef DINGOO */
+
+/* Enable native DINGOO compilation */
+/* #undef DINGOO_NATIVE */
 
 /* Enable DINGUX compilation */
 /* #undef DINGUX */
@@ -98,7 +106,10 @@
 #define HAVE_ALLOCA_H 1
 
 /* Define to 1 if you have the <alsa/asoundlib.h> header file. */
-/* #undef HAVE_ALSA_ASOUNDLIB_H 1 */
+/* #undef HAVE_ALSA_ASOUNDLIB_H */
+
+/* Define to 1 if you have the <aros/_timeval.h> header file. */
+/* #undef HAVE_AROS__TIMEVAL_H */
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #define HAVE_ARPA_INET_H 1
@@ -106,7 +117,7 @@
 /* Define to 1 if you have the <artsc.h> header file. */
 /* #undef HAVE_ARTSC_H */
 
-/* Define to 1 if you have the `atexit' function. */
+/* Dingoo has atexit */
 #define HAVE_ATEXIT 1
 
 /* Enable AudioUnit support. */
@@ -134,7 +145,7 @@
 /* #undef HAVE_D3D9_H */
 
 /* Define to 1 if you have the `dcgettext' function. */
-#define HAVE_DCGETTEXT 1
+/* #undef HAVE_DCGETTEXT */
 
 /* Define to 1 if you have the declaration of `sys_siglist', and to 0 if you
    don't. */
@@ -167,6 +178,8 @@
 
 /* Can we use the dos NET library? */
 /* #undef HAVE_DOS_LIBNET */
+/* dsound.lib or libdsound.a are present */
+/* #undef HAVE_DSOUND_LIB */
 
 /* Support for dynamic library loading. */
 /* #undef HAVE_DYNLIB_SUPPORT */
@@ -288,8 +301,6 @@
 /* Define to 1 if you have the `ossaudio' library (-lossaudio). */
 /* #undef HAVE_LIBOSSAUDIO */
 
-/* Define to 1 if you have the `resid' library (-lresid). */
-/* #undef HAVE_LIBRESID */
 
 /* Define to 1 if you have the <libusbhid.h> header file. */
 /* #undef HAVE_LIBUSBHID_H */
@@ -374,6 +385,11 @@
 
 /* Support for ParSID. */
 /* #undef HAVE_PARSID */
+/* A libpcap version with pcap_inject is available */
+/* #undef HAVE_PCAP_INJECT */
+
+/* A libpcap version with pcap_sendpacket is available */
+/* #undef HAVE_PCAP_SENDPACKET */
 
 /* Can we use the PNG library? */
 /* #undef HAVE_PNG */
@@ -586,6 +602,8 @@
 
 /* Define to 1 if you have the <vfork.h> header file. */
 /* #undef HAVE_VFORK_H */
+/* Define to 1 if you have the <wchar.h> header file. */
+/* #define HAVE_WCHAR_H 1 */
 
 /* Define to 1 if you have the <winioctl.h> header file. */
 /* #undef HAVE_WINIOCTL_H */
@@ -616,6 +634,17 @@
 
 /* Can we use the ZLIB compression library? */
 #define HAVE_ZLIB /**/
+/* Define to 1 if you have the `_XlcCloseConverter' function. */
+/* #define HAVE__XLCCLOSECONVERTER 1 */
+
+/* Define to 1 if you have the `_XlcConvert' function. */
+/* #define HAVE__XLCCONVERT 1 */
+
+/* Define to 1 if you have the `_XlcCurrentLC' function. */
+/* #define HAVE__XLCCURRENTLC 1
+
+/* Define to 1 if you have the `_XlcOpenConverter' function. */
+/* #define HAVE__XLCOPENCONVERTER 1 */
 
 /* Enable support for Linux style joysticks. */
 /* #undef LINUX_JOYSTICK */
@@ -682,6 +711,11 @@
 
 /* The current arch, cpu and compiler used. */
 /* #undef PLATFORM */
+/* Enable morphos shared SDL library support. */
+/* #undef POWERSDL_AMIGA_INLINE */
+
+/* Where do we want to install the executable? */
+/* #define PREFIX "/usr/local" */
 
 /* Define as the return type of signal handlers (`int' or `void'). */
 #define RETSIGTYPE void
@@ -766,6 +800,8 @@
 
 /* Enable SDL prefix for header inclusion. */
 /* #undef USE_SDL_PREFIX */
+/* Are we using the Unix/X11/Xaw ui? */
+/* #define USE_XAWUI */
 
 /* Enable XF86 extensions. */
 /* #undef USE_XF86_EXTENSIONS */
@@ -774,7 +810,7 @@
 /* #undef USE_XF86_VIDMODE_EXT */
 
 /* Version number of package */
-#define VERSION "2.2.9"
+#define VERSION "2.3.15"
 
 /* Win32 Version string. */
 #define VERSION_RC "$VERSION_RC"
@@ -805,13 +841,18 @@
 /* #  undef WORDS_BIGENDIAN */
 # endif
 #endif
+/* Define to 1 if aros can handle auto resolving of library bases. */
+/* #undef WORKING_AROS_AUTO */
+
+/* Enable _Xlc_* functions. */
+/* #define XLC_FUNCS_PRESENT */
 
 /* Define to 1 if the X Window System is missing or not being used. */
 /* #undef X_DISPLAY_MISSING */
 
 /* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */
-#define YYTEXT_POINTER 1
+/* #undef YYTEXT_POINTER */
 
 /* define when using the alpha compaq compiler */
 /* #undef __DECALPHA__ */

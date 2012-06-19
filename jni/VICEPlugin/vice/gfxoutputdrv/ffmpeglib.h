@@ -41,6 +41,29 @@
 #endif
 #endif
 
+/* backwards compatibility */
+#if LIBAVUTIL_VERSION_MAJOR < 51
+#define AVMEDIA_TYPE_AUDIO CODEC_TYPE_AUDIO
+#define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
+/* the win32 check is needed otherwise *nix builds fail */
+#if defined(WIN32) || defined(WATCOM_COMPILE)
+#define av_guess_format guess_format
+#define av_guess_format_t guess_format_t
+#define AV_PKT_FLAG_KEY PKT_FLAG_KEY
+#endif
+#endif
+
+/* wether this check makes sense for V51 is unclear */
+#if LIBAVFORMAT_VERSION_MAJOR < 51
+#define av_guess_format guess_format
+#define av_guess_format_t guess_format_t
+#endif
+
+/* wether this check makes sense for V51 is unclear */
+#if LIBAVCODEC_VERSION_MAJOR < 51
+#define AV_PKT_FLAG_KEY PKT_FLAG_KEY
+#endif
+
 /* generic version function */
 typedef unsigned (*ffmpeg_version_t) (void);
 
@@ -64,7 +87,7 @@ typedef int (*av_write_trailer_t) (AVFormatContext*);
 typedef int (*url_fopen_t) (ByteIOContext**, const char*, int);
 typedef int (*url_fclose_t) (ByteIOContext*);
 typedef void (*dump_format_t) (AVFormatContext *, int, const char*, int);
-typedef AVOutputFormat* (*guess_format_t) (const char*, const char*, const char*);
+typedef AVOutputFormat* (*av_guess_format_t) (const char*, const char*, const char*);
 typedef int (*img_convert_t) (AVPicture*, int, AVPicture*, int, int, int);
 
 /* avutil functions */
@@ -102,7 +125,7 @@ struct ffmpeglib_s {
     url_fopen_t                 p_url_fopen;
     url_fclose_t                p_url_fclose;
     dump_format_t               p_dump_format;
-    guess_format_t              p_guess_format;
+    av_guess_format_t           p_av_guess_format;
 #ifndef HAVE_FFMPEG_SWSCALE
     img_convert_t               p_img_convert;
 #endif

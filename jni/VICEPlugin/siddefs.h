@@ -17,8 +17,8 @@
 //  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //  ---------------------------------------------------------------------------
 
-#ifndef VICE__SIDDEFS_H__
-#define VICE__SIDDEFS_H__
+#ifndef RESID_SIDDEFS_H
+#define RESID_SIDDEFS_H
 
 // Compilation configuration.
 #define RESID_INLINING 1
@@ -73,19 +73,12 @@ enum sampling_method { SAMPLE_FAST, SAMPLE_INTERPOLATE,
 
 extern "C"
 {
-#ifndef __VERSION_CC__
+#ifndef RESID_VERSION_CC
 extern const char* resid_version_string;
 #else
+const char* VERSION = "";
 const char* resid_version_string = VERSION;
 #endif
 }
 
-#if 1
-#define HAVE_SQRTF_PROTOTYPE
-#endif
-
-#if 1 && !defined(HAVE_SQRTF)
-#define HAVE_SQRTF
-#endif
-
-#endif // not VICE__SIDDEFS_H__
+#endif // not RESID_SIDDEFS_H

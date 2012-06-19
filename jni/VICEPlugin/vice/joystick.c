@@ -49,25 +49,61 @@
 #include "snapshot.h"
 #include "types.h"
 #include "uiapi.h"
+#include "userport_joystick.h"
 #include "vice-event.h"
 
+/* #define DEBUGJOY */
+
+#ifdef DEBUGJOY
+#define DBG(x)  printf x
+#else
+#define DBG(x)
+#endif
+
 #define JOYSTICK_RAND() (rand() % machine_get_cycles_per_frame())
+
+#define JOYPAD_FIRE 0x10
+#define JOYPAD_E    0x08
+#define JOYPAD_W    0x04
+#define JOYPAD_S    0x02
+#define JOYPAD_N    0x01
+#define JOYPAD_SW   (JOYPAD_S | JOYPAD_W)
+#define JOYPAD_SE   (JOYPAD_S | JOYPAD_E)
+#define JOYPAD_NW   (JOYPAD_N | JOYPAD_W)
+#define JOYPAD_NE   (JOYPAD_N | JOYPAD_E)
 
 /* Global joystick value.  */
 /*! \todo SRT: document: what are these values joystick_value[0, 1, 2, ..., 5] used for? */
 BYTE joystick_value[JOYSTICK_NUM + 1] = { 0 };
+static BYTE network_joystick_value[JOYSTICK_NUM + 1] = { 0 };
 
 /* Latched joystick status.  */
 static BYTE latch_joystick_value[JOYSTICK_NUM + 1] = { 0 };
-static BYTE network_joystick_value[JOYSTICK_NUM + 1] = { 0 };
 
 /* mapping of the joystick ports */
 int joystick_port_map[JOYSTICK_NUM] = { 0 };
 
 /* to prevent illegal direction combinations */
 static int joystick_opposite_enable = 0;
-static const BYTE joystick_opposite_direction[] = 
-    { 0, 2, 1, 3, 8, 10, 9, 11, 4, 6, 5, 7, 12, 14, 13, 15 };
+static const BYTE joystick_opposite_direction[] = {
+                                               /* E W S N */
+    0,                                         /*         */
+    JOYPAD_S,                                  /*       + */
+    JOYPAD_N,                                  /*     +   */
+    JOYPAD_S | JOYPAD_N,                       /*     + + */
+    JOYPAD_E,                                  /*   +     */
+    JOYPAD_E | JOYPAD_S,                       /*   +   + */
+    JOYPAD_E | JOYPAD_N,                       /*   + +   */
+    JOYPAD_E | JOYPAD_S | JOYPAD_N,            /*   + + + */
+    JOYPAD_W,                                  /* +       */
+    JOYPAD_W | JOYPAD_S,                       /* +     + */
+    JOYPAD_W | JOYPAD_N,                       /* +   +   */
+    JOYPAD_W | JOYPAD_S | JOYPAD_N,            /* +   + + */
+    JOYPAD_E | JOYPAD_W,                       /* + +     */
+    JOYPAD_E | JOYPAD_W | JOYPAD_S,            /* + +   + */
+    JOYPAD_E | JOYPAD_W | JOYPAD_N,            /* + + +   */
+    JOYPAD_E | JOYPAD_W | JOYPAD_S | JOYPAD_N  /* + + + + */
+};
 
 /* Callback to machine specific joystick routines, needed for lightpen triggering */
 static joystick_machine_func_t joystick_machine_func = NULL;
@@ -77,10 +113,15 @@ static alarm_t *joystick_alarm = NULL;
 static CLOCK joystick_delay;
 
 #ifdef COMMON_KBD
-static int joykeys[3][9];
+#define KEYSET_NUM 3
+#define KEYSET_NUM_KEYS 9
+#define KEYSET_IDX_NUMBLOCK 0
+#define KEYSET_IDX_A 1
+#define KEYSET_IDX_B 2
+static int joykeys[KEYSET_NUM][KEYSET_NUM_KEYS];
 #endif
 
-/*! \todo @@@SRT offset is unused! */
+/*! \todo SRT: offset is unused! */
 
 static void joystick_latch_matrix(CLOCK offset)
 {
@@ -88,10 +129,11 @@ static void joystick_latch_matrix(CLOCK offset)
 
     if (network_connected()) {
         idx = network_joystick_value[0];
-        if (idx > 0)
+        if (idx > 0) {
             joystick_value[idx] = network_joystick_value[idx];
-        else
+        } else {
             memcpy(joystick_value, network_joystick_value, sizeof(joystick_value));
+        }
     } else {
         memcpy(joystick_value, latch_joystick_value, sizeof(joystick_value));
     }
@@ -107,8 +149,7 @@ static void joystick_latch_matrix(CLOCK offset)
 
 static void joystick_event_record(void)
 {
-    event_record(EVENT_JOYSTICK_VALUE, (void *)joystick_value,
-                 sizeof(joystick_value));
+    event_record(EVENT_JOYSTICK_VALUE, (void *)joystick_value, sizeof(joystick_value));
 }
 
 void joystick_event_playback(CLOCK offset, void *data)
@@ -130,7 +171,7 @@ static void joystick_latch_handler(CLOCK offset, void *data)
 
 void joystick_event_delayed_playback(void *data)
 {
-    /*! \todo @@@SRT: why network_joystick_value?
+    /*! \todo SRT: why network_joystick_value?
      * and why sizeof latch_joystick_value, 
      * if the target is network_joystick_value?
      */
@@ -152,21 +193,18 @@ static void joystick_process_latch(void)
 {
     if (network_connected()) {
         CLOCK joystick_delay = JOYSTICK_RAND();
-        network_event_record(EVENT_JOYSTICK_DELAY,
-                (void *)&joystick_delay, sizeof(joystick_delay));
-        network_event_record(EVENT_JOYSTICK_VALUE, 
-                (void *)latch_joystick_value, sizeof(latch_joystick_value));
-    } 
-    else
-    {
+        network_event_record(EVENT_JOYSTICK_DELAY, (void *)&joystick_delay, sizeof(joystick_delay));
+        network_event_record(EVENT_JOYSTICK_VALUE, (void *)latch_joystick_value, sizeof(latch_joystick_value));
+    } else {
         alarm_set(joystick_alarm, maincpu_clk + JOYSTICK_RAND());
     }
 }
 
 void joystick_set_value_absolute(unsigned int joyport, BYTE value)
 {
-    if (event_playback_active())
+    if (event_playback_active()) {
         return;
+    }
 
     if (latch_joystick_value[joyport] != value) {
         latch_joystick_value[joyport] = value;
@@ -175,10 +213,12 @@ void joystick_set_value_absolute(unsigned int joyport, BYTE value)
     }
 }
 
+/* set joystick bits */
 void joystick_set_value_or(unsigned int joyport, BYTE value)
 {
-    if (event_playback_active())
+    if (event_playback_active()) {
         return;
+    }
 
     latch_joystick_value[joyport] |= value;
 
@@ -190,10 +230,12 @@ void joystick_set_value_or(unsigned int joyport, BYTE value)
     joystick_process_latch();
 }
 
+/* release joystick bits */
 void joystick_set_value_and(unsigned int joyport, BYTE value)
 {
-    if (event_playback_active())
+    if (event_playback_active()) {
         return;
+    }
 
     latch_joystick_value[joyport] &= value;
     latch_joystick_value[0] = (BYTE)joyport;
@@ -213,84 +255,64 @@ void joystick_clear_all(void)
     joystick_latch_matrix(0);
 }
 
-/*-----------------------------------------------------------------------*/
-
-/* Userport joystick interface emulation */
-
-int extra_joystick_enable;
-int extra_joystick_type;
-
-static int extra_joystick_cga_select = 0;
-static BYTE extra_joystick_hit_sp2_button = 0xff;
-
-BYTE extra_joystick_cga_read(void)
+BYTE get_joystick_value(int index)
 {
-    return (BYTE)~((joystick_value[3] & 0x10)
-           | ((joystick_value[4] & 0x10) << 1)
-           | (joystick_value[extra_joystick_cga_select + 3] & 0xf));
-}
-
-void extra_joystick_cga_store(BYTE value)
-{
-    extra_joystick_cga_select = (value & 0x80) ? 0 : 1;
-}
-
-BYTE extra_joystick_hit_read_button2(void)
-{
-    return extra_joystick_hit_sp2_button;
-}
-
-BYTE extra_joystick_hit_read_button1(void)
-{
-    return (BYTE)((joystick_value[3] & 0x10) ? 0 : 4);
-}
-
-BYTE extra_joystick_hit_read(void)
-{
-    return (BYTE)~((joystick_value[3] & 0xf) | ((joystick_value[4] & 0xf) << 4));
-}
-
-void extra_joystick_hit_store(BYTE value)
-{
-    extra_joystick_hit_sp2_button = (joystick_value[4] & 0x10) ? 0 : 0xff;
-}
-
-BYTE extra_joystick_pet_read(void)
-{
-    BYTE retval;
-
-    retval = ((joystick_value[3] & 0xf) | (joystick_value[4] & 0xf) << 4);
-    retval |= (joystick_value[3] & 0x10) ? 3 : 0;
-    retval |= (joystick_value[4] & 0x10) ? 0x30 : 0;
-    return (BYTE)~(retval);
-}
-
-BYTE extra_joystick_hummer_read(void)
-{
-    return (BYTE)~(joystick_value[3] & 0x1f);
-}
-
-BYTE extra_joystick_oem_read(void)
-{
-    BYTE retval;
-
-    retval = ((joystick_value[3] & 1) << 7);
-    retval |= ((joystick_value[3] & 2) << 5);
-    retval |= ((joystick_value[3] & 4) << 3);
-    retval |= ((joystick_value[3] & 8) << 1);
-    retval |= ((joystick_value[3] & 16) >> 1);
-    return (BYTE)~(retval);
+    return joystick_value[index];
 }
 
 /*-----------------------------------------------------------------------*/
 
-#ifdef COMMON_KBD
-/* the order of values in joypad_bits is the same as in joystick_direction_t */
-static int joypad_bits[9] = {
-    0x10, 0x06, 0x02, 0x0a, 0x04, 0x08, 0x05, 0x01, 0x09
+static int set_userport_joystick_enable(int val, void *param)
+{
+    userport_joystick_enable = val;
+    return 0;
+}
+
+static int set_userport_joystick_type(int val, void *param)
+{
+    if (val >= USERPORT_JOYSTICK_NUM) {
+        return -1;
+    }
+    userport_joystick_type = val;
+    return 0;
+}
+
+/* FIXME: command line options to set these resources are missing */
+/* FIXME: ExtraJoy* needs to be renamed to UserportJoy* in due time */
+static const resource_int_t userport_resources_int[] = {
+    { "ExtraJoy", 0, RES_EVENT_NO, NULL,
+      &userport_joystick_enable, set_userport_joystick_enable, NULL },
+    { "ExtraJoyType", 0, RES_EVENT_NO, NULL,
+      &userport_joystick_type, set_userport_joystick_type, NULL },
+    { NULL }
 };
 
-static int joypad_status[3][9];
+static int set_joystick_opposite_enable(int val, void *param)
+{
+    joystick_opposite_enable = val;
+    return 0;
+}
+
+/*--------------------------------------------------------------------------*/
+
+#ifdef COMMON_KBD
+
+/* the order of values in joypad_bits is the same as in joystick_direction_t */
+static int joypad_bits[KEYSET_NUM_KEYS] = {
+    JOYPAD_FIRE,
+    JOYPAD_SW,
+    JOYPAD_S,
+    JOYPAD_SE,
+    JOYPAD_W,
+    JOYPAD_E,
+    JOYPAD_NW,
+    JOYPAD_N,
+    JOYPAD_NE
+};
+
+static int joypad_status[KEYSET_NUM][KEYSET_NUM_KEYS];
+static int joypad_vmask[KEYSET_NUM];
+static int joypad_hmask[KEYSET_NUM];
 
 typedef enum {
     KEYSET_FIRE,
@@ -304,32 +326,20 @@ typedef enum {
     KEYSET_NE
 } joystick_direction_t;
 
-static int joyreleaseval(int column, int *status)
+/* convert the given keyset status array into the corrosponding bits for the
+ * joystick
+ */
+static int getjoyvalue(int *status)
 {
     int val = 0;
+    int column;
 
-    switch (column) {
-      case KEYSET_SW:
-        val = (status[KEYSET_S] ? 0 : joypad_bits[KEYSET_S]) | 
-              (status[KEYSET_W] ? 0 : joypad_bits[KEYSET_W]);
-        break;
-      case KEYSET_SE:
-        val = (status[KEYSET_S] ? 0 : joypad_bits[KEYSET_S]) | 
-              (status[KEYSET_E] ? 0 : joypad_bits[KEYSET_E]);
-        break;
-      case KEYSET_NW:
-        val = (status[KEYSET_N] ? 0 : joypad_bits[KEYSET_N]) | 
-              (status[KEYSET_W] ? 0 : joypad_bits[KEYSET_W]);
-        break;
-      case KEYSET_NE:
-        val = (status[KEYSET_N] ? 0 : joypad_bits[KEYSET_N]) | 
-              (status[KEYSET_E] ? 0 : joypad_bits[KEYSET_E]);
-        break;
-      default:
-        val = joypad_bits[column];
-        break;
+    for (column = 0; column < KEYSET_NUM_KEYS; column++) {
+        if (status[column]) {
+            val |= joypad_bits[column];
+        }
     }
-    return ~val;
+    return val;
 }
 
 /* toggle keyset joystick. 
@@ -339,12 +349,6 @@ static int joykeys_enable = 0;
 static int set_joykeys_enable(int val, void *param)
 {
     joykeys_enable = val;
-    return 0;
-}
-
-static int set_joystick_opposite_enable(int val, void *param)
-{
-    joystick_opposite_enable = val;
     return 0;
 }
 
@@ -361,41 +365,41 @@ DEFINE_SET_KEYSET(2)
 
 static const resource_int_t resources_int[] = {
     { "KeySet1NorthWest", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_NW], set_keyset1, (void *)KEYSET_NW },
+      &joykeys[KEYSET_IDX_A][KEYSET_NW], set_keyset1, (void *)KEYSET_NW },
     { "KeySet1North", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_N], set_keyset1, (void *)KEYSET_N },
+      &joykeys[KEYSET_IDX_A][KEYSET_N], set_keyset1, (void *)KEYSET_N },
     { "KeySet1NorthEast", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_NE], set_keyset1, (void *)KEYSET_NE },
+      &joykeys[KEYSET_IDX_A][KEYSET_NE], set_keyset1, (void *)KEYSET_NE },
     { "KeySet1East", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_E], set_keyset1, (void *)KEYSET_E },
+      &joykeys[KEYSET_IDX_A][KEYSET_E], set_keyset1, (void *)KEYSET_E },
     { "KeySet1SouthEast", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_SE], set_keyset1, (void *)KEYSET_SE },
+      &joykeys[KEYSET_IDX_A][KEYSET_SE], set_keyset1, (void *)KEYSET_SE },
     { "KeySet1South", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_S], set_keyset1, (void *)KEYSET_S },
+      &joykeys[KEYSET_IDX_A][KEYSET_S], set_keyset1, (void *)KEYSET_S },
     { "KeySet1SouthWest", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_SW], set_keyset1, (void *)KEYSET_SW },
+      &joykeys[KEYSET_IDX_A][KEYSET_SW], set_keyset1, (void *)KEYSET_SW },
     { "KeySet1West", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_W], set_keyset1, (void *)KEYSET_W },
+      &joykeys[KEYSET_IDX_A][KEYSET_W], set_keyset1, (void *)KEYSET_W },
     { "KeySet1Fire", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[1][KEYSET_FIRE], set_keyset1, (void *)KEYSET_FIRE },
+      &joykeys[KEYSET_IDX_A][KEYSET_FIRE], set_keyset1, (void *)KEYSET_FIRE },
     { "KeySet2NorthWest", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_NW], set_keyset2, (void *)KEYSET_NW },
+      &joykeys[KEYSET_IDX_B][KEYSET_NW], set_keyset2, (void *)KEYSET_NW },
     { "KeySet2North", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_N], set_keyset2, (void *)KEYSET_N },
+      &joykeys[KEYSET_IDX_B][KEYSET_N], set_keyset2, (void *)KEYSET_N },
     { "KeySet2NorthEast", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_NE], set_keyset2, (void *)KEYSET_NE },
+      &joykeys[KEYSET_IDX_B][KEYSET_NE], set_keyset2, (void *)KEYSET_NE },
     { "KeySet2East", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_E], set_keyset2, (void *)KEYSET_E },
+      &joykeys[KEYSET_IDX_B][KEYSET_E], set_keyset2, (void *)KEYSET_E },
     { "KeySet2SouthEast", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_SE], set_keyset2, (void *)KEYSET_SE },
+      &joykeys[KEYSET_IDX_B][KEYSET_SE], set_keyset2, (void *)KEYSET_SE },
     { "KeySet2South", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_S], set_keyset2, (void *)KEYSET_S },
+      &joykeys[KEYSET_IDX_B][KEYSET_S], set_keyset2, (void *)KEYSET_S },
     { "KeySet2SouthWest", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_SW], set_keyset2, (void *)KEYSET_SW },
+      &joykeys[KEYSET_IDX_B][KEYSET_SW], set_keyset2, (void *)KEYSET_SW },
     { "KeySet2West", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_W], set_keyset2, (void *)KEYSET_W },
+      &joykeys[KEYSET_IDX_B][KEYSET_W], set_keyset2, (void *)KEYSET_W },
     { "KeySet2Fire", ARCHDEP_KEYBOARD_SYM_NONE, RES_EVENT_NO, NULL,
-      &joykeys[2][KEYSET_FIRE], set_keyset2, (void *)KEYSET_FIRE },
+      &joykeys[KEYSET_IDX_B][KEYSET_FIRE], set_keyset2, (void *)KEYSET_FIRE },
     { "KeySetEnable", 1, RES_EVENT_NO, NULL,
       &joykeys_enable, set_joykeys_enable, NULL },
     { "JoyOpposite", 0, RES_EVENT_NO, NULL,
@@ -403,68 +407,118 @@ static const resource_int_t resources_int[] = {
     { NULL }
 };
 
-static int set_extra_joystick_enable(int val, void *param)
-{
-    extra_joystick_enable = val;
-    return 0;
-}
-
-static int set_extra_joystick_type(int val, void *param)
-{
-    extra_joystick_type = val;
-    return 0;
-}
-
-static const resource_int_t extra_resources_int[] = {
-    { "ExtraJoy", 0, RES_EVENT_NO, NULL,
-      &extra_joystick_enable, set_extra_joystick_enable, NULL },
-    { "ExtraJoyType", 0, RES_EVENT_NO, NULL,
-      &extra_joystick_type, set_extra_joystick_type, NULL },
-    { NULL }
-};
-
-int joystick_check_set(signed long key, int keysetnum, unsigned int joyport)
+#ifdef DEBUGJOY
+static void DBGSTATUS(int keysetnum, int value, int joyport, int key, int flg)
 {
     int column;
+    char *flags[3] = {"set", "unset", "ignored"};
+
+    DBG((" key:%02x |", key));
+    for (column = 0; column < KEYSET_NUM_KEYS; column++) {
+        DBG((joypad_status[keysetnum][column] ? "*" : "."));
+    }
+    DBG(("|"));
+    for (column = 5; column >= 0; column--) {
+        DBG((((value >> column) & 1) ? "*" : "."));
+    }
+    DBG(("|"));
+    for (column = 5; column >= 0; column--) {
+        DBG((((joypad_vmask[keysetnum] >> column) & 1) ? "*" : "."));
+    }
+    DBG(("|"));
+    for (column = 5; column >= 0; column--) {
+        DBG((((joypad_hmask[keysetnum] >> column) & 1) ? "*" : "."));
+    }
+    DBG(("|"));
+    for (column = 5; column >= 0; column--) {
+        DBG((((latch_joystick_value[joyport] >> column) & 1) ? "*" : "."));
+    }
+    DBG((" (%s)\n", flags[flg]));
+}
+#else
+#define DBGSTATUS(a, b, c, d, e)
+#endif
+
+/* called on key-down event */
+int joystick_check_set(signed long key, int keysetnum, unsigned int joyport)
+{
+    int column, value;
 
     /* if joykeys are disabled then ignore key sets */
     if (!joykeys_enable) {
         return 0;
     }
 
-    for (column = 0; column < 9; column++) {
+    for (column = 0; column < KEYSET_NUM_KEYS; column++) {
         if (key == joykeys[keysetnum][column]) {
-            if (joypad_bits[column]) {
-                /*joystick_value[joyport] |= joypad_bits[column];*/
-                joystick_set_value_or(joyport, (BYTE)joypad_bits[column]);
-                joypad_status[keysetnum][column] = 1;
-            } else {
-                /*joystick_value[joyport] = 0;*/
-                joystick_set_value_absolute(joyport, 0);
-                memset(joypad_status[keysetnum], 0, sizeof(joypad_status[keysetnum]));
+
+            DBG(("joystick_check_set:"));
+
+            joypad_status[keysetnum][column] = 1;
+            value = getjoyvalue(joypad_status[keysetnum]);
+
+            if (!joystick_opposite_enable) {
+                /* setup the mask for the opposite side of the pressed key */
+                if ((column == KEYSET_N) || (column == KEYSET_NW) || (column == KEYSET_NE)) {
+                    joypad_vmask[keysetnum] = ~JOYPAD_S;
+                } else if ((column == KEYSET_S) || (column == KEYSET_SW) || (column == KEYSET_SE)) {
+                    joypad_vmask[keysetnum] = ~JOYPAD_N;
+                }
+                if ((column == KEYSET_W) || (column == KEYSET_SW) || (column == KEYSET_NW)) {
+                    joypad_hmask[keysetnum] = ~JOYPAD_E;
+                } else if ((column == KEYSET_E) || (column == KEYSET_SE) || (column == KEYSET_NE)) {
+                    joypad_hmask[keysetnum] = ~JOYPAD_W;
+                }
+                /* if two opposite directions are set, mask out the opposite side of
+                 * the last pressed key */
+                if ((value & joypad_bits[KEYSET_N]) && (value & joypad_bits[KEYSET_S])) {
+                    value &= joypad_vmask[keysetnum];
+                }
+                if ((value & joypad_bits[KEYSET_E]) && (value & joypad_bits[KEYSET_W])) {
+                    value &= joypad_hmask[keysetnum];
+                }
             }
+
+            joystick_set_value_absolute(joyport, (BYTE)value);
+
+            DBGSTATUS(keysetnum, value, joyport, key, 0);
             return 1;
         }
     }
     return 0;
 }
 
+/* called on key-up event */
 int joystick_check_clr(signed long key, int keysetnum, unsigned int joyport)
 {
-    int column;
+    int column, value;
 
     /* if joykeys are disabled then ignore key sets */
     if (!joykeys_enable) {
         return 0;
     }
 
-    for (column = 0; column < 9; column++) {
+    for (column = 0; column < KEYSET_NUM_KEYS; column++) {
         if (key == joykeys[keysetnum][column]) {
-            /*joystick_value[joyport] &= joyreleaseval(column,
-                                                     joypad_status[joynum]);*/
-            joystick_set_value_and(joyport, (BYTE)joyreleaseval(column,
-                                   joypad_status[keysetnum]));
+
             joypad_status[keysetnum][column] = 0;
+            value = getjoyvalue(joypad_status[keysetnum]);
+
+            if (!joystick_opposite_enable) {
+                /* if two opposite directions are set, mask out the opposite side of
+                 * the last pressed key */
+                if ((value & joypad_bits[KEYSET_N]) && (value & joypad_bits[KEYSET_S])) {
+                    value &= joypad_vmask[keysetnum];
+                }
+                if ((value & joypad_bits[KEYSET_E]) && (value & joypad_bits[KEYSET_W])) {
+                    value &= joypad_hmask[keysetnum];
+                }
+            }
+
+            joystick_set_value_absolute(joyport, (BYTE)value);
+
+            DBG(("joystick_check_clr:"));
+            DBGSTATUS(keysetnum, value, joyport, key, 1);
             return 1;
         }
     }
@@ -483,12 +537,28 @@ int joystick_init_resources(void)
     resources_register_int(resources_int);
 
     if (machine_class != VICE_MACHINE_PLUS4) {
-        resources_register_int(extra_resources_int);
+        resources_register_int(userport_resources_int);
     }
 
     return joystick_arch_init_resources();
 }
-#endif
+#else
+static const resource_int_t resources_int[] = {
+    { "JoyOpposite", 0, RES_EVENT_NO, NULL,
+      &joystick_opposite_enable, set_joystick_opposite_enable, NULL },
+    { NULL }
+};
+
+int joystick_extra_init_resources(void)
+{
+    resources_register_int(resources_int);
+
+    if (machine_class != VICE_MACHINE_PLUS4) {
+        return resources_register_int(userport_resources_int);
+    }
+    return 0;
+}
+#endif /* COMMON_KBD */
 
 int joystick_init(void)
 {

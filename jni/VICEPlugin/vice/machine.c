@@ -53,9 +53,7 @@
 #include "maincpu.h"
 #include "mem.h"
 #include "monitor.h"
-#ifdef HAVE_NETWORK
 #include "monitor_network.h"
-#endif
 #include "network.h"
 #include "printer.h"
 #include "resources.h"
@@ -74,6 +72,8 @@
 #include "joy.h"
 #endif
 
+static int machine_init_was_called = 0;
+
 static int ignore_jam;
 int machine_keymap_index;
 
@@ -88,9 +88,17 @@ unsigned int machine_jam(const char *format, ...)
         return JAM_NONE;
 
     va_start(ap, format);
-
     str = lib_mvsprintf(format, ap);
-    ret = ui_jam_dialog(str);
+    va_end(ap);
+
+    if (monitor_is_remote())
+    {
+        ret = monitor_network_ui_jam_dialog(str);
+    }
+    else
+    {
+        ret = ui_jam_dialog(str);
+    }
     lib_free(str);
 
     switch (ret) {
@@ -183,6 +191,8 @@ void machine_early_init(void)
 
 int machine_init(void)
 {
+    machine_init_was_called = 1;
+
     machine_video_init();
 
     fsdevice_init();
@@ -205,6 +215,11 @@ static void machine_maincpu_shutdown(void)
 
 void machine_shutdown(void)
 {
+    if (!machine_init_was_called) {
+        /* happens at the -help command line command*/
+        return;
+    }
+
     file_system_detach_disk_shutdown();
 
     machine_specific_shutdown();
@@ -272,4 +287,3 @@ void machine_shutdown(void)
 
     lib_debug_check();
 }
-

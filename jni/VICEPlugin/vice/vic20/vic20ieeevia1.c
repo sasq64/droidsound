@@ -40,26 +40,26 @@
 #include "vic20ieeevia.h"
 
 
-void REGPARM2 ieeevia1_store(WORD addr, BYTE data)
+void ieeevia1_store(WORD addr, BYTE data)
 {
     viacore_store(machine_context.ieeevia1, addr, data);
 }
 
-BYTE REGPARM1 ieeevia1_read(WORD addr)
+BYTE ieeevia1_read(WORD addr)
 {
     return viacore_read(machine_context.ieeevia1, addr);
 }
 
-BYTE REGPARM1 ieeevia1_peek(WORD addr)
+BYTE ieeevia1_peek(WORD addr)
 {
     return viacore_peek(machine_context.ieeevia1, addr);
 }
 
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
 }
 

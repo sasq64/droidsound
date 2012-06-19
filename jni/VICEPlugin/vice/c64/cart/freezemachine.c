@@ -34,13 +34,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "freezemachine.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* #define FMDEBUG */
 
@@ -95,7 +96,7 @@ static int allow_toggle;
 
 /* ---------------------------------------------------------------------*/
 
-static BYTE REGPARM1 freezemachine_io1_read(WORD addr)
+static BYTE freezemachine_io1_read(WORD addr)
 {
     DBG(("io1 r %04x\n", addr));
     if (addr == 0) {
@@ -106,17 +107,17 @@ static BYTE REGPARM1 freezemachine_io1_read(WORD addr)
     return 0; /* invalid */
 }
 
-static BYTE REGPARM1 freezemachine_io1_peek(WORD addr)
+static BYTE freezemachine_io1_peek(WORD addr)
 {
     return 0; /* invalid */
 }
 
-static void REGPARM2 freezemachine_io1_store(WORD addr, BYTE value)
+static void freezemachine_io1_store(WORD addr, BYTE value)
 {
     DBG(("io1 %04x %02x\n", addr, value));
 }
 
-static BYTE REGPARM1 freezemachine_io2_read(WORD addr)
+static BYTE freezemachine_io2_read(WORD addr)
 {
     DBG(("io2 r %04x\n", addr));
     if (addr == 0) {
@@ -127,12 +128,12 @@ static BYTE REGPARM1 freezemachine_io2_read(WORD addr)
     return 0; /* invalid */
 }
 
-static BYTE REGPARM1 freezemachine_io2_peek(WORD addr)
+static BYTE freezemachine_io2_peek(WORD addr)
 {
     return 0; /* invalid */
 }
 
-static void REGPARM2 freezemachine_io2_store(WORD addr, BYTE value)
+static void freezemachine_io2_store(WORD addr, BYTE value)
 {
     DBG(("io2 %04x %02x\n", addr, value));
 }
@@ -147,8 +148,11 @@ static io_source_t freezemachine_io1_device = {
     freezemachine_io1_read,
     freezemachine_io1_peek,
     NULL,
-    CARTRIDGE_FREEZE_MACHINE
+    CARTRIDGE_FREEZE_MACHINE,
+    0,
+    0
 };
+
 static io_source_t freezemachine_io2_device = {
     CARTRIDGE_NAME_FREEZE_MACHINE,
     IO_DETACH_CART,
@@ -159,7 +163,9 @@ static io_source_t freezemachine_io2_device = {
     freezemachine_io2_read,
     freezemachine_io2_peek,
     NULL,
-    CARTRIDGE_FREEZE_MACHINE
+    CARTRIDGE_FREEZE_MACHINE,
+    0,
+    0
 };
 
 static io_source_list_t *freezemachine_io1_list_item = NULL;
@@ -171,7 +177,7 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 freezemachine_roml_read(WORD addr)
+BYTE freezemachine_roml_read(WORD addr)
 {
     if (roml_toggle) {
         return romh_banks[(addr & 0x1fff) | (rom_A14 << 13)];
@@ -223,8 +229,8 @@ static int freezemachine_common_attach(void)
         return -1;
     }
 
-    freezemachine_io1_list_item = c64io_register(&freezemachine_io1_device);
-    freezemachine_io2_list_item = c64io_register(&freezemachine_io2_device);
+    freezemachine_io1_list_item = io_source_register(&freezemachine_io1_device);
+    freezemachine_io2_list_item = io_source_register(&freezemachine_io2_device);
 
     return 0;
 }
@@ -246,24 +252,24 @@ int freezemachine_bin_attach(const char *filename, BYTE *rawcart)
 int freezemachine_crt_attach(FILE *fd, BYTE *rawcart)
 {
     int i;
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     for (i = 0; i < 4; i++) {
 
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
-/*
-        if (chipheader[0xb] > 0) {
+
+        if (chip.bank > 1 || chip.size != 0x2000 || (chip.start != 0x8000 && chip.start != 0xa000)) {
             return -1;
         }
-*/
-        if (fread(&rawcart[0x2000 * i], 0x2000, 1, fd) < 1) {
-            break;
+
+        if (crt_read_chip(rawcart, (chip.start & 0x2000) + (chip.bank << 14), &chip, fd)) {
+            return -1;
         }
     }
 
-    if (!((i == 2) || (i == 4))) {
+    if (i != 2 && i != 4) {
         return -1;
     }
 
@@ -274,8 +280,8 @@ int freezemachine_crt_attach(FILE *fd, BYTE *rawcart)
 void freezemachine_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(freezemachine_io1_list_item);
-    c64io_unregister(freezemachine_io2_list_item);
+    io_source_unregister(freezemachine_io1_list_item);
+    io_source_unregister(freezemachine_io2_list_item);
     freezemachine_io1_list_item = NULL;
     freezemachine_io2_list_item = NULL;
 }

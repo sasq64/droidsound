@@ -44,6 +44,12 @@ const char *machine_romset_resources_list[] = {
     "DosName3040",
     "DosName4040",
     "DosName1001",
+    "H6809RomAName",
+    "H6809RomBName",
+    "H6809RomCName",
+    "H6809RomDName",
+    "H6809RomEName",
+    "H6809RomFName",
     NULL
 };
 
@@ -71,4 +77,3 @@ int machine_romset_archive_item_create(const char *romset_name)
 void machine_romset_init(void)
 {
 }
-

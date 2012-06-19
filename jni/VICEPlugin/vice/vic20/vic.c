@@ -54,8 +54,10 @@
 #include "vic-mem.h"
 #include "vic-resources.h"
 #include "vic-snapshot.h"
+#include "vic-timing.h"
 #include "vic-color.h"
 #include "vic.h"
+#include "victypes.h"
 #include "vic20.h"
 #include "vic20-resources.h"
 #include "vic20mem.h"
@@ -76,56 +78,27 @@ static void clk_overflow_callback(CLOCK sub, void *unused_data)
     }
 }
 
-void vic_change_timing(void)
+void vic_change_timing(machine_timing_t *machine_timing, int border_mode)
 {
-    int mode;
-
-    resources_get_int("MachineVideoStandard", &mode);
-
-    switch (mode) {
-      case MACHINE_SYNC_NTSC:
-        vic.screen_height = VIC20_NTSC_SCREEN_LINES;
-        vic.screen_width = VIC_NTSC_SCREEN_WIDTH;
-        vic.display_width = VIC_NTSC_DISPLAY_WIDTH;
-        vic.first_displayed_line = VIC20_NTSC_FIRST_DISPLAYED_LINE;
-        vic.last_displayed_line = VIC20_NTSC_LAST_DISPLAYED_LINE;
-        vic.cycles_per_line = VIC20_NTSC_CYCLES_PER_LINE;
-        vic.cycle_offset = VIC20_NTSC_CYCLE_OFFSET;
-        vic.max_text_cols = VIC_NTSC_MAX_TEXT_COLS;
-        break;
-      case MACHINE_SYNC_PAL:
-      default:
-        vic.screen_height = VIC20_PAL_SCREEN_LINES;
-        vic.screen_width = VIC_PAL_SCREEN_WIDTH;
-        vic.display_width = VIC_PAL_DISPLAY_WIDTH;
-        vic.first_displayed_line = VIC20_PAL_FIRST_DISPLAYED_LINE;
-        vic.last_displayed_line = VIC20_PAL_LAST_DISPLAYED_LINE;
-        vic.cycles_per_line = VIC20_PAL_CYCLES_PER_LINE;
-        vic.cycle_offset = VIC20_PAL_CYCLE_OFFSET;
-        vic.max_text_cols = VIC_PAL_MAX_TEXT_COLS;
-        break;
-    }
-
+    vic_timing_set(machine_timing, border_mode);
     if (vic.initialized) {
         vic_set_geometry();
         raster_mode_change();
     }
 }
 
-/* return pixel aspect ratio for current video mode */
-/* FIXME: calculate proper values.
-   look at http://www.codebase64.org/doku.php?id=base:pixel_aspect_ratio&s[]=aspect
-   for an example calculation
-*/
+/* return pixel aspect ratio for current video mode
+ * based on http://codebase64.com/doku.php?id=base:pixel_aspect_ratio
+ */
 static float vic_get_pixel_aspect(void)
 {
     int video;
     resources_get_int("MachineVideoStandard", &video);
     switch (video) {
         case MACHINE_SYNC_PAL:
-            return ((float)VIC_SCREEN_PAL_NORMAL_HEIGHT * 4.0f) / ((float)VIC_SCREEN_PAL_NORMAL_WIDTH * 3.0f);
+            return 1.66574035f / 2.0f;
         case MACHINE_SYNC_NTSC:
-            return ((float)VIC_SCREEN_NTSC_NORMAL_HEIGHT * 4.0f) / ((float)VIC_SCREEN_NTSC_NORMAL_WIDTH * 3.0f);
+            return 1.50411479f / 2.0f;
         default:
             return 1.0f;
     }
@@ -209,7 +182,6 @@ static int init_raster(void)
     raster_t *raster;
 
     raster = &vic.raster;
-    video_color_set_canvas(raster->canvas);
 
     raster->sprite_status = NULL;
     raster_line_changes_init(raster);
@@ -247,7 +219,7 @@ raster_t *vic_init(void)
 {
     vic.log = log_open("VIC");
 
-    vic_change_timing();
+    /* vic_change_timing(); */
 
     if (init_raster() < 0) {
         return NULL;

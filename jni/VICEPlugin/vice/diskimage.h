@@ -34,10 +34,24 @@
 #define D67_FILE_SIZE      176640        /* D67 image, 35 tracks DOS1 */
 #define D71_FILE_SIZE      349696        /* D71 image, 70 tracks */
 #define D71_FILE_SIZE_E   (349696+1366)  /* D71 image, 70 tracks with errors */
+
 #define D81_FILE_SIZE      819200        /* D81 image, 80 tracks */
 #define D81_FILE_SIZE_E    822400        /* D81 image, 80 tracks with errors */
+#define D81_FILE_SIZE_81   829440        /* D81 image, 81 tracks (! sams as D1M) */
+#define D81_FILE_SIZE_81E  832680        /* D81 image, 81 tracks with errors (! sams as D1M) */
+#define D81_FILE_SIZE_82   839680        /* D81 image, 82 tracks */
+#define D81_FILE_SIZE_82E  842960        /* D81 image, 82 tracks with errors */
+#define D81_FILE_SIZE_83   849920        /* D81 image, 83 tracks */
+#define D81_FILE_SIZE_83E  853240        /* D81 image, 83 tracks with errors */
+
 #define D80_FILE_SIZE      533248        /* D80 image, 77 tracks */
 #define D82_FILE_SIZE     1066496        /* D82 image, 77 tracks */
+#define D1M_FILE_SIZE      829440        /* D1M image, 81 tracks */
+#define D1M_FILE_SIZE_E    832680        /* D1M image, 81 tracks with errors */
+#define D2M_FILE_SIZE     1658880        /* D2M image, 81 tracks */
+#define D2M_FILE_SIZE_E   1665360        /* D2M image, 81 tracks with errors */
+#define D4M_FILE_SIZE     3317760        /* D4M image, 81 tracks */
+#define D4M_FILE_SIZE_E   3330720        /* D4M image, 81 tracks with errors */
 
 #define DISK_IMAGE_DEVICE_FS   0
 #define DISK_IMAGE_DEVICE_REAL 1
@@ -45,6 +59,7 @@
 
 #define DISK_IMAGE_TYPE_X64 0
 #define DISK_IMAGE_TYPE_G64 100
+#define DISK_IMAGE_TYPE_P64 200
 #define DISK_IMAGE_TYPE_D64 1541
 #define DISK_IMAGE_TYPE_D67 2040
 #define DISK_IMAGE_TYPE_D71 1571
@@ -52,11 +67,14 @@
 #define DISK_IMAGE_TYPE_D80 8050
 #define DISK_IMAGE_TYPE_D82 8250
 #define DISK_IMAGE_TYPE_TAP 1531
-
+#define DISK_IMAGE_TYPE_D1M 1000
+#define DISK_IMAGE_TYPE_D2M 2000
+#define DISK_IMAGE_TYPE_D4M 4000
 
 struct fsimage_s;
 struct rawimage_s;
 struct gcr_s;
+struct TP64Image;
 
 struct disk_image_s {
     union media_u {
@@ -67,7 +85,9 @@ struct disk_image_s {
     unsigned int device;
     unsigned int type;
     unsigned int tracks;
+    unsigned int half_tracks;
     struct gcr_s *gcr;
+    struct TP64Image *p64;
 };
 typedef struct disk_image_s disk_image_t;
 
@@ -105,6 +125,14 @@ extern int disk_image_check_sector(disk_image_t *image, unsigned int track,
 extern unsigned int disk_image_sector_per_track(unsigned int format,
                                                 unsigned int track);
 extern int disk_image_read_gcr_image(disk_image_t *image);
+extern int disk_image_read_p64_image(disk_image_t *image);
+extern int disk_image_write_p64_image(disk_image_t *image);
+extern int disk_image_read_half_track(disk_image_t *image, unsigned int half_track,
+                                      BYTE *gcr_data, int *gcr_track_size);
+extern int disk_image_write_half_track(disk_image_t *image, unsigned int half_track,
+                                       int gcr_track_size,
+                                       BYTE *gcr_speed_zone,
+                                       BYTE *gcr_track_start_ptr);
 extern int disk_image_read_track(disk_image_t *image, unsigned int track,
                                  BYTE *gcr_data, int *gcr_track_size);
 extern int disk_image_write_track(disk_image_t *image, unsigned int track,
@@ -121,4 +149,3 @@ extern void disk_image_detach_log(disk_image_t *image, signed int lognum,
                                   unsigned int unit);
 
 #endif
-

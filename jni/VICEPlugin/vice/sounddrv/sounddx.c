@@ -28,7 +28,17 @@
 
 #include "vice.h"
 
+#ifdef USE_DXSOUND
+
 #include <stdio.h>
+
+#ifndef HAVE_GUIDLIB
+#define INITGUID
+#endif
+
+#ifndef HAVE_DSOUND_LIB
+#define _WIN32_DCOM
+#endif
 
 #if __GNUC__>2 || (__GNUC__==2 && __GNUC_MINOR__>=95)
 #include <windows.h>
@@ -53,13 +63,6 @@
 #include "types.h"
 #include "uiapi.h"
 
-#ifndef HAVE_GUIDLIB
-/* FIXME: It would be better to convert the dxguid.lib from DX5 into the
-   Mingw32 port of DX5 */
-const GUID IID_IDirectSoundNotify = {0xb0210783, 0x89cd, 0x11d0,
-                                    {0xaf,0x08,0x00,0xa0,0xc9,0x25,0xcd,0x16}};
-#endif
-
 #ifdef USE_SDLUI
 HWND ui_get_main_hwnd(void)
 {
@@ -70,7 +73,6 @@ HWND ui_get_main_hwnd(void)
     return info.window;
 }
 #endif
-
 
 /* ------------------------------------------------------------------------ */
 
@@ -273,7 +275,15 @@ HRESULT result;
            *speed, *fragsize, *fragnr, *channels));
 
     if (ds == NULL) {
+#ifdef HAVE_DSOUND_LIB
         result = DirectSoundCreate(NULL, &ds, NULL);
+#else
+        CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+
+        result = CoCreateInstance(&CLSID_DirectSound, NULL, CLSCTX_INPROC_SERVER, &IID_IDirectSound, (PVOID*)&ds);
+        if (result == S_OK)
+            result = IDirectSound_Initialize(ds, NULL);
+#endif
         if (result != DS_OK) {
             ui_error("Cannot initialize DirectSound:\n%s", ds_error(result));
             return -1;
@@ -546,3 +556,5 @@ int sound_init_dx_device(void)
 {
     return sound_register_device(&dx_device);
 }
+
+#endif /*USE_DXSOUND*/

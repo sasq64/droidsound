@@ -44,6 +44,9 @@
 #include "c128mmu.h"
 #include "c128ui.h"
 #include "c64-midi.h"
+#define CARTRIDGE_INCLUDE_SLOTMAIN_API
+#include "c64cartsystem.h"
+#undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64cia.h"
 #include "c64export.h"
 #include "c64iec.h"
@@ -57,6 +60,7 @@
 #include "debug.h"
 #include "drive-cmdline-options.h"
 #include "drive-resources.h"
+#include "drive-sound.h"
 #include "drive.h"
 #include "drivecpu.h"
 #include "functionrom.h"
@@ -88,8 +92,11 @@
 #include "traps.h"
 #include "types.h"
 #include "vicii.h"
+#include "vicii-mem.h"
 #include "video.h"
+#include "video-sound.h"
 #include "vdc.h"
+#include "vdc-mem.h"
 #include "vsync.h"
 #include "z80.h"
 #include "z80mem.h"
@@ -105,21 +112,21 @@
 int c64_256k_enabled = 0;
 int c64_256k_start = 0xdf80;
 
-void REGPARM2 c64_256k_store(WORD addr, BYTE byte)
+void c64_256k_store(WORD addr, BYTE byte)
 {
 }
 
-BYTE REGPARM1 c64_256k_read(WORD addr)
+BYTE c64_256k_read(WORD addr)
 {
     return 0xff;
 }
 
-BYTE REGPARM1 c64_256k_ram_segment2_read(WORD addr)
+BYTE c64_256k_ram_segment2_read(WORD addr)
 {
     return mem_ram[addr];
 }
 
-void REGPARM2 c64_256k_ram_segment2_store(WORD addr, BYTE byte)
+void c64_256k_ram_segment2_store(WORD addr, BYTE byte)
 {
     mem_ram[addr] = byte;
 }
@@ -133,12 +140,12 @@ void c64_256k_cia_set_vbank(int ciabank)
 
 int plus60k_enabled = 0;
 
-BYTE REGPARM1 plus60k_ram_read(WORD addr)
+BYTE plus60k_ram_read(WORD addr)
 {
     return mem_ram[addr];
 }
 
-void REGPARM2 plus60k_ram_store(WORD addr, BYTE value)
+void plus60k_ram_store(WORD addr, BYTE value)
 {
     mem_ram[addr] = value;
 }
@@ -148,12 +155,12 @@ void REGPARM2 plus60k_ram_store(WORD addr, BYTE value)
 
 int plus256k_enabled = 0;
 
-BYTE REGPARM1 plus256k_ram_high_read(WORD addr)
+BYTE plus256k_ram_high_read(WORD addr)
 {
     return mem_ram[addr];
 }
 
-void REGPARM2 plus256k_ram_high_store(WORD addr, BYTE byte)
+void plus256k_ram_high_store(WORD addr, BYTE byte)
 {
     mem_ram[addr] = byte;
 }
@@ -277,11 +284,151 @@ static machine_timing_t machine_timing;
 
 /* ------------------------------------------------------------------------ */
 
+/* C128-specific I/O initialization. */
+
+static io_source_t vicii_d000_device = {
+    "VIC-IIe",
+    IO_DETACH_CART, /* dummy */
+    NULL,           /* dummy */
+    0xd000, 0xd0ff, 0x7f,
+    1, /* read is always valid */
+    vicii_store,
+    vicii_read,
+    vicii_peek,
+    vicii_dump,
+    0, /* dummy (not a cartridge) */
+    IO_PRIO_HIGH, /* priority, device and mirrors never involved in collisions */
+    0
+};
+
+static io_source_t vicii_d100_device = {
+    "VIC-IIe $D100-$D1FF mirrors",
+    IO_DETACH_CART, /* dummy */
+    NULL,           /* dummy */
+    0xd100, 0xd1ff, 0x7f,
+    1, /* read is always valid */
+    vicii_store,
+    vicii_read,
+    vicii_peek,
+    vicii_dump,
+    0, /* dummy (not a cartridge) */
+    IO_PRIO_HIGH, /* priority, device and mirrors never involved in collisions */
+    0
+};
+
+static io_source_t vicii_d200_device = {
+    "VIC-IIe $D200-$D2FF mirrors",
+    IO_DETACH_CART, /* dummy */
+    NULL,           /* dummy */
+    0xd100, 0xd1ff, 0x7f,
+    1, /* read is always valid */
+    vicii_store,
+    vicii_read,
+    vicii_peek,
+    vicii_dump,
+    0, /* dummy (not a cartridge) */
+    IO_PRIO_HIGH, /* priority, device and mirrors never involved in collisions */
+    0
+};
+
+static io_source_t vicii_d300_device = {
+    "VIC-IIe $D300-$D3FF mirrors",
+    IO_DETACH_CART, /* dummy */
+    NULL,           /* dummy */
+    0xd100, 0xd1ff, 0x7f,
+    1, /* read is always valid */
+    vicii_store,
+    vicii_read,
+    vicii_peek,
+    vicii_dump,
+    0, /* dummy (not a cartridge) */
+    IO_PRIO_HIGH, /* priority, device and mirrors never involved in collisions */
+    0
+};
+
+static io_source_t sid_d400_device = {
+    "SID",
+    IO_DETACH_CART, /* dummy */
+    NULL,           /* dummy */
+    0xd400, 0xd41f, 0x1f,
+    1, /* read is always valid */
+    sid_store,
+    sid_read,
+    sid_peek,
+    NULL, /* TODO: dump */
+    0, /* dummy (not a cartridge) */
+    IO_PRIO_HIGH, /* priority, device and mirrors never involved in collisions */
+    0
+};
+
+static io_source_t sid_d420_device = {
+    "SID mirrors",
+    IO_DETACH_CART, /* dummy */
+    NULL,           /* dummy */
+    0xd420, 0xd4ff, 0x1f,
+    1, /* read is always valid */
+    sid_store,
+    sid_read,
+    sid_peek,
+    NULL, /* TODO: dump */
+    0, /* dummy (not a cartridge) */
+    IO_PRIO_LOW, /* low priority, device and mirrors never involved in collisions */
+    0
+};
+
+static io_source_list_t *vicii_d000_list_item = NULL;
+static io_source_list_t *vicii_d100_list_item = NULL;
+static io_source_list_t *vicii_d200_list_item = NULL;
+static io_source_list_t *vicii_d300_list_item = NULL;
+static io_source_list_t *sid_d400_list_item = NULL;
+static io_source_list_t *sid_d420_list_item = NULL;
+
+void c64io_vicii_init(void)
+{
+    vicii_d000_list_item = io_source_register(&vicii_d000_device);
+    vicii_d100_list_item = io_source_register(&vicii_d100_device);
+    vicii_d200_list_item = io_source_register(&vicii_d200_device);
+    vicii_d300_list_item = io_source_register(&vicii_d300_device);
+}
+
+void c64io_vicii_deinit(void)
+{
+    if (vicii_d000_list_item != NULL) {
+        io_source_unregister(vicii_d000_list_item);
+        vicii_d000_list_item = NULL;
+    }
+
+    if (vicii_d100_list_item != NULL) {
+        io_source_unregister(vicii_d100_list_item);
+        vicii_d100_list_item = NULL;
+    }
+
+    if (vicii_d200_list_item != NULL) {
+        io_source_unregister(vicii_d200_list_item);
+        vicii_d200_list_item = NULL;
+    }
+
+    if (vicii_d300_list_item != NULL) {
+        io_source_unregister(vicii_d300_list_item);
+        vicii_d300_list_item = NULL;
+    }
+}
+
+static void c128io_init(void)
+{
+    c64io_vicii_init();
+    sid_d400_list_item = io_source_register(&sid_d400_device);
+    sid_d420_list_item = io_source_register(&sid_d420_device);
+}
+
+/* ------------------------------------------------------------------------ */
+
 /* C128-specific resource initialization.  This is called before initializing
    the machine itself with `machine_init()'.  */
 int machine_resources_init(void)
 {
     if (traps_resources_init() < 0
+        || rombanks_resources_init() < 0
         || vsync_resources_init() < 0
         || machine_video_resources_init() < 0
         || c128_resources_init() < 0
@@ -306,6 +453,7 @@ int machine_resources_init(void)
         || cartridge_resources_init() < 0
         || mmu_resources_init() < 0
         || z80mem_resources_init() < 0
+        || cartio_resources_init() < 0
         || functionrom_resources_init() < 0) {
         return -1;
     }
@@ -324,6 +472,8 @@ void machine_resources_shutdown(void)
     drive_resources_shutdown();
     cartridge_resources_shutdown();
     functionrom_resources_shutdown();
+    rombanks_resources_shutdown();
+    cartio_shutdown();
 }
 
 /* C128-specific command-line option initialization.  */
@@ -353,6 +503,7 @@ int machine_cmdline_options_init(void)
         || cartridge_cmdline_options_init() < 0
         || mmu_cmdline_options_init() < 0
         || functionrom_cmdline_options_init() < 0
+        || cartio_cmdline_options_init() < 0
         || z80mem_cmdline_options_init() < 0) {
         return -1;
     }
@@ -393,6 +544,8 @@ void machine_setup_context(void)
 /* C128-specific initialization.  */
 int machine_specific_init(void)
 {
+    int delay;
+
     c128_log = log_open("C128");
 
     if (mem_load() < 0) {
@@ -431,7 +584,11 @@ int machine_specific_init(void)
     drive_init();
 
     /* Initialize autostart. FIXME: at least 0xa26 is only for 40 cols */
-    autostart_init((CLOCK)(3 * C128_PAL_RFSH_PER_SEC * C128_PAL_CYCLES_PER_RFSH), 1, 0xa27, 0xe0, 0xec, 0xee);
+    resources_get_int("AutostartDelay", &delay);
+    if (delay == 0) {
+        delay = 3; /* default */
+    }
+    autostart_init((CLOCK)(delay * C128_PAL_RFSH_PER_SEC * C128_PAL_CYCLES_PER_RFSH), 1, 0xa27, 0xe0, 0xec, 0xee);
 
     if (vdc_init() == NULL) {
         return -1;
@@ -459,12 +616,24 @@ int machine_specific_init(void)
     vsync_init(machine_vsync_hook);
     vsync_set_machine_parameter(machine_timing.rfsh_per_sec, machine_timing.cycles_per_sec);
 
+    /* Initialize native sound chip */
+    sid_sound_chip_init();
+
+    /* Initialize cartridge based sound chips */
+    cartridge_sound_chip_init();
+
+    drive_sound_init();
+    video_sound_init();
+
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
 
     /* Initialize keyboard buffer.  */
     kbdbuf_init(842, 208, 10, (CLOCK)(machine_timing.rfsh_per_sec * machine_timing.cycles_per_rfsh));
+
+    /* Initialize the C128-specific I/O */
+    c128io_init();
 
     /* Initialize the C128-specific part of the UI.  */
     c128ui_init();
@@ -658,6 +827,11 @@ void machine_change_timing(int timeval)
         case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_DEBUG_BORDERS):
             timeval ^= VICII_BORDER_MODE(VICII_DEBUG_BORDERS);
             border_mode = VICII_DEBUG_BORDERS;
+            break;
+        case MACHINE_SYNC_PAL ^ VICII_BORDER_MODE(VICII_NO_BORDERS):
+        case MACHINE_SYNC_NTSC ^ VICII_BORDER_MODE(VICII_NO_BORDERS):
+            timeval ^= VICII_BORDER_MODE(VICII_NO_BORDERS);
+            border_mode = VICII_NO_BORDERS;
             break;
     }
 
