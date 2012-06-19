@@ -1385,7 +1385,7 @@ static const asm_opcode_info_t *asm_opcode_info_get(unsigned int p0, unsigned in
     return opcode_list + p0;
 }
 
-static unsigned int asm_addr_mode_get_size(unsigned int mode, unsigned int p0, unsigned int p1)
+static unsigned int asm_addr_mode_get_size(unsigned int mode, unsigned int p0, unsigned int p1, unsigned int p2)
 {
     if (p0 == 0xcb)
         return addr_mode_size[mode] + 1;
@@ -1408,4 +1408,3 @@ void asmz80_init(monitor_cpu_type_t *monitor_cpu_type)
     mon_assemblez80_init(monitor_cpu_type);
     mon_registerz80_init(monitor_cpu_type);
 }
-

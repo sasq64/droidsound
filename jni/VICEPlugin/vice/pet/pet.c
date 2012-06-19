@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -43,6 +43,7 @@
 #include "drive-cmdline-options.h"
 #include "drive-resources.h"
 #include "drive-snapshot.h"
+#include "drive-sound.h"
 #include "drive.h"
 #include "drivecpu.h"
 #include "iecdrive.h"
@@ -61,7 +62,6 @@
 #include "pet-resources.h"
 #include "pet-snapshot.h"
 #include "pet.h"
-#include "pet_userport_dac.h"
 #include "petiec.h"
 #include "petmem.h"
 #include "petreu.h"
@@ -79,13 +79,16 @@
 #include "sid.h"
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
+#include "sidcart.h"
 #include "sound.h"
 #include "tape.h"
 #include "traps.h"
 #include "types.h"
+#include "userport_dac.h"
 #include "util.h"
 #include "via.h"
 #include "video.h"
+#include "video-sound.h"
 #include "vsync.h"
 
 machine_context_t machine_context;
@@ -139,7 +142,7 @@ int machine_resources_init(void)
         || petdww_resources_init() < 0
         || sound_resources_init() < 0
         || sidcart_resources_init() < 0
-        || pet_userport_dac_resources_init() < 0
+        || userport_dac_resources_init() < 0
         || drive_resources_init() < 0
         || datasette_resources_init() < 0
         || acia1_resources_init() < 0
@@ -184,7 +187,7 @@ int machine_cmdline_options_init(void)
         || pia1_init_cmdline_options() < 0
         || sound_cmdline_options_init() < 0
         || sidcart_cmdline_options_init() < 0
-        || pet_userport_dac_cmdline_options_init() < 0
+        || userport_dac_cmdline_options_init() < 0
         || drive_cmdline_options_init() < 0
         || datasette_cmdline_options_init() < 0
         || acia1_cmdline_options_init() < 0
@@ -223,13 +226,16 @@ static void pet_monitor_init(void)
 {
     unsigned int dnr;
     monitor_cpu_type_t asm6502;
+    monitor_cpu_type_t asm6809;
     monitor_interface_t *drive_interface_init[DRIVE_NUM];
-    monitor_cpu_type_t *asmarray[2];
+    monitor_cpu_type_t *asmarray[3];
 
     asmarray[0]=&asm6502;
-    asmarray[1]=NULL;
+    asmarray[1]=&asm6809;
+    asmarray[2]=NULL;
 
     asm6502_init(&asm6502);
+    asm6809_init(&asm6809);
 
     for (dnr = 0; dnr < DRIVE_NUM; dnr++)
         drive_interface_init[dnr] = drivecpu_monitor_interface_get(dnr);
@@ -302,6 +308,18 @@ int machine_specific_init(void)
     vsync_set_machine_parameter(machine_timing.rfsh_per_sec,
                                 machine_timing.cycles_per_sec);
 
+    /* Initialize the sidcart first */
+    sidcart_sound_chip_init();
+
+    /* Initialize native sound chip */
+    pet_sound_chip_init();
+
+    /* Initialize cartridge based sound chips */
+    userport_dac_sound_chip_init();
+
+    drive_sound_init();
+    video_sound_init();
+
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
@@ -345,7 +363,6 @@ void machine_specific_reset(void)
     viacore_reset(machine_context.via);
     acia1_reset();
     crtc_reset();
-    petsound_reset();
     sid_reset();
     petmem_reset();
     rs232drv_reset();
@@ -452,6 +469,15 @@ void machine_change_timing(int timeval)
 
     debug_set_machine_parameter(machine_timing.cycles_per_line, machine_timing.screen_lines);
     drive_set_machine_parameter(machine_timing.cycles_per_sec);
+
+    /* Should these be called also?
+    //vsync_set_machine_parameter(machine_timing.rfsh_per_sec, machine_timing.cycles_per_sec);
+    sound_set_machine_parameter(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
+    sid_set_machine_parameter(machine_timing.cycles_per_sec);
+    clk_guard_set_clk_base(maincpu_clk_guard, machine_timing.cycles_per_rfsh);
+    */
+
+    machine_trigger_reset(MACHINE_RESET_MODE_HARD);
 }
 
 /* Set the screen refresh rate, as this is variable in the CRTC */
@@ -532,7 +558,7 @@ void pet_crtc_set_screen(void)
 */
     crtc_set_screen_options(cols, 25 * 10);
     crtc_set_screen_addr(mem_ram + 0x8000);
-    crtc_set_hw_options((cols == 80) ? 2 : 0, vmask, 0x800, 512, 0x1000);
+    crtc_set_hw_options((cols == 80) ? 2 : 0, vmask, 0x2000, 512, 0x1000);
     crtc_set_retrace_type(petres.crtc ? 1 : 0);
 
     /* No CRTC -> assume 40 columns */

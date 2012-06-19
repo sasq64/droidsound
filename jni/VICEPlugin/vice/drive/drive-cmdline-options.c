@@ -47,6 +47,16 @@ static const cmdline_option_t cmdline_options[] = {
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_DISABLE_TRUE_DRIVE,
       NULL, NULL },
+    { "-drivesound", SET_RESOURCE, 0,
+      NULL, NULL, "DriveSoundEmulation", (void *)1,
+      USE_PARAM_STRING, USE_DESCRIPTION_ID,
+      IDCLS_UNUSED, IDCLS_ENABLE_DRIVE_SOUND,
+      NULL, NULL },
+    { "+drivesound", SET_RESOURCE, 0,
+      NULL, NULL, "DriveSoundEmulation", (void *)0,
+      USE_PARAM_STRING, USE_DESCRIPTION_ID,
+      IDCLS_UNUSED, IDCLS_DISABLE_DRIVE_SOUND,
+      NULL, NULL },
     { NULL }
 };
 
@@ -60,6 +70,11 @@ static cmdline_option_t cmd_drive[] = {
       NULL, NULL, NULL, NULL,
       USE_PARAM_ID, USE_DESCRIPTION_ID,
       IDCLS_P_METHOD, IDCLS_SET_DRIVE_EXTENSION_POLICY,
+      NULL, NULL },
+    { NULL, SET_RESOURCE, 1,
+      NULL, NULL, NULL, (void *)DRIVE_IDLE_TRAP_IDLE,
+      USE_PARAM_ID, USE_DESCRIPTION_ID,
+      IDCLS_P_METHOD, IDCLS_SET_IDLE_METHOD,
       NULL, NULL },
     { NULL }
 };
@@ -75,16 +90,23 @@ int drive_cmdline_options_init(void)
         cmd_drive[1].name = lib_msprintf("-drive%iextend", dnr + 8);
         cmd_drive[1].resource_name
             = lib_msprintf("Drive%iExtendImagePolicy", dnr + 8);
+        cmd_drive[2].name = lib_msprintf("-drive%iidle", dnr + 8);
+        cmd_drive[2].resource_name
+            = lib_msprintf("Drive%iIdleMethod", dnr + 8);
 
-        if (cmdline_register_options(cmd_drive) < 0)
+        if (cmdline_register_options(cmd_drive) < 0) {
             return -1;
+        }
 
-        for (i = 0; i < 2; i++) {
+        for (i = 0; i < 3; i++) {
             lib_free((char *)cmd_drive[i].name);
             lib_free((char *)cmd_drive[i].resource_name);
         }
     }
 
-    return machine_drive_cmdline_options_init()
-        | cmdline_register_options(cmdline_options);
+    if (cmdline_register_options(cmdline_options) < 0) {
+        return -1;
+    }
+
+    return machine_drive_cmdline_options_init();
 }

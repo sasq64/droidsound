@@ -84,6 +84,11 @@
 #    define PLATFORM_OS "WIN64"
 #    define PLATFORM_COMPILER "MSVC"
 #  else
+#    ifdef WINMIPS
+#      define PLATFORM_CPU "MIPS"
+#      define PLATFORM_OS "WIN32"
+#      define PLATFORM_COMPILER "MSVC"
+#    else
 #    ifdef MSVC_RC
 #      ifdef WATCOM_COMPILE
 #        define PLATFORM_COMPILER "WATCOM"
@@ -94,6 +99,7 @@
 #    define PLATFORM_OS "WIN32"
 #    define FIND_X86_CPU
 #  endif
+#endif
 #endif
 
 #if !defined(WIN32_COMPILE) && defined(__CYGWIN32__)
@@ -458,12 +464,14 @@ inline static char *platform_get_ui(void)
     return "NATIVE";
 #endif
 }
+#ifndef PLATFORM_GET_RUNTIME_OS_DECLARED
 
 inline static char *platform_get_runtime_os(void)
 {
     /* dummy till implemented */
     return "not yet implemented";
 }
+#endif
 
 #ifndef PLATFORM_GET_RUNTIME_CPU_DECLARED
 inline static char *platform_get_runtime_cpu(void)

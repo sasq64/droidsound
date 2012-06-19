@@ -40,6 +40,7 @@
 #include "debug.h"
 #include "maincpu.h"
 #include "mem.h"
+#include "raster-changes.h"
 #include "raster-sprite-status.h"
 #include "raster-sprite.h"
 #include "types.h"
@@ -51,6 +52,7 @@
 #include "vicii-mem.h"
 #include "vicii.h"
 #include "viciitypes.h"
+#include "viewport.h"
 
 
 /* Unused bits in VIC-II registers: these are always 1 when read.  */
@@ -80,7 +82,7 @@ static int unused_bits_in_registers[0x50] =
 
 
 /* Store a value in the video bank (it is assumed to be in RAM).  */
-inline static void REGPARM2 vicii_local_store_vbank(WORD addr, BYTE value)
+inline static void vicii_local_store_vbank(WORD addr, BYTE value)
 {
     unsigned int f;
 
@@ -128,13 +130,13 @@ inline static void REGPARM2 vicii_local_store_vbank(WORD addr, BYTE value)
 }
 
 /* Encapsulate inlined function for other modules */
-void REGPARM2 vicii_mem_vbank_store(WORD addr, BYTE value)
+void vicii_mem_vbank_store(WORD addr, BYTE value)
 {
     vicii_local_store_vbank(addr, value);
 }
 
 /* As `store_vbank()', but for the $3900...$39FF address range.  */
-void REGPARM2 vicii_mem_vbank_39xx_store(WORD addr, BYTE value)
+void vicii_mem_vbank_39xx_store(WORD addr, BYTE value)
 {
     vicii_local_store_vbank(addr, value);
 
@@ -147,7 +149,7 @@ void REGPARM2 vicii_mem_vbank_39xx_store(WORD addr, BYTE value)
 }
 
 /* As `store_vbank()', but for the $3F00...$3FFF address range.  */
-void REGPARM2 vicii_mem_vbank_3fxx_store(WORD addr, BYTE value)
+void vicii_mem_vbank_3fxx_store(WORD addr, BYTE value)
 {
     vicii_local_store_vbank(addr, value);
 
@@ -1201,7 +1203,7 @@ inline static void d04d_store(const BYTE value)
 }
 
 /* DTV Palette registers at $d2xx */
-void REGPARM2 vicii_palette_store(WORD addr, BYTE value)
+void vicii_palette_store(WORD addr, BYTE value)
 {
     if (!vicii.extended_enable) {
         return;
@@ -1230,13 +1232,13 @@ void REGPARM2 vicii_palette_store(WORD addr, BYTE value)
     vicii.raster.dont_cache = 1;
 }
 
-BYTE REGPARM1 vicii_palette_read(WORD addr)
+BYTE vicii_palette_read(WORD addr)
 {
     return 0;
 }
 
 /* Store a value in a VIC-II register.  */
-void REGPARM2 vicii_store(WORD addr, BYTE value)
+void vicii_store(WORD addr, BYTE value)
 {
     if (vicii.extended_enable) addr &= 0x7f;
     else addr &= 0x3f;
@@ -1614,7 +1616,7 @@ inline static BYTE d044_read(void)
 }
 
 /* Read a value from a VIC-II register.  */
-BYTE REGPARM1 vicii_read(WORD addr)
+BYTE vicii_read(WORD addr)
 {
     if (vicii.extended_enable) addr &= 0x7f;
     else addr &= 0x3f;
@@ -1957,7 +1959,7 @@ inline static BYTE d019_peek(void)
     return vicii.viciidtv?vicii.irq_status | ((vicii.irq_status & 0xf) ? 0x80 : 0x00):vicii.irq_status;
 }
 
-BYTE REGPARM1 vicii_peek(WORD addr)
+BYTE vicii_peek(WORD addr)
 {
     if (!vicii.viciidtv) {
         addr &= 0x3f;
@@ -1991,4 +1993,3 @@ BYTE REGPARM1 vicii_peek(WORD addr)
         return vicii.regs[addr] | unused_bits_in_registers[addr];
     }
 }
-

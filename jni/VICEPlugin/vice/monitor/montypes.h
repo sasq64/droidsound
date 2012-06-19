@@ -39,7 +39,9 @@
 
 /* Types */
 
+#ifndef bool
 typedef int bool;
+#endif
 
 enum t_reg_id {
    e_A,
@@ -75,14 +77,20 @@ enum t_reg_id {
    e_R14,
    e_R15,
    e_ACM,
-   e_YXM
+   e_YXM,
+/* Registers in the 6809 not covered by the above */
+   e_B,
+   e_D,
+   e_U,
+   e_DP
+
 };
 typedef enum t_reg_id REG_ID;
 
 enum t_memory_op {
-   e_load,
-   e_store,
-   e_load_store
+   e_load  = 0x01,
+   e_store = 0x02,
+   e_exec  = 0x04
 };
 typedef enum t_memory_op MEMORY_OP;
 
@@ -218,7 +226,7 @@ struct monitor_cpu_type_s;
 extern struct console_s *console_log;
 extern int sidefx;
 extern int exit_mon;
-extern int mon_console_close_on_leaving;
+
 extern RADIXTYPE default_radix;
 extern MEMSPACE default_memspace;
 extern bool asm_mode;
@@ -287,6 +295,9 @@ extern BYTE mon_get_mem_val_ex(MEMSPACE mem, int bank, WORD mem_addr);
 extern void mon_get_mem_block(MEMSPACE mem, WORD mem_start, WORD mem_end, BYTE *data);
 extern void mon_get_mem_block_ex(MEMSPACE mem, int bank, WORD mem_start, WORD mem_end, BYTE *data);
 extern void mon_jump(MON_ADDR addr);
+extern void mon_go(void);
+extern void mon_exit(void);
+extern void mon_quit(void);
 extern void mon_keyboard_feed(const char *string);
 extern char *mon_symbol_table_lookup_name(MEMSPACE mem, WORD addr);
 extern int mon_symbol_table_lookup_addr(MEMSPACE mem, char *name);
@@ -303,5 +314,8 @@ extern void mon_playback_init(const char* filename);
 extern void monitor_change_device(MEMSPACE mem);
 
 extern void mon_export(void);
+
+extern void mon_stopwatch_show(const char* prefix, const char* suffix);
+extern void mon_stopwatch_reset(void);
 
 #endif

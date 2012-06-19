@@ -1,10 +1,9 @@
-
-/* A Bison parser, made by GNU Bison 2.4.1.  */
+/* A Bison parser, made by GNU Bison 2.4.3.  */
 
 /* Skeleton interface for Bison's Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006,
+   2009, 2010 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -131,59 +130,74 @@
      CMD_DIR = 347,
      CMD_RESOURCE_GET = 348,
      CMD_RESOURCE_SET = 349,
-     CMD_ATTACH = 350,
-     CMD_DETACH = 351,
-     CMD_MON_RESET = 352,
-     CMD_TAPECTRL = 353,
-     CMD_CARTFREEZE = 354,
-     CMD_CPUHISTORY = 355,
-     CMD_MEMMAPZAP = 356,
-     CMD_MEMMAPSHOW = 357,
-     CMD_MEMMAPSAVE = 358,
-     CMD_COMMENT = 359,
-     CMD_LIST = 360,
-     CMD_EXPORT = 361,
-     CMD_LABEL_ASGN = 362,
-     L_PAREN = 363,
-     R_PAREN = 364,
-     ARG_IMMEDIATE = 365,
-     REG_A = 366,
-     REG_X = 367,
-     REG_Y = 368,
-     COMMA = 369,
-     INST_SEP = 370,
-     REG_B = 371,
-     REG_C = 372,
-     REG_D = 373,
-     REG_E = 374,
-     REG_H = 375,
-     REG_L = 376,
-     REG_AF = 377,
-     REG_BC = 378,
-     REG_DE = 379,
-     REG_HL = 380,
-     REG_IX = 381,
-     REG_IY = 382,
-     REG_SP = 383,
-     REG_IXH = 384,
-     REG_IXL = 385,
-     REG_IYH = 386,
-     REG_IYL = 387,
-     STRING = 388,
-     FILENAME = 389,
-     R_O_L = 390,
-     OPCODE = 391,
-     LABEL = 392,
-     BANKNAME = 393,
-     CPUTYPE = 394,
-     MON_REGISTER = 395,
-     COMPARE_OP = 396,
-     RADIX_TYPE = 397,
-     INPUT_SPEC = 398,
-     CMD_CHECKPT_ON = 399,
-     CMD_CHECKPT_OFF = 400,
-     TOGGLE = 401,
-     MASK = 402
+     CMD_LOAD_RESOURCES = 350,
+     CMD_SAVE_RESOURCES = 351,
+     CMD_ATTACH = 352,
+     CMD_DETACH = 353,
+     CMD_MON_RESET = 354,
+     CMD_TAPECTRL = 355,
+     CMD_CARTFREEZE = 356,
+     CMD_CPUHISTORY = 357,
+     CMD_MEMMAPZAP = 358,
+     CMD_MEMMAPSHOW = 359,
+     CMD_MEMMAPSAVE = 360,
+     CMD_COMMENT = 361,
+     CMD_LIST = 362,
+     CMD_STOPWATCH = 363,
+     RESET = 364,
+     CMD_EXPORT = 365,
+     CMD_AUTOSTART = 366,
+     CMD_AUTOLOAD = 367,
+     CMD_LABEL_ASGN = 368,
+     L_PAREN = 369,
+     R_PAREN = 370,
+     ARG_IMMEDIATE = 371,
+     REG_A = 372,
+     REG_X = 373,
+     REG_Y = 374,
+     COMMA = 375,
+     INST_SEP = 376,
+     L_BRACKET = 377,
+     R_BRACKET = 378,
+     LESS_THAN = 379,
+     REG_U = 380,
+     REG_S = 381,
+     REG_PC = 382,
+     REG_PCR = 383,
+     REG_B = 384,
+     REG_C = 385,
+     REG_D = 386,
+     REG_E = 387,
+     REG_H = 388,
+     REG_L = 389,
+     REG_AF = 390,
+     REG_BC = 391,
+     REG_DE = 392,
+     REG_HL = 393,
+     REG_IX = 394,
+     REG_IY = 395,
+     REG_SP = 396,
+     REG_IXH = 397,
+     REG_IXL = 398,
+     REG_IYH = 399,
+     REG_IYL = 400,
+     PLUS = 401,
+     MINUS = 402,
+     STRING = 403,
+     FILENAME = 404,
+     R_O_L = 405,
+     OPCODE = 406,
+     LABEL = 407,
+     BANKNAME = 408,
+     CPUTYPE = 409,
+     MON_REGISTER = 410,
+     COMPARE_OP = 411,
+     RADIX_TYPE = 412,
+     INPUT_SPEC = 413,
+     CMD_CHECKPT_ON = 414,
+     CMD_CHECKPT_OFF = 415,
+     TOGGLE = 416,
+     MASK = 417
    };
 #endif
 /* Tokens.  */
@@ -279,59 +293,74 @@
 #define CMD_DIR 347
 #define CMD_RESOURCE_GET 348
 #define CMD_RESOURCE_SET 349
-#define CMD_ATTACH 350
-#define CMD_DETACH 351
-#define CMD_MON_RESET 352
-#define CMD_TAPECTRL 353
-#define CMD_CARTFREEZE 354
-#define CMD_CPUHISTORY 355
-#define CMD_MEMMAPZAP 356
-#define CMD_MEMMAPSHOW 357
-#define CMD_MEMMAPSAVE 358
-#define CMD_COMMENT 359
-#define CMD_LIST 360
-#define CMD_EXPORT 361
-#define CMD_LABEL_ASGN 362
-#define L_PAREN 363
-#define R_PAREN 364
-#define ARG_IMMEDIATE 365
-#define REG_A 366
-#define REG_X 367
-#define REG_Y 368
-#define COMMA 369
-#define INST_SEP 370
-#define REG_B 371
-#define REG_C 372
-#define REG_D 373
-#define REG_E 374
-#define REG_H 375
-#define REG_L 376
-#define REG_AF 377
-#define REG_BC 378
-#define REG_DE 379
-#define REG_HL 380
-#define REG_IX 381
-#define REG_IY 382
-#define REG_SP 383
-#define REG_IXH 384
-#define REG_IXL 385
-#define REG_IYH 386
-#define REG_IYL 387
-#define STRING 388
-#define FILENAME 389
-#define R_O_L 390
-#define OPCODE 391
-#define LABEL 392
-#define BANKNAME 393
-#define CPUTYPE 394
-#define MON_REGISTER 395
-#define COMPARE_OP 396
-#define RADIX_TYPE 397
-#define INPUT_SPEC 398
-#define CMD_CHECKPT_ON 399
-#define CMD_CHECKPT_OFF 400
-#define TOGGLE 401
-#define MASK 402
+#define CMD_LOAD_RESOURCES 350
+#define CMD_SAVE_RESOURCES 351
+#define CMD_ATTACH 352
+#define CMD_DETACH 353
+#define CMD_MON_RESET 354
+#define CMD_TAPECTRL 355
+#define CMD_CARTFREEZE 356
+#define CMD_CPUHISTORY 357
+#define CMD_MEMMAPZAP 358
+#define CMD_MEMMAPSHOW 359
+#define CMD_MEMMAPSAVE 360
+#define CMD_COMMENT 361
+#define CMD_LIST 362
+#define CMD_STOPWATCH 363
+#define RESET 364
+#define CMD_EXPORT 365
+#define CMD_AUTOSTART 366
+#define CMD_AUTOLOAD 367
+#define CMD_LABEL_ASGN 368
+#define L_PAREN 369
+#define R_PAREN 370
+#define ARG_IMMEDIATE 371
+#define REG_A 372
+#define REG_X 373
+#define REG_Y 374
+#define COMMA 375
+#define INST_SEP 376
+#define L_BRACKET 377
+#define R_BRACKET 378
+#define LESS_THAN 379
+#define REG_U 380
+#define REG_S 381
+#define REG_PC 382
+#define REG_PCR 383
+#define REG_B 384
+#define REG_C 385
+#define REG_D 386
+#define REG_E 387
+#define REG_H 388
+#define REG_L 389
+#define REG_AF 390
+#define REG_BC 391
+#define REG_DE 392
+#define REG_HL 393
+#define REG_IX 394
+#define REG_IY 395
+#define REG_SP 396
+#define REG_IXH 397
+#define REG_IXL 398
+#define REG_IYH 399
+#define REG_IYL 400
+#define PLUS 401
+#define MINUS 402
+#define STRING 403
+#define FILENAME 404
+#define R_O_L 405
+#define OPCODE 406
+#define LABEL 407
+#define BANKNAME 408
+#define CPUTYPE 409
+#define MON_REGISTER 410
+#define COMPARE_OP 411
+#define RADIX_TYPE 412
+#define INPUT_SPEC 413
+#define CMD_CHECKPT_ON 414
+#define CMD_CHECKPT_OFF 415
+#define TOGGLE 416
+#define MASK 417
 
 
 
@@ -340,7 +369,7 @@
 typedef union YYSTYPE
 {
 
-/* Line 1676 of yacc.c  */
+/* Line 1685 of yacc.c  */
 #line 127 "mon_parse.y"
 
     MON_ADDR a;
@@ -352,11 +381,12 @@ typedef union YYSTYPE
     RADIXTYPE rt;
     ACTION action;
     char *str;
+    asm_mode_addr_info_t mode;
 
 
 
-/* Line 1676 of yacc.c  */
-#line 360 "mon_parse.h"
+/* Line 1685 of yacc.c  */
+#line 390 "mon_parse.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -364,5 +394,4 @@ typedef union YYSTYPE
 #endif
 
 extern YYSTYPE yylval;
-
 

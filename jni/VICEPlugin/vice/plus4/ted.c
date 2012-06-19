@@ -43,6 +43,7 @@
 #include "plus4.h"
 #include "plus4mem.h"
 #include "raster-canvas.h"
+#include "raster-changes.h"
 #include "raster-line.h"
 #include "raster-modes.h"
 #include "resources.h"
@@ -86,9 +87,9 @@ static void clk_overflow_callback(CLOCK sub, void *unused_data)
     old_maincpu_clk -= sub;
 }
 
-void ted_change_timing(machine_timing_t *machine_timing)
+void ted_change_timing(machine_timing_t *machine_timing, int bordermode)
 {
-    ted_timing_set(machine_timing);
+    ted_timing_set(machine_timing, bordermode);
 
     if (ted.initialized) {
         ted_set_geometry();
@@ -246,20 +247,18 @@ inline void ted_handle_pending_alarms(int num_write_cycles)
     }
 }
 
-/* return pixel aspect ratio for current video mode */
-/* FIXME: calculate proper values.
-   look at http://www.codebase64.org/doku.php?id=base:pixel_aspect_ratio&s[]=aspect
-   for an example calculation
-*/
+/* return pixel aspect ratio for current video mode
+ * based on http://codebase64.com/doku.php?id=base:pixel_aspect_ratio
+ */
 static float ted_get_pixel_aspect(void)
 {
     int video;
     resources_get_int("MachineVideoStandard", &video);
     switch (video) {
         case MACHINE_SYNC_PAL:
-            return ((float)TED_SCREEN_PAL_NORMAL_HEIGHT * 4.0f) / ((float)TED_SCREEN_PAL_NORMAL_WIDTH * 3.0f);
+            return 1.03743478f;
         case MACHINE_SYNC_NTSC:
-            return ((float)TED_SCREEN_NTSC_NORMAL_HEIGHT * 4.0f) / ((float)TED_SCREEN_NTSC_NORMAL_WIDTH * 3.0f);
+            return 0.85760931f;
         default:
             return 1.0f;
     }
@@ -283,9 +282,9 @@ static void ted_set_geometry(void)
 {
     unsigned int width, height;
 
-    width = TED_SCREEN_XPIX + ted.screen_borderwidth * 2;
-    height = ted.last_displayed_line - ted.first_displayed_line + 1;
-
+    width = TED_SCREEN_XPIX + ted.screen_rightborderwidth + ted.screen_leftborderwidth;
+    height = (ted.last_displayed_line - ted.first_displayed_line) + 1;
+#if 0
     raster_set_geometry(&ted.raster,
                         width, height,
                         TED_SCREEN_WIDTH, ted.screen_height,
@@ -296,6 +295,19 @@ static void ted_set_geometry(void)
                         ted.first_displayed_line,
                         ted.last_displayed_line,
                         0, 0);
+#endif
+    raster_set_geometry(&ted.raster,
+                        width, height, /* canvas dimensions */
+                        width, ted.screen_height, /* screen dimensions */
+                        TED_SCREEN_XPIX, TED_SCREEN_YPIX, /* gfx dimensions */
+                        TED_SCREEN_TEXTCOLS, TED_SCREEN_TEXTLINES, /* text dimensions */
+                        ted.screen_leftborderwidth, ted.row_25_start_line, /* gfx position */
+                        0, /* gfx area doesn't move */
+                        ted.first_displayed_line,
+                        ted.last_displayed_line,
+                        - TED_RASTER_X(0), /* extra offscreen border left */
+                        0 + TED_SCREEN_XPIX -
+                        ted.screen_leftborderwidth - ted.screen_rightborderwidth + TED_RASTER_X(0)) /* extra offscreen border right */;
 #ifdef __MSDOS__
     video_ack_vga_mode();
 #endif
@@ -308,7 +320,6 @@ static int init_raster(void)
     raster_t *raster;
 
     raster = &ted.raster;
-    video_color_set_canvas(raster->canvas);
 
     raster->sprite_status = NULL;
     raster_line_changes_init(raster);
@@ -351,12 +362,13 @@ raster_t *ted_init(void)
                                       ted_raster_draw_alarm_handler, NULL);
 
     /* For now.  */
-    ted_change_timing(NULL);
+    /* ted_change_timing(NULL); */
 
     ted_timer_init();
 
-    if (init_raster() < 0)
+    if (init_raster() < 0) {
         return NULL;
+    }    
 
     ted_powerup();
 
@@ -383,7 +395,6 @@ void ted_reset(void)
 /*    ted_change_timing();*/
 
     ted_timer_reset();
-    ted_sound_reset();
 
     raster_reset(&ted.raster);
 

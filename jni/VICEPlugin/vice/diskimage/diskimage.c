@@ -26,6 +26,14 @@
 
 #include "vice.h"
 
+/* #define DEBUG_DISKIMAGE */
+
+#ifdef DEBUG_DISKIMAGE
+#define DBG(x)  log_debug x
+#else
+#define DBG(x)
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,13 +43,14 @@
 #include "fsimage-check.h"
 #include "fsimage-create.h"
 #include "fsimage-gcr.h"
+#include "fsimage-p64.h"
 #include "fsimage.h"
 #include "lib.h"
 #include "log.h"
 #include "rawimage.h"
 #include "realimage.h"
 #include "types.h"
-
+#include "p64.h"
 
 static log_t disk_image_log = LOG_DEFAULT;
 
@@ -173,9 +182,13 @@ static const char *disk_image_type(disk_image_t *image)
         case DISK_IMAGE_TYPE_D64: return "D64";
         case DISK_IMAGE_TYPE_D67: return "D67";
         case DISK_IMAGE_TYPE_G64: return "G64";
+        case DISK_IMAGE_TYPE_P64: return "P64";
         case DISK_IMAGE_TYPE_X64: return "X64";
         case DISK_IMAGE_TYPE_D71: return "D71";
         case DISK_IMAGE_TYPE_D81: return "D81";
+        case DISK_IMAGE_TYPE_D1M: return "D1M";
+        case DISK_IMAGE_TYPE_D2M: return "D2M";
+        case DISK_IMAGE_TYPE_D4M: return "D4M";
         default: return NULL;
     }
 }
@@ -355,6 +368,8 @@ int disk_image_open(disk_image_t *image)
 {
     int rc = 0;
 
+    DBG(("disk_image_open"));
+
     switch (image->device) {
       case DISK_IMAGE_DEVICE_FS:
         rc = fsimage_open(image);
@@ -429,7 +444,7 @@ int disk_image_read_sector(disk_image_t *image, BYTE *buf, unsigned int track,
         break;
 #endif
       default:
-        log_error(disk_image_log, "Unknown image device %i.", image->device); 
+        log_error(disk_image_log, "Unknown image device %i.", image->device);
         rc = -1;
     }
 
@@ -465,23 +480,63 @@ int disk_image_write_sector(disk_image_t *image, BYTE *buf, unsigned int track,
 
 /*-----------------------------------------------------------------------*/
 
+int disk_image_read_half_track(disk_image_t *image, unsigned int half_track,
+                              BYTE *gcr_data, int *gcr_track_size)
+{
+    if (image->type == DISK_IMAGE_TYPE_P64) {
+        return fsimage_p64_read_half_track(image, half_track, gcr_data, gcr_track_size);
+    } else {
+        return fsimage_gcr_read_half_track(image, half_track, gcr_data, gcr_track_size);
+    }
+}
+
+int disk_image_write_half_track(disk_image_t *image, unsigned int half_track,
+                               int gcr_track_size, BYTE *gcr_speed_zone,
+                               BYTE *gcr_track_start_ptr)
+{
+    if (image->type == DISK_IMAGE_TYPE_P64) {
+      return fsimage_p64_write_half_track(image, half_track, gcr_track_size, gcr_speed_zone, gcr_track_start_ptr);
+    } else {
+      return fsimage_gcr_write_half_track(image, half_track, gcr_track_size, gcr_speed_zone, gcr_track_start_ptr);
+    }
+}
+
 int disk_image_read_track(disk_image_t *image, unsigned int track,
                           BYTE *gcr_data, int *gcr_track_size)
 {
-    return fsimage_gcr_read_track(image, track, gcr_data, gcr_track_size);
+    if (image->type == DISK_IMAGE_TYPE_P64) {
+	return fsimage_p64_read_track(image, track, gcr_data, gcr_track_size);
+    } else {
+	return fsimage_gcr_read_track(image, track, gcr_data, gcr_track_size);
+    }
 }
 
 int disk_image_write_track(disk_image_t *image, unsigned int track,
                            int gcr_track_size, BYTE *gcr_speed_zone,
                            BYTE *gcr_track_start_ptr)
 {
-    return fsimage_gcr_write_track(image, track, gcr_track_size, gcr_speed_zone,
-                                   gcr_track_start_ptr);
+    if (image->type == DISK_IMAGE_TYPE_P64) {
+	return fsimage_p64_write_track(image, track, gcr_track_size, gcr_speed_zone,
+    	                               gcr_track_start_ptr);
+    } else {
+	return fsimage_gcr_write_track(image, track, gcr_track_size, gcr_speed_zone,
+    	                               gcr_track_start_ptr);
+    }
 }
 
 int disk_image_read_gcr_image(disk_image_t *image)
 {
     return fsimage_read_gcr_image(image);
+}
+
+int disk_image_read_p64_image(disk_image_t *image)
+{
+    return fsimage_read_p64_image(image);
+}
+
+int disk_image_write_p64_image(disk_image_t *image)
+{
+    return fsimage_write_p64_image(image);
 }
 
 /*-----------------------------------------------------------------------*/
@@ -524,4 +579,3 @@ int disk_image_cmdline_options_init(void)
 #endif
     return 0;
 }
-

@@ -44,8 +44,8 @@ struct drive_context_s;         /* forward declaration */
 struct monitor_interface_s;
 
 /* This defines the memory access for the drive CPU.  */
-typedef BYTE REGPARM2 drive_read_func_t(struct drive_context_s *, WORD);
-typedef void REGPARM3 drive_store_func_t(struct drive_context_s *, WORD,
+typedef BYTE drive_read_func_t(struct drive_context_s *, WORD);
+typedef void drive_store_func_t(struct drive_context_s *, WORD,
                                          BYTE);
 
 /*
@@ -83,6 +83,9 @@ typedef struct drivecpu_context_s {
 
     /* Information about the last executed opcode.  */
     unsigned int last_opcode_info;
+
+    /* Address of the last executed opcode. This is used by watchpoints. */
+    unsigned int last_opcode_addr;
 
     /* Public copy of the registers.  */
     mos6510_regs_t cpu_regs;
@@ -131,6 +134,15 @@ typedef struct drivefunc_context_s {
     void (*parallel_set_nrfd)(BYTE);
 } drivefunc_context_t;
 
+extern drivefunc_context_t drive_funcs[DRIVE_NUM];
+
+/*
+ * Helper macros for dual disk drives.
+ */
+#define is_drive0(d)    (!is_drive1(d))
+#define is_drive1(d)    ((d) &  1)
+#define mk_drive0(d)    ((d) & ~1)
+#define mk_drive1(d)    ((d) |  1)
 
 /*
  * The context for an entire drive.
@@ -140,11 +152,13 @@ struct cia_context_s;
 struct riot_context_s;
 struct tpi_context_s;
 struct via_context_s;
+struct pc8477_s;
+struct wd1770_s;
 
 typedef struct drive_context_s {
-    int mynumber;         /* init to [01] */
+    int mynumber;         /* init to [0123] */
     CLOCK *clk_ptr;       /* shortcut to drive_clk[mynumber] */
-    struct drive_s *drive;    /* shortcut to drive[mynumber] */
+    struct drive_s *drive;
 
     struct drivecpu_context_s *cpu;
     struct drivecpud_context_s *cpud;
@@ -154,10 +168,12 @@ typedef struct drive_context_s {
     struct via_context_s *via2;
     struct cia_context_s *cia1571;
     struct cia_context_s *cia1581;
+    struct via_context_s *via4000;
     struct riot_context_s *riot1;
     struct riot_context_s *riot2;
     struct tpi_context_s *tpid;
+    struct pc8477_s *pc8477;
+    struct wd1770_s *wd1770;
 } drive_context_t;
 
 #endif
-

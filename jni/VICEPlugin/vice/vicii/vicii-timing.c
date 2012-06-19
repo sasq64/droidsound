@@ -27,6 +27,7 @@
 
 #include "vice.h"
 
+#include "archdep.h"
 #include "c64.h"
 #include "machine.h"
 #include "resources.h"
@@ -44,7 +45,7 @@
 /* Cycle # at which sprite DMA is set.  */
 #define VICII_PAL_SPRITE_FETCH_CYCLE       54
 #define VICII_NTSC_SPRITE_FETCH_CYCLE      55
-#define VICII_NTSCOLD_SPRITE_FETCH_CYCLE   54
+#define VICII_NTSCOLD_SPRITE_FETCH_CYCLE   55
 #define VICII_PALN_SPRITE_FETCH_CYCLE      55
 
 #define VICII_PAL_SPRITE_WRAP_X     504
@@ -77,6 +78,12 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
 
     resources_get_int("MachineVideoStandard", &mode);
 
+    /* only the text window, will be used if VICII_NO_BORDERS */
+    vicii.screen_leftborderwidth = 0;
+    vicii.screen_rightborderwidth = 0;
+    vicii.first_displayed_line = VICII_NO_BORDER_FIRST_DISPLAYED_LINE;
+    vicii.last_displayed_line = VICII_NO_BORDER_LAST_DISPLAYED_LINE;
+
     switch (mode) {
       case MACHINE_SYNC_NTSC:
         vicii.screen_height = VICII_NTSC_SCREEN_HEIGHT;
@@ -87,7 +94,7 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.screen_rightborderwidth = VICII_SCREEN_NTSC_NORMAL_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_NTSC_NORMAL_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_NTSC_NORMAL_LAST_DISPLAYED_LINE;
-            break;       
+            break;
           case VICII_FULL_BORDERS:
             vicii.screen_leftborderwidth = VICII_SCREEN_NTSC_FULL_LEFTBORDERWIDTH;
             vicii.screen_rightborderwidth = VICII_SCREEN_NTSC_FULL_RIGHTBORDERWIDTH;
@@ -99,6 +106,8 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.screen_rightborderwidth = VICII_SCREEN_NTSC_DEBUG_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_NTSC_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_NTSC_DEBUG_LAST_DISPLAYED_LINE;
+            break;
+          case VICII_NO_BORDERS:
             break;
         }
         vicii.cycles_per_line = VICII_NTSC_CYCLES_PER_LINE;
@@ -128,6 +137,8 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.first_displayed_line = VICII_NTSCOLD_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_NTSCOLD_DEBUG_LAST_DISPLAYED_LINE;
             break;
+          case VICII_NO_BORDERS:
+            break;
         }
         vicii.cycles_per_line = VICII_NTSCOLD_CYCLES_PER_LINE;
         vicii.draw_cycle = VICII_NTSCOLD_DRAW_CYCLE;
@@ -155,6 +166,8 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.screen_rightborderwidth = VICII_SCREEN_PALN_DEBUG_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_PALN_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_PALN_DEBUG_LAST_DISPLAYED_LINE;
+            break;
+          case VICII_NO_BORDERS:
             break;
         }
         vicii.cycles_per_line = VICII_PALN_CYCLES_PER_LINE;
@@ -184,6 +197,8 @@ void vicii_timing_set(machine_timing_t *machine_timing, int border_mode)
             vicii.screen_rightborderwidth = VICII_SCREEN_PAL_DEBUG_RIGHTBORDERWIDTH;
             vicii.first_displayed_line = VICII_PAL_DEBUG_FIRST_DISPLAYED_LINE;
             vicii.last_displayed_line = VICII_PAL_DEBUG_LAST_DISPLAYED_LINE;
+            break;
+          case VICII_NO_BORDERS:
             break;
         }
         vicii.cycles_per_line = VICII_PAL_CYCLES_PER_LINE;

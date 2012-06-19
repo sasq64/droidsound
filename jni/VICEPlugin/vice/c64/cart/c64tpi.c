@@ -37,8 +37,8 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOT0_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "drivecpu.h"
@@ -52,6 +52,7 @@
 #include "translate.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 #define CARTRIDGE_INCLUDE_PRIVATE_API
 #include "c64tpi.h"
@@ -85,10 +86,10 @@ static BYTE *tpi_rom = NULL;
 static tpi_context_t *tpi_context;
 
 /* ---------------------------------------------------------------------*/
-static void REGPARM2 tpi_io2_store(WORD addr, BYTE data);
-static BYTE REGPARM1 tpi_io2_read(WORD addr);
-static BYTE REGPARM1 tpi_io2_peek(WORD addr);
-static int REGPARM1 tpi_io2_dump(void);
+static void tpi_io2_store(WORD addr, BYTE data);
+static BYTE tpi_io2_read(WORD addr);
+static BYTE tpi_io2_peek(WORD addr);
+static int tpi_io2_dump(void);
 
 static io_source_t tpi_io2_device = {
     CARTRIDGE_NAME_IEEE488,
@@ -101,6 +102,7 @@ static io_source_t tpi_io2_device = {
     tpi_io2_peek,
     tpi_io2_dump,
     CARTRIDGE_IEEE488,
+    0,
     0
 };
 
@@ -126,24 +128,24 @@ int tpi_cart_enabled(void)
 
 /* ---------------------------------------------------------------------*/
 
-static void REGPARM2 tpi_io2_store(WORD addr, BYTE data)
+static void tpi_io2_store(WORD addr, BYTE data)
 {
     DBG(("TPI io2 w %02x (%02x)\n", addr, data));
     tpicore_store(tpi_context, addr, data);
 }
 
-static BYTE REGPARM1 tpi_io2_read(WORD addr)
+static BYTE tpi_io2_read(WORD addr)
 {
     DBG(("TPI io2 r %02x\n", addr));
     return tpicore_read(tpi_context, addr);
 }
 
-static BYTE REGPARM1 tpi_io2_peek(WORD addr)
+static BYTE tpi_io2_peek(WORD addr)
 {
     return tpicore_peek(tpi_context, addr);
 }
 
-static int REGPARM1 tpi_io2_dump(void)
+static int tpi_io2_dump(void)
 {
     mon_out("TPI\n");
     tpicore_dump(tpi_context);
@@ -294,7 +296,7 @@ static void store_pc(tpi_context_t *tpi_context, BYTE byte)
     rom_enabled = ((byte & 0x10) ? 1 : 0); /* bit 4, 1 = active */
     /* passthrough support */
     DBG(("TPI store_pc %02x (rom enabled: %d exrom: %d game: %d)\n", byte, rom_enabled, exrom ^ 1, tpi_extgame));
-    cart_config_changed_slot0((BYTE)(exrom << 1) | tpi_extgame, (BYTE)(exrom << 1) | tpi_extgame, CMODE_READ);
+    cart_config_changed_slot0((BYTE)((exrom << 1) | tpi_extgame), (BYTE)((exrom << 1) | tpi_extgame), CMODE_READ);
 }
 
 static void undump_pc(tpi_context_t *tpi_context, BYTE byte)
@@ -435,7 +437,7 @@ static int set_ieee488_enabled(int val, void *param)
         lib_free(tpi_rom);
         tpi_rom = NULL;
         c64export_remove(&export_res);
-        c64io_unregister(tpi_list_item);
+        io_source_unregister(tpi_list_item);
         tpi_list_item = NULL;
         ieee488_enabled = 0;
         DBG(("IEEE: set_enabled unregistered\n"));
@@ -468,7 +470,7 @@ static int set_ieee488_enabled(int val, void *param)
                 return -1;
             } else {
                 DBG(("IEEE: set_enabled registered\n"));
-                tpi_list_item = c64io_register(&tpi_io2_device);
+                tpi_list_item = io_source_register(&tpi_io2_device);
                 ieee488_enabled = 1;
             }
         }
@@ -590,31 +592,27 @@ static int tpi_common_attach(void)
 
 int tpi_bin_attach(const char *filename, BYTE *rawcart)
 {
-    FILE *fd;
     DBG(("TPI: tpi_bin_attach\n"));
 
-    fd = fopen(filename, MODE_READ);
-    if (!fd) {
+    if (util_file_load(filename, rawcart, TPI_ROM_SIZE, UTIL_FILE_LOAD_SKIP_ADDRESS) < 0) {
         return -1;
     }
-    if (fread(rawcart, TPI_ROM_SIZE, 1, fd) < 1) {
-        fclose(fd);
-        return -1;
-    }
-    fclose(fd);
-
     return tpi_common_attach();
 }
 
 int tpi_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (fread(rawcart, TPI_ROM_SIZE, 1, fd) < 1) {
+    if (chip.size != TPI_ROM_SIZE) {
+        return -1;
+    }
+
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 

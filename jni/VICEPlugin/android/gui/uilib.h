@@ -52,7 +52,8 @@ typedef enum uilib_file_filter_enum_s {
     UILIB_FILTER_DTVROM,
     UILIB_FILTER_COMPRESSED,
     UILIB_FILTER_ETH,
-    UILIB_FILTER_MIDI
+    UILIB_FILTER_MIDI,
+    UILIB_FILTER_HD_IMAGE
 } uilib_file_filter_enum_t;
 
 #include "ui.h"

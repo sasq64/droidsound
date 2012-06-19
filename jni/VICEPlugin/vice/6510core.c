@@ -211,6 +211,12 @@
 
 #endif
 
+#ifdef LAST_OPCODE_ADDR
+#define SET_LAST_ADDR(x) LAST_OPCODE_ADDR = (x)
+#else
+#error "please define LAST_OPCODE_ADDR"
+#endif
+
 #ifndef DRIVE_CPU
 
 #ifndef C64DTV
@@ -388,7 +394,6 @@
         }                                                             \
         if (ik & (IK_MONITOR | IK_DMA)) {                             \
             if (ik & IK_MONITOR) {                                    \
-                caller_space = CALLER;                                \
                 if (monitor_force_import(CALLER))                     \
                     IMPORT_REGISTERS();                               \
                 if (monitor_mask[CALLER])                             \
@@ -396,7 +401,7 @@
                 if (monitor_mask[CALLER] & (MI_BREAK)) {              \
                     if (monitor_check_breakpoints(CALLER,             \
                         (WORD)reg_pc)) {                              \
-                        monitor_startup();                            \
+                        monitor_startup(CALLER);                      \
                         IMPORT_REGISTERS();                           \
                     }                                                 \
                 }                                                     \
@@ -405,7 +410,7 @@
                     IMPORT_REGISTERS();                               \
                 }                                                     \
                 if (monitor_mask[CALLER] & (MI_WATCH)) {              \
-                    monitor_check_watchpoints((WORD)reg_pc);          \
+                    monitor_check_watchpoints(LAST_OPCODE_ADDR, (WORD)reg_pc); \
                     IMPORT_REGISTERS();                               \
                 }                                                     \
             }                                                         \
@@ -603,9 +608,27 @@
       INC_PC(pc_inc);                             \
   } while (0)
 
+/*
+The result of the ANE opcode is A = ((A | CONST) & X & IMM), with CONST apparently
+being both chip- and temperature dependent.
+
+The commonly used value for CONST in various documents is 0xee, which is however
+not to be taken for granted (as it is unstable). see here:
+http://visual6502.org/wiki/index.php?title=6502_Opcode_8B_(XAA,_ANE)
+
+as seen in the list, there are several possible values, and its origin is still
+kinda unknown. instead of the commonly used 0xee we use 0xff here, since this
+will make the only known occurance of this opcode in actual code work. see here:
+https://sourceforge.net/tracker/?func=detail&aid=2110948&group_id=223021&atid=1057617
+
+FIXME: in the unlikely event that other code surfaces that depends on another
+CONST value, it probably has to be made configureable somehow if no value can
+be found that works for both.
+*/
+
 #define ANE(value, pc_inc)                                 \
   do {                                                     \
-      reg_a_write = ((reg_a_read | 0xee) & reg_x & ((BYTE)(value)));  \
+      reg_a_write = ((reg_a_read | 0xff) & reg_x & ((BYTE)(value)));  \
       LOCAL_SET_NZ(reg_a_read);                            \
       INC_PC(pc_inc);                                      \
   } while (0)
@@ -935,7 +958,7 @@
           }                                                      \
       }                                                          \
   } while (0)
-  
+
 #define JMP(addr)     \
   do {                \
       JUMP(addr);     \
@@ -1351,7 +1374,7 @@
                                                                           \
       tmp = (addr);                                                       \
       INC_PC(3);                                                          \
-      STORE_ABS_SH_Y(tmp, reg_a_read & reg_x & (((tmp + reg_y) >> 8) + 1), CLK_ABS_I_STORE2);  \
+      STORE_ABS_SH_Y(tmp, reg_a_read & reg_x & ((tmp >> 8) + 1), CLK_ABS_I_STORE2);  \
   } while (0)
 
 #define SHA_IND_Y(addr)                               \
@@ -1378,7 +1401,7 @@
                                                                    \
       tmp = (addr);                                                \
       INC_PC(3);                                                   \
-      STORE_ABS_SH_Y(tmp, reg_x & (((tmp + reg_y) >> 8) + 1), CLK_ABS_I_STORE2); \
+      STORE_ABS_SH_Y(tmp, reg_x & ((tmp >> 8) + 1), CLK_ABS_I_STORE2); \
   } while (0)
 
 #define SHY_ABS_X(addr)                                            \
@@ -1387,7 +1410,7 @@
                                                                    \
       tmp = (addr);                                                \
       INC_PC(3);                                                   \
-      STORE_ABS_SH_X(tmp, reg_y & (((tmp + reg_x) >> 8) + 1), CLK_ABS_I_STORE2); \
+      STORE_ABS_SH_X(tmp, reg_y & ((tmp >> 8) + 1), CLK_ABS_I_STORE2); \
   } while (0)
 
 #define SHS_ABS_Y(addr)                                                    \
@@ -1395,7 +1418,7 @@
       int tmp = (addr);                                                    \
                                                                            \
       INC_PC(3);                                                           \
-      STORE_ABS_SH_Y(tmp, reg_a_read & reg_x & (((tmp + reg_y) >> 8) + 1), CLK_ABS_I_STORE2); \
+      STORE_ABS_SH_Y(tmp, reg_a_read & reg_x & ((tmp >> 8) + 1), CLK_ABS_I_STORE2); \
       reg_sp = reg_a_read & reg_x;                                         \
   } while (0)
 
@@ -1834,7 +1857,7 @@ static const BYTE rewind_fetch_tab[] = {
 
 /*  SET_OPCODE for traps */
 #if !defined WORDS_BIGENDIAN && defined ALLOW_UNALIGNED_ACCESS
-#define SET_OPCODE(o) (opcode) = o;
+#define SET_OPCODE(o) (opcode) = o
 #else
 #if !defined WORDS_BIGENDIAN
 #define SET_OPCODE(o)                          \
@@ -1914,7 +1937,7 @@ static const BYTE rewind_fetch_tab[] = {
         memmap_state |= (MEMMAP_STATE_INSTR | MEMMAP_STATE_OPCODE);
 #endif
 #endif
-
+        SET_LAST_ADDR(reg_pc);
         FETCH_OPCODE(opcode);
 
 #ifdef FEATURE_CPUMEMHISTORY
@@ -1944,7 +1967,7 @@ static const BYTE rewind_fetch_tab[] = {
             debug_drive((DWORD)(reg_pc), debug_clk,
                         mon_disassemble_to_string(e_disk8_space,
                                                   reg_pc, op,
-                                                  lo, hi, 0, 1, "6502"), 
+                                                  lo, hi, 0, 1, "6502"),
                         reg_a_read, reg_x, reg_y, reg_sp, drv->mynumber + 8);
         }
 #else
@@ -1952,6 +1975,10 @@ static const BYTE rewind_fetch_tab[] = {
             BYTE op = (BYTE)(p0);
             BYTE lo = (BYTE)(p1);
             BYTE hi = (BYTE)(p2 >> 8);
+
+            if (op == 0x20) {
+               hi = LOAD(reg_pc + 2);
+            }
 
             debug_maincpu((DWORD)(reg_pc), debug_clk,
                           mon_disassemble_to_string(e_comp_space,
@@ -2316,8 +2343,10 @@ trap_skipped:
 
           case 0x50:            /* BVC $nnnn */
 #ifdef DRIVE_CPU
+            CLK_ADD(CLK, -1);
             if (drivecpu_byte_ready())
                 LOCAL_SET_OVERFLOW(1);
+            CLK_ADD(CLK, 1);
 #endif
             BRANCH(!LOCAL_OVERFLOW(), p1);
             break;
@@ -2424,8 +2453,10 @@ trap_skipped:
 
           case 0x70:            /* BVS $nnnn */
 #ifdef DRIVE_CPU
+            CLK_ADD(CLK, -1);
             if (drivecpu_byte_ready())
                 LOCAL_SET_OVERFLOW(1);
+            CLK_ADD(CLK, 1);
 #endif
             BRANCH(LOCAL_OVERFLOW(), p1);
             break;
@@ -2940,4 +2971,3 @@ trap_skipped:
         }
     }
 }
-

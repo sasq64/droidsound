@@ -56,12 +56,39 @@ int cmdline_init(void)
     return 0;
 }
 
+static cmdline_option_ram_t *lookup_exact(const char *name)
+{
+    unsigned int i;
+
+    for (i = 0; i < num_options; i++) {
+        if (strcmp(options[i].name, name) == 0) {
+            return &options[i];
+        }
+    }
+    return NULL;
+}
+
 int cmdline_register_options(const cmdline_option_t *c)
 {
     cmdline_option_ram_t *p;
 
     p = options + num_options;
     for (; c->name != NULL; c++, p++) {
+
+        if (lookup_exact(c->name)) {
+            archdep_startup_log_error("CMDLINE: (%d) Duplicated option '%s'.\n", num_options, c->name);
+            return -1;
+        }
+
+        if (c->use_description_id != USE_DESCRIPTION_ID) {
+            if(c->description == NULL) {
+                archdep_startup_log_error("CMDLINE: (%d) description id not used and description NULL for '%s'.\n", num_options, c->name);
+                return -1;
+            }
+        }
+
+        /* archdep_startup_log_error("CMDLINE: (%d) registering option '%s'.\n", num_options, c->name); */
+
         if (num_allocated_options <= num_options) {
             num_allocated_options *= 2;
             options = lib_realloc(options, (sizeof(cmdline_option_ram_t) * num_allocated_options));
@@ -73,10 +100,11 @@ int cmdline_register_options(const cmdline_option_t *c)
         p->need_arg = c->need_arg;
         p->set_func = c->set_func;
         p->extra_param = c->extra_param;
-        if (c->resource_name != NULL)
+        if (c->resource_name != NULL) {
             p->resource_name = lib_stralloc(c->resource_name);
-        else
+        } else {
             p->resource_name = NULL;
+        }
         p->resource_value = c->resource_value;
 
         p->use_param_name_id = c->use_param_name_id;
@@ -120,20 +148,22 @@ static cmdline_option_ram_t *lookup(const char *name, int *is_ambiguous)
     name_len = strlen(name);
 
     match = NULL;
+    *is_ambiguous = 0;
     for (i = 0; i < num_options; i++) {
         if (strncmp(options[i].name, name, name_len) == 0) {
             if (options[i].name[name_len] == '\0') {
+                /* return exact matches immediately */
                 *is_ambiguous = 0;
                 return &options[i];
             } else if (match != NULL) {
+                /* multiple non-exact matches found */
+                /* don't exit now, an exact match could be found later */
                 *is_ambiguous = 1;
-                return match;
             }
             match = &options[i];
         }
     }
 
-    *is_ambiguous = 0;
     return match;
 }
 
@@ -223,20 +253,27 @@ void cmdline_show_help(void *userparam)
     ui_cmdline_show_help(num_options, options, userparam);
 }
 
+char *cmdline_options_get_name(int counter)
+{
+    return (char *)_(options[counter].name);
+}
+
 char *cmdline_options_get_param(int counter)
 {
-    if (options[counter].use_param_name_id == USE_PARAM_ID)
+    if (options[counter].use_param_name_id == USE_PARAM_ID) {
         return translate_text(options[counter].param_name_trans);
-    else
+    } else {
         return (char *)_(options[counter].param_name);
+    }
 }
 
 char *cmdline_options_get_description(int counter)
 {
-    if (options[counter].use_description_id == USE_DESCRIPTION_ID)
+    if (options[counter].use_description_id == USE_DESCRIPTION_ID) {
         return translate_text(options[counter].description_trans);
-    else
+    } else {
         return (char *)_(options[counter].description);
+    }
 }
 
 char *cmdline_options_string(void)
@@ -251,7 +288,11 @@ char *cmdline_options_string(void)
         add_to_options1 = lib_msprintf("%s", options[i].name);
         add_to_options3 = lib_msprintf("\n\t%s\n", cmdline_options_get_description(i));
         if (options[i].need_arg && cmdline_options_get_param(i) != NULL) {
-            add_to_options2 = lib_msprintf(" %s", cmdline_options_get_param(i));
+            if (options[i].need_arg == -1) {
+                add_to_options2 = lib_msprintf(" <%s>", cmdline_options_get_param(i));
+            } else {
+                add_to_options2 = lib_msprintf(" %s", cmdline_options_get_param(i));
+            }
             new_cmdline_string = util_concat(cmdline_string, add_to_options1,
                                              add_to_options2, add_to_options3,
                                              NULL);

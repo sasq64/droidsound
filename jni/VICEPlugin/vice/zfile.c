@@ -288,9 +288,6 @@ static char *try_uncompress_with_bzip(const char *name)
 
 static char *try_uncompress_with_tzx(const char *name)
 {
-#ifdef __riscos
-    return NULL;
-#else
     char *tmp_name = NULL;
     size_t l = strlen(name);
     int exit_status;
@@ -320,11 +317,9 @@ static char *try_uncompress_with_tzx(const char *name)
         lib_free(tmp_name);
         return NULL;
     }
-#endif
 }
 
 /* is the name zipcode -name? */
-#ifndef __riscos
 static int is_zipcode_name(char *name)
 {
     if (name[0] >= '1' && name[0] <= '4' && name[1] == '!')
@@ -341,6 +336,7 @@ static const char *extensions[] = {
     FSDEV_EXT_SEP_STR "d82",
     FSDEV_EXT_SEP_STR "g64",
     FSDEV_EXT_SEP_STR "g41",
+    FSDEV_EXT_SEP_STR "p41",
     FSDEV_EXT_SEP_STR "x64",
     FSDEV_EXT_SEP_STR "dsk",
     FSDEV_EXT_SEP_STR "t64",
@@ -369,7 +365,6 @@ static int is_valid_extension(char *end, size_t l, int nameoffset)
     }
     return 0;
 }
-#endif
 
 /* If `name' has a correct extension, try to list its contents and search for
    the first file with a proper extension; if found, extract it.  If this
@@ -383,9 +378,6 @@ static char *try_uncompress_archive(const char *name, int write_mode,
                                     const char *extension,
                                     const char *search)
 {
-#ifdef __riscos
-    return NULL;
-#else
     char *tmp_name = NULL;
     size_t l = strlen(name), len, nameoffset;
     int found = 0;
@@ -521,14 +513,9 @@ static char *try_uncompress_archive(const char *name, int write_mode,
     ZDEBUG(("try_uncompress_archive: `%s %s' successful.", program,
         tmp_name));
     return tmp_name;
-#endif
 }
 
-#ifdef __riscos
-#define C1541_NAME     "Vice:c1541"
-#else
 #define C1541_NAME     "c1541"
-#endif
 
 /* If this file looks like a zipcode, try to extract is using c1541. We have
    to figure this out by reading the contents of the file */
@@ -702,7 +689,7 @@ struct valid_archives_s {
 typedef struct valid_archives_s valid_archives_t;
 
 static const valid_archives_t valid_archives[] = {
-#if (!defined(__MSDOS__) && !defined(__riscos))
+#ifndef __MSDOS__
     { "unzip",   "-l",   "-p",    ".zip",    "Name" },
     { "lha",     "lv",   "pq",    ".lzh",    NULL },
     { "lha",     "lv",   "pq",    ".lha",    NULL },
@@ -715,8 +702,7 @@ static const valid_archives_t valid_archives[] = {
     { "tar",     "-ztf", "-zxOf", ".tgz",    NULL },
     /* this might be overkill, but adding this was sooo easy...  */
     { "zoo",     "lf1q", "xpq",   ".zoo",    NULL },
-#endif
-#if (defined __MSDOS__)
+#else
     { "unzip",   "-l",   "-p",    ".zip",    "Name" },
     { "lha",     "l",    "p",     ".lzh",    "Name" },
 #endif
@@ -1146,4 +1132,3 @@ int zfile_close_action(const char *filename, zfile_action_t action,
     lib_free(fullname);
     return -1;
 }
-

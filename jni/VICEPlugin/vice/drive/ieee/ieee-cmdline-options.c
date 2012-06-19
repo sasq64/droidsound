@@ -28,6 +28,8 @@
 
 #include <stdio.h>
 
+#include "drive.h"
+#include "lib.h"
 #include "cmdline.h"
 #include "ieee-cmdline-options.h"
 #include "translate.h"

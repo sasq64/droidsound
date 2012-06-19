@@ -49,7 +49,7 @@ static int dummy_init(const char *param, int *speed, int *fragsize, int *fragnr,
 static int dummy_write(SWORD *pbuf, size_t nr)
 {
     /* Move data left over from previous overflow to start of new buffer. */
-    int overflow_idx = 0;    
+    int overflow_idx = 0;
     while (overflow_idx != overflow_max &&
 		psid_sound_idx != psid_sound_max) {
 	if (channels == 1) {

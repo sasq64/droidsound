@@ -45,7 +45,10 @@
  * xtensa     | no                  | not yet
  */
 
+#ifndef VICE_PLATFORM_CPU_TYPE_H
+#define VICE_PLATFORM_CPU_TYPE_H
 #include "types.h"
+#include <string.h>
 
 /* Generic alpha cpu discovery */
 #if !defined(FIND_ALPHA_CPU) && (defined(__alpha__) || defined(__alpha_ev6__) || defined(__alpha_ev5__) || defined(__alpha_ev4__))
@@ -493,9 +496,14 @@ static char *unknown = "Unknown x86-compatible";
     __asm mov c, ecx \
     __asm mov d, edx
 #else
+#if defined(__BEOS__) || defined(__OS2__)
+#define cpuid(func, ax, bx, cx, dx) \
+    ax=bx=cx=dx=0;
+#else
 #define cpuid(func, ax, bx, cx, dx) \
     __asm__ __volatile__ ("cpuid":  \
     "=a" (ax), "=b" (bx), "=c" (cx), "=d" (dx) : "a" (func))
+#endif
 #endif
 
 inline static int has_cpuid(void)
@@ -503,7 +511,7 @@ inline static int has_cpuid(void)
     int a = 0;
     int c = 0;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__OS2__)
 /* TODO */
 #else
     __asm__ __volatile__ ("pushf;"
@@ -705,4 +713,4 @@ inline static char* platform_get_runtime_cpu(void)
 #endif
 
 #endif
-
+#endif // VICE_PLATFORM_CPU_TYPE_H

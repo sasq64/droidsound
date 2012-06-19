@@ -77,7 +77,7 @@ static void mon_register_set_val(int mem, int reg_id, WORD val)
 {
     mos6510_regs_t *reg_ptr;
 
-    
+
     if (monitor_diskspace_dnr(mem) >= 0)
         if (!check_drive_emu_level_ok(monitor_diskspace_dnr(mem) + 8))
             return;
@@ -126,12 +126,12 @@ static void mon_register_print(int mem)
 
     regs = mon_interfaces[mem]->cpu_regs;
 
-    mon_out("  ADDR AC XR YR SP 00 01 NV-BDIZC");
+    mon_out("  ADDR AC XR YR SP 00 01 NV-BDIZC ");
 
-    if (mem == e_comp_space && mon_interfaces[mem]->get_line_cycle != NULL)
-        mon_out(" LIN CYC\n");
+    if (mon_interfaces[mem]->get_line_cycle != NULL)
+        mon_out("LIN CYC  STOPWATCH\n");
     else
-        mon_out("\n");
+        mon_out(" STOPWATCH\n");
 
     mon_out(".;%04x %02x %02x %02x %02x %02x %02x %d%d%c%d%d%d%d%d",
               addr_location(mon_register_get_val(mem, e_PC)),
@@ -150,19 +150,49 @@ static void mon_register_print(int mem)
               TEST(MOS6510_REGS_GET_ZERO(regs)),
               TEST(MOS6510_REGS_GET_CARRY(regs)));
 
-    if (mem == e_comp_space && mon_interfaces[mem]->get_line_cycle != NULL) {
+    if (mon_interfaces[mem]->get_line_cycle != NULL) {
         unsigned int line, cycle;
         int half_cycle;
 
         mon_interfaces[mem]->get_line_cycle(&line, &cycle, &half_cycle);
 
         if (half_cycle==-1)
-          mon_out(" %03i %03i\n", line, cycle);
+          mon_out(" %03i %03i", line, cycle);
         else
-          mon_out(" %03i %03i %i\n", line, cycle, half_cycle);
-    } else {
-        mon_out("\n");
+          mon_out(" %03i %03i %i", line, cycle, half_cycle);
     }
+    mon_stopwatch_show(" ", "\n");
+}
+
+static const char* mon_register_print_ex(int mem)
+{
+    static char buff[80];
+    mos6510_regs_t *regs;
+
+    if (monitor_diskspace_dnr(mem) >= 0) {
+        if (!check_drive_emu_level_ok(monitor_diskspace_dnr(mem) + 8))
+            return "";
+    } else if (mem != e_comp_space) {
+        log_error(LOG_ERR, "Unknown memory space!");
+        return "";
+    }
+
+    regs = mon_interfaces[mem]->cpu_regs;
+
+    sprintf(buff, "A:%02X X:%02X Y:%02X SP:%02x %c%c-%c%c%c%c%c",
+            mon_register_get_val(mem, e_A),
+            mon_register_get_val(mem, e_X),
+            mon_register_get_val(mem, e_Y),
+            mon_register_get_val(mem, e_SP),
+            MOS6510_REGS_GET_SIGN(regs)     ? 'N' : '.',
+            MOS6510_REGS_GET_OVERFLOW(regs) ? 'V' : '.',
+            MOS6510_REGS_GET_BREAK(regs)    ? 'B' : '.',
+            MOS6510_REGS_GET_DECIMAL(regs)  ? 'D' : '.',
+            MOS6510_REGS_GET_INTERRUPT(regs)? 'I' : '.',
+            MOS6510_REGS_GET_ZERO(regs)     ? 'Z' : '.',
+            MOS6510_REGS_GET_CARRY(regs)    ? 'C' : '.');
+
+    return buff;
 }
 
 static mon_reg_list_t *mon_register_list_get6502(int mem)
@@ -270,7 +300,7 @@ void mon_register6502_init(monitor_cpu_type_t *monitor_cpu_type)
     monitor_cpu_type->mon_register_get_val = mon_register_get_val;
     monitor_cpu_type->mon_register_set_val = mon_register_set_val;
     monitor_cpu_type->mon_register_print = mon_register_print;
+    monitor_cpu_type->mon_register_print_ex = mon_register_print_ex;
     monitor_cpu_type->mon_register_list_get = mon_register_list_get6502;
     monitor_cpu_type->mon_register_list_set = mon_register_list_set6502;
 }
-

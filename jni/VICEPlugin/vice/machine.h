@@ -46,6 +46,7 @@ extern const char machine_name[];
 #define VICE_MACHINE_PLUS4     7
 #define VICE_MACHINE_C64DTV    8
 #define VICE_MACHINE_C64SC     9
+#define VICE_MACHINE_VSID      10
 
 /* Sync factors.  */
 #define MACHINE_SYNC_PAL     -1
@@ -136,6 +137,9 @@ extern void machine_play_psid(int tune);
 
 /* Check the base address for the second sid chip.  */
 extern int machine_sid2_check_range(unsigned int sid2_adr);
+
+/* Check the base address for the third sid chip.  */
+extern int machine_sid3_check_range(unsigned int sid3_adr);
 
 /* Change the timing parameters of the maching (for example PAL/NTSC).  */
 extern void machine_change_timing(int timeval);

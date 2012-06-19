@@ -75,8 +75,8 @@
 #define NUM_TRACKS_1581        80
 #define NUM_SECTORS_1581       40       /* Logical sectors */
 #define NUM_BLOCKS_1581        3200     /* 3160 free */
-#define MAX_TRACKS_1581        80
-#define MAX_BLOCKS_1581        3200
+#define MAX_TRACKS_1581        83
+#define MAX_BLOCKS_1581        3320
 #define DIR_TRACK_1581         40
 #define DIR_SECTOR_1581        3
 #define BAM_TRACK_1581         40
@@ -105,6 +105,31 @@
 #define BAM_ID_8250            24       /* pos. of disk id in 1st BAM blk */
 #define DIR_TRACK_8250         39
 #define DIR_SECTOR_8250        1
+
+#define NUM_TRACKS_1000        13
+#define NUM_BLOCKS_1000        3240
+#define NUM_SYS_SECTORS_1000   168      /* on system partition track */
+#define MAX_TRACKS_1000        13
+#define MAX_BLOCKS_1000        3240
+
+#define NUM_TRACKS_2000        26
+#define NUM_BLOCKS_2000        6480
+#define NUM_SYS_SECTORS_2000   80       /* on system partition track */
+#define MAX_TRACKS_2000        26
+#define MAX_BLOCKS_2000        6480
+
+#define NUM_TRACKS_4000        51
+#define NUM_BLOCKS_4000        12960
+#define NUM_SYS_SECTORS_4000   160      /* on system partition track */
+#define MAX_TRACKS_4000        51
+#define MAX_BLOCKS_4000        12960
+
+#define DIR_TRACK_4000         1
+#define DIR_SECTOR_4000        34
+#define BAM_TRACK_4000         1
+#define BAM_SECTOR_4000        1
+#define BAM_NAME_4000          4
+#define BAM_ID_4000            22
 
 #define MAX_TRACKS_ANY         MAX_TRACKS_8250
 #define MAX_BLOCKS_ANY         MAX_BLOCKS_8250

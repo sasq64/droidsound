@@ -29,11 +29,12 @@
 
 #include "types.h"
 
-extern BYTE REGPARM1 mmu_read(WORD addr);
-extern void REGPARM2 mmu_store(WORD address, BYTE value);
-extern BYTE REGPARM1 mmu_ffxx_read(WORD addr);
-extern void REGPARM2 mmu_ffxx_store(WORD addr, BYTE value);
-extern BYTE REGPARM1 mmu_ffxx_read_z80(WORD addr);
+extern BYTE mmu_read(WORD addr);
+extern BYTE mmu_peek(WORD addr);
+extern void mmu_store(WORD address, BYTE value);
+extern BYTE mmu_ffxx_read(WORD addr);
+extern void mmu_ffxx_store(WORD addr, BYTE value);
+extern BYTE mmu_ffxx_read_z80(WORD addr);
 
 extern void mmu_reset(void);
 extern void mmu_set_config64(int config);
@@ -41,5 +42,7 @@ extern void mmu_set_config64(int config);
 extern void mmu_init(void);
 extern int mmu_resources_init(void);
 extern int mmu_cmdline_options_init(void);
+
+extern int mmu_dump(void);
 
 #endif

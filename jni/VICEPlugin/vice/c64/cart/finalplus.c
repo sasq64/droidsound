@@ -34,13 +34,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "finalplus.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* #define DEBUGFC */
 
@@ -75,8 +76,8 @@ static int fcplus_roml;
 static int fcplus_romh;
 
 /* some prototypes are needed */
-static BYTE REGPARM1 final_plus_io2_read(WORD addr);
-static void REGPARM2 final_plus_io2_store(WORD addr, BYTE value);
+static BYTE final_plus_io2_read(WORD addr);
+static void final_plus_io2_store(WORD addr, BYTE value);
 
 static io_source_t final_plus_io2_device = {
     CARTRIDGE_NAME_FINAL_PLUS,
@@ -86,9 +87,11 @@ static io_source_t final_plus_io2_device = {
     1, /* read is always valid */
     final_plus_io2_store,
     final_plus_io2_read,
-    NULL, /* TODO: peek */
+    final_plus_io2_read,
     NULL, /* TODO: dump */
-    CARTRIDGE_FINAL_PLUS
+    CARTRIDGE_FINAL_PLUS,
+    0,
+    0
 };
 
 static io_source_list_t *final_plus_io2_list_item = NULL;
@@ -99,13 +102,13 @@ static const c64export_resource_t export_res_plus = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 final_plus_io2_read(WORD addr)
+BYTE final_plus_io2_read(WORD addr)
 {
     DBG(("io2 r %04x\n",addr));
     return ((fcplus_bit << 7) || (fcplus_roml << 6) || (fcplus_romh << 5) || (fcplus_enabled << 4));
 }
 
-void REGPARM2 final_plus_io2_store(WORD addr, BYTE value)
+void final_plus_io2_store(WORD addr, BYTE value)
 {
     if (fcplus_enabled == 1) {
         fcplus_bit = (value >> 7) & 1;
@@ -124,7 +127,7 @@ void REGPARM2 final_plus_io2_store(WORD addr, BYTE value)
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 final_plus_roml_read(WORD addr)
+BYTE final_plus_roml_read(WORD addr)
 {
     if (fcplus_roml == 1) {
         return roml_banks[(addr & 0x1fff)];
@@ -133,7 +136,7 @@ BYTE REGPARM1 final_plus_roml_read(WORD addr)
     }
 }
 
-BYTE REGPARM1 final_plus_romh_read(WORD addr)
+BYTE final_plus_romh_read(WORD addr)
 {
     if ((fcplus_enabled == 1) && (fcplus_romh == 1)) {
         return romh_banks[(addr & 0x1fff)];
@@ -142,13 +145,44 @@ BYTE REGPARM1 final_plus_romh_read(WORD addr)
     }
 }
 
-BYTE REGPARM1 final_plus_a000_bfff_read(WORD addr)
+BYTE final_plus_a000_bfff_read(WORD addr)
 {
     if ((fcplus_enabled == 1) && (fcplus_roml == 1)) {
         return roml_banks[0x2000 + (addr & 0x1fff)];
     } else {
         return mem_read_without_ultimax(addr);
     }
+}
+
+int final_plus_romh_phi1_read(WORD addr, BYTE *value)
+{
+    return CART_READ_C64MEM;
+}
+
+int final_plus_romh_phi2_read(WORD addr, BYTE *value)
+{
+    return final_plus_romh_phi1_read(addr, value);
+}
+
+int final_plus_peek_mem(struct export_s *export, WORD addr, BYTE *value)
+{
+    if (fcplus_roml == 1) {
+        if (addr >= 0x8000 && addr <= 0x9fff) {
+            *value = roml_banks[addr & 0x1fff];
+            return CART_READ_VALID;
+        }
+        if (addr >= 0xa000 && addr <= 0xbfff) {
+            *value = roml_banks[(addr & 0x1fff) + 0x2000];
+            return CART_READ_VALID;
+        }
+    }
+    if (fcplus_romh == 1) {
+        if (addr >= 0xe000) {
+            *value = romh_banks[addr & 0x1fff];
+            return CART_READ_VALID;
+        }
+    }
+    return CART_READ_THROUGH;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -191,7 +225,7 @@ static int final_plus_common_attach(void)
         return -1;
     }
 
-    final_plus_io2_list_item = c64io_register(&final_plus_io2_device);
+    final_plus_io2_list_item = io_source_register(&final_plus_io2_device);
 
     return 0;
 }
@@ -213,18 +247,18 @@ int final_plus_bin_attach(const char *filename, BYTE *rawcart)
 
 int final_plus_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     DBG(("fc+ crt attach\n"));
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (chipheader[0xe] != 0x80) {
+    if (chip.size != 0x8000) {
         return -1;
     }
 
-    if (fread(rawcart, chipheader[0xe] << 8, 1, fd) < 1) {
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -234,7 +268,7 @@ int final_plus_crt_attach(FILE *fd, BYTE *rawcart)
 void final_plus_detach(void)
 {
     c64export_remove(&export_res_plus);
-    c64io_unregister(final_plus_io2_list_item);
+    io_source_unregister(final_plus_io2_list_item);
     final_plus_io2_list_item = NULL;
 }
 

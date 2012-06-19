@@ -30,12 +30,14 @@
 #include <stdlib.h>
 
 #include "autostart.h"
+#include "cartridge.h"
 #include "clkguard.h"
 #include "datasette.h"
 #include "debug.h"
 #include "digiblaster.h"
 #include "drive-cmdline-options.h"
 #include "drive-resources.h"
+#include "drive-sound.h"
 #include "drive.h"
 #include "drivecpu.h"
 #include "imagecontents.h"
@@ -67,26 +69,20 @@
 #include "screenshot.h"
 #include "serial.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-cmdline-options.h"
 #include "sid-resources.h"
-#include "sidcartjoy.h"
 #include "sound.h"
 #include "tape.h"
 #include "ted-cmdline-options.h"
 #include "ted-resources.h"
+#include "ted-sound.h"
 #include "ted.h"
 #include "traps.h"
 #include "types.h"
 #include "video.h"
+#include "video-sound.h"
 #include "vsync.h"
-
-/* beos dummy for the generally used cart function in ui_file.cc */
-#ifdef __BEOS__
-int cartridge_attach_image(int type, const char *filename)
-{
-    return 0;
-}
-#endif
 
 machine_context_t machine_context;
 
@@ -252,9 +248,9 @@ int machine_resources_init(void)
         || machine_video_resources_init() < 0
         || plus4_resources_init() < 0
         || ted_resources_init() < 0
+        || cartridge_resources_init() < 0
         || digiblaster_resources_init() < 0
         || speech_resources_init() < 0
-        || sidcartjoy_resources_init() < 0
         || sound_resources_init() < 0
         || sidcart_resources_init() < 0
         || acia_resources_init() < 0
@@ -274,6 +270,7 @@ int machine_resources_init(void)
 
 void machine_resources_shutdown(void)
 {
+    cartridge_resources_shutdown();
     serial_shutdown();
     video_resources_shutdown();
     plus4_resources_shutdown();
@@ -291,8 +288,8 @@ int machine_cmdline_options_init(void)
         || video_init_cmdline_options() < 0
         || plus4_cmdline_options_init() < 0
         || ted_cmdline_options_init() < 0
+        || cartridge_cmdline_options_init() < 0
         || digiblaster_cmdline_options_init() < 0
-        || sidcartjoy_cmdline_options_init() < 0
         || sound_cmdline_options_init() < 0
         || sidcart_cmdline_options_init() < 0
         || speech_cmdline_options_init() < 0
@@ -323,8 +320,9 @@ static void plus4_monitor_init(void)
 
     asm6502_init(&asm6502);
 
-    for (dnr = 0; dnr < DRIVE_NUM; dnr++)
+    for (dnr = 0; dnr < DRIVE_NUM; dnr++) {
         drive_interface_init[dnr] = drivecpu_monitor_interface_get(dnr);
+    }
 
     /* Initialize the monitor.  */
     monitor_init(maincpu_monitor_interface_get(), drive_interface_init,
@@ -340,6 +338,8 @@ void machine_setup_context(void)
 /* Plus4-specific initialization.  */
 int machine_specific_init(void)
 {
+    int delay;
+
     plus4_log = log_open("Plus4");
 
     if (mem_load() < 0)
@@ -370,21 +370,40 @@ int machine_specific_init(void)
     drive_init();
 
     /* Initialize autostart.  */
-    autostart_init((CLOCK)(2 * PLUS4_PAL_RFSH_PER_SEC
+    resources_get_int("AutostartDelay", &delay);
+    if (delay == 0) {
+        delay = 2; /* default */
+    }
+    autostart_init((CLOCK)(delay * PLUS4_PAL_RFSH_PER_SEC
                    * PLUS4_PAL_CYCLES_PER_RFSH), 0, 0, 0xc8, 0xca, -40);
+
+    /* Initialize the sidcart first */
+    sidcart_sound_chip_init();
+
+    /* Initialize native sound chip */
+    ted_sound_chip_init();
+
+    /* Initialize cartridge based sound chips */
+    digiblaster_sound_chip_init();
+    speech_sound_chip_init();
+
+    drive_sound_init();
+    video_sound_init();
 
     /* Initialize sound.  Notice that this does not really open the audio
        device yet.  */
     sound_init(machine_timing.cycles_per_sec, machine_timing.cycles_per_rfsh);
 
-    if (ted_init() == NULL)
+    if (ted_init() == NULL) {
         return -1;
+    }
 
     acia_init();
 
 #ifndef COMMON_KBD
-    if (plus4_kbd_init() < 0)
+    if (plus4_kbd_init() < 0) {
         return -1;
+    }
 #endif
 
     plus4_monitor_init();
@@ -436,8 +455,6 @@ void machine_specific_reset(void)
     plus4tcbm2_reset();
 
     ted_reset();
-
-    digiblaster_sound_reset();
 
     sid_reset();
 
@@ -523,6 +540,32 @@ void machine_get_line_cycle(unsigned int *line, unsigned int *cycle, int *half_c
 
 void machine_change_timing(int timeval)
 {
+    int border_mode;
+
+    switch (timeval) {
+        default:
+        case MACHINE_SYNC_PAL ^ TED_BORDER_MODE(TED_NORMAL_BORDERS):
+        case MACHINE_SYNC_NTSC ^ TED_BORDER_MODE(TED_NORMAL_BORDERS):
+            timeval ^= TED_BORDER_MODE(TED_NORMAL_BORDERS);
+            border_mode = TED_NORMAL_BORDERS;
+            break;
+        case MACHINE_SYNC_PAL ^ TED_BORDER_MODE(TED_FULL_BORDERS):
+        case MACHINE_SYNC_NTSC ^ TED_BORDER_MODE(TED_FULL_BORDERS):
+            timeval ^= TED_BORDER_MODE(TED_FULL_BORDERS);
+            border_mode = TED_FULL_BORDERS;
+            break;
+        case MACHINE_SYNC_PAL ^ TED_BORDER_MODE(TED_DEBUG_BORDERS):
+        case MACHINE_SYNC_NTSC ^ TED_BORDER_MODE(TED_DEBUG_BORDERS):
+            timeval ^= TED_BORDER_MODE(TED_DEBUG_BORDERS);
+            border_mode = TED_DEBUG_BORDERS;
+            break;
+        case MACHINE_SYNC_PAL ^ TED_BORDER_MODE(TED_NO_BORDERS):
+        case MACHINE_SYNC_NTSC ^ TED_BORDER_MODE(TED_NO_BORDERS):
+            timeval ^= TED_BORDER_MODE(TED_NO_BORDERS);
+            border_mode = TED_NO_BORDERS;
+            break;
+    }
+
     switch (timeval) {
       case MACHINE_SYNC_PAL:
         machine_timing.cycles_per_sec = PLUS4_PAL_CYCLES_PER_SEC;
@@ -552,7 +595,7 @@ void machine_change_timing(int timeval)
     serial_iec_device_set_machine_parameter(machine_timing.cycles_per_sec);
     clk_guard_set_clk_base(maincpu_clk_guard, machine_timing.cycles_per_rfsh);
 
-    ted_change_timing(&machine_timing);
+    ted_change_timing(&machine_timing, border_mode);
 
     machine_trigger_reset(MACHINE_RESET_MODE_HARD);
 }
@@ -579,8 +622,9 @@ int machine_autodetect_psid(const char *name)
 
 int machine_screenshot(screenshot_t *screenshot, struct video_canvas_s *canvas)
 {
-    if (canvas != ted_get_canvas())
+    if (canvas != ted_get_canvas()) {
         return -1;
+    }
 
     ted_screenshot(screenshot);
 
@@ -590,8 +634,9 @@ int machine_screenshot(screenshot_t *screenshot, struct video_canvas_s *canvas)
 int machine_canvas_async_refresh(struct canvas_refresh_s *refresh,
                                  struct video_canvas_s *canvas)
 {
-    if (canvas != ted_get_canvas())
+    if (canvas != ted_get_canvas()) {
         return -1;
+    }
 
     ted_async_refresh(refresh);
 

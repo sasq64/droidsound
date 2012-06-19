@@ -133,7 +133,7 @@ int ioutil_errno(unsigned int check)
 }
 
 #if !defined(VMS) && !defined(__VAX)
-#if !defined(HAVE_GETCWD) && !defined(RISCOS)
+#ifndef HAVE_GETCWD
 char *getcwd (char *buf, size_t len)
 {
     char ourbuf[PATH_MAX];
@@ -191,9 +191,6 @@ int ioutil_stat(const char *file_name, unsigned int *len, unsigned int *isdir)
 /* IO helper functions.  */
 char *ioutil_current_dir(void)
 {
-#ifdef __riscos
-    return GetCurrentDirectory();
-#else
     static size_t len = 128;
     char *p = lib_malloc(len);
 
@@ -206,9 +203,9 @@ char *ioutil_current_dir(void)
     }
 
     return p;
-#endif
 }
 
+#ifndef DINGOO_NATIVE
 static int dirs_amount = 0;
 static int files_amount = 0;
 
@@ -317,6 +314,7 @@ ioutil_dir_t *ioutil_opendir(const char *path)
 
     return ioutil_dir;
 }
+#endif
 
 char *ioutil_readdir(ioutil_dir_t *ioutil_dir)
 {

@@ -102,8 +102,7 @@ static int mon_out_buffered(const char *buffer)
     if (!console_log || console_log->console_cannot_output) {
         mon_buffer_alloc();
         mon_buffer_add(buffer, (unsigned int)strlen(buffer));
-    }
-    else {
+    } else {
         rv = mon_buffer_flush();
         rv = uimon_out(buffer) || rv;
     }
@@ -119,6 +118,7 @@ int mon_out(const char *format, ...)
 
     va_start(ap, format);
     buffer = lib_mvsprintf(format, ap);
+    va_end(ap);
 
 #ifdef HAVE_NETWORK
     if (monitor_is_remote()) {
@@ -199,8 +199,8 @@ void mon_set_command(console_t *console_log, char *command,
 {
     pchCommandLine = command;
 
-    if (console_log)
-        console_out(console_log, "%s\n", command);
+    uimon_out(command);
+    uimon_out("\n");
 
     if (pAfter)
         (*pAfter)();

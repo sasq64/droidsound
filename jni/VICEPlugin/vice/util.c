@@ -70,6 +70,7 @@ char *util_concat(const char *s, ...)
         tot_len += arg_len[i];
     }
     num_args = i;
+    va_end(ap);
 
     newp = lib_malloc(tot_len + 1);
 
@@ -83,7 +84,6 @@ char *util_concat(const char *s, ...)
         ptr += arg_len[i];
     }
     *ptr = '\0';
-
     va_end(ap);
 
 #ifdef AMIGA_SUPPORT
@@ -613,7 +613,7 @@ DWORD util_be_buf_to_dword(BYTE *buf)
 {
     DWORD data;
 
-    data = buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
+    data = buf[3] | (buf[2] << 8) | (buf[1] << 16) | (buf[0] << 24);
 
     return data;
 }
@@ -655,6 +655,15 @@ WORD util_le_buf_to_word(BYTE *buf)
     WORD data;
 
     data = buf[0] | (buf[1] << 8);
+
+    return data;
+}
+
+WORD util_be_buf_to_word(BYTE *buf)
+{
+    WORD data;
+
+    data = buf[1] | (buf[0] << 8);
 
     return data;
 }
@@ -876,7 +885,6 @@ void util_add_extension_maxpath(char *name, const char *extension, unsigned int 
         && (strcasecmp(&((name)[name_len - ext_len]), extension) == 0))
         return;
 
-    
     sprintf(name,"%s%c%s",name,FSDEV_EXT_SEP_CHR,extension);
 }
 
@@ -884,12 +892,30 @@ char *util_get_extension(char *filename)
 {
     char *s;
 
-    if (filename == NULL)
+    if (filename == NULL) {
         return NULL;
+    }
 
     s = strrchr(filename, FSDEV_EXT_SEP_CHR);
-    if (s)
+    if (s) {
         return s + 1;
-    else
+    } else {
         return NULL;
+    }
+}
+
+/* char to char tolower function, still uses tolower,
+   but it keeps the ugly casting to avoid warnings
+   out of the main sources. */
+char util_tolower(char c)
+{
+    return (char)tolower((int)c);
+}
+
+/* char to char toupper function, still uses toupper,
+   but it keeps the ugly casting to avoid warnings
+   out of the main sources. */
+char util_toupper(char c)
+{
+    return (char)toupper((int)c);
 }

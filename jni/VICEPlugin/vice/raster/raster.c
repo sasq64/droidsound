@@ -39,6 +39,7 @@
 #include "machine.h"
 #include "raster-cache.h"
 #include "raster-canvas.h"
+#include "raster-changes.h"
 #include "raster-modes.h"
 #include "raster-resources.h"
 #include "raster-sprite-status.h"
@@ -52,7 +53,7 @@
 #include "viewport.h"
 
 
-int raster_calc_frame_buffer_width(raster_t *raster)
+static int raster_calc_frame_buffer_width(raster_t *raster)
 {
     return raster->geometry->screen_size.width
         + raster->geometry->extra_offscreen_border_left
@@ -148,6 +149,7 @@ static int raster_realize_frame_buffer(raster_t *raster)
     return 0;
 }
 
+/* called from raster_realize() */
 static int realize_canvas(raster_t *raster)
 {
     viewport_t *viewport;
@@ -162,8 +164,9 @@ static int realize_canvas(raster_t *raster)
                      &raster->canvas->draw_buffer->canvas_width,
                      &raster->canvas->draw_buffer->canvas_height, 1);
 
-        if (new_canvas == NULL)
+        if (new_canvas == NULL) {
             return -1;
+        }
 
         raster->canvas = new_canvas;
 
@@ -175,12 +178,13 @@ static int realize_canvas(raster_t *raster)
         video_canvas_create_set(raster->canvas);
     }
 
-    if (raster_realize_frame_buffer(raster) < 0)
+    if (raster_realize_frame_buffer(raster) < 0) {
         return -1;
+    }
 
     /* The canvas might give us something different from what we
        requested. FIXME: Only do this if really something changed. */
-    video_viewport_resize(raster->canvas);
+    video_viewport_resize(raster->canvas, 1);
     return 0;
 }
 
@@ -194,12 +198,7 @@ static int perform_mode_change(raster_t *raster)
     }
     raster_force_repaint(raster);
 
-    /* FIXME: `video_viewport_resize()' already calls
-       `video_canvas_resize()'. */
-    video_canvas_resize(raster->canvas,
-                        raster->canvas->draw_buffer->canvas_width,
-                        raster->canvas->draw_buffer->canvas_height);
-    video_viewport_resize(raster->canvas);
+    video_viewport_resize(raster->canvas, 1);
 
     return 0;
 }
@@ -398,12 +397,13 @@ void raster_set_geometry(raster_t *raster,
 
     geometry->gfx_area_moves = gfx_area_moves;
 
-    raster->canvas->draw_buffer->canvas_width = canvas_width;
-    raster->canvas->draw_buffer->canvas_height = canvas_height;
+    raster->canvas->draw_buffer->visible_width = canvas_width;
+    raster->canvas->draw_buffer->visible_height = canvas_height;
 }
 
 static int raster_realize_init_done = 0;
 
+/* called from init_raster() in the videochip code */
 int raster_realize(raster_t *raster)
 {
     raster_list_t *rlist;
@@ -529,10 +529,12 @@ void raster_async_refresh(raster_t *raster, struct canvas_refresh_s *ref)
              + raster->canvas->viewport->first_x;
     ref->y = raster->geometry->first_displayed_line;
 
-    if (raster->canvas->videoconfig->doublesizex)
-        ref->x *= 2;
-    if (raster->canvas->videoconfig->doublesizey)
-        ref->y *= 2;
+    if (raster->canvas->videoconfig->doublesizex) {
+        ref->x *= (raster->canvas->videoconfig->doublesizex + 1);
+    }
+    if (raster->canvas->videoconfig->doublesizey) {
+        ref->y *= (raster->canvas->videoconfig->doublesizey + 1);
+    }
 }
 
 void raster_shutdown(raster_t *raster)
@@ -561,4 +563,3 @@ void raster_shutdown(raster_t *raster)
     raster_resources_chip_shutdown(raster);
     raster_destroy_raster(raster);
 }
-

@@ -30,7 +30,6 @@
 
 #include "romset.h"
 
-
 const char *machine_romset_resources_list[] = {
     "KernalName",
     "BasicName",
@@ -41,10 +40,11 @@ const char *machine_romset_resources_list[] = {
     "DosName1570",
     "DosName1571",
     "DosName1581",
+    "DosName2000",
+    "DosName4000",
     "DosName1551",
     NULL
 };
-
 
 int machine_romset_file_load(const char *filename)
 {
@@ -70,4 +70,3 @@ int machine_romset_archive_item_create(const char *romset_name)
 void machine_romset_init(void)
 {
 }
-

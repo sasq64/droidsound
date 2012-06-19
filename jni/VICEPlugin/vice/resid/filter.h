@@ -20,19 +20,7 @@
 #ifndef RESID_FILTER_H
 #define RESID_FILTER_H
 
-#include "siddefs.h"
-#include <math.h>
-
-#ifndef HAVE_SQRTF_PROTOTYPE
-extern float sqrtf(float val);
-#endif
- 
-#ifndef HAVE_SQRTF
-static float sqrtf(float val)
-{
-    return (float)sqrt((double)val);
-}
-#endif
+#include "resid-config.h"
 
 namespace reSID
 {
@@ -365,9 +353,7 @@ public:
   void set_chip_model(chip_model model);
   void set_voice_mask(reg4 mask);
 
-  RESID_INLINE
   void clock(int voice1, int voice2, int voice3);
-  RESID_INLINE
   void clock(cycle_count delta_t, int voice1, int voice2, int voice3);
   void reset();
 
@@ -387,9 +373,6 @@ protected:
   void set_sum_mix();
   void set_w0();
   void set_Q();
-
-  RESID_INLINE
-  static int isqrt(int x);
 
   // Filter enabled.
   bool enabled;
@@ -431,7 +414,7 @@ protected:
   int v1;
 
   // Cutoff frequency DAC voltage, resonance.
-  int Vw, Vw_term, Vw_bias;
+  int Vddt_Vw_2, Vw_bias;
   int _8_div_Q;
   // FIXME: Temporarily used for MOS 8580 emulation.
   int w0;
@@ -440,33 +423,33 @@ protected:
   chip_model sid_model;
 
   typedef struct {
-    int vo_N19;  // Fixed point scaling for 19 bit op-amp output.
-    int vo_T19;  // Fixed point scaled translation for 19 bit op-amp output.
-    int Vth;     // Transistor threshold voltage.
-    int Vddt;    // Vdd - Vth
-    int n_vcr;
+    int vo_N16;  // Fixed point scaling for 16 bit op-amp output.
+    int kVddt;   // K*(Vdd - Vth)
     int n_snake;
     int voice_scale_s14;
     int voice_DC;
+    int ak;
+    int bk;
     int vc_min;
     int vc_max;
 
     // Reverse op-amp transfer function.
-    int opamp_rev[1 << 16];
+    unsigned short opamp_rev[1 << 16];
     // Lookup tables for gain and summer op-amps in output stage / filter.
     unsigned short summer[summer_offset<5>::value];
     unsigned short gain[16][1 << 16];
     unsigned short mixer[mixer_offset<8>::value];
     // Cutoff frequency DAC output voltage table. FC is an 11 bit register.
-    unsigned int f0_dac[1 << 11];
-    // Op-amp transfer function.
-    int opamp[1 << 19];
+    unsigned short f0_dac[1 << 11];
   } model_filter_t;
 
-  int solve_gain(int n, int vi_t, int& x, model_filter_t& mf);
-  int solve_integrate(int dt, int vi_t, int& x, int& vc, model_filter_t& mf);
+  int solve_gain(int* opamp, int n, int vi_t, int& x, model_filter_t& mf);
+  int solve_integrate_6581(int dt, int vi_t, int& x, int& vc, model_filter_t& mf);
 
-  static int sqrt_table[1 << 16];
+  // VCR - 6581 only.
+  static unsigned short vcr_kVg[1 << 16];
+  static unsigned short vcr_n_Ids_term[1 << 16];
+  // Common parameters.
   static model_filter_t model_filter[2];
 
 friend class SID;
@@ -489,21 +472,15 @@ void Filter::clock(int voice1, int voice2, int voice3)
 {
   model_filter_t& f = model_filter[sid_model];
 
-  v1 = (voice1*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v2 = (voice2*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v3 = (voice3*f.voice_scale_s14 >> 14) + f.voice_DC;
-
-  // This is handy for testing.
-  if (unlikely(!enabled)) {
-    return;
-  }
+  v1 = (voice1*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v2 = (voice2*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v3 = (voice3*f.voice_scale_s14 >> 18) + f.voice_DC;
 
   // Sum inputs routed into the filter.
-  int Vi;
-  int offset;
+  int Vi = 0;
+  int offset = 0;
 
-  switch (sum) {
-  default:
+  switch (sum & 0xf) {
   case 0x0:
     Vi = 0;
     offset = summer_offset<0>::value;
@@ -573,9 +550,9 @@ void Filter::clock(int voice1, int voice2, int voice3)
   // Calculate filter outputs.
   if (sid_model == 0) {
     // MOS 6581.
-    Vlp = solve_integrate(1, Vbp, Vlp_x, Vlp_vc, f);
-    Vbp = solve_integrate(1, Vhp, Vbp_x, Vbp_vc, f);
-    Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp >> 3] + ((Vlp + Vi) >> 3)] << 3;
+    Vlp = solve_integrate_6581(1, Vbp, Vlp_x, Vlp_vc, f);
+    Vbp = solve_integrate_6581(1, Vhp, Vbp_x, Vbp_vc, f);
+    Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp] + Vlp + Vi];
   }
   else {
     // MOS 8580. FIXME: Not yet using op-amp model.
@@ -583,8 +560,8 @@ void Filter::clock(int voice1, int voice2, int voice3)
     // delta_t = 1 is converted to seconds given a 1MHz clock by dividing
     // with 1 000 000.
 
-    int dVbp = w0*(Vhp >> 7) >> 13;
-    int dVlp = w0*(Vbp >> 7) >> 13;
+    int dVbp = w0*(Vhp >> 4) >> 16;
+    int dVlp = w0*(Vbp >> 4) >> 16;
     Vbp -= dVbp;
     Vlp -= dVlp;
     Vhp = (Vbp*_1024_div_Q >> 10) - Vlp - Vi;
@@ -599,9 +576,9 @@ void Filter::clock(cycle_count delta_t, int voice1, int voice2, int voice3)
 {
   model_filter_t& f = model_filter[sid_model];
 
-  v1 = (voice1*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v2 = (voice2*f.voice_scale_s14 >> 14) + f.voice_DC;
-  v3 = (voice3*f.voice_scale_s14 >> 14) + f.voice_DC;
+  v1 = (voice1*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v2 = (voice2*f.voice_scale_s14 >> 18) + f.voice_DC;
+  v3 = (voice3*f.voice_scale_s14 >> 18) + f.voice_DC;
 
   // Enable filter on/off.
   // This is not really part of SID, but is useful for testing.
@@ -612,11 +589,10 @@ void Filter::clock(cycle_count delta_t, int voice1, int voice2, int voice3)
   }
 
   // Sum inputs routed into the filter.
-  int Vi;
-  int offset;
+  int Vi = 0;
+  int offset = 0;
 
-  switch (sum) {
-  default:
+  switch (sum & 0xf) {
   case 0x0:
     Vi = 0;
     offset = summer_offset<0>::value;
@@ -695,9 +671,9 @@ void Filter::clock(cycle_count delta_t, int voice1, int voice2, int voice3)
       }
 
       // Calculate filter outputs.
-      Vlp = solve_integrate(delta_t_flt, Vbp, Vlp_x, Vlp_vc, f);
-      Vbp = solve_integrate(delta_t_flt, Vhp, Vbp_x, Vbp_vc, f);
-      Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp >> 3] + ((Vlp + Vi) >> 3)] << 3;
+      Vlp = solve_integrate_6581(delta_t_flt, Vbp, Vlp_x, Vlp_vc, f);
+      Vbp = solve_integrate_6581(delta_t_flt, Vhp, Vbp_x, Vbp_vc, f);
+      Vhp = f.summer[offset + f.gain[_8_div_Q][Vbp] + Vlp + Vi];
 
       delta_t -= delta_t_flt;
     }
@@ -716,8 +692,8 @@ void Filter::clock(cycle_count delta_t, int voice1, int voice2, int voice3)
       // Calculate filter outputs.
       int w0_delta_t = w0*delta_t_flt >> 2;
 
-      int dVbp = w0_delta_t*(Vhp >> 7) >> 11;
-      int dVlp = w0_delta_t*(Vbp >> 7) >> 11;
+      int dVbp = w0_delta_t*(Vhp >> 4) >> 14;
+      int dVlp = w0_delta_t*(Vbp >> 4) >> 14;
       Vbp -= dVbp;
       Vlp -= dVlp;
       Vhp = (Vbp*_1024_div_Q >> 10) - Vlp - Vi;
@@ -742,10 +718,9 @@ void Filter::input(short sample)
   // primary use of the emulator is not to process external signals.
   // The upside is that the MOS8580 "digi boost" works without a separate (DC)
   // input interface.
-  // Note that the input is 16 bits, compared to the 20 bit voice output;
-  // we thus right shift by 10 instead of 14.
+  // Note that the input is 16 bits, compared to the 20 bit voice output.
   model_filter_t& f = model_filter[sid_model];
-  ve = (sample*f.voice_scale_s14*3 >> 10) + (f.mixer[0] << 3);
+  ve = (sample*f.voice_scale_s14*3 >> 14) + f.mixer[0];
 }
 
 
@@ -777,11 +752,10 @@ for my $mix (0..2**@i-1) {
   */
 
   // Sum inputs routed into the mixer.
-  int Vi;
-  int offset;
+  int Vi = 0;
+  int offset = 0;
 
-  switch (mix) {
-  default:
+  switch (mix & 0x7f) {
   case 0x00:
     Vi = 0;
     offset = mixer_offset<0>::value;
@@ -1298,11 +1272,11 @@ for my $mix (0..2**@i-1) {
 
   // Sum the inputs in the mixer and run the mixer output through the gain.
   if (sid_model == 0) {
-    return (short)(f.gain[vol][f.mixer[offset + (Vi >> 3)]] - (1 << 15));
+    return (short)(f.gain[vol][f.mixer[offset + Vi]] - (1 << 15));
   }
   else {
     // FIXME: Temporary code for MOS 8580, should use code above.
-    return Vi*vol >> 7;
+    return Vi*vol >> 4;
   }
 }
 
@@ -1318,78 +1292,94 @@ circuits, using a combination of Newton-Raphson and bisection.
 
 From Kirchoff's current law it follows that
 
-  IR1 - IR2 = 0
+  IR1f + IR2r = 0
 
-Substituting the standard Id-Vds transistor model (triode mode) for the
-currents, we get one equation for each direction of the current.
+Substituting the triode mode transistor model K*W/L*(Vgst^2 - Vgdt^2)
+for the currents, we get:
 
-Eq. 1: n*(2*(Vddt-vx)-(vi-vx))*(vi-vx) - (2*(Vddt-vo)-(vx-vo))*(vx-vo) = 0
-Eq. 2: n*(2*(Vddt-vi)-(vx-vi))*(vx-vi) - (2*(Vddt-vx)-(vo-vx))*(vo-vx) = 0
+  n*((Vddt - vx)^2 - (Vddt - vi)^2) + (Vddt - vx)^2 - (Vddt - vo)^2 = 0
 
-It turns out that these equations are equal (multiply Eq. 2 by -1).
-We factorize Eq. 1 in order to reduce the number of arithmetic operations,
-and get our root function f:
+Our root function f can thus be written as:
 
-f = (2*Vddt - vo)*vo - (n + 1)*(2*Vddt - vx)*vx + n*(2*Vddt - vi)*vi = 0
+  f = (n + 1)*(Vddt - vx)^2 - n*(Vddt - vi)^2 - (Vddt - vo)^2 = 0
+
+We are using the mapping function x = vo - vx -> vx. We thus substitute
+for vo = vx + x and get:
+
+  f = (n + 1)*(Vddt - vx)^2 - n*(Vddt - vi)^2 - (Vddt - (vx + x))^2 = 0
 
 Using substitution constants
 
-a = n + 1
-b = Vddt
-c = n*(2*b - vi)*vi
+  a = n + 1
+  b = Vddt
+  c = n*(Vddt - vi)^2
 
-we get the following equations for the root function and its derivative:
+the equations for the root function and its derivative can be written as:
 
-f = (2*b - vo)*vo - a*(2*b - vx)*vx + c
-df = 2*((b - vo)*dvo - a*(b - vx))
+  f = a*(b - vx)^2 - c - (b - (vx + x))^2
+  df = 2*((b - (vx + x))*(dvx + 1) - a*(b - vx)*dvx)
 */
 RESID_INLINE
-int Filter::solve_gain(int n, int vi_n, int& x, model_filter_t& mf)
+int Filter::solve_gain(int* opamp, int n, int vi, int& x, model_filter_t& mf)
 {
-  // Translate normalized vi.
-  int vi = vi_n + mf.vo_T19;
+  // Note that all variables are translated and scaled in order to fit
+  // in 16 bits. It is not necessary to explicitly translate the variables here,
+  // since they are all used in subtractions which cancel out the translation:
+  // (a - t) - (b - t) = a - b
 
   // Start off with an estimate of x and a root bracket [ak, bk].
-  // f is decreasing, so that f(ak) > 0 and f(bk) < 0.
-  int ak = mf.vo_T19, bk = mf.vo_T19 + (1 << 19) - 1;
+  // f is increasing, so that f(ak) < 0 and f(bk) > 0.
+  int ak = mf.ak, bk = mf.bk;
 
-  int a = n + (1 << 7); // Scaled by 2^7
-  int b = mf.Vddt;      // Scaled by m*2^19
-  unsigned int _2b = b << 1;  // Scaled by m*2^19, unsigned to use all bits.
-  int c = n*(((_2b - vi) >> 4)*(vi >> 3) >> 11); // Scaled by m^2*2^27.
+  int a = n + (1 << 7);              // Scaled by 2^7
+  int b = mf.kVddt;                  // Scaled by m*2^16
+  int b_vi = b - vi;                 // Scaled by m*2^16
+  if (b_vi < 0) b_vi = 0;
+  int c = n*int(unsigned(b_vi)*unsigned(b_vi) >> 12);    // Scaled by m^2*2^27
 
   for (;;) {
     int xk = x;
 
     // Calculate f and df.
-    int vo_dvo = mf.opamp[x - mf.vo_T19];
-    int vo = (vo_dvo & 0x7ffff) + mf.vo_T19;  // Scaled by m*2^19
-    int dvo = vo_dvo >> 19;                   // Scaled by 2^8
+    int vx_dvx = opamp[x];
+    int vx = vx_dvx & 0xffff;  // Scaled by m*2^16
+    int dvx = vx_dvx >> 16;    // Scaled by 2^11
 
-    // f = (2*b - vo)*vo - a*(2*b - vx)*vx + c
-    // df = 2*((b - vo)*dvo - a*(b - vx))
+    // f = a*(b - vx)^2 - c - (b - vo)^2
+    // df = 2*((b - vo)*(dvx + 1) - a*(b - vx)*dvx)
     //
+    int vo = vx + (x << 1) - (1 << 16);
+    if (vo >= (1 << 16)) {
+      vo = (1 << 16) - 1;
+    }
+    else if (vo < 0) {
+      vo = 0;
+    }
+    int b_vx = b - vx;
+    if (b_vx < 0) b_vx = 0;
+    int b_vo = b - vo;
+    if (b_vo < 0) b_vo = 0;
     // The dividend is scaled by m^2*2^27.
-    int f = int(((_2b - vo) >> 4)*(vo >> 3) >> 4) - int(a*(((_2b - x) >> 4)*(x >> 3) >> 11)) + c;
-    // The divisor is scaled by m*2^8.
-    int df = (((b - vo)*dvo >> 1) - a*(b - x)) >> 17;
-    // The resulting quotient is thus scaled by m*2^19.
+    int f = a*int(unsigned(b_vx)*unsigned(b_vx) >> 12) - c - int(unsigned(b_vo)*unsigned(b_vo) >> 5);
+    // The divisor is scaled by m*2^11.
+    int df = (b_vo*(dvx + (1 << 11)) - a*(b_vx*dvx >> 7)) >> 15;
+    // The resulting quotient is thus scaled by m*2^16.
 
     // Newton-Raphson step: xk1 = xk - f(xk)/f'(xk)
     x -= f/df;
     if (unlikely(x == xk)) {
       // No further root improvement possible.
-      return vo - mf.vo_T19;
+      return vo;
     }
 
     // Narrow down root bracket.
     if (f < 0) {
       // f(xk) < 0
-      bk = xk;
+      ak = xk;
     }
     else {
       // f(xk) > 0
-      ak = xk;
+      bk = xk;
     }
 
     if (unlikely(x <= ak) || unlikely(x >= bk)) {
@@ -1397,7 +1387,7 @@ int Filter::solve_gain(int n, int vi_n, int& x, model_filter_t& mf)
       x = (ak + bk) >> 1;
       if (unlikely(x == ak)) {
 	// No further bisection possible.
-	return vo - mf.vo_T19;
+	return vo;
       }
     }
   }
@@ -1408,6 +1398,8 @@ int Filter::solve_gain(int n, int vi_n, int& x, model_filter_t& mf)
 Find output voltage in inverting integrator SID op-amp circuits, using a
 single fixpoint iteration step.
 
+A circuit diagram of a MOS 6581 integrator is shown below.
+
                  ---C---
                 |       |
   vi -----Rw-------[A>----- vo
@@ -1416,104 +1408,161 @@ single fixpoint iteration step.
 
 From Kirchoff's current law it follows that
 
-  IRw + IRs - IC = 0
+  IRw + IRs + ICr = 0
 
 Using the formula for current through a capacitor, i = C*dv/dt, we get
 
-  IRw + IRs - C*(vc - vc0)/dt = 0
-  dt/C*(IRw + IRs) - vc + vc0 = 0
+  IRw + IRs + C*(vc - vc0)/dt = 0
+  dt/C*(IRw + IRs) + vc - vc0 = 0
+  vc = vc0 - n*(IRw(vi,vx) + IRs(vi,vx))
 
-  vc = n*(IRw(vi,vx) + IRs(vi,vx)) + vc0
-  vc = n*(IRw(vi,g(vc)) + IRs(vi,g(vc))) + vc0
+which may be rewritten as the following iterative fixpoint function:
+
+  vc = vc0 - n*(IRw(vi,g(vc)) + IRs(vi,g(vc)))
+
+To accurately calculate the currents through Rs and Rw, we need to use
+transistor models. Rs has a gate voltage of Vdd = 12V, and can be
+assumed to always be in triode mode. For Rw, the situation is rather
+more complex, as it turns out that this transistor will operate in
+both subthreshold, triode, and saturation modes.
+
+The Shichman-Hodges transistor model routinely used in textbooks may
+be written as follows:
+
+  Ids = 0                          , Vgst < 0               (subthreshold mode) 
+  Ids = K/2*W/L*(2*Vgst - Vds)*Vds , Vgst >= 0, Vds < Vgst  (triode mode)
+  Ids = K/2*W/L*Vgst^2             , Vgst >= 0, Vds >= Vgst (saturation mode)
+
+  where
+  K   = u*Cox (conductance)
+  W/L = ratio between substrate width and length
+  Vgst = Vg - Vs - Vt (overdrive voltage)
+
+This transistor model is also called the quadratic model.
+
+Note that the equation for the triode mode can be reformulated as
+independent terms depending on Vgs and Vgd, respectively, by the
+following substitution:
+
+  Vds = Vgst - (Vgst - Vds) = Vgst - Vgdt
+
+  Ids = K*W/L*(2*Vgst - Vds)*Vds
+  = K*W/L*(2*Vgst - (Vgst - Vgdt)*(Vgst - Vgdt)
+  = K*W/L*(Vgst + Vgdt)*(Vgst - Vgdt)
+  = K*W/L*(Vgst^2 - Vgdt^2)
+
+This turns out to be a general equation which covers both the triode
+and saturation modes (where the second term is 0 in saturation mode).
+The equation is also symmetrical, i.e. it can calculate negative
+currents without any change of parameters (since the terms for drain
+and source are identical except for the sign).
+
+FIXME: Subthreshold as function of Vgs, Vgd.
+  Ids = I0*e^(Vgst/(n*VT))       , Vgst < 0               (subthreshold mode) 
+
+The remaining problem with the textbook model is that the transition
+from subthreshold the triode/saturation is not continuous.
+
+Realizing that the subthreshold and triode/saturation modes may both
+be defined by independent (and equal) terms of Vgs and Vds,
+respectively, the corresponding terms can be blended into (equal)
+continuous functions suitable for table lookup.
+
+The EKV model (Enz, Krummenacher and Vittoz) essentially performs this
+blending using an elegant mathematical formulation:
+
+  Ids = Is*(if - ir)
+  Is = 2*u*Cox*Ut^2/k*W/L
+  if = ln^2(1 + e^((k*(Vg - Vt) - Vs)/(2*Ut))
+  ir = ln^2(1 + e^((k*(Vg - Vt) - Vd)/(2*Ut))
+
+For our purposes, the EKV model preserves two important properties
+discussed above:
+
+- It consists of two independent terms, which can be represented by
+  the same lookup table.
+- It is symmetrical, i.e. it calculates current in both directions,
+  facilitating a branch-free implementation.
+
+Rw in the circuit diagram above is a VCR (voltage controlled resistor),
+as shown in the circuit diagram below.
+
+                   Vw
+                   
+                   |
+           Vdd     |
+              |---|  
+             _|_   |
+           --    --| Vg
+          |      __|__
+          |      -----  Rw
+          |      |   |
+  vi ------------     -------- vo
+
+
+In order to calculalate the current through the VCR, its gate voltage
+must be determined.
+
+Assuming triode mode and applying Kirchoff's current law, we get the
+following equation for Vg:
+
+u*Cox/2*W/L*((Vddt - Vg)^2 - (Vddt - vi)^2 + (Vddt - Vg)^2 - (Vddt - Vw)^2) = 0
+2*(Vddt - Vg)^2 - (Vddt - vi)^2 - (Vddt - Vw)^2 = 0
+(Vddt - Vg) = sqrt(((Vddt - vi)^2 + (Vddt - Vw)^2)/2)
+
+Vg = Vddt - sqrt(((Vddt - vi)^2 + (Vddt - Vw)^2)/2)
 
 */
 RESID_INLINE
-int Filter::solve_integrate(int dt, int vi_n, int& x, int& vc,
-			    model_filter_t& mf)
+int Filter::solve_integrate_6581(int dt, int vi, int& vx, int& vc,
+				 model_filter_t& mf)
 {
-  // Translate normalized vi.
-  int vi = vi_n + mf.vo_T19; // Scaled by m*2^19
+  // Note that all variables are translated and scaled in order to fit
+  // in 16 bits. It is not necessary to explicitly translate the variables here,
+  // since they are all used in subtractions which cancel out the translation:
+  // (a - t) - (b - t) = a - b
 
-  int Vddt = mf.Vddt;        // Scaled by m*2^19
-  int n_vcr = mf.n_vcr;      // Scaled by (1/m)*2^9  (fits in 12 bits)
-  int n_snake = mf.n_snake;  // Scaled by (1/m)*2^19 (fits in 12 bits)
+  int kVddt = mf.kVddt;      // Scaled by m*2^16
 
-  // VCR gate voltage.
-  // Vg = Vddt - sqrt(Vddt*(Vddt - Vw - Vi) + (Vw*Vw + Vi*Vi)/2)
-  // Vth could be included in the table lookup by using different tables
-  // for the 6581 and the 8580.
-  int Vg = Vddt - sqrt_table[(Vw_term + (vi >> 4)*(((vi >> 1) - Vddt) >> 4)) >> 14];
-  int Vgt = Vg - mf.Vth;     // Scaled by m*2^19
+  // "Snake" voltages for triode mode calculation.
+  unsigned int Vgst = kVddt - vx;
+  unsigned int Vgdt = kVddt - vi;
+  unsigned int Vgdt_2 = Vgdt*Vgdt;
 
-  // Determine the direction of the current flowing through the VCR and
-  // the "snake" transistor.
-  if (vi < x) {
-    // Negative current.
-    int Vds = x - vi;
-    int Vov_vcr = Vgt - vi;
-    int Vov_snake = Vddt - vi;
+  // "Snake" current, scaled by (1/m)*2^13*m*2^16*m*2^16*2^-15 = m*2^30
+  int n_I_snake = mf.n_snake*(int(Vgst*Vgst - Vgdt_2) >> 15);
 
-    // Start with the current through the "snake" (triode mode).
-    // n_I = n_snake*(2*Vov_snake - Vds)*Vds
-    //
-    // Scaled by (1/m)*2^19*m*2^19*m*2^19*2^-4*2^-4*2^-12*2^-18 = m*2^19
-    int n_I = n_snake*((((Vov_snake << 1) - Vds) >> 4)*(Vds >> 4) >> 12) >> 18;
+  // VCR gate voltage.       // Scaled by m*2^16
+  // Vg = Vddt - sqrt(((Vddt - Vw)^2 + Vgdt^2)/2)
+  int kVg = vcr_kVg[(Vddt_Vw_2 + (Vgdt_2 >> 1)) >> 16];
 
-    if (Vov_vcr > 0) {
-      // Add the current through the VCR.
-      if (Vds < Vov_vcr) {
-	// Vov >= 0, Vds < Vov: Triode mode (linear region).
-	// n_I += n_vcr*(2*Vov_vcr - Vds)*Vds
-	//
-	// Scaled by (1/m)*2^9*m*2^19*m*2^19*2^-4*2^-4*2^-12*2^8 = m*2^19
-	n_I += n_vcr*((((Vov_vcr << 1) - Vds) >> 4)*(Vds >> 4) >> 12) >> 8;
-      }
-      else {
-	// Vov >= 0, Vds >= Vov: Saturation mode (pinch-off).
-	// The linear dependence of Ids on Vds is negligible, and is not
-	// modeled.
-	// n_I += n_vcr*Vov_vcr*Vov_vcr
-	//
-	// Scaled by (1/m)*2^9*m*2^19*m*2^19*2^-4*2^-3*2^-12*2^8 = m*2^19
-	n_I += n_vcr*((Vov_vcr >> 4)*(Vov_vcr >> 4) >> 12) >> 8;
-      }
-    }
-    // The subthreshold leakage current is negligible, and is not modeled.
+  // VCR voltages for EKV model table lookup.
+  int Vgs = kVg - vx;
+  if (Vgs < 0) Vgs = 0;
+  int Vgd = kVg - vi;
+  if (Vgd < 0) Vgd = 0;
 
-    // Change in capacitor charge.
-    vc -= n_I*dt;
-    if (vc < mf.vc_min) {
-      vc = mf.vc_min;
-    }
+  // VCR current, scaled by m*2^15*2^15 = m*2^30
+  int n_I_vcr = (vcr_n_Ids_term[Vgs] - vcr_n_Ids_term[Vgd]) << 15;
+
+  // Change in capacitor charge.
+  vc -= (n_I_snake + n_I_vcr)*dt;
+
+/*
+  // FIXME: Determine whether this check is necessary.
+  if (vc < mf.vc_min) {
+    vc = mf.vc_min;
   }
-  else {
-    // Positive current.
-    int Vds = vi - x;
-    int Vov_vcr = Vgt - x;
-    int Vov_snake = Vddt - x;
-
-    int n_I = n_snake*((((Vov_snake << 1) - Vds) >> 4)*(Vds >> 4) >> 12) >> 18;
-
-    if (Vov_vcr > 0) {
-      if (Vds < Vov_vcr) {
-	n_I += n_vcr*((((Vov_vcr << 1) - Vds) >> 4)*(Vds >> 4) >> 12) >> 8;
-      }
-      else {
-	n_I += n_vcr*((Vov_vcr >> 4)*(Vov_vcr >> 4) >> 12) >> 8;
-      }
-    }
-
-    vc += n_I*dt;
-    if (vc > mf.vc_max) {
-      vc = mf.vc_max;
-    }
+  else if (vc > mf.vc_max) {
+    vc = mf.vc_max;
   }
+*/
 
   // vx = g(vc)
-  x = mf.opamp_rev[(vc + (1 << 19)) >> 4];
+  vx = mf.opamp_rev[(vc >> 15) + (1 << 15)];
 
   // Return vo.
-  return (x - vc) - mf.vo_T19;
+  return vx + (vc >> 14);
 }
 
 #endif // RESID_INLINING || defined(RESID_FILTER_CC)

@@ -28,10 +28,14 @@
 
 #include <stdio.h>
 
+#include "drive.h"
+#include "drivetypes.h"
+#include "driverom.h"
 #include "ieee-resources.h"
 #include "ieeerom.h"
 #include "lib.h"
 #include "resources.h"
+#include "traps.h"
 #include "util.h"
 
 
@@ -42,7 +46,6 @@ static char *dos_rom_name_1001 = NULL;
 static char *dos_rom_name_2040 = NULL;
 static char *dos_rom_name_3040 = NULL;
 static char *dos_rom_name_4040 = NULL;
-
 
 static int set_dos_rom_name_2040(const char *val, void *param)
 {
@@ -138,4 +141,3 @@ void ieee_resources_shutdown(void)
     lib_free(dos_rom_name_3040);
     lib_free(dos_rom_name_4040);
 }
-

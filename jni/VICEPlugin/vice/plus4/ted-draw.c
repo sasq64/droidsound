@@ -74,7 +74,7 @@ static BYTE *const aligned_line_buffer = (BYTE *)_aligned_line_buffer;
 /* Pointer to the start of the graphics area on the frame buffer.  */
 #define GFX_PTR()               \
     (ted.raster.draw_buffer_ptr \
-    + (ted.screen_borderwidth + ted.raster.xsmooth))
+    + (ted.screen_leftborderwidth + ted.raster.xsmooth))
 
 #ifdef ALLOW_UNALIGNED_ACCESS
 #define ALIGN_DRAW_FUNC(name, xs, xe) \
@@ -213,12 +213,19 @@ static int get_std_text(raster_cache_t *cache, unsigned int *xs,
                             1,
                             xs, xe,
                             rr);
+    r |= raster_cache_data_fill(cache->color_data_2,
+                            ted.vbuf,
+                            TED_SCREEN_TEXTCOLS,
+                            1,
+                            xs, xe,
+                            rr);
 
 
 
     return r;
 }
 
+/* without video cache */
 inline static void _draw_std_text(BYTE *p, unsigned int xs, unsigned int xe)
 {
     DWORD *table_ptr;
@@ -245,10 +252,9 @@ inline static void _draw_std_text(BYTE *p, unsigned int xs, unsigned int xe)
             } else {
                 d = *(char_ptr + ted.vbuf[i] * 8);
             }
-
-            if ((int)i == cursor_pos)
+            if ((int)i == cursor_pos) {
                 d ^= 0xff;
-
+            }
             *((DWORD *)p + i * 2) = *(ptr + (d >> 4));
             *((DWORD *)p + i * 2 + 1) = *(ptr + (d & 0xf));
         }
@@ -258,14 +264,14 @@ inline static void _draw_std_text(BYTE *p, unsigned int xs, unsigned int xe)
             DWORD *ptr = table_ptr + ((ted.cbuf[i] & 0x7f) << 11);
 
             if ((ted.cbuf[i] & 0x80) && (!ted.cursor_visible)) {
-                d = 0;
+                d = (ted.vbuf[i] & 0x80 ? 0xff : 0x00);
             } else {
                 d = *(char_ptr + (ted.vbuf[i] & 0x7f) * 8)
                     ^ (ted.vbuf[i] & 0x80 ? 0xff : 0x00);
             }
-            if ((int)i == cursor_pos)
+            if ((int)i == cursor_pos) {
                 d ^= 0xff;
-
+            }
             *((DWORD *)p + i * 2) = *(ptr + (d >> 4));
             *((DWORD *)p + i * 2 + 1) = *(ptr + (d & 0xf));
         }
@@ -277,24 +283,26 @@ static void draw_std_text(void)
     ALIGN_DRAW_FUNC(_draw_std_text, 0, TED_SCREEN_TEXTCOLS - 1);
 }
 
+/* with video cache */
 inline static void _draw_std_text_cached(BYTE *p, unsigned int xs,
                                          unsigned int xe,
                                          raster_cache_t *cache)
 {
     DWORD *table_ptr;
-    BYTE *foreground_data, *color_data;
+    BYTE *foreground_data, *color_data, *vbuf;
     unsigned int i;
 
     table_ptr = hr_table + (cache->background_data[0] << 4);
-    foreground_data = cache->foreground_data;
+    foreground_data = cache->foreground_data; /* contains both vbuf and cbuf */
     color_data = cache->color_data_1;
+    vbuf = cache->color_data_2;
 
     for (i = xs; i <= xe; i++) {
         int d;
         DWORD *ptr = table_ptr + ((color_data[i] & 0x7f) << 11);
 
         if ((color_data[i] & 0x80) && (!ted.cursor_visible)) {
-            d = 0;
+            d = (vbuf[i] & 0x80 ? 0xff : 0x00);
         } else {
             d = foreground_data[i];
         }
@@ -348,8 +356,9 @@ static void draw_std_text_foreground(unsigned int start_char,
             } else {
                 b = char_ptr[ted.vbuf[i] * 8];
             }
-            if ((int)i == cursor_pos)
+            if ((int)i == cursor_pos) {
                 b ^= 0xff;
+            }
             f = ted.cbuf[i] & 0x7f;
 
             DRAW_STD_TEXT_BYTE(p, b, f);
@@ -359,13 +368,14 @@ static void draw_std_text_foreground(unsigned int start_char,
             BYTE b, f;
 
             if ((ted.cbuf[i] & 0x80) && (!ted.cursor_visible)) {
-                b=0;
+                b= (ted.vbuf[i] & 0x80 ? 0xff : 0x00);
             } else {
                 b = char_ptr[(ted.vbuf[i] & 0x7f) * 8]
                     ^ (ted.vbuf[i] & 0x80 ? 0xff : 0x00);
             }
-            if ((int)i == cursor_pos)
+            if ((int)i == cursor_pos) {
                 b ^= 0xff;
+            }
             f = ted.cbuf[i] & 0x7f;
 
             DRAW_STD_TEXT_BYTE(p, b, f);
@@ -373,7 +383,9 @@ static void draw_std_text_foreground(unsigned int start_char,
     }
 }
 
-/* Hires Bitmap mode.  */
+/*
+    Hires Bitmap mode.
+*/
 
 static int get_hires_bitmap(raster_cache_t *cache, unsigned int *xs,
                             unsigned int *xe, int rr)
@@ -453,7 +465,9 @@ static void draw_hires_bitmap_foreground(unsigned int start_char,
     ALIGN_DRAW_FUNC(_draw_hires_bitmap, start_char, end_char);
 }
 
-/* Multicolor text mode.  */
+/*
+    Multicolor text mode.  
+*/
 
 static int get_mc_text(raster_cache_t *cache, unsigned int *xs,
                        unsigned int *xe, int rr)
@@ -490,30 +504,32 @@ static int get_mc_text(raster_cache_t *cache, unsigned int *xs,
 
 inline static void _draw_mc_text(BYTE *p, unsigned int xs, unsigned int xe)
 {
-     BYTE c[12];
-     BYTE *char_ptr;
-     WORD *ptmp;
-     unsigned int i;
+    BYTE c[12];
+    BYTE *char_ptr;
+    WORD *ptmp;
+    unsigned int i, v, d;
 
-     char_ptr = ted.chargen_ptr + ted.raster.ycounter;
+    char_ptr = ted.chargen_ptr + ted.raster.ycounter;
 
-     c[1] = c[0] = ted.raster.background_color;
-     c[3] = c[2] = ted.ext_background_color[0];
-     c[5] = c[4] = ted.ext_background_color[1];
-     c[11] = c[8] = ted.raster.background_color;
+    c[1] = c[0] = ted.raster.background_color;
+    c[3] = c[2] = ted.ext_background_color[0];
+    c[5] = c[4] = ted.ext_background_color[1];
+    c[11] = c[8] = ted.raster.background_color;
 
-     ptmp = (WORD *)(p + xs * 8);
-     for (i = xs; i <= xe; i++) {
-         unsigned int d = (*(char_ptr + ted.vbuf[i] * 8))
-                          | ((ted.cbuf[i] & 0x8) << 5);
+    ptmp = (WORD *)(p + xs * 8);
+    for (i = xs; i <= xe; i++) {
+/*         unsigned int d = (*(char_ptr + ted.vbuf[i] * 8))
+                          | ((ted.cbuf[i] & 0x8) << 5); */
+        v = ted.vbuf[i] & (ted.reverse_mode ? 0xff : 0x7f);
+        d = char_ptr[v * 8] | ((ted.cbuf[i] & 0x8) << 5);
 
-         c[10] = c[9] = c[7] = c[6] = ted.cbuf[i] & 0x77;
+        c[10] = c[9] = c[7] = c[6] = ted.cbuf[i] & 0x77;
 
-         ptmp[0] = ((WORD *)c)[mc_table[d]];
-         ptmp[1] = ((WORD *)c)[mc_table[0x200 + d]];
-         ptmp[2] = ((WORD *)c)[mc_table[0x400 + d]];
-         ptmp[3] = ((WORD *)c)[mc_table[0x600 + d]];
-         ptmp += 4;
+        ptmp[0] = ((WORD *)c)[mc_table[d]];
+        ptmp[1] = ((WORD *)c)[mc_table[0x200 + d]];
+        ptmp[2] = ((WORD *)c)[mc_table[0x400 + d]];
+        ptmp[3] = ((WORD *)c)[mc_table[0x600 + d]];
+        ptmp += 4;
     }
 }
 
@@ -1045,4 +1061,3 @@ void ted_draw_init(void)
 
     setup_modes();
 }
-

@@ -3,7 +3,7 @@
  *
  * Written by
  *  Andreas Boose <viceteam@t-online.de>
- *  Andre' Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Daniel Sladic <sladic@eecg.toronto.edu>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *
@@ -49,32 +49,32 @@
 
 typedef struct drivevia1_context_s {
     unsigned int number;
+    BYTE drivenumberjumper;
     struct drive_s *drive;
-    int parallel_id;
     int v_parieee_is_out;         /* init to 1 */
 } drivevia1_context_t;
 
 
-void REGPARM3 via1d2031_store(drive_context_t *ctxptr, WORD addr, BYTE data)
+void via1d2031_store(drive_context_t *ctxptr, WORD addr, BYTE data)
 {
     viacore_store(ctxptr->via1d2031, addr, data);
 }
 
-BYTE REGPARM2 via1d2031_read(drive_context_t *ctxptr, WORD addr)
+BYTE via1d2031_read(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_read(ctxptr->via1d2031, addr);
 }
 
-BYTE REGPARM2 via1d2031_peek(drive_context_t *ctxptr, WORD addr)
+BYTE via1d2031_peek(drive_context_t *ctxptr, WORD addr)
 {
     return viacore_peek(ctxptr->via1d2031, addr);
 }
 
-static void set_ca2(int state)
+static void set_ca2(via_context_t *via_context, int state)
 {
 }
 
-static void set_cb2(int state)
+static void set_cb2(via_context_t *via_context, int state)
 {
 }
 
@@ -202,10 +202,11 @@ static void store_prb(via_context_t *via_context, BYTE byte, BYTE p_oldpb,
 
 static void undump_pcr(via_context_t *via_context, BYTE byte)
 {
+#if 0
     drivevia1_context_t *via1p;
 
     via1p = (drivevia1_context_t *)(via_context->prv);
-#if 0
+
     /* FIXME: Is this correct? */
     if (via1p->number != 0)
         via2d_update_pcr(byte, &drive[0]);
@@ -264,16 +265,9 @@ static BYTE read_pra(via_context_t *via_context, WORD addr)
 static BYTE read_prb(via_context_t *via_context)
 {
     BYTE byte;
-    BYTE orval;
-    BYTE andval;
     drivevia1_context_t *via1p;
 
     via1p = (drivevia1_context_t *)(via_context->prv);
-
-    /* 0 for drive0, 0x20 for drive 1 */
-    orval = (via1p->number << 5);
-    /* 0xfe for drive0, 0xff for drive 1 */
-    andval = (0xfe | via1p->number);
 
     byte = 0xff;
     if (parieee_is_out) {
@@ -294,9 +288,10 @@ static BYTE read_prb(via_context_t *via_context)
 
     byte = (byte & ~(via_context->via[VIA_DDRB]))
            | (via_context->via[VIA_PRB] & via_context->via[VIA_DDRB]);
+
     if (!(via_context->ca2_state)) {
-        byte &= andval /* 0xff */;  /* byte & 3 + 8 -> device-no */
-        byte &= 0xfd /* 0xff */;  /* device-no switche */
+        byte &= 0xf8;                     /* device-no switches */
+        byte += via1p->drivenumberjumper; /* byte & 3 + 8 -> device-no */
     }
 
     return byte;
@@ -320,6 +315,7 @@ void via1d2031_setup_context(drive_context_t *ctxptr)
     via->prv = lib_malloc(sizeof(drivevia1_context_t));
     via1p = (drivevia1_context_t *)(via->prv);
     via1p->number = ctxptr->mynumber;
+    via1p->drivenumberjumper = ctxptr->mynumber & 0x07; /* 3 bits */
 
     via->context = (void *)ctxptr;
 
@@ -337,11 +333,6 @@ void via1d2031_setup_context(drive_context_t *ctxptr)
 
     via1p->drive = ctxptr->drive;
     via1p->v_parieee_is_out = 1;
-    if (via1p->number == 0) {
-        via1p->parallel_id = PARALLEL_DRV0;
-    } else {
-        via1p->parallel_id = PARALLEL_DRV1;
-    }
 
     via->undump_pra = undump_pra;
     via->undump_prb = undump_prb;
@@ -361,4 +352,3 @@ void via1d2031_setup_context(drive_context_t *ctxptr)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
-
