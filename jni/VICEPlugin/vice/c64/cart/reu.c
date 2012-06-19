@@ -45,7 +45,7 @@
 
 #include "archdep.h"
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "interrupt.h"
@@ -69,9 +69,10 @@
 #endif
 
 /*! \brief the debug levels to use when REU_DEBUG is defined */
-enum {
+typedef enum {
     DEBUG_LEVEL_NONE = 0,              /*!< do not output debugging information */
     DEBUG_LEVEL_REGISTER,              /*!< output debugging information concerning the REU registers */
+    DEBUG_LEVEL_REGISTER2,             /*!< more register stuff */
     DEBUG_LEVEL_TRANSFER_HIGH_LEVEL,   /*!< output debugging information on transfers, on a high-level (per operation) */
     DEBUG_LEVEL_NO_DRAM,               /*!< output debugging information whenever an address is accessed where no DRAM is available  */
     DEBUG_LEVEL_TRANSFER_LOW_LEVEL     /*!< output debugging information on transfers, on a low-level (per single byte) */
@@ -79,7 +80,7 @@ enum {
 
 #ifdef REU_DEBUG
     /*! \brief dynamically define the debugging level */
-    static enum debug_level_e DEBUG_LEVEL = DEBUG_LEVEL_NONE;
+    static debug_level_e DEBUG_LEVEL = DEBUG_LEVEL_TRANSFER_LOW_LEVEL;
 
     /*! \brief output debugging information
       \param _level
@@ -206,8 +207,8 @@ static struct rec_s rec;
 
 /*! \brief some rec options which define special behaviour */
 struct rec_options_s {
-    unsigned int wrap_around;                   /*!< address where the REU has a wrap around */
-    unsigned int special_wrap_around_1700;      /*!< address where the special 1700 wrap around occurs; if no 1700, the same avalue as wrap_around */
+    unsigned int wrap_around;                   /*!< address where the REU has a wrap around (usually 512k, 1700 is special) */
+    unsigned int dram_wrap_around;              /*!< address where the dram address space has a wrap around */
     unsigned int not_backedup_addresses;        /*!< beginning from this address up to wrap_around, there is no DRAM at all */
     unsigned int wrap_around_mask_when_storing; /*!< mask for the wrap around of REU address when putting result back in base_reu and bank_reu */
     BYTE         reg_bank_unused;               /*!< the unused bits (stuck at 1) of REU_REG_RW_BANK; for original REU, it is REU_REG_RW_BANK_UNUSED */
@@ -252,9 +253,9 @@ static int reu_write_image = 0;
 /* ------------------------------------------------------------------------- */
 
 /* some prototypes are needed */
-static void REGPARM2 reu_io2_store(WORD addr, BYTE byte);
-static BYTE REGPARM1 reu_io2_read(WORD addr);
-static BYTE REGPARM1 reu_io2_peek(WORD addr);
+static void reu_io2_store(WORD addr, BYTE byte);
+static BYTE reu_io2_read(WORD addr);
+static BYTE reu_io2_peek(WORD addr);
 
 static io_source_t reu_io2_device = {
     CARTRIDGE_NAME_REU,
@@ -267,6 +268,7 @@ static io_source_t reu_io2_device = {
     reu_io2_peek,
     NULL, /* TODO: dump */
     CARTRIDGE_REU,
+    IO_PRIO_HIGH, /* high priority so it will work together with cartridges like RR and SSV5 */
     0
 };
 
@@ -313,7 +315,7 @@ static int set_reu_enabled(int val, void *param)
             return -1;
         }
         c64export_remove(&export_res_reu);
-        c64io_unregister(reu_list_item);
+        io_source_unregister(reu_list_item);
         reu_list_item = NULL;
         reu_enabled = 0;
     } else if ((val) && (!reu_enabled)) {
@@ -323,7 +325,7 @@ static int set_reu_enabled(int val, void *param)
         if (c64export_add(&export_res_reu) < 0) {
             return -1;
         }
-        reu_list_item = c64io_register(&reu_io2_device);
+        reu_list_item = io_source_register(&reu_io2_device);
         reu_enabled = 1;
     }
     return 0;
@@ -397,44 +399,47 @@ static int set_reu_size(int val, void *param)
     reu_size_kb = val;
     reu_size = reu_size_kb << 10;
 
-    rec_options.wrap_around = 0x80000;
-    rec_options.special_wrap_around_1700 = rec_options.wrap_around;
+    rec_options.wrap_around = 0x80000; /* always 512k, except 1700 */
+    rec_options.dram_wrap_around = rec_options.wrap_around;
     rec_options.not_backedup_addresses = reu_size;
     rec_options.wrap_around_mask_when_storing = rec_options.wrap_around - 1;
+
     rec_options.reg_bank_unused = REU_REG_RW_BANK_UNUSED;
     rec_options.status_preset = REU_REG_R_STATUS_256K_CHIPS;
 
     switch (val) {
         case 128: /* Commodore 1700 */
             rec_options.status_preset = 0; /* we do not have 256K chips, but only 64K chips */
-            rec_options.special_wrap_around_1700 = 0x20000; /* the 1700 has a special wrap around, mimic that one */
+            /* the 1700 has a special wrap around, mimic that one */
+            rec_options.wrap_around = 0x20000;
+            rec_options.dram_wrap_around = 0x20000;
             break;
         case 256: /* Commodore 1764 */
-            break;
         case 512: /* Commodore 1750 */
             break;
-
         /*
             note: the only real REU > 512kb that existed was the CMD 1750XL, which
                   shows the "wraparound bug" behaviour.
                   also the 1541U implements this starting with fw2.0, and the same
-                  is appearently true for the upcoming chameleon.
+                  is true for the chameleon.
+            "hacked REU" > 512k generally works like this.
+            - the upper 5 bits of the banking register are added (in form of a latch)
+              and are directly connected to the upper adresslines of the dram. that
+              means these bits are never affected by what happens inside the REC chip.
+            - the lower bits go the REC chip just like in a smaller REU
         */
         case 1024:
         case 2048: /* CMD 1750XL */
         case 4096:
         case 8192:
         case 16384:
-        default:
-#if 0
-            /* for the other (fictive) REUs, assume the bank register would be fully 8 bits wide */
-            rec_options.wrap_around = rec_options.special_wrap_around_1700 = 0;
-            rec_options.wrap_around_mask_when_storing = 0xffffffff;
             rec_options.reg_bank_unused = 0;
-#endif
-            rec_options.wrap_around = rec_options.special_wrap_around_1700 = 0;
-            rec_options.reg_bank_unused = 0;
+            rec_options.wrap_around_mask_when_storing = 0x00ffffff;
+            rec_options.dram_wrap_around = 0x01000000;
             break;
+        default:
+            log_message(reu_log, "Unknown REU size %d.", val);
+            return -1;
     }
  
     if (reu_enabled) {
@@ -912,7 +917,7 @@ static void reu_store_without_sideeffects(WORD addr, BYTE byte)
   \return
     The value the register has
 */
-static BYTE REGPARM1 reu_io2_read(WORD addr)
+static BYTE reu_io2_read(WORD addr)
 {
     BYTE retval = 0xff;
 
@@ -944,7 +949,7 @@ static BYTE REGPARM1 reu_io2_read(WORD addr)
     return retval;
 }
 
-static BYTE REGPARM1 reu_io2_peek(WORD addr)
+static BYTE reu_io2_peek(WORD addr)
 {
     BYTE retval = 0xff;
     if (addr < rec_options.first_unused_register_address) {
@@ -962,7 +967,7 @@ static BYTE REGPARM1 reu_io2_peek(WORD addr)
   \param byte
     The value to set the register to
 */
-static void REGPARM2 reu_io2_store(WORD addr, BYTE byte)
+static void reu_io2_store(WORD addr, BYTE byte)
 {
     if (!reu_dma_active && (addr < rec_options.first_unused_register_address)) {
         reu_store_without_sideeffects(addr, byte);
@@ -1000,8 +1005,9 @@ static void REGPARM2 reu_io2_store(WORD addr, BYTE byte)
 /* ------------------------------------------------------------------------- */
 
 /*! \brief increment the reu address, taking wrap around into account
-  This function increments the reu address by the specified step.
-  If a wrap around should occur, perform it, too.
+  This function increments the lower 19bits of the reu address (ie the range
+  adressed by the REC chip) by the specified step.
+  If a wrap around should occur (usually at 512k), perform it, too.
 
   \param reu_addr
      The address to be incremented
@@ -1014,15 +1020,14 @@ static void REGPARM2 reu_io2_store(WORD addr, BYTE byte)
 */
 inline static unsigned int increment_reu_with_wrap_around(unsigned int reu_addr, unsigned int reu_step)
 {
+    unsigned int next = (reu_addr & 0x0007ffff) + reu_step;
     assert(((reu_step == 0) || (reu_step == 1)));
 
-    reu_addr += reu_step;
-
-    if ( (reu_addr == rec_options.special_wrap_around_1700) || (reu_addr == rec_options.wrap_around)) {
-        reu_addr = 0;
+    if (next == rec_options.wrap_around) {
+        next = 0;
     }
 
-    return reu_addr;
+    return (reu_addr & 0x00f80000) | next;
 }
 
 /*! \brief store a value into the REU
@@ -1041,7 +1046,7 @@ inline static unsigned int increment_reu_with_wrap_around(unsigned int reu_addr,
 */
 inline static void store_to_reu(unsigned int reu_addr, BYTE value)
 {
-    reu_addr &= rec_options.special_wrap_around_1700 - 1;
+    reu_addr &= rec_options.dram_wrap_around - 1;
     if (reu_addr < rec_options.not_backedup_addresses) {
         assert(reu_addr < reu_size);
         reu_ram[reu_addr] = value;
@@ -1071,7 +1076,7 @@ inline static BYTE read_from_reu(unsigned int reu_addr)
 {
     BYTE value = 0xff; /* dummy value to return if not DRAM is available */
 
-    reu_addr &= rec_options.special_wrap_around_1700 - 1;
+    reu_addr &= rec_options.dram_wrap_around - 1;
     if (reu_addr < rec_options.not_backedup_addresses) {
         assert(reu_addr < reu_size);
         value = reu_ram[reu_addr];
@@ -1116,7 +1121,7 @@ static void reu_dma_update_regs(WORD host_addr, unsigned int reu_addr, int len, 
          * incr. of addr. disabled, as already pointing to correct addr.
          * address changes only if not fixed, correct reu base registers  -RH
          */
-        DEBUG_LOG(DEBUG_LEVEL_REGISTER, (reu_log, "No autoload."));
+        DEBUG_LOG(DEBUG_LEVEL_REGISTER2, (reu_log, "No autoload."));
         if (BITS_ARE_ALL_UNSET(rec.address_control_reg, REU_REG_RW_ADDR_CONTROL_FIX_C64)) {
             rec.base_computer = host_addr;
         }
@@ -1193,7 +1198,7 @@ static void reu_dma_host_to_reu(WORD host_addr, unsigned int reu_addr, int host_
         reu_addr = increment_reu_with_wrap_around(reu_addr, reu_step);
         len--;
     }
-    DEBUG_LOG(DEBUG_LEVEL_REGISTER, (reu_log, "END OF BLOCK"));
+    DEBUG_LOG(DEBUG_LEVEL_REGISTER2, (reu_log, "END OF BLOCK"));
     reu_dma_update_regs(host_addr, reu_addr, ++len, REU_REG_R_STATUS_END_OF_BLOCK);
 }
 
@@ -1235,7 +1240,7 @@ static void reu_dma_reu_to_host(WORD host_addr, unsigned int reu_addr, int host_
         reu_addr = increment_reu_with_wrap_around(reu_addr, reu_step);
         len--;
     }
-    DEBUG_LOG(DEBUG_LEVEL_REGISTER, (reu_log, "END OF BLOCK"));
+    DEBUG_LOG(DEBUG_LEVEL_REGISTER2, (reu_log, "END OF BLOCK"));
     reu_dma_update_regs(host_addr, reu_addr, ++len, REU_REG_R_STATUS_END_OF_BLOCK);
 }
 
@@ -1283,7 +1288,7 @@ static void reu_dma_swap(WORD host_addr, unsigned int reu_addr, int host_step, i
         reu_addr = increment_reu_with_wrap_around(reu_addr, reu_step);
         len--;
     }
-    DEBUG_LOG(DEBUG_LEVEL_REGISTER, (reu_log, "END OF BLOCK"));
+    DEBUG_LOG(DEBUG_LEVEL_REGISTER2, (reu_log, "END OF BLOCK"));
     reu_dma_update_regs(host_addr, reu_addr, ++len, REU_REG_R_STATUS_END_OF_BLOCK);
 }
 

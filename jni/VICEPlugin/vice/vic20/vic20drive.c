@@ -38,7 +38,7 @@
 
 int machine_drive_resources_init(void)
 {
-    return drive_resources_type_init(DRIVE_TYPE_1541)
+    return drive_resources_type_init(DRIVE_TYPE_1541) /* FIXME: we should emulate 1540 */
         | iec_drive_resources_init() | ieee_drive_resources_init();
 }
 
@@ -91,11 +91,6 @@ void machine_drive_setup_context(struct drive_context_s *drv)
 void machine_drive_idling_method(unsigned int dnr)
 {
     iec_drive_idling_method(dnr);
-}
-
-void machine_drive_vsync_hook(void)
-{
-    iec_drive_vsync_hook();
 }
 
 void machine_drive_rom_load(void)
@@ -188,4 +183,3 @@ void machine_drive_stub(void)
 {
 
 }
-

@@ -2,7 +2,7 @@
  * riot2d.c - RIOT2 emulation in the SFD1001, 8050 and 8250 disk drive.
  *
  * Written by
- *  Andre' Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -43,18 +43,19 @@
 
 typedef struct driveriot2_context_s {
     unsigned int number;
+    BYTE drivenumberjumper;
     struct drive_s *drive;
     int r_atn_active;     /* init to 0 */
     unsigned int int_num;
 } driveriot2_context_t;
 
 
-void REGPARM3 riot2_store(drive_context_t *ctxptr, WORD addr, BYTE data)
+void riot2_store(drive_context_t *ctxptr, WORD addr, BYTE data)
 {
     riotcore_store(ctxptr->riot2, addr, data);
 }
 
-BYTE REGPARM2 riot2_read(drive_context_t *ctxptr, WORD addr)
+BYTE riot2_read(drive_context_t *ctxptr, WORD addr)
 {
     return riotcore_read(ctxptr->riot2, addr);
 }
@@ -171,8 +172,8 @@ static void undump_prb(riot_context_t *riot_context, BYTE byte)
     /* 1001 only needs LED 0 and Error LED */
     riot2p->drive->led_status = (byte >> 4) & 0x03;
 
-    if ((riot2p->number == 0) && (drive_check_dual(riot2p->drive->type))) {
-        drive_context[1]->drive->led_status
+    if ((is_drive0(riot2p->number)) && (drive_check_dual(riot2p->drive->type))) {
+        drive_context[mk_drive1(riot2p->number)]->drive->led_status
             = ((byte & 8) ? 1 : 0) | ((byte & 32) ? 2 : 0);
     }
 
@@ -195,8 +196,8 @@ static void store_prb(riot_context_t *riot_context, BYTE byte)
     /* 1001 only needs LED 0 and Error LED */
     riot2p->drive->led_status = (byte >> 4) & 0x03;
 
-    if ((riot2p->number == 0) && (drive_check_dual(riot2p->drive->type))) {
-        drive_context[1]->drive->led_status
+    if ((is_drive0(riot2p->number)) && (drive_check_dual(riot2p->drive->type))) {
+        drive_context[mk_drive1(riot2p->number)]->drive->led_status
             = ((byte & 8) ? 1 : 0) | ((byte & 32) ? 2 : 0);
     }
 }
@@ -236,7 +237,7 @@ static BYTE read_pra(riot_context_t *riot_context)
 static BYTE read_prb(riot_context_t *riot_context)
 {
     driveriot2_context_t *riot2p;
-    BYTE byte = 0xff;
+    BYTE byte = 0xff - 7;
 
     riot2p = (driveriot2_context_t *)(riot_context->prv);
 
@@ -245,10 +246,8 @@ static BYTE read_prb(riot_context_t *riot_context)
     if (parallel_ndac)
         byte -= 0x40;
 
-    if (riot2p->number == 0)
-        byte -= 1;        /* device address bit 0 */
-    byte -= 2;          /* device address bit 1 */
-    byte -= 4;          /* device address bit 2 */
+    /* Here the device number is made known to the disk. */
+    byte += riot2p->drivenumberjumper;     /* device address bit 0, 1, 2 */
 
     return (byte & ~(riot_context->riot_io)[3])
         | ((riot_context->riot_io)[2] & (riot_context->riot_io)[3]);
@@ -271,6 +270,7 @@ void riot2_setup_context(drive_context_t *ctxptr)
     riot->prv = lib_malloc(sizeof(driveriot2_context_t));
     riot2p = (driveriot2_context_t *)(riot->prv);
     riot2p->number = ctxptr->mynumber;
+    riot2p->drivenumberjumper = ctxptr->mynumber & 0x07; /* 3 bits */
 
     riot->context = (void *)ctxptr;
 
@@ -295,4 +295,3 @@ void riot2_setup_context(drive_context_t *ctxptr)
     riot->set_irq = set_irq;
     riot->restore_irq = restore_irq;
 }
-

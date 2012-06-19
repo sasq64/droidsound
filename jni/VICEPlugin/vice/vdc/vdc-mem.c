@@ -105,7 +105,7 @@ static void vdc_perform_fillcopy(void)
 /* VDC interface functions. */
 
 /* Store a value in a VDC register. */
-void REGPARM2 vdc_store(WORD addr, BYTE value)
+void vdc_store(WORD addr, BYTE value)
 {
     BYTE oldval;
 
@@ -337,7 +337,7 @@ void REGPARM2 vdc_store(WORD addr, BYTE value)
             /* Horizontal smooth scroll */
 #ifdef ALLOW_UNALIGNED_ACCESS
             /* Smooth scroll behaviour differs between VDC versions */
-            if (vdc.revision == 0) {
+            if (vdc.revision == VDC_REVISION_0) {
                 /* v0 VDC, incrementing HSS moves screen to the left, so xsmooth should decrease */
                 vdc.xsmooth = ((vdc.regs[22] >> 4) - (vdc.regs[25] & 0x0F)) & 0x0F;
             } else {
@@ -457,7 +457,7 @@ void REGPARM2 vdc_store(WORD addr, BYTE value)
 }
 
 
-BYTE REGPARM1 vdc_read(WORD addr)
+BYTE vdc_read(WORD addr)
 {
     /* bitmask to set the unused bits in returned register values */
     static const BYTE regmask[38] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0xE0, 0x00, 0x00,
@@ -523,12 +523,12 @@ BYTE REGPARM1 vdc_read(WORD addr)
     }
 }
 
-BYTE REGPARM1 vdc_ram_read(WORD addr)
+BYTE vdc_ram_read(WORD addr)
 {
     return vdc.ram[addr & vdc.vdc_address_mask];
 }
 
-void REGPARM2 vdc_ram_store(WORD addr, BYTE value)
+void vdc_ram_store(WORD addr, BYTE value)
 {
    vdc.ram[addr & vdc.vdc_address_mask] = value; 
 }

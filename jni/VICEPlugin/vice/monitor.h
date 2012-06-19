@@ -30,12 +30,10 @@
 #define VICE_MONITOR_H
 
 #include "types.h"
+#include "monitor/asm.h"
 
 /** Generic interface.  **/
-#define NUM_MEMSPACES 6
-
-#define any_watchpoints(mem) \
-    (watchpoints_load[(mem)] || watchpoints_store[(mem)])
+#define NUM_MEMSPACES e_invalid_space
 
 enum mon_int {
     MI_NONE = 0,
@@ -58,7 +56,8 @@ typedef enum t_memspace MEMSPACE;
 enum CPU_TYPE_s {
     CPU_6502,
     CPU_Z80,
-    CPU_6502DTV
+    CPU_6502DTV,
+    CPU_6809
 };
 typedef enum CPU_TYPE_s CPU_TYPE_t;
 
@@ -67,13 +66,14 @@ struct interrupt_cpu_status_s;
 struct monitor_cpu_type_s {
     CPU_TYPE_t cpu_type;
     unsigned int (*asm_addr_mode_get_size)(unsigned int mode, unsigned int p0,
-                                           unsigned int p1);
+                                           unsigned int p1, unsigned int p2);
     const struct asm_opcode_info_s *(*asm_opcode_info_get)(unsigned int p0, unsigned int p1,
                                                            unsigned int p2);
-    int (*mon_assemble_instr)(const char *opcode_name, unsigned int operand);
+    int (*mon_assemble_instr)(const char *opcode_name, asm_mode_addr_info_t operand);
     unsigned int (*mon_register_get_val)(int mem, int reg_id);
     void (*mon_register_set_val)(int mem, int reg_id, WORD val);
     void (*mon_register_print)(int mem);
+    const char* (*mon_register_print_ex)(int mem);
     struct mon_reg_list_s *(*mon_register_list_get)(int mem);
     void (*mon_register_list_set)(struct mon_reg_list_s *mon_reg_list, int mem);
 };
@@ -90,6 +90,9 @@ struct monitor_interface_s {
 
     /* Pointer to the registers of the DTV CPU.  */
     struct mos6510dtv_regs_s *dtv_cpu_regs;
+
+    /* Pointer to the registers of the DTV CPU.  */
+    struct h6809_regs_s *h6809_cpu_regs;
 
     /* Pointer to the alarm/interrupt status.  */
     struct interrupt_cpu_status_s *int_status;
@@ -120,12 +123,6 @@ struct monitor_interface_s {
 typedef struct monitor_interface_s monitor_interface_t;
 
 /* Externals */
-struct break_list_s;
-extern struct break_list_s *watchpoints_load[NUM_MEMSPACES];
-extern struct break_list_s *watchpoints_store[NUM_MEMSPACES];
-extern struct break_list_s *breakpoints[NUM_MEMSPACES];
-
-extern MEMSPACE caller_space;
 extern unsigned monitor_mask[NUM_MEMSPACES];
 
 
@@ -137,7 +134,8 @@ extern void monitor_init(monitor_interface_t *maincpu_interface,
                          struct monitor_cpu_type_s **asmarray);
 extern void monitor_shutdown(void);
 extern int monitor_cmdline_options_init(void);
-extern void monitor_startup(void);
+extern int monitor_resources_init(void);
+void monitor_startup(MEMSPACE mem);
 extern void monitor_startup_trap(void);
 
 extern void monitor_abort(void);
@@ -145,7 +143,7 @@ extern void monitor_abort(void);
 extern int monitor_force_import(MEMSPACE mem);
 extern void monitor_check_icount(WORD a);
 extern void monitor_check_icount_interrupt(void);
-extern void monitor_check_watchpoints(WORD a);
+extern void monitor_check_watchpoints(unsigned int lastpc, unsigned int pc);
 
 extern void monitor_cpu_type_set(const char *cpu_type);
 
@@ -166,13 +164,9 @@ extern int mon_out(const char *format, ...);
 #endif
 
 /** Breakpoint interface.  */
-/* Defines */
-#define monitor_check_breakpoints(mem, addr) \
-    monitor_breakpoint_check_checkpoint(mem, addr, breakpoints[mem])
 
 /* Prototypes */
-extern int monitor_breakpoint_check_checkpoint(MEMSPACE mem, WORD addr,
-                                               struct break_list_s *list);
+extern int monitor_check_breakpoints(MEMSPACE mem, WORD addr);
 
 /** Disassemble interace */
 /* Prototypes */
@@ -189,7 +183,9 @@ extern void mon_ioreg_add_list(struct mem_ioreg_list_s **list, const char *name,
 /* Assembler initialization.  */
 extern void asm6502_init(struct monitor_cpu_type_s *monitor_cpu_type);
 extern void asm6502dtv_init(struct monitor_cpu_type_s *monitor_cpu_type);
+extern void asm6809_init(struct monitor_cpu_type_s *monitor_cpu_type);
 extern void asmz80_init(struct monitor_cpu_type_s *monitor_cpu_type);
+extern void asm6809_init(struct monitor_cpu_type_s *monitor_cpu_type);
 
 struct monitor_cartridge_commands_s {
     int (*cartridge_attach_image)(int type, const char *filename);
@@ -204,7 +200,7 @@ extern monitor_cartridge_commands_t mon_cart_cmd;
 
 /* CPU history/memmap prototypes */
 extern void monitor_cpuhistory_store(unsigned int addr, unsigned int op, unsigned int p1, unsigned int p2,
-                                     BYTE reg_a, BYTE reg_x, BYTE reg_y, 
+                                     BYTE reg_a, BYTE reg_x, BYTE reg_y,
                                      BYTE reg_sp, unsigned int reg_st);
 extern void monitor_memmap_store(unsigned int addr, unsigned int type);
 

@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *
  * 16/24bpp support added by
  *  Steven Tieu <stieu@physics.ubc.ca>
@@ -29,6 +29,14 @@
  *
  */
 
+/* #define DEBUG_CRTC */
+
+#ifdef DEBUG_CRTC
+#define DBG(_x_)        log_debug _x_
+#else
+#define DBG(_x_)
+#endif
+
 #include "vice.h"
 
 #include <stdio.h>
@@ -47,6 +55,7 @@
 #include "machine.h"
 #include "maincpu.h"
 #include "raster-canvas.h"
+#include "raster-changes.h"
 #include "raster-line.h"
 #include "raster-modes.h"
 #include "resources.h"
@@ -54,6 +63,7 @@
 #include "types.h"
 #include "vsync.h"
 #include "video.h"
+#include "viewport.h"
 
 
 #define crtc_min(a,b)   (((a)<(b))?(a):(b))
@@ -77,7 +87,7 @@ crtc_t crtc = {
     1,              /* hw_cols */
     0,              /* hw_blank */
     0x3ff,          /* vaddr_mask */
-    0x800,          /* vaddr_charswitch */
+    0x2000,         /* vaddr_charswitch */
     512,            /* vaddr_charoffset */
     0x1000          /* vaddr_revswitch */
 };
@@ -229,7 +239,10 @@ static inline void crtc_update_disp_char(void)
 /* return pixel aspect ratio for current video mode */
 /* FIXME: calculate proper values.
    look at http://www.codebase64.org/doku.php?id=base:pixel_aspect_ratio&s[]=aspect
-   for an example calculation
+   for an example calculation.
+   The Fat-40 models have a different aspect ratio than the older,
+   CRTC-less models, since they display their 40 characters in the same
+   space as 80 characters, and the screen is wider than before.
 */
 static float crtc_get_pixel_aspect(void)
 {
@@ -244,7 +257,7 @@ static float crtc_get_pixel_aspect(void)
             return 0.75f;
     }
 */
-    return 1.0f; /* assume 1:1 for CRTC */
+    return 1.0f; /* assume 1:1 for CRTC; corrected by 1x2 render mode */
 }
 
 /* return type of monitor used for current video mode */
@@ -256,8 +269,9 @@ static int crtc_get_crt_type(void)
 /* update screen window */
 void crtc_update_window(void)
 {
-    if (!crtc.initialized)
+    if (!crtc.initialized) {
         return;
+    }
 
     crtc.raster.display_ystart = CRTC_SCREEN_BORDERHEIGHT;
     crtc.raster.display_ystop = crtc.screen_height
@@ -265,6 +279,8 @@ void crtc_update_window(void)
     crtc.raster.display_xstart = CRTC_SCREEN_BORDERWIDTH;
     crtc.raster.display_xstop = crtc.screen_width
                                 - 2 * CRTC_SCREEN_BORDERWIDTH;
+
+    crtc_update_renderer();
 
     raster_set_geometry(&crtc.raster,
                         crtc.screen_width, crtc.screen_height,
@@ -307,21 +323,18 @@ void crtc_set_chargen_addr(BYTE *chargen, int cmask)
 
 void crtc_set_screen_options(int num_cols, int rasterlines)
 {
-    crtc.screen_width = (num_cols + CRTC_EXTRA_COLS) * 8
-                        + 2 * CRTC_SCREEN_BORDERWIDTH;
-    crtc.screen_height = rasterlines + CRTC_EXTRA_RASTERLINES
-                         + 2 * CRTC_SCREEN_BORDERHEIGHT;
+    crtc.screen_width = (num_cols + CRTC_EXTRA_COLS) * 8 + 2 * CRTC_SCREEN_BORDERWIDTH;
+    crtc.screen_height = rasterlines + CRTC_EXTRA_RASTERLINES + 2 * CRTC_SCREEN_BORDERHEIGHT;
 
-#if 0
-    log_debug("crtc_set_screen_options: cols=%d, rl=%d -> w=%d, h=%d\n",
-              num_cols, rasterlines, crtc.screen_width, crtc.screen_height);
-#endif
+    DBG(("crtc_set_screen_options: cols=%d, rl=%d -> w=%d, h=%d",
+              num_cols, rasterlines, crtc.screen_width, crtc.screen_height));
 
     crtc_update_window();
     resources_touch("CrtcDoubleSize");
 
-    if (crtc.raster.canvas != NULL)
-        video_viewport_resize(crtc.raster.canvas);
+    if (crtc.raster.canvas != NULL) {
+        video_viewport_resize(crtc.raster.canvas, 1);
+    }
 }
 
 void crtc_set_hw_options(int hwflag, int vmask, int vchar, int vcoffset,
@@ -367,6 +380,8 @@ static void clk_overflow_callback(CLOCK sub, void *data)
 raster_t *crtc_init(void)
 {
     raster_t *raster;
+
+    DBG(("crtc_init"));
 
     crtc.log = log_open("CRTC");
 

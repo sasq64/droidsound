@@ -3,7 +3,7 @@
  *
  * Written by
  *  Daniel Sladic <sladic@eecg.toronto.edu>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -54,7 +54,7 @@ iecbus_t *iecbus_drive_port(void)
     return NULL;
 }
 
-void parallel_cable_drive_write(BYTE data, int handshake, unsigned int dnr)
+void parallel_cable_drive_write(int port, BYTE data, int handshake, unsigned int dnr)
 {
 }
 
@@ -62,4 +62,3 @@ int iec_available_busses(void)
 {
     return IEC_BUS_IEEE;
 }
-

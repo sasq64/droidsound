@@ -41,6 +41,7 @@
 #include "types.h"
 #include "util.h"
 #include "x64.h"
+#include "p64.h"
 
 
 static log_t createdisk_log = LOG_DEFAULT;
@@ -117,6 +118,66 @@ static int fsimage_create_gcr(disk_image_t *image)
     return 0;
 }
 
+static int fsimage_create_p64(disk_image_t *image)
+{
+    TP64MemoryStream P64MemoryStreamInstance;
+    TP64Image P64Image;
+    BYTE gcr_track[7928], *gcrptr;
+    unsigned int track, sector;
+    fsimage_t *fsimage;
+    int rc = -1;
+
+    fsimage = image->media.fsimage;
+
+    P64ImageCreate(&P64Image);
+
+    for (track = 0; track < MAX_TRACKS_1541; track++) {
+        const int raw_track_size[4] = { 6250, 6666, 7142, 7692 };
+
+        memset(&gcr_track[0], 0x55, 7928);
+        gcrptr = &gcr_track[0];
+
+        for (sector = 0;
+        sector < disk_image_sector_per_track(DISK_IMAGE_TYPE_D64, track + 1);
+        sector++) {
+            BYTE chksum, id[2], rawdata[260];
+            int i;
+
+            id[0] = id[1] = 0xa0;
+            memset(rawdata, 0, 260);
+            rawdata[0] = 7;
+            chksum = rawdata[1];
+            for (i = 1; i < 256; i++) {
+                chksum ^= rawdata[i + 1];
+            }
+            rawdata[257] = chksum;
+
+            gcr_convert_sector_to_GCR(rawdata, gcrptr, track + 1, sector,
+                                      id[0], id[1], 0);
+            gcrptr += 360;
+        }
+
+
+        P64PulseStreamConvertFromGCR(&P64Image.PulseStreams[(track + 1) << 1], (void*)&gcr_track[0], raw_track_size[disk_image_speed_map_1541(track)] << 3);
+
+    }
+
+    P64MemoryStreamCreate(&P64MemoryStreamInstance);
+    P64MemoryStreamClear(&P64MemoryStreamInstance);
+    if (P64ImageWriteToStream(&P64Image,&P64MemoryStreamInstance)) {
+        if (fwrite(P64MemoryStreamInstance.Data, P64MemoryStreamInstance.Size, 1, fsimage->fd) < 1) {
+          log_error(createdisk_log, "Cannot write image data.");
+          rc = -1;
+        } else {
+          rc = 0;
+        }
+    }
+    P64MemoryStreamDestroy(&P64MemoryStreamInstance);
+
+    P64ImageDestroy(&P64Image);
+
+    return rc;
+}
 
 /*-----------------------------------------------------------------------*/
 /* Create a disk image.  */
@@ -124,12 +185,12 @@ static int fsimage_create_gcr(disk_image_t *image)
 int fsimage_create(const char *name, unsigned int type)
 {
     disk_image_t *image;
-    unsigned int size, i;
+    unsigned int size, i, size2;
     BYTE block[256];
     fsimage_t *fsimage;
     int rc = 0;
 
-    size = 0;
+    size = 0; size2 = 0;
 
     switch(type) {
       case DISK_IMAGE_TYPE_D64:
@@ -152,6 +213,20 @@ int fsimage_create(const char *name, unsigned int type)
         size = D82_FILE_SIZE;
         break;
       case DISK_IMAGE_TYPE_G64:
+        break;
+      case DISK_IMAGE_TYPE_P64:
+        break;
+      case DISK_IMAGE_TYPE_D1M:
+        size = D1M_FILE_SIZE;
+        size2 = 40 * 256;
+        break;
+      case DISK_IMAGE_TYPE_D2M:
+        size = D2M_FILE_SIZE;
+        size2 = 80 * 256;
+        break;
+      case DISK_IMAGE_TYPE_D4M:
+        size = D4M_FILE_SIZE;
+        size2 = 160 * 256;
         break;
       default:
         log_error(createdisk_log,
@@ -210,7 +285,10 @@ int fsimage_create(const char *name, unsigned int type)
       case DISK_IMAGE_TYPE_D81:
       case DISK_IMAGE_TYPE_D80:
       case DISK_IMAGE_TYPE_D82:
-        for (i = 0; i < (size / 256); i++) {
+      case DISK_IMAGE_TYPE_D1M:
+      case DISK_IMAGE_TYPE_D2M:
+      case DISK_IMAGE_TYPE_D4M:
+        for (i = 0; i < ((size - size2) / 256); i++) {
             if (fwrite(block, 256, 1, fsimage->fd) < 1) {
                 log_error(createdisk_log,
                           "Cannot seek to end of disk image `%s'.",
@@ -219,9 +297,52 @@ int fsimage_create(const char *name, unsigned int type)
                 break;
             }
         }
+        if (!rc && size2) {
+            for (i = 0; i < size2 / 256; i++) {
+                memset(block, 0, 256);
+                if (i == 5) {
+                    memset(block, 255, 224);
+                    block[0] = 0x00;
+                    block[0x38] = 0x00;
+                    block[0x70] = 0x00;
+                    block[0xa8] = 0x00;
+                    block[0x39] = 0x00;
+                    block[0x71] = (size - size2) >> 17;
+                    block[0xa9] = (size - size2) >> 9;
+                    block[0xe2] = 1;
+                    block[0xe3] = 1;
+                    memcpy(block + 0xf0, "\x43\x4d\x44\x20\x46\x44\x20\x53\x45\x52\x49\x45\x53\x20\x20\x20",16);
+                } else if (i == 8) {
+                    block[0x00] = 0x01;
+                    block[0x01] = 0x01;
+                    block[0x02] = 0xff;
+                    memcpy(block + 5, "\x53\x59\x53\x54\x45\x4d\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0\xa0", 16);
+                    block[0x22] = 0x01;
+                    memcpy(block + 0x25, "\x50\x41\x52\x54\x49\x54\x49\x4f\x4e\x20\x31\xa0\xa0\xa0\xa0\xa0", 16);
+                    block[0x3e] = (size - size2) >> 17;
+                    block[0x3f] = (size - size2) >> 9;
+                } else if (i > 8 && i < 11) {
+                    block[0x00] = 0x01;
+                    block[0x01] = i - 7;
+                } else if (i == 11) {
+                    block[0x01] = 0xff;
+                }
+                if (fwrite(block, 256, 1, fsimage->fd) < 1) {
+                    log_error(createdisk_log,
+                            "Cannot seek to end of disk image `%s'.",
+                            fsimage->name);
+                    rc = -1;
+                    break;
+                }
+            }
+            break;
+        }
         break;
       case DISK_IMAGE_TYPE_G64:
         rc = fsimage_create_gcr(image);
+        break;
+      case DISK_IMAGE_TYPE_P64:
+        rc = fsimage_create_p64(image);
         break;
     }
 
@@ -236,4 +357,3 @@ void fsimage_create_init(void)
 {
     createdisk_log = log_open("Disk Create");
 }
-

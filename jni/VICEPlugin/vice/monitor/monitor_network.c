@@ -38,19 +38,25 @@
 #include "log.h"
 #include "monitor.h"
 #include "monitor_network.h"
+#include "montypes.h"
 #include "resources.h"
 #include "translate.h"
+#include "ui.h"
 #include "uiapi.h"
 #include "util.h"
 #include "vicesocket.h"
 
 #ifdef HAVE_NETWORK
 
+#define ADDR_LIMIT(x) ((WORD)(addr_mask(x)))
+
 static vice_network_socket_t * listen_socket = NULL;
 static vice_network_socket_t * connected_socket = NULL;
 
 static char * monitor_server_address = NULL;
 static int monitor_enabled = 0;
+
+static int monitor_binary_input = 0;
 
 
 int monitor_network_transmit(const char * buffer, size_t buffer_length)
@@ -122,31 +128,15 @@ void monitor_check_remote(void)
     }
 }
 
-char * monitor_network_get_command_line(void)
+static char * monitor_network_extract_text_command_line(char * pbuffer, int buffer_size, int * pbuffer_pos)
 {
-    static char buffer[200] = { 0 };
-    static int bufferpos = 0;
-
-    char * p = NULL;
     char * cr_start = NULL;
     char * cr_end = NULL;
+    char * p = NULL;
 
     do {
-        if (monitor_network_data_available()) {
-
-            int n = monitor_network_receive(buffer + bufferpos, sizeof buffer - bufferpos - 1);
-
-            if (n > 0) {
-                bufferpos += n;
-            }
-            else if (n <= 0) {
-                monitor_network_quit();
-                break;
-            }
-        }
-
-        cr_start = strchr(buffer, '\n');
-        cr_end   = strchr(buffer, '\r');
+        cr_start = strchr(pbuffer, '\n');
+        cr_end   = strchr(pbuffer, '\r');
 
         if (cr_start || cr_end) {
             if (cr_start == NULL) {
@@ -169,25 +159,217 @@ char * monitor_network_get_command_line(void)
             assert(cr_end != NULL);
 
             *cr_start = 0;
-            p = lib_stralloc(buffer);
+            p = lib_stralloc(pbuffer);
 
-            memmove(buffer, cr_end + 1, strlen(cr_end + 1) );
+            memmove(pbuffer, cr_end + 1, strlen(cr_end + 1) );
 
-            bufferpos -= (int) strlen(p) + (cr_end - cr_start) + 1;
-            buffer[bufferpos] = 0;
+            *pbuffer_pos -= (int)(strlen(p) + (cr_end - cr_start) + 1);
+            pbuffer[*pbuffer_pos] = 0;
             break;
         }
-        else if (bufferpos >= sizeof buffer) {
+        else if (*pbuffer_pos >= buffer_size) {
             /* we have a command that is too large: 
              * process it anyway, so the sender knows something is wrong
              */
-            p = lib_stralloc(buffer);
-            bufferpos = 0;
-            buffer[0] = 0;
+            p = lib_stralloc(pbuffer);
+            *pbuffer_pos = 0;
+            pbuffer[0] = 0;
             break;
         }
 
-        ui_dispatch_next_event();
+    } while (0);
+
+    return p;
+}
+
+/*
+    The binary remote monitor commands are injected into the "normal" commands. 
+    The remote monitor detects a binary command because it starts with ASCII STX 
+    (0x02). After this, there is one byte telling the length of the command. The 
+    next byte describes the command. Currently, only 0x01 is implemented which 
+    is "memdump". 
+
+    Note that the command length byte (the one after STX) does *not* count the 
+    STX, the command length nor the command byte.
+
+    Also note that there is no termination character. The command length acts as 
+    synchronisation point.
+
+    For the memdump command, the next bytes are as follows:
+    1. start address low
+    2. start address high
+    3. end address low
+    4. end address high
+    5. memspace
+
+    The memspace describes which part of the computer you want to read: 
+    0 --> the computer (C64)
+    1 --> drive 8, 2 --> drive 9, 3 --> drive 10, 4 --> drive 11 
+
+    So, for a memdump of 0xa0fe to 0xa123, you have to issue the bytes 
+    (in this order):
+
+    0x02 (STX), 0x05 (command length), 0x01 (command: memdump), 0xfe (SA low), 
+    0xa0 (SA high), 0x23 (EA low), 0xa1 (EA high), 0x00 (computer memspace) 
+
+    The answer looks as follows:
+
+    byte 0: STX (0x02)
+    byte 1: answer length low
+    byte 2: answer length (bits 8-15)
+    byte 3: answer length (bits 16-23)
+    byte 4: answer length (bits 24-31, that is, high)
+    byte 5: error code
+    byte 6 - (answer length+6): the binary answer
+    [...]
+
+    Error codes are currently:
+    0x00: ok, everything worked
+    0x80: command length is not long enough for this specific command 
+    0x81: an invalid parameter occurred
+
+    If an error stats but "ok" occurs, then VICE will output more details for 
+    the reason into its log. [...]
+*/
+
+#define ASC_STX 0x02
+#define MON_CMD_MEMDUMP 1
+
+#define MON_ERR_OK            0
+#define MON_ERR_CMD_TOO_SHORT 0x80  /* command length is not enough for this command */
+#define MON_ERR_INVALID_PARAMETER 0x81  /* command has invalid parameters */
+
+static void monitor_network_binary_answer(unsigned int length, unsigned char errorcode, unsigned char * answer)
+{
+    unsigned char binlength[6];
+
+    binlength[0] = ASC_STX;
+    binlength[1] =  length        & 0xFFu;
+    binlength[2] = (length >>  8) & 0xFFu;
+    binlength[3] = (length >> 16) & 0xFFu;
+    binlength[4] = (length >> 24) & 0xFFu;
+    binlength[5] = errorcode;
+
+    monitor_network_transmit((char*)binlength, sizeof binlength);
+
+    if (answer != NULL) {
+        monitor_network_transmit((char*)answer, length);
+    }
+}
+
+static void monitor_network_binary_error(unsigned char errorcode)
+{
+    monitor_network_binary_answer(0, errorcode, NULL);
+}
+
+static void monitor_network_process_binary_command(unsigned char * pbuffer, int buffer_size, int * pbuffer_pos, unsigned int command_length)
+{
+    int command = pbuffer[2];
+    int ok = 1;
+
+    switch (command) {
+    case MON_CMD_MEMDUMP:
+        if (command_length < 5) {
+            monitor_network_binary_error(MON_ERR_CMD_TOO_SHORT);
+        }
+        else {
+            unsigned int startaddress = pbuffer[3] | (pbuffer[4] << 8);
+            unsigned int endaddress = pbuffer[4] | (pbuffer[5] << 8);
+
+            MEMSPACE memspace = e_default_space;
+
+            switch (pbuffer[5])
+            {
+            case 0: memspace = e_comp_space;   break;
+            case 1: memspace = e_disk8_space;  break;
+            case 2: memspace = e_disk9_space;  break;
+            case 3: memspace = e_disk10_space; break;
+            case 4: memspace = e_disk11_space; break;
+            default:
+                monitor_network_binary_error(MON_ERR_INVALID_PARAMETER);
+                log_message(LOG_DEFAULT, "monitor_network binary memdump: Unknown memspace %u", pbuffer[5]);
+                ok = 0;
+            }
+            
+            if (startaddress >= endaddress) {
+                monitor_network_binary_error(MON_ERR_INVALID_PARAMETER);
+                log_message(LOG_DEFAULT, "monitor_network binary memdump: wrong start and/or end address %04x - %04x",
+                    startaddress, endaddress);
+
+                ok = 0;
+            }
+
+            if (ok) {
+                unsigned int length = endaddress - startaddress + 1;
+                unsigned int i;
+
+                unsigned char * p = lib_malloc(length);
+
+                for (i = 0; i < length; i++) {
+                    p[i] = mon_get_mem_val(memspace, (WORD)ADDR_LIMIT(startaddress + i));
+                }
+                
+                monitor_network_binary_answer(length, MON_ERR_OK, p);
+                lib_free(p);
+            }
+        }
+        break;
+
+    default:
+        log_message(LOG_DEFAULT, "monitor_network binary command: unknown command %u, skipping command length of %u", command, command_length);
+        break;
+    }
+
+    *pbuffer_pos = 0;
+    pbuffer[0] = 0;
+}
+
+
+char * monitor_network_get_command_line(void)
+{
+    static char buffer[260] = { 0 };
+    static int bufferpos = 0;
+
+    char * p = NULL;
+
+    do {
+        int n = monitor_network_receive(buffer + bufferpos, sizeof buffer - bufferpos - 1);
+
+        if (n > 0) {
+            bufferpos += n;
+        }
+        else if (n <= 0) {
+            monitor_network_quit();
+            break;
+        }
+
+        /* check if we got a binary command */
+        if (bufferpos == n)
+        {
+            if (buffer[0] == ASC_STX) {
+                monitor_binary_input = 1;
+            }
+        }
+
+        if (monitor_binary_input) {
+            if (bufferpos > 2) {
+                /* we already got the length, get it */
+                unsigned int command_length = buffer[1];
+
+                if (3 + command_length <= bufferpos) {
+                    monitor_network_process_binary_command((unsigned char*)buffer, sizeof buffer, &bufferpos, command_length);
+                    monitor_binary_input = 0;
+                }
+            }
+        }
+        else {
+            p = monitor_network_extract_text_command_line(buffer, sizeof buffer, &bufferpos);
+            if (p) {
+                break;
+            }
+        }
+           
+        ui_dispatch_events();
 
     } while (1);
 
@@ -376,6 +558,27 @@ int monitor_is_remote(void)
     return connected_socket != NULL;
 }
 
+ui_jam_action_t monitor_network_ui_jam_dialog(const char *format, ...)
+{
+    char * txt;
+
+    char init_string[] = "An error occurred: ";
+    char end_string[] = "\n";
+
+    va_list ap;
+    va_start(ap, format);
+    txt = lib_mvsprintf(format, ap);
+    va_end(ap);
+
+    monitor_network_transmit(init_string, sizeof init_string - 1);
+    monitor_network_transmit(txt, strlen(txt));
+    monitor_network_transmit(end_string, sizeof end_string - 1);
+
+    lib_free(txt);
+
+    return UI_JAM_HARD_RESET;
+}
+
 #else
 
 int monitor_network_resources_init(void)
@@ -409,6 +612,11 @@ char * monitor_network_get_command_line(void)
 int monitor_is_remote(void)
 {
     return 0;
+}
+
+ui_jam_action_t monitor_network_ui_jam_dialog(const char *format, ...)
+{
+    return UI_JAM_HARD_RESET;
 }
 
 #endif

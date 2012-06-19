@@ -25,13 +25,21 @@
  *
  */
 
+/* #define DEBUG_VIDEO */
+
+#ifdef DEBUG_VIDEO
+#define DBG(_x_)        log_debug _x_
+#else
+#define DBG(_x_)
+#endif
+
 #include "vice.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "lib.h"
 #include "resources.h"
-#include "video-resources.h"
 #include "video-color.h"
 #include "video.h"
 #include "videoarch.h"
@@ -39,22 +47,37 @@
 #include "util.h"
 #include "log.h"
 
-video_resources_t video_resources =
+/*-----------------------------------------------------------------------*/
+/* global resources.  */
+
+static int hwscale_possible;
+
+static int set_hwscale_possible(int val, void *param)
 {
-    1000, /* color_saturation */
-    1100, /* color_contrast */
-    1100, /* color_brightness */ 
-    2200, /* color_gamma */
-    1000, /* color_tint */
-    0,    /* delayloop_emulation */
-    667,  /* pal_scanlineshade */
-    500,  /* pal_blur */
-    1250, /* pal_oddlines_phase */
-    750   /* pal_oddlines_offset */
+    hwscale_possible = val;
+
+    return 0;
+}
+
+static resource_int_t resources_hwscale_possible[] =
+{
+    { "HwScalePossible",
+#ifdef HAVE_HWSCALE
+      1,
+#else
+      0,
+#endif
+      RES_EVENT_NO, NULL,
+      &hwscale_possible, set_hwscale_possible, NULL },
+    RESOURCE_INT_LIST_END
 };
 
 int video_resources_init(void)
 {
+    if (resources_register_int(resources_hwscale_possible) < 0) {
+        return -1;
+    }
+
     return video_arch_resources_init();
 }
 
@@ -66,7 +89,7 @@ void video_resources_shutdown(void)
 /*-----------------------------------------------------------------------*/
 /* Per chip resources.  */
 
-static void video_resources_update_ui(video_canvas_t *canvas);
+static int video_resources_update_ui(video_canvas_t *canvas);
 
 struct video_resource_chip_mode_s {
     video_canvas_t *resource_chip;
@@ -94,42 +117,33 @@ static int set_double_size_enabled(int val, void *param)
 
     if (cap_render->sizex > 1
         && (video_chip_cap->dsize_limit_width == 0
-        || (canvas->draw_buffer->canvas_width > 0
-        && canvas->draw_buffer->canvas_width
-        <= video_chip_cap->dsize_limit_width))) {
-        canvas->videoconfig->doublesizex = 1;
+            || (canvas->draw_buffer->canvas_width
+                   <= video_chip_cap->dsize_limit_width))
+        ) {
+        canvas->videoconfig->doublesizex = (cap_render->sizex - 1);
     } else {
         canvas->videoconfig->doublesizex = 0;
     }
 
     if (cap_render->sizey > 1
         && (video_chip_cap->dsize_limit_height == 0
-        || (canvas->draw_buffer->canvas_height > 0
-        && canvas->draw_buffer->canvas_height
-        <= video_chip_cap->dsize_limit_height))) {
-        canvas->videoconfig->doublesizey = 1;
+            || (canvas->draw_buffer->canvas_height
+                   <= video_chip_cap->dsize_limit_height))
+        ) {
+        canvas->videoconfig->doublesizey = (cap_render->sizey - 1);
     } else {
         canvas->videoconfig->doublesizey = 0;
     }
 
-    /* FIXME: Kludge needed until kind of render and dimensions are
-       separated from `rendermode' (which is overloaded currently). */
-    if (canvas->videoconfig->rendermode == VIDEO_RENDER_RGB_2X2) {
-        if (canvas->videoconfig->doublesizex == 0) {
-            canvas->videoconfig->rendermode = VIDEO_RENDER_RGB_1X2;
-        }
-        if (canvas->videoconfig->doublesizex == 0
-            && canvas->videoconfig->doublesizey == 0) {
-            canvas->videoconfig->rendermode = VIDEO_RENDER_RGB_1X1;
-        }
-    }
+
+    DBG(("set_double_size_enabled sizex:%d sizey:%d doublesizex:%d doublesizey:%d rendermode:%d", cap_render->sizex, cap_render->sizey, canvas->videoconfig->doublesizex, canvas->videoconfig->doublesizey, canvas->videoconfig->rendermode));
 
     if ((canvas->videoconfig->double_size_enabled != val
-        || old_doublesizex != canvas->videoconfig->doublesizex
-        || old_doublesizey != canvas->videoconfig->doublesizey)
+         || old_doublesizex != canvas->videoconfig->doublesizex
+         || old_doublesizey != canvas->videoconfig->doublesizey)
         && canvas->initialized
         && canvas->viewport->update_canvas > 0) {
-        video_viewport_resize(canvas);
+        video_viewport_resize(canvas, 1);
     }
 
     canvas->videoconfig->double_size_enabled = val;
@@ -172,15 +186,6 @@ static resource_int_t resources_chip_scan[] =
     RESOURCE_INT_LIST_END
 };
 
-static int hwscale_possible;
-
-static int set_hwscale_possible(int val, void *param)
-{
-    hwscale_possible = val;
-
-    return 0;
-}
-
 static int set_hwscale_enabled(int val, void *param)
 {
     video_canvas_t *canvas = (video_canvas_t *)param;
@@ -195,7 +200,7 @@ static int set_hwscale_enabled(int val, void *param)
     canvas->videoconfig->hwscale = val;
 
     if (canvas->initialized) {
-        video_viewport_resize(canvas);
+        video_viewport_resize(canvas, 1);
         video_color_update_palette(canvas);
     }
 
@@ -208,29 +213,52 @@ static const char *vname_chip_hwscale[] = { "HwScale", NULL };
 
 static resource_int_t resources_chip_hwscale[] =
 {
-    { NULL, 0, RES_EVENT_NO, NULL,
-      NULL, set_hwscale_enabled, NULL },
-    RESOURCE_INT_LIST_END
-};
-
-static resource_int_t resources_chip_hwscale_possible[] =
-{
-    { "HwScalePossible",
 #ifdef HAVE_HWSCALE
-      1,
+    { NULL, 1, RES_EVENT_NO, NULL, NULL, set_hwscale_enabled, NULL },
 #else
-      0,
+    { NULL, 0, RES_EVENT_NO, NULL, NULL, set_hwscale_enabled, NULL },
 #endif
-      RES_EVENT_NO, NULL,
-      &hwscale_possible, set_hwscale_possible, NULL },
     RESOURCE_INT_LIST_END
 };
 
-static int set_scale2x_enabled(int val, void *param)
+static int set_chip_rendermode(int val, void *param)
 {
+    char *chip, *dsize;
+    int old, err;
     video_canvas_t *canvas = (video_canvas_t *)param;
 
-    canvas->videoconfig->scale2x = val;
+    old = canvas->videoconfig->filter;
+    chip = canvas->videoconfig->chip_name;
+
+    DBG(("set_chip_rendermode %s (%d->%d)", chip, old, val));
+
+    dsize = util_concat(chip, "DoubleSize", NULL);
+
+    canvas->videoconfig->filter = val;
+    canvas->videoconfig->scale2x = 0; /* FIXME: remove this */
+    err = 0;
+    switch (val) {
+        case VIDEO_FILTER_NONE:
+            break;
+        case VIDEO_FILTER_CRT:
+            if (video_color_update_palette(canvas) < 0) {
+                err = 1;
+            }
+            break;
+        case VIDEO_FILTER_SCALE2X:
+            /* set double size */
+            if (resources_set_int(dsize, 1) < 0) {
+                err = 1;
+            }
+            canvas->videoconfig->scale2x = 1; /* FIXME: remove this */
+            break;
+    }
+
+    if (err) {
+        canvas->videoconfig->filter = old;
+    }
+
+    lib_free(dsize);
 
     if (canvas->initialized) {
         video_canvas_refresh_all(canvas);
@@ -241,12 +269,12 @@ static int set_scale2x_enabled(int val, void *param)
     return 0;
 }
 
-static const char *vname_chip_scale2x[] = { "Scale2x", NULL };
+static const char *vname_chip_rendermode[] = { "Filter", NULL };
 
-static resource_int_t resources_chip_scale2x[] =
+static resource_int_t resources_chip_rendermode[] =
 {
     { NULL, 0, RES_EVENT_NO, NULL,
-      NULL, set_scale2x_enabled, NULL },
+      NULL, set_chip_rendermode, NULL },
     RESOURCE_INT_LIST_END
 };
 
@@ -426,6 +454,170 @@ static resource_int_t resources_chip_double_buffer[] =
     RESOURCE_INT_LIST_END
 };
 
+/*
+      resources for the color/palette generator
+*/
+
+static int set_color_saturation(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 2000) {
+        val = 2000;
+    }
+    canvas->videoconfig->video_resources.color_saturation = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_color_contrast(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 2000) {
+        val = 2000;
+    }
+    canvas->videoconfig->video_resources.color_contrast = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_color_brightness(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 2000) {
+        val = 2000;
+    }
+    canvas->videoconfig->video_resources.color_brightness = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_color_gamma(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 4000) {
+        val = 4000;
+    }
+    canvas->videoconfig->video_resources.color_gamma = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_color_tint(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 2000) {
+        val = 2000;
+    }
+    canvas->videoconfig->video_resources.color_tint = val;
+    return video_color_update_palette(canvas);
+}
+
+static const char *vname_chip_colors[] = { "ColorSaturation", "ColorContrast", "ColorBrightness", "ColorGamma", "ColorTint", NULL };
+
+static resource_int_t resources_chip_colors[] =
+{
+    { NULL, 1000, RES_EVENT_NO, NULL,
+      NULL, set_color_saturation, NULL },
+    { NULL, 1000, RES_EVENT_NO, NULL,
+      NULL, set_color_contrast, NULL },
+    { NULL, 1000, RES_EVENT_NO, NULL,
+      NULL, set_color_brightness, NULL },
+    { NULL, 2200, RES_EVENT_NO, NULL,
+      NULL, set_color_gamma, NULL },
+    { NULL, 1000, RES_EVENT_NO, NULL,
+      NULL, set_color_tint, NULL },
+    RESOURCE_INT_LIST_END
+};
+
+static int set_pal_scanlineshade(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 1000) {
+        val = 1000;
+    }
+    canvas->videoconfig->video_resources.pal_scanlineshade = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_pal_oddlinesphase(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 2000) {
+        val = 2000;
+    }
+    canvas->videoconfig->video_resources.pal_oddlines_phase = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_pal_oddlinesoffset(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 2000) {
+        val = 2000;
+    }
+    canvas->videoconfig->video_resources.pal_oddlines_offset = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_pal_blur(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    if (val < 0) {
+        val = 0;
+    }
+    if (val > 1000) {
+        val = 1000;
+    }
+    canvas->videoconfig->video_resources.pal_blur = val;
+    return video_color_update_palette(canvas);
+}
+
+static int set_audioleak(int val, void *param)
+{
+    video_canvas_t *canvas = (video_canvas_t *)param;
+    canvas->videoconfig->video_resources.audioleak = val ? 1 : 0;
+    return 0;
+}
+
+static const char *vname_chip_crtemu[] = { "PALScanLineShade", "PALBlur", "PALOddLinePhase", "PALOddLineOffset", "AudioLeak", NULL };
+
+static resource_int_t resources_chip_crtemu[] =
+{
+    { NULL, 667, RES_EVENT_NO, NULL,
+      NULL, set_pal_scanlineshade, NULL },
+    { NULL, 500, RES_EVENT_NO, NULL,
+      NULL, set_pal_blur, NULL },
+    { NULL, 1250, RES_EVENT_NO, NULL,
+      NULL, set_pal_oddlinesphase, NULL },
+    { NULL, 750, RES_EVENT_NO, NULL,
+      NULL, set_pal_oddlinesoffset, NULL },
+    { NULL, 0, RES_EVENT_NO, NULL,
+      NULL, set_audioleak, NULL },
+    RESOURCE_INT_LIST_END
+};
+
+/*-----------------------------------------------------------------------*/
+
 int video_resources_chip_init(const char *chipname,
                               struct video_canvas_s **canvas,
                               video_chip_cap_t *video_chip_cap)
@@ -435,6 +627,8 @@ int video_resources_chip_init(const char *chipname,
     video_render_initconfig((*canvas)->videoconfig);
     (*canvas)->videoconfig->cap = video_chip_cap;
 
+    (*canvas)->videoconfig->chip_name = strdup(chipname);
+
     /* Set single size render as default.  */
     (*canvas)->videoconfig->rendermode = video_chip_cap->single_mode.rmode;
     (*canvas)->videoconfig->doublesizex
@@ -442,6 +636,7 @@ int video_resources_chip_init(const char *chipname,
     (*canvas)->videoconfig->doublesizey
         = video_chip_cap->single_mode.sizey > 1 ? 1 : 0;
 
+    /* CHIPDoubleScan */
     if (video_chip_cap->dscan_allowed != 0) {
         resources_chip_scan[0].name
             = util_concat(chipname, vname_chip_scan[0], NULL);
@@ -468,23 +663,7 @@ int video_resources_chip_init(const char *chipname,
         lib_free((char *)(resources_chip_hwscale[0].name));
     }
 
-    if (resources_register_int(resources_chip_hwscale_possible) < 0) {
-        return -1;
-    }
-
-    if (video_chip_cap->scale2x_allowed != 0) {
-        resources_chip_scale2x[0].name
-            = util_concat(chipname, vname_chip_scale2x[0], NULL);
-        resources_chip_scale2x[0].value_ptr
-            = &((*canvas)->videoconfig->scale2x);
-        resources_chip_scale2x[0].param = (void *)*canvas;
-        if (resources_register_int(resources_chip_scale2x) < 0) {
-            return -1;
-        }
-
-        lib_free((char *)(resources_chip_scale2x[0].name));
-    }
-
+    /* CHIPDoubleSize */
     if (video_chip_cap->dsize_allowed != 0) {
         resources_chip_size[0].name
             = util_concat(chipname, vname_chip_size[0], NULL);
@@ -557,6 +736,7 @@ int video_resources_chip_init(const char *chipname,
         }
     }
 
+    /* Palette related */
     resources_chip_palette_string[0].name
         = util_concat(chipname, vname_chip_palette[0], NULL);
     resources_chip_palette_string[0].factory_value
@@ -589,6 +769,7 @@ int video_resources_chip_init(const char *chipname,
         lib_free((char *)(resources_chip_palette_int[0].name));
     }
 
+    /* double buffering */
     if (video_chip_cap->double_buffering_allowed != 0) {
         resources_chip_double_buffer[0].name
             = util_concat(chipname, vname_chip_double_buffer[0], NULL);
@@ -602,42 +783,75 @@ int video_resources_chip_init(const char *chipname,
         lib_free((char *)(resources_chip_double_buffer[0].name));
     }
 
+    /* palette generator */
+    i = 0; while (vname_chip_colors[i]) {
+        resources_chip_colors[i].name = util_concat(chipname, vname_chip_colors[i], NULL);
+        resources_chip_colors[i].param = (void *)*canvas;
+        ++i;
+    }
+    resources_chip_colors[0].value_ptr = &((*canvas)->videoconfig->video_resources.color_saturation);
+    resources_chip_colors[1].value_ptr = &((*canvas)->videoconfig->video_resources.color_contrast);
+    resources_chip_colors[2].value_ptr = &((*canvas)->videoconfig->video_resources.color_brightness);
+    resources_chip_colors[3].value_ptr = &((*canvas)->videoconfig->video_resources.color_gamma);
+    resources_chip_colors[4].value_ptr = &((*canvas)->videoconfig->video_resources.color_tint);
+
+    if (resources_register_int(resources_chip_colors) < 0) {
+        return -1;
+    }
+
+    i = 0; while (vname_chip_colors[i]) {
+        lib_free((char *)(resources_chip_colors[i].name));
+        ++i;
+    }
+
+    /* crt emulation */
+    i = 0; while (vname_chip_crtemu[i]) {
+        resources_chip_crtemu[i].name = util_concat(chipname, vname_chip_crtemu[i], NULL);
+        resources_chip_crtemu[i].param = (void *)*canvas;
+        ++i;
+    }
+    resources_chip_crtemu[0].value_ptr = &((*canvas)->videoconfig->video_resources.pal_scanlineshade);
+    resources_chip_crtemu[1].value_ptr = &((*canvas)->videoconfig->video_resources.pal_blur);
+    resources_chip_crtemu[2].value_ptr = &((*canvas)->videoconfig->video_resources.pal_oddlines_phase);
+    resources_chip_crtemu[3].value_ptr = &((*canvas)->videoconfig->video_resources.pal_oddlines_offset);
+    resources_chip_crtemu[4].value_ptr = &((*canvas)->videoconfig->video_resources.audioleak);
+
+    if (resources_register_int(resources_chip_crtemu) < 0) {
+        return -1;
+    }
+
+    i = 0; while (vname_chip_crtemu[i]) {
+        lib_free((char *)(resources_chip_crtemu[i].name));
+        ++i;
+    }
+
+    /* CHIPFilter */
+    resources_chip_rendermode[0].name
+        = util_concat(chipname, vname_chip_rendermode[0], NULL);
+    resources_chip_rendermode[0].value_ptr
+        = &((*canvas)->videoconfig->filter);
+    resources_chip_rendermode[0].param = (void *)*canvas;
+    if (resources_register_int(resources_chip_rendermode) < 0) {
+        return -1;
+    }
+
+    lib_free((char *)(resources_chip_rendermode[0].name));
+
     return 0;
 }
 
 void video_resources_chip_shutdown(struct video_canvas_s *canvas)
 {
     lib_free(canvas->videoconfig->external_palette_name);
+    lib_free(canvas->videoconfig->chip_name);
 
     if (canvas->videoconfig->cap->fullscreen.device_num > 0) {
         lib_free(canvas->videoconfig->fullscreen_device);
     }
 }
 
-static void video_resources_update_ui(video_canvas_t *canvas)
+/* FIXME: this one seems weird */
+static int video_resources_update_ui(video_canvas_t *canvas)
 {
-    int pal_enabled = 0;
-    int ui_doublescan_enabled, ui_scale2x_enabled;
-
-    if (canvas->videoconfig->cap->palemulation_allowed)
-        resources_get_int("PALEmulation", &pal_enabled);
-
-    if (canvas->videoconfig->double_size_enabled != 0) {
-        if (pal_enabled) {
-            ui_doublescan_enabled = 1;
-            ui_scale2x_enabled = 0;
-        } else if (canvas->videoconfig->scale2x != 0) {
-            ui_doublescan_enabled = 0;
-            ui_scale2x_enabled = 1;
-        } else {
-            ui_doublescan_enabled = 1;
-            ui_scale2x_enabled = 1;
-        }
-    } else {
-        ui_doublescan_enabled = 0;
-        ui_scale2x_enabled = 0;
-    }
-/*
-    ui_enable_chip resources(ui_doublescan_enabled, ui_scale2x_enabled);
-*/
+    return video_color_update_palette(canvas);
 }

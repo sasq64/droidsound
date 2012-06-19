@@ -75,6 +75,18 @@ void drivesync_set_1571(int new_sync, struct drive_context_s *drv)
     }
 }
 
+void drivesync_set_4000(struct drive_context_s *drv, int new_sync)
+{
+    unsigned int dnr;
+
+    dnr = drv->mynumber;
+
+    if (rom_loaded && drv->drive->type == DRIVE_TYPE_4000) {
+        drv->drive->clock_frequency = (new_sync) ? 4 : 2;
+        drivesync_factor(drv);
+    }
+}
+
 void drivesync_clock_frequency(unsigned int type, drive_t *drive)
 {
     switch (type) {
@@ -87,6 +99,8 @@ void drivesync_clock_frequency(unsigned int type, drive_t *drive)
         break;
       case DRIVE_TYPE_1551:
       case DRIVE_TYPE_1581:
+      case DRIVE_TYPE_2000:
+      case DRIVE_TYPE_4000:
         drive->clock_frequency = 2;
         break;
       case DRIVE_TYPE_2031:

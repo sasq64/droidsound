@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -36,7 +36,7 @@
 
 #define PET_RAM_SIZE            0x8000
 #define PET_ROM_SIZE            0x8000
-#define PET_CHARGEN_ROM_SIZE    0x2000
+#define PET_CHARGEN_ROM_SIZE    0x4000
 
 #define PET_KERNAL1_CHECKSUM    3236
 #define PET_KERNAL2_CHECKSUM    31896
@@ -51,6 +51,7 @@
 
 extern BYTE mem_chargen_rom[PET_CHARGEN_ROM_SIZE];
 extern BYTE mem_rom[PET_ROM_SIZE];
+extern BYTE mem_6809rom[];
 
 struct petres_s;
 struct petinfo_s;
@@ -59,7 +60,8 @@ extern int pet_mem_init_resources(void);
 extern int pet_mem_init_cmdline_options(void);
 
 extern void mem_initialize_memory(void);
-extern void get_mem_access_tables(read_func_ptr_t **read, store_func_ptr_t **write);
+extern void get_mem_access_tables(read_func_ptr_t **read, store_func_ptr_t **write, BYTE ***base, int **limit);
+extern void invalidate_mem_limit(int lower, int upper);
 extern void petmem_check_info(struct petres_s *pi);
 
 extern void petmem_reset(void);
@@ -79,5 +81,13 @@ extern int spet_ramwp;
 extern BYTE petmem_map_reg;
 extern BYTE petmem_2001_buf_ef[];
 
+extern read_func_t mem6809_read;
+extern store_func_t mem6809_store;
+extern void mem6809_store16(WORD addr, WORD value);
+extern WORD mem6809_read16(WORD addr);
+#ifdef H6309
+extern void mem6809_store32(WORD addr, DWORD value);
+extern DWORD mem6809_read32(WORD addr);
 #endif
 
+#endif

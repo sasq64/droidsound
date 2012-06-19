@@ -27,9 +27,10 @@
 #ifndef VICE_SIGNALS_H
 #define VICE_SIGNALS_H
 
+/* initial init of all signal handlers */
 extern void signals_init(int do_core_dumps);
-extern void signals_abort_set(void);
-extern void signals_abort_unset(void);
+/* set/unset the SIGPIPE (broken pipe) handler */
+extern void signals_pipe_set(void);
+extern void signals_pipe_unset(void);
 
 #endif
-

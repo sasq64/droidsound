@@ -35,6 +35,7 @@
 #include "raster-modes.h"
 #include "types.h"
 #include "vic.h"
+#include "victypes.h"
 #include "vic-draw.h"
 
 
@@ -254,4 +255,3 @@ void vic_draw_init(void)
 
     setup_modes();
 }
-

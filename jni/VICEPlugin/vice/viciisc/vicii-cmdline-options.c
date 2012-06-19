@@ -53,6 +53,8 @@ int border_set_func(const char *value, void *extra_param)
        vicii_resources.border_mode = VICII_FULL_BORDERS;
    } else if (strcmp(value, "2") == 0 || strcmp(value, "debug") == 0) {
        vicii_resources.border_mode = VICII_DEBUG_BORDERS;
+   } else if (strcmp(value, "3") == 0 || strcmp(value, "none") == 0) {
+       vicii_resources.border_mode = VICII_NO_BORDERS;
    } else {
        vicii_resources.border_mode = VICII_NORMAL_BORDERS;
    }
@@ -152,57 +154,22 @@ static const cmdline_option_t cmdline_options[] =
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_DISABLE_SPRITE_SPRITE,
       NULL, NULL },
-    { "-newluminance", SET_RESOURCE, 0,
+    { "-VICIInewluminance", SET_RESOURCE, 0,
       NULL, NULL, "VICIINewLuminances", (void *)1,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_USE_NEW_LUMINANCES,
       NULL, NULL },
-    { "+newluminance", SET_RESOURCE, 0,
+    { "+VICIInewluminance", SET_RESOURCE, 0,
       NULL, NULL, "VICIINewLuminances", (void *)0,
       USE_PARAM_STRING, USE_DESCRIPTION_ID,
       IDCLS_UNUSED, IDCLS_USE_OLD_LUMINANCES,
       NULL, NULL },
-    { "-saturation", SET_RESOURCE, 1,
-      NULL, NULL, "ColorSaturation", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_SATURATION,
-      "<0-2000>", NULL },
-    { "-contrast", SET_RESOURCE, 1,
-      NULL, NULL, "ColorContrast", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_CONTRAST,
-      "<0-2000>", NULL },
-    { "-brightness", SET_RESOURCE, 1,
-      NULL, NULL, "ColorBrightness", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_BRIGHTNESS,
-      "<0-2000>", NULL },
-    { "-gamma", SET_RESOURCE, 1,
-      NULL, NULL, "ColorGamma", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_GAMMA,
-      "<0-2000>", NULL },
-    { "-tint", SET_RESOURCE, 1,
-      NULL, NULL, "ColorTint", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_TINT,
-      "<0-2000>", NULL },
-    { "-oddlinesphase", SET_RESOURCE, 1,
-      NULL, NULL, "PALOddLinePhase", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_ODDLINES_PHASE,
-      "<0-2000>", NULL },
-    { "-oddlinesoffset", SET_RESOURCE, 1,
-      NULL, NULL, "PALOddLineOffset", NULL,
-      USE_PARAM_STRING, USE_DESCRIPTION_ID,
-      IDCLS_UNUSED, IDCLS_SET_ODDLINES_OFFSET,
-      "<0-2000>", NULL },
     { "-VICIImodel", CALL_FUNCTION, 1,
       set_vicii_model, NULL, NULL, NULL,
       USE_PARAM_ID, USE_DESCRIPTION_ID,
       IDCLS_P_MODEL, IDCLS_SET_VICII_MODEL,
       NULL, NULL },
-    { NULL }
+    CMDLINE_LIST_END
 };
 
 int vicii_cmdline_options_init(void)

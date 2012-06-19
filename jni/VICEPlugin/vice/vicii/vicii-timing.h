@@ -57,8 +57,8 @@
 
 #define VICII_SCREEN_PALN_NORMAL_LEFTBORDERWIDTH     0x20
 #define VICII_SCREEN_PALN_NORMAL_RIGHTBORDERWIDTH    0x20
-#define VICII_SCREEN_PALN_FULL_LEFTBORDERWIDTH       0x30 /* actually 0x2e, but must be divisible by 8 */
-#define VICII_SCREEN_PALN_FULL_RIGHTBORDERWIDTH      0x24
+#define VICII_SCREEN_PALN_FULL_LEFTBORDERWIDTH       0x38
+#define VICII_SCREEN_PALN_FULL_RIGHTBORDERWIDTH      0x2c
 #define VICII_SCREEN_PALN_DEBUG_LEFTBORDERWIDTH      0x88 /* 17 cycles */
 #define VICII_SCREEN_PALN_DEBUG_RIGHTBORDERWIDTH     0x40 /* 8 cycles */
 
@@ -71,6 +71,9 @@
    - "full" shows all lines minus the vertical retrace
    - "debug" mode shows all lines, including vertical retrace
 */
+#define VICII_NO_BORDER_FIRST_DISPLAYED_LINE         51
+#define VICII_NO_BORDER_LAST_DISPLAYED_LINE          250
+
 #define VICII_PAL_NORMAL_FIRST_DISPLAYED_LINE        0x10   /* 16 */
 #define VICII_PAL_NORMAL_LAST_DISPLAYED_LINE         0x11f  /* 287 */
 #define VICII_PAL_FULL_FIRST_DISPLAYED_LINE          0x08   /* 8 */

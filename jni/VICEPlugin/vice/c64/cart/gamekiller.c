@@ -34,13 +34,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "gamekiller.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /* #define GKDEBUG */
 
@@ -68,7 +69,7 @@
 
 static int cartridge_disable_flag;
 
-static void REGPARM2 gamekiller_io1_store(WORD addr, BYTE value)
+static void gamekiller_io1_store(WORD addr, BYTE value)
 {
     DBG(("io1 %04x %02x\n",addr,value));
     cartridge_disable_flag++;
@@ -78,7 +79,7 @@ static void REGPARM2 gamekiller_io1_store(WORD addr, BYTE value)
     }
 }
 
-static void REGPARM2 gamekiller_io2_store(WORD addr, BYTE value)
+static void gamekiller_io2_store(WORD addr, BYTE value)
 {
     DBG(("io2 %04x %02x\n",addr,value));
     cartridge_disable_flag++;
@@ -86,6 +87,11 @@ static void REGPARM2 gamekiller_io2_store(WORD addr, BYTE value)
         cart_config_changed_slotmain(2, 2, CMODE_READ);
         DBG(("Game Killer disabled\n"));
     }
+}
+
+static BYTE gamekiller_peek(WORD addr)
+{
+    return 0;
 }
 
 static io_source_t gamekiller_io1_device = {
@@ -96,9 +102,11 @@ static io_source_t gamekiller_io1_device = {
     0, /* read is never valid */
     gamekiller_io1_store,
     NULL,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_GAME_KILLER
+    gamekiller_peek,
+    NULL,
+    CARTRIDGE_GAME_KILLER,
+    0,
+    0
 };
 
 static io_source_t gamekiller_io2_device = {
@@ -109,9 +117,11 @@ static io_source_t gamekiller_io2_device = {
     0, /* read is never valid */
     gamekiller_io2_store,
     NULL,
-    NULL, /* TODO: peek */
-    NULL, /* TODO: dump */
-    CARTRIDGE_GAME_KILLER
+    gamekiller_peek,
+    NULL,
+    CARTRIDGE_GAME_KILLER,
+    0,
+    0
 };
 
 static io_source_list_t *gamekiller_io1_list_item = NULL;
@@ -123,13 +133,23 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
+int gamekiller_peek_mem(struct export_s *export, WORD addr, BYTE *value)
+{
+    if (cartridge_disable_flag <= 1) {
+        if (addr >= 0xe000) {
+            *value = romh_banks[addr & 0x1fff];
+            return CART_READ_VALID;
+        }
+    }
+    return CART_READ_THROUGH;
+}
+
 void gamekiller_freeze(void)
 {
     DBG(("Game Killer freeze\n"));
     cart_config_changed_slotmain(3, 3, CMODE_READ | CMODE_RELEASE_FREEZE);
     cartridge_disable_flag = 0;
 }
-
 
 void gamekiller_config_init(void)
 {
@@ -152,8 +172,8 @@ static int gamekiller_common_attach(void)
         return -1;
     }
 
-    gamekiller_io1_list_item = c64io_register(&gamekiller_io1_device);
-    gamekiller_io2_list_item = c64io_register(&gamekiller_io2_device);
+    gamekiller_io1_list_item = io_source_register(&gamekiller_io1_device);
+    gamekiller_io2_list_item = io_source_register(&gamekiller_io2_device);
 
     return 0;
 }
@@ -169,17 +189,17 @@ int gamekiller_bin_attach(const char *filename, BYTE *rawcart)
 
 int gamekiller_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (chipheader[0xb] > 0) {
+    if (chip.bank > 0 || chip.size != GAME_KILLER_CART_SIZE) {
         return -1;
     }
 
-    if (fread(rawcart, GAME_KILLER_CART_SIZE, 1, fd) < 1) {
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -189,8 +209,8 @@ int gamekiller_crt_attach(FILE *fd, BYTE *rawcart)
 void gamekiller_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(gamekiller_io1_list_item);
-    c64io_unregister(gamekiller_io2_list_item);
+    io_source_unregister(gamekiller_io1_list_item);
+    io_source_unregister(gamekiller_io2_list_item);
     gamekiller_io1_list_item = NULL;
     gamekiller_io2_list_item = NULL;
 }

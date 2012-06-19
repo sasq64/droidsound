@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "6809.h"
 #include "crtc-mem.h"
 #include "crtctypes.h"
 #include "log.h"
@@ -41,6 +42,7 @@
 #include "petacia.h"
 #include "petdww.h"
 #include "petmem.h"
+#include "petmodel.h"
 #include "petpia.h"
 #include "petreu.h"
 #include "pets.h"
@@ -48,13 +50,14 @@
 #include "ram.h"
 #include "resources.h"
 #include "sid.h"
+#include "sidcart.h"
 #include "sid-resources.h"
 #include "types.h"
 #include "via.h"
 #include "vsync.h"
 
 
-static BYTE REGPARM1 mem_read_patchbuf(WORD addr);
+static BYTE mem_read_patchbuf(WORD addr);
 
 BYTE petmem_2001_buf_ef[256];
 
@@ -66,9 +69,12 @@ unsigned int mem_old_reg_pc;
 /* we keep the current system config in here. */
 
 petres_t petres = { 32, 0x0800, 1, 80, 0, 0, 0, 0, 0, 0, 0,
-                    NULL, NULL, NULL,
-                    NULL, NULL, NULL,
-                    0, 0, 0, 0, 0, 0, 0, 0
+                    /* ROM image resources */
+                    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                    /* SuperPET resources */
+                    { NULL }, SUPERPET_CPU_6502,
+                    /* runtime (derived) variables */
+                    0, PET_MAP_LINEAR, 0, 0, 0, 0, 0, 0
 };
 
 /* ------------------------------------------------------------------------- */
@@ -76,10 +82,12 @@ petres_t petres = { 32, 0x0800, 1, 80, 0, 0, 0, 0, 0, 0, 0,
 /* The PET memory. */
 
 #define RAM_ARRAY 0x20000 /* this includes 8x96 expansion RAM */
+#define PET_6809_ROMSIZE        (NUM_6809_ROMS * 0x1000)
 
 BYTE mem_ram[RAM_ARRAY]; /* 128K to make things easier. Real size is 4-128K. */
 BYTE mem_rom[PET_ROM_SIZE];
 BYTE mem_chargen_rom[PET_CHARGEN_ROM_SIZE];
+BYTE mem_6809rom[PET_6809_ROMSIZE];
 
 static int ram_size = RAM_ARRAY;       /* FIXME? */
 
@@ -101,26 +109,37 @@ BYTE petmem_map_reg = 0;
 static int bank8offset = 0;
 static int bankCoffset = 0;
 
+/* memory tables for the 6809 */
+static read_func_ptr_t _mem6809_read_tab[0x101];
+static store_func_ptr_t _mem6809_write_tab[0x101];
+static read_func_ptr_t _mem6809_read_tab_watch[0x101];
+static store_func_ptr_t _mem6809_write_tab_watch[0x101];
+static BYTE *_mem6809_read_base_tab[0x101];
+static int mem6809_read_limit_tab[0x101];
+
+read_func_ptr_t *_mem6809_read_tab_ptr;
+store_func_ptr_t *_mem6809_write_tab_ptr;
+
 static log_t pet_mem_log = LOG_ERR;
 
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 zero_read(WORD addr)
+BYTE zero_read(WORD addr)
 {
     return mem_ram[addr & 0xff];
 }
 
-void REGPARM2 zero_store(WORD addr, BYTE value)
+void zero_store(WORD addr, BYTE value)
 {
     mem_ram[addr & 0xff] = value;
 }
 
-static BYTE REGPARM1 ram_read(WORD addr)
+static BYTE ram_read(WORD addr)
 {
     return mem_ram[addr];
 }
 
-static void REGPARM2 ram_store(WORD addr, BYTE value)
+static void ram_store(WORD addr, BYTE value)
 {
 /*
 if (addr == 0x8000) printf("charline=%d, ycount=%d, char=%d\n",
@@ -129,75 +148,93 @@ if (addr == 0x8000) printf("charline=%d, ycount=%d, char=%d\n",
     mem_ram[addr] = value;
 }
 
-static BYTE REGPARM1 read_ext8(WORD addr)
+static BYTE read_ext8(WORD addr)
 {
     return mem_ram[addr + bank8offset];
 }
 
-static void REGPARM2 store_ext8(WORD addr, BYTE value)
+static void store_ext8(WORD addr, BYTE value)
 {
     mem_ram[addr + bank8offset] = value;
 }
 
-static BYTE REGPARM1 read_extC(WORD addr)
+static BYTE read_extC(WORD addr)
 {
     return mem_ram[addr + bankCoffset];
 }
 
-static void REGPARM2 store_extC(WORD addr, BYTE value)
+static void store_extC(WORD addr, BYTE value)
 {
     mem_ram[addr + bankCoffset] = value;
 }
 
-static BYTE REGPARM1 read_vmirror(WORD addr)
+static BYTE read_vmirror(WORD addr)
 {
     return mem_ram[0x8000 + (addr & (petres.videoSize - 1))];
 }
 
-static void REGPARM2 store_vmirror(WORD addr, BYTE value)
+static void store_vmirror(WORD addr, BYTE value)
 {
     mem_ram[0x8000 + (addr & (petres.videoSize - 1))] = value;
 }
 
-BYTE REGPARM1 rom_read(WORD addr)
+BYTE rom_read(WORD addr)
 {
     return mem_rom[addr & 0x7fff];
 }
 
-void REGPARM2 rom_store(WORD addr, BYTE value)
+void rom_store(WORD addr, BYTE value)
 {
     mem_rom[addr & 0x7fff] = value;
 }
 
-static BYTE REGPARM1 read_unused(WORD addr)
+#define ROM6809_BASE    0xA000
+
+BYTE rom6809_read(WORD addr)
 {
-    if (petreu_enabled && addr>=0x8800 && addr<0x8900)
-      return read_petreu_reg(addr);
+    return mem_6809rom[addr - ROM6809_BASE];
+    //BYTE val = mem_6809rom[addr - ROM6809_BASE];
+    //printf("rom6809_read %04x -> %02x\n", addr, val);
+    //return val;
+}
 
-    if (petreu_enabled && addr>=0x8900 && addr<0x8a00)
-      return read_petreu_ram(addr);
+void rom6809_store(WORD addr, BYTE value)
+{
+    mem_6809rom[addr - ROM6809_BASE] = value;
+}
 
-    if (petreu_enabled && addr>=0x8a00 && addr<0x8b00)
-      return read_petreu2_reg(addr);
+static BYTE read_unused(WORD addr)
+{
+    if (petreu_enabled) {
+        if (addr >= 0x8800 && addr < 0x8900) {
+            return read_petreu_reg(addr);
+        } else if (addr >= 0x8900 && addr < 0x8a00) {
+            return read_petreu_ram(addr);
+        } else if (addr >= 0x8a00 && addr < 0x8b00) {
+            return read_petreu2_reg(addr);
+        }
+    }
 
     if (petdww_enabled) {
-        if (addr>=0xeb00 && addr<0xec00) {
+        if (addr >= 0xeb00 && addr < 0xec00) {
             return read_petdww_reg(addr);
-        } else if (addr>=0xec00 && addr<0xf000 && !petdww_mem_at_9000()) {
+        } else if (addr >= 0xec00 && addr < 0xf000 && !petdww_mem_at_9000()) {
             return read_petdww_ec00_ram(addr);
         }
     }
 
-    if (sidcart_enabled && sidcart_address==1 && addr>=0xe900 && addr<=0xe91f)
-      return sid_read(addr);
-
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x8f00 && addr<=0x8f1f)
-      return sid_read(addr);
+    if (sidcart_enabled()) {
+        if (sidcart_address == 1 && addr >= 0xe900 && addr <= 0xe91f) {
+            return sid_read(addr);
+        } else if (sidcart_address == 0 && addr >= 0x8f00 && addr <= 0x8f1f) {
+            return sid_read(addr);
+        }
+    }
 
     return (addr >> 8) & 0xff;
 }
 
-static BYTE REGPARM1 mem_read_patchbuf(WORD addr)
+static BYTE mem_read_patchbuf(WORD addr)
 {
     return petmem_2001_buf_ef[addr & 0xff];
 }
@@ -206,16 +243,28 @@ static BYTE REGPARM1 mem_read_patchbuf(WORD addr)
 
 /* Functions for watchpoint memory access.  */
 
-static BYTE REGPARM1 read_watch(WORD addr)
+static BYTE read_watch(WORD addr)
 {
     monitor_watch_push_load_addr(addr, e_comp_space);
     return _mem_read_tab[addr >> 8](addr);
 }
 
-static void REGPARM2 store_watch(WORD addr, BYTE value)
+static void store_watch(WORD addr, BYTE value)
 {
     monitor_watch_push_store_addr(addr, e_comp_space);
     _mem_write_tab[addr >> 8](addr, value);
+}
+
+static BYTE read6809_watch(WORD addr)
+{
+    monitor_watch_push_load_addr(addr, e_comp_space);
+    return _mem6809_read_tab[addr >> 8](addr);
+}
+
+static void store6809_watch(WORD addr, BYTE value)
+{
+    monitor_watch_push_store_addr(addr, e_comp_space);
+    _mem6809_write_tab[addr >> 8](addr, value);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -223,15 +272,197 @@ static void REGPARM2 store_watch(WORD addr, BYTE value)
 /* SuperPET handling
  *
  * This adds some write-only registers at $eff*, an ACIA at $eff0 and
- * 64k RAM that are mapped in 4k pages at $9***
+ * 64k RAM that are mapped in 4k pages at $9***.
  * Here the 8x96 expansion RAM doubles as the SuperPET banked RAM.
+ * There is also a dongle (6702) at $efe0.
  */
 
 int spet_ramen  = 1;
 int spet_bank   = 0;
 int spet_ctrlwp = 1;
 int spet_diag   = 0;
-int spet_ramwp  = 1;
+int spet_ramwp  = 0;
+#define DEBUG_DONGLE    0
+
+/* Internal state of the 6702 dongle */
+#define DONGLE_MAGIC    (128 + 64 + 16 + 4 + 2) /* = 214 = $D6 = %1101 0110 */
+static int shift[8];
+static const int leftmost[8] = {
+    1 << (6 - 1),       /*   1 The size of each shift register is 6, 3, 7... */
+    1 << (3 - 1),       /*   2 and therefore those are also the periods of */
+    1 << (7 - 1),       /*   4 the output bits. */
+    1 << (8 - 1),       /*   8 */
+    1 << (1 - 1),       /*  16 */
+    1 << (3 - 1),       /*  32 */
+    1 << (5 - 1),       /*  64 */
+    1 << (2 - 1),       /* 128 */
+};
+static int val6702;
+static int prevodd;
+static int wantodd;
+
+static void reset6702(void)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        if ((1 << i) & (DONGLE_MAGIC | 1)) {
+            shift[i] = leftmost[i];
+        } else {
+            shift[i] = 0;
+        }
+    }
+    val6702 = DONGLE_MAGIC;
+    prevodd = 1;
+    wantodd = 0;
+}
+
+static inline
+BYTE read6702(void)
+{
+    return val6702;
+}
+
+/*
+ * Only the first odd value which is written after
+ * an even value has an effect.
+ *
+ * Thanks to Ruud Baltissen, William Levak, Rob Clarke,
+ * Kajtar Zsolt and Segher Boessenkool, from cbm-hackers,
+ * for their contributions.
+ * -Olaf Seibert.
+ */
+static inline
+void write6702(BYTE input)
+{
+    if ((input & 1) == wantodd) {
+        if (wantodd) {
+            int i;
+            int v = val6702;
+            int changed = prevodd ^ input;
+            int mask = 0x80;
+
+            /* loop over all 8 output bits / shift registers */
+            for (i = 7; i >= 0; i--, mask >>= 1) {
+                /* If the input bit changed toggle leftmost bit */
+                if (changed & mask) {
+                    shift[i] ^= leftmost[i];
+                }
+                if (shift[i] & 1) {
+                    v ^= mask;
+                    shift[i] |= leftmost[i] << 1; /* wrap bit around */
+                }
+                shift[i] >>= 1;
+            }
+
+            prevodd = input;
+            val6702 = v;
+        }
+        wantodd ^= 1;
+    }
+}
+
+/*
+ * It is possible to "emulate" the 6702 dongle by returning a sequence
+ * of fixed values.  We even ignore the values that are written to it!
+ * Idea and recovery of values by Dave E. Roberts.
+ *
+ * Code references to Waterloo Editor 1.1.
+ * The dongle check routine starts at $9852 in bank 0.
+ *
+ * This table is not needed any more since the emulation has been
+ * perfected but it is here for reference.
+ */
+
+/*
+static BYTE dongle_values [ 29 ] = {    // Indexed as 0 to 28.
+    / * Used once at the start of the subroutine.        * /
+    0x04, / * 9860: LDA  [<$06,S] ; [ 0]                 * /
+
+    / * Iteration 1 of the 'outer' loop.                 * /
+    0xFF, / * 987C: ASL  [<$06,S] ; Can ignore!          * /
+    0x91, / * 987F: EORB [<$06,S] ; [ 2]                 * /
+    0xFF, / * 9887: ASL  [<$06,S] ; Can ignore!          * /
+    0x3C, / * 988A: LDA  [<$06,S] ; [ 4]                 * /
+
+    / * Iteration 2 of the 'outer' loop.                 * /
+    0xFF, / * 987C: ASL  [<$06,S] ; Can ignore!          * /
+    0xAC, / * 987F: EORB [<$06,S] ; [ 6]                 * /
+    0xFF, / * 9887: ASL  [<$06,S] ; Can ignore!          * /
+    0xC7, / * 988A: LDA  [<$06,S] ; [ 8]                 * /
+
+    / * Iteration 3 of the 'outer' loop.                 * /
+    0xFF, / * 987C: ASL  [<$06,S] ; Can ignore!          * /
+    0xF0, / * 987F: EORB [<$06,S] ; [10]                 * /
+    0xFF, / * 9887: ASL  [<$06,S] ; Can ignore!          * /
+    0xE3, / * 988A: LDA  [<$06,S] ; [12]                 * /
+
+    / * Iteration 4 of the 'outer' loop.                 * /
+    0xFF, / * 987C: ASL  [<$06,S] ; Can ignore!          * /
+    0x36, / * 987F: EORB [<$06,S] ; [14]                 * /
+    0xFF, / * 9887: ASL  [<$06,S] ; Can ignore!          * /
+    0x5A, / * 988A: LDA  [<$06,S] ; [16]                 * /
+
+    / * Iteration 5 of the 'outer' loop.                 * /
+    0xFF, / * 987C: ASL  [<$06,S] ; Can ignore!          * /
+    0xBB, / * 987F: EORB [<$06,S] ; [18]                 * /
+    0xFF, / * 9887: ASL  [<$06,S] ; Can ignore!          * /
+    0xC3, / * 988A: LDA  [<$06,S] ; [20]                 * /
+
+    / * Iteration 6 of the 'outer' loop.                 * /
+    0xFF, / * 987C: ASL  [<$06,S] ; Can ignore!          * /
+    0x6A, / * 987F: EORB [<$06,S] ; [22]                 * /
+    0xFF, / * 9887: ASL  [<$06,S] ; Can ignore!          * /
+    0x75, / * 988A: LDA  [<$06,S] ; [24]                 * /
+
+    / * Iteration 7 of the 'outer' loop.                 * /
+    0xFF, / * 987C: ASL  [<$06,S] ; Can ignore!          * /
+    0xA3, / * 987F: EORB [<$06,S] ; [26]                 * /
+    0xFF, / * 9887: ASL  [<$06,S] ; Can ignore!          * /
+    0x3E  / * 988A: LDA  [<$06,S] ; [28]                 * /
+
+    / * In fact, these values below are the ones that are
+      * produced by the real thing, starting from a reset. * /
+
+                   214,
+    214, 214, 214, 214,
+    214, 214, 198, 198,
+    198, 198, 212, 212,
+    212, 212,  84,  84,
+     84,  84,   6,   6,
+      6,   6,  39,  39,
+     39,  39,  51,  51,
+};
+*/
+
+static int efe0_dump(void)
+{
+    int i;
+    int mask = 1;
+
+    mon_out("efe0 = $%02x; previous in = $%02x; odd/even = %d\n", val6702, prevodd, wantodd);
+    for (i = 0; i < 8; i++, mask <<= 1) {
+        int j;
+        int maskj;
+        int sh = shift[i];
+        int lm = leftmost[i];
+
+        mon_out("%d %3d: $%02x  %%", i, mask, sh);
+
+        for (j = 7, maskj = 1<<j; j >= 0; j--, maskj >>= 1) {
+            if (maskj > lm) {
+                mon_out(" ");
+            } else if (sh & maskj) {
+                mon_out("1");
+            } else {
+                mon_out("0");
+            }
+        }
+        mon_out("\n");
+    }
+
+    return 0;
+}
 
 void petmem_reset(void)
 {
@@ -240,13 +471,17 @@ void petmem_reset(void)
     spet_ctrlwp = 1;
 
     petmem_map_reg = 0;
+#if DEBUG_DONGLE
+    printf("reset 6702\n");
+#endif
+    reset6702();
 }
 
 static void superpet_powerup(void)
 {
 /* Those two are not reset by a soft reset (/RES), only by power down */
     spet_diag = 0;
-    spet_ramwp = 1;
+    spet_ramwp = 0;     /* should look at hardware switch */
     petmem_reset();
 }
 
@@ -255,7 +490,7 @@ int petmem_superpet_diag(void)
     return petres.superpet && spet_diag;
 }
 
-static BYTE REGPARM1 read_super_io(WORD addr)
+static BYTE read_super_io(WORD addr)
 {
     if (addr >= 0xeff4) {       /* unused / readonly */
         return read_unused(addr);
@@ -263,30 +498,43 @@ static BYTE REGPARM1 read_super_io(WORD addr)
     if (addr >= 0xeff0) {       /* ACIA */
         return acia1_read((WORD)(addr & 0x03));
     } else
-    if (addr >= 0xefe4) {       /* unused */
-        return read_unused(addr);
-    } else
-    if (addr >= 0xefe0) {       /* dongle */
+    if ((addr & 0x0010) == 0) {
+        /* Dongle E F xxx0 xxxx, see zimmers.net,
+         * schematics/computers/pet/SuperPET/324055.gif.
+         * Typical address is $EFE0, possibly EFE0...3.
+         */
+        if (addr >= 0xefe0 && addr < 0xefe4) {
+            BYTE dongle_value = read6702();
+#if DEBUG_DONGLE
+            log_message(pet_mem_log, "*** DONGLE %04x -> 0x%02X %3d", addr, dongle_value, dongle_value);
+#endif /* DEBUG_DONGLE */
+            return dongle_value;
+        }
+        return 0xff;
     }
     return read_unused(addr);   /* fallback */
 }
 
-static void REGPARM2 store_super_io(WORD addr, BYTE value)
+static void store_super_io(WORD addr, BYTE value)
 {
     if (addr >= 0xeffe) {       /* RAM/ROM switch */
         spet_ramen = !(value & 1);
+        //printf("spet_ramen := %d\n", spet_ramen);
     } else
     if (addr >= 0xeffc) {       /* Bank select */
         spet_bank = value & 0x0f;
         spet_ctrlwp = !(value & 0x80);
+        //printf("spet_bank := %d\n", spet_bank);
+        //printf("spet_ctrlwp := %d\n", spet_ctrlwp);
     } else {
         if (addr >= 0xeff8) {
             if (!spet_ctrlwp) {
                 if (!(value & 1)) {
-                    log_error(pet_mem_log, "SuperPET: 6809 not emulated!");
+                    log_error(pet_mem_log, "SuperPET: switching to 6809 not emulated!");
                     machine_trigger_reset(MACHINE_RESET_MODE_SOFT);
                 }
-                spet_ramwp = !(value & 0x2);
+                spet_ramwp = !(value & 0x2);    /* IF hardware w/p switch is PROG */
+                //printf("spet_ramwp := %d\n", spet_ramwp);
                 spet_diag = (value & 0x8);
             }
         } else
@@ -294,15 +542,16 @@ static void REGPARM2 store_super_io(WORD addr, BYTE value)
         } else
         if (addr >= 0xeff0) {   /* ACIA */
             acia1_store((WORD)(addr & 0x03), value);
-        } else
-        if (addr >= 0xefe4) {   /* unused */
-        } else
-        if (addr >= 0xefe0) {   /* dongle? */
+        } else if (addr >= 0xefe0 && addr < 0xefe4) { /* dongle */
+#if DEBUG_DONGLE
+            log_message(pet_mem_log, "*** DONGLE %04x := %02X %3d", addr, value, value);
+#endif
+            write6702(value);
         }
     }
 }
 
-static BYTE REGPARM1 read_super_9(WORD addr)
+static BYTE read_super_9(WORD addr)
 {
     if (spet_ramen) {
         return (mem_ram + 0x10000)[(spet_bank << 12) | (addr & 0x0fff)];
@@ -310,9 +559,12 @@ static BYTE REGPARM1 read_super_9(WORD addr)
     return rom_read(addr);
 }
 
-static void REGPARM2 store_super_9(WORD addr, BYTE value)
+static void store_super_9(WORD addr, BYTE value)
 {
     if (spet_ramen && !spet_ramwp) {
+        /* printf("store_super_9: %04x <- %04x <- %02x\n",
+                (spet_bank << 12) | (addr & 0x0fff),
+                addr, value); */
         (mem_ram + 0x10000)[(spet_bank << 12) | (addr & 0x0fff)] = value;
     }
 }
@@ -322,15 +574,95 @@ static void REGPARM2 store_super_9(WORD addr, BYTE value)
 
 /* Generic memory access.  */
 
-void REGPARM2 mem_store(WORD addr, BYTE value)
+void mem_store(WORD addr, BYTE value)
 {
     _mem_write_tab_ptr[addr >> 8](addr, value);
 }
 
-BYTE REGPARM1 mem_read(WORD addr)
+BYTE mem_read(WORD addr)
 {
     return _mem_read_tab_ptr[addr >> 8](addr);
 }
+
+#define PRINT_6809_STORE        0
+#define PRINT_6809_READ         0
+
+void mem6809_store(WORD addr, BYTE value)
+{
+#if PRINT_6809_STORE
+    if (addr >= 0x8000 && addr < 0x9000)
+        printf("mem6809_store   %04x <- %02x\n", addr, value);
+#endif
+    _mem6809_write_tab_ptr[addr >> 8](addr, value);
+}
+
+BYTE mem6809_read(WORD addr)
+{
+#if PRINT_6809_READ
+    BYTE v;
+    v = _mem6809_read_tab_ptr[addr >> 8](addr);
+    printf("mem6809_read   %04x -> %02x\n", addr, v);
+    return v;
+#else
+    return _mem6809_read_tab_ptr[addr >> 8](addr);
+#endif
+}
+
+void mem6809_store16(WORD addr, WORD value)
+{
+#if PRINT_6809_STORE0
+    printf("mem6809_store16 %04x <- %04x\n", addr, value);
+#endif
+    addr++;
+    _mem6809_write_tab_ptr[addr >> 8](addr, (BYTE)(value & 0xFF));
+    addr--;
+    _mem6809_write_tab_ptr[addr >> 8](addr, (BYTE)(value >> 8));
+}
+
+WORD mem6809_read16(WORD addr)
+{
+    WORD val;
+    val  = _mem6809_read_tab_ptr[addr >> 8](addr) << 8;
+    addr++;
+    val |= _mem6809_read_tab_ptr[addr >> 8](addr);
+#if PRINT_6809_READ
+    printf("mem6809_read16 %04x -> %04x\n", addr, val);
+#endif
+    return val;
+}
+
+#ifdef H6309
+void mem6809_store32(WORD addr, DWORD value)
+{
+#if PRINT_6809_STORE0
+    printf("mem6809_store32 %04x <- %04x\n", addr, value);
+#endif
+    addr += 3;
+    _mem6809_write_tab_ptr[addr >> 8](addr, (BYTE)(value & 0xFF));
+    addr--;
+    _mem6809_write_tab_ptr[addr >> 8](addr, (BYTE)((value >> 8) & 0xFF));
+    addr--;
+    _mem6809_write_tab_ptr[addr >> 8](addr, (BYTE)((value >> 16) & 0xFF));
+    addr--;
+    _mem6809_write_tab_ptr[addr >> 8](addr, (BYTE)(value >> 24));
+}
+
+DWORD mem6809_read32(WORD addr)
+{
+    DWORD val;
+    val  = _mem6809_read_tab_ptr[addr >> 8](addr) << 24;
+    addr++;
+    val |= _mem6809_read_tab_ptr[addr >> 8](addr) << 16;
+    addr++;
+    val |= _mem6809_read_tab_ptr[addr >> 8](addr) << 8;
+    addr++;
+    val |= _mem6809_read_tab_ptr[addr >> 8](addr);
+#if PRINT_6809_READ
+    printf("mem6809_read32 %04x -> %04x\n", addr, val);
+#endif
+    return val;
+}
+#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -342,7 +674,7 @@ BYTE REGPARM1 mem_read(WORD addr)
 
 /* When we write, we write all involved chips.  */
 
-static void REGPARM2 store_io(WORD addr, BYTE value)
+static void store_io(WORD addr, BYTE value)
 {
     if (addr & 0x10)
         pia1_store(addr, value);
@@ -364,7 +696,7 @@ static void REGPARM2 store_io(WORD addr, BYTE value)
  * the bus drivers of all involved chips interact and you get strange
  * results...
  */
-static BYTE REGPARM1 read_io(WORD addr)
+static BYTE read_io(WORD addr)
 {
     BYTE v1, v2, v3, v4;
 
@@ -402,30 +734,43 @@ static BYTE REGPARM1 read_io(WORD addr)
     }
 }
 
-static void REGPARM2 store_dummy(WORD addr, BYTE value)
+static void store_void(WORD addr, BYTE value)
 {
-    if (petreu_enabled && addr>=0x8800 && addr<0x8900)
-      store_petreu_reg(addr,value);
+    (void)value;
+}
 
-    if (petreu_enabled && addr>=0x8900 && addr<0x8a00)
-      store_petreu_ram(addr,value);
-
-    if (petreu_enabled && addr>=0x8a00 && addr<0x8b00)
-      store_petreu2_reg(addr,value);
+/*
+ * store_dummy() stores in normally-unassigned memory space,
+ * except that some hardware expansions may be there.
+ * For adresses < 0x8000 it is faster to use store_void().
+ */
+static void store_dummy(WORD addr, BYTE value)
+{
+    if (petreu_enabled) {
+        if (addr >= 0x8800 && addr < 0x8900) {
+            store_petreu_reg(addr,value);
+        } else if (addr >= 0x8900 && addr < 0x8a00) {
+            store_petreu_ram(addr,value);
+        } else if (addr >= 0x8a00 && addr < 0x8b00) {
+            store_petreu2_reg(addr,value);
+        }
+    }
 
     if (petdww_enabled) {
-        if (addr>=0xeb00 && addr<0xec00) {
+        if (addr >= 0xeb00 && addr < 0xec00) {
             store_petdww_reg(addr, value);
-        } else if (addr>=0xec00 && addr<0xf000 && !petdww_mem_at_9000()) {
+        } else if (addr >= 0xec00 && addr < 0xf000 && !petdww_mem_at_9000()) {
             store_petdww_ec00_ram(addr, value);
         }
     }
 
-    if (sidcart_enabled && sidcart_address==1 && addr>=0xe900 && addr<0xe91f)
-      sid_store(addr,value);
-
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x8f00 && addr<0x8f1f)
-      sid_store(addr,value);
+    if (sidcart_enabled()) {
+        if (sidcart_address == 1 && addr >= 0xe900 && addr < 0xe91f) {
+            sid_store(addr,value);
+        } else if (sidcart_address == 0 && addr >= 0x8f00 && addr < 0x8f1f) {
+            sid_store(addr,value);
+        }
+    }
 
     return;
 }
@@ -437,12 +782,12 @@ static void REGPARM2 store_dummy(WORD addr, BYTE value)
 static void set_std_9tof(void)
 {
     int i, l;
-    static void REGPARM2 (*store)(WORD, BYTE);
+    static void (*store)(WORD, BYTE);
     int ram9, rama;
 
-    store = (petres.map == 2) ? ram_store : store_dummy;
-    ram9 = (petres.map == 2 && petres.mem9) ? 1 : 0;
-    rama = (petres.map == 2 && petres.memA) ? 1 : 0;
+    store = (petres.map == PET_MAP_8296) ? ram_store : store_dummy;
+    ram9 = (petres.map == PET_MAP_8296 && petres.mem9) ? 1 : 0;
+    rama = (petres.map == PET_MAP_8296 && petres.memA) ? 1 : 0;
 
     /* Setup RAM/ROM at $9000 - $9FFF. */
     if (petres.superpet) {
@@ -472,7 +817,7 @@ static void set_std_9tof(void)
     }
 
     if (petdww_enabled && petdww_mem_at_9000()) {
-        petdww_override_std_9toa(_mem_read_tab, _mem_write_tab);
+        petdww_override_std_9toa(_mem_read_tab, _mem_write_tab, _mem_read_base_tab, mem_read_limit_tab);
     }
 
     /* Setup ROM at $B000 - $E7FF. */
@@ -508,7 +853,7 @@ static void set_std_9tof(void)
     } else
     if (petres.rompatch) {
         _mem_read_tab[0xef] = mem_read_patchbuf;
-        _mem_write_tab[0xef] = store_dummy;
+        _mem_write_tab[0xef] = store_void;
         _mem_read_base_tab[0xef] = petmem_2001_buf_ef;
         mem_read_limit_tab[0xef] = 0xeffd;
     }
@@ -525,15 +870,30 @@ static void set_std_9tof(void)
     mem_read_limit_tab_ptr = mem_read_limit_tab;
 }
 
-void get_mem_access_tables(read_func_ptr_t **read, store_func_ptr_t **write)
+void get_mem_access_tables(read_func_ptr_t **read, store_func_ptr_t **write, BYTE ***base, int **limit)
 {
     *read = _mem_read_tab;
     *write = _mem_write_tab;
+    *base = _mem_read_base_tab;
+    *limit = mem_read_limit_tab;
 }
+
+static BYTE **cpu_mem_base_ptr;
+static int *cpu_mem_limit_ptr;
 
 void mem_set_bank_pointer(BYTE **base, int *limit)
 {
-    /* We do not need MMU support.  */
+    cpu_mem_base_ptr = base;
+    cpu_mem_limit_ptr = limit;
+}
+
+void invalidate_mem_limit(int lower, int upper)
+{
+    if (cpu_mem_limit_ptr &&
+            *cpu_mem_limit_ptr >= lower && *cpu_mem_limit_ptr < upper) {
+        *cpu_mem_limit_ptr = -1;
+        *cpu_mem_base_ptr = NULL;
+    }
 }
 
 /* FIXME: TODO! */
@@ -542,9 +902,13 @@ void mem_toggle_watchpoints(int flag, void *context)
     if (flag) {
         _mem_read_tab_ptr = _mem_read_tab_watch;
         _mem_write_tab_ptr = _mem_write_tab_watch;
+        _mem6809_read_tab_ptr = _mem6809_read_tab_watch;
+        _mem6809_write_tab_ptr = _mem6809_write_tab_watch;
     } else {
         _mem_read_tab_ptr = _mem_read_tab;
         _mem_write_tab_ptr = _mem_write_tab;
+        _mem6809_read_tab_ptr = _mem6809_read_tab;
+        _mem6809_write_tab_ptr = _mem6809_write_tab;
     }
 }
 
@@ -587,10 +951,10 @@ void mem_toggle_watchpoints(int flag, void *context)
  */
 
 /* Save old store function for last byte.  */
-static void REGPARM2 (*store_ff)(WORD addr, BYTE value) = NULL;
+static void (*store_ff)(WORD addr, BYTE value) = NULL;
 
 /* Write to last page of memory in 8x96.  */
-static void REGPARM2 store_8x96(WORD addr, BYTE value)
+static void store_8x96(WORD addr, BYTE value)
 {
     BYTE changed;
     int l, protected;
@@ -623,6 +987,7 @@ static void REGPARM2 store_8x96(WORD addr, BYTE value)
                     _mem_read_base_tab[l] = mem_ram + bank8offset + (l << 8);
                     mem_read_limit_tab[l] = 0xbffd;
                 }
+                invalidate_mem_limit(0x8000, 0xc000);
             }
             if (changed & 0xca) {       /* $c000-$ffff */
                 protected = value & 0x02;
@@ -650,6 +1015,7 @@ static void REGPARM2 store_8x96(WORD addr, BYTE value)
                 }
                 store_ff = _mem_write_tab[0xff];
                 _mem_write_tab[0xff] = store_8x96;
+                invalidate_mem_limit(0xc000, 0x10000);
             }
         } else {                /* disable ext. RAM */
             for (l = 0x80; l < 0x90; l++) {
@@ -661,11 +1027,40 @@ static void REGPARM2 store_8x96(WORD addr, BYTE value)
             set_std_9tof();
             store_ff = _mem_write_tab[0xff];
             _mem_write_tab[0xff] = store_8x96;
+            invalidate_mem_limit(0x8000, 0x10000);
         }
         petmem_map_reg = value;
 
     }
     return;
+}
+
+static int fff0_dump(void)
+{
+    mon_out("fff0 = %02x: ", petmem_map_reg);
+    if (petmem_map_reg & 0x80) {
+        mon_out("enabled, ");
+        if (petmem_map_reg & 0x40) {
+            mon_out("I/O peek through, ");
+        }
+        if (petmem_map_reg & 0x20) {
+            mon_out("screen peek through, ");
+        }
+        if (petmem_map_reg & 0x10) {
+            mon_out("$10 unused bit set, ");
+        }
+        mon_out("\nC000-FFFF: bank %d %s, ",
+            ((petmem_map_reg & 0x08) ? 3 : 1),
+            ((petmem_map_reg & 0x02) ? "(write protected)" : "(r/w)")
+               );
+        mon_out("8000-BFFF: bank %d %s.\n",
+            ((petmem_map_reg & 0x04) ? 2 : 0),
+            ((petmem_map_reg & 0x01) ? "(write protected)" : "(r/w)")
+               );
+    } else {
+        mon_out("disabled.\n");
+    }
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -719,7 +1114,12 @@ void mem_initialize_memory(void)
         l = 128;                /* fix 8096 / 8296 */
 
     /* Setup RAM from $0000 to petres.ramSize */
-    for (i = 0x00; i < l; i++) {
+    _mem_read_tab[0] = zero_read;
+    _mem_write_tab[0] = zero_store;
+    _mem_read_base_tab[0] = mem_ram;
+    mem_read_limit_tab[0] = 0x00fd;
+
+    for (i = 0x01; i < l; i++) {
         _mem_read_tab[i] = ram_read;
         _mem_write_tab[i] = ram_store;
         _mem_read_base_tab[i] = mem_ram + (i << 8);
@@ -729,7 +1129,7 @@ void mem_initialize_memory(void)
     /* Setup unused from petres.ramSize to $7fff */
     for (i = l; i < 0x80; i++) {
         _mem_read_tab[i] = read_unused;
-        _mem_write_tab[i] = store_dummy;
+        _mem_write_tab[i] = store_void;
         _mem_read_base_tab[i] = NULL;
         mem_read_limit_tab[i] = -1;
     }
@@ -764,6 +1164,60 @@ void mem_initialize_memory(void)
         store_8x96(0xfff0, old_map_reg);
     } else {
         petmem_map_reg = 0;
+    }
+
+
+    if (petres.superpet) {
+        /*
+         * Initialize SuperPET 6809 memory view.
+         * Basically, it is the same as the 6502 view, except for the
+         * ROMs in addresses $A000 - $FFFF and but including the I/O range
+         * of $E800 - $EFFF.
+         */
+
+        for (i = 0x00; i < 0xa0; i++) {
+            _mem6809_read_tab[i]      = _mem_read_tab[i];
+            _mem6809_write_tab[i]     = _mem_write_tab[i];
+            _mem6809_read_base_tab[i] = _mem_read_base_tab[i];
+            mem6809_read_limit_tab[i] = mem_read_limit_tab[i];
+        }
+        /*
+         * Set up the ROMs.
+         */
+        for (i = 0xa0; i < 0xe8; i++) {
+            _mem6809_read_tab[i]      = rom6809_read;
+            _mem6809_write_tab[i]     = store_void;
+            _mem6809_read_base_tab[i] = mem_6809rom + i - (ROM6809_BASE >> 8);
+            mem6809_read_limit_tab[i] = 0xe7fc;
+        }
+        for (i = 0xf0; i < 0x100; i++) {
+            _mem6809_read_tab[i]      = rom6809_read;
+            _mem6809_write_tab[i]     = store_void;
+            _mem6809_read_base_tab[i] = mem_6809rom + i - (ROM6809_BASE >> 8);
+            mem6809_read_limit_tab[i] = 0xfffc;
+        }
+        /*
+         * Also copy the I/O setup from the 6502 view.
+         */
+        for (i = 0xe8; i < 0xf0; i++) {
+            _mem6809_read_tab[i]      = _mem_read_tab[i];
+            _mem6809_write_tab[i]     = _mem_write_tab[i];
+            _mem6809_read_base_tab[i] = _mem_read_base_tab[i];
+            mem6809_read_limit_tab[i] = mem_read_limit_tab[i];
+        }
+
+        _mem6809_read_tab[0x100] = _mem6809_read_tab[0];
+        _mem6809_write_tab[0x100] = _mem6809_write_tab[0];
+        _mem6809_read_base_tab[0x100] = _mem6809_read_base_tab[0];
+        mem6809_read_limit_tab[0x100] = -1;
+
+        _mem6809_read_tab_ptr = _mem6809_read_tab;
+        _mem6809_write_tab_ptr = _mem6809_write_tab;
+
+        for (i = 0; i < 0x101; i++) {
+            _mem6809_read_tab_watch[i] = read6809_watch;
+            _mem6809_write_tab_watch[i] = store6809_watch;
+        }
     }
 }
 
@@ -856,11 +1310,17 @@ static BYTE peek_bank_io(WORD addr)
 /* Exported banked memory access functions for the monitor.  */
 
 static const char *banknames[] = {
-    "default", "cpu", "ram", "rom", "io", "extram", NULL
+    "default", "cpu", "ram", "rom", "io", "extram", "6809", NULL
+};
+
+enum {
+    bank_default, bank_cpu = 0, bank_ram, bank_rom, bank_io, bank_extram,
+    bank_cpu6809
 };
 
 static const int banknums[] = {
-    0, 0, 1, 2, 3, 4
+    bank_default, bank_cpu, bank_ram, bank_rom, bank_io, bank_extram,
+    bank_cpu6809,
 };
 
 const char **mem_bank_list(void)
@@ -884,25 +1344,30 @@ int mem_bank_from_name(const char *name)
 BYTE mem_bank_read(int bank, WORD addr, void *context)
 {
     switch (bank) {
-      case 0:                   /* current */
+      case bank_default:        /* current */
         return mem_read(addr);
         break;
-      case 4:                   /* extended RAM area (8x96) */
+      case bank_extram:         /* extended RAM area (8x96, SuperPET) */
         return mem_ram[addr + 0x10000];
         break;
-      case 3:                   /* io */
+      case bank_io:            /* io */
         if (addr >= 0xe800 && addr < 0xe900) {
             return read_io(addr);
+        }
+        if (petres.superpet && (addr & 0xff00) == 0xef00) {
+            return read_super_io(addr);
         }
         if (addr >= 0xe900 && addr < 0xe800 + petres.IOSize) {
             return read_unused(addr);
         }
         /* fallthrough to rom */
-      case 2:                   /* rom */
+      case bank_rom:           /* rom */
         if (addr >= 0x9000) {
             return mem_rom[addr & 0x7fff];
         }
-      case 1:                   /* ram */
+      case bank_cpu6809:       /* 6809 */
+        return mem6809_read(addr);
+      case bank_ram:           /* ram */
         break;
     }
     return mem_ram[addr];
@@ -911,12 +1376,15 @@ BYTE mem_bank_read(int bank, WORD addr, void *context)
 BYTE mem_bank_peek(int bank, WORD addr, void *context)
 {
     switch (bank) {
-      case 0:                   /* current */
+      case bank_default:        /* current */
         return mem_read(addr);  /* FIXME */
         break;
-      case 3:                   /* io */
+      case bank_io:             /* io */
         if (addr >= 0xe800 && addr < 0xe900) {
             return peek_bank_io(addr);
+        }
+        if (petres.superpet && (addr & 0xff00) == 0xef00) {
+            return read_super_io(addr);
         }
         if (addr >= 0xe900 && addr < 0xe800 + petres.IOSize) {
             BYTE result;
@@ -932,25 +1400,32 @@ BYTE mem_bank_peek(int bank, WORD addr, void *context)
 void mem_bank_write(int bank, WORD addr, BYTE byte, void *context)
 {
     switch (bank) {
-      case 0:                   /* current */
+      case bank_default:        /* current */
         mem_store(addr, byte);
         return;
-      case 4:                   /* extended RAM area (8x96) */
+      case bank_extram:         /* extended RAM area (8x96) */
         mem_ram[addr + 0x10000] = byte;
         return;
-      case 3:                   /* io */
+      case bank_io:             /* io */
         if (addr >= 0xe800 && addr < 0xe900) {
             store_io(addr, byte);
+            return;
+        }
+        if (petres.superpet && (addr & 0xff00) == 0xef00) {
+            store_super_io(addr, byte);
             return;
         }
         if (addr >= 0xe900 && addr < 0xe800 + petres.IOSize) {
             store_dummy(addr, byte);
             return;
         }
-      case 2:                   /* rom */
+      case bank_rom:            /* rom */
         if (addr >= 0x9000) {
             return;
         }
+      case bank_cpu6809:        /* rom */
+        mem6809_store(addr, byte);
+        return;
       case 1:                   /* ram */
         break;
     }
@@ -959,9 +1434,9 @@ void mem_bank_write(int bank, WORD addr, BYTE byte, void *context)
 
 static int mem_dump_io(WORD addr) {
     if ((addr >= 0xe810) && (addr <= 0xe81f)) {
-        /* return piacore_dump(machine_context.pia1); */ /* FIXME */
+        return pia1_dump();
     } else if ((addr >= 0xe820) && (addr <= 0xe82f)) {
-        /* return piacore_dump(machine_context.pia2); */ /* FIXME */
+        return pia2_dump();
     } else if ((addr >= 0xe840) && (addr <= 0xe84f)) {
         return viacore_dump(machine_context.via);
     } else if ((addr >= 0xe880) && (addr <= 0xe881)) {
@@ -970,7 +1445,37 @@ static int mem_dump_io(WORD addr) {
         }
     } else if ((addr >= 0xeb00) && (addr <= 0xeb0f)) {
         if (petdww_enabled) {
-            /* return dwwpiacore_dump(machine_context.dwwpia); */ /* FIXME */
+            return petdwwpia_dump();
+        }
+    } else if (addr == 0xfff0) {
+        if (petres.map) {
+            return fff0_dump();
+        }
+    }
+    if (petres.superpet) {
+        if (addr >= 0xefe0 && addr <= 0xefe3) {
+            return efe0_dump();
+        } else if (addr >= 0xeff0 && addr <= 0xeff3) {
+            // ACIA
+        } else if (addr == 0xeff8) {
+            // Control switch
+            /* return aciacore_dump(); */
+            mon_out("CPU: %s\n",
+                petres.superpet_cpu_switch == SUPERPET_CPU_6502 ? "6502" :
+                petres.superpet_cpu_switch == SUPERPET_CPU_6809 ? "6809" :
+                                                            "PROG (unimpl)");
+            mon_out("RAM write protect: $%x\n", spet_ramwp);
+            mon_out("diagnostic sense: $%x\n", spet_diag);
+            return 0;
+        } else if (addr == 0xeffc) {
+            // Bank select
+            mon_out("bank: $%x\n", spet_bank);
+            mon_out("control write protect: $%x\n", spet_ctrlwp);
+            return 0;
+        } else if (addr == 0xeffe) {
+            // RAM/ROM switch
+            mon_out("ram_enable: %d\n", spet_ramen);
+            return 0;
         }
     }
     return -1;
@@ -989,6 +1494,16 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
     if (petdww_enabled) {
         mon_ioreg_add_list(&mem_ioreg_list, "DWWPIA", 0xeb00, 0xeb0f, mem_dump_io);
     }
+    if (petres.map) {
+        mon_ioreg_add_list(&mem_ioreg_list, "8096", 0xfff0, 0xfff0, mem_dump_io);
+    }
+    if (petres.superpet) {
+        mon_ioreg_add_list(&mem_ioreg_list, "6702", 0xefe0, 0xefe3, mem_dump_io);
+        mon_ioreg_add_list(&mem_ioreg_list, "ACIA", 0xeff0, 0xeff3, mem_dump_io);
+        mon_ioreg_add_list(&mem_ioreg_list, "Control", 0xeff8, 0xeff8, mem_dump_io);
+        mon_ioreg_add_list(&mem_ioreg_list, "Bank", 0xeffc, 0xeffc, mem_dump_io);
+        mon_ioreg_add_list(&mem_ioreg_list, "RAM/ROM", 0xeffe, 0xeffe, mem_dump_io);
+    }
 
     return mem_ioreg_list;
 }
@@ -1003,150 +1518,6 @@ void mem_get_screen_parameter(WORD *base, BYTE *rows, BYTE *columns, int *bank)
     *rows = 25;
     *columns = (BYTE)cols;
     *bank = 0;
-}
-
-/*-----------------------------------------------------------------------*/
-
-int pet_init_ok = 0;
-
-/* ------------------------------------------------------------------------- */
-
-#define PET_CHARGEN_NAME        "chargen"
-
-/*
- * table with Model information
- */
-struct pet_table_s { 
-    const char *model;
-    petinfo_t info;
-};
-typedef struct pet_table_s pet_table_t;
-
-static pet_table_t pet_table[] = {
-    { "2001",
-      { 8, 0x0800, 0, 40, 0, 0, 1, 1, 1, 1, 0,
-        PET_CHARGEN_NAME, PET_KERNAL1NAME, PET_EDITOR1G40NAME, PET_BASIC1NAME,
-        NULL, NULL, NULL } },
-    { "3008",
-      { 8, 0x0800, 0, 40, 0, 0, 1, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL2NAME, PET_EDITOR2G40NAME, PET_BASIC2NAME,
-        NULL, NULL, NULL } },
-    { "3016",
-      { 16, 0x0800, 0, 40, 0, 0, 1, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL2NAME, PET_EDITOR2G40NAME, PET_BASIC2NAME,
-        NULL, NULL, NULL } },
-    { "3032",
-      { 32, 0x0800, 0, 40, 0, 0, 1, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL2NAME, PET_EDITOR2G40NAME, PET_BASIC2NAME,
-        NULL, NULL, NULL } },
-    { "3032B",
-      { 32, 0x0800, 0, 40, 0, 0, 0, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL2NAME, PET_EDITOR2B40NAME, PET_BASIC2NAME,
-        NULL, NULL, NULL } },
-    { "4016",
-      { 16, 0x0800, 1, 40, 0, 0, 1, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL4NAME, PET_EDITOR4G40NAME, PET_BASIC4NAME,
-        NULL, NULL, NULL } },
-    { "4032",
-      { 32, 0x0800, 1, 40, 0, 0, 1, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL4NAME, PET_EDITOR4G40NAME, PET_BASIC4NAME,
-        NULL, NULL, NULL } },
-    { "4032B",
-      { 32, 0x0800, 1, 40, 0, 0, 0, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL4NAME, PET_EDITOR4B40NAME, PET_BASIC4NAME,
-        NULL, NULL, NULL } },
-    { "8032",
-      { 32, 0x0800, 1, 80, 0, 0, 0, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL4NAME, PET_EDITOR4B80NAME, PET_BASIC4NAME,
-        NULL, NULL, NULL } },
-    { "8096",
-      { 96, 0x0800, 1, 80, 0, 0, 0, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL4NAME, PET_EDITOR4B80NAME, PET_BASIC4NAME,
-        NULL, NULL, NULL } },
-    { "8296",
-      { 128, 0x0100, 1, 80, 0, 0, 0, 0, 0, 0, 0,
-        PET_CHARGEN_NAME, PET_KERNAL4NAME, PET_EDITOR4B80NAME, PET_BASIC4NAME,
-        NULL, NULL, NULL } },
-    { "SuperPET",
-      { 32, 0x0800, 1, 80, 0, 0, 0, 0, 0, 0, 1,
-        PET_CHARGEN_NAME, PET_KERNAL4NAME, PET_EDITOR4B80NAME, PET_BASIC4NAME,
-        NULL, NULL, NULL } },
-    { NULL }
-};
-
-int petmem_set_conf_info(petinfo_t *pi)
-{
-    int kindex;
-
-    resources_set_int("RamSize", pi->ramSize);
-    resources_set_int("IOSize", pi->IOSize);
-    resources_set_int("Crtc", pi->crtc);
-    resources_set_int("VideoSize", pi->video);
-    resources_set_int("Ram9", pi->mem9);
-    resources_set_int("RamA", pi->memA);
-    resources_set_int("EoiBlank", pi->eoiblank);
-    resources_set_int("SuperPET", pi->superpet);
-
-    resources_get_int("KeymapIndex", &kindex);
-    resources_set_int("KeymapIndex", (kindex & 1) + 2 * pi->kbd_type);
-    return 0;
-}
-
-int pet_set_model_info(petinfo_t *pi)
-{
-    /* set hardware config */
-    petmem_set_conf_info(pi);
-
-    if (pi->pet2k) {    /* set resource only when necessary */
-        resources_set_int("Basic1", pi->pet2k);
-    }
-    resources_set_int("Basic1Chars", pi->pet2kchar);
-
-    resources_set_string("ChargenName", pi->chargenName);
-    resources_set_string("KernalName", pi->kernalName);
-    resources_set_string("BasicName", pi->basicName);
-    resources_set_string("EditorName", pi->editorName);
-
-    /* allow additional ROMs to survive a model switch. */
-    if (pi->mem9name)
-        resources_set_string("RomModule9Name", pi->mem9name);
-    if (pi->memAname)
-        resources_set_string("RomModuleAName", pi->memAname);
-    if (pi->memBname)
-        resources_set_string("RomModuleBName", pi->memBname);
-    return 0;
-}
-
-static int pet_model = 8;
-
-int pet_set_model(const char *model_name, void *extra)
-{
-    int i;
-
-    i = 0;
-    while (pet_table[i].model) {
-        if (!strcmp(pet_table[i].model, model_name)) {
-
-            pet_set_model_info(&pet_table[i].info);
-
-            /* we have to wait until we have done enough initialization */
-            if (pet_init_ok) {
-                /* mem_load(); - not needed as resources now load */
-                vsync_suspend_speed_eval();
-                machine_trigger_reset(MACHINE_RESET_MODE_SOFT);
-                pet_model = i;
-            }
-            return 0;
-        }
-        i++;
-    }
-
-    return -1;
-}
-
-const char *get_pet_model(void)
-{
-    return pet_table[pet_model].model;
 }
 
 /************************** PET resource handling ************************/
@@ -1173,4 +1544,3 @@ void petmem_check_info(petres_t *pi)
         pi->videoSize = 0x1000;
     }
 }
-

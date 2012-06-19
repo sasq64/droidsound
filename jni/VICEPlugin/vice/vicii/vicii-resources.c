@@ -41,8 +41,7 @@
 #include "viciitypes.h"
 #include "video.h"
 
-
-vicii_resources_t vicii_resources;
+vicii_resources_t vicii_resources = { 0, 0, 0, 0 };
 static video_chip_cap_t video_chip_cap;
 
 
@@ -50,8 +49,9 @@ static int set_border_mode(int val, void *param)
 {
     int sync;
 
-    if (resources_get_int("MachineVideoStandard", &sync) < 0)
+    if (resources_get_int("MachineVideoStandard", &sync) < 0) {
         sync = MACHINE_SYNC_PAL;
+    }
 
     if (vicii_resources.border_mode != val) {
         vicii_resources.border_mode = val;
@@ -99,7 +99,7 @@ static const resource_int_t resources_int[] =
 int vicii_resources_init(void)
 {
     video_chip_cap.dsize_allowed = ARCHDEP_VICII_DSIZE;
-    video_chip_cap.dsize_default = 0;
+    video_chip_cap.dsize_default = ARCHDEP_VICII_DSIZE;
     video_chip_cap.dsize_limit_width = 0;
     video_chip_cap.dsize_limit_height = 0;
     video_chip_cap.dscan_allowed = ARCHDEP_VICII_DSCAN;
@@ -126,4 +126,3 @@ int vicii_resources_init(void)
 
     return resources_register_int(resources_int);
 }
-

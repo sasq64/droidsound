@@ -33,9 +33,10 @@
 #include <string.h>
 
 #include "maincpu.h"
-#include "raster.h"
+#include "raster-changes.h"
 #include "types.h"
 #include "vic.h"
+#include "victypes.h"
 #include "vic-mem.h"
 #include "vic20mem.h"
 #include "vic20sound.h"
@@ -48,7 +49,7 @@
 
 /* VIC access functions. */
 
-void REGPARM2 vic_store(WORD addr, BYTE value)
+void vic_store(WORD addr, BYTE value)
 {
     addr &= 0xf;
     vic.regs[addr] = value;
@@ -216,7 +217,7 @@ void REGPARM2 vic_store(WORD addr, BYTE value)
     }
 }
 
-BYTE REGPARM1 vic_read(WORD addr)
+BYTE vic_read(WORD addr)
 {
     addr &= 0xf;
 
@@ -259,7 +260,7 @@ BYTE REGPARM1 vic_read(WORD addr)
     }
 }
 
-BYTE REGPARM1 vic_peek(WORD addr)
+BYTE vic_peek(WORD addr)
 {
     /* No side effects (unless mouse_get_* counts) */
     return vic_read(addr);

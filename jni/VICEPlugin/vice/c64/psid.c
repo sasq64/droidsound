@@ -57,9 +57,10 @@ typedef struct psid_s {
     WORD songs;
     WORD start_song;
     DWORD speed;
-    BYTE name[32];
-    BYTE author[32];
-    BYTE copyright[32];
+    /* psid v3 allows all 32 bytes to be used with no zero termination */
+    BYTE name[32 + 1];
+    BYTE author[32 + 1];
+    BYTE copyright[32 + 1];
     WORD flags;
     BYTE start_page;
     BYTE max_pages;
@@ -212,7 +213,7 @@ int psid_load_file(const char* filename)
     ptr += 4;
     psid->version = psid_extract_word(&ptr);
 
-    if (psid->version < 1 || psid->version > 2) {
+    if (psid->version < 1 || psid->version > 3) {
         log_error(vlog, "Unknown PSID version number: %d.", (int)psid->version);
         goto fail;
     }
@@ -234,15 +235,15 @@ int psid_load_file(const char* filename)
     psid->speed |= psid_extract_word(&ptr);
     psid->frames_played = 0;
     memcpy(psid->name, ptr, 32);
-    psid->name[31] = '\0';
+    psid->name[32] = '\0';
     ptr += 32;
     memcpy(psid->author, ptr, 32);
-    psid->author[31] = '\0';
+    psid->author[32] = '\0';
     ptr += 32;
     memcpy(psid->copyright, ptr, 32);
-    psid->copyright[31] = '\0';
+    psid->copyright[32] = '\0';
     ptr += 32;
-    if (psid->version == 2) {
+    if (psid->version >= 2) {
         psid->flags = psid_extract_word(&ptr);
         psid->start_page = *ptr++;
         psid->max_pages = *ptr++;
@@ -439,7 +440,7 @@ void psid_init_tune(void)
         log_message(vlog, "Using %s interrupt", irq_str);
         log_message(vlog, "Playing tune %d out of %d (default=%d)", start_song, psid->songs, psid->start_song);
     } else {
-        if (vsid_mode) {
+        if (machine_class == VICE_MACHINE_VSID) {
             char * driver_info_text;
             driver_info_text = lib_msprintf("Driver=$%04X, Image=$%04X-$%04X, Init=$%04X, Play=$%04X", reloc_addr, psid->load_addr,
                                             psid->load_addr + psid->data_size - 1, psid->init_addr, psid->play_addr);
@@ -468,6 +469,9 @@ void psid_init_tune(void)
     addr += psid_set_cbm80(reloc_addr, addr);
 
     ram_store(addr, (BYTE)(start_song));
+
+    /* force flag in c64 memory, many sids reads it and must be set AFTER the sid flag is read */
+    ram_store((WORD)(0x02a6), (BYTE)(sync == MACHINE_SYNC_NTSC ? 0 : 1) );
 }
 
 void psid_set_tune(int tune)
@@ -534,11 +538,14 @@ void psid_init_driver(void)
                 break;
         }
 
-        /* Stereo SID specification support from Wilfred Bos.
-         * Top byte of reserved holds the middle nybbles of
-         * the 2nd chip address. */
+    }
+    /* Stereo SID specification support from Wilfred Bos.
+     * Top byte of reserved holds the middle nybbles of
+     * the 2nd chip address. */
+    if (psid->version >= 3) {
         resources_set_int("SidStereo", 0);
         sid2loc = 0xd000 | ((psid->reserved >> 4) & 0x0ff0);
+        log_message(vlog, "2nd SID at $%04x", sid2loc);
         if (((sid2loc >= 0xd420 && sid2loc < 0xd800) || sid2loc >= 0xde00)
                 && (sid2loc & 0x10) == 0) {
                 resources_set_int("SidStereo", 1);

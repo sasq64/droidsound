@@ -277,8 +277,10 @@ void petdww_shutdown(void)
 
 static read_func_ptr_t save_mem_read_tab[PET_DWW_RAM_SIZE >> 8];
 static store_func_ptr_t save_mem_write_tab[PET_DWW_RAM_SIZE >> 8];
+static BYTE *save_mem_base_tab[PET_DWW_RAM_SIZE >> 8];
+static int save_mem_limit_tab[PET_DWW_RAM_SIZE >> 8];
 
-static BYTE REGPARM2 dww_ram9000_read(WORD addr)
+static BYTE dww_ram9000_read(WORD addr)
 {
     WORD min9000 = (addr - 0x9000) & RAM_SIZE_MASK;
 
@@ -288,7 +290,7 @@ static BYTE REGPARM2 dww_ram9000_read(WORD addr)
     return petdww_ram[min9000];
 }
 
-static void REGPARM2 dww_ram9000_store(WORD addr, BYTE value)
+static void dww_ram9000_store(WORD addr, BYTE value)
 {
     WORD min9000 = (addr - 0x9000) & RAM_SIZE_MASK;
 
@@ -298,10 +300,14 @@ static void REGPARM2 dww_ram9000_store(WORD addr, BYTE value)
     petdww_ram[min9000] = value;
 }
 
-void petdww_override_std_9toa(read_func_ptr_t *mem_read_tab, store_func_ptr_t *mem_write_tab)
+void petdww_override_std_9toa(read_func_ptr_t *mem_read_tab, store_func_ptr_t *mem_write_tab, BYTE **mem_base_tab, int *mem_limit_tab)
 {
     int i;
 
+    /* Check this just in case */
+    if (petres.superpet) {
+        return;
+    }
     /*
      * Check if this was already done.
      * FIXME: What if something else also overrides these entries?
@@ -326,13 +332,19 @@ void petdww_override_std_9toa(read_func_ptr_t *mem_read_tab, store_func_ptr_t *m
     for (i = 0x90; i < 0xb0; i++) {
         save_mem_read_tab[i - 0x90] = mem_read_tab[i];
         save_mem_write_tab[i - 0x90] = mem_write_tab[i];
+        save_mem_base_tab[i - 0x90] = mem_base_tab[i];
+        save_mem_limit_tab[i - 0x90] = mem_limit_tab[i];
 
         mem_read_tab[i] = dww_ram9000_read;
         mem_write_tab[i] = dww_ram9000_store;
+        mem_base_tab[i] = &petdww_ram[(i - 0x90) << 8];
+        mem_limit_tab[i] = 0xaffd;
+
     }
+    invalidate_mem_limit(0x9000, 0xb000);
 }
 
-void petdww_restore_std_9toa(read_func_ptr_t *mem_read_tab, store_func_ptr_t *mem_write_tab)
+void petdww_restore_std_9toa(read_func_ptr_t *mem_read_tab, store_func_ptr_t *mem_write_tab, BYTE **mem_base_tab, int *mem_limit_tab)
 {
     int i;
 
@@ -345,7 +357,10 @@ void petdww_restore_std_9toa(read_func_ptr_t *mem_read_tab, store_func_ptr_t *me
         for (i = 0x90; i < 0xb0; i++) {
             mem_read_tab[i] = save_mem_read_tab[i - 0x90];
             mem_write_tab[i] = save_mem_write_tab[i - 0x90];
+            mem_base_tab[i] = save_mem_base_tab[i - 0x90];
+            mem_limit_tab[i] = save_mem_limit_tab[i - 0x90];
         }
+        invalidate_mem_limit(0x9000, 0xb000);
     }
 #if DWW_DEBUG_RAM
     else {
@@ -367,6 +382,7 @@ void petdww_restore_std_9toa(read_func_ptr_t *mem_read_tab, store_func_ptr_t *me
 #define mypia_snapshot_write_module petdwwpia_snapshot_write_module
 #define mypia_snapshot_read_module petdwwpia_snapshot_read_module
 #define mypia_signal petdwwpia_signal
+#define mypia_dump petdwwpia_dump
 
 static piareg mypia;
 
@@ -464,15 +480,15 @@ static int charrom_on;
 #define extra_charrom_off         (output_porta & 0x20)
 /* #define mem_at_ec00          (!(output_portb & 0x01)) */
 
-BYTE REGPARM1 petdwwpia_read(WORD addr);
-void REGPARM2 petdwwpia_store(WORD addr, BYTE byte);
+BYTE petdwwpia_read(WORD addr);
+void petdwwpia_store(WORD addr, BYTE byte);
 
 int petdww_mem_at_9000()
 {
     return mem_at_9000;
 }
 
-BYTE REGPARM1 read_petdww_reg(WORD addr)
+BYTE read_petdww_reg(WORD addr)
 {
     /* forward to PIA */
 #if DWW_DEBUG_REG
@@ -481,7 +497,7 @@ BYTE REGPARM1 read_petdww_reg(WORD addr)
     return petdwwpia_read(addr);
 }
 
-BYTE REGPARM1 read_petdww_ec00_ram(WORD addr)
+BYTE read_petdww_ec00_ram(WORD addr)
 {
     addr &= RAM_1K_SIZE_MASK;
     addr |= mem_bank;
@@ -490,7 +506,7 @@ BYTE REGPARM1 read_petdww_ec00_ram(WORD addr)
 }
 
 
-void REGPARM2 store_petdww_reg(WORD addr, BYTE byte)
+void store_petdww_reg(WORD addr, BYTE byte)
 {
     /* forward to PIA */
 #if DWW_DEBUG_REG
@@ -499,7 +515,7 @@ void REGPARM2 store_petdww_reg(WORD addr, BYTE byte)
     petdwwpia_store(addr, byte);
 }
 
-void REGPARM2 store_petdww_ec00_ram(WORD addr, BYTE byte)
+void store_petdww_ec00_ram(WORD addr, BYTE byte)
 {
 #if DWW_DEBUG_REG
     log_message(petdww_log, "store_petdww_ec00_ram: $%04x := $%02x", addr, byte);
@@ -553,13 +569,15 @@ static void store_pb(BYTE byte)
     {
         read_func_ptr_t *read;
         store_func_ptr_t *write;
+        BYTE **base;
+        int *limit;
 
-        get_mem_access_tables(&read, &write);
+        get_mem_access_tables(&read, &write, &base, &limit);
 
         if (mem_at_9000) {
-            petdww_override_std_9toa(read, write);
+            petdww_override_std_9toa(read, write, base, limit);
         } else {
-            petdww_restore_std_9toa(read, write);
+            petdww_restore_std_9toa(read, write, base, limit);
         }
     }
 }

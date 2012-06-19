@@ -40,7 +40,7 @@
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
 #include "c64mem.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "cmdline.h"
 #include "crt.h"
@@ -64,6 +64,7 @@
 #include "actionreplay.h"
 #include "atomicpower.h"
 #include "c64acia.h"
+#include "c64-generic.h"
 #include "c64-midi.h"
 #include "c64tpi.h"
 #include "comal80.h"
@@ -82,16 +83,17 @@
 #include "final.h"
 #include "finalplus.h"
 #include "final3.h"
+#include "formel64.h"
 #include "freezeframe.h"
 #include "freezemachine.h"
 #include "funplay.h"
 #include "gamekiller.h"
-#include "generic.h"
 #include "georam.h"
 #include "gs.h"
 #include "ide64.h"
 #include "isepic.h"
 #include "kcs.h"
+#include "kingsoft.h"
 #include "mach5.h"
 #include "magicdesk.h"
 #include "magicformel.h"
@@ -102,6 +104,7 @@
 #include "sfx_soundexpander.h"
 #include "sfx_soundsampler.h"
 #include "ocean.h"
+#include "pagefox.h"
 #include "prophet64.h"
 #include "ramcart.h"
 #include "retroreplay.h"
@@ -109,6 +112,7 @@
 #include "rexep256.h"
 #include "rexutility.h"
 #include "ross.h"
+#include "silverrock128.h"
 #include "simonsbasic.h"
 #include "snapshot64.h"
 #include "stardos.h"
@@ -279,6 +283,11 @@ static const cmdline_option_t cmdline_options[] =
       USE_PARAM_ID, USE_DESCRIPTION_ID,
       IDCLS_P_NAME, IDCLS_ATTACH_RAW_EXPERT_CART,
       NULL, NULL },
+    { "-cartf64", CALL_FUNCTION, 1,
+      cart_attach_cmdline, (void *)CARTRIDGE_FORMEL64, NULL, NULL,
+      USE_PARAM_ID, USE_DESCRIPTION_ID,
+      IDCLS_P_NAME, IDCLS_ATTACH_RAW_F64_CART,
+      NULL, NULL },
     { "-cartfc1", CALL_FUNCTION, 1,
       cart_attach_cmdline, (void *)CARTRIDGE_FINAL_I, NULL, NULL,
       USE_PARAM_ID, USE_DESCRIPTION_ID,
@@ -344,6 +353,11 @@ static const cmdline_option_t cmdline_options[] =
       USE_PARAM_ID, USE_DESCRIPTION_ID,
       IDCLS_P_NAME, IDCLS_ATTACH_RAW_KCS_CART,
       NULL, NULL },
+    { "-cartks", CALL_FUNCTION, 1,
+      cart_attach_cmdline, (void *)CARTRIDGE_KINGSOFT, NULL, NULL,
+      USE_PARAM_ID, USE_DESCRIPTION_ID,
+      IDCLS_P_NAME, IDCLS_ATTACH_RAW_KINGSOFT_CART,
+      NULL, NULL },
     { "-cartmach5", CALL_FUNCTION, 1,
       cart_attach_cmdline, (void *)CARTRIDGE_MACH5, NULL, NULL,
       USE_PARAM_ID, USE_DESCRIPTION_ID,
@@ -383,6 +397,11 @@ static const cmdline_option_t cmdline_options[] =
       cart_attach_cmdline, (void *)CARTRIDGE_OCEAN, NULL, NULL,
       USE_PARAM_ID, USE_DESCRIPTION_ID,
       IDCLS_P_NAME, IDCLS_ATTACH_RAW_OCEAN_CART,
+      NULL, NULL },
+    { "-cartpf", CALL_FUNCTION, 1,
+      cart_attach_cmdline, (void *)CARTRIDGE_PAGEFOX, NULL, NULL,
+      USE_PARAM_ID, USE_DESCRIPTION_ID,
+      IDCLS_P_NAME, IDCLS_ATTACH_RAW_PAGEFOX_CART,
       NULL, NULL },
     { "-cartp64", CALL_FUNCTION, 1,
       cart_attach_cmdline, (void *)CARTRIDGE_P64, NULL, NULL,
@@ -438,6 +457,11 @@ static const cmdline_option_t cmdline_options[] =
       cart_attach_cmdline, (void *)CARTRIDGE_SUPER_GAMES, NULL, NULL,
       USE_PARAM_ID, USE_DESCRIPTION_ID,
       IDCLS_P_NAME, IDCLS_ATTACH_RAW_SUPER_GAMES_CART,
+      NULL, NULL },
+    { "-cartsilver", CALL_FUNCTION, 1,
+      cart_attach_cmdline, (void *)CARTRIDGE_SILVERROCK_128, NULL, NULL,
+      USE_PARAM_ID, USE_DESCRIPTION_ID,
+      IDCLS_P_NAME, IDCLS_ATTACH_RAW_SILVERROCK_128_CART,
       NULL, NULL },
     { "-cartsimon", CALL_FUNCTION, 1,
       cart_attach_cmdline, (void *)CARTRIDGE_SIMONS_BASIC, NULL, NULL,
@@ -853,6 +877,8 @@ int cart_bin_attach(int type, const char *filename, BYTE *rawcart)
             return final_v3_bin_attach(filename, rawcart);
         case CARTRIDGE_FINAL_PLUS:
             return final_plus_bin_attach(filename, rawcart);
+        case CARTRIDGE_FORMEL64:
+            return formel64_bin_attach(filename, rawcart);
         case CARTRIDGE_FREEZE_FRAME:
             return freezeframe_bin_attach(filename, rawcart);
         case CARTRIDGE_FREEZE_MACHINE:
@@ -871,6 +897,8 @@ int cart_bin_attach(int type, const char *filename, BYTE *rawcart)
             return ide64_bin_attach(filename, rawcart);
         case CARTRIDGE_KCS_POWER:
             return kcs_bin_attach(filename, rawcart);
+        case CARTRIDGE_KINGSOFT:
+            return kingsoft_bin_attach(filename, rawcart);
         case CARTRIDGE_MACH5:
             return mach5_bin_attach(filename, rawcart);
         case CARTRIDGE_MAGIC_DESK:
@@ -885,6 +913,8 @@ int cart_bin_attach(int type, const char *filename, BYTE *rawcart)
             return ocean_bin_attach(filename, rawcart);
         case CARTRIDGE_P64:
             return p64_bin_attach(filename, rawcart);
+        case CARTRIDGE_PAGEFOX:
+            return pagefox_bin_attach(filename, rawcart);
         case CARTRIDGE_RETRO_REPLAY:
             return retroreplay_bin_attach(filename, rawcart);
         case CARTRIDGE_REX:
@@ -893,6 +923,8 @@ int cart_bin_attach(int type, const char *filename, BYTE *rawcart)
             return rexep256_bin_attach(filename, rawcart);
         case CARTRIDGE_ROSS:
             return ross_bin_attach(filename, rawcart);
+        case CARTRIDGE_SILVERROCK_128:
+            return silverrock128_bin_attach(filename, rawcart);
         case CARTRIDGE_SIMONS_BASIC:
             return simon_bin_attach(filename, rawcart);
         case CARTRIDGE_SNAPSHOT64:
@@ -1015,6 +1047,9 @@ void cart_attach(int type, BYTE *rawcart)
         case CARTRIDGE_FINAL_PLUS:
             final_plus_config_setup(rawcart);
             break;
+        case CARTRIDGE_FORMEL64:
+            formel64_config_setup(rawcart);
+            break;
         case CARTRIDGE_FREEZE_FRAME:
             freezeframe_config_setup(rawcart);
             break;
@@ -1042,6 +1077,9 @@ void cart_attach(int type, BYTE *rawcart)
         case CARTRIDGE_KCS_POWER:
             kcs_config_setup(rawcart);
             break;
+        case CARTRIDGE_KINGSOFT:
+            kingsoft_config_setup(rawcart);
+            break;
         case CARTRIDGE_MACH5:
             mach5_config_setup(rawcart);
             break;
@@ -1063,6 +1101,9 @@ void cart_attach(int type, BYTE *rawcart)
         case CARTRIDGE_P64:
             p64_config_setup(rawcart);
             break;
+        case CARTRIDGE_PAGEFOX:
+            pagefox_config_setup(rawcart);
+            break;
         case CARTRIDGE_RETRO_REPLAY:
             retroreplay_config_setup(rawcart);
             break;
@@ -1074,6 +1115,9 @@ void cart_attach(int type, BYTE *rawcart)
             break;
         case CARTRIDGE_ROSS:
             ross_config_setup(rawcart);
+            break;
+        case CARTRIDGE_SILVERROCK_128:
+            silverrock128_config_setup(rawcart);
             break;
         case CARTRIDGE_SIMONS_BASIC:
             simon_config_setup(rawcart);
@@ -1406,6 +1450,9 @@ void cart_detach(int type)
         case CARTRIDGE_FINAL_PLUS:
             final_plus_detach();
             break;
+        case CARTRIDGE_FORMEL64:
+            formel64_detach();
+            break;
         case CARTRIDGE_FREEZE_FRAME:
             freezeframe_detach();
             break;
@@ -1430,6 +1477,9 @@ void cart_detach(int type)
         case CARTRIDGE_KCS_POWER:
             kcs_detach();
             break;
+        case CARTRIDGE_KINGSOFT:
+            kingsoft_detach();
+            break;
         case CARTRIDGE_MACH5:
             mach5_detach();
             break;
@@ -1448,6 +1498,9 @@ void cart_detach(int type)
         case CARTRIDGE_OCEAN:
             ocean_detach();
             break;
+        case CARTRIDGE_PAGEFOX:
+            pagefox_detach();
+            break;
         case CARTRIDGE_RETRO_REPLAY:
             retroreplay_detach();
             break;
@@ -1459,6 +1512,9 @@ void cart_detach(int type)
             break;
         case CARTRIDGE_ROSS:
             ross_detach();
+            break;
+        case CARTRIDGE_SILVERROCK_128:
+            silverrock128_detach();
             break;
         case CARTRIDGE_SIMONS_BASIC:
             simon_detach();
@@ -1620,6 +1676,9 @@ void cartridge_init_config(void)
         case CARTRIDGE_FINAL_III:
             final_v3_config_init();
             break;
+        case CARTRIDGE_FORMEL64:
+            formel64_config_init();
+            break;
         case CARTRIDGE_FREEZE_FRAME:
             freezeframe_config_init();
             break;
@@ -1647,6 +1706,9 @@ void cartridge_init_config(void)
         case CARTRIDGE_KCS_POWER:
             kcs_config_init();
             break;
+        case CARTRIDGE_KINGSOFT:
+            kingsoft_config_init();
+            break;
         case CARTRIDGE_MACH5:
             mach5_config_init();
             break;
@@ -1668,6 +1730,9 @@ void cartridge_init_config(void)
         case CARTRIDGE_P64:
             p64_config_init();
             break;
+        case CARTRIDGE_PAGEFOX:
+            pagefox_config_init();
+            break;
         case CARTRIDGE_RETRO_REPLAY:
             retroreplay_config_init();
             break;
@@ -1679,6 +1744,9 @@ void cartridge_init_config(void)
             break;
         case CARTRIDGE_ROSS:
             ross_config_init();
+            break;
+        case CARTRIDGE_SILVERROCK_128:
+            silverrock128_config_init();
             break;
         case CARTRIDGE_SIMONS_BASIC:
             simon_config_init();
@@ -1815,6 +1883,9 @@ void cartridge_reset(void)
             break;
         case CARTRIDGE_EPYX_FASTLOAD:
             epyxfastload_reset();
+            break;
+        case CARTRIDGE_FORMEL64:
+            formel64_reset();
             break;
         case CARTRIDGE_FREEZE_MACHINE:
             freezemachine_reset();
@@ -2108,94 +2179,18 @@ int cartridge_crt_save(int type, const char *filename)
 
 /* ------------------------------------------------------------------------- */
 
-int cartridge_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec)
+void cartridge_sound_chip_init(void)
 {
-    digimax_sound_machine_init(psid, speed, cycles_per_sec);
-    sfx_soundexpander_sound_machine_init(psid, speed, cycles_per_sec);
-    sfx_soundsampler_sound_machine_init(psid, speed, cycles_per_sec);
-    magicvoice_sound_machine_init(psid, speed, cycles_per_sec);
-    return 0;
-}
-
-void cartridge_sound_machine_close(sound_t *psid)
-{
-    sfx_soundexpander_sound_machine_close(psid);
-    magicvoice_sound_machine_close(psid);
-}
-
-/* for read/store 0x00 <= addr <= 0x1f is the sid
- *                0x20 <= addr <= 0x3f is the digimax
- *                0x40 <= addr <= 0x5f is the SFX sound sampler
- *                0x60 <= addr <= 0x7f is the SFX sound expander
- *                0x80 <= addr <= 0x9f is the Magic Voice
- */
-int cartridge_sound_machine_read(sound_t *psid, WORD addr, BYTE *value)
-{
-    if (addr >= 0x20 && addr <= 0x3f) {
-        *value = digimax_sound_machine_read(psid, (WORD)(addr - 0x20));
-        return 1;
-    }
-
-    if (addr >= 0x40 && addr <= 0x5f) {
-        *value = sfx_soundsampler_sound_machine_read(psid, (WORD)(addr - 0x40));
-        return 1;
-    }
-
-    if (addr >= 0x60 && addr <= 0x7f) {
-        *value = sfx_soundexpander_sound_machine_read(psid, (WORD)(addr - 0x60));
-        return 1;
-    }
-
-    if (addr >= 0x80 && addr <= 0x9f) {
-        *value = magicvoice_sound_machine_read(psid, (WORD)(addr - 0x80));
-        return 1;
-    }
-
-    return 0;
-}
-
-void cartridge_sound_machine_store(sound_t *psid, WORD addr, BYTE byte)
-{
-    if (addr >= 0x20 && addr <= 0x3f) {
-        digimax_sound_machine_store(psid, (WORD)(addr - 0x20), byte);
-    }
-
-    if (addr >= 0x40 && addr <= 0x5f) {
-        sfx_soundsampler_sound_machine_store(psid, (WORD)(addr - 0x40), byte);
-    }
-
-    if (addr >= 0x60 && addr <= 0x7f) {
-        sfx_soundexpander_sound_machine_store(psid, (WORD)(addr - 0x60), byte);
-    }
-
-    if (addr >= 0x80 && addr <= 0x9f) {
-        magicvoice_sound_machine_store(psid, (WORD)(addr - 0x80), byte);
-    }
-}
-
-void cartridge_sound_machine_reset(sound_t *psid, CLOCK cpu_clk)
-{
-    digimax_sound_reset();
-    sfx_soundexpander_sound_reset();
-    sfx_soundsampler_sound_reset();
-    magicvoice_sound_machine_reset(psid, cpu_clk);
-}
-
-int cartridge_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t)
-{
-    digimax_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    sfx_soundexpander_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    sfx_soundsampler_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    magicvoice_sound_machine_calculate_samples(psid, pbuf, nr, interleave, delta_t);
-    return nr;
+    digimax_sound_chip_init();
+    sfx_soundsampler_sound_chip_init();
+    sfx_soundexpander_sound_chip_init();
+    magicvoice_sound_chip_init();
 }
 
 /* ------------------------------------------------------------------------- */
 
 /*
     Snapshot reading and writing
-
-    FIXME: incomplete
 */
 
 #define C64CART_DUMP_MAX_CARTS  16
@@ -2211,6 +2206,7 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
     BYTE i;
     BYTE number_of_carts = 0;
     int cart_ids[C64CART_DUMP_MAX_CARTS];
+    int last_cart = 0;
 
     memset(cart_ids, 0, sizeof(cart_ids));
 
@@ -2223,7 +2219,10 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                 DBG(("CART snapshot save: active carts > max (%i)\n", number_of_carts));
                 return -1;
             }
-            cart_ids[number_of_carts++] = e->device->cartid;
+            if (last_cart != e->device->cartid) {
+                last_cart = e->device->cartid;
+                cart_ids[number_of_carts++] = last_cart;
+            }
             e = e->next;
         }
     }
@@ -2290,8 +2289,16 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
     for (i = 0; i < number_of_carts; i++) {
         switch (cart_ids[i]) {
             /* "Slot 0" */
-            /* FIXME case CARTRIDGE_MMC64: */
-            /* FIXME case CARTRIDGE_MAGIC_VOICE: */ /* emulation not ready yet */
+            case CARTRIDGE_MMC64:
+                if (mmc64_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+            case CARTRIDGE_MAGIC_VOICE:
+                if (magicvoice_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
             case CARTRIDGE_IEEE488:
                 if (tpi_snapshot_write_module(s) < 0) {
                     return -1;
@@ -2411,6 +2418,11 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                     return -1;
                 }
                 break;
+            case CARTRIDGE_FORMEL64:
+                if (formel64_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
             case CARTRIDGE_FREEZE_FRAME:
                 if (freezeframe_snapshot_write_module(s) < 0) {
                     return -1;
@@ -2443,9 +2455,18 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                     return -1;
                 }
                 break;
-            /* FIXME case CARTRIDGE_IDE64: */
+            case CARTRIDGE_IDE64:
+                if (ide64_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
             case CARTRIDGE_KCS_POWER:
                 if (kcs_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+            case CARTRIDGE_KINGSOFT:
+                if (kingsoft_snapshot_write_module(s) < 0) {
                     return -1;
                 }
                 break;
@@ -2469,7 +2490,11 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                     return -1;
                 }
                 break;
-            /* FIXME case CARTRIDGE_MMC_REPLAY: */ /* emulation not ready yet */
+            case CARTRIDGE_MMC_REPLAY:
+                if (mmcreplay_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
             case CARTRIDGE_OCEAN:
                 if (ocean_snapshot_write_module(s) < 0) {
                     return -1;
@@ -2477,6 +2502,11 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                 break;
             case CARTRIDGE_P64:
                 if (p64_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+            case CARTRIDGE_PAGEFOX:
+                if (pagefox_snapshot_write_module(s) < 0) {
                     return -1;
                 }
                 break;
@@ -2497,6 +2527,11 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                 break;
             case CARTRIDGE_ROSS:
                 if (ross_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+            case CARTRIDGE_SILVERROCK_128:
+                if (silverrock128_snapshot_write_module(s) < 0) {
                     return -1;
                 }
                 break;
@@ -2567,19 +2602,39 @@ int cartridge_snapshot_write_modules(struct snapshot_s *s)
                     return -1;
                 }
                 break;
-            /* FIXME case CARTRIDGE_MIDI_PASSPORT: */
-            /* FIXME case CARTRIDGE_MIDI_DATEL: */
-            /* FIXME case CARTRIDGE_MIDI_SEQUENTIAL: */
-            /* FIXME case CARTRIDGE_MIDI_NAMESOFT: */
-            /* FIXME case CARTRIDGE_MIDI_MAPLIN: */
+#ifdef HAVE_MIDI
+            case CARTRIDGE_MIDI_PASSPORT:
+            case CARTRIDGE_MIDI_DATEL:
+            case CARTRIDGE_MIDI_SEQUENTIAL:
+            case CARTRIDGE_MIDI_NAMESOFT:
+            case CARTRIDGE_MIDI_MAPLIN:
+                if (c64_midi_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+#endif
             case CARTRIDGE_REU:
                 if (reu_write_snapshot_module(s) < 0) {
                     return -1;
                 }
                 break;
-            /* FIXME case CARTRIDGE_SFX_SOUND_EXPANDER: */
-            /* FIXME case CARTRIDGE_SFX_SOUND_SAMPLER: */
-            /* FIXME case CARTRIDGE_TFE: */
+            case CARTRIDGE_SFX_SOUND_EXPANDER:
+                if (sfx_soundexpander_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+            case CARTRIDGE_SFX_SOUND_SAMPLER:
+                if (sfx_soundsampler_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+#ifdef HAVE_TFE
+            case CARTRIDGE_TFE:
+                if (tfe_snapshot_write_module(s) < 0) {
+                    return -1;
+                }
+                break;
+#endif
 #ifdef HAVE_RS232
             case CARTRIDGE_TURBO232:
                 if (aciacart_snapshot_write_module(s) < 0) {
@@ -2693,307 +2748,363 @@ int cartridge_snapshot_read_modules(struct snapshot_s *s)
     for (i = 0; i < number_of_carts; i++) {
         switch (cart_ids[i]) {
             /* "Slot 0" */
-            /* FIXME case CARTRIDGE_MMC64: */
-            /* FIXME case CARTRIDGE_MAGIC_VOICE: */ /* emulation not ready yet */
+            case CARTRIDGE_MMC64:
+                if (mmc64_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
+            case CARTRIDGE_MAGIC_VOICE:
+                if (magicvoice_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
             case CARTRIDGE_IEEE488:
                 if (tpi_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
 
             /* "Slot 1" */
             case CARTRIDGE_DQBB:
                 if (dqbb_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_EXPERT:
                 if (expert_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_ISEPIC:
                 if (isepic_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_RAMCART:
                 if (ramcart_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
 
             /* "Main Slot" */
             case CARTRIDGE_ACTION_REPLAY:
                 if (actionreplay_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_ACTION_REPLAY2:
                 if (actionreplay2_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_ACTION_REPLAY3:
                 if (actionreplay3_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_ACTION_REPLAY4:
                 if (actionreplay4_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_ATOMIC_POWER:
                 if (atomicpower_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_CAPTURE:
                 if (capture_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_COMAL80:
                 if (comal80_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_DELA_EP64:
                 if (delaep64_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_DELA_EP7x8:
                 if (delaep7x8_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_DELA_EP256:
                 if (delaep256_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_DIASHOW_MAKER:
                 if (dsm_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_DINAMIC:
                 if (dinamic_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_EASYFLASH:
                 if (easyflash_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_EPYX_FASTLOAD:
                 if (epyxfastload_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_EXOS:
                 if (exos_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_FINAL_I:
                 if (final_v1_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_FINAL_III:
                 if (final_v3_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_FINAL_PLUS:
                 if (final_plus_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
+                }
+                break;
+            case CARTRIDGE_FORMEL64:
+                if (formel64_snapshot_read_module(s) < 0) {
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_FREEZE_FRAME:
                 if (freezeframe_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_FREEZE_MACHINE:
                 if (freezemachine_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_FUNPLAY:
                 if (funplay_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_GAME_KILLER:
                 if (gamekiller_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_GENERIC_16KB:
             case CARTRIDGE_GENERIC_8KB:
             case CARTRIDGE_ULTIMAX:
                 if (generic_snapshot_read_module(s, cart_ids[i]) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_GS:
                 if (gs_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
-            /* FIXME case CARTRIDGE_IDE64: */
+            case CARTRIDGE_IDE64:
+                if (ide64_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
             case CARTRIDGE_KCS_POWER:
                 if (kcs_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
+                }
+                break;
+            case CARTRIDGE_KINGSOFT:
+                if (kingsoft_snapshot_read_module(s) < 0) {
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_MACH5:
                 if (mach5_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_MAGIC_DESK:
                 if (magicdesk_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_MAGIC_FORMEL:
                 if (magicformel_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_MIKRO_ASSEMBLER:
                 if (mikroass_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
-            /* FIXME CARTRIDGE_MMC_REPLAY: */ /* emulation not ready yet */
+            case CARTRIDGE_MMC_REPLAY:
+                if (mmcreplay_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
             case CARTRIDGE_OCEAN:
                 if (ocean_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_P64:
                 if (p64_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
+                }
+                break;
+            case CARTRIDGE_PAGEFOX:
+                if (pagefox_snapshot_read_module(s) < 0) {
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_RETRO_REPLAY:
                 if (retroreplay_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_REX:
                 if (rex_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_REX_EP256:
                 if (rexep256_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_ROSS:
                 if (ross_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
+            case CARTRIDGE_SILVERROCK_128:
+                if (silverrock128_snapshot_read_module(s) < 0) {
                     return -1;
                 }
                 break;
             case CARTRIDGE_SIMONS_BASIC:
                 if (simon_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_SNAPSHOT64:
                 if (snapshot64_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_STARDOS:
                 if (stardos_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_STRUCTURED_BASIC:
                 if (stb_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_SUPER_EXPLODE_V5:
                 if (se5_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_SUPER_GAMES:
                 if (supergames_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_SUPER_SNAPSHOT:
                 if (supersnapshot_v4_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_SUPER_SNAPSHOT_V5:
                 if (supersnapshot_v5_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_WARPSPEED:
                 if (warpspeed_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_WESTERMANN:
                 if (westermann_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_ZAXXON:
                 if (zaxxon_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
 
             /* "IO Slot" */
             case CARTRIDGE_DIGIMAX:
                 if (digimax_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
             case CARTRIDGE_GEORAM:
                 if (georam_read_snapshot_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
-            /* FIXME case CARTRIDGE_MIDI_PASSPORT: */
-            /* FIXME case CARTRIDGE_MIDI_DATEL: */
-            /* FIXME case CARTRIDGE_MIDI_SEQUENTIAL: */
-            /* FIXME case CARTRIDGE_MIDI_NAMESOFT: */
-            /* FIXME case CARTRIDGE_MIDI_MAPLIN: */
+#ifdef HAVE_MIDI
+            case CARTRIDGE_MIDI_PASSPORT:
+            case CARTRIDGE_MIDI_DATEL:
+            case CARTRIDGE_MIDI_SEQUENTIAL:
+            case CARTRIDGE_MIDI_NAMESOFT:
+            case CARTRIDGE_MIDI_MAPLIN:
+                if (c64_midi_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
+#endif
             case CARTRIDGE_REU:
                 if (reu_read_snapshot_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
-            /* FIXME case CARTRIDGE_SFX_SOUND_EXPANDER: */
-            /* FIXME case CARTRIDGE_SFX_SOUND_SAMPLER: */
-            /* FIXME case CARTRIDGE_TFE: */
+            case CARTRIDGE_SFX_SOUND_EXPANDER:
+                if (sfx_soundexpander_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
+            case CARTRIDGE_SFX_SOUND_SAMPLER:
+                if (sfx_soundsampler_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
+#ifdef HAVE_TFE
+            case CARTRIDGE_TFE:
+                if (tfe_snapshot_read_module(s) < 0) {
+                    goto fail2;
+                }
+                break;
+#endif
 #ifdef HAVE_RS232
             case CARTRIDGE_TURBO232:
                 if (aciacart_snapshot_read_module(s) < 0) {
-                    return -1;
+                    goto fail2;
                 }
                 break;
 #endif
 
             default:
                 DBG(("CART snapshot read: cart %i handler missing\n", cart_ids[i]));
-                return -1;
+                    goto fail2;
         }
 
         cart_attach_from_snapshot(cart_ids[i]);
@@ -3012,6 +3123,7 @@ fail:
     if (m != NULL) {
         snapshot_module_close(m);
     }
+fail2:
+    mem_cartridge_type = CARTRIDGE_NONE; /* Failed to load cartridge! */
     return -1;
 }
-

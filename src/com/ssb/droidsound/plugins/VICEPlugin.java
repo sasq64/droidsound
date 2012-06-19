@@ -208,6 +208,6 @@ public class VICEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public String getVersion() {
-		return "VICE 2.2.10-r23402, reSID 1.0-pre1";
+		return "VICE 2.3.19-r25866, reSID 1.0-pre1";
 	}
 }

@@ -3,7 +3,7 @@
  * ($DD00).
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Ettore Perazzoli <ettore@comm2000.it>
  *  Andreas Boose <viceteam@t-online.de>
  *
@@ -38,6 +38,7 @@
 #include "c64parallel.h"
 #include "c64dtv-resources.h"
 #include "cia.h"
+#include "drive.h"
 #include "hummeradc.h"
 #include "iecbus.h"
 #include "interrupt.h"
@@ -49,6 +50,7 @@
 #include "printer.h"
 #include "ps2mouse.h"
 #include "types.h"
+#include "userport_joystick.h"
 #include "vicii.h"
 
 #ifdef HAVE_RS232
@@ -56,12 +58,12 @@
 #endif
 
 
-void REGPARM2 cia2_store(WORD addr, BYTE data)
+void cia2_store(WORD addr, BYTE data)
 {
-    if ((addr&0x1f) == 1) {
-        if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA) {
-            extra_joystick_cga_store(data);
-        }
+    if ((addr & 0x1f) == 1) {
+        /* FIXME: in the upcoming userport system this call needs to be conditional */
+        userport_joystick_store_pbx(data);
+
         if (c64dtv_hummer_adc_enabled) {
             hummeradc_store(data);
         }
@@ -73,26 +75,14 @@ void REGPARM2 cia2_store(WORD addr, BYTE data)
     ciacore_store(machine_context.cia2, addr, data);
 }
 
-BYTE REGPARM1 cia2_read(WORD addr)
+BYTE cia2_read(WORD addr)
 {
     BYTE retval = 0xff;
-    if ((addr&0x1f) == 1) {
-        if (extra_joystick_enable) {
-            switch (extra_joystick_type) {
-                case EXTRA_JOYSTICK_CGA:
-                    retval &= extra_joystick_cga_read();
-                    break;
-                case EXTRA_JOYSTICK_PET:
-                    retval &= extra_joystick_pet_read();
-                    break;
-                case EXTRA_JOYSTICK_HUMMER:
-                    retval &= extra_joystick_hummer_read();
-                    break;
-                case EXTRA_JOYSTICK_OEM:
-                    retval &= extra_joystick_oem_read();
-                    break;
-            }
-        }
+
+    if ((addr & 0x1f) == 1) {
+        /* FIXME: in the upcoming userport system this call needs to be conditional */
+        retval = userport_joystick_read_pbx(retval);
+
         if (ps2mouse_enabled) {
             retval &= (ps2mouse_read() | 0x3f);
         }
@@ -103,14 +93,14 @@ BYTE REGPARM1 cia2_read(WORD addr)
     }
 
     /* disable TOD & serial */
-    if (((addr&0xf)>=8)&&((addr&0xf)<=0xc)) {
+    if (((addr & 0xf) >= 8) && ((addr & 0xf) <= 0xc)) {
         return 0xff;
     }
 
     return ciacore_read(machine_context.cia2, addr);
 }
 
-BYTE REGPARM1 cia2_peek(WORD addr)
+BYTE cia2_peek(WORD addr)
 {
     return ciacore_peek(machine_context.cia2, addr);
 }
@@ -147,7 +137,6 @@ static void do_reset_cia(cia_context_t *cia_context)
     vbank = 0;
     mem_set_vbank(vbank);
 }
-
 
 static void pre_store(void)
 {
@@ -201,7 +190,7 @@ static void undump_ciapa(cia_context_t *cia_context, CLOCK rclk, BYTE byte)
 
 static void store_ciapb(cia_context_t *cia_context, CLOCK rclk, BYTE byte)
 {
-    parallel_cable_cpu_write((BYTE)byte);
+    parallel_cable_cpu_write(DRIVE_PC_STANDARD, (BYTE)byte);
 #ifdef HAVE_RS232
     rsuser_write_ctrl((BYTE)byte);
 #endif
@@ -209,7 +198,7 @@ static void store_ciapb(cia_context_t *cia_context, CLOCK rclk, BYTE byte)
 
 static void pulse_ciapc(cia_context_t *cia_context, CLOCK rclk)
 {
-    parallel_cable_cpu_pulse();
+    parallel_cable_cpu_pulse(DRIVE_PC_STANDARD);
     printer_userport_write_data((BYTE)(cia_context->old_pb));
 }
 
@@ -217,14 +206,13 @@ static void pulse_ciapc(cia_context_t *cia_context, CLOCK rclk)
 static inline void undump_ciapb(cia_context_t *cia_context, CLOCK rclk,
                                 BYTE byte)
 {
-    parallel_cable_cpu_undump((BYTE)byte);
+    parallel_cable_cpu_undump(DRIVE_PC_STANDARD, (BYTE)byte);
     printer_userport_write_data((BYTE)byte);
 #ifdef HAVE_RS232
     rsuser_write_ctrl((BYTE)byte);
 #endif
-    if (extra_joystick_enable && extra_joystick_type == EXTRA_JOYSTICK_CGA) {
-        extra_joystick_cga_store(byte);
-    }
+    /* in the upcoming userport system this call needs to be conditional */
+    userport_joystick_store_pbx(byte);
 }
 
 /* read_* functions must return 0xff if nothing to read!!! */
@@ -243,7 +231,7 @@ static BYTE read_ciapb(cia_context_t *cia_context)
         byte = rsuser_read_ctrl();
     } else 
 #endif
-    byte = parallel_cable_cpu_read();
+    byte = parallel_cable_cpu_read(DRIVE_PC_STANDARD);
 
     byte = (byte & ~(cia_context->c_cia[CIA_DDRB]))
            | (cia_context->c_cia[CIA_PRB] & cia_context->c_cia[CIA_DDRB]);
@@ -252,7 +240,7 @@ static BYTE read_ciapb(cia_context_t *cia_context)
 
 static void read_ciaicr(cia_context_t *cia_context)
 {
-    parallel_cable_cpu_execute();
+    parallel_cable_cpu_execute(DRIVE_PC_STANDARD);
 }
 
 static void read_sdr(cia_context_t *cia_context)

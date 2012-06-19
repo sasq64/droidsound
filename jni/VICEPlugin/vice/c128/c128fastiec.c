@@ -29,6 +29,7 @@
 #include "c128fastiec.h"
 #include "c64.h"
 #include "cia.h"
+#include "via.h"
 #include "drive.h"
 #include "drivecpu.h"
 #include "drivetypes.h"
@@ -37,6 +38,7 @@
 #include "types.h"
 
 static int fast_cpu_direction, fast_drive_direction[DRIVE_NUM];
+int burst_mod = 0;
 
 void c128fastiec_init(void)
 {
@@ -59,11 +61,19 @@ void c128fastiec_fast_cpu_write(BYTE data)
             drive = drive_context[dnr]->drive;
             if (drive->enable) {
                 drivecpu_execute(drive_context[dnr], maincpu_clk);
-                if (drive->type == DRIVE_TYPE_1570 || drive->type == DRIVE_TYPE_1571 || drive->type == DRIVE_TYPE_1571CR) {
+                switch (drive->type) {
+                case DRIVE_TYPE_1570:
+                case DRIVE_TYPE_1571:
+                case DRIVE_TYPE_1571CR:
                     ciacore_set_sdr(drive_context[dnr]->cia1571, data);
-                }
-                if (drive->type == DRIVE_TYPE_1581) {
+                    break;
+                case DRIVE_TYPE_1581:
                     ciacore_set_sdr(drive_context[dnr]->cia1581, data);
+                    break;
+                case DRIVE_TYPE_2000:
+                case DRIVE_TYPE_4000:
+                    viacore_set_sr(drive_context[dnr]->via4000, data);
+                    break;
                 }
             }
         }
@@ -87,4 +97,8 @@ void iec_fast_drive_direction(int direction, unsigned int dnr)
 {
     /* 0: input */
     fast_drive_direction[dnr] = direction;
+}
+
+void c64fastiec_fast_cpu_write(BYTE data)
+{
 }
