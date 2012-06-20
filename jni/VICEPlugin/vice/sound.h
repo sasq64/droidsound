@@ -38,6 +38,7 @@
 #define SOUND_SAMPLE_RATE 44100
 #define SOUND_CHANNELS_MAX 2
 #define SOUND_BUFSIZE 32768
+#define SOUND_SIDS_MAX 3
 
 #ifdef __MSDOS__
 # define SOUND_SAMPLE_BUFFER_SIZE       100     /* ms */
@@ -87,22 +88,27 @@ typedef struct sound_device_s
 
 static inline SWORD sound_audio_mix(int ch1, int ch2)
 {
-  if (ch1 == 0)
-    return (SWORD)ch2;
+    if (ch1 == 0) {
+       return (SWORD)ch2;
+    }
 
-  if (ch2 == 0)
-    return (SWORD)ch1;
+    if (ch2 == 0) {
+        return (SWORD)ch1;
+    }
 
-  if ((ch1 > 0 && ch2 < 0) || (ch1 < 0 && ch2 >0))
-    return (SWORD)ch1+ch2;
+    if ((ch1 > 0 && ch2 < 0) || (ch1 < 0 && ch2 >0)) {
+        return (SWORD)ch1 + ch2;
+    }
 
-  if (ch1 > 0)
-    return (SWORD)((ch1 + ch2) - (ch1 * ch2 / 32768));
+    if (ch1 > 0) {
+        return (SWORD)((ch1 + ch2) - (ch1 * ch2 / 32768));
+    }
 
-  return (SWORD)-((-(ch1) + -(ch2)) - (-(ch1) * -(ch2) / 32768));
+    return (SWORD)-((-(ch1) + -(ch2)) - (-(ch1) * -(ch2) / 32768));
 }
 
 /* Sound adjustment types.  */
+#define SOUND_ADJUST_DEFAULT   -1
 #define SOUND_ADJUST_FLEXIBLE   0
 #define SOUND_ADJUST_ADJUSTING  1
 #define SOUND_ADJUST_EXACT      2
@@ -112,10 +118,15 @@ static inline SWORD sound_audio_mix(int ch1, int ch2)
 #define SOUND_FRAGMENT_MEDIUM   1
 #define SOUND_FRAGMENT_LARGE    2
 
+/* Sound output modes */
+#define SOUND_OUTPUT_SYSTEM   0
+#define SOUND_OUTPUT_MONO     1
+#define SOUND_OUTPUT_STEREO   2
+
 /* external functions for vice */
 extern void sound_init(unsigned int clock_rate, unsigned int ticks_per_frame);
 extern void sound_reset(void);
-#if defined(__MSDOS__) || defined(__riscos)
+#ifdef __MSDOS__
 extern int sound_flush(void);
 #else
 extern double sound_flush(void);
@@ -178,32 +189,28 @@ extern long sound_sample_position(void);
 
 /* functions and structs implemented by each machine */
 typedef struct sound_s sound_t;
-extern sound_t *sound_machine_open(int chipno);
-extern int sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-extern void sound_machine_close(sound_t *psid);
-extern int sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr,
-					   int interleave, int *delta_t);
-extern void sound_machine_store(sound_t *psid, WORD addr, BYTE val);
-extern BYTE sound_machine_read(sound_t *psid, WORD addr);
 extern char *sound_machine_dump_state(sound_t *psid);
 extern void sound_machine_prevent_clk_overflow(sound_t *psid, CLOCK sub);
-extern void sound_machine_reset(sound_t *psid, CLOCK cpu_clk);
-extern int sound_machine_cycle_based(void);
-extern int sound_machine_channels(void);
 extern void sound_machine_enable(int enable);
 
 extern unsigned int sound_device_num(void);
 extern const char *sound_device_name(unsigned int num);
 
-#ifdef __riscos
-extern int SoundPollEvery;
-extern int SoundMachineReady;
-extern int SoundThreadActive;
-extern void sound_poll(void);
-extern void sound_synthesize(SWORD *buffer, int length);
-#endif
-
 extern sound_t *sound_get_psid(unsigned int channel);
 
-#endif
+typedef struct sound_chip_s {
+    sound_t *(*open)(int chipno);
+    int (*init)(sound_t *psid, int speed, int cycles_per_sec);
+    void (*close)(sound_t *psid);
+    int (*calculate_samples)(sound_t **psid, SWORD *pbuf, int nr, int sound_output_channels, int sound_chip_channels, int *delta_t);
+    void (*store)(sound_t *psid, WORD addr, BYTE val);
+    BYTE (*read)(sound_t *psid, WORD addr);
+    void (*reset)(sound_t *psid, CLOCK cpu_clk);
+    int (*cycle_based)(void);
+    int (*channels)(void);
+    int chip_enabled;
+} sound_chip_t;
 
+extern WORD sound_chip_register(sound_chip_t *chip);
+
+#endif

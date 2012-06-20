@@ -30,6 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef RAND_MAX
+#include <limits.h>
+#define RAND_MAX INT_MAX
+#endif
+
 #include "alarm.h"
 #include "archdep.h"
 #include "c64.h"
@@ -220,7 +225,6 @@ static int set_cartridge_reset(int val, void *param)
     if (c64cartridge_reset != val) {
         DBG(("c64cartridge_reset changed: %d\n", val));
         c64cartridge_reset = val; /* resource value modified */
-        return try_cartridge_attach(cartridge_type, cartridge_file);
     }
     return 0;
 }
@@ -373,6 +377,7 @@ int cartridge_type_enabled(int type)
 int cartridge_attach_image(int type, const char *filename)
 {
     BYTE *rawcart;
+    char *abs_filename;
     int carttype = CARTRIDGE_NONE;
     int cartid = CARTRIDGE_NONE;
     int oldmain = CARTRIDGE_NONE;
@@ -387,8 +392,14 @@ int cartridge_attach_image(int type, const char *filename)
         return 0;
     }
 
+    if (archdep_path_is_relative(filename)) {
+        archdep_expand_path(&abs_filename, filename);
+    } else {
+        abs_filename = lib_stralloc(filename);
+    }
+
     if (type == CARTRIDGE_CRT) {
-        carttype = crt_getid(filename);
+        carttype = crt_getid(abs_filename);
     } else {
         carttype = type;
     }
@@ -421,7 +432,7 @@ int cartridge_attach_image(int type, const char *filename)
 
     if (type == CARTRIDGE_CRT) {
         DBG(("CART: attach CRT ID: %d '%s'\n", carttype, filename));
-        cartid = crt_attach(filename, rawcart);
+        cartid = crt_attach(abs_filename, rawcart);
         if (cartid == CARTRIDGE_NONE) {
             goto exiterror;
         }
@@ -431,7 +442,7 @@ int cartridge_attach_image(int type, const char *filename)
     } else {
         DBG(("CART: attach BIN ID: %d '%s'\n", carttype, filename));
         cartid = carttype;
-        if (cart_bin_attach(carttype, filename, rawcart) < 0) {
+        if (cart_bin_attach(carttype, abs_filename, rawcart) < 0) {
             goto exiterror;
         }
     }
@@ -457,18 +468,20 @@ int cartridge_attach_image(int type, const char *filename)
         if (type == CARTRIDGE_CRT) {
             crttype = carttype;
         }
-        util_string_set(&cartfile, filename);
+        util_string_set(&cartfile, abs_filename);
     }
 
     DBG(("CART: cartridge_attach_image type: %d ID: %d done.\n", type, carttype));
     lib_free(rawcart);
-    log_message(LOG_DEFAULT, "CART: attached '%s' as ID %d.", filename, carttype);
+    log_message(LOG_DEFAULT, "CART: attached '%s' as ID %d.", abs_filename, carttype);
+    lib_free(abs_filename);
     return 0;
 
 exiterror:
     DBG(("CART: error\n"));
     lib_free(rawcart);
-    log_message(LOG_DEFAULT, "CART: could not attach '%s'.", filename);
+    log_message(LOG_DEFAULT, "CART: could not attach '%s'.", abs_filename);
+    lib_free(abs_filename);
     return -1;
 }
 
@@ -560,14 +573,18 @@ void cartridge_set_default(void)
 {
     int type = CARTRIDGE_NONE;
 
-    if (util_file_exists(cartfile)) {
-        if (crt_getid(cartfile) > 0) {
-            type = CARTRIDGE_CRT;
+    if (cartfile != NULL) {
+        if (util_file_exists(cartfile)) {
+            if (crt_getid(cartfile) > 0) {
+                type = CARTRIDGE_CRT;
+            } else {
+                type = c64cart_type;
+            }
         } else {
-            type = c64cart_type;
+            DBG(("cartridge_set_default: file does not exist: '%s'\n", cartfile));
         }
     } else {
-        DBG(("cartridge_set_default: file does not exist: '%s'\n", cartfile));
+        DBG(("cartridge_set_default: no filename\n"));
     }
     DBG(("cartridge_set_default: id %d '%s'\n", type, cartfile));
 
@@ -582,7 +599,7 @@ void cartridge_set_default(void)
 int cartridge_save_image(int type, const char *filename)
 {
     char *ext = util_get_extension((char *)filename);
-    if (!strcmp(ext, "crt")) {
+    if (ext != NULL && !strcmp(ext, "crt")) {
         return cartridge_crt_save(type, filename);
     }
     return cartridge_bin_save(type, filename);

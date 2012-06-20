@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -38,6 +38,7 @@ extern int petrom_load_editor(void);
 extern int petrom_load_rom9(void);
 extern int petrom_load_romA(void);
 extern int petrom_load_romB(void);
+extern int petrom_load_6809rom(int num);
 
 extern void petrom_convert_chargen_2k(void);
 extern void petrom_convert_chargen(BYTE *charrom);
@@ -53,4 +54,3 @@ extern int petrom_A_loaded;
 extern int petrom_B_loaded;
 
 #endif
-

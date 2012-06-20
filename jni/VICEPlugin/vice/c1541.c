@@ -85,6 +85,7 @@
 #include "vdrive.h"
 #include "vice-event.h"
 #include "zipcode.h"
+#include "p64.h"
 
 
 #define GEOS    /* DiSc */
@@ -149,6 +150,8 @@ int rom1541_loaded = 0;
 int rom1541ii_loaded = 0;
 int rom1571_loaded = 0;
 int rom1581_loaded = 0;
+int rom2000_loaded = 0;
+int rom4000_loaded = 0;
 int rom2031_loaded = 0;
 int rom1001_loaded = 0;
 int rom2040_loaded = 0;
@@ -157,6 +160,8 @@ BYTE *drive_rom1541;
 BYTE *drive_rom1541ii;
 BYTE *drive_rom1571;
 BYTE *drive_rom1581;
+BYTE *drive_rom2000;
+BYTE *drive_rom4000;
 BYTE *drive_rom2031;
 BYTE *drive_rom1001;
 BYTE *drive_rom2040;
@@ -441,6 +446,7 @@ static int split_args(const char *line, int *nargs, char **args)
 static int arg_to_int(const char *arg, int *return_value)
 {
     char *tailptr;
+    int counter = 0;
 
     *return_value = (int)strtol(arg, &tailptr, 10);
 
@@ -449,8 +455,9 @@ static int arg_to_int(const char *arg, int *return_value)
 
     /* Only whitespace is allowed after the last valid character.  */
     if (!util_check_null_string(tailptr)) {
-        while (isspace(*tailptr))
-            tailptr++;
+        while (isspace((int)tailptr[counter]))
+            counter++;
+        tailptr += counter;
         if (*tailptr != 0)
             return -1;
     }
@@ -675,11 +682,15 @@ static int open_disk_image(vdrive_t *vdrive, const char *name,
     disk_image_media_create(image);
 
     image->gcr = gcr_create_image();
+    image->p64 = lib_calloc(1, sizeof(TP64Image));
+    P64ImageCreate((PP64Image)image->p64);
     image->read_only = 0;
 
     disk_image_name_set(image, lib_stralloc(name));
 
     if (disk_image_open(image) < 0) {
+        P64ImageDestroy((PP64Image)image->p64);
+        lib_free(image->p64);
         disk_image_media_destroy(image);
         disk_image_destroy(image);
         fprintf(stderr, "Cannot open file `%s'.\n", name);
@@ -701,6 +712,8 @@ static void close_disk_image(vdrive_t *vdrive, int unit)
     if (image != NULL) {
         vdrive_detach_image(image, unit, vdrive);
         gcr_destroy_image(image->gcr);
+        P64ImageDestroy((PP64Image)image->p64);
+        lib_free(image->p64);
         if (image->device == DISK_IMAGE_DEVICE_REAL)
             serial_realdevice_disable();
         disk_image_close(image);
@@ -1164,7 +1177,7 @@ static int format_cmd(int nargs, char **args)
         /* format <diskname,id> <type> <imagename> */
         /* Create a new image.  */
         /* FIXME: I want a unit number here too.  */
-        *args[2] = tolower(*args[2]);
+        *args[2] = util_tolower(*args[2]);
         if (strcmp(args[2], "d64") == 0)
             disk_type = DISK_IMAGE_TYPE_D64;
         else if (strcmp(args[2], "d67") == 0)
@@ -1181,6 +1194,12 @@ static int format_cmd(int nargs, char **args)
             disk_type = DISK_IMAGE_TYPE_G64;
         else if (strcmp(args[2], "x64") == 0)
             disk_type = DISK_IMAGE_TYPE_X64;
+        else if (strcmp(args[2], "d1m") == 0)
+            disk_type = DISK_IMAGE_TYPE_D1M;
+        else if (strcmp(args[2], "d2m") == 0)
+            disk_type = DISK_IMAGE_TYPE_D2M;
+        else if (strcmp(args[2], "d4m") == 0)
+            disk_type = DISK_IMAGE_TYPE_D4M;
         else
             return FD_BADVAL;
         if (nargs > 4) {
@@ -1292,6 +1311,9 @@ static int info_cmd(int nargs, char **args)
       case VDRIVE_IMAGE_FORMAT_2040:
         format_name = "2040";
         break;
+      case VDRIVE_IMAGE_FORMAT_4000:
+        format_name = "4000";
+        break;
       default:
         return FD_NOTREADY;
     }
@@ -1309,6 +1331,47 @@ static int info_cmd(int nargs, char **args)
     return FD_OK;
 }
 
+static int list_match_pattern(char *pat, char *str)
+{
+    int n;
+
+    if (*str == '"') {
+        str++;
+    }
+
+    if ((*str == 0) && (*pat != 0)) {
+        return 0;
+    }
+
+    n = strlen(str);
+    while (n) {
+        n--;
+        if (str[n] == '"') {
+            str[n] = 0;
+            break;
+        }
+    }
+
+    while (*str) {
+        if (*pat == '*') {
+            return 1;
+        } else if ((*pat != '?') && (*pat != *str)) {
+            return 0;
+        }
+        str++; pat++;
+    }
+    if ((*pat != 0) && (*pat != '*')) {
+        return 0;
+    }
+    return 1;
+}
+
+/*
+    FIXME: diskcontents_read internally opens/closes the disk image, including
+           a complete reset of internal vdrive variables. this makes things like
+           changing sub partitions and sub directories inside images impossible
+           from the c1541 shell.
+*/
 static int list_cmd(int nargs, char **args)
 {
     char *pattern, *name;
@@ -1329,8 +1392,9 @@ static int list_cmd(int nargs, char **args)
         dnr = drive_number;
     }
 
-    if (check_drive(dnr, CHK_RDY) < 0)
+    if (check_drive(dnr, CHK_RDY) < 0) {
         return FD_NOTREADY;
+    }
 
     vdrive = drives[dnr & 3];
     name = disk_image_name_get(vdrive->image);
@@ -1347,11 +1411,14 @@ static int list_cmd(int nargs, char **args)
         lib_free(string);
         if (element == NULL) {
             pager_print("Empty image\n");
-        }
-        else do {
-            string = image_contents_file_to_string(element, 1);
-            pager_print(string);
-            pager_print("\n");
+        } else do {
+            string = image_contents_filename_to_string(element, 1);
+            if ((pattern == NULL) || list_match_pattern(pattern, string)) {
+                lib_free(string);
+                string = image_contents_file_to_string(element, 1);
+                pager_print(string);
+                pager_print("\n");
+            }
             lib_free(string);
         } while ( (element = element->next) != NULL);
         if (listing->blocks_free >= 0) {
@@ -2916,8 +2983,9 @@ static int raw_cmd(int nargs, char **args)
 {
     vdrive_t *vdrive = drives[drive_number];
 
-    if (vdrive == NULL || vdrive->buffers[15].buffer == NULL)
+    if (vdrive == NULL || vdrive->buffers[15].buffer == NULL) {
         return FD_NOTREADY;
+    }
 
     /* Write to the command channel.  */
     if (nargs >= 2) {

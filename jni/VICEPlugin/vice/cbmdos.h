@@ -51,6 +51,7 @@
 #define CBMDOS_IPE_LONG_LINE               32
 #define CBMDOS_IPE_BAD_NAME                33
 #define CBMDOS_IPE_NO_NAME                 34
+#define CBMDOS_IPE_PATH_NOT_FOUND          39
 
 #define CBMDOS_IPE_NO_RECORD               50
 #define CBMDOS_IPE_OVERFLOW                51
@@ -80,6 +81,7 @@
 #define CBMDOS_FT_USR         3
 #define CBMDOS_FT_REL         4
 #define CBMDOS_FT_CBM         5       /* 1581 partition */
+#define CBMDOS_FT_DIR         6
 #define CBMDOS_FT_REPLACEMENT 0x20
 #define CBMDOS_FT_LOCKED      0x40
 #define CBMDOS_FT_CLOSED      0x80
@@ -88,6 +90,7 @@
 #define CBMDOS_FAM_READ   0
 #define CBMDOS_FAM_WRITE  1
 #define CBMDOS_FAM_APPEND 2
+#define CBMDOS_FAM_EOF    4
 
 /* CBM DOS directory definitions.  */
 #define CBMDOS_SLOT_NAME_LENGTH 16

@@ -28,7 +28,6 @@
 
 #include "render1x1pal.h"
 #include "types.h"
-#include "video-resources.h"
 #include "video-color.h"
 
 static inline
@@ -100,46 +99,46 @@ void store_pixel_4(BYTE *trg, SDWORD y1, SDWORD u1, SDWORD v1, SDWORD y2, SDWORD
 static inline
 void store_pixel_UYVY(BYTE *trg, SDWORD y1_, SDWORD u1, SDWORD v1, SDWORD y2_, SDWORD u2, SDWORD v2)
 {
-    BYTE y1 = (y1_ >> 16) & 0xFFu;
-    BYTE y2 = (y2_ >> 16) & 0xFFu;
+    BYTE y1 = (BYTE)((y1_ >> 16) & 0xFFu);
+    BYTE y2 = (BYTE)((y2_ >> 16) & 0xFFu);
 
     u1 = (u1 + u2) >> 17;
     v1 = (v1 + v2) >> 17;
 
-    trg[0] = u1 + 128;
+    trg[0] = (BYTE)(u1 + 128);
     trg[1] = y1;
-    trg[2] = v1 + 128;
+    trg[2] = (BYTE)(v1 + 128);
     trg[3] = y2;
 }
 
 static inline
 void store_pixel_YUY2(BYTE *trg, SDWORD y1_, SDWORD u1, SDWORD v1, SDWORD y2_, SDWORD u2, SDWORD v2)
 {
-    BYTE y1 = (y1_ >> 16) & 0xFFu;
-    BYTE y2 = (y2_ >> 16) & 0xFFu;
+    BYTE y1 = (BYTE)((y1_ >> 16) & 0xFFu);
+    BYTE y2 = (BYTE)((y2_ >> 16) & 0xFFu);
 
     u1 = (u1 + u2) >> 17;
     v1 = (v1 + v2) >> 17;
 
     trg[0] = y1;
-    trg[1] = u1 + 128;
+    trg[1] = (BYTE)(u1 + 128);
     trg[2] = y2;
-    trg[3] = v1 + 128;
+    trg[3] = (BYTE)(v1 + 128);
 }
 
 static inline
 void store_pixel_YVYU(BYTE *trg, SDWORD y1_, SDWORD u1, SDWORD v1, SDWORD y2_, SDWORD u2, SDWORD v2)
 {
-    BYTE y1 = (y1_ >> 16) & 0xFFu;
-    BYTE y2 = (y2_ >> 16) & 0xFFu;
+    BYTE y1 = (BYTE)((y1_ >> 16) & 0xFFu);
+    BYTE y2 = (BYTE)((y2_ >> 16) & 0xFFu);
 
     u1 = (u1 + u2) >> 17;
     v1 = (v1 + v2) >> 17;
 
     trg[0] = y1;
-    trg[1] = v1 + 128;
+    trg[1] = (BYTE)(v1 + 128);
     trg[2] = y2;
-    trg[3] = u1 + 128;
+    trg[3] = (BYTE)(u1 + 128);
 }
 
 /* PAL 1x1 renderers */
@@ -153,7 +152,7 @@ render_generic_1x1_pal(video_render_color_tables_t *color_tab, const BYTE *src, 
                        void (*store_func)(BYTE *trg,
                                           SDWORD y1, SDWORD u1, SDWORD v1,
                                           SDWORD y2, SDWORD u2, SDWORD v2),
-                       int yuvtarget)
+                       int yuvtarget, video_render_config_t *config)
 {
     const SDWORD *cbtable = color_tab->cbtable;
     const SDWORD *crtable = color_tab->crtable;
@@ -203,7 +202,7 @@ render_generic_1x1_pal(video_render_color_tables_t *color_tab, const BYTE *src, 
     width >>= 1;
 
     /* Calculate odd line shading */
-    off = (int) (((float) video_resources.pal_oddlines_offset * (1.5f / 2000.0f) - (1.5f / 2.0f - 1.0f)) * (1 << 5));
+    off = (int) (((float) config->video_resources.pal_oddlines_offset * (1.5f / 2000.0f) - (1.5f / 2.0f - 1.0f)) * (1 << 5));
 
     for (y = ys; y < height + ys; y++) {
         tmpsrc = src;
@@ -266,11 +265,11 @@ render_UYVY_1x1_pal(video_render_color_tables_t *color_tab,
                   const unsigned int width, const unsigned int height,
                   const unsigned int xs, const unsigned int ys,
                   const unsigned int xt, const unsigned int yt,
-                  const unsigned int pitchs, const unsigned int pitcht)
+                  const unsigned int pitchs, const unsigned int pitcht, video_render_config_t *config)
 {
     render_generic_1x1_pal(color_tab, src, trg, width, height, xs, ys, xt, yt,
                            pitchs, pitcht,
-                           4, store_pixel_UYVY, 1);
+                           4, store_pixel_UYVY, 1, config);
 }
 
 void
@@ -279,11 +278,11 @@ render_YUY2_1x1_pal(video_render_color_tables_t *color_tab,
                   const unsigned int width, const unsigned int height,
                   const unsigned int xs, const unsigned int ys,
                   const unsigned int xt, const unsigned int yt,
-                  const unsigned int pitchs, const unsigned int pitcht)
+                  const unsigned int pitchs, const unsigned int pitcht, video_render_config_t *config)
 {
     render_generic_1x1_pal(color_tab, src, trg, width, height, xs, ys, xt, yt,
                            pitchs, pitcht,
-                           4, store_pixel_YUY2, 1);
+                           4, store_pixel_YUY2, 1, config);
 }
 
 void
@@ -292,11 +291,11 @@ render_YVYU_1x1_pal(video_render_color_tables_t *color_tab,
                   const unsigned int width, const unsigned int height,
                   const unsigned int xs, const unsigned int ys,
                   const unsigned int xt, const unsigned int yt,
-                  const unsigned int pitchs, const unsigned int pitcht)
+                  const unsigned int pitchs, const unsigned int pitcht, video_render_config_t *config)
 {
     render_generic_1x1_pal(color_tab, src, trg, width, height, xs, ys, xt, yt,
                            pitchs, pitcht,
-                           4, store_pixel_YVYU, 1);
+                           4, store_pixel_YVYU, 1, config);
 }
 
 void
@@ -305,11 +304,11 @@ render_16_1x1_pal(video_render_color_tables_t *color_tab,
                   const unsigned int width, const unsigned int height,
                   const unsigned int xs, const unsigned int ys,
                   const unsigned int xt, const unsigned int yt,
-                  const unsigned int pitchs, const unsigned int pitcht)
+                  const unsigned int pitchs, const unsigned int pitcht, video_render_config_t *config)
 {
     render_generic_1x1_pal(color_tab, src, trg, width, height, xs, ys, xt, yt,
                            pitchs, pitcht,
-                           4, store_pixel_2, 0);
+                           4, store_pixel_2, 0, config);
 }
 
 void
@@ -318,11 +317,11 @@ render_24_1x1_pal(video_render_color_tables_t *color_tab,
                   const unsigned int width, const unsigned int height,
                   const unsigned int xs, const unsigned int ys,
                   const unsigned int xt, const unsigned int yt,
-                  const unsigned int pitchs, const unsigned int pitcht)
+                  const unsigned int pitchs, const unsigned int pitcht, video_render_config_t *config)
 {
     render_generic_1x1_pal(color_tab, src, trg, width, height, xs, ys, xt, yt,
                            pitchs, pitcht,
-                           6, store_pixel_3, 0);
+                           6, store_pixel_3, 0, config);
 }
 
 void
@@ -331,9 +330,9 @@ render_32_1x1_pal(video_render_color_tables_t *color_tab,
                   const unsigned int width, const unsigned int height,
                   const unsigned int xs, const unsigned int ys,
                   const unsigned int xt, const unsigned int yt,
-                  const unsigned int pitchs, const unsigned int pitcht)
+                  const unsigned int pitchs, const unsigned int pitcht, video_render_config_t *config)
 {
     render_generic_1x1_pal(color_tab, src, trg, width, height, xs, ys, xt, yt,
                            pitchs, pitcht,
-                           8, store_pixel_4, 0);
+                           8, store_pixel_4, 0, config);
 }

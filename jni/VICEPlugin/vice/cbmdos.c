@@ -61,7 +61,7 @@ static const cbmdos_errortext_t cbmdos_error_messages[] =
     { 32, "SYNTAX ERROR" },
     { 33, "SYNTAX ERROR" },
     { 34, "SYNTAX ERROR" },
-    { 39, "SYNTAX ERROR" },
+    { 39, "FILE NOT FOUND" }, /* 2000/4000 */
     { 50, "RECORD NOT RESENT" },
     { 51, "OVERFLOW IN RECORD" },
     { 52, "FILE TOO LARGE" },   /* 1581 */
@@ -84,7 +84,7 @@ static const cbmdos_errortext_t cbmdos_error_messages[] =
 };
 
 static const char *cbmdos_ft[] = {
-    "DEL", "SEQ", "PRG", "USR", "REL", "CBM"
+    "DEL", "SEQ", "PRG", "USR", "REL", "CBM", "DIR"
 };
 
 const char *cbmdos_errortext(unsigned int code)
@@ -105,7 +105,7 @@ const char *cbmdos_errortext(unsigned int code)
 
 const char *cbmdos_filetype_get(unsigned int filetype)
 {
-   if (filetype > 5) {
+   if (filetype > 6) {
        return NULL;
    }
 
@@ -227,7 +227,7 @@ unsigned int cbmdos_command_parse(cbmdos_cmd_parse_t *cmd_parse)
         p++;
 #endif
 
-    cmdlen = cmd_parse->cmdlength - (p - cmd_parse->cmd);
+    cmdlen = cmd_parse->cmdlength - (int)(p - cmd_parse->cmd);
     cmd_parse->parselength = 0;
 
     /* Temporary hack.  */
@@ -303,7 +303,7 @@ unsigned int cbmdos_command_parse(cbmdos_cmd_parse_t *cmd_parse)
 
         c = (char *)memchr(p, ',', cmdlen);
         if (c) {
-            cmdlen -= (c - (const char *)p);
+            cmdlen -= (int)(c - (const char *)p);
             p = (BYTE *)c;
         } else {
             cmdlen = 0;

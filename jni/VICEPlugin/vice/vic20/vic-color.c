@@ -32,6 +32,7 @@
 
 #include "vic-color.h"
 #include "vic.h"
+#include "victypes.h"
 #include "video.h"
 
 
@@ -84,4 +85,3 @@ int vic_color_update_palette(struct video_canvas_s *canvas)
     video_color_palette_internal(canvas, &vic_palette);
     return video_color_update_palette(canvas);
 }
-

@@ -36,6 +36,7 @@
 #include "sound.h"
 #include "types.h"
 #include "vic.h"
+#include "victypes.h"
 #include "vic-mem.h"
 #include "vic-snapshot.h"
 
@@ -196,4 +197,3 @@ fail:
         snapshot_module_close(m);
     return -1;
 }
-

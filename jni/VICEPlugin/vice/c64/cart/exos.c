@@ -33,16 +33,17 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
 #include "c64memrom.h"
 #include "c64rom.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "exos.h"
 #include "resources.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     Exos v3
@@ -60,9 +61,28 @@ static const c64export_resource_t export_res = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 exos_romh_read(WORD addr)
+BYTE exos_romh_read(WORD addr)
 {
     return romh_banks[(addr & 0x1fff)];
+}
+
+int exos_romh_phi1_read(WORD addr, BYTE *value)
+{
+    return CART_READ_C64MEM;
+}
+
+int exos_romh_phi2_read(WORD addr, BYTE *value)
+{
+    return exos_romh_phi1_read(addr, value);
+}
+
+int exos_peek_mem(struct export_s *export, WORD addr, BYTE *value)
+{
+    if (addr >= 0xe000) {
+        *value = romh_banks[addr & 0x1fff];
+        return CART_READ_VALID;
+    }
+    return CART_READ_THROUGH;
 }
 
 void exos_config_init(void)
@@ -99,13 +119,17 @@ int exos_bin_attach(const char *filename, BYTE *rawcart)
 
 int exos_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (fread(&rawcart[0x0000], 0x2000, 1, fd) < 1) {
+    if (chip.size != 0x2000) {
+        return -1;
+    }
+
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 

@@ -42,7 +42,7 @@
 #define NL10_ROM_SIZE      0x8000
 
 #include "drivedos1541.h"
-#include "drived1541ii.h"
+#include "drived1541II.h"
 
 static embedded_t commonfiles[] = {
   { "mps803", 512 * 7, 512 * 7, 512 * 7, NULL },
@@ -53,6 +53,8 @@ static embedded_t commonfiles[] = {
   { "dos1570", DRIVE_ROM1571_SIZE, DRIVE_ROM1571_SIZE, DRIVE_ROM1571_SIZE, NULL },
   { "dos1571", DRIVE_ROM1571_SIZE, DRIVE_ROM1571_SIZE, DRIVE_ROM1571_SIZE, NULL },
   { "dos1581", DRIVE_ROM1581_SIZE, DRIVE_ROM1581_SIZE, DRIVE_ROM1581_SIZE, NULL },
+  { "dos2000", DRIVE_ROM2000_SIZE, DRIVE_ROM2000_SIZE, DRIVE_ROM2000_SIZE, NULL },
+  { "dos4000", DRIVE_ROM4000_SIZE, DRIVE_ROM4000_SIZE, DRIVE_ROM4000_SIZE, NULL },
   { "dos2031", DRIVE_ROM2031_SIZE, DRIVE_ROM2031_SIZE, DRIVE_ROM2031_SIZE, NULL },
   { "dos2040", DRIVE_ROM2040_SIZE, DRIVE_ROM2040_SIZE, DRIVE_ROM2040_SIZE, NULL },
   { "dos3040", DRIVE_ROM3040_SIZE, DRIVE_ROM3040_SIZE, DRIVE_ROM3040_SIZE, NULL },
@@ -65,11 +67,19 @@ static embedded_t commonfiles[] = {
 static size_t embedded_match_file(const char *name, BYTE *dest, int minsize, int maxsize, embedded_t *emb)
 {
     int i = 0;
+    int load_at_start;
+
+    if (minsize < 0) {
+	minsize = -minsize;
+	load_at_start = 1;
+    } else {
+	load_at_start = 0;
+    }
 
     while (emb[i].name != NULL) {
         if (!strcmp(name, emb[i].name) && minsize == emb[i].minsize && maxsize == emb[i].maxsize) {
             if (emb[i].esrc != NULL) {
-                if (emb[i].size != minsize) {
+                if (emb[i].size != minsize || load_at_start) {
                     memcpy(dest, emb[i].esrc, maxsize);
                 } else {
                     memcpy(dest + maxsize - minsize, emb[i].esrc, minsize);

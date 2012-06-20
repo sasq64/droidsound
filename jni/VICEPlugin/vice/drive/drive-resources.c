@@ -47,8 +47,8 @@
 /* Is true drive emulation switched on?  */
 static int drive_true_emulation;
 
-static int drive1_resources_type(int val, void *param);
-
+/* Is drive sound emulation switched on?  */
+int drive_sound_emulation;
 
 static int set_drive_true_emulation(int val, void *param)
 {
@@ -82,6 +82,12 @@ static int set_drive_true_emulation(int val, void *param)
     return 0;
 }
 
+static int set_drive_sound_emulation(int val, void *param)
+{
+    drive_sound_emulation = val;
+    return 0;
+}
+
 static int set_drive_extend_image_policy(int val, void *param)
 {
     switch (val) {
@@ -95,81 +101,7 @@ static int set_drive_extend_image_policy(int val, void *param)
     }
 }
 
-static int drive0_resources_type(int val, void *param)
-{
-    unsigned int type;
-    int busses;
-    drive_t *drive;
-
-    drive = drive_context[0]->drive;
-    type = (unsigned int)val;
-    busses = iec_available_busses();
-
-    /* if bus for drive type is not allowed, set to default value for bus */
-    if (!drive_check_bus(type, 0, busses)) {
-        if (busses & IEC_BUS_IEC) {
-            type = DRIVE_TYPE_1541;
-        } else
-        if (busses & IEC_BUS_IEEE) {
-            type = DRIVE_TYPE_2031;
-        } else
-            type = DRIVE_TYPE_NONE;
-    }
-
-    if (drive_check_dual(type)) {
-        /* dual disk drives disable second emulated unit */
-        log_warning(drive->log,
-                    "Dual disk drive disables second emulated drive");
-
-        drive1_resources_type(DRIVE_TYPE_NONE, NULL);
-    }
-
-    switch (type) {
-      case DRIVE_TYPE_1541:
-      case DRIVE_TYPE_1541II:
-      case DRIVE_TYPE_1551:
-      case DRIVE_TYPE_1570:
-      case DRIVE_TYPE_1571:
-      case DRIVE_TYPE_1571CR:
-      case DRIVE_TYPE_1581:
-      case DRIVE_TYPE_2031:
-      case DRIVE_TYPE_1001:
-      case DRIVE_TYPE_2040:
-      case DRIVE_TYPE_3040:
-      case DRIVE_TYPE_4040:
-      case DRIVE_TYPE_8050:
-      case DRIVE_TYPE_8250:
-        if (drive->type != type) {
-            drive->current_half_track = 2 * 18;
-            if ((type == DRIVE_TYPE_1001)
-                || (type == DRIVE_TYPE_8050)
-                || (type == DRIVE_TYPE_8250)) {
-                drive->current_half_track = 2 * 38;
-            }
-        }
-        drive->type = type;
-        if (drive_true_emulation) {
-            drive->enable = 1;
-            drive_enable(drive_context[0]);
-            /* 1551 drive does not use the IEC bus */
-            machine_bus_status_drivetype_set(8, drive_check_bus(type, 0,
-                                             IEC_BUS_IEC));
-        }
-        drive_set_disk_drive_type(type, drive_context[0]);
-        driverom_initialize_traps(drive);
-        machine_drive_idling_method(0);
-        return 0;
-      case DRIVE_TYPE_NONE:
-        drive->type = type;
-        drive_disable(drive_context[0]);
-        machine_bus_status_drivetype_set(8, 0);
-        return 0;
-      default:
-        return -1;
-    }
-}
-
-static int drive1_resources_type(int val, void *param)
+static int drive_resources_type(int val, void *param)
 {
     unsigned int type, dnr;
     int busses;
@@ -177,13 +109,12 @@ static int drive1_resources_type(int val, void *param)
 
     dnr = vice_ptr_to_uint(param);
     drive = drive_context[dnr]->drive;
-    drive0 = drive_context[0]->drive;
 
     type = (unsigned int)val;
     busses = iec_available_busses();
 
     /* if bus for drive type is not allowed, set to default value for bus */
-    if (!drive_check_bus(type, dnr, busses)) {
+    if (!drive_check_bus(type, busses)) {
         if (busses & IEC_BUS_IEC) {
             type = DRIVE_TYPE_1541;
         } else
@@ -193,12 +124,25 @@ static int drive1_resources_type(int val, void *param)
             type = DRIVE_TYPE_NONE;
     }
 
-    if (drive0->enable && drive_check_dual(drive0->type)) {
-        /* dual disk drives disable second emulated unit */
-        log_warning(drive->log,
-                    "Dual disk drive disables second emulated drive");
+    if (is_drive0(dnr)) {
+        if (drive_check_dual(type)) {
+            int drive1 = mk_drive1(dnr);
 
-        type = DRIVE_TYPE_NONE;
+            /* dual disk drives disable second emulated unit */
+            log_warning(drive->log,
+                    "Dual disk drive %d disables emulated drive %d", dnr, drive1);
+
+            drive_resources_type(DRIVE_TYPE_NONE, int_to_void_ptr(drive1));
+        }
+    } else {
+        drive0 = drive_context[mk_drive0(dnr)]->drive;
+        if (drive0->enable && drive_check_dual(drive0->type)) {
+            /* dual disk drives disable second emulated unit */
+            log_warning(drive->log,
+                    "Dual disk drive %d disables emulated drive %d", mk_drive0(dnr), dnr);
+
+            type = DRIVE_TYPE_NONE;
+        }
     }
 
     switch (type) {
@@ -209,6 +153,8 @@ static int drive1_resources_type(int val, void *param)
       case DRIVE_TYPE_1571:
       case DRIVE_TYPE_1571CR:
       case DRIVE_TYPE_1581:
+      case DRIVE_TYPE_2000:
+      case DRIVE_TYPE_4000:
       case DRIVE_TYPE_2031:
       case DRIVE_TYPE_1001:
       case DRIVE_TYPE_2040:
@@ -230,10 +176,10 @@ static int drive1_resources_type(int val, void *param)
             drive_enable(drive_context[dnr]);
             /* 1551 drive does not use the IEC bus */
             machine_bus_status_drivetype_set(dnr + 8, drive_check_bus(type,
-                                             dnr, IEC_BUS_IEC));
+                                             IEC_BUS_IEC));
         }
         drive_set_disk_drive_type(type, drive_context[dnr]);
-        driverom_initialize_traps(drive);
+        driverom_initialize_traps(drive, 1);
         machine_drive_idling_method(dnr);
         return 0;
       case DRIVE_TYPE_NONE:
@@ -245,21 +191,6 @@ static int drive1_resources_type(int val, void *param)
         return -1;
     }
 }
-
-static int drive_resources_type(int val, void *param)
-{
-    switch (vice_ptr_to_uint(param)) {
-      case 0:
-        return drive0_resources_type(val, param);
-      case 1:
-      case 2:
-      case 3:
-        return drive1_resources_type(val, param);
-    }
-
-    return -1;
-}
-
 
 static resource_int_t res_drive_type[] = {
     { NULL, 0, RES_EVENT_SAME, NULL,
@@ -294,16 +225,43 @@ int drive_resources_type_init(unsigned int default_type)
     return 0;
 }
 
+static int set_drive_idling_method(int val, void *param)
+{
+    unsigned int dnr;
+    drive_t *drive;
+
+    dnr = vice_ptr_to_uint(param);
+    drive = drive_context[dnr]->drive;
+
+    /* FIXME: Maybe we should call `drive_cpu_execute()' here?  */
+    if (val != DRIVE_IDLE_SKIP_CYCLES
+        && val != DRIVE_IDLE_TRAP_IDLE
+        && val != DRIVE_IDLE_NO_IDLE)
+        return -1;
+
+    drive->idling_method = val;
+
+    if (!rom_loaded) {
+        return 0;
+    }
+
+    driverom_initialize_traps(drive, 0);
+    return 0;
+}
 
 static const resource_int_t resources_int[] = {
     { "DriveTrueEmulation", 1, RES_EVENT_STRICT, (resource_value_t)1,
       &drive_true_emulation, set_drive_true_emulation, NULL },
+    { "DriveSoundEmulation", 0, RES_EVENT_NO, (resource_value_t)0,
+      &drive_sound_emulation, set_drive_sound_emulation, NULL },
     { NULL }
 };
 
 static resource_int_t res_drive[] = {
     { NULL, DRIVE_EXTEND_NEVER, RES_EVENT_SAME, NULL,
       NULL, set_drive_extend_image_policy, NULL },
+    { NULL, DRIVE_IDLE_NO_IDLE, RES_EVENT_SAME, NULL,
+      NULL, set_drive_idling_method, NULL },
     { NULL }
 };
 
@@ -318,11 +276,15 @@ int drive_resources_init(void)
         res_drive[0].name = lib_msprintf("Drive%iExtendImagePolicy", dnr + 8);
         res_drive[0].value_ptr = (int *)&(drive->extend_image_policy);
         res_drive[0].param = uint_to_void_ptr(dnr);
+        res_drive[1].name = lib_msprintf("Drive%iIdleMethod", dnr + 8);
+        res_drive[1].value_ptr = &(drive->idling_method);
+        res_drive[1].param = uint_to_void_ptr(dnr);
 
         if (resources_register_int(res_drive) < 0)
             return -1;
 
         lib_free((char *)(res_drive[0].name));
+        lib_free((char *)(res_drive[1].name));
     }
 
     return machine_drive_resources_init()
@@ -333,4 +295,3 @@ void drive_resources_shutdown(void)
 {
     machine_drive_resources_shutdown();
 }
-

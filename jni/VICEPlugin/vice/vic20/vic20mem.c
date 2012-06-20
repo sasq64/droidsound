@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Daniel Kahlin <daniel@kahlin.net>
  *
  * Multiple memory configuration support originally by
@@ -35,13 +35,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cartio.h"
 #include "cartridge.h"
-#include "cart/vic20cartmem.h"
 #include "log.h"
 #include "machine.h"
 #include "maincpu.h"
 #include "mem.h"
-#include "midi.h"
 #include "monitor.h"
 #include "ram.h"
 #include "resources.h"
@@ -54,6 +53,7 @@
 #include "vic-mem.h"
 #include "vic20.h"
 #include "vic20-resources.h"
+#include "vic20cartmem.h"
 #include "vic20ieeevia.h"
 #include "vic20mem.h"
 #include "vic20memrom.h"
@@ -94,77 +94,80 @@ store_func_ptr_t *_mem_write_tab_ptr;
 BYTE **_mem_read_base_tab_ptr;
 int *mem_read_limit_tab_ptr;
 
+/* Current watchpoint state. 1 = watchpoints active, 0 = no watchpoints */
+static int watchpoints_active = 0;
+
 /* ------------------------------------------------------------------------- */
 
-BYTE REGPARM1 zero_read(WORD addr)
+BYTE zero_read(WORD addr)
 {
     vic20_cpu_last_data = mem_ram[addr & 0xff];
     vic20_mem_v_bus_read(addr);
     return vic20_cpu_last_data;
 }
 
-void REGPARM2 zero_store(WORD addr, BYTE value)
+void zero_store(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     vic20_mem_v_bus_store(addr);
     mem_ram[addr & 0xff] = value;
 }
 
-static BYTE REGPARM1 ram_read(WORD addr)
+static BYTE ram_read(WORD addr)
 {
     vic20_cpu_last_data = mem_ram[addr];
     return vic20_cpu_last_data;
 }
 
-static BYTE REGPARM1 ram_read_v_bus(WORD addr)
+static BYTE ram_read_v_bus(WORD addr)
 {
     vic20_cpu_last_data = mem_ram[addr];
     vic20_mem_v_bus_read(addr);
     return vic20_cpu_last_data;
 }
 
-static void REGPARM2 ram_store(WORD addr, BYTE value)
+static void ram_store(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     mem_ram[addr & (VIC20_RAM_SIZE - 1)] = value;
 }
 
-static void REGPARM2 ram_store_v_bus(WORD addr, BYTE value)
+static void ram_store_v_bus(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     vic20_mem_v_bus_store(addr);
     mem_ram[addr & (VIC20_RAM_SIZE - 1)] = value;
 }
 
-static BYTE REGPARM1 ram_peek(WORD addr)
+static BYTE ram_peek(WORD addr)
 {
     return mem_ram[addr];
 }
 
 /* ------------------------------------------------------------------------- */
 
-static BYTE REGPARM1 colorram_read(WORD addr)
+static BYTE colorram_read(WORD addr)
 {
     vic20_cpu_last_data = mem_ram[addr] | (vic20_v_bus_last_data & 0xf0);
     vic20_v_bus_last_data = vic20_cpu_last_data; /* TODO verify this */
     return vic20_cpu_last_data;
 }
 
-static void REGPARM2 colorram_store(WORD addr, BYTE value)
+static void colorram_store(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     vic20_v_bus_last_data = vic20_cpu_last_data; /* TODO verify this */
     mem_ram[addr & (VIC20_RAM_SIZE - 1)] = value & 0xf;
 }
 
-static BYTE REGPARM1 colorram_peek(WORD addr)
+static BYTE colorram_peek(WORD addr)
 {
     return mem_ram[addr] | (vic20_v_bus_last_data & 0xf0);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static void REGPARM2 via_store(WORD addr, BYTE value)
+static void via_store(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
 
@@ -177,7 +180,7 @@ static void REGPARM2 via_store(WORD addr, BYTE value)
     vic20_mem_v_bus_store(addr);
 }
 
-static BYTE REGPARM1 via_read(WORD addr)
+static BYTE via_read(WORD addr)
 {
     if ( (addr & 0x30) == 0x00 ) {  /* $910x (unconnected V-bus) */
         vic20_cpu_last_data = vic20_v_bus_last_data;
@@ -196,7 +199,7 @@ static BYTE REGPARM1 via_read(WORD addr)
     return vic20_cpu_last_data;
 }
 
-static BYTE REGPARM1 via_peek(WORD addr)
+static BYTE via_peek(WORD addr)
 {
 
     if ((addr & 0x30) == 0x00) {  /* $910x (unconnected V-bus) */
@@ -216,57 +219,7 @@ static BYTE REGPARM1 via_peek(WORD addr)
 
 /*-------------------------------------------------------------------*/
 
-static BYTE REGPARM1 io3_read(WORD addr)
-{
-    if (sidcart_enabled && sidcart_address==1 && addr>=0x9c00 && addr<=0x9c1f) {
-        vic20_cpu_last_data = sid_read(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-#ifdef HAVE_MIDI
-    if (midi_enabled && (addr & 0xff00) == 0x9c00) {
-        if (midi_test_read((WORD)(addr & 0xff))) {
-            vic20_cpu_last_data = midi_read((WORD)(addr & 0xff));
-            vic20_mem_v_bus_read(addr);
-            return vic20_cpu_last_data;
-        }
-    }
-#endif
-
-    if (mem_cart_blocks & VIC_CART_IO3) {
-        vic20_cpu_last_data = cartridge_read_io3(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-    vic20_mem_v_bus_read(addr);
-    return vic20_cpu_last_data;
-}
-
-static void REGPARM2 io3_store(WORD addr, BYTE value)
-{
-    vic20_cpu_last_data = value;
-
-    if (sidcart_enabled && sidcart_address==1 && addr>=0x9c00 && addr<=0x9c1f) {
-        sid_store(addr,value);
-    }
-
-#ifdef HAVE_MIDI
-    if (midi_enabled && (addr & 0xff00) == 0x9c00) {
-        midi_store((WORD)(addr & 0xff), value);
-    }
-#endif
-
-    if (mem_cart_blocks & VIC_CART_IO3) {
-        cartridge_store_io3(addr, value);
-    }
-
-    vic20_mem_v_bus_store(addr);
-    return;
-}
-
-static BYTE REGPARM1 io3_peek(WORD addr)
+static BYTE io3_peek(WORD addr)
 {
 #if 0
     /* TODO */
@@ -286,136 +239,66 @@ static BYTE REGPARM1 io3_peek(WORD addr)
 #endif
 #endif
 
-    if (mem_cart_blocks & VIC_CART_IO3) {
-        return cartridge_peek_io3(addr);
-    }
-
     return vic20_v_bus_last_data;
 }
 
-static BYTE REGPARM1 io2_read(WORD addr)
-{
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x9800 && addr<=0x981f) {
-        vic20_cpu_last_data = sid_read(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-    if (ieee488_enabled) {
-        if (addr & 0x10) {
-            vic20_cpu_last_data = ieeevia2_read(addr);
-            vic20_mem_v_bus_read(addr);
-            return vic20_cpu_last_data;
-        } else {
-            vic20_cpu_last_data = ieeevia1_read(addr);
-            vic20_mem_v_bus_read(addr);
-            return vic20_cpu_last_data;
-        }
-    }
-
-    if (mem_cart_blocks & VIC_CART_IO2) {
-        vic20_cpu_last_data = cartridge_read_io2(addr);
-        vic20_mem_v_bus_read(addr);
-        return vic20_cpu_last_data;
-    }
-
-    vic20_mem_v_bus_read(addr);
-    return vic20_cpu_last_data;
-}
-
-static void REGPARM2 io2_store(WORD addr, BYTE value)
-{
-    vic20_cpu_last_data = value;
-
-    if (sidcart_enabled && sidcart_address==0 && addr>=0x9800 && addr<=0x981f) {
-        sid_store(addr,value);
-    }
-
-    if (ieee488_enabled) {
-        if (addr & 0x10) {
-            ieeevia2_store(addr, value);
-        } else {
-            ieeevia1_store(addr, value);
-        }
-    }
-
-    if (mem_cart_blocks & VIC_CART_IO2) {
-        cartridge_store_io2(addr, value);
-    }
-
-    vic20_mem_v_bus_store(addr);
-    return;
-}
-
-static BYTE REGPARM1 io2_peek(WORD addr)
+static BYTE io2_peek(WORD addr)
 {
 #if 0
     /* TODO */
     if (sidcart_enabled && sidcart_address==0 && addr>=0x9800 && addr<=0x981f) {
         return sid_peek(addr);
     }
-
-    if (ieee488_enabled) {
-        if (addr & 0x10) {
-            return ieeevia2_peek(addr);
-        } else {
-            return ieeevia1_peek(addr);
-        }
-    }
 #endif
-
-    if (mem_cart_blocks & VIC_CART_IO2) {
-        return cartridge_peek_io2(addr);
-    }
 
     return vic20_v_bus_last_data;
 }
 
 /*-------------------------------------------------------------------*/
 
-static BYTE REGPARM1 chargen_read(WORD addr)
+static BYTE chargen_read(WORD addr)
 {
     vic20_cpu_last_data = vic20memrom_chargen_read(addr);
     vic20_mem_v_bus_read(addr);
     return vic20_cpu_last_data;
 }
 
-static BYTE REGPARM1 chargen_peek(WORD addr)
+static BYTE chargen_peek(WORD addr)
 {
     return vic20memrom_chargen_read(addr);
 }
 
 /*-------------------------------------------------------------------*/
 
-static BYTE REGPARM1 read_unconnected_v_bus(WORD addr)
+static BYTE read_unconnected_v_bus(WORD addr)
 {
     vic20_cpu_last_data = vic20_v_bus_last_data;
     vic20_mem_v_bus_read(addr);
     return vic20_cpu_last_data;
 }
 
-static BYTE REGPARM1 read_unconnected_c_bus(WORD addr)
+static BYTE read_unconnected_c_bus(WORD addr)
 {
     return vic20_cpu_last_data;
 }
 
-static void REGPARM2 store_dummy_v_bus(WORD addr, BYTE value)
+static void store_dummy_v_bus(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
     vic20_mem_v_bus_store(addr);
 }
 
-static void REGPARM2 store_dummy_c_bus(WORD addr, BYTE value)
+static void store_dummy_c_bus(WORD addr, BYTE value)
 {
     vic20_cpu_last_data = value;
 }
 
-static BYTE REGPARM1 peek_unconnected_v_bus(WORD addr)
+static BYTE peek_unconnected_v_bus(WORD addr)
 {
     return vic20_v_bus_last_data;
 }
 
-static BYTE REGPARM1 peek_unconnected_c_bus(WORD addr)
+static BYTE peek_unconnected_c_bus(WORD addr)
 {
     return vic20_cpu_last_data;
 }
@@ -423,13 +306,13 @@ static BYTE REGPARM1 peek_unconnected_c_bus(WORD addr)
 /*-------------------------------------------------------------------*/
 /* Watchpoint functions */
 
-static BYTE REGPARM1 read_watch(WORD addr)
+static BYTE read_watch(WORD addr)
 {
     monitor_watch_push_load_addr(addr, e_comp_space);
     return _mem_read_tab_nowatch[addr >> 8](addr);
 }
 
-static void REGPARM2 store_watch(WORD addr, BYTE value)
+static void store_watch(WORD addr, BYTE value)
 {
     monitor_watch_push_store_addr(addr, e_comp_space);
     _mem_write_tab_nowatch[addr >> 8](addr, value);
@@ -438,17 +321,17 @@ static void REGPARM2 store_watch(WORD addr, BYTE value)
 /* ------------------------------------------------------------------------- */
 /* Generic memory access.  */
 
-void REGPARM2 mem_store(WORD addr, BYTE value)
+void mem_store(WORD addr, BYTE value)
 {
     _mem_write_tab_ptr[addr >> 8](addr, value);
 }
 
-BYTE REGPARM1 mem_read(WORD addr)
+BYTE mem_read(WORD addr)
 {
     return _mem_read_tab_ptr[addr >> 8](addr);
 }
 
-BYTE REGPARM1 mem_peek(WORD addr)
+BYTE mem_peek(WORD addr)
 {
     return _mem_peek_tab[addr >> 8](addr);
 }
@@ -637,12 +520,12 @@ void mem_initialize_memory(void)
 
     /* Setup I/O2 at the expansion port */
     set_mem(0x98, 0x9b,
-            io2_read, io2_store, io2_peek,
+            vic20io2_read, vic20io2_store, io2_peek,
             NULL, 0);
 
     /* Setup I/O3 at the expansion port (includes emulator ID) */
     set_mem(0x9c, 0x9f,
-            io3_read, io3_store, io3_peek,
+            vic20io3_read, vic20io3_store, io3_peek,
             NULL, 0);
 
     /* Setup BASIC ROM at $C000-$DFFF. */
@@ -669,7 +552,7 @@ void mem_initialize_memory(void)
         _mem_write_tab_watch[i] = store_watch;
     }
 
-    mem_toggle_watchpoints(0, NULL);
+    mem_toggle_watchpoints(watchpoints_active, NULL);
 }
 
 void mem_toggle_watchpoints(int flag, void *context)
@@ -681,6 +564,7 @@ void mem_toggle_watchpoints(int flag, void *context)
         _mem_read_tab_ptr = _mem_read_tab_nowatch;
         _mem_write_tab_ptr = _mem_write_tab_nowatch;
     }
+    watchpoints_active = flag;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -791,7 +675,7 @@ mem_ioreg_list_t *mem_ioreg_list_get(void *context)
     mon_ioreg_add_list(&mem_ioreg_list, "VIA1", 0x9120, 0x912f, mem_dump_io);
     mon_ioreg_add_list(&mem_ioreg_list, "VIA2", 0x9110, 0x911f, mem_dump_io);
 
-    cartridge_ioreg_add_list(&mem_ioreg_list);
+    io_source_ioreg_add_list(&mem_ioreg_list);
 
     return mem_ioreg_list;
 }
@@ -873,4 +757,3 @@ int mem_patch_kernal(void)
 
     return 0;
 }
-

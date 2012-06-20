@@ -2,7 +2,7 @@
  * pets.h - PET version handling.
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -44,7 +44,23 @@
 #define PET_EDITOR4B80NAME  "edit4b80"
 #define PET_EDITOR4B40NAME  "edit4b40"
 
+#define SUPERPET_6809_A_NAME "waterloo-a000.901898-01.bin"
+#define SUPERPET_6809_B_NAME "waterloo-b000.901898-02.bin"
+#define SUPERPET_6809_C_NAME "waterloo-c000.901898-03.bin"
+#define SUPERPET_6809_D_NAME "waterloo-d000.901898-04.bin"
+#define SUPERPET_6809_E_NAME "waterloo-e000.901897-01.bin"
+#define SUPERPET_6809_F_NAME "waterloo-f000.901898-05.bin"
+
 #define PET_COLS 80
+#define PET_MAP_LINEAR          0
+#define PET_MAP_8096            1
+#define PET_MAP_8296            2
+
+#define SUPERPET_CPU_6502       0
+#define SUPERPET_CPU_6809       1
+#define SUPERPET_CPU_PROG       2
+
+#define NUM_6809_ROMS           6       /* at 0x[ABCDEF]000 */
 
 /* This struct is used to hold the default values for the different models */
 typedef struct petinfo_s {
@@ -69,6 +85,8 @@ typedef struct petinfo_s {
     const char  *memBname;      /* $B*** ROM image filename */
     const char  *memAname;      /* $A*** ROM image filename */
     const char  *mem9name;      /* $9*** ROM image filename */
+    /* SuperPET resources */
+    char        *h6809romName[NUM_6809_ROMS];   /* $[ABCDEF]*** */
 } petinfo_t;
 
 /* This struct holds the resources and some other runtime-derived info */
@@ -95,6 +113,10 @@ typedef struct petres_s {
     char        *memAname;      /* $A*** ROM image filename */
     char        *mem9name;      /* $9*** ROM image filename */
 
+    /* SuperPET resources */
+    char        *h6809romName[NUM_6809_ROMS];   /* $[ABCDEF]*** */
+    int         superpet_cpu_switch; /* 0 = 6502, 1 = 6809E, 2 = "prog" */
+
     /* runtime (derived) variables */
     int         videoSize;      /* video RAM size (1k or 2k) */
     int         map;            /* 0 = linear map, 1 = 8096 mapping */
@@ -109,16 +131,10 @@ typedef struct petres_s {
 
 extern petres_t petres;
 
-extern int pet_set_model(const char *model_name, void *extra);
-extern const char *get_pet_model(void);
-extern int pet_set_ramsize(int v);
+extern int pet_set_model(const char *model_name, void *extra); /* used by cmdline options */
 
-extern int pet_init_resources(void);
-extern int pet_init_cmdline_options(void);
+extern int pet_init_ok; /* used in pet.c */
 
-extern int pet_set_model_info(petinfo_t *pi);
-
-extern int pet_init_ok;
+extern int petmem_set_conf_info(petinfo_t *pi); /* used in petmemsnapshot.c */
 
 #endif
-

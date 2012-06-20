@@ -35,13 +35,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "final.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     The Final Cartridge 1+2
@@ -63,12 +64,12 @@
 #endif
 
 /* some prototypes are needed */
-static BYTE REGPARM1 final_v1_io1_read(WORD addr);
-static BYTE REGPARM1 final_v1_io1_peek(WORD addr);
-static void REGPARM2 final_v1_io1_store(WORD addr, BYTE value);
-static BYTE REGPARM1 final_v1_io2_read(WORD addr);
-static BYTE REGPARM1 final_v1_io2_peek(WORD addr);
-static void REGPARM2 final_v1_io2_store(WORD addr, BYTE value);
+static BYTE final_v1_io1_read(WORD addr);
+static BYTE final_v1_io1_peek(WORD addr);
+static void final_v1_io1_store(WORD addr, BYTE value);
+static BYTE final_v1_io2_read(WORD addr);
+static BYTE final_v1_io2_peek(WORD addr);
+static void final_v1_io2_store(WORD addr, BYTE value);
 
 static io_source_t final1_io1_device = {
     CARTRIDGE_NAME_FINAL_I,
@@ -79,8 +80,10 @@ static io_source_t final1_io1_device = {
     final_v1_io1_store,
     final_v1_io1_read,
     final_v1_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_FINAL_I
+    NULL,
+    CARTRIDGE_FINAL_I,
+    0,
+    0
 };
 
 static io_source_t final1_io2_device = {
@@ -92,8 +95,10 @@ static io_source_t final1_io2_device = {
     final_v1_io2_store,
     final_v1_io2_read,
     final_v1_io2_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_FINAL_I
+    NULL,
+    CARTRIDGE_FINAL_I,
+    0,
+    0
 };
 
 static io_source_list_t *final1_io1_list_item = NULL;
@@ -105,37 +110,37 @@ static const c64export_resource_t export_res_v1 = {
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 final_v1_io1_read(WORD addr)
+BYTE final_v1_io1_read(WORD addr)
 {
     DBG(("disable %04x\n", addr));
     cart_config_changed_slotmain(2, 2, CMODE_READ | CMODE_RELEASE_FREEZE);
     return roml_banks[0x1e00 + (addr & 0xff)];
 }
 
-BYTE REGPARM1 final_v1_io1_peek(WORD addr)
+BYTE final_v1_io1_peek(WORD addr)
 {
     return roml_banks[0x1e00 + (addr & 0xff)];
 }
 
-void REGPARM2 final_v1_io1_store(WORD addr, BYTE value)
+void final_v1_io1_store(WORD addr, BYTE value)
 {
     DBG(("disable %04x %02x\n", addr, value));
     cart_config_changed_slotmain(2, 2, CMODE_WRITE | CMODE_RELEASE_FREEZE);
 }
 
-BYTE REGPARM1 final_v1_io2_read(WORD addr)
+BYTE final_v1_io2_read(WORD addr)
 {
     DBG(("enable %04x\n", addr));
     cart_config_changed_slotmain(1, 1, CMODE_READ | CMODE_RELEASE_FREEZE);
     return roml_banks[0x1f00 + (addr & 0xff)];
 }
 
-BYTE REGPARM1 final_v1_io2_peek(WORD addr)
+BYTE final_v1_io2_peek(WORD addr)
 {
     return roml_banks[0x1f00 + (addr & 0xff)];
 }
 
-void REGPARM2 final_v1_io2_store(WORD addr, BYTE value)
+void final_v1_io2_store(WORD addr, BYTE value)
 {
     DBG(("enable %04x %02x\n", addr, value));
     cart_config_changed_slotmain(1, 1, CMODE_WRITE | CMODE_RELEASE_FREEZE);
@@ -143,12 +148,12 @@ void REGPARM2 final_v1_io2_store(WORD addr, BYTE value)
 
 /* ---------------------------------------------------------------------*/
 
-BYTE REGPARM1 final_v1_roml_read(WORD addr)
+BYTE final_v1_roml_read(WORD addr)
 {
     return roml_banks[(addr & 0x1fff)];
 }
 
-BYTE REGPARM1 final_v1_romh_read(WORD addr)
+BYTE final_v1_romh_read(WORD addr)
 {
     return romh_banks[(addr & 0x1fff)];
 }
@@ -182,8 +187,8 @@ static int final_v1_common_attach(void)
         return -1;
     }
 
-    final1_io1_list_item = c64io_register(&final1_io1_device);
-    final1_io2_list_item = c64io_register(&final1_io2_device);
+    final1_io1_list_item = io_source_register(&final1_io1_device);
+    final1_io2_list_item = io_source_register(&final1_io2_device);
 
     return 0;
 }
@@ -199,17 +204,17 @@ int final_v1_bin_attach(const char *filename, BYTE *rawcart)
 
 int final_v1_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
-    if (fread(chipheader, 0x10, 1, fd) < 1) {
+    if (crt_read_chip_header(&chip, fd)) {
         return -1;
     }
 
-    if (chipheader[0xc] != 0x80 || chipheader[0xe] != 0x40) {
+    if (chip.start != 0x8000 || chip.size != 0x4000) {
         return -1;
     }
 
-    if (fread(rawcart, chipheader[0xe] << 8, 1, fd) < 1) {
+    if (crt_read_chip(rawcart, 0, &chip, fd)) {
         return -1;
     }
 
@@ -219,8 +224,8 @@ int final_v1_crt_attach(FILE *fd, BYTE *rawcart)
 void final_v1_detach(void)
 {
     c64export_remove(&export_res_v1);
-    c64io_unregister(final1_io1_list_item);
-    c64io_unregister(final1_io2_list_item);
+    io_source_unregister(final1_io1_list_item);
+    io_source_unregister(final1_io2_list_item);
     final1_io1_list_item = NULL;
     final1_io2_list_item = NULL;
 }

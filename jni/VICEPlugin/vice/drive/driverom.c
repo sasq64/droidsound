@@ -79,65 +79,257 @@ int driverom_load_images(void)
     return 0;
 }
 
-void driverom_initialize_traps(drive_t *drive)
+static void driverom_fix_checksum(drive_t *drive)
 {
+    int i, j;
+    DWORD sum32;
+    WORD sum16;
+    BYTE m, m2;
 
-    /*int i;*/
+    switch (drive->type) {
+    case DRIVE_TYPE_1541:
+    case DRIVE_TYPE_1541II:
+        sum32 = (DWORD)-0xc0;
+        drive->rom[0x4001] = 0xff;
+        for (i = 0; i < 0x2000; i++) {
+            sum32 += drive->rom[i ^ 0x5f00];
+        }
+        drive->rom[0x4001] = ~(sum32 % 255);
 
-    if ((drive->type == DRIVE_TYPE_1541) ||
-        (drive->type == DRIVE_TYPE_1541II)) {
-        /* Save the ROM check.  */
-        drive->rom_checksum[0] = drive->rom[0xeae4 - 0x8000];
-        drive->rom_checksum[1] = drive->rom[0xeae5 - 0x8000];
-        drive->rom_checksum[2] = drive->rom[0xeae8 - 0x8000];
-        drive->rom_checksum[3] = drive->rom[0xeae9 - 0x8000];
-        /* Save the idle trap.  */
-        drive->rom_idle_trap[0] = drive->rom[0xec9b - 0x8000];
+        sum32 = (DWORD)-0xe0;
+        drive->rom[0x7ee6] = 0xff;
+        for (i = 0; i < 0x2000; i++) {
+            sum32 += drive->rom[i ^ 0x7f00];
+        }
+        drive->rom[0x7ee6] = ~(sum32 % 255);
+        break;
+    case DRIVE_TYPE_1551:
+        sum32 = 0xfe;
+        drive->rom[0x4000] = 0xff;
+        for (i = 0x0; i < 0x4000; i++) {
+            sum32 += drive->rom[i ^ 0x7f00];
+        }
+        drive->rom[0x4000] = ~(sum32 % 255);
+        break;
+    case DRIVE_TYPE_1570:
+        sum32 = 0xff;
+        drive->rom[0x4000] = 0xff;
+        for (i = 0x102; i < 0x8000; i++) {
+            sum32 += drive->rom[i];
+        }
+        drive->rom[0x4000] = ~(sum32 % 255);
+        break;
+    case DRIVE_TYPE_1571:
+    case DRIVE_TYPE_1571CR:
+        sum32 = 0xfe;
+        drive->rom[0x4000] = 0xff;
+        for (i = 2; i < 0x8000; i++) {
+            sum32 += drive->rom[i];
+        }
+        drive->rom[0x4000] = ~(sum32 % 255);
+        break;
+    case DRIVE_TYPE_1581:
+        sum32 = 0xff;
+        drive->rom[2] = 0xff;
+        for (i = 2; i < 0x8000; i++) {
+            sum32 += drive->rom[i];
+        }
+        drive->rom[2] = ~(sum32 % 255);
+        break;
+    case DRIVE_TYPE_2000:
+    case DRIVE_TYPE_4000:
+        sum16 = 0;
+        for (i = 4; i < 0x8000; i++) {
+            sum16 += drive->rom[i];
+        }
+        drive->rom[2] = sum16;
+        drive->rom[3] = sum16 >> 8;
+        break;
+    case DRIVE_TYPE_2031:
+        sum32 = (DWORD)-0xc0;
+        drive->rom[0x4000] = 0xff;
+        for (i = 0; i < 0x2000; i++) {
+            sum32 += drive->rom[i ^ 0x5f00];
+        }
+        drive->rom[0x4000] = ~(sum32 % 255);
 
-        if (drive->idling_method == DRIVE_IDLE_TRAP_IDLE) {
-            drive->rom[0xeae4 - 0x8000] = 0xea;
-            drive->rom[0xeae5 - 0x8000] = 0xea;
-            drive->rom[0xeae8 - 0x8000] = 0xea;
-            drive->rom[0xeae9 - 0x8000] = 0xea;
-            drive->rom[0xec9b - 0x8000] = TRAP_OPCODE;
+        sum32 = (DWORD)-0xe0;
+        drive->rom[0x7f35] = 0xff;
+        for (i = 0; i < 0x2000; i++) {
+            sum32 += drive->rom[i ^ 0x7f00];
+        }
+        drive->rom[0x7f35] = ~(sum32 % 255);
+        break;
+    case DRIVE_TYPE_2040:
+        sum32 = 0;
+        drive->rom[0x603f] = 0xff;
+        for (i = 0; i < 0x1000; i++) {
+            sum32 += drive->rom[i ^ 0x6f00];
+        }
+        drive->rom[0x603f] = -(sum32 % 255);
+        break;
+    case DRIVE_TYPE_3040:
+    case DRIVE_TYPE_4040:
+        sum32 = (DWORD)-0xd0;
+        drive->rom[0x52a0] = 0xff;
+        for (i = 0; i < 0x1000; i++) {
+            sum32 += drive->rom[i ^ 0x5f00];
+        }
+        drive->rom[0x52a0] = ~(sum32 % 255);
+
+        if (drive->rom[0x67a6] == 0x60
+            && drive->rom[0x67a8] == 0xad) {
+            sum32 = (DWORD)-0xe0;
+            drive->rom[0x67a7] = 0xff;
+            for (i = 0; i < 0x1000; i++) {
+                sum32 += drive->rom[i ^ 0x6f00];
+            }
+            drive->rom[0x67a7] = ~(sum32 % 255);
+        } else if (drive->rom[0x67ad] == 0x60
+            && drive->rom[0x67af] == 0xad) {
+            sum32 = (DWORD)-0xe0;
+            drive->rom[0x67ae] = 0xff;
+            for (i = 0; i < 0x1000; i++) {
+                sum32 += drive->rom[i ^ 0x6f00];
+            }
+            drive->rom[0x67ae] = ~(sum32 % 255);
         }
 
-        /* patch ROM for fast drive reset */
-/*
-        for (i = 0; i < sizeof(rompatch); i++)
-            drive->rom[(0xEAAF - 0x8000) + i] = rompatch[i];
-*/
+        sum32 = (DWORD)-0xf0;
+        drive->rom[0x7fe9] = 0xff;
+        for (i = 0; i < 0x1000; i++) {
+            sum32 += drive->rom[i ^ 0x7f00];
+        }
+        drive->rom[0x7fe9] = ~(sum32 % 255);
+        break;
     }
 
-    if (drive->type == DRIVE_TYPE_1551) {
-        /* Save the ROM check. */
-        drive->rom_checksum[0] = drive->rom[0xe9f4 - 0x8000];
-        drive->rom_checksum[1] = drive->rom[0xe9f5 - 0x8000];
-        /* Save the idle trap changes. */
+    switch (drive->type) {
+    case DRIVE_TYPE_1570:
+    case DRIVE_TYPE_1571:
+    case DRIVE_TYPE_1571CR:
+        sum16 = 0;
+        for (i = 6; i < 0x8003; i++) {
+            switch (i) {
+            case 0x8000:
+                m = sum16;
+                break;
+            case 0x8001:
+                m = sum16 >> 8;
+                break;
+            case 0x8002:
+                break;
+            default:
+                m = drive->rom[i];
+            }
+            for (j = 0; j < 8; j++) {
+                m2 = m ^ (sum16 >> 8) ^ (sum16 >> 11) ^ (sum16 >> 15) ^ (sum16 >> 6);
+                m = (m >> 1) | ((sum16 >> 8) & 0x80);
+                sum16 = (sum16 << 1) | (m2 & 1);
+            }
+        }
+        drive->rom[0] = sum16;
+        drive->rom[1] = sum16 >> 8;
+        break;
+    case DRIVE_TYPE_1581:
+        sum16 = 0xffff;
+        for (i = 2; i < 0x8000; i ++) {
+            sum16 ^= drive->rom[i] << 8;
+            for (j = 0; j < 8; j++) {
+                if (sum16 & 0x8000) {
+                    sum16 <<= 1;
+                    sum16 ^= 0x1021;
+                } else {
+                    sum16 <<= 1;
+                }
+            }
+        }
+        drive->rom[0] = sum16;
+        drive->rom[1] = sum16 >> 8;
+        break;
+    }
+}
+
+void driverom_initialize_traps(drive_t *drive, int save)
+{
+    if (save && drive->type == DRIVE_TYPE_1551) {
         drive->rom_idle_trap[0] = drive->rom[0xeabf - 0x8000];
         drive->rom_idle_trap[1] = drive->rom[0xeac0 - 0x8000];
         drive->rom_idle_trap[2] = drive->rom[0xead0 - 0x8000];
-        drive->rom_idle_trap[3] = drive->rom[0xead9 - 0x8000];
-
+    }
+    switch (drive->type) {
+    case DRIVE_TYPE_1541:
+    case DRIVE_TYPE_1541II:
+    case DRIVE_TYPE_1570:
+    case DRIVE_TYPE_1571:
+    case DRIVE_TYPE_1571CR:
+        drive->trap = 0xec9b;
+        drive->trapcont = 0xebff;
+        break;
+    case DRIVE_TYPE_1551:
+        drive->trap = 0xead9;
+        drive->trapcont = 0xeabd;
         if (drive->idling_method == DRIVE_IDLE_TRAP_IDLE) {
-            drive->rom[0xe9f4 - 0x8000] = 0xea;
-            drive->rom[0xe9f5 - 0x8000] = 0xea;
             drive->rom[0xeabf - 0x8000] = 0xea;
             drive->rom[0xeac0 - 0x8000] = 0xea;
             drive->rom[0xead0 - 0x8000] = 0x08;
-            drive->rom[0xead9 - 0x8000] = TRAP_OPCODE;
+        } else {
+            drive->rom[0xeabf - 0x8000] = drive->rom_idle_trap[0];
+            drive->rom[0xeac0 - 0x8000] = drive->rom_idle_trap[1];
+            drive->rom[0xead0 - 0x8000] = drive->rom_idle_trap[2];
         }
+        break;
+    case DRIVE_TYPE_1581:
+        drive->trap = 0xb158;
+        drive->trapcont = 0xb105;
+        break;
+    case DRIVE_TYPE_2000:
+        drive->trap = 0xf3c0;
+        drive->trapcont = 0xf368;
+        break;
+    case DRIVE_TYPE_4000:
+        drive->trap = 0xf3ec;
+        drive->trapcont = 0xf394;
+        break;
+    case DRIVE_TYPE_2031:
+        drive->trap = 0xece9;
+        drive->trapcont = 0xec4d;
+        break;
+    case DRIVE_TYPE_2040:
+        drive->trap = 0xe2d3;
+        drive->trapcont = 0xe27e;
+        break;
+    case DRIVE_TYPE_3040:
+        drive->trap = 0xd508;
+        drive->trapcont = 0xd4b8;
+        break;
+    case DRIVE_TYPE_4040:
+        drive->trap = 0xd507;
+        drive->trapcont = 0xd4b7;
+        break;
+    default:
+        drive->trap = -1;
+        drive->trapcont = -1;
     }
+    if (drive->trap >=0
+        && drive->rom[drive->trap - 0x8000 + 1] == (drive->trapcont & 0xff)
+        && drive->rom[drive->trap - 0x8000 + 2] == (drive->trapcont >> 8)) {
 
-    if (drive->type == DRIVE_TYPE_1581) {
-        /* Skip rom/ram checks (JMP $afca) */
-        drive->rom[0xaf6f - 0x8000] = 0x4c;
-        drive->rom[0xaf70 - 0x8000] = 0xca;
-        drive->rom[0xaf71 - 0x8000] = 0xaf;
-        /* Trap handler changes PC to 0xdaf6 */
-        /* Skips comparison after CRC calculation */
-        drive->rom[0xdaee - 0x8000] = TRAP_OPCODE;
+        if (drive->idling_method == DRIVE_IDLE_TRAP_IDLE
+            && drive->rom[drive->trap - 0x8000] == 0x4c) {
+            drive->rom[drive->trap - 0x8000] = TRAP_OPCODE;
+        }
+        if (drive->idling_method != DRIVE_IDLE_TRAP_IDLE
+            && drive->rom[drive->trap - 0x8000] == TRAP_OPCODE) {
+            drive->rom[drive->trap - 0x8000] = 0x4c;
+            drive->trap = -1;
+            drive->trapcont = -1;
+        }
+    } else {
+        drive->trap = -1;
+        drive->trapcont = -1;
     }
+    driverom_fix_checksum(drive);
 }
 
 void driverom_init(void)

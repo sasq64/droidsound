@@ -33,12 +33,14 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "gs.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     GS Cartridge
@@ -52,9 +54,11 @@
 */
 
 static int currbank = 0;
+static BYTE regval = 0;
 
-static void REGPARM2 gs_io1_store(WORD addr, BYTE value)
+static void gs_io1_store(WORD addr, BYTE value)
 {
+    regval = value;
     cart_romlbank_set_slotmain(addr & 0x3f);
     cart_set_port_exrom_slotmain(1);
     cart_set_port_game_slotmain(0);
@@ -62,15 +66,21 @@ static void REGPARM2 gs_io1_store(WORD addr, BYTE value)
     currbank = addr & 0x3f;
 }
 
-static BYTE REGPARM1 gs_io1_read(WORD addr)
+static BYTE gs_io1_read(WORD addr)
 {
     cart_config_changed_slotmain(0, 0, CMODE_READ);
     return 0;
 }
 
-static BYTE REGPARM1 gs_io1_peek(WORD addr)
+static BYTE gs_io1_peek(WORD addr)
 {
-    return currbank;
+    return regval;
+}
+
+static int gs_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -84,8 +94,10 @@ static io_source_t gs_device = {
     gs_io1_store,
     gs_io1_read,
     gs_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_GS
+    gs_dump,
+    CARTRIDGE_GS,
+    0,
+    0
 };
 
 static io_source_list_t *gs_list_item = NULL;
@@ -117,7 +129,7 @@ static int gs_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    gs_list_item = c64io_register(&gs_device);
+    gs_list_item = io_source_register(&gs_device);
     return 0;
 }
 
@@ -131,16 +143,16 @@ int gs_bin_attach(const char *filename, BYTE *rawcart)
 
 int gs_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
-        if (chipheader[0xb] >= 64 || (chipheader[0xc] != 0x80 && chipheader[0xc] != 0xa0)) {
+        if (chip.bank > 63 || (chip.start != 0x8000 && chip.start != 0xa000) || chip.size != 0x2000) {
             return -1;
         }
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -150,7 +162,7 @@ int gs_crt_attach(FILE *fd, BYTE *rawcart)
 void gs_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(gs_list_item);
+    io_source_unregister(gs_list_item);
     gs_list_item = NULL;
 }
 

@@ -40,17 +40,12 @@ extern int speech_cmdline_options_init(void);
 extern int speech_resources_init(void);
 extern void speech_resources_shutdown(void);
 
-extern BYTE REGPARM1 speech_read(WORD addr);
-extern BYTE REGPARM1 speech_peek(WORD addr);
-extern void REGPARM2 speech_store(WORD addr, BYTE value);
+extern BYTE speech_read(WORD addr);
+extern BYTE speech_peek(WORD addr);
+extern void speech_store(WORD addr, BYTE value);
 
-extern BYTE speech_sound_machine_read(sound_t *psid, WORD addr);
-extern void speech_sound_machine_store(sound_t *psid, WORD addr, BYTE byte);
-extern int speech_sound_machine_calculate_samples(sound_t *psid, SWORD *pbuf, int nr, int interleave, int *delta_t);
-extern void speech_sound_machine_reset(sound_t *psid, CLOCK cpu_clk);
-extern int speech_sound_machine_init(sound_t *psid, int speed, int cycles_per_sec);
-extern void speech_sound_machine_close(sound_t *psid);
+extern void speech_sound_chip_init(void);
 
-extern int REGPARM1 speech_dump(void *ctx);
+extern int speech_dump(void *ctx);
 
 #endif

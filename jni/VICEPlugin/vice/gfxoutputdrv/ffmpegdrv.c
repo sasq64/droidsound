@@ -107,6 +107,7 @@ static int video_outbuf_size;
 static int video_width, video_height;
 static AVFrame *picture, *tmp_picture;
 static double video_pts;
+static unsigned int framecounter;
 #ifdef HAVE_FFMPEG_SWSCALE
 static struct SwsContext *sws_ctx;
 #endif
@@ -118,6 +119,7 @@ static int audio_bitrate;
 static int video_bitrate;
 static int audio_codec;
 static int video_codec;
+static int video_halve_framerate;
 
 static int ffmpegdrv_init_file(void);
 
@@ -159,7 +161,6 @@ static int set_video_bitrate(int val, void *param)
      || (video_bitrate > VICE_FFMPEG_VIDEO_RATE_MAX)) {
         video_bitrate = VICE_FFMPEG_VIDEO_RATE_DEFAULT;
     }
-
     return 0;
 }
 
@@ -173,10 +174,20 @@ static int set_video_codec(int val, void *param)
 {
     video_codec = val;
     return 0;
+}
 
+static int set_video_halve_framerate(int val, void *param)
+{
+    if (video_halve_framerate != val && screenshot_is_recording()) {
+        ui_error("Can't change framerate while recording. Try again later.");
+        return 0;
+    }
+    video_halve_framerate = val;
+    return 0;
 }
 
 /*---------- Resources ------------------------------------------------*/
+
 static const resource_string_t resources_string[] = {
     { "FFMPEGFormat", "avi", RES_EVENT_NO, NULL,
       &ffmpeg_format, set_format, NULL },
@@ -194,9 +205,10 @@ static const resource_int_t resources_int[] = {
       &audio_codec, set_audio_codec, NULL },
     { "FFMPEGVideoCodec", CODEC_ID_MPEG4, RES_EVENT_NO, NULL,
       &video_codec, set_video_codec, NULL },
+    { "FFMPEGVideoHalveFramerate", 0, RES_EVENT_NO, NULL,
+      &video_halve_framerate, set_video_halve_framerate, NULL },
     { NULL }
 };
-
 
 static int ffmpegdrv_resources_init(void)
 {
@@ -330,7 +342,7 @@ static int ffmpegmovie_init_audio(int speed, int channels,
 
     c = st->codec;
     c->codec_id = ffmpegdrv_fmt->audio_codec;
-    c->codec_type = CODEC_TYPE_AUDIO;
+    c->codec_type = AVMEDIA_TYPE_AUDIO;
     c->sample_fmt = SAMPLE_FMT_S16;
 
     /* put sample parameters */
@@ -358,7 +370,7 @@ static int ffmpegmovie_encode_audio(soundmovie_buffer_t *audio_in)
         pkt.size = (*ffmpeglib.p_avcodec_encode_audio)(c, 
                         audio_outbuf, audio_outbuf_size, audio_in->buffer);
         pkt.pts = c->coded_frame->pts;
-        pkt.flags |= PKT_FLAG_KEY;
+        pkt.flags |= AV_PKT_FLAG_KEY;
         pkt.stream_index = audio_st->index;
         pkt.data = audio_outbuf;
 
@@ -547,7 +559,7 @@ static void ffmpegdrv_init_video(screenshot_t *screenshot)
 
     c = st->codec;
     c->codec_id = ffmpegdrv_fmt->video_codec;
-    c->codec_type = CODEC_TYPE_VIDEO;
+    c->codec_type = AVMEDIA_TYPE_VIDEO;
 
     /* put sample parameters */
     c->bit_rate = video_bitrate;
@@ -556,6 +568,9 @@ static void ffmpegdrv_init_video(screenshot_t *screenshot)
     video_height = c->height = (screenshot->height + 15) & ~0xf;
     /* frames per second */
     c->time_base.den = (int)(vsync_get_refresh_frequency() + 0.5);
+    if (video_halve_framerate) {
+        c->time_base.den /= 2;
+    }
     c->time_base.num = 1;
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */
     c->pix_fmt = PIX_FMT_YUV420P;
@@ -586,6 +601,7 @@ static void ffmpegdrv_init_video(screenshot_t *screenshot)
 
     video_st = st;
     video_pts = 0;
+    framecounter = 0;
 
     if (audio_init_done)
         ffmpegdrv_init_file();
@@ -645,10 +661,10 @@ static int ffmpegdrv_save(screenshot_t *screenshot, const char *filename)
     video_init_done = 0;
     file_init_done = 0;
 
-    ffmpegdrv_fmt = (*ffmpeglib.p_guess_format)(ffmpeg_format, NULL, NULL);
+    ffmpegdrv_fmt = (*ffmpeglib.p_av_guess_format)(ffmpeg_format, NULL, NULL);
 
     if (!ffmpegdrv_fmt)
-        ffmpegdrv_fmt = (*ffmpeglib.p_guess_format)("mpeg", NULL, NULL);
+        ffmpegdrv_fmt = (*ffmpeglib.p_av_guess_format)("mpeg", NULL, NULL);
 
     if (!ffmpegdrv_fmt) {
         log_debug("ffmpegdrv: Cannot find suitable output format");
@@ -774,6 +790,12 @@ static int ffmpegdrv_record(screenshot_t *screenshot)
         /* drop this frame */
         return 0;
     }
+    
+    framecounter++;
+    if (video_halve_framerate && (framecounter & 1)) {
+        /* drop every second frame */
+        return 0;
+    }
 
     c = video_st->codec;
 
@@ -797,7 +819,7 @@ static int ffmpegdrv_record(screenshot_t *screenshot)
     if (ffmpegdrv_oc->oformat->flags & AVFMT_RAWPICTURE) {
         AVPacket pkt;
         (*ffmpeglib.p_av_init_packet)(&pkt);
-        pkt.flags |= PKT_FLAG_KEY;
+        pkt.flags |= AV_PKT_FLAG_KEY;
         pkt.stream_index = video_st->index;
         pkt.data = (uint8_t*)picture;
         pkt.size = sizeof(AVPicture);
@@ -818,7 +840,7 @@ static int ffmpegdrv_record(screenshot_t *screenshot)
             (*ffmpeglib.p_av_init_packet)(&pkt);
             pkt.pts = c->coded_frame->pts;
             if (c->coded_frame->key_frame)
-                pkt.flags |= PKT_FLAG_KEY;
+                pkt.flags |= AV_PKT_FLAG_KEY;
             pkt.stream_index = video_st->index;
             pkt.data = video_outbuf;
             pkt.size = out_size;
@@ -878,4 +900,3 @@ void gfxoutput_init_ffmpeg(void)
 
     (*ffmpeglib.p_av_register_all)();
 }
-

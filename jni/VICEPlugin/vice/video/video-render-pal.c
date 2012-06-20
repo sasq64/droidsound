@@ -44,9 +44,11 @@
 #include "resources.h"
 #include "types.h"
 #include "video-render.h"
-#include "video-resources.h"
 #include "video.h"
 
+#ifdef DINGOO_NATIVE
+#include "render1x1_dingoo.h"
+#endif
 
 static void video_render_pal_main(video_render_config_t *config,
                                   BYTE *src, BYTE *trg,
@@ -54,6 +56,9 @@ static void video_render_pal_main(video_render_config_t *config,
                                   int yt, int pitchs, int pitcht, int depth,
                                   viewport_t *viewport)
 {
+#ifdef DINGOO_NATIVE
+    render_16_1x1_04_dingoo(&config->color_tables, src, trg, width, height, xs, ys, xt, yt, pitchs, pitcht);
+#else
     video_render_color_tables_t *colortab;
     int doublescan, delayloop, rendermode, scale2x, video;
 
@@ -64,8 +69,7 @@ static void video_render_pal_main(video_render_config_t *config,
     colortab = &config->color_tables;
     scale2x = config->scale2x;
 
-    /* FIXME: bad name. this toggles the CRT emulation */
-    delayloop = video_resources.delayloop_emulation;
+    delayloop = (config->filter == VIDEO_FILTER_CRT);
 
     /*
     if (config->external_palette)
@@ -74,7 +78,7 @@ static void video_render_pal_main(video_render_config_t *config,
 
     if ((rendermode == VIDEO_RENDER_PAL_1X1
         || rendermode == VIDEO_RENDER_PAL_2X2)
-        && video_resources.pal_scanlineshade <= 0)
+        && config->video_resources.pal_scanlineshade <= 0)
         doublescan = 0;
 
     switch (rendermode) {
@@ -87,15 +91,15 @@ static void video_render_pal_main(video_render_config_t *config,
                 switch (depth) {
                 case 16:
                     render_16_1x1_pal(colortab, src, trg, width, height,
-                                        xs, ys, xt, yt, pitchs, pitcht);
+                                        xs, ys, xt, yt, pitchs, pitcht, config);
                     return;
                 case 24:
                     render_24_1x1_pal(colortab, src, trg, width, height,
-                                    xs, ys, xt, yt, pitchs, pitcht);
+                                    xs, ys, xt, yt, pitchs, pitcht, config);
                     return;
                 case 32:
                     render_32_1x1_pal(colortab, src, trg, width, height,
-                                    xs, ys, xt, yt, pitchs, pitcht);
+                                    xs, ys, xt, yt, pitchs, pitcht, config);
                     return;
                 }
             } else {
@@ -143,17 +147,17 @@ static void video_render_pal_main(video_render_config_t *config,
                     case 16:
                         render_16_2x2_ntsc(colortab, src, trg, width, height,
                                         xs, ys, xt, yt, pitchs, pitcht,
-                                        viewport);
+                                        viewport, config);
                         return;
                     case 24:
                         render_24_2x2_ntsc(colortab, src, trg, width, height,
                                         xs, ys, xt, yt, pitchs, pitcht,
-                                        viewport);
+                                        viewport, config);
                         return;
                     case 32:
                         render_32_2x2_ntsc(colortab, src, trg, width, height,
                                         xs, ys, xt, yt, pitchs, pitcht,
-                                        viewport);
+                                        viewport, config);
                         return;
                     }
                     break;
@@ -162,17 +166,17 @@ static void video_render_pal_main(video_render_config_t *config,
                     case 16:
                         render_16_2x2_pal(colortab, src, trg, width, height,
                                         xs, ys, xt, yt, pitchs, pitcht,
-                                        viewport);
+                                        viewport, config);
                         return;
                     case 24:
                         render_24_2x2_pal(colortab, src, trg, width, height,
                                         xs, ys, xt, yt, pitchs, pitcht,
-                                        viewport);
+                                        viewport, config);
                         return;
                     case 32:
                         render_32_2x2_pal(colortab, src, trg, width, height,
                                         xs, ys, xt, yt, pitchs, pitcht,
-                                        viewport);
+                                        viewport, config);
                         return;
                     }
                     break;
@@ -218,6 +222,7 @@ static void video_render_pal_main(video_render_config_t *config,
         }
     }
     log_debug("video_render_pal_main unsupported rendermode (%d)\n", rendermode);
+#endif
 }
 
 void video_render_pal_init(void)

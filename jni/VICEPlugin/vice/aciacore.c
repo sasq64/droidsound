@@ -1,9 +1,9 @@
 /*! \file aciacore.c \n
- *  \author André Fachat, Spiro Trikaliotis\n
+ *  \author Andre Fachat, Spiro Trikaliotis\n
  *  \brief  Template file for ACIA 6551 emulation.
  *
  * Written by
- *  André Fachat <fachat@physik.tu-chemnitz.de>
+ *  Andre Fachat <fachat@physik.tu-chemnitz.de>
  *  Spiro Trikaliotis <spiro.trikaliotis@gmx.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -443,12 +443,16 @@ static void set_acia_ticks(void)
 */
 static int acia_set_mode(int new_mode, void *param)
 {
-    if (new_mode < ACIA_MODE_LOWEST || new_mode > ACIA_MODE_HIGHEST)
+    if (new_mode < ACIA_MODE_LOWEST || new_mode > ACIA_MODE_HIGHEST) {
         return -1;
+    }
+
+    if (myacia_set_mode(new_mode) == 0 && new_mode != ACIA_MODE_LOWEST) {
+        return -1;
+    }
 
     acia.mode = new_mode;
     set_acia_ticks();
-
     return 0;
 }
 
@@ -639,8 +643,12 @@ void myacia_reset(void)
         rs232drv_close(acia.fd);
     acia.fd = -1;
 
-    alarm_unset(acia.alarm_tx);
-    alarm_unset(acia.alarm_rx);
+    if (acia.alarm_tx) {
+        alarm_unset(acia.alarm_tx);
+    }
+    if (acia.alarm_rx) {
+        alarm_unset(acia.alarm_rx);
+    }
     acia.alarm_active_tx = 0;
     acia.alarm_active_rx = 0;
 
@@ -856,7 +864,7 @@ int myacia_snapshot_read_module(snapshot_t *p)
   \param byte
     The value to set the register to
 */
-void REGPARM2 myacia_store(WORD addr, BYTE byte)
+void myacia_store(WORD addr, BYTE byte)
 {
     int acia_register_size;
 
@@ -903,7 +911,9 @@ void REGPARM2 myacia_store(WORD addr, BYTE byte)
         acia.in_tx = ACIA_TX_STATE_NO_TRANSMIT;
         acia_set_int(acia.irq_type, acia.int_num, IK_NONE);
         acia.irq = 0;
-        alarm_unset(acia.alarm_tx);
+        if (acia.alarm_tx) {
+            alarm_unset(acia.alarm_tx);
+        }
         acia.alarm_active_tx = 0;
         acia_set_handshake_lines();
         break;
@@ -946,7 +956,7 @@ void REGPARM2 myacia_store(WORD addr, BYTE byte)
   \return
     The value the register has
 */
-BYTE REGPARM1 myacia_read(WORD addr)
+BYTE myacia_read(WORD addr)
 {
 #if 0 /* def DEBUG */
     static BYTE myacia_read_(WORD);
@@ -995,9 +1005,9 @@ static BYTE myacia_read_(WORD addr)
         return 0xff;
       case T232_ECTRL:
         return acia.ectrl 
-                     + ((acia.ctrl & ACIA_CTRL_BITS_BPS_MASK) == ACIA_CTRL_BITS_BPS_16X_EXT_CLK) 
+                     + (((acia.ctrl & ACIA_CTRL_BITS_BPS_MASK) == ACIA_CTRL_BITS_BPS_16X_EXT_CLK) 
                        ? T232_ECTRL_BITS_EXT_ACTIVE 
-                       : 0;
+                       : 0);
     }
     /* should never happen */
     return 0;
@@ -1180,6 +1190,6 @@ static void int_acia_rx(CLOCK offset, void *data)
 
 int acia_dump(void *acia_context)
 {
-    /* FIXME: dump details using mod_out(), return 0 on success */
+    /* FIXME: dump details using mon_out(), return 0 on success */
     return -1;
 }

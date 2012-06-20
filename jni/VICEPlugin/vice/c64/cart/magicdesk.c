@@ -33,13 +33,15 @@
 #include "c64cartsystem.h"
 #undef CARTRIDGE_INCLUDE_SLOTMAIN_API
 #include "c64export.h"
-#include "c64io.h"
 #include "c64mem.h"
+#include "cartio.h"
 #include "cartridge.h"
 #include "magicdesk.h"
+#include "monitor.h"
 #include "snapshot.h"
 #include "types.h"
 #include "util.h"
+#include "crt.h"
 
 /*
     "Magic Desk" Cartridge
@@ -54,9 +56,11 @@
 */
 
 static int currbank = 0;
+static BYTE regval = 0;
 
-static void REGPARM2 magicdesk_io1_store(WORD addr, BYTE value)
+static void magicdesk_io1_store(WORD addr, BYTE value)
 {
+    regval = value;
     cart_romlbank_set_slotmain(value & 0x3f);
     cart_set_port_game_slotmain(0);
     if (value & 0x80) {
@@ -69,9 +73,15 @@ static void REGPARM2 magicdesk_io1_store(WORD addr, BYTE value)
     cart_port_config_changed_slotmain();
 }
 
-static BYTE REGPARM1 magicdesk_io1_peek(WORD addr)
+static BYTE magicdesk_io1_peek(WORD addr)
 {
-    return currbank;
+    return regval;
+}
+
+static int magicdesk_dump(void)
+{
+    mon_out("Bank: %d\n", currbank);
+    return 0;
 }
 
 /* ---------------------------------------------------------------------*/
@@ -85,8 +95,10 @@ static io_source_t magicdesk_device = {
     magicdesk_io1_store,
     NULL,
     magicdesk_io1_peek,
-    NULL, /* TODO: dump */
-    CARTRIDGE_MAGIC_DESK
+    magicdesk_dump,
+    CARTRIDGE_MAGIC_DESK,
+    0,
+    0
 };
 
 static io_source_list_t *magicdesk_list_item = NULL;
@@ -116,7 +128,7 @@ static int magicdesk_common_attach(void)
     if (c64export_add(&export_res) < 0) {
         return -1;
     }
-    magicdesk_list_item = c64io_register(&magicdesk_device);
+    magicdesk_list_item = io_source_register(&magicdesk_device);
     return 0;
 }
 
@@ -134,16 +146,16 @@ int magicdesk_bin_attach(const char *filename, BYTE *rawcart)
 
 int magicdesk_crt_attach(FILE *fd, BYTE *rawcart)
 {
-    BYTE chipheader[0x10];
+    crt_chip_header_t chip;
 
     while (1) {
-        if (fread(chipheader, 0x10, 1, fd) < 1) {
+        if (crt_read_chip_header(&chip, fd)) {
             break;
         }
-        if (chipheader[0xb] >= 64 || (chipheader[0xc] != 0x80 && chipheader[0xc] != 0xa0)) {
+        if (chip.bank > 63 || (chip.start != 0x8000 && chip.start != 0xa000) || chip.size != 0x2000) {
             return -1;
         }
-        if (fread(&rawcart[chipheader[0xb] << 13], 0x2000, 1, fd) < 1) {
+        if (crt_read_chip(rawcart, chip.bank << 13, &chip, fd)) {
             return -1;
         }
     }
@@ -153,7 +165,7 @@ int magicdesk_crt_attach(FILE *fd, BYTE *rawcart)
 void magicdesk_detach(void)
 {
     c64export_remove(&export_res);
-    c64io_unregister(magicdesk_list_item);
+    io_source_unregister(magicdesk_list_item);
     magicdesk_list_item = NULL;
 }
 

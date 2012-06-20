@@ -41,6 +41,7 @@
 #include "lib.h"
 #include "mon_command.h"
 #include "montypes.h"
+#include "asm.h"
 #include "mon_parse.h" /* FIXME ! */
 #include "types.h"
 
@@ -58,6 +59,51 @@ YY_BUFFER_STATE my_state;
 
 #define YY_USER_ACTION { last_len = cur_len; cur_len += yyleng; }
 
+static int hexint(char n) {
+    if ((n >= '0') && (n <= '9')) {
+        return n - '0';
+    } else if ((n >= 'a') && (n <= 'f')) {
+        return n - ('a' - 0x0a);
+    } else if ((n >= 'A') && (n <= 'F')) {
+        return n - ('A' - 0x0a);
+    }
+    return 0;
+}
+
+/* remove escaped codes from string and replace them by their actual character
+   codes. */
+static void unescape(char *s) {
+    char *d = s;
+    int n;
+    while (*s) {
+        if (*s == '\\') {
+            s++;
+            switch (*s) {
+                case '\\': *d = '\\'; break; /* backslash */
+                case 'n': *d = '\n'; break; /* lf */
+                case 'r': *d = '\r'; break; /* cr */
+                case '"': *d = '"';  break; /* quote */
+                case 'x': /* hex codes */
+                    s++; if (*s == 0) { goto send; }
+                    n = hexint(*s) << 4;
+                    s++; if (*s == 0) { goto send; }
+                    *d = n | hexint(*s);
+                    break;
+                default:
+                    *d = '\\'; d++;
+                    if (*s == 0) { goto send; }
+                    *d = *s;
+                    break;
+            }
+        } else {
+            *d = *s;
+        }
+        s++;d++;
+    }
+send:
+    *d = 0;
+}
+
 %}
 
 %option case-insensitive
@@ -70,14 +116,15 @@ HDIGIT  [0-9a-f]
 
 %{
    if (new_cmd) {
-      if (!(asm_mode && opt_asm))
+      if (!(asm_mode && opt_asm)) {
          last_len = cur_len = 0;
-
+      }
       if (asm_mode) {
          BEGIN (ASM_MODE);
          opt_asm = 0;
-      } else
+      } else {
          BEGIN (CMD);
+      }
       new_cmd = 0;
    }
 %}
@@ -90,6 +137,8 @@ HDIGIT  [0-9a-f]
         a               { opt_asm = 1; BEGIN(INITIAL); return CMD_ASSEMBLE; }
         add_label|al    { BEGIN(INITIAL);       return CMD_ADD_LABEL; }
         attach          { BEGIN(FNAME);         return CMD_ATTACH; }
+        autostart       { BEGIN(FNAME);         return CMD_AUTOSTART; }
+        autoload        { BEGIN(FNAME);         return CMD_AUTOLOAD; }
         bank            { BEGIN(BNAME);         return CMD_BANK; }
         bload|bl        { BEGIN(FNAME);         return CMD_BLOAD; }
         block_read|br   { BEGIN(INITIAL);       return CMD_BLOCK_READ; }
@@ -99,6 +148,7 @@ HDIGIT  [0-9a-f]
         block_write|bw  { BEGIN(INITIAL);       return CMD_BLOCK_WRITE; }
         cartfreeze      { BEGIN(INITIAL);       return CMD_CARTFREEZE; }
         cd              { BEGIN(ROL);           return CMD_CHDIR; }
+        stopwatch|sw    { BEGIN(INITIAL);       return CMD_STOPWATCH; }
         command         { BEGIN(INITIAL);       return CMD_COMMAND; }
         compare|c       { BEGIN(INITIAL);       return CMD_COMPARE; }
         condition|cond  { BEGIN(INITIAL);       return CMD_CONDITION; }
@@ -123,7 +173,7 @@ HDIGIT  [0-9a-f]
         ii              { BEGIN(INITIAL);       return CMD_SCREENCODE_DISPLAY; }
         ignore          { BEGIN(INITIAL);       return CMD_IGNORE; }
         io              { BEGIN(INITIAL);       return CMD_IO; }
-        keybuf          { BEGIN(ROL);           return CMD_KEYBUF; }
+        keybuf          { BEGIN(INITIAL);       return CMD_KEYBUF; }
         list            { BEGIN(INITIAL);       return CMD_LIST; }
         load|l          { BEGIN(FNAME);         return CMD_LOAD; }
         load_labels|ll  { BEGIN(FNAME);         return CMD_LOAD_LABELS; }
@@ -145,6 +195,8 @@ HDIGIT  [0-9a-f]
         reset           { BEGIN(INITIAL);       return CMD_MON_RESET; }
         resourceget|resget { BEGIN(INITIAL);    return CMD_RESOURCE_GET; }
         resourceset|resset { BEGIN(INITIAL);    return CMD_RESOURCE_SET; }
+        load_resources|resload  { BEGIN(FNAME); return CMD_LOAD_RESOURCES; }
+        save_resources|ressave  { BEGIN(FNAME); return CMD_SAVE_RESOURCES; }
         return|ret      { BEGIN(INITIAL);       return CMD_RETURN; }
         save|s          { BEGIN(FNAME);         return CMD_SAVE; }
         save_labels|sl  { BEGIN(FNAME);         return CMD_SAVE_LABELS; }
@@ -170,8 +222,11 @@ on  		{ yylval.i = e_ON; return TOGGLE; }
 off 		{ yylval.i = e_OFF; return TOGGLE; }
 toggle		{ yylval.i = e_TOGGLE; return TOGGLE; }
 
-load 		{ yylval.i = e_load; return MEM_OP; }
-store 		{ yylval.i = e_store; return MEM_OP; }
+load { yylval.i = e_load; return MEM_OP; }
+store { yylval.i = e_store; return MEM_OP; }
+exec { yylval.i = e_exec; return MEM_OP; }
+
+reset		{ return RESET; }
 
 if		{ BEGIN (COND_MODE); return IF; }
 
@@ -180,13 +235,35 @@ if		{ BEGIN (COND_MODE); return IF; }
                      BEGIN (STR);
                   }
                 }
+
 <STR>\" 	{ if (quote) {
-                     quote = 0;
-                     BEGIN (INITIAL);
+                     if ((yyleng > 1) && (yytext[yyleng - 2] == '\\')) {
+                         yymore(); /* skip escaped quote */
+                     } else if (((yyleng < 4) || (yytext[yyleng - 4] != '\\')) &&
+                                (yyleng > 2) && (yytext[yyleng - 3] == '\\') &&
+                                (yytext[yyleng - 2] == '"')) {
+                         /* special case, \"" at end of string */
+                         yylval.str = lib_stralloc(yytext);
+                         yylval.str[yyleng -1] = 0;
+                         unescape(yylval.str);
+                         quote = 0;
+                         BEGIN (INITIAL);
+                         return STRING;
+                     } else {
+                         quote = 0;
+                         BEGIN (INITIAL);
+                     }
                   }
                 }
 
-<STR>[^\"\n]*      { yylval.str = lib_stralloc(yytext); return STRING; }
+<STR>[^\"\n]*   { if (yytext[yyleng - 1] == '\\') {
+                     yymore(); /* skip escaped quote */
+                  } else {
+                     yylval.str = lib_stralloc(yytext);
+                     unescape(yylval.str);
+                     return STRING;
+                  }
+                }
 
  /* prefixes for numbers */
 \.\$		{ yylval.i = e_hexadecimal; return INPUT_SPEC; }
@@ -350,6 +427,8 @@ if		{ BEGIN (COND_MODE); return IF; }
 <ASM_MODE>e|E           { return REG_E; }
 <ASM_MODE>h|H           { return REG_H; }
 <ASM_MODE>l|L           { return REG_L; }
+<ASM_MODE>s|S           { return REG_S; }
+<ASM_MODE>u|U           { return REG_U; }
 <ASM_MODE>x|X           { return REG_X; }
 <ASM_MODE>y|Y           { return REG_Y; }
 
@@ -357,6 +436,11 @@ if		{ BEGIN (COND_MODE); return IF; }
 <ASM_MODE>\)            { dont_match_reg_a = 0; return R_PAREN; }
 <ASM_MODE>#             { dont_match_reg_a = 1; return ARG_IMMEDIATE; }
 <ASM_MODE>:             { dont_match_reg_a = 0; return INST_SEP; }
+<ASM_MODE>\[            { dont_match_reg_a = 1; return L_BRACKET; }
+<ASM_MODE>\]            { dont_match_reg_a = 0; return R_BRACKET; }
+<ASM_MODE>\<            { dont_match_reg_a = 1; return LESS_THAN; }
+<ASM_MODE>\+            { return PLUS; }
+<ASM_MODE>-             { return MINUS; }
 
 <ASM_MODE,INITIAL,COND_MODE,REG_ASGN,LABEL_ASGN>{
     {HDIGIT}{8}             { yylval.str = lib_stralloc(yytext); return H_RANGE_GUESS; }
@@ -396,4 +480,3 @@ static int yywrap(void)
 {
     return 1;
 }
-

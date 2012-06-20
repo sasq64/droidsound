@@ -1,11 +1,14 @@
+
+/*! \file vice.h 
+ *
+ *  \brief Main header file for VICE.
+ *
+ *  \author Ettore Perazzoli <ettore@comm2000.it>
+ *  \author Jouko Valta <jopi@stekt.oulu.fi>
+ *  \author Andreas Boose <viceteam@t-online.de>
+ */
+
 /*
- * vice.h - Main header file for VICE.
- *
- * Written by
- *  Ettore Perazzoli <ettore@comm2000.it>
- *  Jouko Valta <jopi@stekt.oulu.fi>
- *  Andreas Boose <viceteam@t-online.de>
- *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
  *
@@ -35,7 +38,11 @@
    actually automake barfs if the source directory was already
    configured, so this should not be an issue anymore.  */
 
-#include <config.h> /* Automagically created by the `configure' script.  */
+#ifdef IDE_COMPILE
+# include <ide-config.h> /* standard config file for IDE based compiles. */
+#else
+# include <config.h> /* Automagically created by the `configure' script.  */
+#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -94,11 +101,6 @@
 #define ALLOW_UNALIGNED_ACCESS
 #endif
 
-/* RISC OS specific stuff */
-#ifdef __riscos
-#include "ROlib.h"
-#endif
-
 /* SunOS 4.x specific stuff */
 #if defined(sun) || defined(__sun)
 #  if !defined(__SVR4) && !defined(__svr4__)
@@ -109,7 +111,7 @@
 
 /* ------------------------------------------------------------------------- */
 /* Which OS is using the common keyboard routines?  */
-#if (!defined(__riscos) && !defined(__OS2__)) || defined(USE_SDLUI)
+#if !defined(__OS2__) || defined(USE_SDLUI)
 #define COMMON_KBD
 #endif
 

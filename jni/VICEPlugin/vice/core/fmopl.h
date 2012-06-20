@@ -146,6 +146,10 @@ extern unsigned char ym3526_read(FM_OPL *chip, int a);
 extern unsigned char ym3526_peek(FM_OPL *chip, int a);
 extern int ym3526_timer_over(FM_OPL *chip, int c);
 
+struct snapshot_s;
+extern int ym3526_snapshot_read_module(struct snapshot_s *s);
+extern int ym3526_snapshot_write_module(struct snapshot_s *s);
+
 /*
  * Generate samples for one of the YM3526's
  *
@@ -154,5 +158,9 @@ extern int ym3526_timer_over(FM_OPL *chip, int c);
  * 'length' is the number of samples that should be generated
  */
 extern void ym3526_update_one(FM_OPL *chip, OPLSAMPLE *buffer, int length);
+
+
+extern int connect1_is_output0(int *connect);
+extern void set_connect1(int *connect, int output0);
 
 #endif /* VICE_FMOPL_H */

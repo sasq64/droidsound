@@ -336,9 +336,8 @@ void drivecpu_prevent_clk_overflow_all(CLOCK sub)
 /* Handle a ROM trap. */
 inline static DWORD drive_trap_handler(drive_context_t *drv)
 {
-    if (MOS6510_REGS_GET_PC(&(drv->cpu->cpu_regs)) == 0xec9b) {
-        /* Idle loop 1541 drive*/
-        MOS6510_REGS_SET_PC(&(drv->cpu->cpu_regs), 0xebff);
+    if (MOS6510_REGS_GET_PC(&(drv->cpu->cpu_regs)) == drv->drive->trap) {
+        MOS6510_REGS_SET_PC(&(drv->cpu->cpu_regs), drv->drive->trapcont);
         if (drv->drive->idling_method == DRIVE_IDLE_TRAP_IDLE) {
             CLOCK next_clk;
 
@@ -349,25 +348,6 @@ inline static DWORD drive_trap_handler(drive_context_t *drv)
 
             *(drv->clk_ptr) = next_clk;
         }
-        return 0;
-    }
-    if (MOS6510_REGS_GET_PC(&(drv->cpu->cpu_regs)) == 0xead9) {
-        /* Idle loop for 1551 drive*/
-        MOS6510_REGS_SET_PC(&(drv->cpu->cpu_regs), 0xeabd);
-        if (drv->drive->idling_method == DRIVE_IDLE_TRAP_IDLE) {
-            CLOCK next_clk;
-
-            next_clk = alarm_context_next_pending_clk(drv->cpu->alarm_context);
-
-            if (next_clk > drv->cpu->stop_clk)
-                next_clk = drv->cpu->stop_clk;
-
-            *(drv->clk_ptr) = next_clk;
-        }
-        return 0;
-    }
-    if (MOS6510_REGS_GET_PC(&(drv->cpu->cpu_regs)) == 0xdaee) {
-        MOS6510_REGS_SET_PC(&(drv->cpu->cpu_regs), 0xdaf6);
         return 0;
     }
     return (DWORD)-1;
@@ -478,6 +458,7 @@ void drivecpu_execute(drive_context_t *drv, CLOCK clk_value)
 #define RMW_FLAG (cpu->rmw_flag)
 #define PAGE_ONE (cpu->pageone)
 #define LAST_OPCODE_INFO (cpu->last_opcode_info)
+#define LAST_OPCODE_ADDR (cpu->last_opcode_addr)
 #define TRACEFLG (debug.drivecpu_traceflg[drv->mynumber])
 
 #define CPU_INT_STATUS (cpu->int_status)
@@ -575,6 +556,12 @@ static void drive_jam(drive_context_t *drv)
       case DRIVE_TYPE_1581:
         dname = "  1581";
         break;
+      case DRIVE_TYPE_2000:
+        dname = "  2000";
+        break;
+      case DRIVE_TYPE_4000:
+        dname = "  4000";
+        break;
       case DRIVE_TYPE_2031:
         dname = "  2031";
         break;
@@ -611,8 +598,7 @@ static void drive_jam(drive_context_t *drv)
         machine_trigger_reset(MACHINE_RESET_MODE_HARD);
         break;
       case JAM_MONITOR:
-        caller_space = drv->cpu->monspace;
-        monitor_startup();
+        monitor_startup(drv->cpu->monspace);
         break;
       default:
         CLK++;
@@ -666,7 +652,9 @@ int drivecpu_snapshot_write_module(drive_context_t *drv, snapshot_t *s)
             goto fail;
     }
 
-    if (drv->drive->type == DRIVE_TYPE_1581) {
+    if (drv->drive->type == DRIVE_TYPE_1581
+        || drv->drive->type == DRIVE_TYPE_2000
+        || drv->drive->type == DRIVE_TYPE_4000) {
         if (SMW_BA(m, drv->cpud->drive_ram, 0x2000) < 0)
             goto fail;
     }
@@ -747,7 +735,9 @@ int drivecpu_snapshot_read_module(drive_context_t *drv, snapshot_t *s)
             goto fail;
     }
 
-    if (drv->drive->type == DRIVE_TYPE_1581) {
+    if (drv->drive->type == DRIVE_TYPE_1581
+        || drv->drive->type == DRIVE_TYPE_2000
+        || drv->drive->type == DRIVE_TYPE_4000) {
         if (SMR_BA(m, drv->cpud->drive_ram, 0x2000) < 0)
             goto fail;
     }
@@ -771,4 +761,3 @@ fail:
         snapshot_module_close(m);
     return -1;
 }
-
