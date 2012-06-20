@@ -88,7 +88,7 @@ public class SongTest extends InstrumentationTestCase {
 		File m0 = Utils.dumpFile(new File(tempDir, "MDAT.music"), assets.open("music/MDAT.music")); 
 		Utils.dumpFile(new File(tempDir, "SMPL.music"), assets.open("music/SMPL.music"));
 		UADEPlugin plugin = new UADEPlugin();
-		playSong(plugin, FileSource.fromFile(m0));
+		playSong(plugin, FileSource.fromFile(m0), 3);
 	}
 
 	public void testRMU() throws IOException {	

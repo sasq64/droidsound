@@ -9,8 +9,6 @@ import android.test.InstrumentationTestCase;
 import com.ssb.droidsound.file.FileCache;
 import com.ssb.droidsound.file.FileSource;
 
-import junit.framework.TestCase;
-
 public class FileSourceTest extends InstrumentationTestCase {
 	
 	private AssetManager assets;
@@ -18,6 +16,7 @@ public class FileSourceTest extends InstrumentationTestCase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
+		FileCache.getInstance().purge();
         assets = getInstrumentation().getContext().getAssets();
 	}
 	
