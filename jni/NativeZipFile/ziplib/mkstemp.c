@@ -1,5 +1,3 @@
-/* $NiH: mkstemp.c,v 1.3 2006/04/23 14:51:45 wiz Exp $ */
-
 /* Adapted from NetBSB libc by Dieter Baron */
 
 /*	NetBSD: gettemp.c,v 1.13 2003/12/05 00:57:36 uebayasi Exp 	*/
@@ -40,6 +38,9 @@
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef _WIN32
+#include <io.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -52,6 +53,15 @@
 int
 _zip_mkstemp(char *path)
 {
+#ifdef _WIN32
+	int ret;
+	ret = _creat(_mktemp(path), _S_IREAD|_S_IWRITE);
+	if (ret == -1) {
+		return 0;
+	} else {
+		return ret;
+	}
+#else
 	int fd;   
 	char *start, *trv;
 	struct stat sbuf;
@@ -137,4 +147,5 @@ _zip_mkstemp(char *path)
 		}
 	}
 	/*NOTREACHED*/
+#endif
 }
