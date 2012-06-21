@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <android/log.h>
 
 #include "zipint.h"
 
@@ -89,6 +90,7 @@ zip_open(const char *fn, int flags, int *zep)
 	return NULL;
     }
 
+    __android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "FILE OPENED");
     return _zip_open(fn, fp, flags, 0, zep);
 }
 
@@ -115,13 +117,15 @@ _zip_open(const char *fn, FILE *fp, int flags, int aflags, int *zep)
 	    za->zp = fp;
 	return za;
     }
+    
+    __android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "SCANNING");
 
     cdir = _zip_find_central_dir(fp, flags, zep, len);
     if (cdir == NULL) {
 	fclose(fp);
 	return NULL;
     }
-
+    
     if ((za=_zip_allocate_new(fn, flags, zep)) == NULL) {
 	_zip_cdir_free(cdir);
 	fclose(fp);
@@ -135,10 +139,12 @@ _zip_open(const char *fn, FILE *fp, int flags, int aflags, int *zep)
     
     za->zp = fp;
 
+    __android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "CHECK TORRENTZIP");
     _zip_check_torrentzip(za, cdir);
 
     za->ch_flags = za->flags;
 
+    __android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "DONE");
     free(cdir);
 
     return za;
@@ -267,6 +273,7 @@ _zip_readcdir(FILE *fp, off_t buf_offset, unsigned char *buf, unsigned char *eoc
 	}
 	i++;
 	
+    __android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "Reading %d zipentries", cd->nentry);
 	if (i == cd->nentry && left > 0) {
 	    /* Infozip extension for more than 64k entries:
 	       nentries wraps around, size indicates correct EOCD */
@@ -278,6 +285,7 @@ _zip_readcdir(FILE *fp, off_t buf_offset, unsigned char *buf, unsigned char *eoc
     }
     cd->nentry = i;
     
+    __android_log_print(ANDROID_LOG_VERBOSE, "ZIP", "DONE");
     return cd;
 }
 
