@@ -1,23 +1,63 @@
-<LinearLayout android:orientation="vertical" xmlns:android="http://schemas.android.com/apk/res/android" 
-	android:layout_width="fill_parent" android:layout_height="fill_parent" android:background="#000000" >
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/play_screen"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#000000"
+    android:orientation="vertical" >
 
-	<TextView style="@style/InfoTitle"
-		android:id="@+id/plinfo_text"
-	 	android:background="#4040A0"
-	 	android:gravity="right"
-	 />
-	<TextView android:text="@string/info" style="@style/InfoTitle"/>
-	<TextView android:id="@+id/info_text"
-		android:scrollbars="vertical"
-		android:maxLines="100"
-		android:autoLink="web|email"
-		android:layout_width="fill_parent" android:layout_height="0dip"
-		android:layout_weight="1.0"
-	/>
-	<TextView style="@style/InfoTitle" android:id="@+id/low_text"/>
-	<FrameLayout
-	    android:layout_width="fill_parent" android:layout_height="wrap_content" 
-	    android:id="@+id/controls">
-		<include layout="@layout/controls" />
-	</FrameLayout>
+	<TextView
+		android:id="@+id/title_text"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:paddingLeft="4dp"
+		android:paddingTop="4dp"
+		android:singleLine="true"
+		android:textColor="#FFFFFFFF"
+		android:background="#FF000080"
+		android:textSize="20dp"
+		android:textStyle="bold" />
+
+	<TextView
+		android:id="@+id/subtitle_text"
+		android:paddingLeft="4dp"
+		android:paddingBottom="4dp"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:ellipsize="start"
+		android:singleLine="true"
+		android:textColor="#FFFFFFFF"
+		android:background="#FF000080"
+		android:textSize="15dp" />
+
+	<TextView
+        android:id="@+id/plinfo_text"
+        style="@style/InfoTitle"
+        android:background="#4040A0"
+        android:gravity="right" />
+
+    <TextView
+        style="@style/InfoTitle"
+        android:text="@string/info" />
+
+    <TextView
+        android:id="@+id/info_text"
+        android:layout_width="fill_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1.0"
+        android:autoLink="web|email"
+        android:maxLines="100"
+        android:scrollbars="vertical" />
+
+    <TextView
+        android:id="@+id/low_text"
+        style="@style/InfoTitle" />
+
+    <FrameLayout
+        android:id="@+id/controls"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+
+        <include layout="@layout/controls" />
+    </FrameLayout>
+
 </LinearLayout>

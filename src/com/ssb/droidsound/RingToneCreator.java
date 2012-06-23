@@ -4,9 +4,13 @@ import java.io.File;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +18,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.ssb.droidsound.utils.Log;
 
@@ -142,6 +147,57 @@ public class RingToneCreator {
 		});
 		AlertDialog alert = builder.create();
 		return alert;
+	}
+
+	public void save(String value) {
+		
+		File f = new File(value);
+		
+		Log.d(TAG, "SETTING RINGTONE %s %d", value, f.length());
+		
+		ContentValues values = new ContentValues();
+		values.put(MediaStore.MediaColumns.DATA, value);
+		values.put(MediaStore.MediaColumns.TITLE, ringTone.name);
+		values.put(MediaStore.MediaColumns.SIZE, f.length());
+		values.put(MediaStore.MediaColumns.MIME_TYPE, "audio/x-wav");
+		values.put(MediaStore.Audio.Media.ARTIST, "Droidsound");
+		values.put(MediaStore.Audio.Media.DURATION, ringTone.seconds);
+		values.put(MediaStore.Audio.Media.IS_RINGTONE, true);
+		values.put(MediaStore.Audio.Media.IS_NOTIFICATION, false);
+		values.put(MediaStore.Audio.Media.IS_ALARM, false);
+		values.put(MediaStore.Audio.Media.IS_MUSIC, false);
+
+		//Insert it into the database
+		Uri uri = MediaStore.Audio.Media.getContentUriForPath(value);
+		Uri newUri = null;
+		Log.d(TAG, "URI " + uri.toString());
+		try {
+			int rows = activity.getContentResolver().delete(uri, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { ringTone.name });
+			Log.d(TAG, "ROWS " + rows);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		try {
+			newUri = activity.getContentResolver().insert(uri, values);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if(newUri == null) {
+			int rows = activity.getContentResolver().update(uri, values, String.format("%s = ?", MediaStore.MediaColumns.TITLE), new String [] { ringTone.name });
+			Log.d(TAG, "UPDATE ROWS " + rows);
+			newUri = uri;
+		} else {
+			Log.d(TAG, "NEWURI " + uri.getPath());
+		}
+		Toast toast;
+		if(ringTone.setDefault) {
+			RingtoneManager.setActualDefaultRingtoneUri(activity, RingtoneManager.TYPE_RINGTONE, newUri);				
+			toast = Toast.makeText(activity, R.string.ringtone_set, Toast.LENGTH_LONG);
+		} else {
+			toast = Toast.makeText(activity, R.string.ringtone_created, Toast.LENGTH_LONG);
+		}
+		toast.show();
+
 	}
 	
 	

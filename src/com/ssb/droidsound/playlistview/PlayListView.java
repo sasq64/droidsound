@@ -49,6 +49,19 @@ public class PlayListView extends ListView { //extends TouchListView {
 		setAdapter(adapter);
 	}
     
+    public PlayListView(Context context) {
+    	super(context);
+      	
+		int itemColor = 0xFFFFFFFF;
+		int subitemColor = 0xFFA0A0FF;
+		int archiveColor = 0xFFFFFFA0;
+		int dirColor = 0xFFFFFFA0;
+
+		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
+		setAdapter(adapter);
+    }
+    
+    
     public boolean editMode() { return adapter.isEditMode(); }
     
     public void setEditMode(boolean on) {

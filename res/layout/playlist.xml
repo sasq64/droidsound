@@ -1,0 +1,53 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:background="#444444"
+	android:orientation="vertical" 
+	>
+
+
+	<TextView
+		android:id="@+id/dir_text"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:paddingLeft="4dp"
+		android:paddingTop="4dp"
+		android:text="Title"		
+		android:singleLine="true"
+		android:textColor="#FFFFFFFF"
+		android:background="#FF000080"
+		android:textSize="20dp"
+		android:textStyle="bold" />
+
+	<TextView
+		android:id="@+id/path_text"
+		android:paddingLeft="4dp"
+		android:paddingBottom="4dp"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="Subtitle"
+		android:ellipsize="start"
+		android:singleLine="true"
+		android:textColor="#FFFFFFFF"
+		android:background="#FF000080"
+		android:textSize="15dp" />
+
+	<FrameLayout
+		android:id="@+id/play_list_frame"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent" >
+
+		<com.ssb.droidsound.playlistview.PlayListView
+			android:id="@+id/play_list"
+			android:layout_width="fill_parent"
+			android:layout_height="fill_parent"
+			archiveColor="#ffffffa0"
+			dirColor="#ffffffa0"
+			itemColor="#ffffffff"
+			subitemColor="#ffa0a0ff"
+			android:background="#ff000000"
+			android:cacheColorHint="#ff000000"
+			android:fastScrollEnabled="true" />
+	</FrameLayout>
+
+</LinearLayout>
