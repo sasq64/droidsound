@@ -89,5 +89,14 @@ public class ZipFileSource extends FileSource {
 	@Override
 	public long getLength() {
 		return size;
-	}		
+	}
+	
+	@Override
+	public void close() {
+		super.close();
+		if(zipFile != null)
+			zipFile.close();
+		zipFile = null;
+	}
+	
 }

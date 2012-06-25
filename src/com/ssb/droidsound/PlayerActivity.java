@@ -65,6 +65,7 @@ import com.ssb.droidsound.playlistview.PlayListView;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.utils.NativeZipFile;
 import com.ssb.droidsound.utils.Unzipper;
 import com.viewpagerindicator.PageIndicator;
 import com.viewpagerindicator.TitlePageIndicator;
@@ -1161,8 +1162,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		// break;
 		case KeyEvent.KEYCODE_Q:
 			player.stop();
-			//songDatabase.quit();
-			//songDatabase = null;
+			songDatabase.quit();
+			songDatabase = null;
 			finish();
 			break;
 		case KeyEvent.KEYCODE_A:
@@ -1474,8 +1475,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 		case R.id.quit:
 			player.stop();
-			//songDatabase.quit();
-			//songDatabase = null;
+			NativeZipFile.closeCached();
+			songDatabase.quit();
+			songDatabase = null;
 			finish();
 			break;
 		case R.id.new_:
