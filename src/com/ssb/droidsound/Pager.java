@@ -3,12 +3,17 @@ package com.ssb.droidsound;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ssb.droidsound.utils.Log;
+import com.viewpagerindicator.PageIndicator;
+
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.View;
 import android.view.ViewGroup;
 
 public class Pager extends PagerAdapter {
+	private static final String TAG = PagerAdapter.class.getSimpleName();
 	
 	public static interface FlipCallback {
 		void flipped(int to, int from, View v);
@@ -25,13 +30,16 @@ public class Pager extends PagerAdapter {
 	private ViewPager pager;
 	
 	private List<View> viewList = new ArrayList<View>();
+	private OnPageChangeListener listener;
+	private PageIndicator titleIndicator;
 	
-	public Pager(View vf) {
+	public Pager(View vf, PageIndicator ti) {
 		pager = (ViewPager) vf;
+		titleIndicator = ti;
 				
 		pager.setAdapter(this);
 		
-		pager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+		listener = new ViewPager.OnPageChangeListener() {
 			@Override
 			public void onPageSelected(int what) {
 
@@ -46,7 +54,11 @@ public class Pager extends PagerAdapter {
 			@Override
 			public void onPageScrollStateChanged(int arg0) {
 			}
-		});
+		};
+		
+		titleIndicator.setViewPager(pager);
+		titleIndicator.setOnPageChangeListener(listener);
+		//pager.setOnPageChangeListener(listener);
 	}
 	
 	public void addView(View v) {
@@ -95,20 +107,21 @@ public class Pager extends PagerAdapter {
 
 	@Override
 	public boolean isViewFromObject(View arg0, Object arg1) {
+		//Log.d(TAG, "IS VIEW %s ==  %s", arg0.toString(), arg1.toString());
 		return arg0 == arg1;
 	}
 	
 	@Override
 	public Object instantiateItem(ViewGroup container, int position) {
 		container.addView(viewList.get(position));
-		
-		return viewList.get(position);
-		// TODO Auto-generated method stub
-		//return super.instantiateItem(container, position);
+		Log.d(TAG, "Instansiate %d", position);
+		return viewList.get(position);		
+
 	}
 	
 	@Override
 	public void destroyItem(ViewGroup container, int position, Object object) {
+		Log.d(TAG, "Destroy %d", position);
 		container.removeView((View)object);
 	}
 	
@@ -117,5 +130,10 @@ public class Pager extends PagerAdapter {
 	@Override
 	public CharSequence getPageTitle(int position) {
 		return titles[position];
+	}
+
+	public OnPageChangeListener getChangeListener() {
+		pager.setOnPageChangeListener(null);
+		return listener;
 	}
 }

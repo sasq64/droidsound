@@ -458,11 +458,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		vp.setPageMargin(pixels);
 		//vp.setPageMarginDrawable(0x444444);
 		
-		
-		flipper = new Pager(vp);
-
 		PageIndicator titleIndicator = (PageIndicator)findViewById(R.id.titles);
-		titleIndicator.setViewPager(vp);		
+		flipper = new Pager(vp, titleIndicator);
+		
 		
 		//playListView = (PlayListView) findViewById(R.id.play_list);
 		//searchListView = (PlayListView) findViewById(R.id.search_list);
@@ -499,6 +497,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		flipper.onFlip(new Pager.FlipCallback() {
 			@Override
 			public void flipped(int to, int from, View v) {
+				Log.d(TAG, "Flipped to %d", to);
 				switch(to) {
 				case INFO_VIEW:
 					currentPlaylistView = null;
