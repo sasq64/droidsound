@@ -111,4 +111,11 @@ public class Pager extends PagerAdapter {
 	public void destroyItem(ViewGroup container, int position, Object object) {
 		container.removeView((View)object);
 	}
+	
+	private static final String [] titles = new String [] { "BROWSER", "PLAYER", "SEARCH" };
+	
+	@Override
+	public CharSequence getPageTitle(int position) {
+		return titles[position];
+	}
 }

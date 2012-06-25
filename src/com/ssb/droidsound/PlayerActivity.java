@@ -66,6 +66,8 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Unzipper;
+import com.viewpagerindicator.PageIndicator;
+import com.viewpagerindicator.TitlePageIndicator;
 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
@@ -450,7 +452,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		ViewPager vp = (ViewPager) findViewById(R.id.flipper);
 		vp.setPageMargin(pixels);
 		//vp.setPageMarginDrawable(0x444444);
+		
+		
 		flipper = new Pager(vp);
+
+		PageIndicator titleIndicator = (PageIndicator)findViewById(R.id.titles);
+		titleIndicator.setViewPager(vp);		
 		
 		//playListView = (PlayListView) findViewById(R.id.play_list);
 		//searchListView = (PlayListView) findViewById(R.id.search_list);
