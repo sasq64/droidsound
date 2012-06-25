@@ -149,7 +149,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 	private SparseArray<Runnable> confirmables = new SparseArray<Runnable>();
 
-	private LinearLayout titleBar;
+	private ViewGroup playlistBar;
+	private ViewGroup searchBar;
 
 
 	private PowerManager.WakeLock wakeLock;
@@ -192,8 +193,12 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				return;
 			}
 		}
+		
+		int so = state.sortOrderPlayList;
+		if(plv == searchListView)
+			so = state.sortOrderSearch;
 
-		Cursor cursor = songDatabase.getFilesInPath(path, state.sortOrder);
+		Cursor cursor = songDatabase.getFilesInPath(path, so);
 		// Cursor cursor = songDatabase.getFilesInPath("http://swimmer.se/mp3/", sortOrder);
 		plv.setCursor(cursor, path);
 
@@ -224,7 +229,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 	private void updateFileView() {
 		String p2 = playListView.getPath();
-		Cursor cursor = songDatabase.getFilesInPath(p2, state.sortOrder);
+		Cursor cursor = songDatabase.getFilesInPath(p2, state.sortOrderPlayList);
 		playListView.setCursor(cursor, p2);
 	}
 	
@@ -341,7 +346,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			if(searchCursor != null) {
 				searchCursor.realClose();
 			}
-			searchCursor = new SearchCursor(songDatabase.search(query, currentPath, state.sortOrder));
+			searchCursor = new SearchCursor(songDatabase.search(query, currentPath, state.sortOrderSearch));
 			searchQuery = query;
 			searchDirDepth = 0;
 			if(searchCursor != null) {
@@ -477,7 +482,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 
 		searchButton = (ImageButton) sl.findViewById(R.id.search_button);
-		titleBar = (LinearLayout) sl.findViewById(R.id.title_bar);
+		searchBar = (ViewGroup) sl.findViewById(R.id.title_bar);
+		playlistBar = (ViewGroup) pl.findViewById(R.id.title_bar);
 		//titleText = (TextView) pl.findViewById(R.id.list_title);		
 		//subtitleText = (TextView) pl.findViewById(R.id.list_subtitle);
 		dirText = (TextView) pl.findViewById(R.id.dir_text);
@@ -708,6 +714,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 								} */
 								Log.d(TAG, "Playing Playlist %s %s", plist.getFile().getPath(), plist.toString());
 								player.playPlaylist(plist.getFile().getPath(), index);
+								state.songSelected = true;
 								return;
 							}
 						}
@@ -720,6 +727,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 							names[i] = files[i].getPath();
 						}
 						player.playList(names, index);
+						state.songSelected = true;
 						// adapter.notifyDataSetChanged();
 						// adapter.setSelectedPosition(position);
 					}
@@ -760,40 +768,50 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		});*/
 		
-		titleBar.setOnClickListener(new OnClickListener() {
+		searchBar.setOnClickListener(new OnClickListener() {
 			
 			final int [] sortNames = new int [] { R.string.sort_name, R.string.sort_date, R.string.sort_author };
 
 			@Override
 			public void onClick(View v) {
-				//flipper.flipTo(SAME_VIEW);
-				if(currentPlaylistView == playListView) {
-					state.sortOrder = (state.sortOrder + 1) % 3;
-					
-					Toast toast = Toast.makeText(PlayerActivity.this, sortNames[state.sortOrder], Toast.LENGTH_SHORT);
-					toast.show();					
-					
-					String p = currentPlaylistView.getPath();
-					Cursor cursor = songDatabase.getFilesInPath(p, state.sortOrder);
-					currentPlaylistView.setCursor(cursor, p);
-				} else if(currentPlaylistView == searchListView) {
-					state.sortOrder = (state.sortOrder + 1) % 3;
-					if(searchCursor != null) {
-						searchCursor.realClose();
-					}
-					Cursor cr = songDatabase.search(searchQuery, currentPath, state.sortOrder);
-					if(cr != null) {
-						searchCursor = new SearchCursor(cr);
-						searchListView.setCursor(searchCursor, null);
-						//currentPlaylistView = searchListView;
-						flipper.flipTo(SAME_VIEW);
-					} else
-						searchCursor = null;
+				state.sortOrderSearch = (state.sortOrderSearch + 1) % 3;
+				
+				Toast toast = Toast.makeText(PlayerActivity.this, sortNames[state.sortOrderSearch], Toast.LENGTH_SHORT);
+				toast.show();	
+				
+				if(searchCursor != null) {
+					searchCursor.realClose();
 				}
-				Log.d(TAG, "TB Sortorder now %d", state.sortOrder);
+				Cursor cr = songDatabase.search(searchQuery, currentPath, state.sortOrderSearch);
+				if(cr != null) {
+					searchCursor = new SearchCursor(cr);
+					searchListView.setCursor(searchCursor, null);
+					//currentPlaylistView = searchListView;
+					flipper.flipTo(SAME_VIEW);
+				} else
+					searchCursor = null;
+				Log.d(TAG, "TB Sortorder now %d", state.sortOrderSearch);
 			}
 		});
 		
+		playlistBar.setOnClickListener(new OnClickListener() {
+			
+			final int [] sortNames = new int [] { R.string.sort_name, R.string.sort_date, R.string.sort_author };
+
+			@Override
+			public void onClick(View v) {
+				state.sortOrderPlayList = (state.sortOrderPlayList + 1) % 3;
+				
+				Toast toast = Toast.makeText(PlayerActivity.this, sortNames[state.sortOrderPlayList], Toast.LENGTH_SHORT);
+				toast.show();					
+				
+				String p = currentPlaylistView.getPath();
+				Cursor cursor = songDatabase.getFilesInPath(p, state.sortOrderPlayList);
+				currentPlaylistView.setCursor(cursor, p);
+				Log.d(TAG, "TB Sortorder now %d", state.sortOrderPlayList);
+			}
+		});
+
 		Log.d(TAG, "ON CREATE DONE");
 	}
 	
@@ -1282,9 +1300,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			player.setOption(PlayerService.OPTION_SPEECH, speech ? "on" : "off");
 		}
 		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
-		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));
-		
+		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));		
 		player.setOption(PlayerService.OPTION_CYCLE_SUBTUNES, prefs.getBoolean("subtunes", false) ? "on" : "off");
+
+		state.playerSwitch = prefs.getBoolean("openplayer", true);
 		
 
 		String b = prefs.getString("buffer", "Long");
@@ -1402,6 +1421,11 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 				currentRingTone = null;
 				break;
 				
+			}
+			
+			if(state.songSelected && state.playerSwitch) {
+				flipper.flipTo(INFO_VIEW);
+				state.songSelected = false;
 			}
 			
 			state.songFile = new SongFile(value);

@@ -6,6 +6,12 @@
 	>
 
 
+    <LinearLayout
+        	android:id="@+id/title_bar"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
+
 	<TextView
 		android:id="@+id/dir_text"
 		android:layout_width="fill_parent"
@@ -32,6 +38,8 @@
 		android:background="#FF000080"
 		android:textSize="15dp" />
 
+	</LinearLayout>
+	
 	<FrameLayout
 		android:id="@+id/play_list_frame"
 		android:layout_width="fill_parent"

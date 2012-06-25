@@ -63,14 +63,14 @@ public class Pager extends PagerAdapter {
 
 		if(what < 3) {
 			if(old != what) {
-				pager.setCurrentItem(what);
+				pager.setCurrentItem(what, animate);
 			}
 		} else if(what == NEXT_VIEW) {
 			what = (old+1)%3;
-			pager.setCurrentItem(what);
+			pager.setCurrentItem(what, animate);
 		} else if(what == PREV_VIEW) {
 			what = (old-1)%3;
-			pager.setCurrentItem(what);
+			pager.setCurrentItem(what, animate);
 		} else if(what == SAME_VIEW) {
 			what = old;
 		}

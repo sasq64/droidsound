@@ -1,18 +1,25 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
         android:key="main_prefs">
+    <!--
     <CheckBoxPreference
             android:key="extensions"
             android:title="Unknown extensions"
             android:defaultValue="false"
             android:summary="Index files with unknown extensions"
             />
-    <!--  CheckBoxPreference
+     CheckBoxPreference
             android:key="silence"
             android:title="Silence detection"
             android:defaultValue="true"
             android:summaryOff="Silence will not trigger a song change"
             android:summaryOn="Silence will trigger a song change"
             / -->
+    <CheckBoxPreference
+            android:key="openplayer"
+            android:title="Switch to Player"
+            android:defaultValue="true"
+            android:summary="Automatically switch to player screen after starting a song"
+            />
     <CheckBoxPreference
             android:key="subtunes"
             android:title="Cycle subtunes"

@@ -5,7 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 
 public class PlayState {
 	public int seekingSong;
-	public int sortOrder;
+	public int sortOrderSearch;
+	public int sortOrderPlayList;
 	public int songPos;
 	public int subTune;
 	public int subTuneCount;
@@ -28,6 +29,8 @@ public class PlayState {
 	public String operationTitle;
 	public int operationTuneCount;
 	public SongFile clipBoardFile;
+	public boolean songSelected;
+	public boolean playerSwitch;
 
 	public PlayState() {
 	}
