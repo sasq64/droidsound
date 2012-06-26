@@ -8,6 +8,7 @@
 	</group>
 	<group android:id="@+id/on_dir">
 		<item android:id="@+id/del_dir" android:title="@string/del_dir" />
+		<item android:id="@+id/scan_dir" android:title="@string/scan_dir" />
 	</group>
 	<group android:id="@+id/on_plist">
 		<item android:id="@+id/set_plist" android:title="@string/set_plist" />

@@ -29,6 +29,7 @@
 <string name="ringtone_set">New ringtone set</string>
 <string name="ringtone_created">New ringtone created</string>
 <string name="rescan">Rescan</string>
+<string name="scan_dir">Rescan</string>
 <string name="abort_scan">Abort scan</string>
 <string name="about">About</string>
 <string name="new_">New</string>

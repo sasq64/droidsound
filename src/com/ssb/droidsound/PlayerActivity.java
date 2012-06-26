@@ -1908,6 +1908,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			break;
 			
 
+		case R.id.scan_dir:
+			songDatabase.scanDir(file.getPath());
+			break;
 		case R.id.del_dir:
 			//operationFile = file;
 			state.operationSong = new SongFile(file);

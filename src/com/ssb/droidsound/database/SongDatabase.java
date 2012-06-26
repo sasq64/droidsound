@@ -94,6 +94,7 @@ public class SongDatabase implements Runnable {
 
 	protected static final int MSG_SCAN = 0;
 	protected static final int MSG_OPEN = 1;
+	protected static final int MSG_SCANDIR = 2;
 	protected static final int MSG_QUIT = 4;
 	protected static final int MSG_INDEXMODE = 5;
 	
@@ -192,9 +193,9 @@ public class SongDatabase implements Runnable {
 	            		doScan((String)msg.obj, msg.arg1 != 0);
 	            	}
 	            	break;
-	            //case MSG_INDEXMODE:
-	            //	createIndex(msg.arg1);
-	            //	break;
+	            case MSG_SCANDIR:
+            		doScanDir((String)msg.obj);
+	            	break;
 	            case MSG_QUIT:
 	            	Log.d(TAG, "Telling looper to quit");
 	            	Looper.myLooper().quit();
@@ -366,6 +367,7 @@ public class SongDatabase implements Runnable {
 		Log.d(TAG, "Scanning %s", zipFile.getPath());
 		
 		// Erase any previous entries
+		scanDb.delete("FILES", "PATH=? AND FILENAME=?", new String [] { zipFile.getParent(), zipFile.getName() } );
 		scanDb.delete("FILES", "PATH=?", new String [] { zipFile.getPath() });		
 		scanDb.delete("FILES", "PATH LIKE ?", new String [] { zipFile.getPath() + "/%" });		
 		
@@ -426,9 +428,8 @@ public class SongDatabase implements Runnable {
 				path = baseNameNoSlash;
 			}
 
-			if(fileName.equals("")) {
-				pathSet.add(path);
-			} else {
+			pathSet.add(path);
+			if(!fileName.equals("")) {
 									
 				//InputStream is = zfile.getInputStream(ze);
 				
@@ -849,6 +850,11 @@ public class SongDatabase implements Runnable {
 		mHandler.sendMessage(msg);
 	}
 
+	public void scanDir(String dir) {
+		Message msg = mHandler.obtainMessage(MSG_SCANDIR, dir);
+		mHandler.sendMessage(msg);
+	}
+
 	public void rescan(String mdir) {
 		Message msg = mHandler.obtainMessage(MSG_SCAN, 2, 0, mdir);
 		mHandler.sendMessage(msg);
@@ -869,6 +875,60 @@ public class SongDatabase implements Runnable {
 			mHandler.sendMessage(msg);
 		} */
 		
+	}
+	
+	private void doScanDir(String dir) {
+		
+		scanDb = getWritableDatabase();
+		
+		if(scanDb == null) {
+			return;
+		}
+
+		stopScanning = false;
+		scanning = true;
+		
+		//long startTime = System.currentTimeMillis();
+		//long lastScan = -1;
+		
+		File f = new File(dir);
+		
+		if(f.isDirectory()) {
+			scanFiles(f, true, 0);
+		} else if(f.getName().toUpperCase().endsWith(".ZIP")) {			
+			try {
+				isReady = false;
+				scanCallback.notifyScan(f.getPath(), 0);
+				scanDb.beginTransaction();
+				if(scanZip(f)) {
+					ContentValues values = new ContentValues();
+					values.put("PATH", f.getParentFile().getPath());
+					values.put("FILENAME", f.getName());
+					values.put("TYPE", TYPE_ARCHIVE);
+					int end = f.getName().length();
+					values.put("TITLE", f.getName().substring(0, end - 4));				
+					Log.d(TAG, "Inserting FILE... (%s)", f.getName());
+					scanDb.insert("FILES", "PATH", values);
+					scanDb.setTransactionSuccessful();
+					Log.d(TAG, "ZIP TRANSATION SUCCESSFUL");
+				}
+			} /*catch (ZipException e) {
+				Log.d(TAG, "Broken zip");
+			} */ catch (IOException e) {
+				Log.d(TAG, "IO Error");
+			}
+			scanDb.endTransaction();
+		}
+
+		stopScanning = false;
+		isReady = true;
+		
+		scanDb.close();
+		scanDb = null;
+		scanning = false;
+
+		scanCallback.notifyScan(null, -1);
+
 	}
 	
 	private void doScan(String modsDir, boolean full) {
@@ -975,7 +1035,7 @@ public class SongDatabase implements Runnable {
 
 		
 		
-		scanFiles(parentDir, full, lastScan);		
+		scanFiles(parentDir, full, lastScan);
 		
 		if(!stopScanning) {
 			ContentValues values = new ContentValues();
