@@ -54,6 +54,7 @@ AAAHH!!! Real Monsters;arm
 Aryol;aryol
 Aguri Suzuki F-1 Super Driving;asf1
 A.S.P. Air Strike Patrol;asp
+Asahi Shinbun Rensai;asr
 Asterix;ast
 Asterix & Obelix;ast2
 Ashita no Joe;astj
@@ -154,6 +155,7 @@ BS Buster's Digital Magazine;bust
 Barbie Vacation Adventure;bva
 Bulls vs. Blazers;bvb
 Bill Walsh College Football;bwcf
+Bishoujo Wrestlinger's History;bwh
 Brunswick World Tournament of Champions;bwtc
 Battle Zeque Den;bzd
 Carrier Aces;cace
@@ -226,7 +228,7 @@ Champions World Class Soccer;cwcs
 Dark Half;daha
 Dark Law - Meaning of Death;dala
 Dolucky's A-League Soccer;dals
-Dead Dance (Tuff E Nuff);dance
+Tuff E Nuff;dance
 Super Dany;dany
 Dark Kingdom;dark
 Death and Return of Superman, The;dars
@@ -254,6 +256,7 @@ Dossun! Ganseki Battle;dgb
 Dharma Doujou;dhdo
 Dino City;dici
 Dimension Force;difo
+Dirt Racer;dirt
 Kinnikuman - Dirty Challenger;dirty
 Derby Jockey;dj
 Derby Jockey 2;dj2
@@ -285,10 +288,12 @@ Dragon Quest 1 & 2;dq12
 Dragon Quest 3;dq3
 Dragon Quest 5;dq5
 Dragon Quest 6;dq6
+Dorque and Imp;dqai
 Dragon's Earth;drea
 Adventures of Dr. Franken;drf
 Drakkhen;drk
 Dragon's Lair;drla
+BS Do-Re-Mi;drm
 Do-Re-Mi Fantasy - Milon no DokiDoki Daibouken;drmf
 Star Trek Deep Space Nine - The Crossroads of Time;ds9
 Dragon Slayer - The Legend of Heroes;dslh
@@ -389,7 +394,9 @@ Masaki Shimono no Fishing To Bassing;ftb
 Famicom Tantei Club 2;ftc2
 Full Throttle Racing;ftr
 From TV Animation Slam Dunk 2;ftsd2
+From TV Animation Slam Dunk - SD Heat Up!;ftsdh
 Flintstones - Treasure of Sierra Madrock;ftsm
+BS Furoito no Chousenjou;furo
 F-Zero;fz
 Inspector Gadget;gadg
 Game Genie;gage
@@ -408,6 +415,7 @@ Ganbare Daiku no Gensan;gdng
 Ginga Eiyuu Densetsu;ged
 BS Gekkan Coin Toss Deck;gek
 Genocide 2;gen2
+Genjuu Ryodan;genjr
 George Foreman's KO Boxing;gfko
 Ganbare Goemon (Legend of the Mystical Ninja);gg
 Ganbare Goemon 2 - Kiteretsu Shogun Magginesu!;gg2
@@ -454,7 +462,7 @@ Hisshou 777 Fighter III;h7f3
 Home Alone;ha
 Home Alone 2;ha2
 Hagane;hag
-Hanjyuku Hero - Aah Sekai yo Hanjuku Nare;hahe
+Hanjuku Hero;hahe
 Hajimari no Mori (The Forest of Beginnings);haji
 Harapeko Bakka;hb
 Hardball 3;hb3
@@ -920,6 +928,7 @@ Rival Turf;rival
 Rap Jam;rj
 Rejoice - Aretha Oukoku no Kanata;rjc
 Riverse Kids;rk
+Rokudenashi Blues;rkdb
 Ranma 1-2 - Akaneko-dan Teki Hihou;rmath
 Ranma 1-2 - Bakuretsu Rantouhen;rmbr
 Ranma Nibunnoichi - Chonai Gekitou Hen;rmcg
@@ -999,7 +1008,7 @@ Shin Chou Kouki;sck
 Super Conflict - The Mideast;scme
 Super Caesar's Palace;scp
 Super Castlevania 4;scv4
-Secret of Mana (Seiken Densetsu 2);sd2
+Secret of Mana;sd2
 Seiken Densetsu 3;sd3
 Super Double Dragon;sdd
 SD F-1 Grand Prix;sdf1g
@@ -1018,6 +1027,7 @@ Super Drift Out;sdo
 Seifuku Densetsu - Pretty Fighter;sdpf
 SD Ultra Battle;sdub
 Sim Earth;se
+Sensible Soccer;sens
 Super Star Wars - The Empire Strikes Back;sesb
 Star Fox;sf
 Super F1 Circus;sf1c
@@ -1035,6 +1045,7 @@ Super Formation Soccer (Super Soccer);sfs
 Super Formation Soccer 2;sfs2
 Super Formation Soccer '94;sfs94
 Super Formation Soccer '95;sfs95
+Super Formation Soccer '96;sfs96
 Super Family Tennis;sft
 Starfield Trainer;sftr
 Star Fox 2 (never released to public);sfx2
@@ -1062,6 +1073,7 @@ Shonen Ashibe;shas
 Shiki Eiyuu Den - Jinryuu Densetsu;shed
 Shanghai - Banri no Tyojyo ~ The Great Wall;shg
 Shanghai 2 - Dragon's Eye;shg2
+Shougi Club;shgc
 Super High Impact;shi
 Shinseiki Odysselya;shod
 Shinseiki Odysselya 2;shod2
@@ -1086,7 +1098,7 @@ Astral Bout 3;skab3
 Skyblazer;skb
 Sengo Kuno Hasha - Tenka Fubu heno Michi;skh
 Super Kyuukyoku Harikiri Stadium;skhs
-Sküljagger;skjg
+Skuljagger;skjg
 Super Koukou Yakyuu - Ikkyuu Nyuukon;skyin
 Super Slapshot;slap
 Slayers;slay
@@ -1192,6 +1204,7 @@ Super Street Fighter 2;ssf2
 Super Shougi;sshg
 Super Shougi 2;sshg2
 Super Shougi 3;sshg3
+Shin Shougi Club;sshgc
 Steven Seagal is the Final Option;ssitfo
 Shijou Saikyou League Serie A - Ace Striker;sslsa
 Shijou Saikyou no Quiz Ou Kettei Sen Super;ssnqs
@@ -1437,6 +1450,7 @@ Youkai Buster - Ruka no Daibouken;ykb
 Yakouchuu;ykc
 Young Merlin;ym
 Yume Maboroshi no Gotoku;ymng
+Yuujin no Furi Furi Girls;ynffg
 Yoshi no Kuruppon;ynk
 Yogi Bear;yogi
 Yuuyu no Quiz de Go! Go!;yqgg
@@ -1459,6 +1473,8 @@ Zico Soccer;zico
 Zenkoku Juudan Ultra Shinri Game;zjsg
 Zero the Kamikaze Squirrel;zks
 '96 Zenkoku Koukou Soccer Senshuken;zkss
+Zenkoku Koukou Soccer Senshuken 2;zkss2
+Zenkoku Koukou Soccer Senshuken;zkssh
 Zakuro no Aji;zna
 Zennihon Pro Wrestling;znpw
 Zennihon Pro Wrestling 2 - 3.4 Budoukan;znpw2
