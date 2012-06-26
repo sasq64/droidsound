@@ -29,12 +29,12 @@ public class AudioPlayer {
 
 	public void update(short [] samples, int len) {
 		
-		if(doStart) {
-			audioTrack.play();
-			startPlaybackHead = audioTrack.getPlaybackHeadPosition();
-			Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
-			doStart = false;
-		}
+		//if(doStart) {
+		//	audioTrack.play();
+		//	startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+		//	Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
+		//	doStart = false;
+		//}
 		
 		audioTrack.write(samples, 0, len);
 		
@@ -103,7 +103,11 @@ public class AudioPlayer {
 			reinitAudio = false;
 		}
 
-		doStart = true;
+		//doStart = true;
+		audioTrack.play();
+		startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+		Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
+
 		playPosOffset = 0;		
 	}
 

@@ -428,8 +428,9 @@ public class SongDatabase implements Runnable {
 				path = baseNameNoSlash;
 			}
 
-			pathSet.add(path);
-			if(!fileName.equals("")) {
+			if(fileName.equals("")) {
+				pathSet.add(path);
+			} else {
 									
 				//InputStream is = zfile.getInputStream(ze);
 				
