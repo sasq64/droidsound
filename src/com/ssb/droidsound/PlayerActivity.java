@@ -1300,7 +1300,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			player.setOption(PlayerService.OPTION_SPEECH, speech ? "on" : "off");
 		}
 		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
-		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "0"));		
+		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "900"));		
 		player.setOption(PlayerService.OPTION_CYCLE_SUBTUNES, prefs.getBoolean("subtunes", false) ? "on" : "off");
 
 		state.playerSwitch = prefs.getBoolean("openplayer", true);
