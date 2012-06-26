@@ -17,6 +17,8 @@ public class AudioPlayer {
 	private int FREQ = 44100;
 	private int startPlaybackHead;
 	private int playPosOffset;
+
+	private boolean doStart;
 	
 	public AudioPlayer(int bs) {
 		bufSize = bs;
@@ -26,7 +28,17 @@ public class AudioPlayer {
 	}
 
 	public void update(short [] samples, int len) {
+		
+		if(doStart) {
+			audioTrack.play();
+			startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+			Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
+			doStart = false;
+		}
+		
 		audioTrack.write(samples, 0, len);
+		
+		
 	}
 	
 	// Get number of seconds played since start
@@ -91,12 +103,8 @@ public class AudioPlayer {
 			reinitAudio = false;
 		}
 
-		audioTrack.play();
-
-		
-		playPosOffset = 0;
-		startPlaybackHead = audioTrack.getPlaybackHeadPosition();
-		Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
+		doStart = true;
+		playPosOffset = 0;		
 	}
 
 	public void pause() {
