@@ -210,7 +210,13 @@
 		</PreferenceCategory>
 	</PreferenceScreen>
             
-    <PreferenceScreen
+	<Preference android:key="rescan_pref"
+	android:title="Rescan database"
+	android:summary="Scan sdcard for changes and update database."
+	/>
+
+		<!-- 
+		<PreferenceScreen
             android:key="database_prefs"
             android:title="Database"
             android:summary="Database options"
@@ -223,11 +229,6 @@
                 android:entries="@array/indexing_opts"
                 android:entryValues="@array/indexing_opts"
 		/>
-		<Preference android:key="rescan_pref"
-		android:title="Rescan database"
-		android:summary="Scan sdcard for changes and update database."
-		/>
-		<!-- 
 		<Preference android:key="backup_pref"
 		android:title="Backup database"
 		android:summary="Copy the database to sdcard"
@@ -235,9 +236,9 @@
 		<Preference android:key="restore_pref"
 		android:title="Restore database"
 		android:summary="Restore database from file on sdcard"
-		/>  -->
+		/>  
     </PreferenceScreen>
-    
+    -->
     <Preference
     	android:key="download_link"
 		android:title="Download"
