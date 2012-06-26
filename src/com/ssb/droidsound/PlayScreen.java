@@ -19,7 +19,7 @@ import com.ssb.droidsound.utils.Log;
 public class PlayScreen {
 	private static final String TAG = PlayScreen.class.getSimpleName();
 
-	private static String[] repnames = { "CONT", "----", "REPT", "CS", "RS" };
+	private static String[] repnames = { "CONT", "HOLD", "REPT", "CS", "RS" };
 
 	private ViewGroup parent;
 	private PlayerServiceConnection player;
@@ -290,7 +290,7 @@ public class PlayScreen {
 			state.songRepeat = value;
 			repeatText.setText(repnames[value]);
 			if(value == 1) {
-				repeatText.setTextColor(0xff308050);
+				repeatText.setTextColor(0xff80c0ff);
 			} else {
 				repeatText.setTextColor(0xff80ffc0);
 			}
