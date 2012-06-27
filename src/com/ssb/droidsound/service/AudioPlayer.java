@@ -29,16 +29,28 @@ public class AudioPlayer {
 
 	public void update(short [] samples, int len) {
 		
-		//if(doStart) {
-		//	audioTrack.play();
-		//	startPlaybackHead = audioTrack.getPlaybackHeadPosition();
-		//	Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
-		//	doStart = false;
-		//}
+		if(doStart) {
+			audioTrack.play();
+			//Log.d(TAG, "STATE " + audioTrack.getState());
+			//try {
+			//	Thread.sleep(10);
+			//} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+			//	e.printStackTrace();
+			//}
+			startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+			playPosOffset = 0;
+			//Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
+			//Log.d(TAG, "STATE " + audioTrack.getState());
+			doStart = false;
+		}
 		
 		audioTrack.write(samples, 0, len);
 		
-		
+
+		//Log.d(TAG, "STATE " + audioTrack.getState());
+		//Log.d(TAG, "PLAYBACK NOW " + audioTrack.getPlaybackHeadPosition());
+
 	}
 	
 	// Get number of seconds played since start
@@ -49,6 +61,8 @@ public class AudioPlayer {
 		}
 		int pos = audioTrack.getPlaybackHeadPosition() - startPlaybackHead;
 		int playPos = pos * 10 / (FREQ / 100);
+		//Log.d(TAG, "POS %d => %d (%d)", pos, playPos, playPosOffset);
+
 		return playPos + playPosOffset;
 	}
 	
@@ -103,12 +117,13 @@ public class AudioPlayer {
 			reinitAudio = false;
 		}
 
-		//doStart = true;
-		audioTrack.play();
-		startPlaybackHead = audioTrack.getPlaybackHeadPosition();
-		Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
+		doStart = true;
+		//Log.d(TAG, "STATE " + audioTrack.getState());
 
-		playPosOffset = 0;		
+		//audioTrack.play();
+		//startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+		//Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
+		//playPosOffset = 0;		
 	}
 
 	public void pause() {
