@@ -214,6 +214,11 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 		}
 		return N_getIntInfo(songFile, what);
 	}
+	
+	@Override
+	public String getVersion() {
+		return "sexyPSF 0.4.7";
+	}
 
 	native public long N_load(String fileName);	
 	native public void N_unload(long song);

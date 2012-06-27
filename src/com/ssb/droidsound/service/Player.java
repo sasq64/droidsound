@@ -77,6 +77,7 @@ public class Player implements Runnable {
 	private short[] samples;
 	private AudioPlayer audioPlayer;
 	private int bufSize;
+	private int dataSize;
 
 	// Plugins
 	private DroidSoundPlugin currentPlugin;
@@ -116,6 +117,7 @@ public class Player implements Runnable {
 		silentPosition = -1;
 		// Enough for 3000ms
 		bufSize = 0x40000;
+		dataSize = bufSize / 16;
 		samples = new short[bufSize / 2];
 	}
 
@@ -426,6 +428,9 @@ public class Player implements Runnable {
 				audioPlayer.start();
 				currentState = State.PLAYING;
 			}
+			
+			// First read should fill more of buffer to avoid stuttering
+			dataSize = bufSize / 4;
 
 			lastPos = -1000;
 			
@@ -683,9 +688,12 @@ public class Player implements Runnable {
 					}
 
 					if(!songEnded) {
-						len = currentPlugin.getSoundData(samples, bufSize / 16);
+						len = currentPlugin.getSoundData(samples, dataSize);
+						dataSize = bufSize / 16;
 					} else {
 						Thread.sleep(100);
+						len = dataSize;
+						Arrays.fill(samples, 0, len, (short) 0);
 					}
 
 					int playPos = audioPlayer.getPlaybackPosition();
@@ -715,14 +723,13 @@ public class Player implements Runnable {
 					if(len < 0) {
 						if(playPos > 5000) {
 							Log.d(TAG, "SONG ENDED HERE");
-							songEnded = true;
-							
-							currentState = State.SWITCHING;
+							songEnded = true;							
+							//currentState = State.SWITCHING;
 							Message msg = mHandler.obtainMessage(MSG_DONE);
 							mHandler.sendMessage(msg);							
 
 						}
-						len = bufSize / 16;
+						len = dataSize;
 						Arrays.fill(samples, 0, len, (short) 0);
 					}
 					if(len > 0) {
@@ -838,6 +845,7 @@ public class Player implements Runnable {
 		synchronized (cmdLock) {
 			if(bufSize != bs) {
 				bufSize = bs;
+				dataSize = bufSize / 16;
 				Log.d(TAG, "Buffersize now " + bs);
 				if(audioPlayer != null)
 					audioPlayer.setBufferSize(bufSize);

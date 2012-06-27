@@ -250,7 +250,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		}
 		
 		int rc = N_getIntInfo(currentSong, what);
-		if(what == INFO_LENGTH && rc == 0)
+		if(what == INFO_LENGTH && rc == 90*1000) // TODO: Find out why sc68 ALWAYS returns 90 second default length!!! ARGH!! // && (rc == 0 || rc == (33*60*1000)))
 			rc = -1;
 		return rc;
 	}

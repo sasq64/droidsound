@@ -5,8 +5,14 @@ import java.io.File;
 import android.content.Context;
 import android.database.Cursor;
 import android.util.AttributeSet;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.BaseAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
+import com.ssb.droidsound.R;
 import com.ssb.droidsound.utils.Log;
 
 /**
@@ -20,7 +26,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 
 	private PlayListAdapter adapter;
 	
-    public PlayListView(Context context, AttributeSet attrs) {
+    public PlayListView(final Context context, AttributeSet attrs) {
 		super(context, attrs);
 		
 		int itemColor = 0xFFA0A0FF;
@@ -28,26 +34,46 @@ public class PlayListView extends ListView { //extends TouchListView {
 		int archiveColor = 0xFFFFA080;
 		int dirColor = 0xFFA0A080;
 
-		
-		for(int i=0; i<attrs.getAttributeCount(); i++) {
-			String name = attrs.getAttributeName(i);
-			if(name.equals("dirColor")) {
-				dirColor = attrs.getAttributeIntValue(i, -1);
-			} else
-			if(name.equals("archiveColor")) {
-				archiveColor = attrs.getAttributeIntValue(i, -1);
-			} else
-			if(name.equals("itemColor")) {
-				itemColor = attrs.getAttributeIntValue(i, -1);
-			}
-			if(name.equals("subitemColor")) {
-				subitemColor = attrs.getAttributeIntValue(i, -1);
+		if(attrs != null) {
+			for(int i=0; i<attrs.getAttributeCount(); i++) {
+				String name = attrs.getAttributeName(i);
+				if(name != null) {
+					if(name.equals("dirColor")) {
+						dirColor = attrs.getAttributeIntValue(i, -1);
+					} else
+					if(name.equals("archiveColor")) {
+						archiveColor = attrs.getAttributeIntValue(i, -1);
+					} else
+					if(name.equals("itemColor")) {
+						itemColor = attrs.getAttributeIntValue(i, -1);
+					}
+					if(name.equals("subitemColor")) {
+						subitemColor = attrs.getAttributeIntValue(i, -1);
+					}
+				} else {
+					Log.d(TAG, "ATTR %d: %d", i, attrs.getAttributeNameResource(i));
+				}
 			}
 		}
-				
+
 		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
+
 	}
+    
+    /*
+    public PlayListView(Context context) {
+    	super(context);
+      	
+		int itemColor = 0xFFFFFFFF;
+		int subitemColor = 0xFFA0A0FF;
+		int archiveColor = 0xFFFFFFA0;
+		int dirColor = 0xFFFFFFA0;
+
+		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
+		setAdapter(adapter);
+    } */
+    
     
     public boolean editMode() { return adapter.isEditMode(); }
     

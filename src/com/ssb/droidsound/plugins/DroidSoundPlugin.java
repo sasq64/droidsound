@@ -199,7 +199,7 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public String getVersion() {
-		return "Unknown";
+		return null;
 	}
 
 	public boolean delayedInfo() {

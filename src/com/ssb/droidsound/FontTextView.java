@@ -19,9 +19,11 @@ public class FontTextView extends TextView {
 		}
 		
 		if(font != null) {
-			Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/" + font + ".ttf");
-			if(tf != null) {
-				setTypeface(tf);
+			if(!isInEditMode()) {
+				Typeface tf = Typeface.createFromAsset(context.getAssets(), "fonts/" + font + ".ttf");
+				if(tf != null) {
+					setTypeface(tf);
+				}
 			}
 		}
 	}

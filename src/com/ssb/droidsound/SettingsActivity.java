@@ -22,7 +22,6 @@ import android.preference.PreferenceScreen;
 
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.plugins.SidPlugin;
 import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.VICEPlugin;
 import com.ssb.droidsound.utils.Log;
@@ -183,7 +182,7 @@ public class SettingsActivity extends PreferenceActivity {
 	
 			p = new Preference(this);
 			p.setTitle("Application");
-			p.setSummary(String.format("%s v%s\n(C) 2010,2011 by Jonas Minnberg (Sasq)", appName, pinfo.versionName));		
+			p.setSummary(String.format("%s v%s\n(C) 2010-2012 by Jonas Minnberg (Sasq)", appName, pinfo.versionName));		
 			abScreen.addPreference(p);
 	
 			pc = new PreferenceCategory(this);
@@ -191,11 +190,11 @@ public class SettingsActivity extends PreferenceActivity {
 			abScreen.addPreference(pc);
 	
 			for(DroidSoundPlugin pl : list) {
-				if(pl instanceof SidPlugin) {					
-				} else {
+				String info = pl.getVersion();
+				if(info != null) {
 					p = new Preference(this);
 					p.setTitle(pl.getClass().getSimpleName());
-					p.setSummary(pl.getVersion());		
+					p.setSummary(info);		
 					abScreen.addPreference(p);
 				}
 			}
@@ -207,6 +206,11 @@ public class SettingsActivity extends PreferenceActivity {
 			p = new Preference(this);
 			p.setTitle("Icons");
 			p.setSummary("G-Flat SVG by poptones");		
+			abScreen.addPreference(p);
+
+			p = new Preference(this);
+			p.setTitle("ViewPageIndicator");
+			p.setSummary("by Jake Wharton");		
 			abScreen.addPreference(p);
 		}
 

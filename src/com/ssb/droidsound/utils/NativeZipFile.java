@@ -36,6 +36,9 @@ public class NativeZipFile implements Archive {
 		}
 	};
 	
+	private static long lastZipRef = 0;
+	private static String lastZipName = null;
+	
 	private long zipRef;
 	private String zipName;	
 	
@@ -52,22 +55,49 @@ public class NativeZipFile implements Archive {
 	private native int read(long fd, byte [] target, int offs, int len);
 	private native void close(long fd);
 	
+	public static void closeCached() {
+		try {
+			new NativeZipFile((String)null);
+		} catch (IOException e) {
+		}
+	}
 	
 	public NativeZipFile(String fileName) throws IOException {
-		zipName = fileName;
-		openZipFile(fileName);
-		if(zipRef == 0) {
-			throw new IOException();
-		}
+		init(fileName);
 	}
 	
 	public NativeZipFile(File file) throws IOException {
-		zipName = file.getPath();
-		openZipFile(file.getPath());
+		init(file.getPath());
+	}
+	
+	private void init(String fileName) throws IOException {
+		
+		zipName = fileName;
+
+		if(lastZipName != null) {
+			if(zipName != null && zipName.equals(lastZipName)) {
+				Log.d(TAG, "Reusing last zip: %s", lastZipName);
+				zipRef = lastZipRef;
+				return;
+			} else {
+				Log.d(TAG, "Closing last zip: %s", lastZipName);
+				zipRef = lastZipRef;
+				closeZipFile();
+				zipRef = 0;
+				lastZipName = null;
+			}
+		}
+		if(zipName == null)
+			return;
+		
+		Log.d(TAG, "Opening new zip: %s", zipName);
+		openZipFile(zipName);
 		if(zipRef == 0) {
 			throw new IOException();
 		}
 	}
+	
+	
 	
 	public String getZipName() {
 		return zipName;
@@ -151,7 +181,7 @@ public class NativeZipFile implements Archive {
 		}
 
 		@Override
-		public void close() {
+		public void close() {			
 			zipFile.close(fd);
 		}
 
@@ -200,7 +230,10 @@ public class NativeZipFile implements Archive {
 	}
 	
 	public void close() {
-		closeZipFile();
+		lastZipRef = zipRef;
+		lastZipName = zipName;
+		return;
+		//closeZipFile();
 	}
 	
 	private static class MyIterator implements Iterator<Archive.Entry> {

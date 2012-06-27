@@ -1,0 +1,73 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#000000"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:id="@+id/title_bar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#800000"
+        android:orientation="horizontal" >
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.0"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/search_text"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:text="Search"
+                android:paddingLeft="4dp"
+                android:paddingTop="4dp"
+                android:singleLine="true"
+				android:textColor="#FFFFFFFF"
+				android:background="#FF800000"
+				android:textSize="20dp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/subsearch_text"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="4dp"
+                android:paddingBottom="4dp"
+                android:ellipsize="start"
+                android:singleLine="true"
+                android:textColor="#FFFFFFFF"
+				android:background="#FF800000"
+                android:textSize="15dp" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/search_button"
+            style="@style/Button"
+            android:contentDescription="Search"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_menu_search"
+          />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/search_list_frame"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+
+        <com.ssb.droidsound.playlistview.PlayListView
+            android:id="@+id/search_list"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            archiveColor="#ffffffa0"
+            dirColor="#ffffffa0"
+            itemColor="#ffffffff"
+            subitemColor="#ffa0a0ff"
+            android:background="#ff000000"
+            android:cacheColorHint="#ff000000"
+            android:fastScrollEnabled="true" />
+    </FrameLayout>
+
+</LinearLayout>

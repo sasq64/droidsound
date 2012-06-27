@@ -400,9 +400,9 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
                 	break;
                 case Player.MSG_DONE:
                 	Log.d(TAG, "Music done");
-                	//if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
+                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
                 		playNextSong();
-                	//} else {
+                	}// else {
                 	//	info[SONG_STATE] = 0;
                 	//	performCallback(SONG_STATE);
                 	//}
@@ -891,10 +891,10 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 			
  			player.setSubSong(song);
 			info[SONG_SUBSONG] = (Integer)song;			
-			if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-				info[SONG_REPEAT] = RM_KEEP_PLAYING;
-				performCallback(SONG_REPEAT);
-			}
+			//if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
+			//	info[SONG_REPEAT] = RM_KEEP_PLAYING;
+			//	performCallback(SONG_REPEAT);
+			//}
 			
 			//if(ok) {
 			//	info[SONG_FILENAME] = nextSong.filename + ";" + song;
