@@ -58,7 +58,7 @@
             android:summary="Plugin Audio Settings"
 	>
 	
-		<PreferenceCategory
+		<!-- <PreferenceCategory
 			android:title="MP3"
 			android:key="MP3Plugin"
 		>
@@ -67,8 +67,8 @@
 	            android:title="Simple MP3 streaming"
 	            android:defaultValue="false"
 	            android:summary="Use simple Android streaming. More limited but possibly more stable."
-	            />
-		</PreferenceCategory>
+	            /> 
+		</PreferenceCategory> -->
 		<PreferenceCategory
 			android:title="SID"
 			android:key="SidPlugin"
