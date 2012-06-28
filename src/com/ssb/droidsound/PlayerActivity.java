@@ -29,7 +29,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.PowerManager;
+//import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.view.ViewPager;
@@ -154,7 +154,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	private ViewGroup searchBar;
 
 
-	private PowerManager.WakeLock wakeLock;
+	//private PowerManager.WakeLock wakeLock;
 
 	private File moveFileHere;
 
@@ -735,8 +735,8 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 			}
 		};
 
-		PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-		wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "Droidsound");
+		//PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		//wakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "Droidsound");
 
 		playListView.setOnItemClickListener(listClickListener);
 		searchListView.setOnItemClickListener(listClickListener);
@@ -1336,9 +1336,9 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		Playlist.flushAll();
 
-		if(wakeLock.isHeld()) {
-			wakeLock.release();
-		}
+		//if(wakeLock.isHeld()) {
+		//	wakeLock.release();
+		//}
 
 		player.unbindService(this);
 

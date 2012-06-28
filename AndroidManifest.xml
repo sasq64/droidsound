@@ -2,11 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.ssb.droidsound"
 	android:installLocation="auto"
-	android:versionCode="15"
-	android:versionName="1.3.1" >
+	android:versionCode="16"
+	android:versionName="1.4" >
 
 	<uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.WAKE_LOCK" />
+	<!-- <uses-permission android:name="android.permission.WAKE_LOCK" /> -->
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
 	<uses-permission android:name="android.permission.WRITE_SETTINGS" />
@@ -14,8 +14,8 @@
 	<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
 	<uses-sdk
-		android:minSdkVersion="8"
-		android:targetSdkVersion="8" />
+		android:minSdkVersion="7"
+		android:targetSdkVersion="7" />
 
 	<application
 		android:icon="@drawable/droidsound64x64"

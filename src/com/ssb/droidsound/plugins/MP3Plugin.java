@@ -49,7 +49,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 	private String type;
 
-	public static boolean simpleStream = false;
+	//public static boolean simpleStream = false;
 
 	@Override
 	public boolean canHandle(FileSource fs) {		
@@ -235,7 +235,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		started = false;
 		loaded = false;
 			
-		if(simpleStream) {
+		/*if(simpleStream) {
 			Log.d(TAG, "LOAD %s", songName);
 			mediaPlayer = new MediaPlayer();
 			mediaPlayer.setDataSource(songName);
@@ -248,7 +248,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			});
 			mediaPlayer.prepareAsync();
 			prepared = false;
-		} else {
+		} else { */
 			if(httpThread == null) {
 				mediaPlayer = new MediaPlayer();
 				Log.d(TAG, "Creating thread");
@@ -259,7 +259,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			Log.d(TAG, "LOAD %s", songName);
 			id3Tag = null;
 			cueFile = null;
-		}
+		//}
 		return true;
 	}
 
@@ -300,7 +300,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		if(pls != null) {
 			if(pls.getMediaCount() > 0) {
 
-				if(simpleStream) {
+				/*if(simpleStream) {
 					Log.d(TAG, "LOAD %s", pls.getMedia(0));
 					description = pls.getDescription(0);
 					mediaPlayer = new MediaPlayer();
@@ -324,7 +324,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 					});
 					mediaPlayer.prepareAsync();
 					prepared = false;
-				} else {
+				} else { */
 					try {
 						if(httpThread == null) {
 							mediaPlayer = new MediaPlayer();
@@ -345,7 +345,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 						e.printStackTrace();
 						return false;
 					}
-				}
+				//}
 				return true;
 			}
 		}	
@@ -487,12 +487,13 @@ public class MP3Plugin extends DroidSoundPlugin {
 		return (!started);
 	}
 
+	/*
 	@Override
 	public void setOption(String opt, Object val) {
 
 		// if(opt.equals("simplestream"))
 		simpleStream = (Boolean) val;
 		Log.d(TAG, "Simple Streaming %s", simpleStream ? "ON" : "OFF");
-	}
+	} */
 
 }

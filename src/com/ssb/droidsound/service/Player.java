@@ -697,7 +697,11 @@ public class Player implements Runnable {
 					}
 
 					int playPos = audioPlayer.getPlaybackPosition();
-
+					//Log.d(TAG, "PLAY LAST %d %d", playPos, lastPos);
+					
+					if(lastPos > playPos)
+						lastPos = -1;
+					
 					if(playPos >= lastPos + 500) {
 
 						Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos /*+ playPosOffset*/, -1);

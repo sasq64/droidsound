@@ -18,7 +18,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
-import android.media.AudioManager.OnAudioFocusChangeListener;
+//import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -37,7 +37,7 @@ import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.Player.SongInfo;
 import com.ssb.droidsound.utils.Log;
 
-public class PlayerService extends Service implements OnAudioFocusChangeListener, PlayerInterface {
+public class PlayerService extends Service implements PlayerInterface {
 	private static final String TAG = PlayerService.class.getSimpleName();
 	
 	// Information
@@ -102,6 +102,7 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	private BroadcastReceiver mediaReceiver;
 	
 	private static boolean hasRemoteControl;
+	private static boolean hasAudioFocus;
 	static {
 		try {
 			RemoteControlWrapper.checkAvailable();
@@ -109,9 +110,16 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 		} catch (Throwable t) {
 			hasRemoteControl = false;
 		}
+		try {
+			AudioFocusWrapper.checkAvailable();
+			hasAudioFocus = true;
+		} catch (Throwable t) {
+			hasAudioFocus = false;
+		}
 	}
 	
 	private RemoteControlWrapper remoteControl;
+	private AudioFocusWrapper afWrapper;
 
 	private int defaultRepeatMode = RM_CONTINUE;
 
@@ -667,10 +675,15 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 		getPackageManager().setComponentEnabledSetting(myEventReceiver, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP); 		
 
 		AudioManager myAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-		myAudioManager.registerMediaButtonEventReceiver(myEventReceiver);
+		try {
+			myAudioManager.registerMediaButtonEventReceiver(myEventReceiver);
+		} catch (Throwable t) {
+		}
 
 		if(hasRemoteControl)
 			remoteControl = new RemoteControlWrapper(this, myEventReceiver); 
+		if(hasAudioFocus)
+			afWrapper = new AudioFocusWrapper(this, player);
 		
 		notification = new Notification(R.drawable.note36, "Droidsound", System.currentTimeMillis());				
 		Intent notificationIntent = new Intent(this, PlayerActivity.class);
@@ -684,8 +697,10 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 	void beforePlay(String name) {
 		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
 		startForeground(R.string.notification, notification);
-		AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-		am.requestAudioFocus(this, AudioManager.STREAM_MUSIC,  AudioManager.AUDIOFOCUS_GAIN);
+		//AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		//am.requestAudioFocus(this, AudioManager.STREAM_MUSIC,  AudioManager.AUDIOFOCUS_GAIN);
+		if(hasAudioFocus)
+			afWrapper.requestFocus();
 		
 		if(hasRemoteControl)
 			remoteControl.setState(RemoteControlWrapper.PLAYING);
@@ -695,9 +710,10 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
 		if(hasRemoteControl)
 			remoteControl.setState(RemoteControlWrapper.STOPPED);
 		stopForeground(true);
-		AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-		am.abandonAudioFocus(this);
-		
+		//AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		//am.abandonAudioFocus(this);
+		if(hasAudioFocus)
+			afWrapper.abandonFocus();
 	}
 	
 	@Override
@@ -1139,22 +1155,6 @@ public class PlayerService extends Service implements OnAudioFocusChangeListener
     	Log.d(TAG, "UNBOUND");
     	return super.onUnbind(intent);
     }
-
-	@Override
-	public void onAudioFocusChange(int focusChange) {
-		if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-            // Pause playback
-			player.paused(true);
-		} else if (focusChange == AudioManager.AUDIOFOCUS_GAIN) {
-            // Resume playback
-			player.paused(false);
-		} else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) {
-			//AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            //am.abandonAudioFocus(this);
-			player.stop();
-			whenStopped();
-        }
-	}
 
 	@Override
 	public boolean isActive() {
