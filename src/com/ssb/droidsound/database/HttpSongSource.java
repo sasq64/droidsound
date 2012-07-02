@@ -1,5 +1,6 @@
 package com.ssb.droidsound.database;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -20,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.MatrixCursor;
+import android.os.Environment;
 
 import com.ssb.droidsound.FileIdentifier;
 import com.ssb.droidsound.utils.Log;
@@ -56,6 +58,21 @@ public class HttpSongSource {
 		Log.d(TAG, "'%s' became '%s'", s, htmlFix(s));*/
 	}
 	
+	
+	private static void enableHttpResponseCache() {
+	    try {
+	        long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
+	        
+	        File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+			File tempDir = new File(droidDir, "httpCache");
+	        
+	        File httpCacheDir = new File(tempDir, "http");
+	        Class.forName("android.net.http.HttpResponseCache")
+	            .getMethod("install", File.class, long.class)
+	            .invoke(null, httpCacheDir, httpCacheSize);
+	    } catch (Exception httpResponseCacheNotAvailable) {
+	    }
+	}
 	
 	
 	
@@ -108,6 +125,9 @@ public class HttpSongSource {
 
 		@Override
 		public void run() {
+			
+			
+			
 			
 			while(!doQuit) {
 				try {
@@ -255,11 +275,15 @@ public class HttpSongSource {
 			} catch (MalformedURLException me) {
 				msg = "<Illegal URL>";
 				status = -3;
+				dirList.remove(pathName);
+				return;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				msg = "<IO Error>";
 				status = -4;
+				dirList.remove(pathName);
+				return;
 			}
 			
 			if(msg != null) {
@@ -301,6 +325,9 @@ public class HttpSongSource {
 		}
 		
 		if(httpThread == null) {
+			
+			enableHttpResponseCache();
+			
 			httpWorker = new HTTPWorker(ctx);
 			httpThread = new Thread(httpWorker);
 			httpThread.start();
