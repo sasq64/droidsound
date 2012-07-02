@@ -272,7 +272,7 @@ public class Player implements Runnable {
 		FileSource songSource;
 		
 		String path = song.getPath();
-		if(path.startsWith("http:"))
+		if(path.startsWith("http"))
 			songSource = FileSource.create(path);
 		else
 		if(song.getZipPath() != null) {
@@ -503,6 +503,8 @@ public class Player implements Runnable {
 								mHandler.sendMessage(msg);
 							}
 							break;
+						default:
+							break;
 						}
 						if(currentState != State.STOPPED) {
 							switch(command) {
@@ -563,6 +565,8 @@ public class Player implements Runnable {
 										audioPlayer.play();
 								}
 
+								break;
+							default:
 								break;
 							}
 						}
