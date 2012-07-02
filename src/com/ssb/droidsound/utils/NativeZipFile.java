@@ -273,7 +273,7 @@ public class NativeZipFile implements Archive {
 	
 
 	@Override
-	public Iterator<Archive.Entry> getIerator() {
+	public Iterator<Archive.Entry> getIterator() {
 		return new MyIterator(this);
 	}
 

@@ -389,7 +389,7 @@ public class SongDatabase implements Runnable {
 		
 		Log.d(TAG, "ENUM");
 		//Enumeration<? extends ZipEntry> entries = zfile.entries();
-		Iterator<Archive.Entry> entries = archive.getIerator();
+		Iterator<Archive.Entry> entries = archive.getIterator();
 		
 		Set<String> pathSet = new HashSet<String>();
 		

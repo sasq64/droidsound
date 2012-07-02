@@ -55,7 +55,7 @@ public class UnRar implements Archive {
 	}*/
 
 	@Override
-	public Iterator<Entry> getIerator() {
+	public Iterator<Entry> getIterator() {
 		// TODO Auto-generated method stub
 		return null;
 	}

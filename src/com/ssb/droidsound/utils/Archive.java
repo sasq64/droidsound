@@ -11,7 +11,7 @@ public interface Archive {
 		public long getSize();
 	}
 	
-	Iterator<Entry> getIerator();	
+	Iterator<Entry> getIterator();	
 	Entry getEntry(String path);	
 	FileSource getFileSource(Entry entry);
 	void close();
