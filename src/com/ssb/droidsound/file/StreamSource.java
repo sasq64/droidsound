@@ -16,7 +16,6 @@ public class StreamSource extends FileSource {
 		super(ref);
 	}
 
-	
 	@Override
 	protected InputStream intGetStream() {
 				

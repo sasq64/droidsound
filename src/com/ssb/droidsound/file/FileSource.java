@@ -1,5 +1,6 @@
 package com.ssb.droidsound.file;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,12 +29,15 @@ public abstract class FileSource {
 	//private boolean leaveParentDir;
 
 	private String reference;
+
+	private CharSequence refPath;
 	
 
 	public FileSource(String ref) {
 		reference = ref;
 		int slash = ref.lastIndexOf('/');
-		baseName = ref.substring(slash + 1);		
+		baseName = ref.substring(slash + 1);
+		refPath = slash > 0 ? ref.subSequence(0, slash+1) : "";
 	}
 
 	public static FileSource create(String ref) {
@@ -98,11 +102,19 @@ public abstract class FileSource {
 				} catch (IOException e1) {
 				}
 				if(is != null) {
+					
+					
+					ByteArrayOutputStream bs = new ByteArrayOutputStream();
+					byte [] data = new byte [16384];
+					int n;
 					try {
-						size = is.available();
-						buffer = new byte[(int) size];
-						is.read(buffer);
+						while ((n = is.read(data, 0, data.length)) != -1) {
+							bs.write(data, 0, n);
+						}
+						bs.flush();
 						is.close();
+						buffer = bs.toByteArray();
+						size = buffer.length;
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -232,9 +244,10 @@ public abstract class FileSource {
 		
 		if(fs == null) {
 			// Otherwise, try creating a relative file manually
-			if(file == null)
-				file = intGetFile();
-			if(file != null) {
+			if(file == null) {
+				fs = FileSource.create(refPath + name);				
+				//file = intGetFile();
+			} else {
 				fs = fromFile(new File(file.getParentFile(), name));
 			}
 		}
