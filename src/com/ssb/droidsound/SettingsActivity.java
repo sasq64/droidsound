@@ -26,6 +26,7 @@ import com.ssb.droidsound.plugins.SidplayPlugin;
 import com.ssb.droidsound.plugins.VICEPlugin;
 import com.ssb.droidsound.utils.Log;
 
+@SuppressWarnings("deprecation") // Old preference system
 public class SettingsActivity extends PreferenceActivity {
 
 	protected static final String TAG = SettingsActivity.class.getSimpleName();

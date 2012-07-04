@@ -1,9 +1,10 @@
 package com.ssb.droidsound.plugins;
 
-import java.io.DataInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,9 +45,10 @@ public class RSNPlugin extends DroidSoundPlugin {
 			if(lookup.size() == 0) {
 				try {
 					InputStream is = getContext().getAssets().open("rsnsets.dat");
-					DataInputStream dis = new DataInputStream(is);
+					//DataInputStream dis = new DataInputStream(is);
+					BufferedReader br = new BufferedReader(new InputStreamReader(is));
 					while(true) {
-						String line = dis.readLine();
+						String line = br.readLine();
 						if(line == null)
 							break;
 						int sc = line.lastIndexOf(';');
@@ -57,7 +59,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 							lookup.put(name, title);
 						}
 					}
-					dis.close();
+					br.close();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

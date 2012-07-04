@@ -114,6 +114,7 @@ struct ModInfo {
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
 {
+	return 0; //UNUSED
 }
 
 

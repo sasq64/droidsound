@@ -1,5 +1,6 @@
 package com.ssb.droidsound.plugins;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import android.media.MediaPlayer;
 import com.ssb.droidsound.file.FileSource;
 
 public abstract class DroidSoundPlugin {
+	@SuppressWarnings("unused")
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
 	
 	public static final int INFO_TITLE = 0;
@@ -134,7 +136,11 @@ public abstract class DroidSoundPlugin {
 	public String getBaseName(String fname) {
 		
 		if(fname.startsWith("http:/")) {
-			fname = URLDecoder.decode(fname);
+			try {
+				fname = URLDecoder.decode(fname, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
 		}
 		
 		

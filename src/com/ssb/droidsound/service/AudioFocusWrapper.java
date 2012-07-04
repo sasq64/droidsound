@@ -12,7 +12,7 @@ public class AudioFocusWrapper {
 
 	static {
 		try {
-			OnAudioFocusChangeListener dummy = new OnAudioFocusChangeListener() {
+			new OnAudioFocusChangeListener() {
 				@Override
 				public void onAudioFocusChange(int focusChange) {}
 			};

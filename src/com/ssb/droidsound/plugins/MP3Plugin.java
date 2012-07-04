@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.List;
 
 import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnPreparedListener;
 
 import com.ssb.droidsound.MediaStreamer;
 import com.ssb.droidsound.file.FileSource;
@@ -22,7 +21,6 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private MediaPlayer mediaPlayer;
 	private volatile boolean started;
 	private volatile boolean prepared;
-	private volatile boolean loaded;
 
 	private MediaStreamer streamer;
 
@@ -37,7 +35,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private String songGenre;
 	private String songComment;
 	private String songCopyright;
-	private String songYear;
+	//private String songYear;
 	
 	private ID3Tag id3Tag;
 	private CueFile cueFile;
@@ -48,8 +46,6 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private String description;
 
 	private String type;
-
-	//public static boolean simpleStream = false;
 
 	@Override
 	public boolean canHandle(FileSource fs) {		
@@ -221,7 +217,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		songLength = -1;
 		songTitle = null;
 		songTrack = null;
-		songYear = null;
+		//songYear = null;
 	}
 	
 	//@Override
@@ -233,33 +229,18 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		prepared = false;
 		started = false;
-		loaded = false;
 			
-		/*if(simpleStream) {
-			Log.d(TAG, "LOAD %s", songName);
+		if(httpThread == null) {
 			mediaPlayer = new MediaPlayer();
-			mediaPlayer.setDataSource(songName);
-			loaded = true;
-			mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
-				@Override
-				public void onPrepared(MediaPlayer mp) {
-					prepared = true;
-				}
-			});
-			mediaPlayer.prepareAsync();
-			prepared = false;
-		} else { */
-			if(httpThread == null) {
-				mediaPlayer = new MediaPlayer();
-				Log.d(TAG, "Creating thread");
-				streamer = new MediaStreamer(songName , mediaPlayer, true);
-				httpThread = new Thread(streamer);
-				httpThread.start();
-			}
-			Log.d(TAG, "LOAD %s", songName);
-			id3Tag = null;
-			cueFile = null;
-		//}
+			Log.d(TAG, "Creating thread");
+			streamer = new MediaStreamer(songName , mediaPlayer, true);
+			httpThread = new Thread(streamer);
+			httpThread.start();
+		}
+		Log.d(TAG, "LOAD %s", songName);
+		id3Tag = null;
+		cueFile = null;
+
 		return true;
 	}
 
@@ -282,7 +263,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		prepared = false;
 		started = false;
-		loaded = false;
+
 		songLength = -1;
 		
 		File file = fs.getFile();
@@ -299,53 +280,26 @@ public class MP3Plugin extends DroidSoundPlugin {
 		
 		if(pls != null) {
 			if(pls.getMediaCount() > 0) {
+				try {
+					if(httpThread == null) {
+						mediaPlayer = new MediaPlayer();
+						Log.d(TAG, "Creating thread");
+						streamer = new MediaStreamer(pls.getMediaList(), mediaPlayer, false);
+						description = pls.getDescription(0);
+						httpThread = new Thread(streamer);
+						// httpThread.setPriority(Thread.MAX_PRIORITY);
+						httpThread.start();
+					}
 
-				/*if(simpleStream) {
 					Log.d(TAG, "LOAD %s", pls.getMedia(0));
-					description = pls.getDescription(0);
-					mediaPlayer = new MediaPlayer();
-					try {
-						mediaPlayer.setDataSource(pls.getMedia(0));
-					} catch (IllegalArgumentException e) {
-						e.printStackTrace();
-					} catch (SecurityException e) {
-						e.printStackTrace();
-					} catch (IllegalStateException e) {
-						e.printStackTrace();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-					loaded = true;
-					mediaPlayer.setOnPreparedListener(new OnPreparedListener() {
-						@Override
-						public void onPrepared(MediaPlayer mp) {
-							prepared = true;
-						}
-					});
-					mediaPlayer.prepareAsync();
-					prepared = false;
-				} else { */
-					try {
-						if(httpThread == null) {
-							mediaPlayer = new MediaPlayer();
-							Log.d(TAG, "Creating thread");
-							streamer = new MediaStreamer(pls.getMediaList(), mediaPlayer, false);
-							description = pls.getDescription(0);
-							httpThread = new Thread(streamer);
-							// httpThread.setPriority(Thread.MAX_PRIORITY);
-							httpThread.start();
-						}
+					// mediaPlayer.setLooping(true);
+					id3Tag = null;
+					cueFile = null;
 
-						Log.d(TAG, "LOAD %s", pls.getMedia(0));
-						// mediaPlayer.setLooping(true);
-						id3Tag = null;
-						cueFile = null;
-
-					} catch (Exception e) {
-						e.printStackTrace();
-						return false;
-					}
-				//}
+				} catch (Exception e) {
+					e.printStackTrace();
+					return false;
+				}
 				return true;
 			}
 		}	
@@ -354,7 +308,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 			Log.d(TAG, "LOAD %s", file.getPath());
 			mediaPlayer = new MediaPlayer();
 			mediaPlayer.setDataSource(file.getPath());
-			loaded = true;
+
 			mediaPlayer.prepare();
 			prepared = true;			
 			mediaPlayer.start();

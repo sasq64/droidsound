@@ -173,6 +173,7 @@ public class HttpSongSource {
 			}
 		}
 
+		@SuppressWarnings("resource") // The matrix cursor does not need to be closed
 		private void getDirFromHTTP(String pathName) {
 			
 			MatrixCursor cursor = new MatrixCursor(new String [] { "TITLE", "TYPE", "PATH", "FILENAME"} );
@@ -181,7 +182,7 @@ public class HttpSongSource {
 			try {
 				URL url = new URL(pathName);		
 				URLConnection conn = url.openConnection();
-				if (!(conn instanceof HttpURLConnection))
+				if (!(conn instanceof HttpURLConnection)) 
 					throw new IOException("Not a HTTP connection");
 		
 				HttpURLConnection httpConn = (HttpURLConnection) conn;

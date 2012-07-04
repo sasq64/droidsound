@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -314,7 +315,11 @@ public class Playlist {
 		String s = songFile.getPath();
 		FileIdentifier.MusicInfo minfo = null;
 		if(s.startsWith("http://")) {			
-			songFile.setTitle(URLDecoder.decode(songFile.getName()));
+			try {
+				songFile.setTitle(URLDecoder.decode(songFile.getName(), "UTF-8"));
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
 		} else {
 			FileSource fs = FileSource.fromFile(songFile.getFile());
 			minfo = FileIdentifier.identify(fs);

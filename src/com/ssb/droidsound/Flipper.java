@@ -1,6 +1,5 @@
 package com.ssb.droidsound;
 
-import android.support.v4.view.ViewPager;
 import android.view.View;
 import android.view.animation.Animation;
 import android.widget.ViewFlipper;
@@ -20,7 +19,6 @@ public class Flipper {
 	
 	private ViewFlipper flipper;
 	private FlipCallback callBack;
-	private ViewPager pager;
 	
 	public Flipper(View vf) {
 		flipper = (ViewFlipper) vf;

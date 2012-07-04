@@ -1,6 +1,7 @@
 package com.ssb.droidsound;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
 public class SongFile {
@@ -53,7 +54,11 @@ public class SongFile {
 		playtime = -1;
 		protocol = "";
 		if(fname.startsWith("file://")) {
-			fname = URLDecoder.decode(fname.substring(7));			
+			try {
+				fname = URLDecoder.decode(fname.substring(7), "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
 		} else if(fname.startsWith("http://")) {
 			fname = fname.substring(7);
 			protocol = "http://";

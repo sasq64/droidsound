@@ -154,6 +154,7 @@ DWORD CSoundFile::GetLength(BOOL bAdjust, BOOL bTotal)
 			case CMD_S3MCMDEX:
 				if ((param & 0xF0) == 0x60) { nSpeedCount = param & 0x0F; break; } else
 				if ((param & 0xF0) == 0xB0) { param &= 0x0F; param |= 0x60; }
+				/* no break */
 			case CMD_MODCMDEX:
 				if ((param & 0xF0) == 0xE0) nSpeedCount = (param & 0x0F) * nMusicSpeed; else
 				if ((param & 0xF0) == 0x60)
@@ -710,6 +711,7 @@ void CSoundFile::CheckNNA(UINT nChn, UINT instr, int note, BOOL bForceCut)
 			case NNA_NOTEOFF:	KeyOff(n); break;
 			case NNA_NOTECUT:
 				p->nFadeOutVol = 0;
+				/* no break */
 			case NNA_NOTEFADE:	p->dwFlags |= CHN_NOTEFADE; break;
 			}
 			if (!p->nVolume)

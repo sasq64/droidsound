@@ -8,6 +8,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.ref.WeakReference;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -174,35 +176,46 @@ public class SongDatabase implements Runnable {
 		String s = dumpname.toUpperCase();
 		dbsources.put(s, ds);
 	}
+	
+	private static class MyHandler extends Handler {
+		
+		private WeakReference<SongDatabase> sdbRef;
+
+		public MyHandler(SongDatabase sdb) {
+			sdbRef = new WeakReference<SongDatabase>(sdb);
+		}
+		
+		@Override
+        public void handleMessage(Message msg) {
+        	Log.d(TAG, "Got msg %d with arg %d", msg.what, msg.arg1);
+        	SongDatabase sdb = sdbRef.get();
+            switch (msg.what) {
+            case MSG_SCAN:
+            	if(msg.arg1 == 2) {
+            		sdb.doOpen(true);
+            		sdb.doScan((String)msg.obj, false);
+            	} else {
+            		sdb.doScan((String)msg.obj, msg.arg1 != 0);
+            	}
+            	break;
+            case MSG_SCANDIR:
+            	sdb.doScanDir((String)msg.obj);
+            	break;
+            case MSG_QUIT:
+            	Log.d(TAG, "Telling looper to quit");
+            	Looper.myLooper().quit();
+            	break;
+            } 
+		}
+	};
+	
 
 	@Override
 	public void run() {
 				
 		Looper.prepare();
 		
-		mHandler = new Handler() {
-			@Override
-	        public void handleMessage(Message msg) {
-	        	Log.d(TAG, "Got msg %d with arg %d", msg.what, msg.arg1);
-	            switch (msg.what) {
-	            case MSG_SCAN:
-	            	if(msg.arg1 == 2) {
-	            		doOpen(true);
-	            		doScan((String)msg.obj, false);
-	            	} else {
-	            		doScan((String)msg.obj, msg.arg1 != 0);
-	            	}
-	            	break;
-	            case MSG_SCANDIR:
-            		doScanDir((String)msg.obj);
-	            	break;
-	            case MSG_QUIT:
-	            	Log.d(TAG, "Telling looper to quit");
-	            	Looper.myLooper().quit();
-	            	break;
-	            } 
-			}
-		};
+		mHandler = new MyHandler(this);
 		
 		doOpen(false);
 
@@ -1244,7 +1257,13 @@ public class SongDatabase implements Runnable {
 		currentPlaylist = null;
 
 		if(pathName.startsWith("http://")) {
-			String s = URLDecoder.decode(pathName);
+			String s;
+			try {
+				s = URLDecoder.decode(pathName, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+
 			pathTitle = new File(s).getName();
 			return HttpSongSource.getFilesInPath(context, pathName, sorting);
 		}
@@ -1270,10 +1289,6 @@ public class SongDatabase implements Runnable {
 
 		if(rdb == null) {
 			rdb = getReadableDatabase();
-		}
-
-		if(rdb.isDbLockedByOtherThreads()) {
-			return null;
 		}
 		
 		for(Entry<String, DataSource> db : dbsources.entrySet()) {

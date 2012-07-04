@@ -1,6 +1,7 @@
 package com.ssb.droidsound.service;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -300,9 +302,178 @@ public class PlayerService extends Service implements PlayerInterface {
 		}	
 
 	}
+	
+	private static class MyHandler extends Handler {
+		
+		private WeakReference<PlayerService> psRef;
+
+		public MyHandler(PlayerService ps) {
+			psRef = new WeakReference<PlayerService>(ps);
+		}
+		
+		@Override
+		public void handleMessage(Message msg) {
+			String [] sa;
+			PlayerService ps = psRef.get();
+            switch (msg.what) {
+            	case Player.MSG_WAVDUMPED:
+            		ps.info[SONG_FILENAME] = msg.obj;
+            		ps.performCallback(SONG_FILENAME);
+            		ps.info[SONG_FILENAME] = null;
+            		break;
+            	case Player.MSG_DETAILS:
+            		sa = (String [])msg.obj;
+            		ps.info[SONG_DETAILS] = "DETAILS";
+            		ps.currentSongInfo.details = sa;
+            		ps.performCallback(SONG_DETAILS);
+            		Log.d(TAG, "%%%%%%%% Sending %d details", sa.length);
+            		break;
+            	case Player.MSG_INFO:
+        			sa = (String [])msg.obj;
+        			ps.info[SONG_TITLE] = sa[0];
+        			ps.info[SONG_AUTHOR] = sa[1];
+        			
+					if(hasRemoteControl)
+						ps.remoteControl.setMetaData((String) ps.info[SONG_AUTHOR], (String) ps.info[SONG_TITLE]);
+        			
+					ps.speakTitle();
+					ps.performCallback(SONG_TITLE, SONG_AUTHOR);
+        			break;
+            	case Player.MSG_SUBTUNE:
+            		Log.d(TAG, "SUBTUNE %d, Length %d", msg.arg1, msg.arg2);
+            		ps.info[SONG_SUBSONG] = msg.arg1;
+            		ps.info[SONG_LENGTH] = msg.arg2;
+            		
+            		if(msg.arg2 == -1)
+            			ps.info[SONG_LENGTH] = ps.defaultLength;
+            		
+            		ps.info[SONG_STATE] = 1;
+            		if(msg.obj != null) {
+            			sa = (String [])msg.obj;
+            			ps.info[SONG_SUBTUNE_TITLE] = sa[0];
+            			ps.info[SONG_SUBTUNE_AUTHOR] = sa[1];
+            			
+
+            			
+            			if(msg.arg1 < 0) {
+
+        					if(hasRemoteControl)
+        						ps.remoteControl.setMetaData((String) ps.info[SONG_SUBTUNE_AUTHOR], (String) ps.info[SONG_SUBTUNE_TITLE]);
+
+        					ps.speakTitle();
+            			}
+            			
+            			ps.performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_STATE);
+                		break;                		
+            		}
+            		ps.performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_STATE);
+            		break;
+                case Player.MSG_NEWSONG:
+                	
+                	
+                	String lastFileName = ps.currentSongInfo.fileName;
+                	
+                	ps.player.getSongInfo(ps.currentSongInfo);
+                	                	
+                	ps.info[SONG_TITLE] = ps.currentSongInfo.title;
+					ps.info[SONG_AUTHOR] = ps.currentSongInfo.author;
+					ps.info[SONG_COPYRIGHT] = ps.currentSongInfo.copyright;
+					ps.info[SONG_FORMAT] = ps.currentSongInfo.type;
+					ps.info[SONG_LENGTH] = ps.currentSongInfo.length;
+					ps.info[SONG_TOTALSONGS] = ps.currentSongInfo.subTunes;
+					ps.info[SONG_SUBSONG] = ps.currentSongInfo.startTune;
+					ps.info[SONG_REPEAT] = ps.defaultRepeatMode;
+					ps.info[SONG_SUBTUNE_TITLE] = ps.currentSongInfo.subtuneTitle;
+					ps.info[SONG_SUBTUNE_AUTHOR] = ps.currentSongInfo.subtuneAuthor;
+					ps.info[SONG_FLAGS] = ps.currentSongInfo.canSeek ? 1 : 0;
+					ps.info[SONG_STATE] = 1;
+					ps.info[SONG_SOURCE] = "";
+					ps.info[SONG_BUFFERING] = -1;
+					
+            		if(ps.currentSongInfo.length == -1)
+            			ps.info[SONG_LENGTH] = ps.defaultLength;
+
+					
+					if(ps.currentSongInfo.source != null && ps.currentSongInfo.source.length() > 0)					
+						ps.info[SONG_SOURCE] = ps.currentSongInfo.source;
+					else if(ps.playListName != null) {
+						ps.info[SONG_SOURCE] = ps.playListName;
+					}
+					
+					Log.d(TAG, "SOURCE IS " + ps.currentSongInfo.source);
+
+					if(lastFileName == null || !lastFileName.equals(ps.currentSongInfo.fileName)) {
+						if(ps.ttsStatus >= 0) {
+							ps.speakTitle();
+						}
+					}
+					
+					if(hasRemoteControl)
+						ps.remoteControl.setMetaData((String) ps.info[SONG_AUTHOR], (String) ps.info[SONG_TITLE]);        			
+
+					ps.performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
+                	break;
+                case Player.MSG_DONE:
+                	Log.d(TAG, "Music done");
+                	if((Integer)ps.info[SONG_REPEAT] == RM_CONTINUE) {
+                		ps.playNextSong();
+                	}// else {
+                	//	ps.info[SONG_STATE] = 0;
+                	//	performCallback(SONG_STATE);
+                	//}
+                    break;
+                case Player.MSG_PROGRESS:
+                	int l = (Integer)ps.info[SONG_LENGTH];
+                	if(l < 0) {
+                		l = ps.defaultLength;
+                	}
+                	//Log.d(TAG, "%d vs %d", msg.arg1, l);
+                	if(l > 0 && (msg.arg1 >= l) && ((Integer)ps.info[SONG_REPEAT] == RM_CONTINUE)) {
+                		ps.playNextSong();
+                	} else {                	
+                    	int pos = (Integer)msg.arg1;
+                    	int buffering = (Integer)msg.arg2;
+                    	if(pos >= 0 && buffering >= 0) {
+	                    	ps.info[SONG_BUFFERING] = buffering;
+	                    	ps.info[SONG_POS] = pos;
+	                    	ps.performCallback(SONG_BUFFERING, SONG_POS);
+                    	} else if(pos >= 0) {
+	                    	ps.info[SONG_POS] = pos;
+	                    	ps.performCallback(SONG_POS);
+                    	} else {
+	                    	ps.info[SONG_BUFFERING] = buffering;
+	                    	ps.performCallback(SONG_BUFFERING);
+                    	}
+                	}
+    				break;
+                case Player.MSG_STATE:
+                	ps.info[SONG_STATE] = (Integer)msg.arg1;
+                	
+                	if(msg.arg1 == 0) {
+                		ps.info[SONG_POS] = ps.info[SONG_SUBSONG] = ps.info[SONG_TOTALSONGS] = ps.info[SONG_LENGTH] = 0;
+                		ps.currentSongInfo.fileName = null;
+                		ps.performCallback(SONG_POS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_LENGTH, SONG_STATE);
+                	} else {                	
+                		ps.performCallback(SONG_STATE);
+                	}
+                	break;
+                /*case Player.MSG_SILENT:
+                	if(silenceDetect) {
+	                	if((Integer)ps.info[SONG_REPEAT] == RM_CONTINUE) {
+	                		playNextSong();
+	                	} else {
+	                		Log.d(TAG, "User has interferred, not switching");
+	                	}
+                	}
+                	break;*/
+                default:
+                    super.handleMessage(msg);
+            }
+        }
+	};
 		
 	
-    private Handler mHandler = new Handler() {
+    private Handler mHandler = null; /*new Handler() {
 
 		@Override
         public void handleMessage(Message msg) {
@@ -450,21 +621,12 @@ public class PlayerService extends Service implements PlayerInterface {
                 		performCallback(SONG_STATE);
                 	}
                 	break;
-                /*case Player.MSG_SILENT:
-                	if(silenceDetect) {
-	                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-	                		playNextSong();
-	                	} else {
-	                		Log.d(TAG, "User has interferred, not switching");
-	                	}
-                	}
-                	break;*/
                 default:
                     super.handleMessage(msg);
             }
         }
 
-    };
+    }; */
 
 	
     void createThread() {
@@ -589,11 +751,15 @@ public class PlayerService extends Service implements PlayerInterface {
 	protected int callState = TelephonyManager.CALL_STATE_IDLE;
 
     
+	@TargetApi(8)
+	@SuppressWarnings("deprecation") // Notifications needs to be backward compatible
 	@Override
 	public void onCreate() {
 		super.onCreate();
 		
 		DroidSoundPlugin.setContext(getApplicationContext());
+		
+		mHandler = new MyHandler(this);
 		
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 		player = new Player(audioManager, mHandler, getApplicationContext());
@@ -685,7 +851,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		if(hasAudioFocus)
 			afWrapper = new AudioFocusWrapper(this, player);
 		
-		notification = new Notification(R.drawable.note36, "Droidsound", System.currentTimeMillis());				
+		notification = new Notification(R.drawable.note36, "Droidsound", System.currentTimeMillis());		
 		Intent notificationIntent = new Intent(this, PlayerActivity.class);
 		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
 	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
@@ -694,6 +860,7 @@ public class PlayerService extends Service implements PlayerInterface {
 	    
 	}
 	
+	@SuppressWarnings("deprecation")
 	void beforePlay(String name) {
 		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
 		startForeground(R.string.notification, notification);

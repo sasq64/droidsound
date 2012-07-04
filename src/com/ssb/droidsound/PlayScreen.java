@@ -194,6 +194,7 @@ public class PlayScreen {
 		});
 
 		plusText.setOnClickListener(new OnClickListener() {
+			@SuppressWarnings("deprecation")
 			@Override
 			public void onClick(View v) {
 

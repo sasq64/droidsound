@@ -5,14 +5,8 @@ import java.io.File;
 import android.content.Context;
 import android.database.Cursor;
 import android.util.AttributeSet;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 
-import com.ssb.droidsound.R;
 import com.ssb.droidsound.utils.Log;
 
 /**
@@ -109,6 +103,7 @@ public class PlayListView extends ListView { //extends TouchListView {
     	
     }
 
+	@SuppressWarnings("deprecation") // TODO: Really should fix this deprecation
 	public void rescan() {
 		//adapter.setCursor(dataBase.getFilesInPath(pathName), pathName);
 		if(adapter.getCursor() != null) {

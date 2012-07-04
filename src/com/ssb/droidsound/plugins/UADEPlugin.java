@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.List;
@@ -152,7 +153,11 @@ public class UADEPlugin extends DroidSoundPlugin {
 	public String getBaseName(String name) {
 
 		if(name.startsWith("http:/")) {
-			name = URLDecoder.decode(name);
+			try {
+				name = URLDecoder.decode(name, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
 		}
 				
 		name = name.substring(name.lastIndexOf('/')+1);

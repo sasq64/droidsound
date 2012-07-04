@@ -29,7 +29,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-//import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.view.ViewPager;
@@ -52,7 +51,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -68,8 +66,9 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 import com.ssb.droidsound.utils.Unzipper;
 import com.viewpagerindicator.PageIndicator;
-import com.viewpagerindicator.TitlePageIndicator;
+//import android.os.PowerManager;
 
+@SuppressWarnings("deprecation") // No fragment support 
 public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
 	private static final String TAG = "PlayerActivity";
 	public static final int VERSION = 18;
@@ -517,9 +516,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 	
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-		boolean indexUnknown = prefs.getBoolean("extensions", false);
-		FileIdentifier.setIndexUnknown(indexUnknown);
-
 		state.seekingSong = 0;
 
 		currentPlaylistView = playListView;
@@ -840,7 +836,7 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		Log.d(TAG, "CREATED");
 	}
-
+	
 	private void setupModsDir() {
 		
 		String md = prefs.getString("modsDir", null);
@@ -1318,8 +1314,6 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		}
 
 		songDatabase.setIndexMode(imode);
-
-		FileIdentifier.setIndexUnknown(prefs.getBoolean("extensions", false));
 	}
 
 	@Override

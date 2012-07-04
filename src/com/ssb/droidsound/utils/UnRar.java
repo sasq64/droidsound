@@ -22,6 +22,7 @@ public class UnRar implements Archive {
 		return rc == 0;
 	}
 	
+	/*
 	private static class RarEntry implements Archive.Entry {
 		
 		private UnRar rarFile;
@@ -37,7 +38,7 @@ public class UnRar implements Archive {
 		}
 	}
 	
-	/*
+	
 	private static class MyIterator implements Iterator<RarEntry> {
 		
 		@Override

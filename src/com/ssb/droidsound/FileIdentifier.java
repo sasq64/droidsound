@@ -21,8 +21,6 @@ public class FileIdentifier {
 	private static HashSet<String> modMagic;
 
 	private static List<DroidSoundPlugin> plugins;
-
-	private static boolean indexUnknown;
 	
 	public static final int TYPE_MOD = 1;
 	public static final int TYPE_SID = 2;
@@ -388,10 +386,6 @@ public class FileIdentifier {
 	
 	static int getInt(byte [] data, int o) {		
 		return (data[o] & 0xff) | ((data[o+1] & 0xff)<<8) | ((data[o+2] & 0xff)<<16) | ((data[o+3] & 0xff)<<24);		
-	}
-
-	public static void setIndexUnknown(boolean idx) {		
-		indexUnknown = idx;
 	}
 
 }

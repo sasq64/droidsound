@@ -11,7 +11,7 @@ import com.ssb.droidsound.utils.DataFileSource;
 import com.ssb.droidsound.utils.Log;
 
 public abstract class FileSource {
-	@SuppressWarnings("unused") private static final String TAG = FileSource.class.getSimpleName();
+	private static final String TAG = FileSource.class.getSimpleName();
 	
 	private File file;
 	private InputStream inputStream;
