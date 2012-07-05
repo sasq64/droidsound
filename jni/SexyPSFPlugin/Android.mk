@@ -13,6 +13,6 @@ LOCAL_SRC_FILES := SexyPSFPlugin.cpp sexypsf/PsxBios.c sexypsf/PsxCounters.c sex
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/sexypsf
 LOCAL_LDLIBS := -llog -lz
-LOCAL_CFLAGS := -DPSS_STYLE=1
+LOCAL_CFLAGS := -DPSS_STYLE=1 $(MY_CFLAGS)
 
 include $(BUILD_SHARED_LIBRARY)

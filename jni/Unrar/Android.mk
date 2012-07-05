@@ -30,7 +30,7 @@ FILES = unrar/rar.cpp unrar/strlist.cpp unrar/strfn.cpp unrar/pathfn.cpp unrar/s
 
 LOCAL_SRC_FILES := UnRar.cpp $(FILES) $(LIB_FILES)
 
-LOCAL_CFLAGS := -DSILENT -DRARDLL -I$(LOCAL_PATH)/rar
+LOCAL_CFLAGS := -DSILENT -DRARDLL -I$(LOCAL_PATH)/rar $(MY_CFLAGS)
 LOCAL_LDLIBS := -llog -lz
 
 include $(BUILD_SHARED_LIBRARY)

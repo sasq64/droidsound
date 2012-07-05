@@ -16,7 +16,9 @@
 
 X := $(call my-dir)
 
-# include $(X)/Tremor/Android.mk
+ifeq ($(TARGET_ARCH_ABI),armeabi-v7a) 
+MY_CFLAGS += -mtune=cortex-a8
+endif
 
 include $(X)/ModPlugin/Android.mk
 include $(X)/GMEPlugin/Android.mk

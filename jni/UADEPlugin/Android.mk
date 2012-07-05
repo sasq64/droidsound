@@ -52,6 +52,9 @@ LOCAL_C_INCLUDES := \
                 $(LOCAL_PATH)/uade/frontends/include \
                 $(LOCAL_PATH)/$(FE) \
 
+
+LOCAL_CFLAGS := $(MY_CFLAGS)
+
 LOCAL_LDLIBS := -llog
 
 include $(BUILD_SHARED_LIBRARY)

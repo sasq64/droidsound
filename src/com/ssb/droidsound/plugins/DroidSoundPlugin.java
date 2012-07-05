@@ -17,6 +17,10 @@ public abstract class DroidSoundPlugin {
 	@SuppressWarnings("unused")
 	private static final String TAG = DroidSoundPlugin.class.getSimpleName();
 	
+	static {
+		System.loadLibrary("stlport_shared");
+	}
+	
 	public static final int INFO_TITLE = 0;
 	public static final int INFO_AUTHOR = 1;
 	public static final int INFO_LENGTH = 2;
