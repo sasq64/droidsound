@@ -17,7 +17,9 @@
 X := $(call my-dir)
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a) 
-MY_CFLAGS += -mtune=cortex-a8
+MY_CFLAGS := -mtune=cortex-a8
+else
+MY_CFLAGS := 
 endif
 
 include $(X)/ModPlugin/Android.mk
