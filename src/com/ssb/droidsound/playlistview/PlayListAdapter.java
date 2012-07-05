@@ -51,6 +51,8 @@ class PlayListAdapter extends BaseAdapter {
 
 	private boolean inNetwork;
 
+	private String [] years;
+
 	
 	PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
 		mContext = context;
@@ -61,6 +63,10 @@ class PlayListAdapter extends BaseAdapter {
 		dirColor = dc;
 		titleHeight = -1;
 		subtitleHeight = -1;
+		
+		years = new String [35];
+		for(int i=0;i<years.length; i++)
+			years[i] = String.format("(%04d)", i+1980);
 	}
 	
 	public void setCursor(Cursor cursor, String dirName) {
@@ -137,6 +143,7 @@ class PlayListAdapter extends BaseAdapter {
 		}
 	}
 	
+	
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 
@@ -184,7 +191,11 @@ class PlayListAdapter extends BaseAdapter {
 			int date = mCursor.getInt(mDateIndex);
 			if(date > 0) {
 				//Log.d(TAG, "DATE " + date);
-				side = String.format("(%04d)", date / 10000);
+				int year = date / 10000;
+				if(year >= 1980 || year <= 2014)
+					side = years[year-1980];
+				else
+					side = String.format("(%04d)", date / 10000);
 			}
 		}
 		

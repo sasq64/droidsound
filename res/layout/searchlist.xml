@@ -51,22 +51,17 @@
           />
     </LinearLayout>
 
-    <FrameLayout
-        android:id="@+id/search_list_frame"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent" >
-
-        <com.ssb.droidsound.playlistview.PlayListView
-            android:id="@+id/search_list"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            archiveColor="#ffffffa0"
-            dirColor="#ffffffa0"
-            itemColor="#ffffffff"
-            subitemColor="#ffa0a0ff"
-            android:background="#ff000000"
-            android:cacheColorHint="#ff000000"
-            android:fastScrollEnabled="true" />
-    </FrameLayout>
+       <com.ssb.droidsound.playlistview.PlayListView
+           android:id="@+id/search_list"
+           android:layout_width="fill_parent"
+           android:layout_height="fill_parent"
+           archiveColor="#ffffffa0"
+           dirColor="#ffffffa0"
+           itemColor="#ffffffff"
+           subitemColor="#ffa0a0ff"
+           android:fastScrollEnabled="true" />
+       <!--             android:background="#ff000000"
+           android:cacheColorHint="#ff000000"
+        -->
 
 </LinearLayout>
