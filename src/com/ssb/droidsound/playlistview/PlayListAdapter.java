@@ -47,6 +47,10 @@ class PlayListAdapter extends BaseAdapter {
 
 	private boolean editMode;
 
+	private String upperPathName;
+
+	private boolean inNetwork;
+
 	
 	PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
 		mContext = context;
@@ -67,6 +71,14 @@ class PlayListAdapter extends BaseAdapter {
 		
 		mCursor = cursor;
 		pathName = dirName;
+		if(pathName != null) {
+			upperPathName = dirName.toUpperCase();
+			inNetwork = upperPathName.contains(".LNK");
+		} else {
+			upperPathName = null;
+			inNetwork = false;
+		}
+		
 		
 		if(mCursor == null) {
 			return;
@@ -233,11 +245,7 @@ class PlayListAdapter extends BaseAdapter {
 		}
 
 		
-		String path = mPathIndex >= 0 ? mCursor.getString(mPathIndex) : null;
-		if(path == null)
-			path = pathName;
-		
-		String upath = path.toUpperCase();
+		String path = mPathIndex >= 0 ? mCursor.getString(mPathIndex) : pathName;
 		
 		String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
 		
@@ -281,7 +289,7 @@ class PlayListAdapter extends BaseAdapter {
 			if(ext.equals("LNK")) {
 				iv.setImageResource(R.drawable.gflat_net_folder);
 				tv0.setTextColor(0xffffc0c0);
-			} else if(upath.contains(".LNK")) {
+			} else if(inNetwork) {
 				iv.setImageResource(R.drawable.gflat_folder);
 				tv0.setTextColor(0xffffc0c0);
 			} else {
