@@ -1075,7 +1075,7 @@ public class SongDatabase implements Runnable {
 		//rdb.close();
 	}
 
-	private static String searchOrder [] = new String[] { "TITLE", "COMPOSER", "DATE" };
+	private static String searchOrder [] = new String[] { "TITLE COLLATE NOCASE", "DATE", "COMPOSER COLLATE NOCASE" };
 
 	public Cursor search(String query, String fromPath, int sorting) {
 		
@@ -1157,7 +1157,7 @@ public class SongDatabase implements Runnable {
 		return pathTitle;
 	}
 	
-	private static String sortOrder [] = new String[] { "TYPE, TITLE, FILENAME", "TYPE, DATE, FILENAME", "TYPE, COMPOSER, FILENAME" };
+	private static String sortOrder [] = new String[] { "TYPE, TITLE COLLATE NOCASE, FILENAME ", "TYPE, DATE, FILENAME", "TYPE, COMPOSER COLLATE NOCASE, FILENAME" };
 
 	private Map<String, String> linkMap = new HashMap<String, String>();
 	/*

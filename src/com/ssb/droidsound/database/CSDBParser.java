@@ -414,7 +414,7 @@ public class CSDBParser implements DataSource {
 				return new DirWrapper(rdb.rawQuery("select name, date, id from events order by date desc", null));
 			} else
 			if(parts[1].equals("GROUPS")) {
-				return new DirWrapper(rdb.rawQuery("select name, id from groups order by name", null));
+				return new DirWrapper(rdb.rawQuery("select name, id from groups order by name collate nocase", null));
 			} else
 			if(parts[1].equals("TOP DEMOS")) {
 				return new ReleaseCursor(rdb.rawQuery("select id, name, type, groupid, rating from releases where type='C64 Demo' order by rating desc limit 500", null));			
@@ -481,7 +481,7 @@ public class CSDBParser implements DataSource {
 		Log.d(TAG, "QUERY: %s PATH: %s",query, path);
 		int csdb = path.toUpperCase().lastIndexOf(DUMP_NAME);
 		path = path.substring(0, csdb + DUMP_NAME.length()) + "/RELEASES";
-		return new ReleaseCursor(db.rawQuery("select id, name, type, groupid, rating from releases where name like ? order by name limit 250", new String [] {"%" + query + "%"} ), path);		
+		return new ReleaseCursor(db.rawQuery("select id, name, type, groupid, rating from releases where name like ? order by name collate nocase limit 250", new String [] {"%" + query + "%"} ), path);		
 	}
 
 
