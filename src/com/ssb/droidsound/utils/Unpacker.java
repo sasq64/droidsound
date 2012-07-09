@@ -7,19 +7,8 @@ public class Unpacker {
 	@SuppressWarnings("unused")
 	private static final String TAG = Unpacker.class.getSimpleName();
 	
-	public static Archive openArchive(File path) {
-		
-		NativeZipFile lastZip = null;
-		try {
-			//if(lastZip != null && lastZip.getZipName().equals(path.getPath())) {
-			//	Log.d(TAG, "Reusing last zip");
-			//} else {			
-				lastZip = new NativeZipFile(path);
-			//}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return lastZip;
+	public static Archive openArchive(File path) throws IOException {		
+		return new NativeZipFile(path);
 	}
 	
 

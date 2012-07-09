@@ -277,9 +277,14 @@ public class Player implements Runnable {
 		else
 		if(song.getZipPath() != null) {
 			
-			Archive archive = Unpacker.openArchive(new File(song.getZipPath()));
-			Archive.Entry entry = archive.getEntry(song.getZipName());
-			songSource = archive.getFileSource(entry);
+			try {
+				Archive archive = Unpacker.openArchive(new File(song.getZipPath()));
+				Archive.Entry entry = archive.getEntry(song.getZipName());
+				songSource = archive.getFileSource(entry);
+			} catch (IOException e) {
+				// TODO: Display error dialog
+				return;
+			}
 			
 			//songSource = new FileSource(song.getZipPath(), song.getZipName());
 			

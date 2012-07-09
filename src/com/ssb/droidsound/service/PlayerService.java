@@ -1142,7 +1142,8 @@ public class PlayerService extends Service implements PlayerInterface {
 			 		if(arg.equals("Very Long")) {
 			 			bufSize = BUFSIZE(4.0);
 			 		}
-					player.setBufSize(bufSize);
+			 		if(player != null)
+			 			player.setBufSize(bufSize);
 					break;
 				}
 			} catch (NumberFormatException e) {
@@ -1298,14 +1299,14 @@ public class PlayerService extends Service implements PlayerInterface {
 					@Override
 					public void onInit(int status) {					
 						ttsStatus = status;
-						textToSpeech.setLanguage(Locale.US);
-						if(saySomething != null) {
+						if(saySomething != null && textToSpeech != null) {
 							textToSpeech.speak(saySomething, TextToSpeech.QUEUE_FLUSH, null);
 							saySomething = null;
 						}
 							
 					}
 				});
+				textToSpeech.setLanguage(Locale.US);
 			}
 		} else {
 			if(textToSpeech != null) {

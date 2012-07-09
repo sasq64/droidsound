@@ -387,7 +387,8 @@ public class SongDatabase implements Runnable {
 		Log.d(TAG, "OPEN");
 		//ZipFile zfile = new ZipFile(zipFile);
 		
-		Archive archive = Unpacker.openArchive(zipFile);		
+		Archive archive = Unpacker.openArchive(zipFile);
+		
 		//NativeZipFile zfile = new NativeZipFile(zipFile);
 		Log.d(TAG, "ENTRY");
 		

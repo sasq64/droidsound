@@ -333,6 +333,9 @@ public class SidPlugin extends DroidSoundPlugin {
 		String name = fs.getName();
 		int size = (int) fs.getLength();
 		
+		if(size < 0x80)
+			return false;
+		
 		String s = new String(module, 0, 4);
 		if((s.equals("PSID") || s.equals("RSID"))) {
 			type = 0;
