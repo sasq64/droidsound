@@ -648,13 +648,14 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 	@Override
 	public void run() {
-		while(true) {
+		for(int i=0; i<32; i++) {
 			try {
 				httpStream();
 			} catch (IOException e) {
 				e.printStackTrace();
 			} catch (Error e2) {
-				e2.printStackTrace();
+				return;
+				//e2.printStackTrace();
 			}
 			if(hasQuit)
 				return;

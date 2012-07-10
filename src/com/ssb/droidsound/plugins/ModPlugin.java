@@ -25,7 +25,7 @@ public class ModPlugin extends DroidSoundPlugin {
 		extensions.add("IT");
 		extensions.add("UMX");
 		extensions.add("ULT");
-		extensions.add("669");
+		//extensions.add("669");
 		extensions.add("STM");		
 	}
 	
