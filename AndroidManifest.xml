@@ -114,13 +114,13 @@
 			</intent-filter>
 		</activity>
 
-		<receiver android:name=".service.RemoteControlReceiver" >
+		<receiver android:name=".service.RemoteControlReceiver" android:process=":player" >
 			<intent-filter>
 				<action android:name="android.intent.action.MEDIA_BUTTON" />
 			</intent-filter>
 		</receiver>
 
-		<service android:name=".service.PlayerService" />
+		<service android:name=".service.PlayerService" android:process=":player" />
 
 		<activity android:name=".SettingsActivity" />
 		<activity android:name=".HelpActivity" />

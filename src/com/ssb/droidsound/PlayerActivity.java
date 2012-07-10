@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -29,6 +30,8 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.view.ViewPager;
@@ -69,7 +72,7 @@ import com.viewpagerindicator.PageIndicator;
 //import android.os.PowerManager;
 
 @SuppressWarnings("deprecation") // No fragment support 
-public class PlayerActivity extends Activity implements PlayerServiceConnection.Callback {
+public class PlayerActivity extends Activity  {
 	private static final String TAG = "PlayerActivity";
 	public static final int VERSION = 18;
 
@@ -1258,13 +1261,31 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 
 		return super.onKeyUp(keyCode, event);
 	}
+	
+	private static class ValueChangeHandler extends Handler {
+		
+		private WeakReference<PlayerActivity> activityRef;
+
+		public ValueChangeHandler(PlayerActivity activity) {
+			activityRef = new WeakReference<PlayerActivity>(activity);
+		}
+		
+		@Override
+		public void handleMessage(Message msg) {
+			if(msg.obj != null)
+				activityRef.get().stringChanged(msg.what, (String)msg.obj);
+			else
+				activityRef.get().intChanged(msg.what, msg.arg1);
+		}
+	}
+	
 
 	@Override
 	protected void onResume() {
 		super.onResume();
 		Log.d(TAG, "#### onResume()");
 
-		player.bindService(this, this);
+		player.bindService(this, new ValueChangeHandler(this));
 		
 		//if(songDatabase == null) {
 		//	setupSongDatabase();
@@ -1397,12 +1418,10 @@ public class PlayerActivity extends Activity implements PlayerServiceConnection.
 		Log.d(TAG, sb.toString());
 	}
 	
-	@Override
 	public void intChanged(int what, int value) {
 		playScreen.intChanged(what, value);
 	}
 
-	@Override
 	public void stringChanged(int what, String value) {
 
 

@@ -7,7 +7,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.DeadObjectException;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.RemoteException;
 
 import com.ssb.droidsound.service.IPlayerService;
@@ -25,7 +28,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 	
 	protected IPlayerService mService;
 	private String modToPlay;
-	private Callback callback;
+	//private Callback callback;
 	
 	private static class Opt {
 		int opt;
@@ -42,19 +45,24 @@ public class PlayerServiceConnection implements ServiceConnection {
 
 		@Override
 		public void stringChanged(int what, String value) throws RemoteException {
-			if(callback != null) {
-				callback.stringChanged(what, value);
+			if(handler != null) {
+				Message msg = handler.obtainMessage(what, value);
+				handler.sendMessage(msg);
+				//callback.stringChanged(what, value);
 			}
 		}
 
 		@Override
 		public void intChanged(int what, int value) throws RemoteException {
-			if(callback != null) {
-				callback.intChanged(what, value);
+			if(handler != null) {
+				Message msg = handler.obtainMessage(what, value, -1);
+				handler.sendMessage(msg);
+				//callback.stringChanged(what, value);
 			}
 		}
 	};
 	private boolean bound;
+	private Handler handler;
 	
 	@Override
 	public void onServiceConnected(ComponentName name, IBinder service) {
@@ -88,8 +96,8 @@ public class PlayerServiceConnection implements ServiceConnection {
 		Log.d(TAG, "Service Disconnected!");
 	}
 
-	public void bindService(Context ctx, Callback cb) {
-		callback = cb;
+	public void bindService(Context ctx, Handler h) {
+		handler = h;
 		Log.d(TAG, "binding");
 		Intent i = new Intent(ctx, PlayerService.class);
 		bound = true;
@@ -99,7 +107,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 
 	public void unbindService(Context ctx) {
 		Log.d(TAG, "Unbinding");
-		callback = null;
+		handler = null;
 		bound = false;
 		if(mService != null) {
 			try {
