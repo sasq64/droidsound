@@ -419,6 +419,8 @@ public class SongDatabase implements Runnable {
 		ContentValues values = new ContentValues();
 		//values.put("LENGTH", 0);
 		values.put("TYPE", TYPE_FILE);
+		
+		boolean pathIncluded = false;
 			
 		while(entries.hasNext()) {
 		//while(entries.hasMoreElements()) {
@@ -432,19 +434,23 @@ public class SongDatabase implements Runnable {
 			//ZipEntry ze = entries.nextElement();
 			Archive.Entry ze = entries.next();
 			
-			String n = ze.getPath(); //ze.getName();			
+			String n = ze.getPath(); // -> MUSIC/song.mod		
 			int slash = n.lastIndexOf('/');				
 			String fileName = n.substring(slash+1);
 			String path;
 			if(slash >= 0) {
-				path = baseName + n.substring(0, slash);
+				path = baseName + n.substring(0, slash); // -> '/sdcard/MODS/Stuff.zip/' + 'MUSIC'
 			} else {
-				path = baseNameNoSlash;
+				path = baseNameNoSlash; // Silly optimization
 			}
 
 			if(fileName.equals("")) {
+				pathIncluded = true;
 				pathSet.add(path);
 			} else {
+				
+				if(!pathIncluded && !path.equals(baseNameNoSlash))
+					pathSet.add(path);
 									
 				//InputStream is = zfile.getInputStream(ze);
 				
@@ -490,8 +496,36 @@ public class SongDatabase implements Runnable {
 		
 		values.clear();
 		values.put("TYPE", TYPE_DIR);
+		if(!pathIncluded) {
+			
+			// Add all parent paths to the paths already in pathSet
+			
+			Set<String> pathSet2 = new HashSet<String>();
+			for(String s : pathSet) {
+				//if(s.equals(baseNameNoSlash))
+				//	break;
+
+				int slash = 1;
+				while(slash > 0) {					
+					slash = s.lastIndexOf('/');
+					if(slash > 0) {
+						s = s.substring(0,slash);
+						if(s.equals(baseNameNoSlash))
+							break;
+						if(pathSet.contains(s))
+							break;
+						pathSet2.add(s);					
+					}
+				}
+			}
+			pathSet.addAll(pathSet2);
+		}
 		for(String s : pathSet) {
 			//ContentValues values = new ContentValues();
+			
+			if(!pathIncluded) {
+				Log.d(TAG, "Adding: %s", s);
+			}
 			
 			int slash = s.lastIndexOf('/');
 			String fileName = s.substring(slash+1);
