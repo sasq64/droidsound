@@ -551,7 +551,7 @@ public class PlayerActivity extends Activity  {
 				}
 				else if(intent.getAction().equals("com.sddb.droidsound.OPEN_DONE")) {
 					Log.d(TAG, "Open done!");
-
+/*
 					String s = prefs.getString("indexing", "Basic");
 					int imode = SongDatabase.INDEX_BASIC;
 					if(s.equals("Full")) {
@@ -560,7 +560,7 @@ public class PlayerActivity extends Activity  {
 						imode = SongDatabase.INDEX_NONE;
 					}
 					songDatabase.setIndexMode(imode);
-
+*/
 
 					if(lastConfig != null) {
 						Log.d(TAG, "CONFIG CHANGE");
@@ -1326,6 +1326,7 @@ public class PlayerActivity extends Activity  {
 		String b = prefs.getString("buffer", "Long");
 		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
 
+		/*
 		String s = prefs.getString("indexing", "Basic");
 		int imode = SongDatabase.INDEX_BASIC;
 		if(s.equals("Full")) {
@@ -1334,7 +1335,7 @@ public class PlayerActivity extends Activity  {
 			imode = SongDatabase.INDEX_NONE;
 		}
 
-		songDatabase.setIndexMode(imode);
+		songDatabase.setIndexMode(imode);*/
 	}
 
 	@Override

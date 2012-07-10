@@ -79,8 +79,8 @@ public class SongDatabase implements Runnable {
 
 	private volatile boolean isReady;
 
-	private int indexMode = -1;
-	private int lastIndexMode = -1;
+	//private int indexMode = -1;
+	//private int lastIndexMode = -1;
 
 	private File dbFile;
 	
@@ -272,32 +272,14 @@ public class SongDatabase implements Runnable {
 				scanCallback.notifyScan("Clearing tables", 0);
 				Log.d(TAG, "Deleting file tables!");
 				
-				// try {
-				// 	db.execSQL("DELETE FROM FILES;");
-				// 	db.execSQL("DELETE FROM VARIABLES;");
-				// } catch (SQLException e) {
-				// 	Log.d(TAG, "No tables do delete from, thats OK");
-				// }
-				
 				db.execSQL("DROP TABLE IF EXISTS FILES ;");
 				db.execSQL("DROP TABLE IF EXISTS VARIABLES ;");
 				db.execSQL("DROP TABLE IF EXISTS LINKS ;");
 				//db.execSQL("DROP TABLE IF EXISTS SONGINFO");
 				db.setVersion(DB_VERSION);
-			}
-	
-			if(drop) {
 				scanCallback.notifyScan("Creating tables", 0);
 			}
-			
-			/*
-			db.execSQL("CREATE TABLE IF NOT EXISTS SONGINFO (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-					"HASH INTEGER," +
-					"MD5 TEXT," +
-					"COMMENT TEXT," +
-					"SONGLENGTH TEXT" + ");"); */
-
-
+	
 			db.execSQL("CREATE TABLE IF NOT EXISTS " + "FILES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"PATH" + " TEXT," +
 					"FILENAME" + " TEXT," +
@@ -308,30 +290,23 @@ public class SongDatabase implements Runnable {
 					"DATE" + " INTEGER," +
 					"FORMAT" + " TEXT" + ");");
 					// "LENGTH" + " INTEGER" + 
-/*
-			db.execSQL("CREATE TABLE IF NOT EXISTS " + "METADATA" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
-					"CHECKSUM" + " INTEGER," +
-					"LAST_PLAYED" + " INTEGER," +
-					"POSITION" + " INTEGER," +
-					"TYPE" + " INTEGER," +
-					"RATING" + " INTEGER," +
-					"TAGS" + " STRING," +
-					"COMMENT" + " STRING," +
-					"PLAYCOUNT" + " INTEGER" + ");"); */
-
-			//db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");
-			//db.execSQL("CREATE INDEX IF NOT EXISTS titleindex ON FILES (TITLE) ;");
-			//db.execSQL("CREATE INDEX IF NOT EXISTS composerindex ON FILES (TITLE) ;");
 			
 			db.execSQL("CREATE TABLE IF NOT EXISTS " + "VARIABLES" + " (" + BaseColumns._ID + " INTEGER PRIMARY KEY," +
 					"VAR" + " TEXT," +
 					"VALUE" + " TEXT" + ");");
+			
+			db.execSQL("CREATE INDEX IF NOT EXISTS fileindex ON FILES (PATH) ;");		
+			db.execSQL("DROP INDEX IF EXISTS titleindex ;");
+			db.execSQL("DROP INDEX IF EXISTS composerindex ;");
+			db.execSQL("DROP INDEX IF EXISTS filenameindex ;");
+
 		} finally {		
 			db.close();
 		}
 		isReady = true;
 	}
 	
+	/*
 	private void createIndex(SQLiteDatabase db) {
 		
 			
@@ -372,7 +347,7 @@ public class SongDatabase implements Runnable {
 			
 			//indexMode = mode; 
 		//}
-	}
+	} */
 	
 	
 	private boolean scanZip(File zipFile) throws IOException {
@@ -914,17 +889,18 @@ public class SongDatabase implements Runnable {
 		mHandler.sendMessage(msg);
 	}
 
+	/*
 	public void setIndexMode(int mode) {
 		
 		 Log.d(TAG, "INDEX MODE " + mode);
 		 indexMode = mode;
-		/*
-		if(indexMode != mode) {
-			Message msg = mHandler.obtainMessage(MSG_INDEXMODE, mode, 0);
-			mHandler.sendMessage(msg);
-		} */
 		
-	}
+		//if(indexMode != mode) {
+		//	Message msg = mHandler.obtainMessage(MSG_INDEXMODE, mode, 0);
+		//	mHandler.sendMessage(msg);
+		//}
+		
+	} */
 	
 	private void doScanDir(String dir) {
 		
@@ -1093,10 +1069,10 @@ public class SongDatabase implements Runnable {
 			scanDb.update("VARIABLES", values, "VAR='lastscan'", null);
 		}
 			
-		if(indexMode != lastIndexMode) {
-			createIndex(scanDb);
-			lastIndexMode = indexMode;
-		}
+		//if(indexMode != lastIndexMode) {
+		//	createIndex(scanDb);
+		//	lastIndexMode = indexMode;
+		//}
 		
 		stopScanning = false;
 		isReady = true;
@@ -1541,43 +1517,6 @@ public class SongDatabase implements Runnable {
 			}
 		}
 	}
-	/*
-	public SongInfo getInfo(String md5) {
-		
-		int hash = (int)(Long.parseLong(md5.substring(24), 16) & 0xffffffff);
-		String hashStr = Integer.toString(hash);
-		
-		if(rdb == null) {
-			rdb = getReadableDatabase();
-		}
-
-		if(rdb.isDbLockedByOtherThreads()) {
-			return null;
-		}
-		
-		Cursor c = rdb.query("SONGINFO", new String [] { "MD5", "COMMENT", "SONGLENGTH" }, "HASH=?", new String[] { hashStr } ,null, null, null);
-
-		SongInfo info = new SongInfo();
-		
-		if(c.getCount() == 1) {
-			info.comment = c.getString(1);
-			info.length = c.getString(2);
-			return info;
-		}
-		
-		while(c.moveToNext()) {
-			String dbmd5 = c.getString(0);
-			Log.d(TAG, "Comparing %s to %s", dbmd5, md5);
-			if(dbmd5.equals(md5)) {
-				info.comment = c.getString(1);
-				info.length = c.getString(2);
-				return info;
-			}			
-		}
-		
-		return null;
-	}
-	*/
 
 	public void quit() {
 		stopScanning = true;
