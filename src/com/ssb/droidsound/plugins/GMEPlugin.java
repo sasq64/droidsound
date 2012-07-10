@@ -56,7 +56,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public boolean load(FileSource fs) {
-		if(fs.isFile()) 		
+		if(fs.isFile() || fs.getExt().equals("VGZ")) 		
 			currentSong = N_loadFile(fs.getFile().getPath());
 		else
 			currentSong = N_load(fs.getContents(), (int) fs.getLength());
@@ -65,7 +65,7 @@ public class GMEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public boolean loadInfo(FileSource fs)  {
-		if(fs.isFile()) 		
+		if(fs.isFile() || fs.getExt().equals("VGZ")) 		
 			currentSong = N_loadFile(fs.getFile().getPath());
 		else
 			currentSong = N_load(fs.getContents(), (int) fs.getLength());
