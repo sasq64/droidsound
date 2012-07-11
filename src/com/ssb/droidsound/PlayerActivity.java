@@ -840,6 +840,11 @@ public class PlayerActivity extends Activity  {
 		Log.d(TAG, "CREATED");
 	}
 	
+	private void displayError(int what) {
+		showDialog(what);
+	}
+	
+	
 	private void setupModsDir() {
 		
 		String md = prefs.getString("modsDir", null);
@@ -1419,6 +1424,14 @@ public class PlayerActivity extends Activity  {
 	}
 	
 	public void intChanged(int what, int value) {
+		
+		if(what == 999) {
+			displayError(R.string.player_crash);
+			return;
+		} else if (what == PlayerService.SONG_ERROR) {
+			displayError(R.string.could_not_play);
+		}
+		
 		playScreen.intChanged(what, value);
 	}
 

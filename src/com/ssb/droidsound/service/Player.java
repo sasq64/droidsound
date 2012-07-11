@@ -50,6 +50,7 @@ public class Player implements Runnable {
 	public static final int MSG_DETAILS = 6;
 	public static final int MSG_INFO = 7;
 	protected static final int MSG_WAVDUMPED = 8;
+	public static final int MSG_FAILED = 99;
 
 	// public static final int MSG_SUBTUNE = 5;
 
@@ -441,6 +442,10 @@ public class Player implements Runnable {
 			
 			return;
 		}
+		
+		Message msg = mHandler.obtainMessage(MSG_FAILED);
+		mHandler.sendMessage(msg);
+		
 		currentState = State.STOPPED;
 	}
 

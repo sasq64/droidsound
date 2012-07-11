@@ -67,7 +67,12 @@ public class PlayerService extends Service implements PlayerInterface {
 	public static final int SONG_FLAGS = 17;
 	public static final int SONG_SOURCE = 18;
 	public static final int SONG_BUFFERING = 19;
-	public static final int SONG_SIZEOF = 20;
+	
+	public static final int SONG_ERROR = 20;
+	
+	public static final int SONG_SIZEOF = 21;
+	
+	public static final int ERR_SONG_COULD_NOT_PLAY = 1;
 
 	public static final int OPTION_SPEECH = 0;
 	public static final int OPTION_SILENCE_DETECT = 1;
@@ -368,6 +373,11 @@ public class PlayerService extends Service implements PlayerInterface {
             		}
             		ps.performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_STATE);
             		break;
+            	case Player.MSG_FAILED:
+            		ps.info[SONG_STATE] = 0;
+            		ps.info[SONG_ERROR] = ERR_SONG_COULD_NOT_PLAY;
+            		ps.performCallback(SONG_FILENAME, SONG_TITLE, SONG_ERROR);
+            		break;
                 case Player.MSG_NEWSONG:
                 	
                 	
@@ -387,6 +397,7 @@ public class PlayerService extends Service implements PlayerInterface {
 					ps.info[SONG_SUBTUNE_AUTHOR] = ps.currentSongInfo.subtuneAuthor;
 					ps.info[SONG_FLAGS] = ps.currentSongInfo.canSeek ? 1 : 0;
 					ps.info[SONG_STATE] = 1;
+					ps.info[SONG_POS] = 0;
 					ps.info[SONG_SOURCE] = "";
 					ps.info[SONG_BUFFERING] = -1;
 					
@@ -411,7 +422,7 @@ public class PlayerService extends Service implements PlayerInterface {
 					if(hasRemoteControl)
 						ps.remoteControl.setMetaData((String) ps.info[SONG_AUTHOR], (String) ps.info[SONG_TITLE]);        			
 
-					ps.performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
+					ps.performCallback(SONG_FILENAME, SONG_TITLE, SONG_POS, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
                 	break;
                 case Player.MSG_DONE:
                 	Log.d(TAG, "Music done");
@@ -764,8 +775,8 @@ public class PlayerService extends Service implements PlayerInterface {
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 		player = new Player(audioManager, mHandler, getApplicationContext());
 		callbacks = new ArrayList<IPlayerServiceCallback>();
-		info = new Object [20];
-		for(int i=0; i<20; i++)
+		info = new Object [SONG_SIZEOF];
+		for(int i=0; i<SONG_SIZEOF; i++)
 			info[i] = null;
 		
 		

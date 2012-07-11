@@ -7,7 +7,6 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.DeadObjectException;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -94,6 +93,10 @@ public class PlayerServiceConnection implements ServiceConnection {
 	@Override
 	public void onServiceDisconnected(ComponentName name) {
 		Log.d(TAG, "Service Disconnected!");
+		if(handler != null) {
+			Message msg = handler.obtainMessage(999);
+			handler.sendMessage(msg);
+		}
 	}
 
 	public void bindService(Context ctx, Handler h) {
