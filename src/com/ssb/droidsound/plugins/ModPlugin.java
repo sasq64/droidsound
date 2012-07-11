@@ -25,8 +25,17 @@ public class ModPlugin extends DroidSoundPlugin {
 		extensions.add("IT");
 		extensions.add("UMX");
 		extensions.add("ULT");
-		//extensions.add("669");
-		extensions.add("STM");		
+		extensions.add("669");
+		extensions.add("STM");
+		extensions.add("FAR");
+		extensions.add("OKT");
+		extensions.add("MDL");
+		extensions.add("DMF");
+		extensions.add("MDL");
+		extensions.add("MT2");
+		extensions.add("PSM");
+		extensions.add("AMF");
+		extensions.add("AMS");
 	}
 	
 	long currentSong = 0;
@@ -219,7 +228,8 @@ public class ModPlugin extends DroidSoundPlugin {
 	@Override
 	public void unload() {		
 		author = null;
-		N_unload(currentSong);
+		if(currentSong != 0)
+			N_unload(currentSong);
 		currentSong = 0;
 	}
 	
@@ -235,22 +245,30 @@ public class ModPlugin extends DroidSoundPlugin {
 		
 		if(what == INFO_AUTHOR) {
 			return author;
-		}		
+		}
+		if(currentSong == 0)
+			return null;
 		return N_getStringInfo(currentSong, what);
 	}
 	@Override
-	public int getIntInfo(int what) { return N_getIntInfo(currentSong, what); }
+	public int getIntInfo(int what) { 
+		if(currentSong == 0)
+			return -1;
+		return N_getIntInfo(currentSong, what);
+	}
 
+	
 	@Override
 	public boolean loadInfo(FileSource fs) {
 
+		return true; /*
 		long song = N_load(fs.getContents(), (int) fs.getLength());
 		if(song == 0)
 			return false;
 		else {
 			author = guessAuthor(N_getStringInfo(song, 100));
 			return true;
-		}
+		}*/
 	}
 	
 	@Override
@@ -261,6 +279,9 @@ public class ModPlugin extends DroidSoundPlugin {
 	@Override
 	public void getDetailedInfo(List<String> list) {
 		
+		if(currentSong == 0)
+			return;
+
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
 		int channels = N_getIntInfo(currentSong, 101);
