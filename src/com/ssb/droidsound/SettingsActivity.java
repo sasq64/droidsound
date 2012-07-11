@@ -75,7 +75,10 @@ public class SettingsActivity extends PreferenceActivity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);		
+		super.onCreate(savedInstanceState);
+		
+		DroidSoundPlugin.setContext(getApplicationContext());
+		
 		addPreferencesFromResource(R.layout.preferences);
 		
 		songDatabase = PlayerActivity.songDatabase;
