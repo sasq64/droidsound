@@ -192,7 +192,7 @@
 	            android:title="Panning"
 	            android:defaultValue="Full Stereo"
                 android:entries="@array/panning_opts"
-                android:entryValues="@array/panning_opts"
+                android:entryValues="@array/panning_vals"
 	            />
 		<!--   CheckBoxPreference
 	            android:key="UADEPlugin.speedhack"
