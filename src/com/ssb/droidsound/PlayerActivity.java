@@ -841,6 +841,7 @@ public class PlayerActivity extends Activity  {
 	}
 	
 	private void displayError(int what) {
+		dialogShowing = true;
 		showDialog(what);
 	}
 	
@@ -1430,7 +1431,14 @@ public class PlayerActivity extends Activity  {
 			displayError(R.string.player_crash);
 			return;
 		} else if (what == PlayerService.SONG_ERROR) {
-			displayError(R.string.could_not_play);
+			switch(value) {
+			case 1:
+				displayError(R.string.could_not_play);
+				break;
+			default:
+				break;
+			}
+			return;
 		}
 		
 		playScreen.intChanged(what, value);

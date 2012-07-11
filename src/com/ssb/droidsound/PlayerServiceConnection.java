@@ -116,7 +116,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 			try {
 				mService.unRegisterCallback(mCallback);
 			} catch (RemoteException e) {
-				throw new RuntimeException(e);
+				//throw new RuntimeException(e);
 			}
 		}
 		ctx.unbindService(this);

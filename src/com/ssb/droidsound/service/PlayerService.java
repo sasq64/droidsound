@@ -377,6 +377,7 @@ public class PlayerService extends Service implements PlayerInterface {
             		ps.info[SONG_STATE] = 0;
             		ps.info[SONG_ERROR] = ERR_SONG_COULD_NOT_PLAY;
             		ps.performCallback(SONG_FILENAME, SONG_TITLE, SONG_ERROR);
+            		ps.info[SONG_ERROR] = 0;
             		break;
                 case Player.MSG_NEWSONG:
                 	
