@@ -1,0 +1,140 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:orientation="horizontal" >
+
+        <com.ssb.droidsound.FontTextView
+            android:id="@+id/seconds_text"
+            style="@style/LEDText"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="8dp"
+            font="led"
+            android:text="00:00"
+            android:textSize="26dp"
+            tools:ignore="HardcodedText" />
+
+        <SeekBar
+            android:id="@+id/song_seek"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.0"
+            android:progressDrawable="@drawable/seekbar" />
+
+        <com.ssb.droidsound.FontTextView
+            android:id="@+id/total_text"
+            style="@style/LEDText"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="5dp"
+            font="led"
+            android:text="00:00"
+            android:textSize="26dp"
+            tools:ignore="HardcodedText" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <ImageButton
+            android:id="@+id/back_button"
+            style="@style/Button"
+            android:background="@drawable/back_button"
+            android:scaleType="fitCenter" />
+
+        <ImageButton
+            android:id="@+id/play_button"
+            style="@style/Button"
+            android:background="@drawable/play_button"
+            android:scaleType="fitCenter" />
+
+        <ImageButton
+            android:id="@+id/stop_button"
+            style="@style/Button"
+            android:background="@drawable/stop_button"
+            android:contentDescription="@string/stop"
+            android:scaleType="fitCenter" />
+
+        <ImageButton
+            android:id="@+id/fwd_button"
+            style="@style/Button"
+            android:background="@drawable/fwd_button"
+            android:scaleType="fitCenter" />
+
+        <com.ssb.droidsound.FontTextView
+            android:id="@+id/songs_text"
+            style="@style/LEDText"
+            android:layout_gravity="center_vertical"
+            font="led"
+             android:layout_marginLeft="6dp"
+            android:text="01/01"
+            android:textColor="#6060ff"
+            android:textSize="25dp"
+            tools:ignore="HardcodedText" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+             />
+
+        <com.ssb.droidsound.FontTextView
+            android:id="@+id/shuffle_text"
+            style="@style/LEDText"
+            android:layout_width="64dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="16dp"
+            font="led"
+            android:gravity="center"
+            android:text="SEQ"
+            android:textColor="#80ffc0"
+            android:textSize="25dp" />
+
+        <com.ssb.droidsound.FontTextView
+            android:id="@+id/repeat_text"
+            style="@style/LEDText"
+            android:layout_width="64dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            font="led"
+            android:gravity="center"
+            android:text="CONT"
+            android:textColor="#80ffc0"
+            android:textSize="25dp" />
+
+        <com.ssb.droidsound.FontTextView
+            android:id="@+id/plus_text"
+            style="@style/LEDText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            font="led"
+            android:gravity="center"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="+"
+            android:textColor="#ff6060"
+            android:textSize="40dp" />
+        <!--
+		<com.ssb.droidsound.FontTextView android:id="@+id/wake_text" style="@style/LEDText" font="led"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:paddingLeft="10dp" android:paddingRight="10dp"
+			android:textSize="24dp"
+			android:textColor="#606060" android:gravity="center"
+			android:text="w" android:layout_gravity="center_vertical" />
+        -->
+    </LinearLayout>
+
+</LinearLayout>
