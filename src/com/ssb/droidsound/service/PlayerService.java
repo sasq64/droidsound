@@ -201,6 +201,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		ct.put("MINDFLOW", "Mind flow");
 		ct.put("MAKTONE", "Mact1");
 		ct.put("NE7", "N E 7");
+		ct.put("DRAX", "Drax");
 		ct.put("CYCLEBURNER", "Cycle burner");
 		ct.put("GLENN RUNE GALLEFOSS", "Glen Runay Gallefoss");
 	}
