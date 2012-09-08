@@ -1,10 +1,10 @@
-package com.ssb.droidsound.service;
+package com.ssb.droidsound.file;
 
 import java.io.File;
 
 import android.os.Environment;
 
-public class FileCache {
+public class FileUtils {
 	
 	public static File getTempDir() {
 		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
@@ -15,7 +15,7 @@ public class FileCache {
 	}
 
 	public static void removeDir(File dir) {
-		
+
 		File [] files = dir.listFiles();
 		for(File f : files) {
 			if(f.isFile())
@@ -25,7 +25,7 @@ public class FileCache {
 		}
 		dir.delete();
 	}
-	
+
 	public static String getBaseName(String fname) {
 		int slash = fname.lastIndexOf('/');
 		if(slash >= 0) {
@@ -37,6 +37,5 @@ public class FileCache {
 		}
 		return fname;
 	}
-	
 
 }

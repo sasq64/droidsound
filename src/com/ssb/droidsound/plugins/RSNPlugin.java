@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ssb.droidsound.file.FileSource;
-import com.ssb.droidsound.service.FileCache;
+import com.ssb.droidsound.file.FileUtils;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.UnRar;
 
@@ -85,7 +85,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 		}
 		//	plugin = new GMEPlugin();
 		
-		title = FileCache.getBaseName(source.getName());
+		title = FileUtils.getBaseName(source.getName());
 		
 		if(lookup.containsKey(title)) {
 			title = lookup.get(title);
@@ -95,7 +95,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 	
 		Log.d(TAG, "Unrar RSN");
 		rarFile = new UnRar(source.getFile().getPath());
-		targetFile = FileCache.getTempDir();//fs.getFile().getParentFile();
+		targetFile = FileUtils.getTempDir();//fs.getFile().getParentFile();
 		rarFile.extractTo(targetFile.getPath());		
 		File [] files = targetFile.listFiles();
 		handlers = new ArrayList<SongHandler>();
@@ -120,7 +120,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 	@Override
 	public boolean loadInfo(FileSource fs) {
 		
-		title = FileCache.getBaseName(fs.getName());
+		title = FileUtils.getBaseName(fs.getName());
 		
 		if(lookup.containsKey(title)) {
 			title = lookup.get(title);
@@ -137,7 +137,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 		}
 		
 		if(targetFile != null)
-			FileCache.removeDir(targetFile);
+			FileUtils.removeDir(targetFile);
 	}
 
 	@Override
