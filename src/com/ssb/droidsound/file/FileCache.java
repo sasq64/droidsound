@@ -21,9 +21,12 @@ public class FileCache {
 			file = f;
 			File dotFile = FileCache.getDotFile(f);
 			if(dotFile.exists()) {
-				time = dotFile.lastModified();
+				time = dotFile.lastModified() / 1000;
 			} else {
-				time = f.lastModified();
+				time = f.lastModified() / 1000;
+			}
+			if(time == 0) {
+				throw new RuntimeException("BUG");
 			}
 				
 		}
@@ -56,7 +59,7 @@ public class FileCache {
 		cacheDir.mkdirs();
 		
 		limitSize = 16*1024*1024;
-		
+		totalSize = 0;
 		indexFiles(cacheDir);
 		Collections.sort(fileList, new Comparator<CacheEntry>() {
 			@Override
@@ -65,9 +68,9 @@ public class FileCache {
 			}
 		});
 		
-		for(CacheEntry f : fileList) {
-			Log.d(TAG, "FILE: %s (%d)", f.file.getPath(), f.time);
-		}
+		//for(CacheEntry f : fileList) {
+		//	Log.d(TAG, "FILE: %s (%d)", f.file.getPath(), f.time);
+		//}
 		
 	}
 	
@@ -78,7 +81,6 @@ public class FileCache {
 
 	private void indexFiles(File dir) {
 		
-		totalSize = 0;
 		File [] files = dir.listFiles();
 		for(File f : files) {
 			if(f.isFile()) {
@@ -97,14 +99,22 @@ public class FileCache {
 		Log.d(TAG, "TOTAL SIZE IS %d", totalSize);
 		if(totalSize <= limitSize)
 			return;
-		for(CacheEntry f : fileList) {
+		
+		Iterator<CacheEntry> iter = fileList.iterator();
+		while (iter.hasNext()) {
+			CacheEntry f = iter.next();
 			totalSize -= f.file.length();
 			Log.d(TAG, "Removing FILE: %s", f.file.getPath());
 
 			f.file.delete();
-			if(totalSize <= limitSize)
+			getDotFile(f.file).delete();
+			
+			iter.remove();
+			
+			if(totalSize <= (limitSize - limitSize/10))
 				break;
 		}
+
 		indexFiles(cacheDir);
 	}
 	
