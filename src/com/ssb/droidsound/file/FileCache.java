@@ -26,7 +26,7 @@ public class FileCache {
 				time = f.lastModified() / 1000;
 			}
 			if(time == 0) {
-				throw new RuntimeException("BUG");
+				throw new RuntimeException("LASTMODIFIED IS ZERO");
 			}
 				
 		}
@@ -82,14 +82,16 @@ public class FileCache {
 	private void indexFiles(File dir) {
 		
 		File [] files = dir.listFiles();
-		for(File f : files) {
-			if(f.isFile()) {
-				if(f.getName().charAt(0) != '.') {
-					fileList.add(new CacheEntry(f));
-					totalSize += f.length();
+		if(files != null) {
+			for(File f : files) {
+				if(f.isFile() && f.length() > 0 && f.canRead()) {
+					if(f.getName().charAt(0) != '.') {
+						fileList.add(new CacheEntry(f));
+						totalSize += f.length();
+					}
+				} else {
+					indexFiles(f);
 				}
-			} else {
-				indexFiles(f);
 			}
 		}
 		dir.delete();
@@ -162,7 +164,7 @@ public class FileCache {
 		
 		file.getParentFile().mkdirs();
 		
-		if(file.exists()) {
+		if(file.exists() && file.length() > 0 && file.canRead()) {
 			Log.d(TAG, "Exists, move to end", file.getPath());
 			
 			File dotFile = getDotFile(file);

@@ -31,6 +31,10 @@ public class PSFFile {
 	}
 	
 	public static Map<String, String> getTags(byte [] module, int size) {
+		
+		if(module.length < 16 || size < 16)
+			return null;
+		
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
 		src.order(ByteOrder.LITTLE_ENDIAN);		
 		byte[] id = new byte[4];
@@ -43,23 +47,22 @@ public class PSFFile {
 		
 		if(id[0] == 'P' && id[1] == 'S' && id[2] == 'F' /*&& id[3] == 1*/) {
 			
-			
-			int resLen = src.getInt();
-			int comprLen = src.getInt();
-
-			src.position(resLen + comprLen + 16);
-			
-			if(src.remaining() >= 5) {
+			try {
+				int resLen = src.getInt();
+				int comprLen = src.getInt();
+	
+				src.position(resLen + comprLen + 16);
 				
-				byte [] tagHeader = new byte[5];		
-				src.get(tagHeader);
-				
-				if(new String(tagHeader).equals("[TAG]")) {
+				if(src.remaining() >= 5) {
 					
-					byte [] tagData = new byte [ size - comprLen - resLen - 21];
-					src.get(tagData);
+					byte [] tagHeader = new byte[5];		
+					src.get(tagHeader);
 					
-					try {
+					if(new String(tagHeader).equals("[TAG]")) {
+						
+						byte [] tagData = new byte [ size - comprLen - resLen - 21];
+						src.get(tagData);
+						
 						String tags = new String(tagData, "ISO-8859-1").trim();
 						
 						if(tags.contains("utf8=1")) {
@@ -78,11 +81,13 @@ public class PSFFile {
 								tagMap.put(parts[0], parts[1]);
 						}
 						return tagMap;
-					} catch (UnsupportedEncodingException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
 					}
 				}
+							
+			} catch (IllegalArgumentException iae) {
+				iae.printStackTrace();
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
 			}
 		}
 		return null;
