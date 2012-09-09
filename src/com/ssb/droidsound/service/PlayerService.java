@@ -784,7 +784,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		
 		phoneStateListener = new PhoneStateListener() {
 			
-			boolean didPause = false;
+			//boolean didPause = false;
 			
 			@Override
 			public void onCallStateChanged(int state, String incomingNumber) {
@@ -795,15 +795,15 @@ public class PlayerService extends Service implements PlayerInterface {
 				case TelephonyManager.CALL_STATE_OFFHOOK:
 					if(player != null && player.isPlaying()) {
 						player.paused(true);
-						didPause = true;
+						//didPause = true;
 					}
 					break;
-				case TelephonyManager.CALL_STATE_IDLE:
+				/*case TelephonyManager.CALL_STATE_IDLE:
 					if(didPause && player != null && !player.isPlaying()) {
 						player.paused(false);
 					}
 					didPause = false;
-					break;
+					break; */
 				}
 				
 				Log.d(TAG, "CALL STATE %d %s", state, incomingNumber);
