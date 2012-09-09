@@ -1306,7 +1306,7 @@ public class PlayerActivity extends Activity  {
 
 		boolean speech = prefs.getBoolean("speech", false);
 
-		if(speech && state.ttsStatus == TTS_UNINSTALLED) {
+		/*if(speech && state.ttsStatus == TTS_UNINSTALLED) {
 			// missing data, install it
 			state.ttsStatus = TTS_UNINSTALLED_ASK;
 
@@ -1319,9 +1319,9 @@ public class PlayerActivity extends Activity  {
 				}
 			});
 
-		} else {
+		} else {*/
 			player.setOption(PlayerService.OPTION_SPEECH, speech ? "on" : "off");
-		}
+		//}
 		player.setOption(PlayerService.OPTION_SILENCE_DETECT, prefs.getBoolean("silence", false) ? "on" : "off");
 		player.setOption(PlayerService.OPTION_DEFAULT_LENGTH, prefs.getString("default_length", "900"));		
 		player.setOption(PlayerService.OPTION_CYCLE_SUBTUNES, prefs.getBoolean("subtunes", false) ? "on" : "off");
