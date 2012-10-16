@@ -32,7 +32,7 @@ namespace ModPlug
 		0,
 		0,
 		0,
-		0
+		-1
 	};
 
 	int gSampleSize;

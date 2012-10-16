@@ -13,6 +13,8 @@
 #ifndef __SNDFILE_H
 #define __SNDFILE_H
 
+#include <android/log.h>
+
 #ifdef UNDER_CE
 int _strnicmp(const char *str1,const char *str2, int n);
 #endif
@@ -610,7 +612,11 @@ public:
 	UINT GetMusicTempo() const { return m_nMusicTempo; }
 	DWORD GetLength(BOOL bAdjust, BOOL bTotal=FALSE);
 	DWORD GetSongTime() { return GetLength(FALSE, TRUE); }
-	void SetRepeatCount(int n) { m_nRepeatCount = n; m_nInitialRepeatCount = n; }
+	void SetRepeatCount(int n) {
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "SNDFILE", "REPEAT %d", n);
+		m_nRepeatCount = n; m_nInitialRepeatCount = n;
+	}
 	int GetRepeatCount() const { return m_nRepeatCount; }
 	BOOL IsPaused() const {	return (m_dwSongFlags & SONG_PAUSED) ? TRUE : FALSE; }
 	void LoopPattern(int nPat, int nRow=0);

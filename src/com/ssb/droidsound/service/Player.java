@@ -37,6 +37,7 @@ public class Player implements Runnable {
 		STOP, // Unload and stop if playing
 		PLAY, // Play new file or last file
 		DUMP_WAV,
+		SET_LOOPMODE,
 		// Only when Playing:
 		PAUSE, UNPAUSE, SET_POS, SET_TUNE,
 	};
@@ -109,6 +110,8 @@ public class Player implements Runnable {
 	private boolean startedFromSub;
 	private int lastLatency;
 	private boolean firstData;
+	private volatile int loopMode = 0;
+	private volatile int oldLoopMode = -1;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -387,6 +390,8 @@ public class Player implements Runnable {
 
 				if(currentSong.subTunes == -1)
 					currentSong.subTunes = 0;
+				
+				currentPlugin.setOption("loop", loopMode);
 			}
 
 			startedFromSub = false;
@@ -470,13 +475,25 @@ public class Player implements Runnable {
 		noPlayWait = 0;
 		int pos = 0;
 		while(noPlayWait < 50) {
+			
+			if(loopMode != oldLoopMode) {
+				if(currentPlugin != null)
+					currentPlugin.setOption("loop", loopMode);
+				oldLoopMode = loopMode;
+			}
+			
 			try {
 				if(command != Command.NO_COMMAND) {
 
 					Log.d(TAG, "Command %s while in state %s", command.toString(), currentState.toString());
 
 					synchronized (cmdLock) {
+						
 						switch(command) {
+						//case SET_LOOPMODE:
+						//	if(currentPlugin != null)
+						//		currentPlugin.setOption("loop", (Integer)argument);
+						//	break;
 						case PLAY:
 							SongFile song = (SongFile) argument;
 							Log.d(TAG, "Playmod " + song.getName());
@@ -846,6 +863,17 @@ public class Player implements Runnable {
 			argument = song;
 		}
 	}
+	
+	public void setLoopMode(int what) {
+		synchronized (cmdLock) {
+		//	command = Command.SET_LOOPMODE;
+		//	argument = what;
+			loopMode = what;
+		
+		}
+	}
+
+	
 
 	public boolean isActive() {
 		return currentState != State.STOPPED;

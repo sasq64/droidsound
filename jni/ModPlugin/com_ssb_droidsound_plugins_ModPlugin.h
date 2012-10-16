@@ -79,6 +79,10 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getString
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getIntInfo
   (JNIEnv *, jobject, jlong, jint);
 
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1setOption
+  (JNIEnv *, jobject, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif

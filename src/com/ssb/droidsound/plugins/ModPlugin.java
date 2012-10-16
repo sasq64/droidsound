@@ -275,6 +275,13 @@ public class ModPlugin extends DroidSoundPlugin {
 	public boolean canSeek() {
 		return true;
 	}
+	
+	@Override
+	public void setOption(String o, Object val) {
+		if(o.equals("loop")) {
+			N_setOption(0, (Integer)val);
+		}
+	}
 
 	@Override
 	public void getDetailedInfo(List<String> list) {
@@ -315,5 +322,6 @@ public class ModPlugin extends DroidSoundPlugin {
 	native public boolean N_setTune(long song, int tune);
 	native public String N_getStringInfo(long song, int what);
 	native public int N_getIntInfo(long song, int what);
+	native public void N_setOption(int opt, int val);
 
 }

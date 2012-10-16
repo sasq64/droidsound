@@ -104,12 +104,17 @@ JNIEXPORT jboolean JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1canHandl
 }
 */
 
+static int loopMode = 0;
+
 struct ModInfo {
 	ModPlugFile *mod;
 	const char *modType;
 	char author[128];
 	char mod_name[128];
 	int mod_length;
+	jbyte *ptr;
+	int size;
+	jbyteArray array;
 };
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1loadInfo(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)
@@ -128,6 +133,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 	settings.mChannels = 2;
 	settings.mFrequency = 44100;
 	settings.mBits = 16;
+	settings.mLoopCount = -1;
 
 	ModPlug_SetSettings(&settings);
 
@@ -139,6 +145,9 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 	{
 		info = new ModInfo();
 		info->mod = mod;
+		info->ptr = ptr;
+		info->size = size;
+		info->array = bArray;
 		//guessAuthor(info);
 		strcpy(info->mod_name, ModPlug_GetName(mod));
 		info->mod_length = ModPlug_GetLength(mod);
@@ -177,7 +186,7 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 		}
 
 		ModPlug_SetSettings(&settings);
-
+		return (long)info;
 	}
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
@@ -189,8 +198,17 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1unload(JNIEn
 	ModInfo *info = (ModInfo*)song;
 	if(info->mod)
 		ModPlug_Unload(info->mod);
+	if(info->ptr)
+		env->ReleaseByteArrayElements(info->array, info->ptr, 0);
+
 	delete info;
 	info = NULL;
+}
+
+JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1setOption(JNIEnv *env, jobject obj, jint opt, jint val)
+{
+	loopMode = val;
+	__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "Loop mode %d", val);
 }
 
 
@@ -204,6 +222,12 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1getSoundData
 
 	//fprintf(stderr, "ptr %p, size %d\n", ptr, size);
 	int rc = ModPlug_Read(info->mod, (void*)ptr, size*2);
+
+	if(rc == 0 && loopMode == 1) {
+		ModPlug_Unload(info->mod);
+		info->mod = ModPlug_Load(info->ptr, info->size);
+		rc = ModPlug_Read(info->mod, (void*)ptr, size*2);
+	}
 
 	//__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "RC:%d, size:%d, ptr:%p", rc, size, ptr);
 	//__android_log_print(ANDROID_LOG_VERBOSE, "ModPlugin", "(%d) %d %d %d %d\n", rc, ptr[size/2], ptr[size/2+1], ptr[size-10], ptr[size-9]);

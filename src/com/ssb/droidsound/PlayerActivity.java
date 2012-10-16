@@ -327,9 +327,13 @@ public class PlayerActivity extends Activity  {
 			String music = intent.getDataString();
 			if(music.toUpperCase().endsWith(".ZIP")) {
 				if(music.startsWith("file:/")) {
-					music = music.substring(6);
+					music = music.substring(6);				
 				}
+				
+				music = URLDecoder.decode(music);
+				
 				File f = new File(music);
+				
 				moveFileHere(f);
 			} else {
 				Intent newIntent = new Intent(intent);

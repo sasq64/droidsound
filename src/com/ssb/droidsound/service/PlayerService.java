@@ -1038,6 +1038,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			whenStopped();
 	    	//userInterferred = false;
 			info[SONG_REPEAT] = defaultRepeatMode;
+			player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
 			performCallback(SONG_REPEAT);
 		}
 
@@ -1121,6 +1122,7 @@ public class PlayerService extends Service implements PlayerInterface {
 					break;
 				case OPTION_REPEATMODE:
 					info[SONG_REPEAT] = Integer.parseInt(arg);
+					player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
 					performCallback(SONG_REPEAT);
 					break;
 				//case OPTION_SILENCE_DETECT:
@@ -1205,6 +1207,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			beforePlay(mod.getName());
 			player.playMod(mod);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
+	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
 			//performCallback(SONG_SOURCE, SONG_REPEAT);
 
 	    	return true;
@@ -1249,6 +1252,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			beforePlay(song.getName());
 			player.playMod(song);
 	    	info[SONG_REPEAT] = defaultRepeatMode;
+	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
 			performCallback(SONG_REPEAT);
 
 
@@ -1259,6 +1263,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		public void playNext() throws RemoteException {
 			Log.d(TAG, "### PLAY NEXT");
 	    	info[SONG_REPEAT] = defaultRepeatMode;
+	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
 			performCallback(SONG_REPEAT);
 			playNextFile();
 		}
@@ -1266,6 +1271,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		@Override
 		public void playPrev() throws RemoteException {
 	    	info[SONG_REPEAT] = defaultRepeatMode;
+	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
 			performCallback(SONG_REPEAT);
 			playPrevFile();
 		}
