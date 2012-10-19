@@ -372,6 +372,7 @@ public class PlayScreen {
 			variables.clear();
 			File imageDir = new File(Environment.getExternalStorageDirectory(), "droidsound/images");
 			variables.put("IMAGEPATH", "file://" + imageDir.getPath() + "/");
+			variables.put("FONTPATH", "file://" + imageDir.getPath() + "/");
 			if(state.songDetails != null) {
 				variables.putAll(state.songDetails);
 				//for(int i=0; i<state.songDetails.length; i+=2) {
@@ -427,7 +428,7 @@ public class PlayScreen {
 		
 		String output = engine.transform(html, variables);
 		
-		infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);
+		infoText.loadDataWithBaseURL("file:///android_asset", output, "text/html", "utf-8", null);
 	}
 	
 	void update() {

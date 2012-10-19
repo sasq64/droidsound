@@ -1,5 +1,12 @@
 <html><head><style type="text/css">
+
+@font-face {
+    font-family: 'topaz';
+    src: url('${FONTPATH}topaz.ttf');
+}
+
 body {
+	font-family: 'topaz';
 	color: #ffffff; background-color: #000000;
 }
 img {
@@ -8,14 +15,15 @@ img {
     margin-right: auto;
     width: 80%
 }
+
 </style></head><body>
 ${if isMOD}<img src="${IMAGEPATH}amiga.jpg"/><br/>${end}
 ${if isXM}<img src="${IMAGEPATH}ft2logo.png"/><br/>${end}
-<b>Format:</b> ${format}<br/>
-<b>Channels:</b> ${channels}<br/>
+<font color="#ffff66"/>Format:</font> ${format}<br/>
+<font color="#ffff66"/>Channels:</font> ${channels}<br/>
 <b>Intruments</b><br/>
-<tt><font color="#66ff66"/>
-${foreach instruments item}${item}<br/>${end}
-</tt></font>
-<b>Size:</b> ${sizeText}<br/>
+<font color="#66ff66"/>
+${foreach instruments item}&nbsp;${item}<br/>${end}
+</font>
+<font color="#ffff66"/>Size:</font> ${sizeText}<br/>
 </html></body>
