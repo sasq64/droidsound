@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import android.content.Context;
 
@@ -251,10 +252,10 @@ public class SidPlugin extends DroidSoundPlugin {
 	
 
 	@Override
-	public void getDetailedInfo(List<String> list) {
+	public void getDetailedInfo(Map<String, Object> list) {
 		final String sids[] = { "UNKNOWN", "6581", "8580", "6581 & 8580" };
 		final String videoModes[] = { "UNKNOWN", "PAL", "NTSC", "PAL & NTSC" };
-		String[] info = new String[] {
+		/*String[] info = new String[] {
 			"Format",
 			songInfo.format,
 			"Copyright",
@@ -264,7 +265,11 @@ public class SidPlugin extends DroidSoundPlugin {
 			"Video Mode",
 			videoModes[songInfo.videoMode],
 		};		
-		list.addAll(Arrays.asList(info));
+		list.addAll(Arrays.asList(info));*/
+		list.put("format", songInfo.format);
+		list.put("copyright", songInfo.copyright);
+		list.put("sidmodel", sids[songInfo.sidModel]);
+		list.put("videomode", videoModes[songInfo.videoMode]);
 	}
 	
 	@Override

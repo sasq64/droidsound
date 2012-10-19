@@ -1,7 +1,9 @@
 package com.ssb.droidsound;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -229,14 +231,47 @@ public class PlayerServiceConnection implements ServiceConnection {
 		}
 	}
 	
-	public String [] getSongInfo() {
+
+	public Map<String, Object> getSongInfo() {
 		try {
-			return mService.getSongInfo();
+			String[] s = mService.getSongInfo();
+			return arrayToMap(s);
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	private Map<String, Object> arrayToMap(String[] s) {
+		
+		HashMap<String, Object> m = new HashMap<String, Object>();
+		
+		for(int i=0; i<s.length; i+=3) {
+			
+			String type = s[i];
+			String key = s[i+1];
+			String val = s[i+2];
+			
+			switch(type.charAt(0)) {
+			case 'I':
+				m.put(key,  Integer.parseInt(val));
+				break;
+			case 'A':
+				m.put(key, val.split("\n"));
+				break;
+			case 'B':
+				m.put(key, Boolean.parseBoolean(val));
+				break;
+			default:
+				m.put(key, val);
+				break;
+			}
+			
+						
+		}
+		return m;
+		
 	}
 
 	public byte [] getSongMD5() {

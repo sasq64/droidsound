@@ -1,6 +1,7 @@
 package com.ssb.droidsound.plugins;
 
 import java.util.List;
+import java.util.Map;
 
 import com.ssb.droidsound.file.FileSource;
 
@@ -23,9 +24,8 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	
 	
 	@Override
-	public void getDetailedInfo(List<String> list) {
-		list.add("Format");
-		list.add("Hively/AHX");
+	public void getDetailedInfo(Map<String, Object> list) {
+		list.put("dormat", "Hively/AHX");
 	}
 	
 	@Override

@@ -1,5 +1,7 @@
 package com.ssb.droidsound;
 
+import java.util.Map;
+
 import android.content.BroadcastReceiver;
 import android.database.sqlite.SQLiteDatabase;
 
@@ -18,7 +20,7 @@ public class PlayState {
 	public String songComposer;
 	public String dirTitle;
 	public String dirSubTitle;
-	public String[] songDetails;
+	public Map<String, Object> songDetails;
 	public int ttsStatus;
 	public int songState;
 	public SongFile operationSong;

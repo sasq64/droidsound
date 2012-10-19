@@ -5,32 +5,32 @@
     android:background="#000000"
     android:orientation="vertical" >
 
-	<TextView
-		android:id="@+id/title_text"
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:paddingLeft="4dp"
-		android:paddingTop="4dp"
-		android:ellipsize="marquee"
-		android:singleLine="true"
-		android:textColor="#FFFFFFFF"
-		android:background="#FF000080"
-		android:textSize="20dp"
-		android:textStyle="bold" />
+    <TextView
+        android:id="@+id/title_text"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#FF000080"
+        android:ellipsize="marquee"
+        android:paddingLeft="4dp"
+        android:paddingTop="4dp"
+        android:singleLine="true"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20dp"
+        android:textStyle="bold" />
 
-	<TextView
-		android:id="@+id/subtitle_text"
-		android:paddingLeft="4dp"
-		android:paddingBottom="4dp"
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:ellipsize="marquee"
-		android:singleLine="true"
-		android:textColor="#FFFFFFFF"
-		android:background="#FF000080"
-		android:textSize="15dp" />
+    <TextView
+        android:id="@+id/subtitle_text"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#FF000080"
+        android:ellipsize="marquee"
+        android:paddingBottom="4dp"
+        android:paddingLeft="4dp"
+        android:singleLine="true"
+        android:textColor="#FFFFFFFF"
+        android:textSize="15dp" />
 
-	<TextView
+    <TextView
         android:id="@+id/plinfo_text"
         style="@style/InfoTitle"
         android:background="#4040A0"
@@ -40,14 +40,11 @@
         style="@style/InfoTitle"
         android:text="@string/info" />
 
-    <TextView
-        android:id="@+id/info_text"
-        android:layout_width="fill_parent"
-        android:layout_height="0dip"
-        android:layout_weight="1.0"
-        android:autoLink="web|email"
-        android:maxLines="100"
-        android:scrollbars="vertical" />
+    <WebView
+        android:id="@+id/web_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.0" />
 
     <TextView
         android:id="@+id/low_text"

@@ -39,22 +39,19 @@ public class GSFPlugin extends DroidSoundPlugin {
 
 	
 	@Override
-	public void getDetailedInfo(List<String> list) {
+	public void getDetailedInfo(Map<String, Object> list) {
 		
 		//String s = N_getStringInfo(currentSong, INFO_TYPE);
 		//if(s != null & s.length() > 0) {
-			list.add("Format");
-			list.add("GSF/Gameboy Advance");
+			list.put("format", "GSF/Gameboy Advance");
 		//}
 		//s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
 		if(info[INFO_COPYRIGHT] != null) {
-			list.add("Copyright");
-			list.add(info[INFO_COPYRIGHT]);
+			list.put("copyright", info[INFO_COPYRIGHT]);
 		}
 		//s = N_getStringInfo(currentSong, INFO_GAME);
 		if(info[INFO_GAME] != null) {
-			list.add("Game");
-			list.add(info[INFO_GAME]);
+			list.put("game", info[INFO_GAME]);
 		}
 	}
 	

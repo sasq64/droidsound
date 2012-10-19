@@ -1,7 +1,14 @@
 package com.ssb.droidsound;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
 import android.app.Activity;
 import android.content.Context;
+import android.os.Environment;
 import android.text.Html;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
@@ -9,10 +16,14 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.floreysoft.jmte.Engine;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.utils.Log;
 
@@ -39,7 +50,8 @@ public class PlayScreen {
 	private TextView repeatText;
 	private TextView plusText;
 
-	private TextView infoText;
+	//private TextView infoText;
+	private WebView infoText;
 	private TextView plinfoText;
 
 	private Activity activity;
@@ -47,6 +59,8 @@ public class PlayScreen {
 	private TextView titleText;
 
 	private TextView subtitleText;
+	
+	private Map<String, Object> variables = new HashMap<String, Object>();
 	
 	public View getView() {
 		return parent;
@@ -76,8 +90,19 @@ public class PlayScreen {
 		repeatText = (TextView) parent.findViewById(R.id.repeat_text);
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
-		infoText = (TextView) parent.findViewById(R.id.info_text);
-		infoText.setMovementMethod(ScrollingMovementMethod.getInstance());
+		infoText = (WebView) parent.findViewById(R.id.web_view);
+		
+        /*WebViewClient client = new WebViewClient() {
+        	@Override
+        	public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+        		Log.d(TAG, "WANT TO LOAD " + url);
+        		return super.shouldInterceptRequest(view, url);
+        	}
+        };
+        infoText.setWebViewClient(client); */
+
+		
+		//infoText.setMovementMethod(ScrollingMovementMethod.getInstance());
 		plinfoText = (TextView) parent.findViewById(R.id.plinfo_text);
 
 		titleText = (TextView) parent.findViewById(R.id.title_text);		
@@ -315,8 +340,9 @@ public class PlayScreen {
 			state.subtuneTitle = null;
 		case PlayerService.SONG_DETAILS:
 			state.songDetails = player.getSongInfo();
-			//hexdump(md5);
-			Log.d(TAG, "#### Got %d details", state.songDetails != null ? state.songDetails.length : -1);
+			
+			Log.d(TAG, "#### Got %d details", state.songDetails != null ? state.songDetails.size() : -1);
+			/*
 			if(state.songDetails != null) {
 				StringBuilder sb = new StringBuilder("<tt>");
 				for(int i = 0; i < state.songDetails.length; i += 2) {
@@ -338,10 +364,22 @@ public class PlayScreen {
 					}
 				}
 				sb.append("</tt>");
-				infoText.setText(Html.fromHtml(sb.toString()));
+				//infoText.setText(Html.fromHtml(sb.toString()));
+				infoText.loadData(sb.toString(), "text/html", "utf-8");
 			} else {
-				infoText.setText("");
+				infoText.clearView();
+			} */
+			variables.clear();
+			File imageDir = new File(Environment.getExternalStorageDirectory(), "droidsound/images");
+			variables.put("IMAGEPATH", "file://" + imageDir.getPath() + "/");
+			if(state.songDetails != null) {
+				variables.putAll(state.songDetails);
+				//for(int i=0; i<state.songDetails.length; i+=2) {
+				//	variables.put(state.songDetails[i], state.songDetails[i+1]);
+				//}
 			}
+			updateInfo();			
+			
 			infoText.scrollTo(0, 0);
 			update();
 			break;
@@ -367,6 +405,29 @@ public class PlayScreen {
 			break;
 
 		}
+	}
+	
+	void updateInfo() {
+		
+        InputStream is;
+        String html = null;
+        
+        
+		try {
+			is = activity.getAssets().open("info.mod.html");
+			byte [] data = new byte [is.available()];        
+	        is.read(data);
+	        is.close();
+	        html = new String(data, "ISO8859_1");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}        
+		
+		Engine engine = new Engine();
+		
+		String output = engine.transform(html, variables);
+		
+		infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);
 	}
 	
 	void update() {

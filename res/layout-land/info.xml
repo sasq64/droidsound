@@ -51,14 +51,11 @@
         android:background="#4040A0"
         android:gravity="right" />
 
-    <TextView
-        android:id="@+id/info_text"
-        android:layout_width="fill_parent"
+    <WebView
+        android:id="@+id/web_view"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1.0"
-        android:autoLink="web|email"
-        android:maxLines="100"
-        android:scrollbars="vertical" />
+        android:layout_weight="1.0" />
 
     <LinearLayout
         android:layout_width="fill_parent"

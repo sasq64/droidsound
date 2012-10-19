@@ -3,6 +3,7 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import android.media.MediaPlayer;
 
@@ -55,7 +56,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public void getDetailedInfo(List<String> info) {
+	public void getDetailedInfo(Map<String, Object> info) {
 		
 		if(streamer != null) {
 			streamer.getDetailedInfo(info);
@@ -64,24 +65,19 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		Log.d(TAG, "getDetailedInfo");
 		
-		info.add("Format");
-		info.add("MP3");
+		info.put("format", "MP3");
 		
 		if(songAlbum != null && songAlbum.length() > 0) {
-			info.add("Album");
-			info.add(songAlbum);
+			info.put("Album", songAlbum);
 		}
 		if(songTrack != null && songTrack.length() > 0) {
-			info.add("Track");
-			info.add(songTrack);
+			info.put("Track", songTrack);
 		}
 		if(songGenre != null && songGenre.length() > 0) {
-			info.add("Genre");
-			info.add(songGenre);
+			info.put("Genre", songGenre);
 		}
 		if(songComment != null && songComment.length() > 0) {
-			info.add("Comment");
-			info.add(songComment);
+			info.put("Comment", songComment);
 		}		
 	}
 

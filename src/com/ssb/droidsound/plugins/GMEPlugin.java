@@ -2,6 +2,7 @@ package com.ssb.droidsound.plugins;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.ssb.droidsound.file.FileSource;
@@ -35,22 +36,22 @@ public class GMEPlugin extends DroidSoundPlugin {
 
 	
 	@Override
-	public void getDetailedInfo(List<String> list) {
+	public void getDetailedInfo(Map<String, Object> list) {
 		
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
 		if(s != null & s.length() > 0) {
-			list.add("Format");
-			list.add("GME: " + s);
+			list.put("format", s);
+			//list.add("GME: " + s);
 		}
 		s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
 		if(s != null & s.length() > 0) {
-			list.add("Copyright");
-			list.add(s);
+			list.put("copyright", s);
+			//list.add(s);
 		}
 		s = N_getStringInfo(currentSong, INFO_GAME);
 		if(s != null & s.length() > 0) {
-			list.add("Game");
-			list.add(s);
+			list.put("game", s);
+			//list.add(s);
 		}		
 	}
 	

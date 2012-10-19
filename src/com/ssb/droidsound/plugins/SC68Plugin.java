@@ -3,6 +3,7 @@ package com.ssb.droidsound.plugins;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.Map;
 
 import android.os.Environment;
 
@@ -98,7 +99,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
 	
 	@Override
-	public void getDetailedInfo(List<String> info) {
+	public void getDetailedInfo(Map<String, Object> info) {
 		
 		String replay = getStringInfo(52);
 		String hwname = getStringInfo(51);
@@ -106,10 +107,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 		if(replay == null) replay = "?";
 		if(hwname == null) hwname = "?";
 		
-		info.add("Format");
-		info.add(String.format("SC68: %s", replay));
-		info.add("Hardware");
-		info.add(String.format("%s (%s)", hwname, hws[hwbits]));
+		info.put("format", String.format("SC68: %s", replay));
+		info.put("hardware", String.format("%s (%s)", hwname, hws[hwbits]));
 	}
 
 	@Override

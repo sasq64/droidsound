@@ -7,7 +7,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import android.content.Context;
 import android.media.AudioManager;
@@ -65,7 +68,7 @@ public class Player implements Runnable {
 		int length;
 		int subTunes;
 		int startTune;
-		public String[] details;
+		public String [] details;
 		public String subtuneTitle;
 		public String subtuneAuthor;
 		public String fileName;
@@ -319,6 +322,7 @@ public class Player implements Runnable {
 		}
 		
 		String sizeAsText = makeSize(songSource.getLength());
+		long size = songSource.getLength();
 		songSource.close();
 		songSource = null;
 
@@ -348,12 +352,12 @@ public class Player implements Runnable {
 				currentSong.subTunes = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
 				currentSong.startTune = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE);
 				
-				ArrayList<String> info = new ArrayList<String>();
+				HashMap<String, Object> info = new HashMap<String, Object>();
 				
-				currentPlugin.getDetailedInfo(info);				
-				info.add("Size");
-				info.add(sizeAsText);
-				currentSong.details = (String[]) info.toArray(new String[info.size()]);
+				currentPlugin.getDetailedInfo(info);
+				info.put("size", size);
+				info.put("sizeText", sizeAsText);
+				currentSong.details = mapToArray(info);
 				
 				//currentSong.details = new String[info.size() + 2];
 				//for(int i = 0; i < info.size(); i++) {
@@ -640,11 +644,11 @@ public class Player implements Runnable {
 								mHandler.sendMessage(msg);
 							}
 							
-							List<String> info = currentPlugin.getDetailedInfo();
+							Map<String, Object> info = currentPlugin.getDetailedInfo();
 							if(info != null) {
 								 
 								Log.d(TAG, "########################################### GOT DETAILS");
-								currentSong.details = (String[]) info.toArray(new String[info.size()]);
+								currentSong.details = mapToArray(info);
 								Message msg = mHandler.obtainMessage(MSG_DETAILS, currentSong.details);
 								mHandler.sendMessage(msg);
 							}
@@ -908,6 +912,39 @@ public class Player implements Runnable {
 			argument = new Object [] {song, new File(destFile), length, flags};
 		}
 		
+	}
+	
+	public String [] mapToArray(Map<String, Object> m) {
+		
+		String [] s = new String [m.size() * 3];
+		
+		int i = 0;
+		for(Entry<String, Object> e: m.entrySet()) {
+			String t = "";
+			String v = "";
+			Object val = e.getValue();
+			if(val instanceof String []) {
+				t = "A";
+				StringBuilder sb = new StringBuilder();
+				for(String si : (String [])e.getValue()) {
+					sb.append(si).append("\n");
+				}
+				v = sb.toString();
+			} else if(val instanceof Integer || val instanceof Long) {
+				t = "I";
+				v = String.valueOf(e.getValue());
+			} else if(val instanceof Boolean) {
+				t = "B";
+				v = String.valueOf(e.getValue());
+			} else {
+				t = "S";
+				v = (String) e.getValue();
+			}
+			s[i++] = t;
+			s[i++] = e.getKey();
+			s[i++] = v;
+		}
+		return s;
 	}
 
 }

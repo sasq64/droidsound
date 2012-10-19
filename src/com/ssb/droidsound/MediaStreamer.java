@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnPreparedListener;
@@ -717,67 +718,55 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		return 0;
 	}
 
-	public void getDetailedInfo(List<String> info) {
+	public void getDetailedInfo(Map<String, Object> info) {
 				
-		info.add("Format");
 		if(parseMp3)
-			info.add("MP3 Stream");
+			info.put("format", "MP3 Stream");
 		else
-			info.add("Stream");
+			info.put("format", "Stream");
 
 		
 		
 		if(songAlbum != null && songAlbum.length() > 0) {
-			info.add("Album");
-			info.add(songAlbum);
+			info.put("album", songAlbum);
 		}
 		if(songTrack != null && songTrack.length() > 0) {
-			info.add("Track");
-			info.add(songTrack);
+			info.put("track", songTrack);
 		}
 		if(songGenre != null && songGenre.length() > 0) {
-			info.add("Genre");
-			info.add(songGenre);
+			info.put("genre", songGenre);
 		}
 
 		if(bitRate != 0) {
-			info.add("Bitrate");
 			if(VBR) {
-				info.add(String.format("VBR (~%dKbit)", avgBitrate / 1000));
+				info.put("bitrate", String.format("VBR (~%dKbit)", avgBitrate / 1000));
 			} else {
-				info.add(String.format("%dKbit", bitRate / 1000));
+				info.put("bitrate", String.format("%dKbit", bitRate / 1000));
 			}
 		}
 
 		if(songComment != null && songComment.length() > 0) {
-			info.add("Comment");
-			info.add(songComment);
+			info.put("comment", songComment);
 		}
 		
 		if(contentLength > 0) {
-			info.add("Size");
-			info.add(Player.makeSize(contentLength));
+			info.put("size", Player.makeSize(contentLength));
 		}
 				
 		if(icyName != null) {
-			info.add("Name");
-			info.add(icyName);
+			info.put("name", icyName);
 		}
 		if(icyDesc != null) {
-			info.add("Description");
-			info.add(icyDesc);
+			info.put("description", icyDesc);
 		}
 		if(icyUrl != null) {
-			info.add("URL");
-			info.add(icyUrl);
+			info.put("url", icyUrl);
 		}
 		if(icyGenre != null) {
-			info.add("Genre");
-			info.add(icyGenre);
+			info.put("genre", icyGenre);
 		}
 		if(bitRate == 0 && icyBitrate != null) {
-			info.add("Bitrate");
-			info.add(icyBitrate);
+			info.put("bitrate", icyBitrate);
 		}
 
 	}

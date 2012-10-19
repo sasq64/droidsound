@@ -2,6 +2,7 @@ package com.ssb.droidsound.plugins;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.ssb.droidsound.file.FileSource;
@@ -284,7 +285,7 @@ public class ModPlugin extends DroidSoundPlugin {
 	}
 
 	@Override
-	public void getDetailedInfo(List<String> list) {
+	public void getDetailedInfo(Map<String, Object> list) {
 		
 		if(currentSong == 0)
 			return;
@@ -293,14 +294,14 @@ public class ModPlugin extends DroidSoundPlugin {
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
 		int channels = N_getIntInfo(currentSong, 101);
 		
-		list.add("Format");
-		list.add("MODPlug: " + fmt);
-		list.add("Channels");
-		list.add(Integer.toString(channels));
+		list.put("is" + fmt, Boolean.TRUE);
+		
+		list.put("format", fmt);
+		list.put("channels", channels);
 
-		if(instruments != null && instruments.length() > 0) {
-			list.add("Instruments");
-			list.add(instruments);
+		if(instruments != null && instruments.length() > 0) {			
+			String[] instrArray = instruments.split("\\n");			
+			list.put("instruments", instrArray);
 		}
 	}
 	

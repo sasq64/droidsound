@@ -328,11 +328,11 @@ public class PlayerService extends Service implements PlayerInterface {
             		ps.info[SONG_FILENAME] = null;
             		break;
             	case Player.MSG_DETAILS:
-            		sa = (String [])msg.obj;
+            		//sa = (String [])msg.obj;
             		ps.info[SONG_DETAILS] = "DETAILS";
-            		ps.currentSongInfo.details = sa;
+            		ps.currentSongInfo.details = (String[]) msg.obj;
             		ps.performCallback(SONG_DETAILS);
-            		Log.d(TAG, "%%%%%%%% Sending %d details", sa.length);
+            		//Log.d(TAG, "%%%%%%%% Sending %d details", sa.length);
             		break;
             	case Player.MSG_INFO:
         			sa = (String [])msg.obj;

@@ -8,6 +8,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import android.os.Environment;
@@ -193,13 +194,12 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public void getDetailedInfo(List<String> list) {
+	public void getDetailedInfo(Map<String, Object> list) {
 
 		if(currentSong == 0) {
 			return;
 		}
-		list.add("Format");
-		list.add("UADE: " + N_getStringInfo(currentSong, INFO_TYPE));
+		list.put("format", N_getStringInfo(currentSong, INFO_TYPE));
 	}
 
 	@Override

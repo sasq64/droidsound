@@ -26,20 +26,17 @@ public class SexyPSFPlugin extends DroidSoundPlugin {
 	}
 	
 	@Override
-	public void getDetailedInfo(List<String> info) {
+	public void getDetailedInfo(Map<String, Object> info) {
 
 		String game = getStringInfo(INFO_GAME);
 		String copyright = getStringInfo(INFO_COPYRIGHT);
 
-		info.add("Format");
-		info.add("PSF (Playstation1)");
+		info.put("format", "PSF (Playstation1)");
 		if(game != null) {
-			info.add("Game");
-			info.add(game);
+			info.put("game", game);
 		}
 		if(copyright != null) {
-			info.add("Copyright");
-			info.add(copyright);
+			info.put("copyright", copyright);
 		}
 	}
 	

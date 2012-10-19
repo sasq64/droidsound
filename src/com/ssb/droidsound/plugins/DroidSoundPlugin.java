@@ -3,6 +3,7 @@ package com.ssb.droidsound.plugins;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -121,13 +122,24 @@ public abstract class DroidSoundPlugin {
 	// "Channels" - Number of channels
 	// "Copyright" - Same as INFO_COPYRIGHT
 	// "Game" - Same as INFO_GAME
-	public void getDetailedInfo(List<String> details) {
+	public void getDetailedInfo(Map<String, Object> details) {
 	}
 	
-	public List<String> getDetailedInfo() {
-		List<String> details = new ArrayList<String>();
+	public Map<String, Object> getDetailedInfo() {
+		Map<String, Object> details = new HashMap<String, Object>();
 		getDetailedInfo(details);
 		return details;
+	}
+	
+	public Object [] getDetailedArray() {
+		Map<String, Object> info = getDetailedInfo();
+		Object[] array = new Object [ info.size() * 2];//(String[]) info.toArray(new String[info.size()]);
+		int i = 0;
+		for(Entry<String, Object> e: info.entrySet()) {
+			array[i++] = e.getKey();
+			array[i++] = e.getValue();
+		}
+		return array;
 	}
 
 	public abstract String getStringInfo(int what);
