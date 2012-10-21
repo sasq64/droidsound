@@ -52,15 +52,19 @@ public class PlayScreen {
 
 	//private TextView infoText;
 	private WebView infoText;
-	private TextView plinfoText;
+	//private TextView plinfoText;
 
 	private Activity activity;
 
-	private TextView titleText;
+	//private TextView titleText;
 
-	private TextView subtitleText;
+	//private TextView subtitleText;
 	
 	private Map<String, Object> variables = new HashMap<String, Object>();
+
+	private Engine engine;
+
+	private String infoHtml;
 	
 	public View getView() {
 		return parent;
@@ -103,12 +107,14 @@ public class PlayScreen {
 
 		
 		//infoText.setMovementMethod(ScrollingMovementMethod.getInstance());
-		plinfoText = (TextView) parent.findViewById(R.id.plinfo_text);
+		//plinfoText = (TextView) parent.findViewById(R.id.plinfo_text);
 
-		titleText = (TextView) parent.findViewById(R.id.title_text);		
-		subtitleText = (TextView) parent.findViewById(R.id.subtitle_text);
+		//titleText = (TextView) parent.findViewById(R.id.title_text);		
+		//subtitleText = (TextView) parent.findViewById(R.id.subtitle_text);
 		
 		shuffleText.setText(state.shuffleSongs ? "RND" : "SEQ");
+		
+		engine = new Engine();
 
 		stopButton.setOnClickListener(new OnClickListener() {
 			@Override
@@ -329,10 +335,11 @@ public class PlayScreen {
 		switch(what) {
 		case PlayerService.SONG_SOURCE:
 			Log.d(TAG, "SOURCE IS " + value);
-			if(value != null && value.length() > 0) {
-				plinfoText.setText(value);
-			} else 
-				plinfoText.setText("");
+			state.songSource = value;
+			//if(value != null && value.length() > 0) {
+			//	plinfoText.setText(value);
+			//} else 
+			//	plinfoText.setText("");
 			break;
 		case PlayerService.SONG_TITLE:
 			Log.d(TAG, "############################## Title is %s", value);
@@ -378,6 +385,18 @@ public class PlayScreen {
 				//	variables.put(state.songDetails[i], state.songDetails[i+1]);
 				//}
 			}
+			
+	        InputStream is;
+			try {
+				is = activity.getAssets().open("info.mod.html");
+				byte [] data = new byte [is.available()];        
+		        is.read(data);
+		        is.close();
+		        infoHtml = new String(data, "ISO8859_1");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}        
+			
 			updateInfo();			
 			
 			infoText.scrollTo(0, 0);
@@ -401,37 +420,20 @@ public class PlayScreen {
 			update();
 			break;
 		case PlayerService.SONG_COPYRIGHT:
+			variables.put("copyright", value);			
 			// songCopyrightText.setText(value);
 			break;
 
 		}
 	}
 	
-	void updateInfo() {
-		
-        InputStream is;
-        String html = null;
-        
-        
-		try {
-			is = activity.getAssets().open("info.mod.html");
-			byte [] data = new byte [is.available()];        
-	        is.read(data);
-	        is.close();
-	        html = new String(data, "ISO8859_1");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}        
-		
-		Engine engine = new Engine();
-		
-		String output = engine.transform(html, variables);
-		
+	void updateInfo() {		
+		String output = engine.transform(infoHtml, variables);		
 		infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);
 	}
 	
 	void update() {
-		if(state.songTitle != null) {
+		/*if(state.songTitle != null) {
 			if(state.subtuneTitle != null && state.subtuneTitle.length() > 0) {
 				titleText.setText(state.subtuneTitle + " (" + state.songTitle + ")");
 			} else {
@@ -442,7 +444,15 @@ public class PlayScreen {
 			subtitleText.setText(state.subtuneAuthor);
 		} else if(state.songComposer != null) {
 			subtitleText.setText(state.songComposer);
-		}
+		} */
+		
+		variables.put("title", state.songTitle);
+		variables.put("subtune_title", state.subtuneTitle);
+		variables.put("composer", state.songComposer);
+		variables.put("subtune_composer", state.subtuneAuthor);
+		variables.put("song_source", state.songSource);
+		
+		updateInfo();
 	}
 	
 }

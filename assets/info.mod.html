@@ -1,6 +1,6 @@
 <html><head><style type="text/css">
 body {
-	color: #ffffff; background-color: #000000;
+	color: #ffffff; background-color: #000000; margin:0; padding:0;
 }
 img {
 	display: block;
@@ -8,14 +8,31 @@ img {
     margin-right: auto;
     width: 80%
 }
-</style></head><body>
+
+.title {
+	color: #ffffff; background-color: #000080; font-weight:bold; font-size:16pt; text-overflow: ellipsis; overflow: hidden;
+}
+.subtitle {
+	color: #ffffff; background-color: #000080; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+}
+.infotitle {
+	color: #ffffff; background-color: #8888ff; font-size:12pt; text-overflow: ellipsis; overflow: hidden;
+}
+</style>
+
+</head><body>
+<div class="title">${title}</div>
+<div class="subtitle">${composer}</div>
+<div class="infotitle">${song_source}</div>
 ${if isMOD}<img src="${IMAGEPATH}amiga.jpg"/><br/>${end}
 ${if isXM}<img src="${IMAGEPATH}ft2logo.png"/><br/>${end}
 <b>Format:</b> ${format}<br/>
 <b>Channels:</b> ${channels}<br/>
+${if instruments}
 <b>Intruments</b><br/>
 <tt><font color="#66ff66"/>
 ${foreach instruments item}${item}<br/>${end}
 </tt></font>
+${end}
 <b>Size:</b> ${sizeText}<br/>
 </html></body>

@@ -33,6 +33,7 @@ public class PlayState {
 	public SongFile clipBoardFile;
 	public boolean songSelected;
 	public boolean playerSwitch;
+	public String songSource;
 
 	public PlayState() {
 	}
