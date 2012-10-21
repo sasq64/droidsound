@@ -65,6 +65,8 @@ public class PlayScreen {
 	private Engine engine;
 
 	private String infoHtml;
+
+	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
 	
 	public View getView() {
 		return parent;
@@ -95,6 +97,9 @@ public class PlayScreen {
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
 		infoText = (WebView) parent.findViewById(R.id.web_view);
+		
+		infoText.loadData(empty, "text/html", "utf-8");
+		
 		
         /*WebViewClient client = new WebViewClient() {
         	@Override
