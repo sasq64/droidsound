@@ -1,24 +1,25 @@
 package com.ssb.droidsound;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import android.app.Activity;
 import android.content.Context;
 import android.os.Environment;
-import android.text.Html;
-import android.text.method.ScrollingMovementMethod;
+import android.os.FileObserver;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -50,17 +51,24 @@ public class PlayScreen {
 	private TextView repeatText;
 	private TextView plusText;
 
-	//private TextView infoText;
 	private WebView infoText;
-	private TextView plinfoText;
+
 
 	private Activity activity;
 
-	private TextView titleText;
 
-	private TextView subtitleText;
 	
 	private Map<String, Object> variables = new HashMap<String, Object>();
+
+	private Engine engine;
+
+	private String infoHtml;
+
+	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
+
+	private File htmlDir;
+
+	private FileObserver observer;
 	
 	public View getView() {
 		return parent;
@@ -92,6 +100,25 @@ public class PlayScreen {
 		
 		infoText = (WebView) parent.findViewById(R.id.web_view);
 		
+		infoText.loadData(empty, "text/html", "utf-8");
+		
+		htmlDir = new File(Environment.getExternalStorageDirectory(), "droidsound/html");
+		if(!htmlDir.exists())
+			htmlDir.mkdir();
+		
+		observer = new FileObserver(htmlDir.getPath(), FileObserver.MODIFY) {			
+			@Override
+			public void onEvent(int event, String path) {
+				updateHtml();
+			}
+		};
+		observer.startWatching();
+		updateHtml();
+		
+		//Handler handler = new Handler();
+		
+		
+		
         /*WebViewClient client = new WebViewClient() {
         	@Override
         	public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
@@ -102,13 +129,9 @@ public class PlayScreen {
         infoText.setWebViewClient(client); */
 
 		
-		//infoText.setMovementMethod(ScrollingMovementMethod.getInstance());
-		plinfoText = (TextView) parent.findViewById(R.id.plinfo_text);
-
-		titleText = (TextView) parent.findViewById(R.id.title_text);		
-		subtitleText = (TextView) parent.findViewById(R.id.subtitle_text);
-		
 		shuffleText.setText(state.shuffleSongs ? "RND" : "SEQ");
+		
+		engine = new Engine();
 
 		stopButton.setOnClickListener(new OnClickListener() {
 			@Override
@@ -324,15 +347,38 @@ public class PlayScreen {
 			break;
 		}
 	}
+	
+	public void updateHtml() {
+		
+		File modTemplate = new File(htmlDir, "info.mod.html");
+		if(modTemplate.exists()) {
+	        FileInputStream is;
+			try {
+				is = new FileInputStream(modTemplate);
+				byte [] data = new byte [is.available()];        
+		        is.read(data);
+		        is.close();
+		        infoHtml = new String(data, "ISO8859_1");
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+	}
+	
 
+	@SuppressWarnings("unused")
 	public void stringChanged(int what, String value) {
 		switch(what) {
 		case PlayerService.SONG_SOURCE:
 			Log.d(TAG, "SOURCE IS " + value);
-			if(value != null && value.length() > 0) {
-				plinfoText.setText(value);
-			} else 
-				plinfoText.setText("");
+			state.songSource = value;
+			//if(value != null && value.length() > 0) {
+			//	plinfoText.setText(value);
+			//} else 
+			//	plinfoText.setText("");
 			break;
 		case PlayerService.SONG_TITLE:
 			Log.d(TAG, "############################## Title is %s", value);
@@ -342,43 +388,50 @@ public class PlayScreen {
 			state.songDetails = player.getSongInfo();
 			
 			Log.d(TAG, "#### Got %d details", state.songDetails != null ? state.songDetails.size() : -1);
-			/*
-			if(state.songDetails != null) {
-				StringBuilder sb = new StringBuilder("<tt>");
-				for(int i = 0; i < state.songDetails.length; i += 2) {
-					// Log.d(TAG, songDetails[i]);
-					// Log.d(TAG, songDetails[i+1]);
-					sb.append("<font color='yellow'><b>").append(state.songDetails[i]).append("</font></b><br/>");
-					if(state.songDetails[i].equals("Instruments")) {
-						// sb.append(songDetails[i+1].replace("\n",
-						// "<br/><font color='white'>"));
-						String[] instr = state.songDetails[i + 1].split("\n");
-						for(int j = 0; j < instr.length; j++) {
-							sb.append(String.format("<font color='white'>%02d</font>: %s<br/>", j + 1, instr[j].replace(">", "&gt;")
-									.replace("<", "&lt;")));
-						}
-
-					} else {
-						sb.append(state.songDetails[i + 1].replace("\n", "<br/>"));
-						sb.append("<br/>");
-					}
-				}
-				sb.append("</tt>");
-				//infoText.setText(Html.fromHtml(sb.toString()));
-				infoText.loadData(sb.toString(), "text/html", "utf-8");
-			} else {
-				infoText.clearView();
-			} */
+			
 			variables.clear();
-			File imageDir = new File(Environment.getExternalStorageDirectory(), "droidsound/images");
-			variables.put("IMAGEPATH", "file://" + imageDir.getPath() + "/");
-			variables.put("FONTPATH", "file://" + imageDir.getPath() + "/");
+			//File imageDir = new File(Environment.getExternalStorageDirectory(), "droidsound/images");
+			variables.put("IMAGEPATH", "file://" + htmlDir.getPath() + "/");
+			variables.put("FONTPATH", "file://" + htmlDir.getPath() + "/");
 			if(state.songDetails != null) {
-				variables.putAll(state.songDetails);
-				//for(int i=0; i<state.songDetails.length; i+=2) {
-				//	variables.put(state.songDetails[i], state.songDetails[i+1]);
-				//}
+				
+				for(Entry<String, Object> e : state.songDetails.entrySet()) {
+					
+					Object val = e.getValue();
+					
+					if(val instanceof String[]) {
+						// Transform String array into object array with extra fields
+						Object[] newArray = new Object [ ((String[])val).length ];
+						
+						int counter = 0;
+						for(final String s : (String[])val) {						
+							counter++;
+							final int idx = counter;
+							newArray[counter-1] = new Object() {									
+								public String text = s;
+								public int index = idx;
+								public String index2 = String.format("%02d", idx);;
+							};							
+						}
+						
+						variables.put(e.getKey(), newArray);
+					} else					
+						variables.put(e.getKey(), e.getValue());
+				}
+				
 			}
+			
+	        InputStream is;
+			try {
+				is = activity.getAssets().open("info.mod.html");
+				byte [] data = new byte [is.available()];        
+		        is.read(data);
+		        is.close();
+		        infoHtml = new String(data, "ISO8859_1");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}        
+			
 			updateInfo();			
 			
 			infoText.scrollTo(0, 0);
@@ -402,37 +455,20 @@ public class PlayScreen {
 			update();
 			break;
 		case PlayerService.SONG_COPYRIGHT:
+			variables.put("copyright", value);			
 			// songCopyrightText.setText(value);
 			break;
 
 		}
 	}
 	
-	void updateInfo() {
-		
-        InputStream is;
-        String html = null;
-        
-        
-		try {
-			is = activity.getAssets().open("info.mod.html");
-			byte [] data = new byte [is.available()];        
-	        is.read(data);
-	        is.close();
-	        html = new String(data, "ISO8859_1");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}        
-		
-		Engine engine = new Engine();
-		
-		String output = engine.transform(html, variables);
-		
-		infoText.loadDataWithBaseURL("file:///android_asset", output, "text/html", "utf-8", null);
+	void updateInfo() {		
+		String output = engine.transform(infoHtml, variables);		
+		infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);
 	}
 	
 	void update() {
-		if(state.songTitle != null) {
+		/*if(state.songTitle != null) {
 			if(state.subtuneTitle != null && state.subtuneTitle.length() > 0) {
 				titleText.setText(state.subtuneTitle + " (" + state.songTitle + ")");
 			} else {
@@ -443,7 +479,15 @@ public class PlayScreen {
 			subtitleText.setText(state.subtuneAuthor);
 		} else if(state.songComposer != null) {
 			subtitleText.setText(state.songComposer);
-		}
+		} */
+		
+		variables.put("title", state.songTitle);
+		variables.put("subtune_title", state.subtuneTitle);
+		variables.put("composer", state.songComposer);
+		variables.put("subtune_composer", state.subtuneAuthor);
+		variables.put("song_source", state.songSource);
+		
+		updateInfo();
 	}
 	
 }

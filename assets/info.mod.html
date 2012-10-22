@@ -6,9 +6,14 @@
 }
 
 body {
-	font-family: 'topaz';
-	color: #ffffff; background-color: #000000;
+	color: #ffffff; background-color: #000000; margin:0; padding:0;
 }
+
+.topaz {
+	font-family: 'topaz';
+}
+
+
 img {
 	display: block;
     margin-left: auto;
@@ -16,14 +21,31 @@ img {
     width: 80%
 }
 
-</style></head><body>
-${if isMOD}<img src="${IMAGEPATH}amiga.jpg"/><br/>${end}
-${if isXM}<img src="${IMAGEPATH}ft2logo.png"/><br/>${end}
-<font color="#ffff66"/>Format:</font> ${format}<br/>
-<font color="#ffff66"/>Channels:</font> ${channels}<br/>
+.title {
+	color: #ffffff; background-color: #000080; font-weight:bold; font-size:16pt; text-overflow: ellipsis; overflow: hidden;
+	padding: 2pt; height: 1.4em
+}
+.subtitle {
+	color: #ffffff; background-color: #000080; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+	padding: 2pt; height: 1.4em
+}
+.infotitle {
+	color: #ffffff; background-color: #8888ff; font-size:10pt; text-overflow: ellipsis; overflow: hidden;
+	padding-top: 1pt; padding-left: 2pt; height: 1.4em
+}
+</style>
+
+</head><body>
+<div class="title">${title}</div>
+<div class="subtitle">${composer}</div>
+<div class="infotitle">${song_source}</div>
+<b>Format:</b> ${format}<br/>
+<b>KANALER:</b> ${channels}<br/>
+${if instruments}
 <b>Intruments</b><br/>
-<font color="#66ff66"/>
-${foreach instruments item}&nbsp;${item}<br/>${end}
-</font>
-<font color="#ffff66"/>Size:</font> ${sizeText}<br/>
+<tt><font color="#66ff66"/>
+${foreach instruments item}${item.index2} : ${item.text}<br/>${end}
+</tt></font>
+${end}
+<b>Size:</b> ${sizeText}<br/>
 </html></body>

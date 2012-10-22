@@ -5,52 +5,6 @@
     android:baselineAligned="false"
     android:orientation="vertical" >
 
-    <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:background="#000000"
-        android:baselineAligned="false"
-        android:orientation="horizontal" >
-
-        <TextView
-            android:id="@+id/title_text"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="#FF000080"
-            android:ellipsize="marquee"
-            android:paddingLeft="4dp"
-            android:paddingBottom="4dp"
-            android:singleLine="true"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20dp"
-            android:textStyle="bold"
-            android:text="Golden Axe" 
-            />
-
-        <TextView
-            android:id="@+id/subtitle_text"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:background="#FF000080"
-            android:ellipsize="marquee"
-            android:paddingBottom="4dp"
-            android:paddingRight="4dp"
-            android:gravity="right"            
-            android:singleLine="true"
-            android:textColor="#FFFFFFFF"
-            android:textSize="20dp"
-            android:text="Jeroen Tel / Manicas of Noise"
-             />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/plinfo_text"
-        style="@style/InfoTitle"
-        android:background="#4040A0"
-        android:gravity="right" />
-
     <WebView
         android:id="@+id/web_view"
         android:layout_width="match_parent"
