@@ -1,34 +1,6 @@
 <html><head><style type="text/css">
-
-@font-face {
-    font-family: 'topaz';
-    src: url('${FONTPATH}topaz.ttf');
-}
-
 body {
 	color: #ffffff; background-color: #000000; margin:0; padding:0;
-}
-
-.topaz {
-	font-family: 'topaz';
-}
-
-
-img {
-	display: block;
-    margin-left: auto;
-    margin-right: auto;
-    width: 80%
-}
-
-.samples {
-	font-family: 'topaz';
-	color: #88ff88;
-}
-
-.info {
-	font-family: 'topaz';
-	color: #ffff88;
 }
 
 .title {
@@ -49,15 +21,13 @@ img {
 <div class="title">${title}</div>
 <div class="subtitle">${composer}</div>
 <div class="infotitle">${song_source}</div>
-<div class="info">
 <b>Format:</b> ${format}<br/>
 <b>Channels:</b> ${channels}<br/>
 ${if instruments}
 <b>Intruments</b><br/>
-<div class="samples">
-${foreach instruments item}${item.index2} : ${item.text}<br/>${end}
+<tt><font color="#66ff66"/>
+${foreach instruments item}${item}<br/>${end}
+</tt></font>
 ${end}
-</div>
 <b>Size:</b> ${sizeText}<br/>
-</div>
 </html></body>

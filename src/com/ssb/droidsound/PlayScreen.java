@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,6 +15,7 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.FileObserver;
 import android.os.Handler;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -67,8 +69,30 @@ public class PlayScreen {
 	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
 
 	private File htmlDir;
+	private Map<String, String> templates = new HashMap<String, String>();
 
 	private FileObserver observer;
+
+	private String currentPluginName;
+
+	private FileObserver observer2;
+	
+	private class MyHandler extends Handler {
+
+		private WeakReference<PlayScreen> psRef;
+
+		public MyHandler(PlayScreen ps) {
+			psRef = new WeakReference<PlayScreen>(ps);
+		}
+
+		@Override
+		public void handleMessage(Message msg) {
+			PlayScreen ps = psRef.get();
+			ps.updateInfo();
+			// switch (msg.what) {
+			// }
+		}
+	};
 	
 	public View getView() {
 		return parent;
@@ -103,19 +127,37 @@ public class PlayScreen {
 		infoText.loadData(empty, "text/html", "utf-8");
 		
 		htmlDir = new File(Environment.getExternalStorageDirectory(), "droidsound/html");
-		if(!htmlDir.exists())
+		if(!htmlDir.exists()) {
 			htmlDir.mkdir();
+			new File(htmlDir, "templates").mkdir();
+			new File(htmlDir, "images").mkdir();
+		}
+
+		final Handler handler = new MyHandler(this);
+
 		
-		observer = new FileObserver(htmlDir.getPath(), FileObserver.MODIFY) {			
+		observer = new FileObserver(htmlDir.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
 			@Override
 			public void onEvent(int event, String path) {
 				updateHtml();
+				Message msg = handler.obtainMessage(0);
+				handler.sendMessage(msg);
+
 			}
 		};
 		observer.startWatching();
+		observer2 = new FileObserver(new File(htmlDir, "templates").getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
+			@Override
+			public void onEvent(int event, String path) {
+				updateHtml();
+				Message msg = handler.obtainMessage(0);
+				handler.sendMessage(msg);
+
+			}
+		};
+		observer2.startWatching();
 		updateHtml();
 		
-		//Handler handler = new Handler();
 		
 		
 		
@@ -348,24 +390,35 @@ public class PlayScreen {
 		}
 	}
 	
+	private String readFile(File f) {
+		FileInputStream is;
+		String contents = null;
+		try {
+			is = new FileInputStream(f);
+			byte [] data = new byte [is.available()];        
+	        is.read(data);
+	        is.close();
+	        contents = new String(data, "ISO8859_1");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return contents;
+	}
+	
 	public void updateHtml() {
 		
-		File modTemplate = new File(htmlDir, "info.mod.html");
-		if(modTemplate.exists()) {
-	        FileInputStream is;
-			try {
-				is = new FileInputStream(modTemplate);
-				byte [] data = new byte [is.available()];        
-		        is.read(data);
-		        is.close();
-		        infoHtml = new String(data, "ISO8859_1");
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
+		File tmplDir = new File(htmlDir, "templates");
+		if(!tmplDir.exists())
+			tmplDir.mkdirs();
+		for(File f : tmplDir.listFiles()) {
+			String parts[] = f.getName().split("\\.");
+			if(parts.length == 2 && parts[1].toLowerCase().equals("html")) {
+				String html = readFile(f);
+				templates.put(parts[0].toUpperCase(), html);
 			}
-		}
-		
+		}		
 	}
 	
 
@@ -423,7 +476,7 @@ public class PlayScreen {
 			
 	        InputStream is;
 			try {
-				is = activity.getAssets().open("info.mod.html");
+				is = activity.getAssets().open("info.def.html");
 				byte [] data = new byte [is.available()];        
 		        is.read(data);
 		        is.close();
@@ -462,8 +515,18 @@ public class PlayScreen {
 		}
 	}
 	
-	void updateInfo() {		
-		String output = engine.transform(infoHtml, variables);		
+	void updateInfo() {
+		
+		if(variables.containsKey("plugin"))
+			currentPluginName = ((String)variables.get("plugin")).toUpperCase();
+		else
+			currentPluginName = "DEF";
+		
+		String html = templates.get(currentPluginName);
+		if(html == null)
+			html = infoHtml;
+		
+		String output = engine.transform(html, variables);		
 		infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);
 	}
 	

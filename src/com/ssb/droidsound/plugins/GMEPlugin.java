@@ -38,10 +38,14 @@ public class GMEPlugin extends DroidSoundPlugin {
 	@Override
 	public void getDetailedInfo(Map<String, Object> list) {
 		
+		list.put("plugin", "GME");
+
+		
 		String s = N_getStringInfo(currentSong, INFO_TYPE);
 		if(s != null & s.length() > 0) {
 			list.put("format", s);
 			//list.add("GME: " + s);
+			list.put("is" + s, true);
 		}
 		s = N_getStringInfo(currentSong, INFO_COPYRIGHT);
 		if(s != null & s.length() > 0) {

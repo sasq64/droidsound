@@ -293,7 +293,8 @@ public class ModPlugin extends DroidSoundPlugin {
 		String instruments = N_getStringInfo(currentSong, 100);
 		String fmt = N_getStringInfo(currentSong, INFO_TYPE);
 		int channels = N_getIntInfo(currentSong, 101);
-		
+	
+		list.put("plugin", "MOD");
 		list.put("is" + fmt, Boolean.TRUE);
 		
 		list.put("format", fmt);

@@ -266,6 +266,9 @@ public class SidPlugin extends DroidSoundPlugin {
 			videoModes[songInfo.videoMode],
 		};		
 		list.addAll(Arrays.asList(info));*/
+		
+		list.put("plugin", "SID");
+
 		list.put("format", songInfo.format);
 		list.put("copyright", songInfo.copyright);
 		list.put("sidmodel", sids[songInfo.sidModel]);
