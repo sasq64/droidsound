@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Environment;
@@ -28,6 +29,7 @@ import android.widget.TextView;
 
 import com.floreysoft.jmte.Engine;
 import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.service.SongMeta;
 import com.ssb.droidsound.utils.Log;
 
 public class PlayScreen {
@@ -69,15 +71,19 @@ public class PlayScreen {
 	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
 
 	private File htmlDir;
+	private File templateDir;
+	private File dataDir;
+
 	private Map<String, String> templates = new HashMap<String, String>();
 
 	private FileObserver observer;
 
 	private String currentPluginName;
 
-	private FileObserver observer2;
+
+	//private FileObserver observer2;
 	
-	private class MyHandler extends Handler {
+	private static class MyHandler extends Handler {
 
 		private WeakReference<PlayScreen> psRef;
 
@@ -88,25 +94,43 @@ public class PlayScreen {
 		@Override
 		public void handleMessage(Message msg) {
 			PlayScreen ps = psRef.get();
-			ps.updateInfo();
-			// switch (msg.what) {
-			// }
+			ps.update();
 		}
 	};
+	
+	/*private static class SongInfo {
+		public String title;
+		public String composer;
+	}; */
+	
+	@SuppressWarnings("unused")
+	private static class VarJS {
+		private Map<String, Object> map;
+
+		public VarJS(Map<String, Object> map) {
+			this.map = map;
+		}
+		
+		public String getString(String what) {
+			return (String) map.get(what);
+		}
+		
+	}
+	
+//	private SongInfo songInfo = new SongInfo();
 	
 	public View getView() {
 		return parent;
 	}
 
+	@SuppressLint("SetJavaScriptEnabled")
 	public PlayScreen(PlayState st, PlayerServiceConnection plr, Activity act) {
 		player = plr;
 		state = st;
-		//parent = ps;
 		activity = act;
 		
 		LayoutInflater inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		parent = (ViewGroup) inflater.inflate(R.layout.info, null);
-
 	
 		stopButton = (ImageButton) parent.findViewById(R.id.stop_button);
 		playButton = (ImageButton) parent.findViewById(R.id.play_button);
@@ -122,45 +146,61 @@ public class PlayScreen {
 		repeatText = (TextView) parent.findViewById(R.id.repeat_text);
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
-		infoText = (WebView) parent.findViewById(R.id.web_view);
+		infoText = (WebView) parent.findViewById(R.id.web_view);		
+		infoText.getSettings().setJavaScriptEnabled(true);		
+		infoText.addJavascriptInterface(new VarJS(variables), "info");
+		//infoText.addJavascriptInterface(songInfo, "info");
 		
+
 		infoText.loadData(empty, "text/html", "utf-8");
 		
+        InputStream is;
+		try {
+			is = activity.getAssets().open("info.def.html");
+			byte [] data = new byte [is.available()];        
+	        is.read(data);
+	        is.close();
+	        infoHtml = new String(data, "ISO8859_1");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}        
+		
 		htmlDir = new File(Environment.getExternalStorageDirectory(), "droidsound/html");
-		if(!htmlDir.exists()) {
+		templateDir = new File(htmlDir, "templates");
+		dataDir = new File(htmlDir, "data");
+		if(!htmlDir.exists())
 			htmlDir.mkdir();
-			new File(htmlDir, "templates").mkdir();
-			new File(htmlDir, "images").mkdir();
-		}
+		if(!templateDir.exists())
+			templateDir.mkdir();
+		if(!dataDir.exists())
+			dataDir.mkdir();
 
 		final Handler handler = new MyHandler(this);
 
 		
-		observer = new FileObserver(htmlDir.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
+		/*observer = new FileObserver(htmlDir.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
 			@Override
 			public void onEvent(int event, String path) {
 				updateHtml();
 				Message msg = handler.obtainMessage(0);
 				handler.sendMessage(msg);
+
+			}
+		};
+		observer.startWatching(); */
+		observer = new FileObserver(templateDir.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
+			@Override
+			public void onEvent(int event, String path) {
+				if(updateHtml()) {
+					Message msg = handler.obtainMessage(0);
+					handler.sendMessage(msg);
+				}
 
 			}
 		};
 		observer.startWatching();
-		observer2 = new FileObserver(new File(htmlDir, "templates").getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
-			@Override
-			public void onEvent(int event, String path) {
-				updateHtml();
-				Message msg = handler.obtainMessage(0);
-				handler.sendMessage(msg);
-
-			}
-		};
-		observer2.startWatching();
 		updateHtml();
-		
-		
-		
-		
+				
         /*WebViewClient client = new WebViewClient() {
         	@Override
         	public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
@@ -307,13 +347,92 @@ public class PlayScreen {
 			}
 		});
 
+	}
+	
+	public void update(Map<String, Object> data, boolean newsong) {
+		
+		if(newsong || state.songDetails == null)
+			state.songDetails = data;
+		else
+			state.songDetails.putAll(data);
+		
+		if(data.containsKey(SongMeta.STATE)) {
+			state.songState = (Integer)data.get(SongMeta.STATE);
+			
+			Log.d(TAG, "State %d", state.songState);
+			
+			if(state.songState == 1) {
+				playButton.setBackgroundResource(R.drawable.pause_button);
+			} else {
+				playButton.setBackgroundResource(R.drawable.play_button);
+			}
+		}
+		if(data.containsKey(SongMeta.LENGTH)) {
+			state.songLength = (Integer)data.get(SongMeta.LENGTH) / 1000;
+			if(state.songLength < 0) {
+				// TODO: Hide length
+				state.songLength = 0;
+				songTotalText.setVisibility(View.GONE);
+			} else {
+				songTotalText.setVisibility(View.VISIBLE);
+			}
+			Log.d(TAG, "Songlength %02d:%02d", state.songLength / 60, state.songLength % 60);
+			songTotalText.setText(String.format("%02d:%02d", state.songLength / 60, state.songLength % 60));
+		}
+		if(data.containsKey(SongMeta.POSITION)) {
+			int value = (Integer)data.get(SongMeta.POSITION) / 1000;
+			if(state.seekingSong == 0) {
+				state.songPos = value;
+				songSecondsText.setText(String.format("%02d:%02d", state.songPos / 60, state.songPos % 60));
+				if(state.songLength > 0) {
+					int percent = 100 * state.songPos / state.songLength;
+					if(percent > 100) percent = 100;
+					songSeeker.setProgress(percent);
+				} else {
+					songSeeker.setProgress(0);
+				}
+			} else
+				state.seekingSong--;
+		}
+		if(data.containsKey(SongMeta.BUFFERING)) {
+			state.buffering = (Integer)data.get(SongMeta.BUFFERING);
+			songSubtunesText.setText(String.format("%02d:%02d", state.buffering / 1000 / 60, (state.buffering/1000) % 60));
+		}
+		
+		
+		
+		if(data.containsKey(SongMeta.TITLE)) {
+			state.songTitle = (String) data.get(SongMeta.TITLE);
+		}
+		if(data.containsKey(SongMeta.SUBTUNE_TITLE)) {
+			state.subtuneTitle = (String) data.get(SongMeta.SUBTUNE_TITLE);
+		}
+		if(data.containsKey(SongMeta.SUBTUNE_COMPOSER)) {
+			state.subtuneAuthor = (String) data.get(SongMeta.SUBTUNE_COMPOSER);
+		}
+		if(data.containsKey(SongMeta.COMPOSER)) {
+			state.songComposer = (String) data.get(SongMeta.COMPOSER);
+		}
+		if(data.containsKey(SongMeta.TOTAL_SUBTUNES)) {
+			state.subTuneCount = (Integer) data.get(SongMeta.TOTAL_SUBTUNES);
+		}
+		if(data.containsKey(SongMeta.SOURCE)) {
+			state.songSource = (String) data.get(SongMeta.SOURCE);
+		}
+		
+		if(newsong)
+			infoText.scrollTo(0, 0);
 
 
-
+		update();
 	}
 
+	/*
 	public void intChanged(int what, int value) {
 		switch(what) {
+		case -1:
+			update();
+			break;
 		case PlayerService.SONG_STATE:
 			Log.d(TAG, "State now %d", value);
 			state.songState = value;
@@ -388,7 +507,7 @@ public class PlayScreen {
 
 			break;
 		}
-	}
+	} */
 	
 	private String readFile(File f) {
 		FileInputStream is;
@@ -407,22 +526,28 @@ public class PlayScreen {
 		return contents;
 	}
 	
-	public void updateHtml() {
+	public boolean updateHtml() {
 		
-		File tmplDir = new File(htmlDir, "templates");
-		if(!tmplDir.exists())
-			tmplDir.mkdirs();
-		for(File f : tmplDir.listFiles()) {
+		if(!templateDir.exists())
+			templateDir.mkdirs();
+		boolean changed = false;
+		for(File f : templateDir.listFiles()) {
 			String parts[] = f.getName().split("\\.");
 			if(parts.length == 2 && parts[1].toLowerCase().equals("html")) {
 				String html = readFile(f);
-				templates.put(parts[0].toUpperCase(), html);
+				String what = parts[0].toUpperCase();
+				String oldHtml = templates.get(what);
+				if(oldHtml == null || !oldHtml.equals(html)) {
+					templates.put(what, html);
+					changed = true;
+				}
 			}
-		}		
+		}
+		return changed;
 	}
 	
-
-	@SuppressWarnings("unused")
+	
+/*
 	public void stringChanged(int what, String value) {
 		switch(what) {
 		case PlayerService.SONG_SOURCE:
@@ -438,74 +563,23 @@ public class PlayScreen {
 			state.songTitle = value;
 			state.subtuneTitle = null;
 		case PlayerService.SONG_DETAILS:
-			state.songDetails = player.getSongInfo();
-			
+			state.songDetails = player.getSongInfo();			
 			Log.d(TAG, "#### Got %d details", state.songDetails != null ? state.songDetails.size() : -1);
-			
-			variables.clear();
-			//File imageDir = new File(Environment.getExternalStorageDirectory(), "droidsound/images");
-			variables.put("IMAGEPATH", "file://" + htmlDir.getPath() + "/");
-			variables.put("FONTPATH", "file://" + htmlDir.getPath() + "/");
-			if(state.songDetails != null) {
-				
-				for(Entry<String, Object> e : state.songDetails.entrySet()) {
-					
-					Object val = e.getValue();
-					
-					if(val instanceof String[]) {
-						// Transform String array into object array with extra fields
-						Object[] newArray = new Object [ ((String[])val).length ];
-						
-						int counter = 0;
-						for(final String s : (String[])val) {						
-							counter++;
-							final int idx = counter;
-							newArray[counter-1] = new Object() {									
-								public String text = s;
-								public int index = idx;
-								public String index2 = String.format("%02d", idx);;
-							};							
-						}
-						
-						variables.put(e.getKey(), newArray);
-					} else					
-						variables.put(e.getKey(), e.getValue());
-				}
-				
-			}
-			
-	        InputStream is;
-			try {
-				is = activity.getAssets().open("info.def.html");
-				byte [] data = new byte [is.available()];        
-		        is.read(data);
-		        is.close();
-		        infoHtml = new String(data, "ISO8859_1");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}        
-			
-			updateInfo();			
-			
 			infoText.scrollTo(0, 0);
-			update();
 			break;
 			
 		case PlayerService.SONG_SUBTUNE_TITLE:
 			Log.d(TAG, "############################## Subtunetitle is %s", value);
 			state.subtuneTitle = value;
 			if(state.subtuneTitle != null && state.subtuneTitle.length() == 0) state.subtuneTitle = null;
-			update();
 			break;
 		case PlayerService.SONG_SUBTUNE_AUTHOR:
 			Log.d(TAG, "############################## Author is %s", value);
 			state.subtuneAuthor = value;
-			update();
 			break;
 		case PlayerService.SONG_AUTHOR:
 			// songComposerText.setText(value);
 			state.songComposer = value;
-			update();
 			break;
 		case PlayerService.SONG_COPYRIGHT:
 			variables.put("copyright", value);			
@@ -513,44 +587,67 @@ public class PlayScreen {
 			break;
 
 		}
-	}
-	
-	void updateInfo() {
+	} */
 		
-		if(variables.containsKey("plugin"))
-			currentPluginName = ((String)variables.get("plugin")).toUpperCase();
-		else
-			currentPluginName = "DEF";
+	@SuppressWarnings("unused")
+	private void update() {
 		
-		String html = templates.get(currentPluginName);
-		if(html == null)
-			html = infoHtml;
-		
-		String output = engine.transform(html, variables);		
-		infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);
-	}
-	
-	void update() {
-		/*if(state.songTitle != null) {
-			if(state.subtuneTitle != null && state.subtuneTitle.length() > 0) {
-				titleText.setText(state.subtuneTitle + " (" + state.songTitle + ")");
-			} else {
-				titleText.setText(state.songTitle);
+		variables.clear();
+		variables.put("DATAPATH", "file://" + dataDir.getPath() + "/");
+		if(state.songDetails != null) {
+			
+			for(Entry<String, Object> e : state.songDetails.entrySet()) {
+				
+				Object val = e.getValue();
+				
+				if(val instanceof String[]) {
+					// Transform String array into object array with extra fields
+					Object[] newArray = new Object [ ((String[])val).length ];
+					
+					int counter = 0;
+					for(final String s : (String[])val) {						
+						counter++;
+						final int idx = counter;
+						newArray[counter-1] = new Object() {									
+							public String text = s;
+							public int index = idx;
+							public String index2 = String.format("%02d", idx);;
+						};							
+					}
+					
+					variables.put(e.getKey(), newArray);
+				} else					
+					variables.put(e.getKey(), e.getValue());
 			}
+			
 		}
-		if(state.subtuneAuthor != null && state.subtuneAuthor.length() > 0) {
-			subtitleText.setText(state.subtuneAuthor);
-		} else if(state.songComposer != null) {
-			subtitleText.setText(state.songComposer);
-		} */
-		
+
 		variables.put("title", state.songTitle);
 		variables.put("subtune_title", state.subtuneTitle);
 		variables.put("composer", state.songComposer);
 		variables.put("subtune_composer", state.subtuneAuthor);
 		variables.put("song_source", state.songSource);
 		
-		updateInfo();
+		//myWebView.loadUrl("javascript:testEcho('Hello World!')");
+		
+		if(variables.containsKey("plugin"))
+			currentPluginName = ((String)variables.get("plugin")).toUpperCase();
+		else
+			currentPluginName = "DEF";
+		
+		
+		if(variables.containsKey("webpage")) {
+			String page = (String) variables.get("webpage");
+			infoText.loadUrl(page);
+		} else {
+			
+			String html = templates.get(currentPluginName);
+			if(html == null)
+				html = infoHtml;
+			
+			String output = engine.transform(html, variables);
+			infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);
+		}
 	}
 	
 }

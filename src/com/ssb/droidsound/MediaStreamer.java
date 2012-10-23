@@ -720,10 +720,10 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 	public void getDetailedInfo(Map<String, Object> info) {
 				
-		if(parseMp3)
-			info.put("format", "MP3 Stream");
-		else
-			info.put("format", "Stream");
+		//if(parseMp3)
+		//	info.put("format", "MP3 Stream");
+		//else
+		info.put("format", "stream");
 
 		
 		

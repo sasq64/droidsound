@@ -1,6 +1,6 @@
 package com.ssb.droidsound.service;
 
 interface IPlayerServiceCallback {
-	void intChanged(int what, int value);
-	void stringChanged(int what, String value);
+	void update(in String [] data, boolean newsong);
+	void error(int errNo, String error);
 }

@@ -13,6 +13,7 @@ public class M3UParser implements PlaylistParser {
 	private static final String TAG = M3UParser.class.getSimpleName();
 	private List<String> songs;
 	private List<String> descs;
+	private String webPage;
 
 	public M3UParser(File file) {
 		BufferedReader reader;
@@ -28,12 +29,18 @@ public class M3UParser implements PlaylistParser {
 				Log.d(TAG, line);
 				line = line.trim();
 				
+				webPage = null;
+				
 				if(line.length() > 0) {
 					if(line.charAt(0) == '#') {
 						if(line.startsWith("#EXTINF:")) {
 							String args[] = line.substring(8).split(",");
 							if(args.length >= 2)
 								desc = args[1];
+						} else
+						if(line.startsWith("#WEBPAGE:")) {
+							webPage = line.substring(9).trim();							
+								
 						}
 					} else {
 						songs.add(line);
@@ -50,7 +57,12 @@ public class M3UParser implements PlaylistParser {
 		}
 	}
 	
+	@Override
+	public String getWebPage() { return webPage; }
+
+	@Override
 	public String getMedia(int i) { return songs.get(i); }
+	@Override
 	public String getDescription(int i) { return descs.get(i); }
 	public int getMediaCount() { return songs.size(); }
 	public List<String> getMediaList() { return songs; }

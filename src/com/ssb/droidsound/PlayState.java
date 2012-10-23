@@ -34,6 +34,7 @@ public class PlayState {
 	public boolean songSelected;
 	public boolean playerSwitch;
 	public String songSource;
+	public int buffering;
 
 	public PlayState() {
 	}

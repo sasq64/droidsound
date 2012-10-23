@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
+import java.util.Map;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -65,6 +66,7 @@ import com.ssb.droidsound.playlistview.FileInfo;
 import com.ssb.droidsound.playlistview.PlayListView;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
 import com.ssb.droidsound.service.PlayerService;
+import com.ssb.droidsound.service.SongMeta;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 import com.ssb.droidsound.utils.Unzipper;
@@ -1282,10 +1284,10 @@ public class PlayerActivity extends Activity  {
 		
 		@Override
 		public void handleMessage(Message msg) {
-			if(msg.obj != null)
-				activityRef.get().stringChanged(msg.what, (String)msg.obj);
+			if(msg.what < 0)
+				activityRef.get().error(msg.what, (String) msg.obj);
 			else
-				activityRef.get().intChanged(msg.what, msg.arg1);
+				activityRef.get().update((Map<String, Object>) msg.obj, msg.what == 0);
 		}
 	}
 	
@@ -1429,6 +1431,42 @@ public class PlayerActivity extends Activity  {
 		Log.d(TAG, sb.toString());
 	}
 	
+	public void update(Map<String, Object> data, boolean newsong) {
+		
+		playScreen.update(data, newsong);
+		
+		String fileName = (String) data.get(SongMeta.FILENAME);
+		
+		if(fileName != null) {
+			if(currentRingTone != null) {
+				ringToneCreator.save(fileName);
+				currentRingTone = null;
+				return;
+			}
+		
+			if(state.songSelected && state.playerSwitch) {
+				flipper.flipTo(INFO_VIEW);
+				state.songSelected = false;
+			}
+		
+			state.songFile = new SongFile(fileName);
+			String path = state.songFile.getFile().getPath();
+			playListView.setHilighted(fileName);
+			searchListView.setHilighted(fileName);
+			// songName = value;
+			
+			Log.d(TAG, "############################## Song file is %s (%s)", fileName, path);
+		}
+		
+		
+		
+	}
+	
+	public void error(int errNo, String error) {
+		displayError(R.string.could_not_play);
+	}
+	
+	/*
 	public void intChanged(int what, int value) {
 		
 		if(what == 999) {
@@ -1482,7 +1520,7 @@ public class PlayerActivity extends Activity  {
 		// }
 		// break;
 		}
-	}
+	} */
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {

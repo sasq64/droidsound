@@ -48,6 +48,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 	private String type;
 
+	private String webPage;
+
+	private int webUpdate;
+
 	@Override
 	public boolean canHandle(FileSource fs) {		
 		String ext = fs.getExt();
@@ -57,6 +61,11 @@ public class MP3Plugin extends DroidSoundPlugin {
 	
 	@Override
 	public void getDetailedInfo(Map<String, Object> info) {
+
+		info.put("plugin", "MP3");		
+
+		if(webPage != null)
+			info.put("webpage", webPage);
 		
 		if(streamer != null) {
 			streamer.getDetailedInfo(info);
@@ -68,17 +77,17 @@ public class MP3Plugin extends DroidSoundPlugin {
 		info.put("format", "MP3");
 		
 		if(songAlbum != null && songAlbum.length() > 0) {
-			info.put("Album", songAlbum);
+			info.put("album", songAlbum);
 		}
 		if(songTrack != null && songTrack.length() > 0) {
-			info.put("Track", songTrack);
+			info.put("track", songTrack);
 		}
 		if(songGenre != null && songGenre.length() > 0) {
-			info.put("Genre", songGenre);
+			info.put("genre", songGenre);
 		}
 		if(songComment != null && songComment.length() > 0) {
-			info.put("Comment", songComment);
-		}		
+			info.put("comment", songComment);
+		}				
 	}
 
 	@Override
@@ -269,6 +278,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		if(file.getName().toUpperCase().endsWith(".M3U")) {
 			pls = new M3UParser(file);
 			type = "M3U";
+			webPage = pls.getWebPage();
 		} else if(file.getName().toUpperCase().endsWith(".PLS")) {
 			pls = new PLSParser(file);
 			type = "PLS";

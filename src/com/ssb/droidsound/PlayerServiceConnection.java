@@ -45,6 +45,27 @@ public class PlayerServiceConnection implements ServiceConnection {
 	private IPlayerServiceCallback mCallback = new IPlayerServiceCallback.Stub() {
 
 		@Override
+		public void update(String[] data, boolean newsong) throws RemoteException {
+			if(handler != null) {
+				Message msg = handler.obtainMessage(newsong ? 0 : 1, arrayToMap(data));
+				handler.sendMessage(msg);
+				//callback.stringChanged(what, value);
+			}
+		}
+
+		@Override
+		public void error(int errNo, String error) throws RemoteException {
+			// TODO Auto-generated method stub
+			if(handler != null) {
+				Message msg = handler.obtainMessage(errNo, error);
+				handler.sendMessage(msg);
+				//callback.stringChanged(what, value);
+			}
+			
+		}
+
+		/*
+		@Override
 		public void stringChanged(int what, String value) throws RemoteException {
 			if(handler != null) {
 				Message msg = handler.obtainMessage(what, value);
@@ -60,7 +81,7 @@ public class PlayerServiceConnection implements ServiceConnection {
 				handler.sendMessage(msg);
 				//callback.stringChanged(what, value);
 			}
-		}
+		}*/
 	};
 	private boolean bound;
 	private Handler handler;

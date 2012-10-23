@@ -4,10 +4,12 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import android.annotation.TargetApi;
 import android.app.Notification;
@@ -36,7 +38,7 @@ import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-import com.ssb.droidsound.service.Player.SongInfo;
+//import com.ssb.droidsound.service.Player.SongInfo;
 import com.ssb.droidsound.utils.Log;
 
 public class PlayerService extends Service implements PlayerInterface {
@@ -44,34 +46,7 @@ public class PlayerService extends Service implements PlayerInterface {
 	
 	// Information
 	
-	public static final int SONG_TITLE = 1;
-	public static final int SONG_AUTHOR = 2;
-	public static final int SONG_COPYRIGHT = 3;
-	public static final int SONG_CPULOAD = 4;	
-	public static final int SONG_FORMAT = 5;
-	
-	public static final int SONG_POS = 6;
-	public static final int SONG_FILENAME = 7;
-	public static final int SONG_LENGTH = 8;
-	public static final int SONG_SUBSONG = 9;
-	public static final int SONG_TOTALSONGS = 10;
-	
-	public static final int SONG_STATE = 11;
-	
-	public static final int SONG_DETAILS = 12;
-	public static final int SONG_REPEAT = 13;
-	
-	public static final int SONG_SUBTUNE_TITLE = 14;
-	public static final int SONG_SUBTUNE_AUTHOR = 15;
-	public static final int SONG_PLAYLIST = 16;
-	public static final int SONG_FLAGS = 17;
-	public static final int SONG_SOURCE = 18;
-	public static final int SONG_BUFFERING = 19;
-	
-	public static final int SONG_ERROR = 20;
-	
-	public static final int SONG_SIZEOF = 21;
-	
+		
 	public static final int ERR_SONG_COULD_NOT_PLAY = 1;
 
 	public static final int OPTION_SPEECH = 0;
@@ -92,14 +67,16 @@ public class PlayerService extends Service implements PlayerInterface {
 	public static final int RM_REPEAT_SUBSONG = 4;
 	//private short[] shuffleArray;
 	
-	private Object info[];
+	//private Object info[];
+	private Map<String, Object> info = new HashMap<String, Object>();
     	
 	private static PlayerInterface playerInterface;
 	private Player player;
 	private Thread playerThread;
 	private List<IPlayerServiceCallback> callbacks; 	
 
-	private SongInfo currentSongInfo = new SongInfo();
+	//private SongInfo currentSongInfo = new SongInfo();
+	//private Map<String, Object> songDetails;
 	
 	//private boolean silenceDetect;
 	//private boolean respectLength = true;
@@ -128,7 +105,8 @@ public class PlayerService extends Service implements PlayerInterface {
 	private RemoteControlWrapper remoteControl;
 	private AudioFocusWrapper afWrapper;
 
-	private int defaultRepeatMode = RM_CONTINUE;
+	//private int defaultRepeatMode = RM_CONTINUE;
+	private int repeatMode = RM_CONTINUE;
 
 	protected String saySomething;
 
@@ -145,23 +123,47 @@ public class PlayerService extends Service implements PlayerInterface {
 		return playerInterface;
 	}
 	
-	private void performCallback(int...what) {
+	private void updateInfo(boolean newsong) {
+		
+		HashMap<String, Object> changed = new HashMap<String, Object>();
+		
+		if(newsong)
+			info.clear();
+		
+		Map<String, Object> newInfo = new HashMap<String, Object>();
+		player.getSongDetails(newInfo);
+		for(Entry<String, Object> e : newInfo.entrySet()) {
+			Object oldVal = info.get(e.getKey());
+			if(oldVal == null || !oldVal.equals(e.getValue())) {
+				changed.put(e.getKey(), e.getValue());
+			}
+			
+			info.put(e.getKey(), e.getValue());
+			
+		}
+		
+		if(changed.containsKey(SongMeta.TITLE)) { 
+			if(hasRemoteControl) {
+				remoteControl.setMetaData((String) info.get(SongMeta.COMPOSER), (String) info.get(SongMeta.TITLE));
+			}
+			speakTitle();
+		}
+
+		String [] updates;
+		
+		if(newsong)
+			updates = player.mapToArray(info);
+		else
+			updates = player.mapToArray(changed);
+
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
 		while(it.hasNext()) {
 			IPlayerServiceCallback cb = it.next();
-			for(int i : what) {
-				try {
-					if(info[i] instanceof String) {
-						cb.stringChanged(i, (String)info[i]);
-					} else if(info[i] == null) {
-						cb.stringChanged(i, null);
-					} else {
-						cb.intChanged(i, (Integer)info[i]);
-					}
-				} catch (RemoteException e) {
-					Log.d(TAG, "Removing callback because peer is gone");
-					it.remove();
-				}
+			try {
+				cb.update(updates, newsong);
+			} catch (RemoteException e1) {
+				//e1.printStackTrace();
+				it.remove();
 			}
 		}
 	}
@@ -257,11 +259,11 @@ public class PlayerService extends Service implements PlayerInterface {
 	private void speakTitle() {
 		String text = "Unnamed song.";
 			
-		if(info[SONG_TITLE] == null) return;
+		if(info.get(SongMeta.TITLE) == null) return;
 		
-		String songComposer = (String) info[SONG_AUTHOR];
+		String songComposer = (String) info.get(SongMeta.COMPOSER);
 		
-		String s = (String) info[SONG_SUBTUNE_AUTHOR];
+		String s = (String) info.get(SongMeta.SUBTUNE_COMPOSER);
 		if(s != null && s.length()> 0) {
 			songComposer = s;
 		}
@@ -277,8 +279,8 @@ public class PlayerService extends Service implements PlayerInterface {
 			}
 		}
 		
-		String songTitle = (String) info[SONG_TITLE];		
-		s = (String) info[SONG_SUBTUNE_TITLE];
+		String songTitle = (String) info.get(SongMeta.TITLE);		
+		s = (String) info.get(SongMeta.SUBTUNE_TITLE);
 		if(s != null && s.length()> 0) {
 			songTitle = s;
 		}
@@ -288,7 +290,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		
 		songComposer = fixSpeech(songComposer, true);
 		/*
-		String subtuneTitle = (String) info[SONG_SUBTUNE_TITLE];
+		String subtuneTitle = (String) info[SongMeta.SUBTUNE_TITLE];
 		
 		if(subtuneTitle != null) {
 			subtuneTitle = fixSpeech(subtuneTitle, false);
@@ -323,156 +325,69 @@ public class PlayerService extends Service implements PlayerInterface {
 			PlayerService ps = psRef.get();
             switch (msg.what) {
             	case Player.MSG_WAVDUMPED:
-            		ps.info[SONG_FILENAME] = msg.obj;
-            		ps.performCallback(SONG_FILENAME);
-            		ps.info[SONG_FILENAME] = null;
+            		ps.info.put(SongMeta.FILENAME, msg.obj);
+            		ps.updateInfo(false);
+            		ps.info.put(SongMeta.FILENAME, null);
             		break;
             	case Player.MSG_DETAILS:
-            		//sa = (String [])msg.obj;
-            		ps.info[SONG_DETAILS] = "DETAILS";
-            		ps.currentSongInfo.details = (String[]) msg.obj;
-            		ps.performCallback(SONG_DETAILS);
-            		//Log.d(TAG, "%%%%%%%% Sending %d details", sa.length);
-            		break;
-            	case Player.MSG_INFO:
-        			sa = (String [])msg.obj;
-        			ps.info[SONG_TITLE] = sa[0];
-        			ps.info[SONG_AUTHOR] = sa[1];
-        			
-					if(hasRemoteControl)
-						ps.remoteControl.setMetaData((String) ps.info[SONG_AUTHOR], (String) ps.info[SONG_TITLE]);
-        			
-					ps.speakTitle();
-					ps.performCallback(SONG_TITLE, SONG_AUTHOR);
-        			break;
             	case Player.MSG_SUBTUNE:
-            		Log.d(TAG, "SUBTUNE %d, Length %d", msg.arg1, msg.arg2);
-            		ps.info[SONG_SUBSONG] = msg.arg1;
-            		ps.info[SONG_LENGTH] = msg.arg2;
-            		
-            		if(msg.arg2 == -1)
-            			ps.info[SONG_LENGTH] = ps.defaultLength;
-            		
-            		ps.info[SONG_STATE] = 1;
-            		if(msg.obj != null) {
-            			sa = (String [])msg.obj;
-            			ps.info[SONG_SUBTUNE_TITLE] = sa[0];
-            			ps.info[SONG_SUBTUNE_AUTHOR] = sa[1];
-            			
-
-            			
-            			if(msg.arg1 < 0) {
-
-        					if(hasRemoteControl)
-        						ps.remoteControl.setMetaData((String) ps.info[SONG_SUBTUNE_AUTHOR], (String) ps.info[SONG_SUBTUNE_TITLE]);
-
-        					ps.speakTitle();
-            			}
-            			
-            			ps.performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_STATE);
-                		break;                		
-            		}
-            		ps.performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_STATE);
+            		//sa = (String [])msg.obj;
+            		//ps.info[SongMeta.DETAILS] = "DETAILS";
+            		//ps.currentSongInfo.details = (String[]) msg.obj;            		
+            		//ps.info = ps.player.getSongDetails();
+            		ps.updateInfo(false);
             		break;
             	case Player.MSG_FAILED:
-            		ps.info[SONG_STATE] = 0;
-            		ps.info[SONG_ERROR] = ERR_SONG_COULD_NOT_PLAY;
-            		ps.performCallback(SONG_FILENAME, SONG_TITLE, SONG_ERROR);
-            		ps.info[SONG_ERROR] = 0;
+            		//ps.info[SongMeta.STATE] = 0;
+            		//ps.info[SongMeta.ERROR] = ERR_SONG.COULD_NOT_PLAY;
+            		//ps.performCallback(SongMeta.FILENAME, SongMeta.TITLE, SongMeta.ERROR);
+            		//ps.info[SongMeta.ERROR] = 0;
             		break;
                 case Player.MSG_NEWSONG:
-                	
-                	
-                	String lastFileName = ps.currentSongInfo.fileName;
-                	
-                	ps.player.getSongInfo(ps.currentSongInfo);
-                	                	
-                	ps.info[SONG_TITLE] = ps.currentSongInfo.title;
-					ps.info[SONG_AUTHOR] = ps.currentSongInfo.author;
-					ps.info[SONG_COPYRIGHT] = ps.currentSongInfo.copyright;
-					ps.info[SONG_FORMAT] = ps.currentSongInfo.type;
-					ps.info[SONG_LENGTH] = ps.currentSongInfo.length;
-					ps.info[SONG_TOTALSONGS] = ps.currentSongInfo.subTunes;
-					ps.info[SONG_SUBSONG] = ps.currentSongInfo.startTune;
-					ps.info[SONG_REPEAT] = ps.defaultRepeatMode;
-					ps.info[SONG_SUBTUNE_TITLE] = ps.currentSongInfo.subtuneTitle;
-					ps.info[SONG_SUBTUNE_AUTHOR] = ps.currentSongInfo.subtuneAuthor;
-					ps.info[SONG_FLAGS] = ps.currentSongInfo.canSeek ? 1 : 0;
-					ps.info[SONG_STATE] = 1;
-					ps.info[SONG_POS] = 0;
-					ps.info[SONG_SOURCE] = "";
-					ps.info[SONG_BUFFERING] = -1;
-					
-            		if(ps.currentSongInfo.length == -1)
-            			ps.info[SONG_LENGTH] = ps.defaultLength;
-
-					
-					if(ps.currentSongInfo.source != null && ps.currentSongInfo.source.length() > 0)					
-						ps.info[SONG_SOURCE] = ps.currentSongInfo.source;
-					else if(ps.playListName != null) {
-						ps.info[SONG_SOURCE] = ps.playListName;
-					}
-					
-					Log.d(TAG, "SOURCE IS " + ps.currentSongInfo.source);
-
-					if(lastFileName == null || !lastFileName.equals(ps.currentSongInfo.fileName)) {
-						if(ps.ttsStatus >= 0) {
-							ps.speakTitle();
-						}
-					}
-					
-					if(hasRemoteControl)
-						ps.remoteControl.setMetaData((String) ps.info[SONG_AUTHOR], (String) ps.info[SONG_TITLE]);        			
-
-					ps.performCallback(SONG_FILENAME, SONG_TITLE, SONG_POS, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
+            		ps.updateInfo(true);
                 	break;
                 case Player.MSG_DONE:
                 	Log.d(TAG, "Music done");
-                	if((Integer)ps.info[SONG_REPEAT] == RM_CONTINUE) {
+                	if(ps.repeatMode == RM_CONTINUE) {
                 		ps.playNextSong();
                 	}// else {
-                	//	ps.info[SONG_STATE] = 0;
-                	//	performCallback(SONG_STATE);
+                	//	ps.info[SongMeta.STATE] = 0;
+                	//	performCallback(SongMeta.STATE);
                 	//}
                     break;
                 case Player.MSG_PROGRESS:
-                	int l = (Integer)ps.info[SONG_LENGTH];
+                	int l = (Integer)ps.info.get(SongMeta.LENGTH);
                 	if(l < 0) {
                 		l = ps.defaultLength;
                 	}
                 	//Log.d(TAG, "%d vs %d", msg.arg1, l);
-                	if(l > 0 && (msg.arg1 >= l) && ((Integer)ps.info[SONG_REPEAT] == RM_CONTINUE)) {
+                	if(l > 0 && (msg.arg1 >= l) && (ps.repeatMode == RM_CONTINUE)) {
                 		ps.playNextSong();
-                	} else {                	
-                    	int pos = (Integer)msg.arg1;
-                    	int buffering = (Integer)msg.arg2;
-                    	if(pos >= 0 && buffering >= 0) {
-	                    	ps.info[SONG_BUFFERING] = buffering;
-	                    	ps.info[SONG_POS] = pos;
-	                    	ps.performCallback(SONG_BUFFERING, SONG_POS);
-                    	} else if(pos >= 0) {
-	                    	ps.info[SONG_POS] = pos;
-	                    	ps.performCallback(SONG_POS);
-                    	} else {
-	                    	ps.info[SONG_BUFFERING] = buffering;
-	                    	ps.performCallback(SONG_BUFFERING);
-                    	}
+                	} else {                		
+                		ps.updateInfo(false);
                 	}
     				break;
                 case Player.MSG_STATE:
-                	ps.info[SONG_STATE] = (Integer)msg.arg1;
+                	
+                	int state = (Integer)msg.arg1;
+                	if(state == 0) {
+                		ps.updateInfo(true);
+                	} else 
+                		ps.updateInfo(false);
+                	
+                	/*ps.info[SongMeta.STATE] = (Integer)msg.arg1;
                 	
                 	if(msg.arg1 == 0) {
-                		ps.info[SONG_POS] = ps.info[SONG_SUBSONG] = ps.info[SONG_TOTALSONGS] = ps.info[SONG_LENGTH] = 0;
+                		ps.info[SongMeta.POS] = ps.info[SongMeta.SUBSONG] = ps.info[SongMeta.TOTALSONGS] = ps.info[SongMeta.LENGTH] = 0;
                 		ps.currentSongInfo.fileName = null;
-                		ps.performCallback(SONG_POS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_LENGTH, SONG_STATE);
+                		ps.performCallback(SongMeta.POS, SongMeta.SUBSONG, SongMeta.TOTALSONGS, SongMeta.LENGTH, SongMeta.STATE);
                 	} else {                	
-                		ps.performCallback(SONG_STATE);
-                	}
+                		ps.performCallback(SongMeta.STATE);
+                	}*/
                 	break;
                 /*case Player.MSG_SILENT:
                 	if(silenceDetect) {
-	                	if((Integer)ps.info[SONG_REPEAT] == RM_CONTINUE) {
+	                	if((Integer)ps.info[SongMeta.REPEAT] == RM_CONTINUE) {
 	                		playNextSong();
 	                	} else {
 	                		Log.d(TAG, "User has interferred, not switching");
@@ -485,161 +400,7 @@ public class PlayerService extends Service implements PlayerInterface {
         }
 	};
 		
-	
-    private Handler mHandler = null; /*new Handler() {
-
-		@Override
-        public void handleMessage(Message msg) {
-        	//Log.d(TAG, "Got msg %d with arg %s", msg.what, (String)msg.obj);
-			String [] sa;
-            switch (msg.what) {
-            	case Player.MSG_WAVDUMPED:
-            		info[SONG_FILENAME] = msg.obj;
-            		performCallback(SONG_FILENAME);
-            		info[SONG_FILENAME] = null;
-            		break;
-            	case Player.MSG_DETAILS:
-            		sa = (String [])msg.obj;
-            		info[SONG_DETAILS] = "DETAILS";
-            		currentSongInfo.details = sa;
-            		performCallback(SONG_DETAILS);
-            		Log.d(TAG, "%%%%%%%% Sending %d details", sa.length);
-            		break;
-            	case Player.MSG_INFO:
-        			sa = (String [])msg.obj;
-        			info[SONG_TITLE] = sa[0];
-        			info[SONG_AUTHOR] = sa[1];
-        			
-					if(hasRemoteControl)
-						remoteControl.setMetaData((String) info[SONG_AUTHOR], (String) info[SONG_TITLE]);
-        			
-        			speakTitle();
-        			performCallback(SONG_TITLE, SONG_AUTHOR);
-        			break;
-            	case Player.MSG_SUBTUNE:
-            		Log.d(TAG, "SUBTUNE %d, Length %d", msg.arg1, msg.arg2);
-            		info[SONG_SUBSONG] = msg.arg1;
-            		info[SONG_LENGTH] = msg.arg2;
-            		
-            		if(msg.arg2 == -1)
-            			info[SONG_LENGTH] = defaultLength;
-            		
-            		info[SONG_STATE] = 1;
-            		if(msg.obj != null) {
-            			sa = (String [])msg.obj;
-            			info[SONG_SUBTUNE_TITLE] = sa[0];
-            			info[SONG_SUBTUNE_AUTHOR] = sa[1];
-            			
-
-            			
-            			if(msg.arg1 < 0) {
-
-        					if(hasRemoteControl)
-        						remoteControl.setMetaData((String) info[SONG_SUBTUNE_AUTHOR], (String) info[SONG_SUBTUNE_TITLE]);
-
-            				speakTitle();
-            			}
-            			
-                		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_STATE);
-                		break;                		
-            		}
-            		performCallback(SONG_SUBSONG, SONG_LENGTH, SONG_STATE);
-            		break;
-                case Player.MSG_NEWSONG:
-                	
-                	
-                	String lastFileName = currentSongInfo.fileName;
-                	
-                	player.getSongInfo(currentSongInfo);
-                	                	
-                	info[SONG_TITLE] = currentSongInfo.title;
-					info[SONG_AUTHOR] = currentSongInfo.author;
-					info[SONG_COPYRIGHT] = currentSongInfo.copyright;
-					info[SONG_FORMAT] = currentSongInfo.type;
-					info[SONG_LENGTH] = currentSongInfo.length;
-					info[SONG_TOTALSONGS] = currentSongInfo.subTunes;
-					info[SONG_SUBSONG] = currentSongInfo.startTune;
-					info[SONG_REPEAT] = defaultRepeatMode;
-					info[SONG_SUBTUNE_TITLE] = currentSongInfo.subtuneTitle;
-					info[SONG_SUBTUNE_AUTHOR] = currentSongInfo.subtuneAuthor;
-					info[SONG_FLAGS] = currentSongInfo.canSeek ? 1 : 0;
-					info[SONG_STATE] = 1;
-					info[SONG_SOURCE] = "";
-					info[SONG_BUFFERING] = -1;
-					
-            		if(currentSongInfo.length == -1)
-            			info[SONG_LENGTH] = defaultLength;
-
-					
-					if(currentSongInfo.source != null && currentSongInfo.source.length() > 0)					
-						info[SONG_SOURCE] = currentSongInfo.source;
-					else if(playListName != null) {
-						info[SONG_SOURCE] = playListName;
-					}
-					
-					Log.d(TAG, "SOURCE IS " + currentSongInfo.source);
-
-					if(lastFileName == null || !lastFileName.equals(currentSongInfo.fileName)) {
-						if(ttsStatus >= 0) {
-							speakTitle();
-						}
-					}
-					
-					if(hasRemoteControl)
-						remoteControl.setMetaData((String) info[SONG_AUTHOR], (String) info[SONG_TITLE]);        			
-
-					performCallback(SONG_FILENAME, SONG_TITLE, SONG_SUBTUNE_TITLE, SONG_SUBTUNE_AUTHOR, SONG_AUTHOR, SONG_COPYRIGHT, SONG_LENGTH, SONG_FLAGS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_SOURCE, SONG_REPEAT, SONG_STATE);
-                	break;
-                case Player.MSG_DONE:
-                	Log.d(TAG, "Music done");
-                	if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-                		playNextSong();
-                	}// else {
-                	//	info[SONG_STATE] = 0;
-                	//	performCallback(SONG_STATE);
-                	//}
-                    break;
-                case Player.MSG_PROGRESS:
-                	int l = (Integer)info[SONG_LENGTH];
-                	if(l < 0) {
-                		l = defaultLength;
-                	}
-                	//Log.d(TAG, "%d vs %d", msg.arg1, l);
-                	if(l > 0 && (msg.arg1 >= l) && ((Integer)info[SONG_REPEAT] == RM_CONTINUE)) {
-                		playNextSong();
-                	} else {                	
-                    	int pos = (Integer)msg.arg1;
-                    	int buffering = (Integer)msg.arg2;
-                    	if(pos >= 0 && buffering >= 0) {
-	                    	info[SONG_BUFFERING] = buffering;
-	                    	info[SONG_POS] = pos;
-	                		performCallback(SONG_BUFFERING, SONG_POS);
-                    	} else if(pos >= 0) {
-	                    	info[SONG_POS] = pos;
-	                		performCallback(SONG_POS);
-                    	} else {
-	                    	info[SONG_BUFFERING] = buffering;
-	                		performCallback(SONG_BUFFERING);
-                    	}
-                	}
-    				break;
-                case Player.MSG_STATE:
-                	info[SONG_STATE] = (Integer)msg.arg1;
-                	
-                	if(msg.arg1 == 0) {
-                		info[SONG_POS] = info[SONG_SUBSONG] = info[SONG_TOTALSONGS] = info[SONG_LENGTH] = 0;
-                		currentSongInfo.fileName = null;
-                		performCallback(SONG_POS, SONG_SUBSONG, SONG_TOTALSONGS, SONG_LENGTH, SONG_STATE);
-                	} else {                	
-                		performCallback(SONG_STATE);
-                	}
-                	break;
-                default:
-                    super.handleMessage(msg);
-            }
-        }
-
-    }; */
+    private Handler mHandler = null;
 
 	
     void createThread() {
@@ -691,10 +452,10 @@ public class PlayerService extends Service implements PlayerInterface {
     public boolean playNextSong() {
     	
     	if(cycleSubTunes) {
-	    	int next = (Integer)info[SONG_SUBSONG] + 1;
-	    	if(next < (Integer)info[SONG_TOTALSONGS]) {
+	    	int next = (Integer)info.get(SongMeta.SUBTUNE) + 1;
+	    	if(next < (Integer)info.get(SongMeta.TOTAL_SUBTUNES)) {
 	        	player.setSubSong(next);
-	    		info[SONG_SUBSONG] = (Integer)next;			
+	    		info.put(SongMeta.SUBTUNE, next);			
 	    		return true;
 	    	}
     	}
@@ -710,7 +471,7 @@ public class PlayerService extends Service implements PlayerInterface {
     	
 		if(song != null) {    			
        		song = playQueue.current();       		
-       		info[SONG_FILENAME] = song.getPath();
+       		info.put(SongMeta.FILENAME, song.getPath());
        		createThread();
 
        		beforePlay(song.getName());
@@ -722,12 +483,11 @@ public class PlayerService extends Service implements PlayerInterface {
 
     public boolean playPrevSong() {
     	
-    	
     	if(cycleSubTunes) {
-	    	int next = (Integer)info[SONG_SUBSONG] - 1;
+    		int next = (Integer)info.get(SongMeta.SUBTUNE) - 1;
 	    	if(next >= 0) {
 	        	player.setSubSong(next);
-	    		info[SONG_SUBSONG] = (Integer)next;			
+	    		info.put(SongMeta.SUBTUNE, next);
 	    		return true;
 	    	}
     	}
@@ -742,7 +502,7 @@ public class PlayerService extends Service implements PlayerInterface {
     	SongFile song = playQueue.prev();    	
 		if(song != null) {    			
        		song = playQueue.current();
-       		info[SONG_FILENAME] = song.getPath();
+       		info.put(SongMeta.FILENAME, song.getPath());
        		createThread();
        		beforePlay(song.getName());
        		player.playMod(song);
@@ -777,10 +537,6 @@ public class PlayerService extends Service implements PlayerInterface {
         AudioManager audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
 		player = new Player(audioManager, mHandler, getApplicationContext());
 		callbacks = new ArrayList<IPlayerServiceCallback>();
-		info = new Object [SONG_SIZEOF];
-		for(int i=0; i<SONG_SIZEOF; i++)
-			info[i] = null;
-		
 		
 		phoneStateListener = new PhoneStateListener() {
 			
@@ -925,13 +681,13 @@ public class PlayerService extends Service implements PlayerInterface {
 	
 					createThread();
 					if(song == null) {
-						String modname = (String) info[SONG_FILENAME];
+						String modname = (String) info.get(SongMeta.FILENAME);
 						if(names != null && modname != null) {
 							Log.d(TAG, "Got playlist without song");
 						}
 					} else {
 						Log.d(TAG, "Want to play list with " + song.getPath());
-						info[SONG_FILENAME] = song.getPath();
+						info.put(SongMeta.FILENAME, song.getPath());
 						playListName = "";
 						beforePlay(song.getName());
 						player.playMod(song);
@@ -940,7 +696,8 @@ public class PlayerService extends Service implements PlayerInterface {
 					Log.d(TAG, "Want to play " + intent.getDataString());
 					createThread();
 					playListName = "";
-					info[SONG_FILENAME] = uri.getLastPathSegment();
+					//info[SongMeta.FILENAME] = uri.getLastPathSegment();
+					info.put(SongMeta.FILENAME, uri.getLastPathSegment());
 					SongFile song = new SongFile(intent.getDataString());
 					beforePlay(song.getName());
 					player.playMod(song);
@@ -975,7 +732,8 @@ public class PlayerService extends Service implements PlayerInterface {
 			Log.d(TAG, "Playmod called " + name);
 			
 			createThread();
-			info[SONG_FILENAME] = name;
+			//info[SongMeta.FILENAME] = name;
+			info.put(SongMeta.FILENAME, name);
 			SongFile song = new SongFile(name);
 			beforePlay(song.getName());			
 			player.playMod(song);
@@ -986,7 +744,15 @@ public class PlayerService extends Service implements PlayerInterface {
 		public void registerCallback(IPlayerServiceCallback cb, int flags) throws RemoteException {
 			
 			if(cb != null) {
-				for(int i=1; i<SONG_SIZEOF; i++) {
+				
+				try {
+					cb.update(player.mapToArray(info), false);
+				} catch (RemoteException e1) {
+					//e1.printStackTrace();
+				}
+
+				
+				/*for(int i=1; i<SongMeta.SIZEOF; i++) {
 					try {
 						if(info[i] != null) {
 							if(info[i] instanceof String) {
@@ -999,7 +765,7 @@ public class PlayerService extends Service implements PlayerInterface {
 						Log.d(TAG, "Ignoring callback because peer is gone");
 						return;
 					}				
-				}
+				}*/
 			}
 			Log.d(TAG, "Adding %s", cb.toString());
 			callbacks.add(cb);			
@@ -1019,7 +785,8 @@ public class PlayerService extends Service implements PlayerInterface {
 			if((!player.isActive() || player.isSwitching()) && play && playQueue != null) {
 				SongFile s = playQueue.current();
 				if(s != null) {
-	           		info[SONG_FILENAME] = s.getPath(); 		           		
+	           		//info[SongMeta.FILENAME] = s.getPath();
+	           		info.put(SongMeta.FILENAME, s.getPath());
 	           		createThread();
 	    			beforePlay(s.getName());			
 	           		player.playMod(s);
@@ -1037,21 +804,21 @@ public class PlayerService extends Service implements PlayerInterface {
 			player.stop();
 			whenStopped();
 	    	//userInterferred = false;
-			info[SONG_REPEAT] = defaultRepeatMode;
-			player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
-			performCallback(SONG_REPEAT);
+			//repeatMode = defaultRepeatMode;
+			player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+			// TODO: performCallback(SongMeta.REPEAT);
 		}
 
 
 		@Override
 		public boolean seekTo(int msec) throws RemoteException {
 			player.seekTo(msec);
-			info[SONG_POS] = msec;
-			performCallback(SONG_POS);
+			info.put(SongMeta.POSITION, msec);
+			//performCallback(SongMeta.POS);
 			
-			/*if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-				info[SONG_REPEAT] = RM_KEEP_PLAYING;
-				performCallback(SONG_REPEAT);
+			/*if((Integer)info[SongMeta.REPEAT] == RM_CONTINUE) {
+				info[SongMeta.REPEAT] = RM_KEEP_PLAYING;
+				performCallback(SongMeta.REPEAT);
 			} */
 			return true;
 		}
@@ -1087,15 +854,16 @@ public class PlayerService extends Service implements PlayerInterface {
 			
 			
  			player.setSubSong(song);
-			info[SONG_SUBSONG] = (Integer)song;			
-			//if((Integer)info[SONG_REPEAT] == RM_CONTINUE) {
-			//	info[SONG_REPEAT] = RM_KEEP_PLAYING;
-			//	performCallback(SONG_REPEAT);
+ 			info.put(SongMeta.SUBTUNE, song);
+			//info[SongMeta.SUBSONG] = (Integer)song;			
+			//if((Integer)info[SongMeta.REPEAT] == RM_CONTINUE) {
+			//	info[SongMeta.REPEAT] = RM_KEEP_PLAYING;
+			//	performCallback(SongMeta.REPEAT);
 			//}
 			
 			//if(ok) {
-			//	info[SONG_FILENAME] = nextSong.filename + ";" + song;
-			//	performCallback(SONG_FILENAME);
+			//	info[SongMeta.FILENAME] = nextSong.filename + ";" + song;
+			//	performCallback(SongMeta.FILENAME);
 			//}
 			
 			return true;
@@ -1121,9 +889,9 @@ public class PlayerService extends Service implements PlayerInterface {
 					Log.d(TAG, "Default length set to " + defaultLength);
 					break;
 				case OPTION_REPEATMODE:
-					info[SONG_REPEAT] = Integer.parseInt(arg);
-					player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
-					performCallback(SONG_REPEAT);
+					repeatMode = Integer.parseInt(arg);
+					player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+					//performCallback(SongMeta.REPEAT);
 					break;
 				//case OPTION_SILENCE_DETECT:
 				//	Log.d(TAG, "Silence detection " + arg);
@@ -1195,7 +963,8 @@ public class PlayerService extends Service implements PlayerInterface {
 			SongFile mod = playQueue.current();       		
 
 			createThread();
-			info[SONG_FILENAME] = mod.getPath();
+			//info[SongMeta.FILENAME] = mod.getPath();
+			info.put(SongMeta.FILENAME, mod.getPath());
 			
 			int dot = name.lastIndexOf('.');
 			if(dot > 0) {
@@ -1206,9 +975,9 @@ public class PlayerService extends Service implements PlayerInterface {
 
 			beforePlay(mod.getName());
 			player.playMod(mod);
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
-			//performCallback(SONG_SOURCE, SONG_REPEAT);
+	    	//info[SongMeta.REPEAT] = defaultRepeatMode;
+	    	//player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+			//performCallback(SongMeta.SOURCE, SongMeta.REPEAT);
 
 	    	return true;
 	    	
@@ -1247,13 +1016,14 @@ public class PlayerService extends Service implements PlayerInterface {
 			SongFile song = playQueue.current();       		
 			Log.d(TAG, "PlayList called " + song.getPath());
 			createThread();
-			info[SONG_FILENAME] = song.getPath();
+//			/info[SongMeta.FILENAME] = song.getPath();
+			info.put(SongMeta.FILENAME, song.getPath());
 			playListName = "";
 			beforePlay(song.getName());
 			player.playMod(song);
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
-			performCallback(SONG_REPEAT);
+	    	//info[SongMeta.REPEAT] = defaultRepeatMode;
+	    	//player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+			//performCallback(SongMeta.REPEAT);
 
 
 			return false;
@@ -1262,30 +1032,30 @@ public class PlayerService extends Service implements PlayerInterface {
 		@Override
 		public void playNext() throws RemoteException {
 			Log.d(TAG, "### PLAY NEXT");
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
-			performCallback(SONG_REPEAT);
+	    	//info[SongMeta.REPEAT] = defaultRepeatMode;
+	    	//player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+			//performCallback(SongMeta.REPEAT);
 			playNextFile();
 		}
 
 		@Override
 		public void playPrev() throws RemoteException {
-	    	info[SONG_REPEAT] = defaultRepeatMode;
-	    	player.setLoopMode((Integer)info[SONG_REPEAT] != RM_CONTINUE ? 1 : 0);
-			performCallback(SONG_REPEAT);
+	    	//info[SongMeta.REPEAT] = defaultRepeatMode;
+	    	//player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+			//performCallback(SongMeta.REPEAT);
 			playPrevFile();
 		}
 
 		@Override
 		public String[] getSongInfo() throws RemoteException {
 
-			return currentSongInfo.details;
+			return player.mapToArray(info);//currentSongInfo.details;
 		}
 
 		@Override
 		public byte[] getSongMD5() throws RemoteException {
 
-			return currentSongInfo.md5;
+			return null;//currentmd5;
 		}
 
 		@Override
@@ -1293,7 +1063,8 @@ public class PlayerService extends Service implements PlayerInterface {
 			// TODO Auto-generated method stub
 			
 			createThread();
-			info[SONG_FILENAME] = modName;
+			//info[SongMeta.FILENAME] = modName;
+			info.put(SongMeta.FILENAME, modName);
 			SongFile song = new SongFile(modName);
 			//beforePlay(song.getName());			
 			player.dumpWav(song, destFile, length, flags);

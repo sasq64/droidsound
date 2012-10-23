@@ -96,7 +96,7 @@ public class SC68Plugin extends DroidSoundPlugin {
 		return new String(data, start, i-start, "ISO-8859-1").trim();
 	}
 	
-	private static final String [] hws = { "?", "YM", "STE", "YM+STE", "Amiga", "Amiga+YM", "Amiga+STE", "Amiga++" }; 
+	private static final String [] hws = { "?", "ST", "STE", "YM+STE", "Amiga", "Amiga+ST", "Amiga+STE", "Amiga++" }; 
 	
 	@Override
 	public void getDetailedInfo(Map<String, Object> info) {
@@ -107,8 +107,11 @@ public class SC68Plugin extends DroidSoundPlugin {
 		if(replay == null) replay = "?";
 		if(hwname == null) hwname = "?";
 		
-		info.put("format", String.format("SC68: %s", replay));
-		info.put("hardware", String.format("%s (%s)", hwname, hws[hwbits]));
+		info.put("plugin", "SC68");
+		info.put("format", replay);
+		info.put("hardware", hwname);		
+		info.put("platform", hws[hwbits]);
+
 	}
 
 	@Override

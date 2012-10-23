@@ -51,4 +51,7 @@ public class PLSParser implements PlaylistParser {
 	public String getDescription(int i) { return descs.get(i); }
 	public int getMediaCount() { return songs.size(); }
 	public List<String> getMediaList() { return songs; }
+
+	@Override
+	public String getWebPage() { return null; }
 }

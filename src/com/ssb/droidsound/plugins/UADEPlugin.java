@@ -199,7 +199,9 @@ public class UADEPlugin extends DroidSoundPlugin {
 		if(currentSong == 0) {
 			return;
 		}
+		list.put("plugin", "UADE");
 		list.put("format", N_getStringInfo(currentSong, INFO_TYPE));
+		
 	}
 
 	@Override
@@ -333,9 +335,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 		N_setOption(OPT_NTSC, on ? 1 : 0);
 	}
 */
-	
-	
-	
+		
 	
 	@Override
 	public void setOption(String o, Object val) {
