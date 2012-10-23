@@ -7,10 +7,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -79,8 +79,9 @@ public class Player implements Runnable {
 	private int noPlayWait;
 	private int lastPos;
 	//private SongInfo currentSong = new SongInfo();
-	private Map<String, Object> songDetails = new HashMap<String, Object>();
+	private ConcurrentHashMap<String, Object> songDetails = new ConcurrentHashMap<String, Object>();
 
+	
 	// private Object songRef;
 
 	private int currentTune;
@@ -371,7 +372,7 @@ public class Player implements Runnable {
 				if(songDetails.get(SongMeta.TITLE) == null || songDetails.get(SongMeta.TITLE).equals("")) {
 
 					if(currentPlugin.delayedInfo()) {
-						songDetails.put(SongMeta.TITLE, null);
+						songDetails.remove(SongMeta.TITLE);
 					} else {					
 						String basename = currentPlugin.getBaseName((String) songDetails.get(SongMeta.FILENAME));
 						
@@ -439,8 +440,9 @@ public class Player implements Runnable {
 				if(mp != null) {
 					currentState = State.PLAYING;
 					lastPos = -1000;
-					//currentSong.source = currentPlugin.getStringInfo(102);
-					songDetails.put(SongMeta.SOURCE, currentPlugin.getStringInfo(102));
+					String source = currentPlugin.getStringInfo(102);
+					if(source != null)
+						songDetails.put(SongMeta.SOURCE, source);
 					//Log.d(TAG, "MP3 SOURCE IS " + currentSong.source);
 	
 					mHandler.sendMessage(msg);
@@ -645,6 +647,7 @@ public class Player implements Runnable {
 
 						if(playPos > 0 && firstData) {
 							
+							
 
 							if(songDetails.get(SongMeta.TITLE) == null)
 								songDetails.put(SongMeta.TITLE, getPluginInfo(DroidSoundPlugin.INFO_TITLE));
@@ -723,7 +726,7 @@ public class Player implements Runnable {
 							}
 							mHandler.sendMessage(msg);							
 							
-							if(title != null && (!title.equals(songDetails.get(SongMeta.TITLE)))) {
+							if(title != null && subTuneTitle != null && (!title.equals(songDetails.get(SongMeta.TITLE)))) {
 								msg = mHandler.obtainMessage(MSG_DETAILS, songDetails);
 								mHandler.sendMessage(msg);
 								songDetails.put(SongMeta.TITLE, subTuneTitle);
@@ -853,8 +856,8 @@ public class Player implements Runnable {
 
 	}
 	
-	synchronized public void getSongDetails(Map<String, Object> target) {
-		target.putAll(songDetails);
+	public void getSongDetails(Map<String, Object> target) {
+		target.putAll(songDetails);			
 	}
 
 	/*synchronized public boolean getSongInfo(SongInfo target) {

@@ -134,7 +134,10 @@ public class PlayerService extends Service implements PlayerInterface {
 		player.getSongDetails(newInfo);
 		for(Entry<String, Object> e : newInfo.entrySet()) {
 			Object oldVal = info.get(e.getKey());
-			if(oldVal == null || !oldVal.equals(e.getValue())) {
+			Object newVal = e.getValue();
+			if(oldVal == null && newVal == null)
+				continue;
+			if((oldVal == null && newVal != null) || !oldVal.equals(newVal)) {
 				changed.put(e.getKey(), e.getValue());
 			}
 			
