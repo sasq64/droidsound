@@ -356,6 +356,11 @@ public class PlayScreen {
 		else
 			state.songDetails.putAll(data);
 		
+		if(newsong) {
+			state.buffering = 0;
+			songSubtunesText.setText(String.format("%02d:%02d", state.buffering / 1000 / 60, (state.buffering/1000) % 60));	
+		}
+		
 		if(data.containsKey(SongMeta.STATE)) {
 			state.songState = (Integer)data.get(SongMeta.STATE);
 			
@@ -398,8 +403,17 @@ public class PlayScreen {
 			state.buffering = (Integer)data.get(SongMeta.BUFFERING);
 			songSubtunesText.setText(String.format("%02d:%02d", state.buffering / 1000 / 60, (state.buffering/1000) % 60));
 		}
-		
-		
+		if(data.containsKey(SongMeta.SUBTUNE)) {
+			state.subTune = (Integer) data.get(SongMeta.SUBTUNE);
+			songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
+		}
+		if(data.containsKey(SongMeta.TOTAL_SUBTUNES)) {
+			state.subTuneCount = (Integer) data.get(SongMeta.TOTAL_SUBTUNES);
+			songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
+		}
+		if(data.containsKey(SongMeta.CAN_SEEK)) {
+			songSeeker.setEnabled((Boolean) data.get(SongMeta.CAN_SEEK));
+		}
 		
 		if(data.containsKey(SongMeta.TITLE)) {
 			state.songTitle = (String) data.get(SongMeta.TITLE);
@@ -422,9 +436,17 @@ public class PlayScreen {
 		
 		if(newsong)
 			infoText.scrollTo(0, 0);
-
-
-		update();
+		boolean doUpdate = newsong;
+		for(Entry<String, Object> e : data.entrySet()) {
+			String k = e.getKey();
+			if(k == SongMeta.POSITION || k == SongMeta.BUFFERING || k == SongMeta.STATE || k == SongMeta.CAN_SEEK || k == SongMeta.LENGTH)
+				continue;
+			doUpdate = true;
+			break;
+		}
+		
+		if(doUpdate)
+			update();
 	}
 
 	/*
@@ -596,9 +618,14 @@ public class PlayScreen {
 		variables.put("DATAPATH", "file://" + dataDir.getPath() + "/");
 		if(state.songDetails != null) {
 			
+			StringBuilder all = new StringBuilder();
+			
 			for(Entry<String, Object> e : state.songDetails.entrySet()) {
 				
 				Object val = e.getValue();
+				String key = e.getKey();
+				all.append(key).append(":");
+				all.append(String.valueOf(val)).append("\n");
 				
 				if(val instanceof String[]) {
 					// Transform String array into object array with extra fields
@@ -619,14 +646,17 @@ public class PlayScreen {
 				} else					
 					variables.put(e.getKey(), e.getValue());
 			}
-			
+			variables.put("all", all.toString());
 		}
-
-		variables.put("title", state.songTitle);
+		
+		if(variables.containsKey(SongMeta.SIZE)) {
+			variables.put("sizeText", makeSize((Integer)variables.get(SongMeta.SIZE)));
+		}
+		/*variables.put("title", state.songTitle);
 		variables.put("subtune_title", state.subtuneTitle);
 		variables.put("composer", state.songComposer);
 		variables.put("subtune_composer", state.subtuneAuthor);
-		variables.put("song_source", state.songSource);
+		variables.put("song_source", state.songSource);*/
 		
 		//myWebView.loadUrl("javascript:testEcho('Hello World!')");
 		
@@ -635,6 +665,8 @@ public class PlayScreen {
 		else
 			currentPluginName = "DEF";
 		
+		variables.put("width", infoText.getWidth());
+		variables.put("height", infoText.getHeight());
 		
 		if(variables.containsKey("webpage")) {
 			String page = (String) variables.get("webpage");
@@ -650,4 +682,19 @@ public class PlayScreen {
 		}
 	}
 	
+	@SuppressLint("DefaultLocale")
+	public static String makeSize(long fileSize) {
+		String s;
+		if(fileSize < 10 * 1024) {
+			s = String.format("%1.1fKB", (float) fileSize / 1024F);
+		} else if(fileSize < 1024 * 1024) {
+			s = String.format("%dKB", fileSize / 1024);
+		} else if(fileSize < 10 * 1024 * 1024) {
+			s = String.format("%1.1fMB", (float) fileSize / (1024F * 1024F));
+		} else {
+			s = String.format("%dMB", fileSize / (1024 * 1024));
+		}
+		return s;
+	}
+
 }

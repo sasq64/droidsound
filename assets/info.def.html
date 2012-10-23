@@ -21,13 +21,22 @@ body {
 <div class="title">${title}</div>
 <div class="subtitle">${composer}</div>
 <div class="infotitle">${song_source}</div>
-<b>Format:</b> ${format}<br/>
+${if format}
+<b>Format:</b>${format}<br/>
+${end}
+${if channels}
 <b>Channels:</b> ${channels}<br/>
+${end}
 ${if instruments}
 <b>Intruments</b><br/>
 <tt><font color="#66ff66"/>
 ${foreach instruments item}${item}<br/>${end}
 </tt></font>
 ${end}
+${if sizeText}
 <b>Size:</b> ${sizeText}<br/>
+${end}
+<pre>
+${all}
+</pre>
 </html></body>

@@ -79,7 +79,7 @@ public class Player implements Runnable {
 	private int noPlayWait;
 	private int lastPos;
 	//private SongInfo currentSong = new SongInfo();
-	private Map<String, Object> songDetails;
+	private Map<String, Object> songDetails = new HashMap<String, Object>();
 
 	// private Object songRef;
 
@@ -314,7 +314,7 @@ public class Player implements Runnable {
 
 			Log.d(TAG, "'%s' by '%s'", song.getTitle(), song.getComposer());
 			
-			songDetails = new HashMap<String, Object>();
+			songDetails.clear(); // = new HashMap<String, Object>();
 
 			synchronized (this) {
 				//currentSong.fileName = song.getPath(); // songName;
@@ -544,7 +544,7 @@ public class Player implements Runnable {
 								currentState = State.STOPPED;
 								songDetails.clear();
 								songDetails.put(SongMeta.STATE, 0);
-								Message msg = mHandler.obtainMessage(MSG_STATE, 0);
+								Message msg = mHandler.obtainMessage(MSG_STATE, 0, 0);
 								mHandler.sendMessage(msg);
 							}
 							break;
@@ -593,7 +593,7 @@ public class Player implements Runnable {
 								if(currentState == State.PLAYING) {
 									currentState = State.PAUSED;
 									songDetails.put(SongMeta.STATE, 2);
-									Message msg = mHandler.obtainMessage(MSG_STATE, 2);
+									Message msg = mHandler.obtainMessage(MSG_STATE, 2, 0);
 									mHandler.sendMessage(msg);
 									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
 									if(mp != null)
@@ -607,7 +607,7 @@ public class Player implements Runnable {
 								if(currentState == State.PAUSED) {
 									currentState = State.PLAYING;
 									songDetails.put(SongMeta.STATE, 1);
-									Message msg = mHandler.obtainMessage(MSG_STATE, 1);
+									Message msg = mHandler.obtainMessage(MSG_STATE, 1, 0);
 									mHandler.sendMessage(msg);
 									MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
 									if(mp != null)

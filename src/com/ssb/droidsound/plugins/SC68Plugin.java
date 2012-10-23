@@ -108,7 +108,8 @@ public class SC68Plugin extends DroidSoundPlugin {
 		if(hwname == null) hwname = "?";
 		
 		info.put("plugin", "SC68");
-		info.put("format", replay);
+		info.put("replay", replay);
+		info.put("format", "SC68");
 		info.put("hardware", hwname);		
 		info.put("platform", hws[hwbits]);
 
