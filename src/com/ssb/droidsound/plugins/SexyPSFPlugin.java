@@ -1,7 +1,6 @@
 package com.ssb.droidsound.plugins;
 
 import java.io.UnsupportedEncodingException;
-import java.util.List;
 import java.util.Map;
 
 import com.ssb.droidsound.file.FileSource;

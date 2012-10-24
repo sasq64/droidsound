@@ -4,7 +4,6 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -22,7 +21,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
-//import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -38,7 +36,6 @@ import com.ssb.droidsound.Playlist;
 import com.ssb.droidsound.R;
 import com.ssb.droidsound.SongFile;
 import com.ssb.droidsound.plugins.DroidSoundPlugin;
-//import com.ssb.droidsound.service.Player.SongInfo;
 import com.ssb.droidsound.utils.Log;
 
 public class PlayerService extends Service implements PlayerInterface {
@@ -155,9 +152,9 @@ public class PlayerService extends Service implements PlayerInterface {
 		String [] updates;
 		
 		if(newsong)
-			updates = player.mapToArray(info);
+			updates = mapToArray(info);
 		else
-			updates = player.mapToArray(changed);
+			updates = mapToArray(changed);
 
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
 		while(it.hasNext()) {
@@ -324,7 +321,6 @@ public class PlayerService extends Service implements PlayerInterface {
 		
 		@Override
 		public void handleMessage(Message msg) {
-			String [] sa;
 			PlayerService ps = psRef.get();
             switch (msg.what) {
             	case Player.MSG_WAVDUMPED:
@@ -749,7 +745,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			if(cb != null) {
 				
 				try {
-					cb.update(player.mapToArray(info), false);
+					cb.update(mapToArray(info), false);
 				} catch (RemoteException e1) {
 					//e1.printStackTrace();
 				}
@@ -1052,7 +1048,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		@Override
 		public String[] getSongInfo() throws RemoteException {
 
-			return player.mapToArray(info);//currentSongInfo.details;
+			return mapToArray(info);//currentSongInfo.details;
 		}
 
 		@Override
@@ -1161,5 +1157,39 @@ public class PlayerService extends Service implements PlayerInterface {
 	@Override
 	public int getCallState() {
 		return callState;
+	}
+	
+	
+	private String [] mapToArray(Map<String, Object> m) {
+		
+		String [] s = new String [m.size() * 3];
+		
+		int i = 0;
+		for(Entry<String, Object> e: m.entrySet()) {
+			String t = "";
+			String v = "";
+			Object val = e.getValue();
+			if(val instanceof String []) {
+				t = "A";
+				StringBuilder sb = new StringBuilder();
+				for(String si : (String [])e.getValue()) {
+					sb.append(si).append("\n");
+				}
+				v = sb.toString();
+			} else if(val instanceof Integer || val instanceof Long) {
+				t = "I";
+				v = String.valueOf(e.getValue());
+			} else if(val instanceof Boolean) {
+				t = "B";
+				v = String.valueOf(e.getValue());
+			} else {
+				t = "S";
+				v = (String) e.getValue();
+			}
+			s[i++] = t;
+			s[i++] = e.getKey();
+			s[i++] = v;
+		}
+		return s;
 	}
 }

@@ -35,7 +35,7 @@ import com.ssb.droidsound.utils.Log;
 public class PlayScreen {
 	private static final String TAG = PlayScreen.class.getSimpleName();
 
-	private static String[] repnames = { "CONT", "HOLD", "REPT", "CS", "RS" };
+	//private static String[] repnames = { "CONT", "HOLD", "REPT", "CS", "RS" };
 
 	private ViewGroup parent;
 	private PlayerServiceConnection player;
@@ -76,7 +76,7 @@ public class PlayScreen {
 
 	private Map<String, String> templates = new HashMap<String, String>();
 
-	private FileObserver observer;
+	private static FileObserver observer = null;
 
 	private String currentPluginName;
 
@@ -176,18 +176,12 @@ public class PlayScreen {
 			dataDir.mkdir();
 
 		final Handler handler = new MyHandler(this);
-
 		
-		/*observer = new FileObserver(htmlDir.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
-			@Override
-			public void onEvent(int event, String path) {
-				updateHtml();
-				Message msg = handler.obtainMessage(0);
-				handler.sendMessage(msg);
-
-			}
-		};
-		observer.startWatching(); */
+		if(observer != null) {
+			observer.stopWatching();
+			observer = null;
+		}
+		
 		observer = new FileObserver(templateDir.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
 			@Override
 			public void onEvent(int event, String path) {
@@ -403,6 +397,12 @@ public class PlayScreen {
 			state.buffering = (Integer)data.get(SongMeta.BUFFERING);
 			songSubtunesText.setText(String.format("%02d:%02d", state.buffering / 1000 / 60, (state.buffering/1000) % 60));
 		}
+		
+		if(data.containsKey("track")) {
+			String track = (String) data.get("track");
+			songSubtunesText.setText(String.format("#%s", track));
+		}
+		
 		if(data.containsKey(SongMeta.SUBTUNE)) {
 			state.subTune = (Integer) data.get(SongMeta.SUBTUNE);
 			songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
@@ -610,6 +610,16 @@ public class PlayScreen {
 
 		}
 	} */
+	
+	private String getVar(String name) {
+		if(variables.containsKey(name)) {
+			String rc = (String) variables.get(name);
+			if(rc.equals(""))
+				return null;
+			return rc;
+		}
+		return null;
+	}
 		
 	@SuppressWarnings("unused")
 	private void update() {
@@ -649,17 +659,27 @@ public class PlayScreen {
 			variables.put("all", all.toString());
 		}
 		
+		String title = getVar(SongMeta.TITLE);
+		String subTitle = getVar(SongMeta.SUBTUNE_TITLE);
+		String subComposer = getVar(SongMeta.SUBTUNE_COMPOSER);
+		String fullTitle = title;
+		
+		if(subTitle != null) {
+			if(title != null && title.length() > 0)
+				fullTitle = subTitle + " (" + title + ")";
+			else
+				fullTitle = subTitle;
+		}
+		variables.put(SongMeta.TITLE, fullTitle);
+		
+		if(subComposer != null) {
+			variables.put(SongMeta.COMPOSER, subComposer);
+		}
+		
 		if(variables.containsKey(SongMeta.SIZE)) {
 			variables.put("sizeText", makeSize((Integer)variables.get(SongMeta.SIZE)));
 		}
-		/*variables.put("title", state.songTitle);
-		variables.put("subtune_title", state.subtuneTitle);
-		variables.put("composer", state.songComposer);
-		variables.put("subtune_composer", state.subtuneAuthor);
-		variables.put("song_source", state.songSource);*/
-		
-		//myWebView.loadUrl("javascript:testEcho('Hello World!')");
-		
+
 		if(variables.containsKey("plugin"))
 			currentPluginName = ((String)variables.get("plugin")).toUpperCase();
 		else

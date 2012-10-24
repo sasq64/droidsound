@@ -2,7 +2,6 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import android.media.MediaPlayer;
@@ -36,21 +35,15 @@ public class MP3Plugin extends DroidSoundPlugin {
 	private String songGenre;
 	private String songComment;
 	private String songCopyright;
-	//private String songYear;
 	
 	private ID3Tag id3Tag;
 	private CueFile cueFile;
 	private int currentSong;
-
 	private Thread httpThread;
-
 	private String description;
-
 	private String type;
-
 	private String webPage;
 
-	private int webUpdate;
 
 	@Override
 	public boolean canHandle(FileSource fs) {		
@@ -228,6 +221,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 	//@Override
 	public boolean loadStream(String songName) throws IOException {
 
+		webPage = null;
+		
 		currentSong = -1;
 		description = null;
 		clearInfo();
@@ -252,6 +247,8 @@ public class MP3Plugin extends DroidSoundPlugin {
 	@Override
 	public boolean load(FileSource fs) {
 		
+		webPage = null;
+
 		String ref = fs.getReference();
 		
 		if(ref.toLowerCase().startsWith("http"))

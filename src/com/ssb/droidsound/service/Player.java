@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import android.annotation.SuppressLint;
@@ -97,6 +96,8 @@ public class Player implements Runnable {
 	private boolean firstData;
 	private volatile int loopMode = 0;
 	private volatile int oldLoopMode = -1;
+	
+	private int currentPos;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -256,8 +257,6 @@ public class Player implements Runnable {
 		songEnded = false;
 
 		currentState = State.SWITCHING;
-
-		
 		
 		FileSource songSource;
 		
@@ -273,6 +272,8 @@ public class Player implements Runnable {
 				songSource = archive.getFileSource(entry);
 			} catch (IOException e) {
 				// TODO: Display error dialog
+				Message msg = mHandler.obtainMessage(MSG_FAILED, "Zip file broken");
+				mHandler.sendMessage(msg);
 				return;
 			}
 			
@@ -303,45 +304,50 @@ public class Player implements Runnable {
 				break;
 			}
 		}
-		
-		//String sizeAsText = makeSize(songSource.getLength());
-		
+				
 		long size = songSource.getLength();
 		songSource.close();
 		songSource = null;
 
 		if(currentPlugin != null) {
-			Log.d(TAG, "HERE WE GO:" + currentPlugin.getClass().getName());
-
+			Log.d(TAG, "FOUND PLUGIN:" + currentPlugin.getClass().getName());
 			Log.d(TAG, "'%s' by '%s'", song.getTitle(), song.getComposer());
 			
 			songDetails.clear(); // = new HashMap<String, Object>();
 
 			synchronized (this) {
-				//currentSong.fileName = song.getPath(); // songName;
 				songDetails.put(SongMeta.FILENAME, song.getPath());
 
 				if(song.getTitle() != null) {
-					//currentSong.title = song.getTitle();
 					songDetails.put(SongMeta.TITLE, song.getTitle());
 				} else {
-					//currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
 					songDetails.put(SongMeta.TITLE, getPluginInfo(DroidSoundPlugin.INFO_TITLE));
 				}
 
 				if(song.getComposer() != null) {
-					//currentSong.author = song.getComposer();
 					songDetails.put(SongMeta.COMPOSER, song.getComposer());
 				} else {
-					//currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
 					songDetails.put(SongMeta.COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_AUTHOR));
 				}
 
-				//currentSong.copyright = getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT);
-				//currentSong.type = getPluginInfo(DroidSoundPlugin.INFO_TYPE);
-				//currentSong.subTunes = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
-				//currentSong.startTune = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE);
+				firstData = false;
 				
+				if(songDetails.get(SongMeta.TITLE) == null || songDetails.get(SongMeta.TITLE).equals("")) {
+
+					if(currentPlugin.delayedInfo()) {
+						songDetails.remove(SongMeta.TITLE);
+						firstData = true;
+					} else {					
+						String basename = currentPlugin.getBaseName((String) songDetails.get(SongMeta.FILENAME));
+						int sep = basename.indexOf(" - ");
+						if(sep > 0) {
+							songDetails.put(SongMeta.COMPOSER, basename.substring(0, sep));
+							songDetails.put(SongMeta.TITLE, basename.substring(sep+3));
+						} else 
+							songDetails.put(SongMeta.TITLE, basename);
+					}
+				}
+	
 				songDetails.put(SongMeta.COPYRIGHT,  getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT));
 				songDetails.put(SongMeta.FORMAT,  getPluginInfo(DroidSoundPlugin.INFO_TYPE));
 				int count = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_COUNT);
@@ -349,60 +355,23 @@ public class Player implements Runnable {
 				songDetails.put(SongMeta.TOTAL_SUBTUNES, count);
 				songDetails.put(SongMeta.SUBTUNE, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_STARTTUNE));
 								
-				//HashMap<String, Object> info = new HashMap<String, Object>();
-				
+
 				currentPlugin.getDetailedInfo(songDetails);
 				songDetails.put(SongMeta.SIZE, size);
-				//currentSong.details = mapToArray(info);
-				
-				//currentSong.details = new String[info.size() + 2];
-				//for(int i = 0; i < info.size(); i++) {
-				//	currentSong.details[i] = info.get(i);
-				//}
-				//currentSong.details[info.size()] = "Size";				
-				//currentSong.details[info.size() + 1] = sizeAsText;
-				//info = null;
 
-				//currentSong.canSeek = currentPlugin.canSeek();
 				songDetails.put(SongMeta.CAN_SEEK, currentPlugin.canSeek());
-				//currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 				songDetails.put(SongMeta.LENGTH, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
 
-				
-				if(songDetails.get(SongMeta.TITLE) == null || songDetails.get(SongMeta.TITLE).equals("")) {
-
-					if(currentPlugin.delayedInfo()) {
-						songDetails.remove(SongMeta.TITLE);
-					} else {					
-						String basename = currentPlugin.getBaseName((String) songDetails.get(SongMeta.FILENAME));
-						
-						
-						int sep = basename.indexOf(" - ");
-						if(sep > 0) {
-							//currentSong.author = basename.substring(0, sep);
-							//currentSong.title = basename.substring(sep+3);
-							songDetails.put(SongMeta.COMPOSER, basename.substring(0, sep));
-							songDetails.put(SongMeta.TITLE, basename.substring(sep+3));
-						} else 
-							songDetails.put(SongMeta.TITLE, basename);
-							//currentSong.title = basename;
-						//Log.d(TAG, "FN Title '%s'", currentSong.title);
-					}
-				}
-
+			
 				songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
 				songDetails.put(SongMeta.SUBTUNE_COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR));
-				//currentSong.subtuneTitle = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
-				//currentSong.subtuneAuthor = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
 				
 				currentPlugin.setOption("loop", loopMode);
 			}
 
+			// Songs in playlists can start from a specific subtune.
 			startedFromSub = false;
-
 			if(song.getSubtune() >= 0) {
-				//currentSong.startTune = song.getSubtune();
-				//currentSong.subTunes = 0;				
 				songDetails.put(SongMeta.START_SUBTUNE, song.getSubtune());				
 				songDetails.put(SongMeta.TOTAL_SUBTUNES, 0);
 				
@@ -411,27 +380,17 @@ public class Player implements Runnable {
 				
 				songDetails.put(SongMeta.SUBTUNE, currentTune);
 
-				//currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
 				songDetails.put(SongMeta.LENGTH, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
-				//currentSong.subtuneTitle = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
-				//currentSong.subtuneAuthor = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
 				songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
 				songDetails.put(SongMeta.SUBTUNE_COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR));
 				startedFromSub = true;
 			}
 
-			lastLatency = 0;// currentSong.length;
-			//lastSubtuneTitle = null;
-			//lastTitle = null;
-
-			//currentSong.source = "";
+			lastLatency = 0;
 			songDetails.put(SongMeta.SOURCE, "");
-			firstData = true;
 			
 			if(!skipStart) {
-	
-				//Log.d(TAG, ":%s:%s:%s:%s:", currentSong.title, currentSong.author, currentSong.copyright, currentSong.type);
-				
+					
 				songDetails.put(SongMeta.STATE, 1);
 	
 				Message msg = mHandler.obtainMessage(MSG_NEWSONG, songDetails);
@@ -443,10 +402,7 @@ public class Player implements Runnable {
 					String source = currentPlugin.getStringInfo(102);
 					if(source != null)
 						songDetails.put(SongMeta.SOURCE, source);
-					//Log.d(TAG, "MP3 SOURCE IS " + currentSong.source);
-	
 					mHandler.sendMessage(msg);
-	
 					mp.start();
 					return;
 				}
@@ -491,7 +447,7 @@ public class Player implements Runnable {
 		//reinitAudio = false;
 		Log.d(TAG, "AudioTrack created in thread " + Thread.currentThread().getId());
 		noPlayWait = 0;
-		int pos = 0;
+		currentPos = 0;
 		while(noPlayWait < 50) {
 			
 			if(loopMode != oldLoopMode) {
@@ -508,10 +464,6 @@ public class Player implements Runnable {
 					synchronized (cmdLock) {
 						
 						switch(command) {
-						//case SET_LOOPMODE:
-						//	if(currentPlugin != null)
-						//		currentPlugin.setOption("loop", (Integer)argument);
-						//	break;
 						case PLAY:
 							SongFile song = (SongFile) argument;
 							Log.d(TAG, "Playmod " + song.getName());
@@ -578,9 +530,7 @@ public class Player implements Runnable {
 										currentState = State.PLAYING;
 									}
 
-									//currentSong.length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-									//currentSong.subtuneTitle = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
-									//currentSong.subtuneAuthor = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
+									songDetails.put(SongMeta.SUBTUNE, currentTune);
 									songDetails.put(SongMeta.LENGTH, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
 									songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
 									songDetails.put(SongMeta.SUBTUNE_COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR));
@@ -626,203 +576,16 @@ public class Player implements Runnable {
 						command = Command.NO_COMMAND;
 					}
 				}
-
 				
-				 // Always feed track - play zeroes after song ends Report song end at correct time				
 				if(currentState == State.PLAYING) {
-					// Log.d(TAG, "Get sound data");
-					int len = 0;
 					MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
-					if(mp != null) {
-
-						int playPos = currentPlugin.getSoundData(null, 0);
-						
-						if(playPos < 0) { // !mp.isPlaying()) {
-							// songEnded = true;
-							Log.d(TAG, "SOUNDDATA DONE");
-							currentState = State.SWITCHING;
-							Message msg = mHandler.obtainMessage(MSG_DONE);
-							mHandler.sendMessage(msg);
-						}
-
-						if(playPos > 0 && firstData) {
-							
-							
-
-							if(songDetails.get(SongMeta.TITLE) == null)
-								songDetails.put(SongMeta.TITLE, getPluginInfo(DroidSoundPlugin.INFO_TITLE));
-							if(songDetails.get(SongMeta.COMPOSER) == null)
-								songDetails.put(SongMeta.COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_AUTHOR));
-							//if(currentSong.title == null)
-							//	currentSong.title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
-							//if(currentSong.author == null)
-							//	currentSong.author = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
-							
-							
-							if(songDetails.get(SongMeta.TITLE) == null || songDetails.get(SongMeta.TITLE).equals("")) {
-
-										
-								String basename = currentPlugin.getBaseName((String) songDetails.get(SongMeta.FILENAME));
-								
-								
-								int sep = basename.indexOf(" - ");
-								if(sep > 0) {
-									//currentSong.author = basename.substring(0, sep);
-									//currentSong.title = basename.substring(sep+3);
-									songDetails.put(SongMeta.COMPOSER, basename.substring(0, sep));
-									songDetails.put(SongMeta.TITLE, basename.substring(sep+3));
-								} else 
-									songDetails.put(SongMeta.TITLE, basename);
-									//currentSong.title = basename;
-								//Log.d(TAG, "FN Title '%s'", currentSong.title);
-							}
-							
-							Map<String, Object> info = currentPlugin.getDetailedInfo();
-							if(info != null) {
-								 
-								Log.d(TAG, "########################################### GOT DETAILS");
-								//currentSong.details = mapToArray(info);
-								songDetails.putAll(info);
-							}
-							firstData = false;
-
-							Message msg = mHandler.obtainMessage(MSG_DETAILS, songDetails);
-							mHandler.sendMessage(msg);
-
-						
-						}
-
-						int latency = currentPlugin.getIntInfo(203);
-						if(latency >= 0) {
-							int diff = latency - lastLatency;
-							if(diff < 0)
-								diff = -diff;
-							if(diff > 1000) {
-								songDetails.put(SongMeta.BUFFERING, latency);
-								Message msg = mHandler.obtainMessage(MSG_PROGRESS, songDetails);
-								mHandler.sendMessage(msg);
-								lastLatency = latency;
-							}
-						}
-
-
-						if(currentPlugin.getIntInfo(DroidSoundPlugin.INFO_DETAILS_CHANGED) != 0) {
-
-							String title = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
-							//String author = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
-
-							String subTuneTitle = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
-							//String subTuneAuthor = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
-							//int length = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-							
-							Log.d(TAG, "######## GOT NEW META INFO");
-							Message msg;
-							if(subTuneTitle != null && (!subTuneTitle.equals(songDetails.get(SongMeta.SUBTUNE_TITLE)))) {
-								msg = mHandler.obtainMessage(MSG_SUBTUNE, songDetails);
-								//currentSong.subtuneTitle =  subTuneTitle;
-								songDetails.put(SongMeta.SUBTUNE_TITLE, subTuneTitle);
-							} else {
-								msg = mHandler.obtainMessage(MSG_SUBTUNE, songDetails);
-							}
-							mHandler.sendMessage(msg);							
-							
-							if(title != null && subTuneTitle != null && (!title.equals(songDetails.get(SongMeta.TITLE)))) {
-								msg = mHandler.obtainMessage(MSG_DETAILS, songDetails);
-								mHandler.sendMessage(msg);
-								songDetails.put(SongMeta.TITLE, subTuneTitle);
-							}
-							
-						}
-
-						int song = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
-						if(song >= 0 && song != currentTune) {
-
-							if(startedFromSub) {
-								Log.d(TAG, "SUBTUNE ENDED");
-								currentState = State.SWITCHING;
-								Message msg = mHandler.obtainMessage(MSG_DONE);
-								mHandler.sendMessage(msg);
-								startedFromSub = false;
-							}
-
-							currentTune = song;
-							songDetails.put(SongMeta.SUBTUNE, currentTune);
-							// currentSong.length =
-							// currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH);
-							//currentSong.subtuneTitle = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE);
-							//currentSong.subtuneAuthor = getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR);
-							songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
-							songDetails.put(SongMeta.SUBTUNE_COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR));
-
-							
-							Message msg = mHandler.obtainMessage(MSG_SUBTUNE, songDetails);
-							mHandler.sendMessage(msg);
-						}
-
-						songDetails.put(SongMeta.POSITION, playPos);
-						Message msg = mHandler.obtainMessage(MSG_PROGRESS);
-						mHandler.sendMessage(msg);
-						Thread.sleep(100);
-						continue;
-					}
-
-					if(!songEnded) {
-						len = currentPlugin.getSoundData(samples, dataSize);
-						dataSize = bufSize / 16;
+					if(mp != null) {						
+						updateMediaPlayer();
 					} else {
-						Thread.sleep(100);
-						len = dataSize;
-						Arrays.fill(samples, 0, len, (short) 0);
+						updatePlayer();
 					}
-
-					int playPos = audioPlayer.getPlaybackPosition();
-					//Log.d(TAG, "PLAY LAST %d %d", playPos, lastPos);
-					
-					if(lastPos > playPos)
-						lastPos = -1;
-					
-					if(playPos >= lastPos + 500) {
-
-						songDetails.put(SongMeta.POSITION, playPos);
-						Message msg = mHandler.obtainMessage(MSG_PROGRESS);
-						mHandler.sendMessage(msg);
-						lastPos = playPos;
-
-						if(currentPlugin.isSilent()) {
-							if(silentPosition < 0) {
-								silentPosition = pos;
-							} else if(pos > silentPosition + 2500) {
-								msg = mHandler.obtainMessage(MSG_SILENT);
-								mHandler.sendMessage(msg);
-								Log.d(TAG, "Silence");
-								silentPosition = -1;
-							}
-						} else {
-							silentPosition = -1;
-						}
-
-					}
-					// Log.d(TAG, "write " + len);
-
-					if(len < 0) {
-						if(playPos > 5000) {
-							Log.d(TAG, "SONG ENDED HERE");
-							songEnded = true;							
-							//currentState = State.SWITCHING;
-							Message msg = mHandler.obtainMessage(MSG_DONE);
-							mHandler.sendMessage(msg);							
-
-						}
-						len = dataSize;
-						Arrays.fill(samples, 0, len, (short) 0);
-					}
-					if(len > 0) {
-						
-						audioPlayer.update(samples, len);
-					}
-
-					noPlayWait = 0;
 				} else {
+
 					if(currentState == State.PAUSED && currentPlugin.getMediaPlayer() != null) {
 						int latency = currentPlugin.getIntInfo(203);
 						if(latency >= 0) {
@@ -856,28 +619,181 @@ public class Player implements Runnable {
 
 	}
 	
+	private void updatePlayer() throws InterruptedException {
+		
+		int len = 0;
+
+		if(!songEnded) {
+			len = currentPlugin.getSoundData(samples, dataSize);
+			dataSize = bufSize / 16;
+		} else {
+			Thread.sleep(100);
+			len = dataSize;
+			Arrays.fill(samples, 0, len, (short) 0);
+		}
+
+		int playPos = audioPlayer.getPlaybackPosition();
+		//Log.d(TAG, "PLAY LAST %d %d", playPos, lastPos);
+		
+		if(lastPos > playPos)
+			lastPos = -1;
+		
+		if(playPos >= lastPos + 500) {
+
+			songDetails.put(SongMeta.POSITION, playPos);
+			Message msg = mHandler.obtainMessage(MSG_PROGRESS);
+			mHandler.sendMessage(msg);
+			lastPos = playPos;
+
+			if(currentPlugin.isSilent()) {
+				if(silentPosition < 0) {
+					silentPosition = currentPos;
+				} else if(currentPos > silentPosition + 2500) {
+					msg = mHandler.obtainMessage(MSG_SILENT);
+					mHandler.sendMessage(msg);
+					Log.d(TAG, "Silence");
+					silentPosition = -1;
+				}
+			} else {
+				silentPosition = -1;
+			}
+
+		}
+		// Log.d(TAG, "write " + len);
+
+		if(len < 0) {
+			if(playPos > 5000) {
+				Log.d(TAG, "SONG ENDED HERE");
+				songEnded = true;							
+				//currentState = State.SWITCHING;
+				Message msg = mHandler.obtainMessage(MSG_DONE);
+				mHandler.sendMessage(msg);							
+
+			}
+			len = dataSize;
+			Arrays.fill(samples, 0, len, (short) 0);
+		}
+		if(len > 0) {
+			
+			audioPlayer.update(samples, len);
+		}
+
+		noPlayWait = 0;
+	}
+	
+	private void updateMediaPlayer() throws InterruptedException {
+		
+		int playPos = currentPlugin.getSoundData(null, 0);
+		
+		if(playPos < 0) { // !mp.isPlaying()) {
+			// songEnded = true;
+			Log.d(TAG, "SOUNDDATA DONE");
+			currentState = State.SWITCHING;
+			Message msg = mHandler.obtainMessage(MSG_DONE);
+			mHandler.sendMessage(msg);
+		}
+
+		// Read delayed info
+		if(playPos > 0 && firstData) {
+			
+			String title = getPluginInfo(DroidSoundPlugin.INFO_TITLE);
+			String composer = getPluginInfo(DroidSoundPlugin.INFO_AUTHOR);
+			
+			if(composer != null)
+				songDetails.put(SongMeta.COMPOSER, composer);			
+
+			if(title != null)
+				songDetails.put(SongMeta.TITLE, title);
+			else {
+				// Still no title, so build one from the filename		
+				String basename = currentPlugin.getBaseName((String) songDetails.get(SongMeta.FILENAME));
+				
+				int sep = basename.indexOf(" - ");
+				if(sep > 0) {
+					songDetails.put(SongMeta.COMPOSER, basename.substring(0, sep));
+					songDetails.put(SongMeta.TITLE, basename.substring(sep+3));
+				} else 
+					songDetails.put(SongMeta.TITLE, basename);
+			}
+			
+			Map<String, Object> info = currentPlugin.getDetailedInfo();
+			if(info != null) {				 
+				Log.d(TAG, "########################################### GOT DETAILS");
+				songDetails.putAll(info);
+			}
+			firstData = false;
+
+			Message msg = mHandler.obtainMessage(MSG_DETAILS, songDetails);
+			mHandler.sendMessage(msg);		
+		}
+
+		int latency = currentPlugin.getIntInfo(203);
+		if(latency >= 0) {
+			int diff = latency - lastLatency;
+			if(diff < 0)
+				diff = -diff;
+			if(diff > 1000) {
+				songDetails.put(SongMeta.BUFFERING, latency);
+				Message msg = mHandler.obtainMessage(MSG_PROGRESS, songDetails);
+				mHandler.sendMessage(msg);
+				lastLatency = latency;
+			}
+		}
+
+		// Check if a new tag has been found (shoutcast metadata)
+		if(currentPlugin.getIntInfo(DroidSoundPlugin.INFO_DETAILS_CHANGED) != 0) {
+
+			String title = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_TITLE);
+			String composer = currentPlugin.getStringInfo(DroidSoundPlugin.INFO_AUTHOR);
+
+			boolean change = false;
+			if(title != null && !title.equals(songDetails.get(SongMeta.TITLE))) {
+				songDetails.put(SongMeta.TITLE, title);
+				change = true;
+			}
+			
+			if(composer != null && !composer.equals(songDetails.get(SongMeta.COMPOSER))) {				
+				songDetails.put(SongMeta.COMPOSER, composer);
+				change = true;
+			}
+			
+			if(change) {
+				Log.d(TAG, "######## GOT NEW META INFO: %s,%s", title, composer);
+				Message msg;
+				msg = mHandler.obtainMessage(MSG_DETAILS, songDetails);
+				mHandler.sendMessage(msg);
+			}			
+		}
+
+		// Check if music passed into another subtune (CUE file handling)
+		int song = currentPlugin.getIntInfo(DroidSoundPlugin.INFO_SUBTUNE_NO);
+		if(song >= 0 && song != currentTune) {
+
+			if(startedFromSub) {
+				Log.d(TAG, "SUBTUNE ENDED");
+				currentState = State.SWITCHING;
+				Message msg = mHandler.obtainMessage(MSG_DONE);
+				mHandler.sendMessage(msg);
+				startedFromSub = false;
+			}
+
+			currentTune = song;
+			songDetails.put(SongMeta.SUBTUNE, currentTune);
+			songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
+			songDetails.put(SongMeta.SUBTUNE_COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR));
+			Message msg = mHandler.obtainMessage(MSG_SUBTUNE, songDetails);
+			mHandler.sendMessage(msg);
+		}
+
+		songDetails.put(SongMeta.POSITION, playPos);
+		Message msg = mHandler.obtainMessage(MSG_PROGRESS);
+		mHandler.sendMessage(msg);
+		Thread.sleep(200);
+	}
+	
 	public void getSongDetails(Map<String, Object> target) {
 		target.putAll(songDetails);			
 	}
-
-	/*synchronized public boolean getSongInfo(SongInfo target) {
-		target.title = currentSong.title == null ? null : new String(currentSong.title);
-		target.author = currentSong.author == null ? null : new String(currentSong.author);
-		target.copyright = currentSong.copyright == null ? null : new String(currentSong.copyright);
-		// target.game = new String(currentSong.game);
-		target.type = currentSong.type == null ? null : new String(currentSong.type);
-		target.length = currentSong.length;
-		target.subTunes = currentSong.subTunes;
-		target.startTune = currentSong.startTune;
-		target.details = currentSong.details;
-		target.subtuneTitle = currentSong.subtuneTitle;
-		target.subtuneAuthor = currentSong.subtuneAuthor;
-		target.fileName = currentSong.fileName;
-		target.canSeek = currentSong.canSeek;
-		target.source = currentSong.source;
-		target.md5 = currentSong.md5;
-		return true;
-	} */
 
 	public void stop() {
 		synchronized (cmdLock) {
@@ -920,14 +836,9 @@ public class Player implements Runnable {
 	
 	public void setLoopMode(int what) {
 		synchronized (cmdLock) {
-		//	command = Command.SET_LOOPMODE;
-		//	argument = what;
-			loopMode = what;
-		
+			loopMode = what;		
 		}
 	}
-
-	
 
 	public boolean isActive() {
 		return currentState != State.STOPPED;
@@ -962,39 +873,6 @@ public class Player implements Runnable {
 			argument = new Object [] {song, new File(destFile), length, flags};
 		}
 		
-	}
-	
-	public String [] mapToArray(Map<String, Object> m) {
-		
-		String [] s = new String [m.size() * 3];
-		
-		int i = 0;
-		for(Entry<String, Object> e: m.entrySet()) {
-			String t = "";
-			String v = "";
-			Object val = e.getValue();
-			if(val instanceof String []) {
-				t = "A";
-				StringBuilder sb = new StringBuilder();
-				for(String si : (String [])e.getValue()) {
-					sb.append(si).append("\n");
-				}
-				v = sb.toString();
-			} else if(val instanceof Integer || val instanceof Long) {
-				t = "I";
-				v = String.valueOf(e.getValue());
-			} else if(val instanceof Boolean) {
-				t = "B";
-				v = String.valueOf(e.getValue());
-			} else {
-				t = "S";
-				v = (String) e.getValue();
-			}
-			s[i++] = t;
-			s[i++] = e.getKey();
-			s[i++] = v;
-		}
-		return s;
 	}
 
 }

@@ -3,6 +3,7 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.Locale;
 
 public class SongFile {
 
@@ -24,6 +25,8 @@ public class SongFile {
 	private String composer;
 	
 	private String protocol;
+	
+	private static Locale locale = Locale.getDefault();
 	
 	public SongFile(SongFile s) {
 		subtune = s.subtune;
@@ -111,7 +114,7 @@ public class SongFile {
 			midfix = fileName.substring(firstDot, lastDot+1);
 		}
 
-		int zip = s[0].toUpperCase().indexOf(".ZIP/");
+		int zip = s[0].toUpperCase(locale).indexOf(".ZIP/");
 		if(zip > 0) {
 			zipPath = s[0].substring(0, zip+4);
 			zipName = s[0].substring(zip+5);

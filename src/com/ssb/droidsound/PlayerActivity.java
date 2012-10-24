@@ -148,7 +148,7 @@ public class PlayerActivity extends Activity  {
 	private static final int TTS_UNCHECKED = -1000;
 	private static final int TTS_OK = 2;
 	private static final int TTS_UNINSTALLED = 0;
-	private static final int TTS_UNINSTALLED_ASK = 1;
+	//private static final int TTS_UNINSTALLED_ASK = 1;
 
 	private Config lastConfig;
 
@@ -1282,6 +1282,7 @@ public class PlayerActivity extends Activity  {
 			activityRef = new WeakReference<PlayerActivity>(activity);
 		}
 		
+		@SuppressWarnings("unchecked")
 		@Override
 		public void handleMessage(Message msg) {
 			if(msg.what < 0)

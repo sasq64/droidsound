@@ -2,14 +2,12 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
-import java.util.List;
 import java.util.Map;
 
 import android.os.Environment;
 
 import com.ssb.droidsound.file.FileSource;
 import com.ssb.droidsound.utils.Log;
-
 import com.ssb.droidsound.utils.Unzipper;
 
 public class SC68Plugin extends DroidSoundPlugin {
