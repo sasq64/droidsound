@@ -5,38 +5,53 @@ body {
 
 .title {
 	color: #ffffff; background-color: #000080; font-weight:bold; font-size:16pt; text-overflow: ellipsis; overflow: hidden;
-	padding: 2pt; height: 1.4em
+	white-space: nowrap; padding: 2pt; height: 1.4em
 }
+
 .subtitle {
 	color: #ffffff; background-color: #000080; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
 	padding: 2pt; height: 1.4em
 }
+
 .infotitle {
 	color: #ffffff; background-color: #8888ff; font-size:10pt; text-overflow: ellipsis; overflow: hidden;
-	padding-top: 1pt; padding-left: 2pt; height: 1.4em
+	white-space: nowrap; padding-top: 1pt; padding-left: 2pt; height: 1.4em
 }
+
+.heading {
+	color: #ffff88; font-weight:bold;
+}
+
+.comment {
+	color: #99aaff; white-space: pre-wrap;
+}
+
 </style>
 
 </head><body>
 <div class="title">${title}</div>
 <div class="subtitle">${composer}</div>
 <div class="infotitle">${song_source}</div>
+
+${if copyright}
+<span class="heading">Copyright:</span> ${copyright}<br/>
+${end}
+
 ${if format}
-<b>Format:</b>${format}<br/>
+<span class="heading">Format:</span> ${format}<br/>
 ${end}
+
 ${if channels}
-<b>Channels:</b> ${channels}<br/>
+<span class="heading">Channels:</span> ${channels}<br/>
 ${end}
+
 ${if instruments}
-<b>Intruments</b><br/>
-<tt><font color="#66ff66"/>
-${foreach instruments item}${item}<br/>${end}
-</tt></font>
+<span class="heading">Intruments</span>
+<span class="comment">
+${foreach instruments item}${item.index2} : ${item.text}<br/>${end}
+</span>
 ${end}
 ${if sizeText}
-<b>Size:</b> ${sizeText}<br/>
+<span class="heading">Size:</span> ${sizeText}<br/>
 ${end}
-<pre>
-${all}
-</pre>
 </html></body>

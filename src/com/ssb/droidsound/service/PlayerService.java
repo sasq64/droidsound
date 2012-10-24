@@ -130,8 +130,10 @@ public class PlayerService extends Service implements PlayerInterface {
 		Map<String, Object> newInfo = new HashMap<String, Object>();
 		player.getSongDetails(newInfo);
 		for(Entry<String, Object> e : newInfo.entrySet()) {
-			Object oldVal = info.get(e.getKey());
+			String key = e.getKey();
+			Object oldVal = info.get(key);			
 			Object newVal = e.getValue();
+			
 			if(oldVal == null && newVal == null)
 				continue;
 			if((oldVal == null && newVal != null) || !oldVal.equals(newVal)) {
@@ -454,7 +456,7 @@ public class PlayerService extends Service implements PlayerInterface {
 	    	int next = (Integer)info.get(SongMeta.SUBTUNE) + 1;
 	    	if(next < (Integer)info.get(SongMeta.TOTAL_SUBTUNES)) {
 	        	player.setSubSong(next);
-	    		info.put(SongMeta.SUBTUNE, next);			
+	    		//info.put(SongMeta.SUBTUNE, next);			
 	    		return true;
 	    	}
     	}
@@ -470,7 +472,7 @@ public class PlayerService extends Service implements PlayerInterface {
     	
 		if(song != null) {    			
        		song = playQueue.current();       		
-       		info.put(SongMeta.FILENAME, song.getPath());
+       		//info.put(SongMeta.FILENAME, song.getPath());
        		createThread();
 
        		beforePlay(song.getName());
@@ -486,7 +488,7 @@ public class PlayerService extends Service implements PlayerInterface {
     		int next = (Integer)info.get(SongMeta.SUBTUNE) - 1;
 	    	if(next >= 0) {
 	        	player.setSubSong(next);
-	    		info.put(SongMeta.SUBTUNE, next);
+	    		//info.put(SongMeta.SUBTUNE, next);
 	    		return true;
 	    	}
     	}
@@ -501,7 +503,7 @@ public class PlayerService extends Service implements PlayerInterface {
     	SongFile song = playQueue.prev();    	
 		if(song != null) {    			
        		song = playQueue.current();
-       		info.put(SongMeta.FILENAME, song.getPath());
+       		//info.put(SongMeta.FILENAME, song.getPath());
        		createThread();
        		beforePlay(song.getName());
        		player.playMod(song);
@@ -686,7 +688,7 @@ public class PlayerService extends Service implements PlayerInterface {
 						}
 					} else {
 						Log.d(TAG, "Want to play list with " + song.getPath());
-						info.put(SongMeta.FILENAME, song.getPath());
+						//info.put(SongMeta.FILENAME, song.getPath());
 						playListName = "";
 						beforePlay(song.getName());
 						player.playMod(song);
@@ -696,7 +698,7 @@ public class PlayerService extends Service implements PlayerInterface {
 					createThread();
 					playListName = "";
 					//info[SongMeta.FILENAME] = uri.getLastPathSegment();
-					info.put(SongMeta.FILENAME, uri.getLastPathSegment());
+					//info.put(SongMeta.FILENAME, uri.getLastPathSegment());
 					SongFile song = new SongFile(intent.getDataString());
 					beforePlay(song.getName());
 					player.playMod(song);
@@ -732,7 +734,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			
 			createThread();
 			//info[SongMeta.FILENAME] = name;
-			info.put(SongMeta.FILENAME, name);
+			//info.put(SongMeta.FILENAME, name);
 			SongFile song = new SongFile(name);
 			beforePlay(song.getName());			
 			player.playMod(song);
@@ -785,7 +787,7 @@ public class PlayerService extends Service implements PlayerInterface {
 				SongFile s = playQueue.current();
 				if(s != null) {
 	           		//info[SongMeta.FILENAME] = s.getPath();
-	           		info.put(SongMeta.FILENAME, s.getPath());
+	           		//info.put(SongMeta.FILENAME, s.getPath());
 	           		createThread();
 	    			beforePlay(s.getName());			
 	           		player.playMod(s);
@@ -812,7 +814,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		@Override
 		public boolean seekTo(int msec) throws RemoteException {
 			player.seekTo(msec);
-			info.put(SongMeta.POSITION, msec);
+			//info.put(SongMeta.POSITION, msec);
 			//performCallback(SongMeta.POS);
 			
 			/*if((Integer)info[SongMeta.REPEAT] == RM_CONTINUE) {
@@ -828,43 +830,10 @@ public class PlayerService extends Service implements PlayerInterface {
 	    	if(playQueue == null) {
 	    		return false;
 	    	}
-			
-			// TODO : Check if next song is the same file and the same sub song
-			/* boolean ok = false;
-			Log.d(TAG, "Current song is " + currentSongInfo.fileName);
-			SongFile nextSong = playQueue.getNextSong();			
-			if(nextSong != null) {
-				Log.d(TAG, "Next song is " + nextSong.getName());
-				if(song == nextSong.startSong && currentSongInfo.fileName.equals(nextSong.filename)) {
-					playQueue.next();
-					ok = true;
-				}
-			}
-			if(!ok) {
-				nextSong = playQueue.getPrevSong();				
-				if(nextSong != null) {
-					Log.d(TAG, "Prev song is " + nextSong.filename);
-					if(song == nextSong.startSong && currentSongInfo.fileName.equals(nextSong.filename)) {
-						playQueue.prev();
-						ok = true;						
-					}
-				}
-			} */
-			
-			
+
  			player.setSubSong(song);
- 			info.put(SongMeta.SUBTUNE, song);
-			//info[SongMeta.SUBSONG] = (Integer)song;			
-			//if((Integer)info[SongMeta.REPEAT] == RM_CONTINUE) {
-			//	info[SongMeta.REPEAT] = RM_KEEP_PLAYING;
-			//	performCallback(SongMeta.REPEAT);
-			//}
-			
-			//if(ok) {
-			//	info[SongMeta.FILENAME] = nextSong.filename + ";" + song;
-			//	performCallback(SongMeta.FILENAME);
-			//}
-			
+ 			//info.put(SongMeta.SUBTUNE, song);
+
 			return true;
 			
 		}
@@ -963,7 +932,7 @@ public class PlayerService extends Service implements PlayerInterface {
 
 			createThread();
 			//info[SongMeta.FILENAME] = mod.getPath();
-			info.put(SongMeta.FILENAME, mod.getPath());
+			//info.put(SongMeta.FILENAME, mod.getPath());
 			
 			int dot = name.lastIndexOf('.');
 			if(dot > 0) {
@@ -1016,7 +985,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			Log.d(TAG, "PlayList called " + song.getPath());
 			createThread();
 //			/info[SongMeta.FILENAME] = song.getPath();
-			info.put(SongMeta.FILENAME, song.getPath());
+			//info.put(SongMeta.FILENAME, song.getPath());
 			playListName = "";
 			beforePlay(song.getName());
 			player.playMod(song);

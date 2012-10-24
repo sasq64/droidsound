@@ -522,7 +522,7 @@ public class Player implements Runnable {
 								if(currentPlugin.setTune((Integer) argument)) {
 									songEnded = false;
 									currentTune = (Integer) argument;
-									songDetails.put(SongMeta.SUBTUNE, currentTune);
+
 									lastPos = -1000;
 									audioPlayer.stop();
 

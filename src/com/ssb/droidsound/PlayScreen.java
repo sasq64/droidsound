@@ -80,6 +80,8 @@ public class PlayScreen {
 
 	private String currentPluginName;
 
+	private JSInterface jsInterface;
+
 
 	//private FileObserver observer2;
 	
@@ -104,15 +106,21 @@ public class PlayScreen {
 	}; */
 	
 	@SuppressWarnings("unused")
-	private static class VarJS {
+	private static class JSInterface {
 		private Map<String, Object> map;
+		public Map<String, String> listenMap;
 
-		public VarJS(Map<String, Object> map) {
+		public JSInterface(Map<String, Object> map) {
 			this.map = map;
+			listenMap = new HashMap<String, String>();
 		}
 		
 		public String getString(String what) {
 			return (String) map.get(what);
+		}
+		
+		public void listenTo(String what, String function) {
+			listenMap.put(what, function);
 		}
 		
 	}
@@ -148,7 +156,8 @@ public class PlayScreen {
 		
 		infoText = (WebView) parent.findViewById(R.id.web_view);		
 		infoText.getSettings().setJavaScriptEnabled(true);		
-		infoText.addJavascriptInterface(new VarJS(variables), "info");
+		jsInterface = new JSInterface(variables);		
+		infoText.addJavascriptInterface(jsInterface, "info");
 		//infoText.addJavascriptInterface(songInfo, "info");
 		
 
@@ -393,6 +402,7 @@ public class PlayScreen {
 			} else
 				state.seekingSong--;
 		}
+		
 		if(data.containsKey(SongMeta.BUFFERING)) {
 			state.buffering = (Integer)data.get(SongMeta.BUFFERING);
 			songSubtunesText.setText(String.format("%02d:%02d", state.buffering / 1000 / 60, (state.buffering/1000) % 60));
@@ -403,14 +413,16 @@ public class PlayScreen {
 			songSubtunesText.setText(String.format("#%s", track));
 		}
 		
-		if(data.containsKey(SongMeta.SUBTUNE)) {
-			state.subTune = (Integer) data.get(SongMeta.SUBTUNE);
-			songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
-		}
 		if(data.containsKey(SongMeta.TOTAL_SUBTUNES)) {
 			state.subTuneCount = (Integer) data.get(SongMeta.TOTAL_SUBTUNES);
-			songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
 		}
+	
+		if(data.containsKey(SongMeta.SUBTUNE)) {
+			state.subTune = (Integer) data.get(SongMeta.SUBTUNE);
+			if(state.subTuneCount > 0)
+				songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
+		}
+	
 		if(data.containsKey(SongMeta.CAN_SEEK)) {
 			songSeeker.setEnabled((Boolean) data.get(SongMeta.CAN_SEEK));
 		}
@@ -436,9 +448,18 @@ public class PlayScreen {
 		
 		if(newsong)
 			infoText.scrollTo(0, 0);
+		
+		
 		boolean doUpdate = newsong;
 		for(Entry<String, Object> e : data.entrySet()) {
 			String k = e.getKey();
+			
+			String func = jsInterface.listenMap.get(k);
+			if(func != null) {
+				infoText.loadUrl("javascript:" + func + "('" + e.getValue() +"')");
+			}
+
+			
 			if(k == SongMeta.POSITION || k == SongMeta.BUFFERING || k == SongMeta.STATE || k == SongMeta.CAN_SEEK || k == SongMeta.LENGTH)
 				continue;
 			doUpdate = true;
@@ -553,6 +574,7 @@ public class PlayScreen {
 		if(!templateDir.exists())
 			templateDir.mkdirs();
 		boolean changed = false;
+		templates.clear();
 		for(File f : templateDir.listFiles()) {
 			String parts[] = f.getName().split("\\.");
 			if(parts.length == 2 && parts[1].toLowerCase().equals("html")) {
@@ -694,6 +716,8 @@ public class PlayScreen {
 		} else {
 			
 			String html = templates.get(currentPluginName);
+			if(html == null)
+				html = templates.get("DEF");
 			if(html == null)
 				html = infoHtml;
 			
