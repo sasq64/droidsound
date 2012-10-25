@@ -1,6 +1,9 @@
 package com.ssb.droidsound.service;
 
 import java.nio.ShortBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Stack;
 
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -10,7 +13,7 @@ import android.media.MediaPlayer;
 
 import com.ssb.droidsound.utils.Log;
 
-public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateListener {	
+public class AsyncAudioPlayer implements Runnable {	
 	private static final String TAG = AudioPlayer.class.getSimpleName();
 
 	private MediaPlayer mediaPlayer;
@@ -25,7 +28,20 @@ public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateList
 	private ShortBuffer buffer;
 
 	private boolean doStart;
+
+	public static enum Command {
+		NO_OP,
+		START,
+		STOP,
+		PAUSE,
+		RELEASE,
+		PLAY,
+		FLUSH,
+		NO_CMD
+	};
 	
+	private LinkedList<Command> commands = new LinkedList<Command>();
+
 	public AsyncAudioPlayer(int bs) {
 		bufSize = bs;
 		silence = 0;
@@ -36,11 +52,71 @@ public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateList
 		init();		
 		while(true) {		
 			try {
-				Thread.sleep(200);
+				int count = 88200/5; // 200ms
+				int bytesAvailable = 0;
+				synchronized (buffer) {
+					bytesAvailable = buffer.position();					
+				}
+				if(bytesAvailable > count) {
+
+					if(doStart) {
+						audioTrack.play();
+						startPlaybackHead = audioTrack.getPlaybackHeadPosition();
+						playPosOffset = 0;
+						doStart = false;
+					}
+					
+					while(bytesAvailable > count) {						
+						synchronized (buffer) {
+							buffer.flip();
+							audioTrack.write(buffer.array(), 0, count);
+							buffer.position(count);
+							buffer.compact();
+						}
+						bytesAvailable -= count;
+						runCommands();
+					}					
+				} else					
+					Thread.sleep(200);
 			} catch (InterruptedException e) {
 				return;
 			}
 		}
+	}
+	
+	private void runCommands() {
+	
+			Command cmd = Command.NO_OP;
+									
+			while(cmd != Command.NO_CMD) {
+				synchronized (commands) {					
+					if(!commands.isEmpty())
+						cmd = commands.removeFirst();
+				}
+				switch(cmd) {
+				case START:
+					_start();
+					break;
+				case STOP:
+					_stop();
+					break;
+				case PAUSE:
+					audioTrack.pause();
+					break;
+				case PLAY:
+					audioTrack.play();
+					break;
+				case RELEASE:
+					audioTrack.release();
+					break;
+				case FLUSH:
+					_flush();
+					break;
+				case NO_OP:
+				case NO_CMD:
+					break;
+				}
+			}
 	}
 	
 	
@@ -48,81 +124,31 @@ public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateList
 	
 	private void init() {
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_OUT_STEREO,
-				AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
+			AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 		buffer = ShortBuffer.allocate(88200*8); // 8 seconds
-		audioTrack.setPositionNotificationPeriod(bufSize/16); // Notify after 1/4 buffer size 
-		audioTrack.setPlaybackPositionUpdateListener(this);
 	}
 	
-	@Override
-	public void onMarkerReached(AudioTrack track) {
-	}
-
-	@Override
-	public void onPeriodicNotification(AudioTrack track) {
-		synchronized (this) {
-			int count = bufSize/4;
-			if(buffer.position() > count) {			
-				audioTrack.write(buffer.array(), 0, count);
-				buffer.limit(buffer.position());
-				buffer.position(count);			
-				buffer.compact();
-			}			
-		}
-		
-	}
-
 
 	public void update(short [] samples, int len) {
 		
 		synchronized (this) {
-					
-		if(doStart) {
-			audioTrack.play();
-			//Log.d(TAG, "STATE " + audioTrack.getState());
-			//try {
-			//	Thread.sleep(10);
-			//} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-			//	e.printStackTrace();
-			//}
-			startPlaybackHead = audioTrack.getPlaybackHeadPosition();
-			playPosOffset = 0;
-			//Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
-			//Log.d(TAG, "STATE " + audioTrack.getState());
-			doStart = false;
-		}
-		
-		int i = len-1;
-		for(; i>=0; i-=3) {
-			if(samples[i] > 128 || samples[i] < -128) {				
-				break;			
+							
+			int i = len-1;
+			for(; i>=0; i-=3) {
+				if(samples[i] > 128 || samples[i] < -128) {				
+					break;			
+				}
 			}
+
+			synchronized (buffer) {
+				buffer.put(samples,0, len);	
+			}
+						
+			if(i >= 0)
+				silence = len+1-i;
+			else
+				silence += len;
 		}
-		
-		buffer.put(samples,0, len);
-		
-		if(i >= 0)
-			silence = len+1-i;
-		else
-			silence += len;
-
-		
-		/*
-		int count = bufSize / 4;
-		if(count > buffer.position()/2)
-			count = buffer.position()/2;
-				
-		audioTrack.write(buffer.array(), 0, count);
-		buffer.limit(buffer.position());
-		buffer.position(count);			
-		buffer.compact();
-		*/
-
-		//Log.d(TAG, "STATE " + audioTrack.getState());
-		//Log.d(TAG, "PLAYBACK NOW " + audioTrack.getPlaybackHeadPosition());
-		}
-
 	}
 	
 	public int getSilence() {
@@ -161,6 +187,12 @@ public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateList
 
 	// Stop playback
 	public void stop() {
+		synchronized (this) {
+			commands.add(Command.STOP);			
+		}
+	}
+	
+	private void _stop() {
 		
 		buffer.clear();
 		
@@ -186,6 +218,12 @@ public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateList
 
 
 	public void start() {
+		synchronized (this) {
+			commands.add(Command.START);			
+		}
+	}
+	
+	private void _start() {
 		//MediaPlayer mp = currentPlugin.getMediaPlayer();
 		if(mediaPlayer != null) {
 			mediaPlayer.start();
@@ -207,16 +245,22 @@ public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateList
 		//Log.d(TAG, "START PLAYBACK " + startPlaybackHead);
 		//playPosOffset = 0;		
 	}
-
+	
 	public void pause() {
-		audioTrack.pause();
-		
+		synchronized (this) {
+			commands.add(Command.PAUSE);			
+		}
 	}
 
 	public void flush() {
+		synchronized (this) {
+			commands.add(Command.FLUSH);			
+		}
+	}
+
+	public void _flush() {
 		
-		buffer.clear();
-		
+		buffer.clear();		
 		audioTrack.flush();
 		startPlaybackHead = audioTrack.getPlaybackHeadPosition();
 		playPosOffset = 0;
@@ -225,19 +269,22 @@ public class AsyncAudioPlayer  implements Runnable, OnPlaybackPositionUpdateList
 	}
 
 	public void release() {
-		audioTrack.release();
-		
+		synchronized (this) {
+			commands.add(Command.RELEASE);			
+		}
 	}
 
 	public void play() {
-		audioTrack.play();
-		// TODO Auto-generated method stub
-		
+		synchronized (this) {
+			commands.add(Command.PLAY);			
+		}
 	}
 
 	public void setBufferSize(int bs) {
-		bufSize = bs;
-		reinitAudio = true;
+		synchronized (this) {
+			bufSize = bs;
+			reinitAudio = true;		
+		}
 	}
 
 	
