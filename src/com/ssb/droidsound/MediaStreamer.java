@@ -315,11 +315,11 @@ V/MediaStreamer(12369): icy-metaint: 16000
 							localMPConnection.write(buffer, 0, size);
 						}
 						
-						if(metaCounter == metaInterval)
-							Log.d(TAG, "META TIME");
+						//if(metaCounter == metaInterval)
+						//	Log.d(TAG, "META TIME");
 						
-					} else
-						Log.d(TAG, "IN META!");
+					} //else
+						//Log.d(TAG, "IN META!");
 					
 					if(parseMp3) {
 						if(usec - last_usec > 1000000) {
@@ -522,12 +522,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			int size = in.read(metaArray, metaPos, rem);
 			metaPos += size;
 
-			Log.d(TAG, "Read %d META bytes", size);
+			//Log.d(TAG, "Read %d META bytes", size);
 
 			
 			if(metaPos == metaSize) {
 				String meta =  new String(metaArray, 1, metaSize-1);
-				Log.d(TAG, "META DONE: " + meta);
+				//Log.d(TAG, "META DONE: " + meta);
 				
 				String split [] = meta.split(";");
 				
@@ -552,7 +552,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 			
 			if(metaPos > 0) {
 				metaSize = (metaArray[0] * 16) + 1;
-				Log.d(TAG, "META SIZE %d", metaSize-1);
+				//Log.d(TAG, "META SIZE %d", metaSize-1);
 				if(metaSize == 1) {
 					metaCounter = 0;
 					metaPos = 0;
@@ -610,12 +610,12 @@ V/MediaStreamer(12369): icy-metaint: 16000
 		}
 		
 		if(!prepared) {
-			Log.d(TAG, "-------- Not prepared yet");
+			//Log.d(TAG, "-------- Not prepared yet");
 			return 0;
 		}
 		
 		if(!started) {			
-			Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> STARTING ");
+			Log.d(TAG, "MEDIASTREAMER STARTING ");
 			mediaPlayer.start();
 			started = true;
 		}

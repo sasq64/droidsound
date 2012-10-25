@@ -19,11 +19,14 @@ extern "C" {
 #include "sound.h"
 #include "sysfile.h"
 
+//#include "../common/Fifo.h"
+#include "../common/Misc.h"
+
 /* In our overridden maincpu.c */
 extern void psid_play(short *buf, int size);
 }
 
-
+/*
 static jstring NewString(JNIEnv *env, const char *str)
 {
 	static jchar *temp, *ptr;
@@ -43,12 +46,14 @@ static jstring NewString(JNIEnv *env, const char *str)
 	free(temp);
 
 	return j;
-}
+} */
 
 static bool videomode_is_ntsc;
 static bool videomode_is_forced;
 static int sid;
 static bool sid_is_forced;
+
+//static Fifo *fifo = NULL;
 
 
 static void c64_song_init()
@@ -115,6 +120,9 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1loadFile
     int ret = psid_load_file(cname);
     env->ReleaseStringUTFChars(name, cname);
     
+    //if(fifo == NULL)
+    //	fifo = new Fifo(0);
+
     if (ret != 0)
     {
         return NewString(env, (const char *) "failure code from psid_load_file()");
@@ -132,6 +140,8 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1unload(JNIE
     * Unfortunately to us, there are a large number of other things
     * that are statically allocated in VICE codebase. */
     psid_set_tune(-1);
+    //delete fifo;
+    //fifo = NULL;
 }
 
 
@@ -139,8 +149,11 @@ JNIEXPORT jint JNICALL Java_com_ssb_droidsound_plugins_VICEPlugin_N_1getSoundDat
 {
     jshort *ptr = env->GetShortArrayElements(sArray, NULL);
     
-    psid_play(ptr, size);
     
+    psid_play(ptr, size);
+    //fifo->processBytes((char*)ptr, size);
+    //__android_log_print(ANDROID_LOG_VERBOSE, "VICEPlugin", "SILENCE %d", fifo->getSilence());
+
     env->ReleaseShortArrayElements(sArray, ptr, 0);
     
     return size;

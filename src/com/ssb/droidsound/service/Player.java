@@ -676,6 +676,13 @@ public class Player implements Runnable {
 		if(len > 0) {
 			
 			audioPlayer.update(samples, len);
+			/*Log.d(TAG, "SILENCE %d", audioPlayer.getSilence());
+			if(audioPlayer.getSilence() > 7000) {
+				//currentState = State.SWITCHING;
+				Message msg = mHandler.obtainMessage(MSG_DONE);
+				mHandler.sendMessage(msg);
+			}*/
+				
 		}
 
 		noPlayWait = 0;

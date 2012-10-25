@@ -13,6 +13,8 @@ import java.util.Map.Entry;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Environment;
 import android.os.FileObserver;
 import android.os.Handler;
@@ -22,10 +24,14 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.webkit.JsResult;
+import android.webkit.WebChromeClient;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.floreysoft.jmte.Engine;
 import com.ssb.droidsound.service.PlayerService;
@@ -60,14 +66,13 @@ public class PlayScreen {
 
 	private Activity activity;
 
-
+	private int oldSeconds = -1;
 	
 	private Map<String, Object> variables = new HashMap<String, Object>();
 
 	private Engine engine;
 
 	private String infoHtml;
-
 	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
 
 	private File htmlDir;
@@ -119,8 +124,9 @@ public class PlayScreen {
 			return (String) map.get(what);
 		}
 		
-		public void listenTo(String what, String function) {
+		public int listenTo(String what, String function) {
 			listenMap.put(what, function);
+			return 0;
 		}
 		
 	}
@@ -204,15 +210,41 @@ public class PlayScreen {
 		observer.startWatching();
 		updateHtml();
 				
-        /*WebViewClient client = new WebViewClient() {
-        	@Override
+        WebViewClient client = new WebViewClient() {
+        	/*@Override
         	public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
         		Log.d(TAG, "WANT TO LOAD " + url);
         		return super.shouldInterceptRequest(view, url);
+        	}*/
+        	@Override
+        	public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+        		super.onReceivedError(view, errorCode, description, failingUrl);
+        		Log.d(TAG, "Error: %d (%s)", errorCode, description);
+        	}
+        	
+        	@Override
+        	public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        		
+        		 Uri uri = Uri.parse(url);
+        		 Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        		 activity.startActivity(intent);
+        		 return true;
+        		
         	}
         };
-        infoText.setWebViewClient(client); */
-
+        infoText.setWebViewClient(client);
+        
+        WebChromeClient chrome = new WebChromeClient() {
+        	
+        	@Override
+        	public boolean onJsAlert(WebView view, String url, String message, JsResult result) {        		
+        		Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+        		result.confirm();
+        		return true;
+        		
+        	}        	
+        };
+        infoText.setWebChromeClient(chrome);
 		
 		shuffleText.setText(state.shuffleSongs ? "RND" : "SEQ");
 		
@@ -367,6 +399,10 @@ public class PlayScreen {
 		if(data.containsKey(SongMeta.STATE)) {
 			state.songState = (Integer)data.get(SongMeta.STATE);
 			
+			
+			if(state.songState == 0) {
+				infoText.loadData(empty, "text/html", "utf-8");
+			}
 			Log.d(TAG, "State %d", state.songState);
 			
 			if(state.songState == 1) {
@@ -387,17 +423,26 @@ public class PlayScreen {
 			Log.d(TAG, "Songlength %02d:%02d", state.songLength / 60, state.songLength % 60);
 			songTotalText.setText(String.format("%02d:%02d", state.songLength / 60, state.songLength % 60));
 		}
+		
+		
+
+		
 		if(data.containsKey(SongMeta.POSITION)) {
 			int value = (Integer)data.get(SongMeta.POSITION) / 1000;
+			
 			if(state.seekingSong == 0) {
-				state.songPos = value;
-				songSecondsText.setText(String.format("%02d:%02d", state.songPos / 60, state.songPos % 60));
-				if(state.songLength > 0) {
-					int percent = 100 * state.songPos / state.songLength;
-					if(percent > 100) percent = 100;
-					songSeeker.setProgress(percent);
-				} else {
-					songSeeker.setProgress(0);
+				if(value != oldSeconds) {
+					oldSeconds = value;
+					state.songPos = value;
+					String t = String.format("%02d:%02d", state.songPos / 60, state.songPos % 60);					
+					songSecondsText.setText(t);
+					if(state.songLength > 0) {
+						int percent = 100 * state.songPos / state.songLength;
+						if(percent > 100) percent = 100;
+						songSeeker.setProgress(percent);
+					} else {
+						songSeeker.setProgress(0);
+					}
 				}
 			} else
 				state.seekingSong--;
@@ -449,14 +494,14 @@ public class PlayScreen {
 		if(newsong)
 			infoText.scrollTo(0, 0);
 		
-		
 		boolean doUpdate = newsong;
 		for(Entry<String, Object> e : data.entrySet()) {
 			String k = e.getKey();
 			
 			String func = jsInterface.listenMap.get(k);
 			if(func != null) {
-				infoText.loadUrl("javascript:" + func + "('" + e.getValue() +"')");
+				String url = "javascript:" + func + "('" + e.getValue() +"')";
+				infoText.loadUrl(url);
 			}
 
 			
@@ -465,6 +510,9 @@ public class PlayScreen {
 			doUpdate = true;
 			break;
 		}
+		
+		if(state.songState == 0)
+			return;
 		
 		if(doUpdate)
 			update();
@@ -711,6 +759,7 @@ public class PlayScreen {
 		variables.put("height", infoText.getHeight());
 		
 		if(variables.containsKey("webpage")) {
+			//jsInterface.listenMap.clear();
 			String page = (String) variables.get("webpage");
 			infoText.loadUrl(page);
 		} else {
