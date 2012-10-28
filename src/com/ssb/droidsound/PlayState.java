@@ -25,7 +25,7 @@ public class PlayState {
 	public int songState;
 	public SongFile operationSong;
 	public boolean shuffleSongs;
-	public int songRepeat;
+	public boolean songRepeat;
 	public String subtuneTitle;
 	public String subtuneAuthor;
 	public String operationTitle;

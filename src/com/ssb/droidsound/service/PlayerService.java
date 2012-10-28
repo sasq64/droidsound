@@ -50,18 +50,18 @@ public class PlayerService extends Service implements PlayerInterface {
 	public static final int OPTION_SILENCE_DETECT = 1;
 	//public static final int OPTION_RESPECT_LENGTH = 2;
 	public static final int OPTION_PLAYBACK_ORDER = 3;
-	public static final int OPTION_REPEATMODE = 4;
+	public static final int OPTION_REPEATSONG = 4;
 	public static final int OPTION_BUFFERSIZE = 5;
 	public static final int OPTION_DEFAULT_LENGTH = 6;
 	public static final int OPTION_CYCLE_SUBTUNES = 7;
 
 
 
-	public static final int RM_CONTINUE = 0;
-	public static final int RM_KEEP_PLAYING = 1;
+	//public static final int RM_CONTINUE = 0;
+	/*public static final int RM_KEEP_PLAYING = 1;
 	public static final int RM_REPEAT = 2;	
 	public static final int RM_CONTINUE_SUBSONGS = 3;
-	public static final int RM_REPEAT_SUBSONG = 4;
+	public static final int RM_REPEAT_SUBSONG = 4;*/
 	//private short[] shuffleArray;
 	
 	//private Object info[];
@@ -103,7 +103,8 @@ public class PlayerService extends Service implements PlayerInterface {
 	private AudioFocusWrapper afWrapper;
 
 	//private int defaultRepeatMode = RM_CONTINUE;
-	private int repeatMode = RM_CONTINUE;
+	//private int repeatMode = RM_CONTINUE;
+	private boolean repeatSong = false;
 
 	protected String saySomething;
 
@@ -324,81 +325,92 @@ public class PlayerService extends Service implements PlayerInterface {
 		@Override
 		public void handleMessage(Message msg) {
 			PlayerService ps = psRef.get();
-            switch (msg.what) {
-            	case Player.MSG_WAVDUMPED:
-            		ps.info.put(SongMeta.FILENAME, msg.obj);
-            		ps.updateInfo(false);
-            		ps.info.put(SongMeta.FILENAME, null);
-            		break;
-            	case Player.MSG_DETAILS:
-            	case Player.MSG_SUBTUNE:
-            		//sa = (String [])msg.obj;
-            		//ps.info[SongMeta.DETAILS] = "DETAILS";
-            		//ps.currentSongInfo.details = (String[]) msg.obj;            		
-            		//ps.info = ps.player.getSongDetails();
-            		ps.updateInfo(false);
-            		break;
-            	case Player.MSG_FAILED:
-            		//ps.info[SongMeta.STATE] = 0;
-            		//ps.info[SongMeta.ERROR] = ERR_SONG.COULD_NOT_PLAY;
-            		//ps.performCallback(SongMeta.FILENAME, SongMeta.TITLE, SongMeta.ERROR);
-            		//ps.info[SongMeta.ERROR] = 0;
-            		break;
-                case Player.MSG_NEWSONG:
-            		ps.updateInfo(true);
-                	break;
-                case Player.MSG_DONE:
-                	Log.d(TAG, "Music done");
-                	if(ps.repeatMode == RM_CONTINUE) {
-                		ps.playNextSong();
-                	}// else {
-                	//	ps.info[SongMeta.STATE] = 0;
-                	//	performCallback(SongMeta.STATE);
-                	//}
-                    break;
-                case Player.MSG_PROGRESS:
-                	int l = (Integer)ps.info.get(SongMeta.LENGTH);
-                	if(l < 0) {
-                		l = ps.defaultLength;
-                	}
-                	//Log.d(TAG, "%d vs %d", msg.arg1, l);
-                	if(l > 0 && (msg.arg1 >= l) && (ps.repeatMode == RM_CONTINUE)) {
-                		ps.playNextSong();
-                	} else {                		
-                		ps.updateInfo(false);
-                	}
-    				break;
-                case Player.MSG_STATE:
-                	
-                	int state = (Integer)msg.arg1;
-                	if(state == 0) {
-                		ps.updateInfo(true);
-                	} else 
-                		ps.updateInfo(false);
-                	
-                	/*ps.info[SongMeta.STATE] = (Integer)msg.arg1;
-                	
-                	if(msg.arg1 == 0) {
-                		ps.info[SongMeta.POS] = ps.info[SongMeta.SUBSONG] = ps.info[SongMeta.TOTALSONGS] = ps.info[SongMeta.LENGTH] = 0;
-                		ps.currentSongInfo.fileName = null;
-                		ps.performCallback(SongMeta.POS, SongMeta.SUBSONG, SongMeta.TOTALSONGS, SongMeta.LENGTH, SongMeta.STATE);
-                	} else {                	
-                		ps.performCallback(SongMeta.STATE);
-                	}*/
-                	break;
-                /*case Player.MSG_SILENT:
-                	if(silenceDetect) {
-	                	if((Integer)ps.info[SongMeta.REPEAT] == RM_CONTINUE) {
-	                		playNextSong();
-	                	} else {
-	                		Log.d(TAG, "User has interferred, not switching");
-	                	}
-                	}
-                	break;*/
-                default:
-                    super.handleMessage(msg);
-            }
-        }
+			switch (msg.what) {
+			case Player.MSG_WAVDUMPED:
+				ps.info.put(SongMeta.FILENAME, msg.obj);
+				ps.updateInfo(false);
+				ps.info.put(SongMeta.FILENAME, null);
+				break;
+			case Player.MSG_DETAILS:
+			case Player.MSG_SUBTUNE:
+				// sa = (String [])msg.obj;
+				// ps.info[SongMeta.DETAILS] = "DETAILS";
+				// ps.currentSongInfo.details = (String[]) msg.obj;
+				// ps.info = ps.player.getSongDetails();
+				ps.updateInfo(false);
+				break;
+			case Player.MSG_FAILED:
+				// ps.info[SongMeta.STATE] = 0;
+				// ps.info[SongMeta.ERROR] = ERR_SONG.COULD_NOT_PLAY;
+				// ps.performCallback(SongMeta.FILENAME, SongMeta.TITLE,
+				// SongMeta.ERROR);
+				// ps.info[SongMeta.ERROR] = 0;
+				break;
+			case Player.MSG_NEWSONG:
+				ps.updateInfo(true);
+				break;
+			case Player.MSG_SILENT:
+				if(msg.arg1 > 2000) {
+					if(ps.repeatSong) {
+						ps.repeatSong();
+					} else {
+						ps.playNextSong();
+					}
+				}
+				break;
+			case Player.MSG_DONE:
+				Log.d(TAG, "Music done");
+				if(ps.repeatSong) {
+					ps.repeatSong();
+				} else {
+					ps.playNextSong();
+				}
+				break;
+
+			case Player.MSG_PROGRESS:
+				int l = (Integer) ps.info.get(SongMeta.LENGTH);
+				if (l < 0) {
+					l = ps.defaultLength;
+				}
+				// Log.d(TAG, "%d vs %d", msg.arg1, l);
+				//if (l > 0 && (msg.arg1 >= l) && !ps.repeatSong) {
+				//	ps.playNextSong();
+				//} else {
+				ps.updateInfo(false);
+				//}
+				break;
+
+			case Player.MSG_STATE:
+
+				int state = (Integer) msg.arg1;
+				if (state == 0) {
+					ps.updateInfo(true);
+				} else
+					ps.updateInfo(false);
+
+				/*ps.info[SongMeta.STATE] = (Integer)msg.arg1;
+				
+				if(msg.arg1 == 0) {
+					ps.info[SongMeta.POS] = ps.info[SongMeta.SUBSONG] = ps.info[SongMeta.TOTALSONGS] = ps.info[SongMeta.LENGTH] = 0;
+					ps.currentSongInfo.fileName = null;
+					ps.performCallback(SongMeta.POS, SongMeta.SUBSONG, SongMeta.TOTALSONGS, SongMeta.LENGTH, SongMeta.STATE);
+				} else {                	
+					ps.performCallback(SongMeta.STATE);
+				}*/
+				break;
+			/*case Player.MSG_SILENT:
+				if(silenceDetect) {
+			    	if((Integer)ps.info[SongMeta.REPEAT] == RM_CONTINUE) {
+			    		playNextSong();
+			    	} else {
+			    		Log.d(TAG, "User has interferred, not switching");
+			    	}
+				}
+				break;*/
+			default:
+				super.handleMessage(msg);
+			}
+		}
 	};
 		
     private Handler mHandler = null;
@@ -415,8 +427,8 @@ public class PlayerService extends Service implements PlayerInterface {
     	if(playerThread == null) {
 			Log.d(TAG, "Creating thread");
 			player.setBufSize(bufSize);
-		    playerThread = new Thread(player);
-		    playerThread.setPriority(Thread.MAX_PRIORITY);
+		    playerThread = new Thread(player, "Player");
+		    playerThread.setPriority(Thread.NORM_PRIORITY+1);
 		    playerThread.start();
     	}
     }
@@ -448,6 +460,11 @@ public class PlayerService extends Service implements PlayerInterface {
     		}
     		oldPlaylistHash = hash;
     	} */
+    }
+    
+    public void repeatSong() {
+    	player.repeatSong();
+    	//player.setSubSong((Integer)info.get(SongMeta.SUBTUNE));
     }
 
     public boolean playNextSong() {
@@ -806,7 +823,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			whenStopped();
 	    	//userInterferred = false;
 			//repeatMode = defaultRepeatMode;
-			player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+			//player.setLoopMode(repeatSong ? 1 : 0);
 			// TODO: performCallback(SongMeta.REPEAT);
 		}
 
@@ -856,9 +873,9 @@ public class PlayerService extends Service implements PlayerInterface {
 					defaultLength  = Integer.parseInt(arg) * 1000;
 					Log.d(TAG, "Default length set to " + defaultLength);
 					break;
-				case OPTION_REPEATMODE:
-					repeatMode = Integer.parseInt(arg);
-					player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
+				case OPTION_REPEATSONG:
+					repeatSong = Boolean.parseBoolean(arg);
+					player.setLoopMode(repeatSong ? 1 : 0);
 					//performCallback(SongMeta.REPEAT);
 					break;
 				//case OPTION_SILENCE_DETECT:

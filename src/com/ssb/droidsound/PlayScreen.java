@@ -158,6 +158,7 @@ public class PlayScreen {
 
 		shuffleText = (TextView) parent.findViewById(R.id.shuffle_text);
 		repeatText = (TextView) parent.findViewById(R.id.repeat_text);
+		repeatText.setText("---");
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
 		infoText = (WebView) parent.findViewById(R.id.web_view);		
@@ -349,12 +350,8 @@ public class PlayScreen {
 			@Override
 			public void onClick(View v) {
 				// shuffleSongs = !shuffleSongs;
-				if(state.songRepeat == 0) {
-					state.songRepeat = 1;
-				} else {
-					state.songRepeat = 0;
-				}
-				player.setOption(PlayerService.OPTION_REPEATMODE, Integer.toString(state.songRepeat));
+				state.songRepeat = !state.songRepeat;
+				player.setOption(PlayerService.OPTION_REPEATSONG, Boolean.toString(state.songRepeat));
 			}
 		});
 
@@ -424,8 +421,10 @@ public class PlayScreen {
 			songTotalText.setText(String.format("%02d:%02d", state.songLength / 60, state.songLength % 60));
 		}
 		
-		
-
+		if(data.containsKey(SongMeta.REPEAT)) {
+			state.songRepeat = (Boolean)data.get(SongMeta.REPEAT);
+			repeatText.setText(state.songRepeat ? "REP" : "---");
+		}
 		
 		if(data.containsKey(SongMeta.POSITION)) {
 			int value = (Integer)data.get(SongMeta.POSITION) / 1000;

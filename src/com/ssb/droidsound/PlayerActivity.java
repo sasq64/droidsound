@@ -1160,12 +1160,8 @@ public class PlayerActivity extends Activity  {
 			// TODO shuffleText.setText(state.shuffleSongs ? "RND" : "SEQ");
 			break;
 		case KeyEvent.KEYCODE_R:
-			if(state.songRepeat == 0) {
-				state.songRepeat = 1;
-			} else {
-				state.songRepeat = 0;
-			}
-			player.setOption(PlayerService.OPTION_REPEATMODE, Integer.toString(state.songRepeat));
+			state.songRepeat = !state.songRepeat;
+			player.setOption(PlayerService.OPTION_REPEATSONG, Boolean.toString(state.songRepeat));
 			break;
 		// case KeyEvent.M:
 		// player.setOption(PlayerService.OPTION_SPEECH, useSpeech ? "on" :
