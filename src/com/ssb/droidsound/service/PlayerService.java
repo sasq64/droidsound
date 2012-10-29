@@ -105,6 +105,7 @@ public class PlayerService extends Service implements PlayerInterface {
 	//private int defaultRepeatMode = RM_CONTINUE;
 	//private int repeatMode = RM_CONTINUE;
 	private boolean repeatSong = false;
+	private boolean holdSong = false;
 
 	protected String saySomething;
 
@@ -350,7 +351,7 @@ public class PlayerService extends Service implements PlayerInterface {
 				ps.updateInfo(true);
 				break;
 			case Player.MSG_SILENT:
-				if(msg.arg1 > 2000) {
+				if(msg.arg1 > 4000) {
 					if(ps.repeatSong) {
 						ps.repeatSong();
 					} else {
@@ -369,15 +370,16 @@ public class PlayerService extends Service implements PlayerInterface {
 
 			case Player.MSG_PROGRESS:
 				int l = (Integer) ps.info.get(SongMeta.LENGTH);
-				if (l < 0) {
-					l = ps.defaultLength;
-				}
-				// Log.d(TAG, "%d vs %d", msg.arg1, l);
-				//if (l > 0 && (msg.arg1 >= l) && !ps.repeatSong) {
-				//	ps.playNextSong();
-				//} else {
-				ps.updateInfo(false);
-				//}
+				boolean endLess = (Boolean) ps.info.get(SongMeta.ENDLESS);
+				if (l < 0) l = ps.defaultLength;
+
+				if(endLess && l > 0 && (msg.arg1 >= l)) {
+					if(ps.repeatSong)
+						ps.repeatSong();
+					else
+						ps.playNextSong();
+				} else
+					ps.updateInfo(false);
 				break;
 
 			case Player.MSG_STATE:

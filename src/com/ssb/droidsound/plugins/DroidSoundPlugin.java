@@ -101,6 +101,11 @@ public abstract class DroidSoundPlugin {
 	public abstract void unload();	
 	public boolean canHandle(FileSource fs) { return false; }
 
+	public boolean restart() {
+		return false;
+	}
+	
+	
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	public abstract int getSoundData(short [] dest, int size);	
@@ -229,5 +234,9 @@ public abstract class DroidSoundPlugin {
 	}
 
 	public void close() {
+	}
+
+	public boolean isEndless() {
+		return false;
 	}
 }

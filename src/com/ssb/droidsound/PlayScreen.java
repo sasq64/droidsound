@@ -352,6 +352,7 @@ public class PlayScreen {
 				// shuffleSongs = !shuffleSongs;
 				state.songRepeat = !state.songRepeat;
 				player.setOption(PlayerService.OPTION_REPEATSONG, Boolean.toString(state.songRepeat));
+				repeatText.setText(state.songRepeat ? "REP" : "---");
 			}
 		});
 
@@ -399,6 +400,8 @@ public class PlayScreen {
 			
 			if(state.songState == 0) {
 				infoText.loadData(empty, "text/html", "utf-8");
+				state.songLength = 0;
+				songTotalText.setText(String.format("%02d:%02d", state.songLength / 60, state.songLength % 60));
 			}
 			Log.d(TAG, "State %d", state.songState);
 			

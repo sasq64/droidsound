@@ -46,5 +46,6 @@ public class SongMeta {
 	public static final String PLUGIN = "plugin";
 	public static final String CAN_SEEK = "can_seek";
 	public static final String BUFFERING = "buffering";
+	public static final String ENDLESS = "endless";
 
 }

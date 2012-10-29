@@ -425,6 +425,11 @@ public class SidPlugin extends DroidSoundPlugin {
 		vicePlugin.setOption(opt, val);
 		sidplayPlugin.setOption(opt, val);
 	}
+	
+	@Override
+	public boolean isEndless() {
+		return true;
+	}
 
 	//@Override
 	//public String getVersion() {		

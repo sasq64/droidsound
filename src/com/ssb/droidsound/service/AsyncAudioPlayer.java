@@ -105,7 +105,7 @@ public class AsyncAudioPlayer implements Runnable {
 						synchronized (buffer) {
 							bytesAvailable = buffer.position();
 						}
-						Log.d(TAG, "WRITE/READ/PLAY %d %d %d", toMSec(framesWritten), toMSec(framesRead), toMSec(playbackPosition));
+						//Log.d(TAG, "WRITE/READ/PLAY %d %d %d", toMSec(framesWritten), toMSec(framesRead), toMSec(playbackPosition));
 					}
 				} else {
 					runCommands();
@@ -217,10 +217,10 @@ public class AsyncAudioPlayer implements Runnable {
 		
 		// framesWritten > framesRead
 		// framesWritten - silence = startOfSilence
-		int bufferFrames = 44100*2;
+		//int bufferFrames = 44100*2;
 		int startOfSilence = framesWritten - silence;
 		//Log.d(TAG, "SILENCE %d %d %d", framesWritten, startOfSilence, framesRead);
-		if((framesRead - bufferFrames) >= startOfSilence) {
+		if((playbackPosition - startPlaybackHead) >= startOfSilence) {
 			return (silence * 2 * 1000 / SEC);	
 		}
 		return 0;
@@ -249,11 +249,11 @@ public class AsyncAudioPlayer implements Runnable {
 			
 			//holdData = true;
 		}
-				
-		int playPos = (playbackPosition  - startPlaybackHead) * 10 / (FREQ / 100);
-		playPosOffset = msec - playPos;
-		Log.d(TAG, "Offset %d - %d = %d", msec, playPos, playPosOffset);
-		
+		if(msec > 0) {
+			int playPos = (playbackPosition  - startPlaybackHead) * 10 / (FREQ / 100);
+			playPosOffset = msec - playPos;
+			Log.d(TAG, "Offset %d - %d = %d", msec, playPos, playPosOffset);
+		}		
 		_flush();
 
 	}
@@ -345,7 +345,6 @@ public class AsyncAudioPlayer implements Runnable {
 	}
 
 	public void _flush() {
-		
 		
 		audioTrack.flush();		
 		//startPlaybackHead = audioTrack.getPlaybackHeadPosition();

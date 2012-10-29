@@ -88,7 +88,7 @@ public class Player implements Runnable {
 
 
 	private volatile State currentState = State.STOPPED;
-	private int silentPosition;
+	//private int silentPosition;
 
 	private boolean songEnded = false;
 
@@ -106,7 +106,7 @@ public class Player implements Runnable {
 
 		plugins = DroidSoundPlugin.createPluginList();
 
-		silentPosition = -1;
+		//silentPosition = -1;
 		// Enough for 3000ms
 		//bufSize = 0x40000;
 		//dataSize = bufSize / 16;
@@ -366,6 +366,7 @@ public class Player implements Runnable {
 
 				songDetails.put(SongMeta.CAN_SEEK, currentPlugin.canSeek());
 				songDetails.put(SongMeta.LENGTH, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
+				songDetails.put(SongMeta.ENDLESS, currentPlugin.isEndless());
 
 			
 				songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
@@ -376,6 +377,7 @@ public class Player implements Runnable {
 
 			// Songs in playlists can start from a specific subtune.
 			startedFromSub = false;
+			currentTune = 0;
 			if(song.getSubtune() >= 0) {
 				songDetails.put(SongMeta.START_SUBTUNE, song.getSubtune());				
 				songDetails.put(SongMeta.TOTAL_SUBTUNES, 0);
@@ -441,10 +443,6 @@ public class Player implements Runnable {
 		}
 		return s;
 	}
-
-	private void playSong() {
-	}
-
 
 	@Override
 	public void run() {
@@ -512,9 +510,20 @@ public class Player implements Runnable {
 								currentState = State.STOPPED;
 								songDetails.clear();
 								songDetails.put(SongMeta.STATE, 0);
+								songDetails.put(SongMeta.POSITION, 0);
 								Message msg = mHandler.obtainMessage(MSG_STATE, 0, 0);
 								mHandler.sendMessage(msg);
 							}
+							break;
+						case RESTART:
+							if(!currentPlugin.restart())
+								if(!currentPlugin.setTune(currentTune))
+									break;
+							songEnded = false;
+							audioPlayer.seekTo(-1);
+							if(currentState == State.SWITCHING) {
+								currentState = State.PLAYING;
+							}							
 							break;
 						default:
 							break;
@@ -551,7 +560,6 @@ public class Player implements Runnable {
 
 									Message msg = mHandler.obtainMessage(MSG_SUBTUNE, songDetails);
 									mHandler.sendMessage(msg);
-
 									audioPlayer.start();
 								}
 								break;
