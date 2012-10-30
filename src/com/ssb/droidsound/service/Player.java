@@ -466,9 +466,10 @@ public class Player implements Runnable {
 			if(loopMode != oldLoopMode) {
 				if(currentPlugin != null)
 					currentPlugin.setOption("loop", loopMode);
-				oldLoopMode = loopMode;
-				
+				oldLoopMode = loopMode;				
 				songDetails.put(SongMeta.REPEAT, loopMode == 1 ? true : false);
+				Message msg = mHandler.obtainMessage(MSG_DETAILS, songDetails);
+				mHandler.sendMessage(msg);
 			}
 			
 			try {

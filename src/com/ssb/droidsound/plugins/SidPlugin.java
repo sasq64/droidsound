@@ -39,6 +39,8 @@ public class SidPlugin extends DroidSoundPlugin {
 	private byte[] mainHash;
 	private short[] extraLengths;
 	private int hashLen;
+	private int loopMode = 0;
+	private int currentFrames;
 		
 	private int songLengths[] = new int [256];
 	private int currentTune;
@@ -319,7 +321,11 @@ public class SidPlugin extends DroidSoundPlugin {
 
 	@Override
 	public int getSoundData(short[] dest, int size) {
-		return currentPlugin.getSoundData(dest, size);
+		int len =  currentPlugin.getSoundData(dest, size);
+		currentFrames += len/2;
+		if(loopMode == 0 && currentFrames / 44100 >= (songLengths[currentTune]/1000))
+			return -1;
+		return len;
 	}
 
 	@Override
@@ -334,6 +340,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		currentTune = 0;
 		songInfo = null;
 		int type = -1;
+		currentFrames = 0;
 		
 		byte [] module = fs.getContents();
 		String name = fs.getName();
@@ -388,7 +395,7 @@ public class SidPlugin extends DroidSoundPlugin {
 		boolean rc = currentPlugin.load(fs);		
 		if(rc) {
 			findLength(module, size);		
-		}		
+		}
 		return rc;
 		
 	}
@@ -397,6 +404,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	public boolean setTune(int tune) {
 		boolean rc = currentPlugin.setTune(tune);
 		if(rc) currentTune = tune;
+		currentFrames = 0;
 		return rc;
 	}
 
@@ -409,6 +417,9 @@ public class SidPlugin extends DroidSoundPlugin {
 	@Override
 	public void setOption(String opt, Object val) {
 		
+		if(opt.equals("loop")) {
+			loopMode = (Integer)val;
+		} else
 		if(opt.equals("sidengine")) {
 			String e = (String) val;
 			

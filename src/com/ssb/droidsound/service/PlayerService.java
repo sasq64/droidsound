@@ -369,7 +369,7 @@ public class PlayerService extends Service implements PlayerInterface {
 				break;
 
 			case Player.MSG_PROGRESS:
-				int l = (Integer) ps.info.get(SongMeta.LENGTH);
+				/*int l = (Integer) ps.info.get(SongMeta.LENGTH);
 				boolean endLess = (Boolean) ps.info.get(SongMeta.ENDLESS);
 				if (l < 0) l = ps.defaultLength;
 
@@ -379,7 +379,7 @@ public class PlayerService extends Service implements PlayerInterface {
 						ps.repeatSong();
 					else
 						ps.playNextSong();
-				} else
+				} else */
 					ps.updateInfo(false);
 				break;
 

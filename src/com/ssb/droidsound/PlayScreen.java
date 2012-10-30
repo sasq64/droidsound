@@ -352,7 +352,7 @@ public class PlayScreen {
 				// shuffleSongs = !shuffleSongs;
 				state.songRepeat = !state.songRepeat;
 				player.setOption(PlayerService.OPTION_REPEATSONG, Boolean.toString(state.songRepeat));
-				repeatText.setText(state.songRepeat ? "REP" : "---");
+				repeatText.setText(state.songRepeat ? "HOLD" : "CONT");
 			}
 		});
 
@@ -442,7 +442,7 @@ public class PlayScreen {
 		
 		if(data.containsKey(SongMeta.REPEAT)) {
 			state.songRepeat = (Boolean)data.get(SongMeta.REPEAT);
-			repeatText.setText(state.songRepeat ? "REP" : "---");
+			repeatText.setText(state.songRepeat ? "HOLD" : "CONT");
 		}
 		
 		if(data.containsKey(SongMeta.POSITION)) {

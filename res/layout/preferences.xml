@@ -33,16 +33,17 @@
             android:summary="Use text to speech to speak titles of songs"
             />
             
-	<EditTextPreference
+	<!-- EditTextPreference
 			android:inputType="numberDecimal"
             android:key="default_length"
-            android:title="Default song length"
+            android:title="Max song length"
             android:dialogTitle="Length (in seconds)"
             android:defaultValue="900"
-            android:summary="Length to use when real length is unknown."
+            android:summary="Never loop more than this."
 	/>
 
-    <ListPreference
+	
+     ListPreference
             android:key="buffer"
             android:title="Buffer Size"
             android:summary="Sound buffer size. Increase to avoid skipping."
@@ -50,7 +51,7 @@
             android:entries="@array/buffer_opts"
 			android:entryValues="@array/buffer_opts"
             android:summaryOn="Audio buffer size"
-            />
+            / -->
 
 	<PreferenceScreen
             android:key="audio_prefs"

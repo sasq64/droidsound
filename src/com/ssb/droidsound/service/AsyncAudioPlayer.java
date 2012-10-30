@@ -94,7 +94,7 @@ public class AsyncAudioPlayer implements Runnable {
 					synchronized (buffers) {
 						if(!buffers.isEmpty()) {
 							data = buffers.removeFirst();
-							bufferTotal -= data.len;
+							bufferTotal -= (data.len/2);
 						}
 					}
 					if(data != null) {
@@ -172,18 +172,23 @@ public class AsyncAudioPlayer implements Runnable {
 	private int arraySize = -1;
 	public short [] getArray(int size) {
 		
-		if(size != arraySize) {
-			arraySize = size;
-			bucket.clear();
+		synchronized (bucket) {			
+			if(size != arraySize) {
+				arraySize = size;
+				bucket.clear();
+			}
+			
+			if(!bucket.isEmpty())
+				return bucket.remove();
 		}
-		
-		if(!bucket.isEmpty())
-			return bucket.remove();
+
 		return new short [arraySize];
 	}
 	
 	public void returnArray(short [] data) {
-		bucket.add(data);
+		synchronized (bucket) {
+			bucket.add(data);			
+		}
 	}
 		
 		
@@ -271,7 +276,7 @@ public class AsyncAudioPlayer implements Runnable {
 
 	// Stop playback
 	public void stop() {
-		synchronized (this) {
+		synchronized (commands) {
 			holdData = true;
 			commands.add(Command.STOP);			
 		}
@@ -323,7 +328,7 @@ public class AsyncAudioPlayer implements Runnable {
 
 
 	public void start() {
-		synchronized (this) {
+		synchronized (commands) {
 			commands.add(Command.START);			
 		}
 	}
@@ -346,13 +351,13 @@ public class AsyncAudioPlayer implements Runnable {
 	}
 	
 	public void pause() {
-		synchronized (this) {
+		synchronized (commands) {
 			commands.add(Command.PAUSE);			
 		}
 	}
 
 	public void flush() {
-		synchronized (this) {
+		synchronized (commands) {
 			commands.add(Command.FLUSH);			
 		}
 	}
@@ -367,13 +372,13 @@ public class AsyncAudioPlayer implements Runnable {
 	}
 
 	public void exit() {
-		synchronized (this) {
+		synchronized (commands) {
 			commands.add(Command.RELEASE);			
 		}
 	}
 
 	public void play() {
-		synchronized (this) {
+		synchronized (commands) {
 			commands.add(Command.PLAY);			
 		}
 	}
