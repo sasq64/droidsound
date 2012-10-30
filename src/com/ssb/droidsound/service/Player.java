@@ -59,7 +59,7 @@ public class Player implements Runnable {
 	private Handler mHandler;
 
 	// Audio data
-	private short[] samples;
+	//private short[] samples;
 	private AsyncAudioPlayer audioPlayer;
 	//private int bufSize;
 	private int dataSize;
@@ -113,7 +113,7 @@ public class Player implements Runnable {
 		
 		dataSize = 44100; //0.5s
 		
-		samples = new short[dataSize];
+		//samples = new short[dataSize];
 	}
 
 
@@ -190,6 +190,8 @@ public class Player implements Runnable {
 			
 		RandomAccessFile raf = new RandomAccessFile(outFile, "rw");
 		raf.write(barray, 0, bb.position());
+		
+		short [] samples = new short [dataSize];
 		
 		int sampleCount = 0;
 		int bytesWritten = 0;
@@ -365,6 +367,7 @@ public class Player implements Runnable {
 				songDetails.put(SongMeta.SIZE, size);
 
 				songDetails.put(SongMeta.CAN_SEEK, currentPlugin.canSeek());
+				songDetails.put(SongMeta.POSITION, 0);
 				songDetails.put(SongMeta.LENGTH, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
 				songDetails.put(SongMeta.ENDLESS, currentPlugin.isEndless());
 
@@ -386,7 +389,7 @@ public class Player implements Runnable {
 				currentTune = song.getSubtune();
 				
 				songDetails.put(SongMeta.SUBTUNE, currentTune);
-
+				songDetails.put(SongMeta.POSITION, 0);
 				songDetails.put(SongMeta.LENGTH, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
 				songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
 				songDetails.put(SongMeta.SUBTUNE_COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR));
@@ -554,6 +557,7 @@ public class Player implements Runnable {
 									}
 
 									songDetails.put(SongMeta.SUBTUNE, currentTune);
+									songDetails.put(SongMeta.POSITION, 0);
 									songDetails.put(SongMeta.LENGTH, currentPlugin.getIntInfo(DroidSoundPlugin.INFO_LENGTH));
 									songDetails.put(SongMeta.SUBTUNE_TITLE,  getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_TITLE));
 									songDetails.put(SongMeta.SUBTUNE_COMPOSER, getPluginInfo(DroidSoundPlugin.INFO_SUBTUNE_AUTHOR));
@@ -613,7 +617,7 @@ public class Player implements Runnable {
 						if(latency >= 0) {
 							if(latency / 1000 != lastLatency / 1000) {
 								songDetails.put(SongMeta.BUFFERING, latency);
-								Message msg = mHandler.obtainMessage(MSG_PROGRESS);
+								Message msg = mHandler.obtainMessage(MSG_PROGRESS, 0, 0);
 								mHandler.sendMessage(msg);
 								lastLatency = latency;
 							}
@@ -653,7 +657,7 @@ public class Player implements Runnable {
 		if(playPos >= lastPos + 500) {
 
 			songDetails.put(SongMeta.POSITION, playPos);
-			Message msg = mHandler.obtainMessage(MSG_PROGRESS);
+			Message msg = mHandler.obtainMessage(MSG_PROGRESS, playPos, 0);
 			mHandler.sendMessage(msg);
 			lastPos = playPos;
 		}
@@ -664,6 +668,9 @@ public class Player implements Runnable {
 		}
 		
 		int len = 0;
+		
+		short [] samples = audioPlayer.getArray(dataSize);
+		
 		if(!songEnded) {
 			len = currentPlugin.getSoundData(samples, dataSize);
 			//dataSize = bufSize / 16;
@@ -771,7 +778,7 @@ public class Player implements Runnable {
 				diff = -diff;
 			if(diff > 1000) {
 				songDetails.put(SongMeta.BUFFERING, latency);
-				Message msg = mHandler.obtainMessage(MSG_PROGRESS, songDetails);
+				Message msg = mHandler.obtainMessage(MSG_PROGRESS, 0, 0);
 				mHandler.sendMessage(msg);
 				lastLatency = latency;
 			}
@@ -823,7 +830,7 @@ public class Player implements Runnable {
 		}
 
 		songDetails.put(SongMeta.POSITION, playPos);
-		Message msg = mHandler.obtainMessage(MSG_PROGRESS);
+		Message msg = mHandler.obtainMessage(MSG_PROGRESS, 0, 0);
 		mHandler.sendMessage(msg);
 		Thread.sleep(200);
 	}

@@ -374,6 +374,7 @@ public class PlayerService extends Service implements PlayerInterface {
 				if (l < 0) l = ps.defaultLength;
 
 				if(endLess && l > 0 && (msg.arg1 >= l)) {
+					Log.d(TAG, "NEXT: %d vs %d", l, msg.arg1);
 					if(ps.repeatSong)
 						ps.repeatSong();
 					else

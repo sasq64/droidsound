@@ -101,7 +101,7 @@ public class PlayScreen {
 		@Override
 		public void handleMessage(Message msg) {
 			PlayScreen ps = psRef.get();
-			ps.update();
+			ps.updateInfo();
 		}
 	};
 	
@@ -382,6 +382,21 @@ public class PlayScreen {
 
 	}
 	
+	private String secToString(int sec) {
+		StringBuilder sb = new StringBuilder();
+		int min = sec / 60;
+		sec = sec % 60;
+		if(min < 10)
+			sb.append('0');
+		sb.append(min);
+		if(sec < 10)
+			sb.append(":0");
+		else
+			sb.append(':');
+		sb.append(sec);
+		return sb.toString();
+	}
+	
 	public void update(Map<String, Object> data, boolean newsong) {
 		
 		if(newsong || state.songDetails == null)
@@ -391,7 +406,7 @@ public class PlayScreen {
 		
 		if(newsong) {
 			state.buffering = 0;
-			songSubtunesText.setText(String.format("%02d:%02d", state.buffering / 1000 / 60, (state.buffering/1000) % 60));	
+			songSubtunesText.setText(secToString(state.buffering / 1000));	
 		}
 		
 		if(data.containsKey(SongMeta.STATE)) {
@@ -401,7 +416,7 @@ public class PlayScreen {
 			if(state.songState == 0) {
 				infoText.loadData(empty, "text/html", "utf-8");
 				state.songLength = 0;
-				songTotalText.setText(String.format("%02d:%02d", state.songLength / 60, state.songLength % 60));
+				songTotalText.setText(secToString(state.songLength));
 			}
 			Log.d(TAG, "State %d", state.songState);
 			
@@ -420,8 +435,9 @@ public class PlayScreen {
 			} else {
 				songTotalText.setVisibility(View.VISIBLE);
 			}
-			Log.d(TAG, "Songlength %02d:%02d", state.songLength / 60, state.songLength % 60);
-			songTotalText.setText(String.format("%02d:%02d", state.songLength / 60, state.songLength % 60));
+			String secs = secToString(state.songLength);
+			Log.d(TAG, "Songlength " + secs);
+			songTotalText.setText(secs);
 		}
 		
 		if(data.containsKey(SongMeta.REPEAT)) {
@@ -436,7 +452,7 @@ public class PlayScreen {
 				if(value != oldSeconds) {
 					oldSeconds = value;
 					state.songPos = value;
-					String t = String.format("%02d:%02d", state.songPos / 60, state.songPos % 60);					
+					String t = secToString(state.songPos);					
 					songSecondsText.setText(t);
 					if(state.songLength > 0) {
 						int percent = 100 * state.songPos / state.songLength;
@@ -452,12 +468,12 @@ public class PlayScreen {
 		
 		if(data.containsKey(SongMeta.BUFFERING)) {
 			state.buffering = (Integer)data.get(SongMeta.BUFFERING);
-			songSubtunesText.setText(String.format("%02d:%02d", state.buffering / 1000 / 60, (state.buffering/1000) % 60));
+			songSubtunesText.setText(secToString(state.buffering / 1000 ));
 		}
 		
 		if(data.containsKey("track")) {
 			String track = (String) data.get("track");
-			songSubtunesText.setText(String.format("#%s", track));
+			songSubtunesText.setText("#" + track);
 		}
 		
 		if(data.containsKey(SongMeta.TOTAL_SUBTUNES)) {
@@ -517,7 +533,7 @@ public class PlayScreen {
 			return;
 		
 		if(doUpdate)
-			update();
+			updateInfo();
 	}
 
 	/*
@@ -694,7 +710,7 @@ public class PlayScreen {
 	}
 		
 	@SuppressWarnings("unused")
-	private void update() {
+	private void updateInfo() {
 		
 		variables.clear();
 		variables.put("DATAPATH", "file://" + dataDir.getPath() + "/");

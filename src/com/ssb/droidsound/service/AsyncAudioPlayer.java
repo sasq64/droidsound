@@ -1,6 +1,5 @@
 package com.ssb.droidsound.service;
 
-import java.nio.ShortBuffer;
 import java.util.LinkedList;
 
 import android.media.AudioFormat;
@@ -19,8 +18,18 @@ public class AsyncAudioPlayer implements Runnable {
 	private int bufSize = SEC;
 	private int FREQ = 44100;
 	private int silence;
+	
+	private static class SampleArray {
+		SampleArray(short [] s, int l) {
+			samples = s;
+			len = l;
+		}
+		public short [] samples;
+		public int len;
+	}
 		
-	private ShortBuffer buffer;
+	//private ShortBuffer buffer;
+	private LinkedList<SampleArray> buffers;
 
 	private boolean doStart;
 
@@ -53,6 +62,8 @@ public class AsyncAudioPlayer implements Runnable {
 
 	private int markPosition;
 
+	private volatile int bufferTotal;
+
 	public AsyncAudioPlayer(int bs) {
 		bufSize = bs;
 		silence = 0;
@@ -60,15 +71,10 @@ public class AsyncAudioPlayer implements Runnable {
 	
 	@Override
 	public void run() {
-		init();		
-		while(true) {		
-			try {
-				int count = SEC/10; // 100ms
-				int bytesAvailable = 0;
-				synchronized (buffer) {
-					bytesAvailable = buffer.position();
-					//Log.d(TAG, "Position at %d", bytesAvailable);
-				}
+		init();
+		//int count = SEC/10; // 100ms
+		try {
+			while(true) {		
 				
 				if(doStart) {
 					isPaused = false;
@@ -80,44 +86,34 @@ public class AsyncAudioPlayer implements Runnable {
 					stopped = false;
 					holdData = false;
 				}				
-				
-				if(!isPaused && bytesAvailable > count) {
-
+				boolean doSleep = true;
+				if(!isPaused && !stopped) {
 					
-					while(bytesAvailable > count) {
-						playbackPosition = audioTrack.getPlaybackHeadPosition();
-						synchronized (buffer) {
-							//Log.d(TAG, "Reading %d shorts", count);
-							if(buffer.position() >= count) {
-								buffer.flip();
-								audioTrack.write(buffer.array(), 0, count);
-								framesRead += count/2;
-								buffer.position(count);
-								buffer.compact();
-							}
+					playbackPosition = audioTrack.getPlaybackHeadPosition();
+					SampleArray data = null;
+					synchronized (buffers) {
+						if(!buffers.isEmpty()) {
+							data = buffers.removeFirst();
+							bufferTotal -= data.len;
 						}
-						runCommands();
-						if(doExit) {
-							return;
-						}
-						if(stopped || isPaused)
-							break;
-						synchronized (buffer) {
-							bytesAvailable = buffer.position();
-						}
-						//Log.d(TAG, "WRITE/READ/PLAY %d %d %d", toMSec(framesWritten), toMSec(framesRead), toMSec(playbackPosition));
 					}
-				} else {
-					runCommands();
-					if(doExit) {
-						return;
+					if(data != null) {
+						audioTrack.write(data.samples, 0, data.len);						
+						framesRead += data.len/2;
+						returnArray(data.samples);
+						doSleep = false;
 					}
-					Thread.sleep(100);
 				}
-				playbackPosition = audioTrack.getPlaybackHeadPosition();
-			} catch (InterruptedException e) {
-				return;
+				runCommands();
+				if(doExit)
+					return;
+				if(doSleep)
+					Thread.sleep(100);
+				//Log.d(TAG, "WRITE/READ/PLAY %d %d %d", toMSec(framesWritten), toMSec(framesRead), toMSec(playbackPosition));				
+				playbackPosition = audioTrack.getPlaybackHeadPosition();			
 			}
+		} catch (InterruptedException e) {
+			return;
 		}
 	}
 	
@@ -166,51 +162,63 @@ public class AsyncAudioPlayer implements Runnable {
 		bufSize = 44100*2; // 1s
 		audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC, FREQ, AudioFormat.CHANNEL_OUT_STEREO,
 			AudioFormat.ENCODING_PCM_16BIT, bufSize*2, AudioTrack.MODE_STREAM);
-		buffer = ShortBuffer.allocate(SEC*8); // 8 seconds
+		//buffer = ShortBuffer.allocate(SEC*8); // 8 seconds
+		buffers = new LinkedList<SampleArray>();
 		framesWritten = 0;
 		framesRead = 0;
 	}
 	
+	private LinkedList<short []> bucket = new LinkedList<short []>();
+	private int arraySize = -1;
+	public short [] getArray(int size) {
+		
+		if(size != arraySize) {
+			arraySize = size;
+			bucket.clear();
+		}
+		
+		if(!bucket.isEmpty())
+			return bucket.remove();
+		return new short [arraySize];
+	}
+	
+	public void returnArray(short [] data) {
+		bucket.add(data);
+	}
+		
+		
 
 	public boolean update(short [] samples, int len) {
 									
-		synchronized (buffer) {
-			//Log.d(TAG, "Writing %d shorts", len);
-			if(buffer.remaining() >= len) {
-				buffer.put(samples,0, len);	
-				framesWritten += (len/2);
-			} else
-				return false;
-		}
-
+		framesWritten += (len/2);
 		int i = len-1;
 		for(; i>=0; i-=3) {
 			if(samples[i] > 128 || samples[i] < -128) {				
 				break;			
 			}
 		}
-		
-					
 		if(i >= 0) {
-			/*if(silence > something) {
-				lastSilenceStart = framesWritten - silence;
-				lastSilenceEnd = framesWritten;
-			}*/
-			
 			silence = (len+1-i)/2;
 		} else
 			silence += (len/2);
-		
+
+		//Log.d(TAG, "Writing %d shorts", len);			
+		synchronized (buffers) {
+			buffers.add(new SampleArray(samples, len));
+			bufferTotal += len/2;
+		}
+				
 		return true;
 
 	}
 	
 	public int getLeft() {
-		synchronized (buffer) {
+		
+		//synchronized (buffer) {
 			if(stopped || holdData) // Dont queue anything when stopped
 				return 0;
-			return buffer.remaining();	
-		}		
+			return  44100*8 - bufferTotal;// buffer.remaining();	
+		//}		
 	}
 	
 	public int getSilence() {
@@ -230,6 +238,9 @@ public class AsyncAudioPlayer implements Runnable {
 	// Get number of seconds played since start
 	public int getPlaybackPosition() {
 		
+		if(stopped || holdData)
+			return 0;
+		
 		int pos = playbackPosition - startPlaybackHead;
 		int playPos = pos * 10 / (FREQ / 100);
 		//Log.d(TAG, "POS %d => %d (%d)", pos, playPos, playPosOffset);
@@ -242,11 +253,11 @@ public class AsyncAudioPlayer implements Runnable {
 		
 		//audioTrack.flush();
 		
-		synchronized (buffer) {
+		synchronized (buffers) {
 			
-			framesWritten -= (buffer.position()/2);			
-			buffer.clear();
-			
+			framesWritten -= bufferTotal;			
+			buffers.clear();
+			bufferTotal = 0;			
 			//holdData = true;
 		}
 		if(msec > 0) {
@@ -294,8 +305,9 @@ public class AsyncAudioPlayer implements Runnable {
 		}
 		audioTrack.stop();
 
-		buffer.clear();
+		buffers.clear();
 		framesWritten = framesRead = silence = 0;
+		bufferTotal = 0;
 		
 		stopped = true;
 		holdData = false;
@@ -325,7 +337,8 @@ public class AsyncAudioPlayer implements Runnable {
 					AudioFormat.ENCODING_PCM_16BIT, bufSize, AudioTrack.MODE_STREAM);
 			reinitAudio = false;
 		}*/
-		buffer.clear();
+		buffers.clear();
+		bufferTotal = 0;
 		framesWritten = framesRead = silence = 0;
 		holdData = false;
 		stopped = false;
