@@ -275,7 +275,7 @@ public class MP3Plugin extends DroidSoundPlugin {
 		if(file.getName().toUpperCase().endsWith(".M3U")) {
 			pls = new M3UParser(file);
 			type = "M3U";
-			webPage = pls.getWebPage();
+			webPage = pls.getVariable("webpage");
 		} else if(file.getName().toUpperCase().endsWith(".PLS")) {
 			pls = new PLSParser(file);
 			type = "PLS";

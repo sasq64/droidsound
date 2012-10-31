@@ -399,6 +399,8 @@ public class PlayScreen {
 	
 	public void update(Map<String, Object> data, boolean newsong) {
 		
+		Log.d(TAG, "UPDATE:%s %d", newsong ? " NEW" : "", data.size());
+		
 		if(newsong || state.songDetails == null)
 			state.songDetails = data;
 		else
@@ -491,16 +493,16 @@ public class PlayScreen {
 		}
 		
 		if(data.containsKey(SongMeta.TITLE)) {
-			state.songTitle = (String) data.get(SongMeta.TITLE);
+			state.songTitle = getString(data, SongMeta.TITLE);
 		}
 		if(data.containsKey(SongMeta.SUBTUNE_TITLE)) {
-			state.subtuneTitle = (String) data.get(SongMeta.SUBTUNE_TITLE);
+			state.subtuneTitle = getString(data, SongMeta.SUBTUNE_TITLE);
 		}
 		if(data.containsKey(SongMeta.SUBTUNE_COMPOSER)) {
-			state.subtuneAuthor = (String) data.get(SongMeta.SUBTUNE_COMPOSER);
+			state.subtuneAuthor = getString(data, SongMeta.SUBTUNE_COMPOSER);
 		}
 		if(data.containsKey(SongMeta.COMPOSER)) {
-			state.songComposer = (String) data.get(SongMeta.COMPOSER);
+			state.songComposer = getString(data, SongMeta.COMPOSER);
 		}
 		if(data.containsKey(SongMeta.TOTAL_SUBTUNES)) {
 			state.subTuneCount = (Integer) data.get(SongMeta.TOTAL_SUBTUNES);
@@ -618,6 +620,13 @@ public class PlayScreen {
 		}
 	} */
 	
+	private String getString(Map<String, Object> data, String what) {
+		String s = (String) data.get(what);
+		if(s.equals(""))
+			return null;
+		return s;
+	}
+
 	private String readFile(File f) {
 		FileInputStream is;
 		String contents = null;

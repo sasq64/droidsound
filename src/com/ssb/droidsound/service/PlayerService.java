@@ -105,7 +105,7 @@ public class PlayerService extends Service implements PlayerInterface {
 	//private int defaultRepeatMode = RM_CONTINUE;
 	//private int repeatMode = RM_CONTINUE;
 	private boolean repeatSong = false;
-	private boolean holdSong = false;
+	//private boolean holdSong = false;
 
 	protected String saySomething;
 
@@ -159,6 +159,9 @@ public class PlayerService extends Service implements PlayerInterface {
 			updates = mapToArray(info);
 		else
 			updates = mapToArray(changed);
+		
+		if(updates.length == 0)
+			return;
 
 		Iterator<IPlayerServiceCallback> it = callbacks.iterator();
 		while(it.hasNext()) {

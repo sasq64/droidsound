@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.ssb.droidsound.utils.Log;
 
@@ -13,6 +15,7 @@ public class PLSParser implements PlaylistParser {
 	private static final String TAG = M3UParser.class.getSimpleName();
 	private List<String> songs;
 	private List<String> descs;
+	private Map<String, String> defines = new HashMap<String, String>();
 
 	public PLSParser(File file) {
 		BufferedReader reader;
@@ -31,6 +34,7 @@ public class PLSParser implements PlaylistParser {
 					
 					String args [] = line.split("=");
 					if(args.length >= 2) {
+						defines.put(args[0], args[1]);
 						if(line.startsWith("File")) {
 							songs.add(args[1]);
 						} if(line.startsWith("Title")) {
@@ -52,6 +56,9 @@ public class PLSParser implements PlaylistParser {
 	public int getMediaCount() { return songs.size(); }
 	public List<String> getMediaList() { return songs; }
 
+
 	@Override
-	public String getWebPage() { return null; }
+	public String getVariable(String var) {
+		return defines.get(var);
+	}
 }

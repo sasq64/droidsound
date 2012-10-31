@@ -109,7 +109,8 @@ public class AsyncAudioPlayer implements Runnable {
 					return;
 				if(doSleep)
 					Thread.sleep(100);
-				//Log.d(TAG, "WRITE/READ/PLAY %d %d %d", toMSec(framesWritten), toMSec(framesRead), toMSec(playbackPosition));				
+				else
+					Log.d(TAG, "WRITE/READ/PLAY %d %d %d", toMSec(framesWritten), toMSec(framesRead), toMSec(playbackPosition));				
 				playbackPosition = audioTrack.getPlaybackHeadPosition();			
 			}
 		} catch (InterruptedException e) {

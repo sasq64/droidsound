@@ -111,7 +111,8 @@ public class MediaStreamer implements Runnable {
 		//httpName = http;
 		this.fileMode = fileMode;
 		mediaPlayer = mp;
-		httpNames.add(http);			
+		httpNames.add(http);
+		loaded = false;
 		//socketPort = -1;
 	}
 	
@@ -119,6 +120,7 @@ public class MediaStreamer implements Runnable {
 		
 		this.fileMode = fileMode;
 		mediaPlayer = mp;
+		loaded = false;
 		for(String s : https)
 			httpNames.add(s);			
 		//socketPort = -1;
@@ -146,6 +148,7 @@ V/MediaStreamer(12369): icy-metaint: 16000
 	void httpStream() throws IOException {
 
 		//localMPConnection = null;
+		loaded = false;
 		
 		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
 

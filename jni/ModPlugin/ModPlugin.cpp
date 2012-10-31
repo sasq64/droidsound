@@ -137,7 +137,10 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 
 	ModPlug_SetSettings(&settings);
 
-	ModPlugFile *mod = ModPlug_Load(ptr, size);
+	jbyte *ptr2 = (jbyte *)malloc(size);
+	memcpy(ptr2, ptr, size);
+
+	ModPlugFile *mod = ModPlug_Load(ptr2, size);
 	ModInfo *info = NULL;
 
 
@@ -145,9 +148,9 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 	{
 		info = new ModInfo();
 		info->mod = mod;
-		info->ptr = ptr;
+		info->ptr = ptr2;
 		info->size = size;
-		info->array = bArray;
+		//info->array = bArray;
 		//guessAuthor(info);
 		strcpy(info->mod_name, ModPlug_GetName(mod));
 		info->mod_length = ModPlug_GetLength(mod);
@@ -186,7 +189,8 @@ JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1load(JNIEnv
 		}
 
 		ModPlug_SetSettings(&settings);
-		return (long)info;
+	} else {
+		free(ptr2);
 	}
 
 	env->ReleaseByteArrayElements(bArray, ptr, 0);
@@ -199,7 +203,9 @@ JNIEXPORT void JNICALL Java_com_ssb_droidsound_plugins_ModPlugin_N_1unload(JNIEn
 	if(info->mod)
 		ModPlug_Unload(info->mod);
 	if(info->ptr)
-		env->ReleaseByteArrayElements(info->array, info->ptr, 0);
+		free(info->ptr);
+
+		//env->ReleaseByteArrayElements(info->array, info->ptr, 0);
 
 	delete info;
 	info = NULL;

@@ -413,7 +413,7 @@ public class Player implements Runnable {
 					if(source != null)
 						songDetails.put(SongMeta.SOURCE, source);
 					mHandler.sendMessage(msg);
-					mp.start();
+					//mp.start();
 					return;
 				}
 	

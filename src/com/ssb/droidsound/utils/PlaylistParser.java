@@ -8,5 +8,6 @@ public interface PlaylistParser {
 	public String getDescription(int i);
 	public int getMediaCount();
 	public List<String> getMediaList();
-	String getWebPage();
+	//String getWebPage();
+	public String getVariable(String var);
 }

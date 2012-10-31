@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.ssb.droidsound.utils.Log;
 
@@ -13,7 +15,8 @@ public class M3UParser implements PlaylistParser {
 	private static final String TAG = M3UParser.class.getSimpleName();
 	private List<String> songs;
 	private List<String> descs;
-	private String webPage;
+
+	private Map<String, String> defines = new HashMap<String, String>();
 
 	public M3UParser(File file) {
 		BufferedReader reader;
@@ -28,9 +31,7 @@ public class M3UParser implements PlaylistParser {
 			while(line != null) {				
 				Log.d(TAG, line);
 				line = line.trim();
-				
-				webPage = null;
-				
+								
 				if(line.length() > 0) {
 					if(line.charAt(0) == '#') {
 						if(line.startsWith("#EXTINF:")) {
@@ -39,8 +40,15 @@ public class M3UParser implements PlaylistParser {
 								desc = args[1];
 						} else
 						if(line.startsWith("#WEBPAGE:")) {
-							webPage = line.substring(9).trim();							
+							defines.put("webpage", line.substring(9).trim());							
 								
+						} else
+						if(line.startsWith("#DEFINE:")) {
+							String def = line.substring(8).trim();
+							String parts [] = def.split("=");
+							if(parts != null && parts.length == 2) {
+								defines.put(parts[0].toLowerCase(), parts[1]);
+							}
 						}
 					} else {
 						songs.add(line);
@@ -58,7 +66,7 @@ public class M3UParser implements PlaylistParser {
 	}
 	
 	@Override
-	public String getWebPage() { return webPage; }
+	public String getVariable(String var) { return defines.get(var); }
 
 	@Override
 	public String getMedia(int i) { return songs.get(i); }

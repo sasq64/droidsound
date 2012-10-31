@@ -199,6 +199,12 @@ public class PlayerActivity extends Activity  {
 			}
 		}
 		
+		if(path.startsWith("/mnt/sdcard/")) {
+			File extFile = Environment.getExternalStorageDirectory();
+			path = extFile.getPath() + path.substring(11);
+		}
+		
+		
 		int so = state.sortOrderPlayList;
 		if(plv == searchListView)
 			so = state.sortOrderSearch;
@@ -961,8 +967,19 @@ public class PlayerActivity extends Activity  {
 			deleteAll(mf);
 		}
 		
+		boolean unzipIt = false;
 		mf = new File(modsDir, "Network");
-		if(!mf.exists()) {			
+		if(mf.exists()) {
+			File sr = new File(mf, "SR");
+			if(sr.exists()) {
+				for(File f : sr.listFiles())
+					f.delete();
+				sr.delete();
+				unzipIt = true;
+			}
+		} else
+			unzipIt = true;
+		if(unzipIt) {			
 			Unzipper.unzipAsset(this, "Network.zip", modsDir);
 		}
 
