@@ -158,7 +158,7 @@ public class PlayScreen {
 
 		shuffleText = (TextView) parent.findViewById(R.id.shuffle_text);
 		repeatText = (TextView) parent.findViewById(R.id.repeat_text);
-		repeatText.setText("---");
+		repeatText.setText("CONT");
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
 		infoText = (WebView) parent.findViewById(R.id.web_view);		

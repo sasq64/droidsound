@@ -100,6 +100,7 @@ public class Player implements Runnable {
 	
 	private Thread audioThread;
 	private boolean isSilent;
+	private SongFile lastSong;
 
 	public Player(AudioManager am, Handler handler, Context ctx) {
 		mHandler = handler;
@@ -255,6 +256,47 @@ public class Player implements Runnable {
 	}
 
 	
+	private void reloadSong() {
+		if(currentPlugin != null) {
+			currentPlugin.unload();
+		}
+		
+		FileSource songSource;
+		
+		String path = lastSong.getPath();
+		if(path.startsWith("http"))
+			songSource = FileSource.create(path);
+		else
+		if(lastSong.getZipPath() != null) {
+			
+			try {
+				Archive archive = Unpacker.openArchive(new File(lastSong.getZipPath()));
+				Archive.Entry entry = archive.getEntry(lastSong.getZipName());
+				songSource = archive.getFileSource(entry);
+			} catch (IOException e) {
+				// TODO: Display error dialog
+				Message msg = mHandler.obtainMessage(MSG_FAILED, "Zip file broken");
+				mHandler.sendMessage(msg);
+				return;
+			}
+			
+			//songSource = new FileSource(song.getZipPath(), song.getZipName());
+			
+			
+		} else {
+			songSource = FileSource.fromFile(lastSong.getFile());
+		}
+		
+		currentPlugin.load(songSource);
+		songSource.close();
+		songSource = null;
+				
+		if(currentTune > 0) {
+			currentPlugin.setTune(currentTune);
+		}
+		
+	}
+	
 	private void startSong(SongFile song, boolean skipStart) {
 
 		if(currentPlugin != null) {
@@ -264,6 +306,8 @@ public class Player implements Runnable {
 		songEnded = false;
 
 		currentState = State.SWITCHING;
+		
+		lastSong = song;
 		
 		FileSource songSource;
 		
@@ -408,6 +452,7 @@ public class Player implements Runnable {
 				MediaPlayer mp = currentPlugin.getMediaPlayer();
 				if(mp != null) {
 					currentState = State.PLAYING;
+					mp.setLooping(loopMode == 1);
 					lastPos = -1000;
 					String source = currentPlugin.getStringInfo(102);
 					if(source != null)
@@ -466,8 +511,12 @@ public class Player implements Runnable {
 			if(loopMode != oldLoopMode) {
 				if(currentPlugin != null)
 					currentPlugin.setOption("loop", loopMode);
-				oldLoopMode = loopMode;				
-				songDetails.put(SongMeta.REPEAT, loopMode == 1 ? true : false);
+				oldLoopMode = loopMode;
+				
+				MediaPlayer mp = currentPlugin == null ? null : currentPlugin.getMediaPlayer();
+				if(mp != null)
+					mp.setLooping(loopMode == 1);
+				songDetails.put(SongMeta.REPEAT, loopMode == 1 ? true : false);				
 				Message msg = mHandler.obtainMessage(MSG_DETAILS, songDetails);
 				mHandler.sendMessage(msg);
 			}
@@ -521,8 +570,9 @@ public class Player implements Runnable {
 							break;
 						case RESTART:
 							if(!currentPlugin.restart())
-								if(!currentPlugin.setTune(currentTune))
-									break;
+								if(!currentPlugin.setTune(currentTune)) {
+									reloadSong();
+								}
 							songEnded = false;
 							audioPlayer.seekTo(-1);
 							if(currentState == State.SWITCHING) {
