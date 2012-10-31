@@ -3,6 +3,7 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -37,6 +38,7 @@ import com.floreysoft.jmte.Engine;
 import com.ssb.droidsound.service.PlayerService;
 import com.ssb.droidsound.service.SongMeta;
 import com.ssb.droidsound.utils.Log;
+import com.ssb.droidsound.utils.Utils;
 
 public class PlayScreen {
 	private static final String TAG = PlayScreen.class.getSimpleName();
@@ -72,7 +74,9 @@ public class PlayScreen {
 
 	private Engine engine;
 
-	private String infoHtml;
+	private String defTemplate;
+	private String streamTemplate;
+
 	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
 
 	private File htmlDir;
@@ -86,6 +90,7 @@ public class PlayScreen {
 	private String currentPluginName;
 
 	private JSInterface jsInterface;
+
 
 
 	//private FileObserver observer2;
@@ -170,26 +175,28 @@ public class PlayScreen {
 
 		infoText.loadData(empty, "text/html", "utf-8");
 		
-        InputStream is;
-		try {
-			is = activity.getAssets().open("info.def.html");
-			byte [] data = new byte [is.available()];        
-	        is.read(data);
-	        is.close();
-	        infoHtml = new String(data, "ISO8859_1");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}        
+		defTemplate = Utils.readAsset(activity, "templates/def.html");
+		streamTemplate = Utils.readAsset(activity, "templates/stream.html");
 		
 		htmlDir = new File(Environment.getExternalStorageDirectory(), "droidsound/html");
 		templateDir = new File(htmlDir, "templates");
 		dataDir = new File(htmlDir, "data");
 		if(!htmlDir.exists())
 			htmlDir.mkdir();
-		if(!templateDir.exists())
+		if(!templateDir.exists()) {
 			templateDir.mkdir();
+			File f = new File(templateDir, "sample.html");
+			try {
+				FileOutputStream os = new FileOutputStream(f);
+				os.write(defTemplate.getBytes());
+				os.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}		
+		}
 		if(!dataDir.exists())
 			dataDir.mkdir();
+		
 
 		final Handler handler = new MyHandler(this);
 		
@@ -650,6 +657,9 @@ public class PlayScreen {
 			templateDir.mkdirs();
 		boolean changed = false;
 		templates.clear();
+		templates.put("stream", streamTemplate);
+		templates.put("def", defTemplate);
+		
 		for(File f : templateDir.listFiles()) {
 			String parts[] = f.getName().split("\\.");
 			if(parts.length == 2 && parts[1].toLowerCase().equals("html")) {
@@ -794,8 +804,8 @@ public class PlayScreen {
 			String html = templates.get(currentPluginName);
 			if(html == null)
 				html = templates.get("DEF");
-			if(html == null)
-				html = infoHtml;
+			//if(html == null)
+			//	html = defTemplate;
 			
 			String output = engine.transform(html, variables);
 			infoText.loadDataWithBaseURL("", output, "text/html", "utf-8", null);

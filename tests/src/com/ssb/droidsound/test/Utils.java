@@ -36,7 +36,21 @@ public class Utils {
 		
 		return outFile;
 	}
-	
+
+	public static String readAsset(String name) {
+		InputStream is;
+		String s = null;
+		try {
+			is = activity.getAssets().open(name);
+			byte [] data = new byte [is.available()];        
+	        is.read(data);
+	        is.close();
+	        s = new String(data, "ISO8859_1");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return s;
+	}
 	
 	
 
