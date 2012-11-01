@@ -198,9 +198,8 @@ BOOL EmulationLoop(void)
   if(emulating /*&& !paused*/) {
     for(int i = 0; i < 2; i++) {
 		CPULoop(EMU_COUNT);
- 
-	    return TRUE;
 	}
+    return TRUE;
   }
   return FALSE;
 
