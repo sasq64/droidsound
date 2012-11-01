@@ -24,7 +24,9 @@ public class HivelyPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public void getDetailedInfo(Map<String, Object> list) {
-		list.put("dormat", "Hively/AHX");
+		
+		list.put("plugin", "HIVELY");
+		list.put("format", "Hively/AHX");
 	}
 	
 	@Override

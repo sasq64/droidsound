@@ -42,6 +42,7 @@ public class SongMeta {
 	public static final String TOTAL_SUBTUNES = "total_subtunes";
 	public static final String STATE = "state";
 	public static final String REPEAT = "repeat";
+	public static final String SHUFFLE = "shuffle";
 	public static final String SIZE = "size";
 	public static final String PLUGIN = "plugin";
 	public static final String CAN_SEEK = "can_seek";

@@ -129,8 +129,14 @@ public class PlayerService extends Service implements PlayerInterface {
 		if(newsong)
 			info.clear();
 		
+		
+		
 		Map<String, Object> newInfo = new HashMap<String, Object>();
 		player.getSongDetails(newInfo);
+		
+		newInfo.put(SongMeta.SHUFFLE, (Boolean)shuffleSongs);
+		newInfo.put(SongMeta.REPEAT, (Boolean)repeatSong);
+		
 		for(Entry<String, Object> e : newInfo.entrySet()) {
 			String key = e.getKey();
 			Object oldVal = info.get(key);			

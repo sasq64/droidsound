@@ -163,7 +163,7 @@ public class PlayScreen {
 
 		shuffleText = (TextView) parent.findViewById(R.id.shuffle_text);
 		repeatText = (TextView) parent.findViewById(R.id.repeat_text);
-		repeatText.setText("CONT");
+		//repeatText.setText("CONT");
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
 		infoText = (WebView) parent.findViewById(R.id.web_view);		
@@ -406,7 +406,7 @@ public class PlayScreen {
 	
 	public void update(Map<String, Object> data, boolean newsong) {
 		
-		Log.d(TAG, "UPDATE:%s %d", newsong ? " NEW" : "", data.size());
+		//Log.d(TAG, "UPDATE:%s %d", newsong ? " NEW" : "", data.size());
 		
 		if(newsong || state.songDetails == null)
 			state.songDetails = data;
@@ -452,6 +452,11 @@ public class PlayScreen {
 		if(data.containsKey(SongMeta.REPEAT)) {
 			state.songRepeat = (Boolean)data.get(SongMeta.REPEAT);
 			repeatText.setText(state.songRepeat ? "HOLD" : "CONT");
+		}
+		
+		if(data.containsKey(SongMeta.SHUFFLE)) {
+			state.shuffleSongs = (Boolean)data.get(SongMeta.SHUFFLE);
+			shuffleText.setText(state.shuffleSongs ? "RND" : "SEQ");
 		}
 		
 		if(data.containsKey(SongMeta.POSITION)) {
@@ -657,8 +662,8 @@ public class PlayScreen {
 			templateDir.mkdirs();
 		boolean changed = false;
 		templates.clear();
-		templates.put("stream", streamTemplate);
-		templates.put("def", defTemplate);
+		templates.put("STREAM", streamTemplate);
+		templates.put("DEF", defTemplate);
 		
 		for(File f : templateDir.listFiles()) {
 			String parts[] = f.getName().split("\\.");
