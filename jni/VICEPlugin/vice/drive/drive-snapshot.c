@@ -34,8 +34,10 @@
 #include "diskconstants.h"
 #include "diskimage.h"
 #include "drive-snapshot.h"
+#include "drive-sound.h"
 #include "drive.h"
 #include "drivecpu.h"
+#include "drivecpu65c02.h"
 #include "drivemem.h"
 #include "driverom.h"
 #include "drivetypes.h"
@@ -233,8 +235,13 @@ int drive_snapshot_write_module(snapshot_t *s, int save_disks, int save_roms)
     for (i = 0; i < 2; i++) {
         drive = drive_context[i]->drive;
         if (drive->enable) {
-            if (drivecpu_snapshot_write_module(drive_context[i], s) < 0)
-                return -1;
+            if (drive->type == DRIVE_TYPE_2000 || drive->type == DRIVE_TYPE_4000) {
+                if (drivecpu65c02_snapshot_write_module(drive_context[i], s) < 0)
+                    return -1;
+            } else {
+                if (drivecpu_snapshot_write_module(drive_context[i], s) < 0)
+                    return -1;
+            }
             if (machine_drive_snapshot_write(drive_context[i], s) < 0)
                 return -1;
         }
@@ -617,8 +624,13 @@ int drive_snapshot_read_module(snapshot_t *s)
     for (i = 0; i < 2; i++) {
         drive = drive_context[i]->drive;
         if (drive->enable) {
-            if (drivecpu_snapshot_read_module(drive_context[i], s) < 0)
-                return -1;
+            if (drive->type == DRIVE_TYPE_2000 || drive->type == DRIVE_TYPE_4000) {
+                if (drivecpu65c02_snapshot_read_module(drive_context[i], s) < 0)
+                    return -1;
+            } else {
+                if (drivecpu_snapshot_read_module(drive_context[i], s) < 0)
+                    return -1;
+            }
             if (machine_drive_snapshot_read(drive_context[i], s) < 0)
                 return -1;
         }
@@ -673,6 +685,12 @@ int drive_snapshot_read_module(snapshot_t *s)
             }
         }
     }
+
+    /* stop currently active drive sounds (bug #3539422)
+     * FIXME: when the drive sound emulation becomes more precise, we might
+     *        want/need to save a snapshot of its current state too
+     */
+    drive_sound_stop();
 
     iec_update_ports_embedded();
     drive_update_ui_status();
@@ -891,7 +909,7 @@ static int drive_snapshot_write_gcrimage_module(snapshot_t *s, unsigned int dnr)
     char snap_module_name[10];
     snapshot_module_t *m;
     BYTE *data, *speed_map;
-    int i;
+    unsigned int i;
     drive_t *drive;
     DWORD num_half_tracks, track_size;
 
@@ -943,7 +961,7 @@ static int drive_snapshot_read_gcrimage_module(snapshot_t *s, unsigned int dnr)
     snapshot_module_t *m;
     char snap_module_name[10];
     BYTE *tmpbuf, *data, *speed_map;
-    int i;
+    unsigned int i;
     drive_t *drive;
 
     drive = drive_context[dnr]->drive;
@@ -1395,3 +1413,4 @@ static int drive_snapshot_read_rom_module(snapshot_t *s, unsigned int dnr)
 
     return 0;
 }
+

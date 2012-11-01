@@ -82,3 +82,4 @@ extern unsigned int fileio_scratch(const char *file_name, const char *path,
 extern unsigned int fileio_get_bytes_left(fileio_info_t *info);
 
 #endif
+

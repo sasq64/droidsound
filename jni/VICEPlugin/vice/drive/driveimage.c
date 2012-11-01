@@ -380,3 +380,4 @@ void drive_image_init(void)
 {
     driveimage_log = log_open("DriveImage");
 }
+

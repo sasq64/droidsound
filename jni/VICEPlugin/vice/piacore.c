@@ -488,3 +488,4 @@ int mypia_snapshot_read_module(snapshot_t * p)
 
     return snapshot_module_close(m);
 }
+

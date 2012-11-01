@@ -128,3 +128,4 @@ int fsimage_check_sector(disk_image_t *image, unsigned int track,
     }
     return (int)(sectors);
 }
+

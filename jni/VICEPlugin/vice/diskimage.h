@@ -149,3 +149,4 @@ extern void disk_image_detach_log(disk_image_t *image, signed int lognum,
                                   unsigned int unit);
 
 #endif
+

@@ -36,6 +36,7 @@
 #endif
 
 #include <stdlib.h> /* abs */
+#include <string.h> /* memset */
 #include "vice.h"
 
 #include "alarm.h"
@@ -50,6 +51,7 @@
 #include "translate.h"
 #include "vsyncapi.h"
 #include "clkguard.h"
+#include "ds1202_1302.h"
 
 /* Log descriptor.  */
 #ifdef DEBUG_MOUSE
@@ -101,6 +103,9 @@ void mouse_set_input(int port)
 static int last_mouse_x = 0;
 static int last_mouse_y = 0;
 static CLOCK last_update = 0;
+static rtc_ds1202_1302_t *ds1202; /* smartmouse */
+static time_t rtc_offset;
+static char smart_ram[65];
 
 static void domove(void)
 {
@@ -661,6 +666,13 @@ void mouse_init(void)
     neosmouse_alarm = alarm_new(maincpu_alarm_context, "NEOSMOUSEAlarm", neosmouse_alarm_handler, NULL);
     mousedrv_init();
     clk_guard_add_callback(maincpu_clk_guard, clk_overflow_callback, NULL);
+    rtc_offset = (time_t)0; /* TODO: offset */
+    memset(smart_ram, 0, sizeof(smart_ram));
+    ds1202 = ds1202_1302_init((BYTE *)smart_ram, &rtc_offset, 1202);
+}
+
+void mouse_shutdown(void) {
+    ds1202_1302_destroy(ds1202);
 }
 
 /* --------------------------------------------------------- */
@@ -681,6 +693,7 @@ void mouse_button_right(int pressed)
 {
     switch (mouse_type) {
     case MOUSE_TYPE_1351:
+    case MOUSE_TYPE_SMART:
 	if (pressed) {
 	    joystick_set_value_or(mouse_port, 1);
 	} else {
@@ -696,7 +709,6 @@ void mouse_button_right(int pressed)
 	break;
     case MOUSE_TYPE_NEOS:
     case MOUSE_TYPE_AMIGA:
-    case MOUSE_TYPE_CX22:
     case MOUSE_TYPE_ST:
 	if (pressed) {
 	    neos_and_amiga_buttons |= 1;
@@ -713,6 +725,7 @@ void mouse_button_middle(int pressed)
 {
     switch (mouse_type) {
     case MOUSE_TYPE_1351: /* Micromys extension */
+    case MOUSE_TYPE_SMART:
 	if (pressed) {
 	    joystick_set_value_or(mouse_port, 2);
 	} else {
@@ -759,12 +772,20 @@ BYTE mouse_get_x(void)
     /* DBG(("mouse_get_x: %d", mouse_type)); */
     switch (mouse_type) {
     case MOUSE_TYPE_1351:
+    case MOUSE_TYPE_SMART:
 	return mouse_get_1351_x();
     case MOUSE_TYPE_PADDLE:
 	return mouse_get_paddle_x();
     case MOUSE_TYPE_NEOS:
     case MOUSE_TYPE_AMIGA:
+    case MOUSE_TYPE_ST:
+        /* Real Amiga and Atari ST mice probably needs this mod
+         * http://www.mssiah-forum.com/viewtopic.php?pid=15208
+         * for their right buttons to be read using pot_x. */
 	return (neos_and_amiga_buttons & 1) ? 0xff : 0;
+    case MOUSE_TYPE_CX22:
+        /* CX22 has no right button */
+	break;
     default:
 	DBG(("mouse_get_x: invalid mouse_type"));
 	break;
@@ -776,6 +797,7 @@ BYTE mouse_get_y(void)
 {
     switch (mouse_type) {
     case MOUSE_TYPE_1351:
+    case MOUSE_TYPE_SMART:
 	return mouse_get_1351_y();
     case MOUSE_TYPE_PADDLE:
 	return mouse_get_paddle_y();
@@ -790,4 +812,14 @@ BYTE mouse_get_y(void)
 	break;
     }
     return 0xff;
+}
+
+void smart_mouse_store(BYTE val)
+{
+    ds1202_1302_set_lines(ds1202, !(val & 8), !!(val & 2), !!(val & 4));
+}
+
+BYTE smart_mouse_read(void)
+{
+    return ds1202_1302_read_data_line(ds1202) ? 0xff : 0xfb;
 }

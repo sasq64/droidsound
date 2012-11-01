@@ -35,7 +35,7 @@ struct interrupt_cpu_status_s;
 struct monitor_interface_s;
 struct snapshot_s;
 
-extern void drivecpu_setup_context(struct drive_context_s *drv);
+extern void drivecpu_setup_context(struct drive_context_s *drv, int i);
 
 extern void drivecpu_init(struct drive_context_s *drv, int type);
 extern void drivecpu_reset(struct drive_context_s *drv);

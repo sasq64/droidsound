@@ -77,3 +77,4 @@ int machine_romset_archive_item_create(const char *romset_name)
 void machine_romset_init(void)
 {
 }
+

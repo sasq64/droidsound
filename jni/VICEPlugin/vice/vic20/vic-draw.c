@@ -255,3 +255,4 @@ void vic_draw_init(void)
 
     setup_modes();
 }
+

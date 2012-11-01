@@ -579,3 +579,4 @@ int disk_image_cmdline_options_init(void)
 #endif
     return 0;
 }
+

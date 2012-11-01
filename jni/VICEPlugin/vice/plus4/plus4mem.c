@@ -1264,3 +1264,4 @@ void mem_get_screen_parameter(WORD *base, BYTE *rows, BYTE *columns, int *bank)
     *columns = 40;
     *bank = 0;
 }
+

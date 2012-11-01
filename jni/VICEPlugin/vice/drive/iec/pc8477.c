@@ -272,6 +272,13 @@ void pc8477_setup_context(drive_context_t *drv)
     drv->pc8477->mycontext = drv;
 }
 
+void pc8477_shutdown(pc8477_t *drv)
+{
+    fdd_shutdown(drv->fdds[1].fdd);
+    lib_free(drv->myname);
+    lib_free(drv);
+}
+
 /*-----------------------------------------------------------------------*/
 /* WD1770 register read/write access.  */
 
@@ -597,7 +604,7 @@ static pc8477_state_t pc8477_execute(pc8477_t *drv)
                 break;
             case 4:
                 drv->clk += BYTE_RATE;
-                drv->fifo[drv->fifop2] = fdd_read(drv->fdd);
+                drv->fifo[drv->fifop2] = (BYTE)fdd_read(drv->fdd);
                 drv->fifop2++;
                 if (drv->fifop2 >= drv->fifo_size) {
                     drv->fifop2 = 0;

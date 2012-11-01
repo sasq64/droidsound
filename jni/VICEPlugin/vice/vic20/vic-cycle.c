@@ -371,3 +371,4 @@ void vic_cycle(void)
     /* Perform fetch */
     vic_cycle_fetch();
 }
+

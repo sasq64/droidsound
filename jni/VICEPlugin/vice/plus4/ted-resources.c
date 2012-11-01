@@ -95,3 +95,4 @@ int ted_resources_init(void)
 
     return resources_register_int(resources_int);
 }
+

@@ -2,7 +2,7 @@
  * cbm2mem.h - CBM-II memory handling.
  *
  * Written by
- *  Andre Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -71,3 +71,4 @@ extern void colorram_store(WORD addr, BYTE value);
 extern BYTE colorram_read(WORD addr);
 
 #endif
+

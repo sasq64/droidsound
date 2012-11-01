@@ -385,3 +385,4 @@ void via1d1541_setup_context(drive_context_t *ctxptr)
     via->set_cb2 = set_cb2;
     via->reset = reset;
 }
+

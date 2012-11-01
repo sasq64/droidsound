@@ -1081,6 +1081,15 @@ IDCLS_DISABLE_PROFDOS
 /* drive/iec/c64exp/c64exp-cmdline-options.c */
 IDCLS_SPECIFY_PROFDOS_1571_ROM_NAME
 
+/* drive/iec/c64exp/c64exp-cmdline-options.c */
+IDCLS_ENABLE_SUPERCARD
+
+/* drive/iec/c64exp/c64exp-cmdline-options.c */
+IDCLS_DISABLE_SUPERCARD
+
+/* drive/iec/c64exp/c64exp-cmdline-options.c */
+IDCLS_SPECIFY_SUPERCARD_ROM_NAME
+
 /* drive/iec/plus4exp/plus4exp-cmdline-options.c */
 IDCLS_PAR_CABLE_PLUS4EXP_TYPE
 
@@ -1905,11 +1914,17 @@ IDCLS_DISABLE_PETDWW
 /* pet/petdww.c */
 IDCLS_SPECIFY_PETDWW_NAME
 
-/* pet/pet_userport_dac.c */
+/* userport/userport_dac.c */
 IDCLS_ENABLE_USERPORT_DAC
 
-/* pet/pet_userport_dac.c */
+/* userport/userport_dac.c */
 IDCLS_DISABLE_USERPORT_DAC
+
+/* userport/userport_rtc.c */
+IDCLS_ENABLE_USERPORT_RTC
+
+/* userport/userport_rtc.c */
+IDCLS_DISABLE_USERPORT_RTC
 
 /* c64/plus256k.c */
 IDCLS_ENABLE_PLUS256K_EXPANSION
@@ -1961,6 +1976,15 @@ IDCLS_DISABLE_DIGIMAX
 
 /* c64/cart/digimax.c */
 IDCLS_DIGIMAX_BASE
+
+/* c64/cart/ds12c887rtc.c */
+IDCLS_ENABLE_DS12C887RTC
+
+/* c64/cart/ds12c887rtc.c */
+IDCLS_DISABLE_DS12C887RTC
+
+/* c64/cart/ds12c887rtc.c */
+IDCLS_DS12C887RTC_BASE
 
 /* c64/cart/sfx_soundexpander.c */
 IDCLS_ENABLE_SFX_SE
@@ -2365,6 +2389,12 @@ IDGS_VALUE
 
 /* monitor/mon_command.c */
 IDGS_MON_RESOURCESET_DESCRIPTION
+
+/* monitor/mon_command.c */
+IDGS_MON_LOAD_RESOURCES_DESCRIPTION
+
+/* monitor/mon_command.c */
+IDGS_MON_SAVE_RESOURCES_DESCRIPTION
 
 /* monitor/mon_command.c */
 IDGS_MON_STOP_DESCRIPTION

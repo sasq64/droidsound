@@ -1408,3 +1408,4 @@ void asmz80_init(monitor_cpu_type_t *monitor_cpu_type)
     mon_assemblez80_init(monitor_cpu_type);
     mon_registerz80_init(monitor_cpu_type);
 }
+

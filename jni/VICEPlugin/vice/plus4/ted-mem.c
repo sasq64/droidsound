@@ -1021,3 +1021,4 @@ BYTE ted_peek(WORD addr)
         return ted.regs[addr] | unused_bits_in_registers[addr];
     }
 }
+

@@ -193,3 +193,4 @@ void vicii_badline_check_state(BYTE value, const int cycle,
             line_becomes_bad(cycle);
     }
 }
+

@@ -1061,3 +1061,4 @@ void ted_draw_init(void)
 
     setup_modes();
 }
+

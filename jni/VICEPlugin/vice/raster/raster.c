@@ -563,3 +563,4 @@ void raster_shutdown(raster_t *raster)
     raster_resources_chip_shutdown(raster);
     raster_destroy_raster(raster);
 }
+

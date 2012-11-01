@@ -73,31 +73,38 @@ monitor_interface_t *drivecpu_monitor_interface_get(unsigned int dnr)
     return drive_context[dnr]->cpu->monitor_interface;
 }
 
-void drivecpu_setup_context(struct drive_context_s *drv)
+void drivecpu_setup_context(struct drive_context_s *drv, int i)
 {
     monitor_interface_t *mi;
     drivecpu_context_t *cpu;
 
-    drv->cpu = lib_calloc(1, sizeof(drivecpu_context_t));
+    if (i) drv->cpu = lib_calloc(1, sizeof(drivecpu_context_t));
     cpu = drv->cpu;
 
-    drv->cpud = lib_calloc(1, sizeof(drivecpud_context_t));
-    drv->func = lib_malloc(sizeof(drivefunc_context_t));
+    if (i) {
+        drv->cpud = lib_calloc(1, sizeof(drivecpud_context_t));
+        drv->func = lib_malloc(sizeof(drivefunc_context_t));
 
-    cpu->int_status = interrupt_cpu_status_new();
-    interrupt_cpu_status_init(cpu->int_status, &(cpu->last_opcode_info));
-    drivecpu_int_status_ptr[drv->mynumber] = cpu->int_status;
+        cpu->int_status = interrupt_cpu_status_new();
+        interrupt_cpu_status_init(cpu->int_status, &(cpu->last_opcode_info));
+        drivecpu_int_status_ptr[drv->mynumber] = cpu->int_status;
+    }
 
     cpu->rmw_flag = 0;
     cpu->d_bank_limit = -1;
     cpu->pageone = NULL;
-    cpu->snap_module_name = lib_msprintf("DRIVECPU%d", drv->mynumber);
-    cpu->identification_string = lib_msprintf("DRIVE#%d", drv->mynumber + 8);
-    cpu->monitor_interface = monitor_interface_new();
+    if (i) {
+        cpu->snap_module_name = lib_msprintf("DRIVECPU%d", drv->mynumber);
+        cpu->identification_string = lib_msprintf("DRIVE#%d", drv->mynumber + 8);
+        cpu->monitor_interface = monitor_interface_new();
+    }
     mi = cpu->monitor_interface;
     mi->context = (void *)drv;
     mi->cpu_regs = &(cpu->cpu_regs);
+    mi->cpu_R65C02_regs = NULL;
+    mi->dtv_cpu_regs = NULL;
     mi->z80_cpu_regs = NULL;
+    mi->h6809_cpu_regs = NULL;
     mi->int_status = cpu->int_status;
     mi->clk = &(drive_clk[drv->mynumber]);
     mi->current_bank = 0;
@@ -111,6 +118,14 @@ void drivecpu_setup_context(struct drive_context_s *drv)
     mi->toggle_watchpoints_func = drivecpu_toggle_watchpoints;
     mi->set_bank_base = drivecpu_set_bank_base;
     cpu->monspace = monitor_diskspace_mem(drv->mynumber);
+
+    if (i) {
+        drv->cpu->clk_guard = clk_guard_new(drv->clk_ptr, CLOCK_MAX
+                                        - CLKGUARD_SUB_MIN);
+
+        drv->cpu->alarm_context = alarm_context_new(
+                                  drv->cpu->identification_string);
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -240,12 +255,6 @@ void drivecpu_trigger_reset(unsigned int dnr)
 
 static void drive_cpu_early_init(drive_context_t *drv)
 {
-    drv->cpu->clk_guard = clk_guard_new(drv->clk_ptr, CLOCK_MAX
-                                        - CLKGUARD_SUB_MIN);
-
-    drv->cpu->alarm_context = alarm_context_new(
-                                  drv->cpu->identification_string);
-
     machine_drive_init(drv);
 }
 
@@ -336,7 +345,7 @@ void drivecpu_prevent_clk_overflow_all(CLOCK sub)
 /* Handle a ROM trap. */
 inline static DWORD drive_trap_handler(drive_context_t *drv)
 {
-    if (MOS6510_REGS_GET_PC(&(drv->cpu->cpu_regs)) == drv->drive->trap) {
+    if (MOS6510_REGS_GET_PC(&(drv->cpu->cpu_regs)) == (WORD)drv->drive->trap) {
         MOS6510_REGS_SET_PC(&(drv->cpu->cpu_regs), drv->drive->trapcont);
         if (drv->drive->idling_method == DRIVE_IDLE_TRAP_IDLE) {
             CLOCK next_clk;
@@ -556,12 +565,6 @@ static void drive_jam(drive_context_t *drv)
       case DRIVE_TYPE_1581:
         dname = "  1581";
         break;
-      case DRIVE_TYPE_2000:
-        dname = "  2000";
-        break;
-      case DRIVE_TYPE_4000:
-        dname = "  4000";
-        break;
       case DRIVE_TYPE_2031:
         dname = "  2031";
         break;
@@ -761,3 +764,4 @@ fail:
         snapshot_module_close(m);
     return -1;
 }
+

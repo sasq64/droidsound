@@ -206,6 +206,10 @@
  *               this register can only be accessed in BCD mode
  */
 
+/* This module is currently used in the following emulated hardware:
+   - C64/C128/VIC20 DS12C887 RTC cartridge
+ */
+
 /* ---------------------------------------------------------------------------------------------------- */
 
 void ds12c887_reset(rtc_ds12c887_t *context)

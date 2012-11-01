@@ -256,3 +256,14 @@ int drive_check_profdos(int drive_type)
         return 1;
     return 0;
 }
+
+int drive_check_supercard(int drive_type)
+{
+    if (drive_type == DRIVE_TYPE_1541
+        || drive_type == DRIVE_TYPE_1541II
+        || drive_type == DRIVE_TYPE_1570
+        || drive_type == DRIVE_TYPE_1571
+        || drive_type == DRIVE_TYPE_1571CR)
+        return 1;
+    return 0;
+}

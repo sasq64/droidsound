@@ -308,3 +308,4 @@ inline static void raster_changes_sprites_add_int(raster_t *raster,
 }
 
 #endif
+

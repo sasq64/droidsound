@@ -84,6 +84,7 @@ static const char *mon_disassemble_to_string_internal(MEMSPACE memspace,
     int addr_mode;
     unsigned opc_size;
     WORD ival;
+    WORD ival2;
     const asm_opcode_info_t *opinfo;
     int prefix = 0;
 
@@ -205,6 +206,15 @@ static const char *mon_disassemble_to_string_internal(MEMSPACE memspace,
             }
             break;
 
+        case ASM_ADDR_MODE_ABS_INDIRECT_X:
+            ival |= (WORD)((p2 & 0xff) << 8);
+            if (!(addr_name = mon_symbol_table_lookup_name(e_comp_space, ival))) {
+                sprintf(buffp, (hex_mode ? " ($%04X,X)" : " (%5d,X)"), ival);
+            } else {
+                sprintf(buffp, " (%s,X)", addr_name);
+            }
+            break;
+
         case ASM_ADDR_MODE_INDIRECT_X:
             if (!(addr_name = mon_symbol_table_lookup_name(e_comp_space, ival))) {
                 sprintf(buffp, (hex_mode ? " ($%02X,X)" : " (%3d,X)"), ival);
@@ -221,6 +231,14 @@ static const char *mon_disassemble_to_string_internal(MEMSPACE memspace,
             }
             break;
 
+          case ASM_ADDR_MODE_INDIRECT:
+            if (!(addr_name = mon_symbol_table_lookup_name(e_comp_space, ival))) {
+                sprintf(buffp, (hex_mode ? " ($%02X)" : " (%3d)"), ival);
+            } else {
+                sprintf(buffp, " (%s)", addr_name);
+            }
+            break;
+
         case ASM_ADDR_MODE_RELATIVE:
             if (0x80 & ival) {
                 ival -= 256;
@@ -231,6 +249,20 @@ static const char *mon_disassemble_to_string_internal(MEMSPACE memspace,
                 sprintf(buffp, (hex_mode ? " $%04X" : " %5d"), ival);
             } else {
                 sprintf(buffp, " %s", addr_name);
+            }
+            break;
+
+        case ASM_ADDR_MODE_ZERO_PAGE_RELATIVE:
+            ival2 = (p2 & 0xff);
+            if (0x80 & ival2) {
+                ival2 -= 256;
+            }
+            ival2 += addr;
+            ival2 += 3;
+            if (!(addr_name = mon_symbol_table_lookup_name(e_comp_space, ival2))) {
+                sprintf(buffp, (hex_mode ? " $%02X, $%04X" : " %3d, %5d"), ival, ival2);
+            } else {
+                sprintf(buffp, (hex_mode ? " $%02X, %s" : " %3d, %s"), ival, addr_name);
             }
             break;
 
@@ -1280,6 +1312,8 @@ static const char *mon_disassemble_to_string_internal(MEMSPACE memspace,
                 strcat(buffp, "CC,");
             }
             buffp[strlen(buffp) - 1] = '\0';
+            break;
+        case ASM_ADDR_MODE_DOUBLE: /* not a real addressing mode */
             break;
     }
 

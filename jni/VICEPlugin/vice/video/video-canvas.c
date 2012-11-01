@@ -163,3 +163,4 @@ void video_canvas_create_set(struct video_canvas_s *canvas)
 {
     canvas->created = 1;
 }
+

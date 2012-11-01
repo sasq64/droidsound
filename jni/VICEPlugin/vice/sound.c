@@ -371,12 +371,18 @@ static const resource_int_t resources_int[] = {
       (void *)&fragment_size, set_fragment_size, NULL },
     { "SoundSuspendTime", 0, RES_EVENT_NO, NULL,
       (void *)&suspend_time, set_suspend_time, NULL },
-    { "SoundSpeedAdjustment", SOUND_ADJUST_DEFAULT, RES_EVENT_NO, NULL,
+    { "SoundSpeedAdjustment", SOUND_ADJUST_EXACT, RES_EVENT_NO, NULL,
       (void *)&speed_adjustment_setting, set_speed_adjustment_setting, NULL },
     { "SoundVolume", 100, RES_EVENT_NO, NULL,
       (void *)&volume, set_volume, NULL },
+#ifdef __MSDOS__
+    /* Force default to SOUND_OUTPUT_MONO, that way stereo/triple sid will work */
+    { "SoundOutput", SOUND_OUTPUT_MONO, RES_EVENT_NO, NULL,
+      (void *)&output_option, set_output_option, NULL },
+#else
     { "SoundOutput", SOUND_OUTPUT_SYSTEM, RES_EVENT_NO, NULL,
       (void *)&output_option, set_output_option, NULL },
+#endif
     { NULL }
 };
 
@@ -777,6 +783,26 @@ int sound_open(void)
     speed = (sample_rate < 8000 || sample_rate > 96000)
             ? SOUND_SAMPLE_RATE : sample_rate;
 
+    switch (output_option) {
+    case SOUND_OUTPUT_SYSTEM:
+    default:
+        channels = (snddata.sound_chip_channels >= 2) ? 2 : 1;
+        break;
+    case SOUND_OUTPUT_MONO:
+        channels = 1;
+        break;
+    case SOUND_OUTPUT_STEREO:
+        channels = 2;
+        break;
+    }
+
+    /* find pdev */
+    for (i = 0; (pdev = sound_devices[i]); i++) {
+        if (!playname || (pdev->name && !strcasecmp(playname, pdev->name))) {
+            break;
+        }
+    }
+
     /* Calculate reasonable fragments. Target is 2 fragments per frame,
      * which gives a reasonable number of fillable audio chunks to avoid
      * ugly situation where a full frame refresh needs to occur before more
@@ -785,6 +811,11 @@ int sound_open(void)
      * information to calculate it. */
     fragsize = speed / ((rfsh_per_sec < 1.0) ? 1 : ((int)rfsh_per_sec))
                / fragment_divisor[fragment_size];
+    if (pdev) {
+        if (channels <= pdev->max_channels) {
+            fragsize *= channels;
+        }
+    }
 
     for (i = 1; 1 << i < fragsize; i++);
     fragsize = 1 << i;
@@ -793,26 +824,8 @@ int sound_open(void)
         fragnr = 3;
     }
 
-    for (i = 0; (pdev = sound_devices[i]); i++) {
-        if (!playname || (pdev->name && !strcasecmp(playname, pdev->name))) {
-            break;
-        }
-    }
-
     if (pdev) {
         if (pdev->init) {
-            switch (output_option) {
-                case SOUND_OUTPUT_SYSTEM:
-                default:
-                    channels = (snddata.sound_chip_channels >= 2) ? 2 : 1;
-                    break;
-                case SOUND_OUTPUT_MONO:
-                    channels = 1;
-                    break;
-                case SOUND_OUTPUT_STEREO:
-                    channels = 2;
-                    break;
-            }
             channels_cap = channels;
             if (pdev->init(playparam, &speed, &fragsize, &fragnr, &channels_cap)) {
                 err = lib_msprintf(translate_text(IDGS_INIT_FAILED_FOR_DEVICE_S), pdev->name);

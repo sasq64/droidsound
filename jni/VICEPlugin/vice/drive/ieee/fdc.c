@@ -1007,3 +1007,4 @@ int fdc_snapshot_read_module(snapshot_t *p, int fnum)
 
     return 0;
 }
+

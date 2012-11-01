@@ -234,3 +234,4 @@ typedef struct vic_s vic_t;
 extern vic_t vic;
 
 #endif
+

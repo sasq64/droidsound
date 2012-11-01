@@ -181,3 +181,4 @@ unsigned int fileio_scratch(const char *file_name, const char *path,
 
     return rc;
 }
+

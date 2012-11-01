@@ -273,7 +273,7 @@ static const char *vname_chip_rendermode[] = { "Filter", NULL };
 
 static resource_int_t resources_chip_rendermode[] =
 {
-    { NULL, 0, RES_EVENT_NO, NULL,
+    { NULL, 1, RES_EVENT_NO, NULL,
       NULL, set_chip_rendermode, NULL },
     RESOURCE_INT_LIST_END
 };
@@ -627,7 +627,7 @@ int video_resources_chip_init(const char *chipname,
     video_render_initconfig((*canvas)->videoconfig);
     (*canvas)->videoconfig->cap = video_chip_cap;
 
-    (*canvas)->videoconfig->chip_name = strdup(chipname);
+    (*canvas)->videoconfig->chip_name = lib_stralloc(chipname);
 
     /* Set single size render as default.  */
     (*canvas)->videoconfig->rendermode = video_chip_cap->single_mode.rmode;
@@ -715,6 +715,7 @@ int video_resources_chip_init(const char *chipname,
         lib_free((char *)(resources_chip_fullscreen_string[0].name));
 
         for (i = 0; i < video_chip_cap->fullscreen.device_num; i++) {
+            /* FIXME: memory leak! */
             resource_chip_mode = lib_malloc(sizeof(video_resource_chip_mode_t));
             resource_chip_mode->resource_chip = *canvas;
             resource_chip_mode->device = i;

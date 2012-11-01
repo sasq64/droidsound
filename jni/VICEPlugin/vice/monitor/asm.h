@@ -79,6 +79,11 @@ enum asm_addr_mode {
     ASM_ADDR_MODE_REG_IND_IX,
     ASM_ADDR_MODE_REG_IND_IY,     /* 40 */
     ASM_ADDR_MODE_REG_IND_SP,
+    /* R65C02 */
+    ASM_ADDR_MODE_INDIRECT,
+    ASM_ADDR_MODE_ABS_INDIRECT_X,
+    ASM_ADDR_MODE_DOUBLE,
+    ASM_ADDR_MODE_ZERO_PAGE_RELATIVE,
     /* more modes needed for 6809 */
     ASM_ADDR_MODE_ILLEGAL,        /* 42 */
     ASM_ADDR_MODE_IMM_BYTE,       /* 43 looks like  ASM_ADDR_MODE_IMMEDIATE */

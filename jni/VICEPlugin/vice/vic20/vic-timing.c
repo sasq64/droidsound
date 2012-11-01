@@ -104,3 +104,4 @@ void vic_timing_set(machine_timing_t *machine_timing, int border_mode)
     }
 
 }
+

@@ -323,3 +323,4 @@ void gfxoutput_init_png(void)
 {
     gfxoutput_register(&png_drv);
 }
+

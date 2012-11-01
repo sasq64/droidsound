@@ -81,6 +81,10 @@
  *                  bits 3-0 years
  */
 
+/* This module is currently used in the following emulated hardware:
+   - C128 internal function RAM+RTC expansion
+ */
+
 /* ---------------------------------------------------------------------------------------------------- */
 
 rtc_bq4830y_t *bq4830y_init(BYTE *ram, time_t *offset)

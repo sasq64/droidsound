@@ -163,6 +163,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH) \
     $(LOCAL_PATH)/vice/userport \
     $(LOCAL_PATH)/vice/vdrive \
     $(LOCAL_PATH)/vice/vicii \
+    $(LOCAL_PATH)/vice/rtc \
 #terminator for last backslash
 
 LOCAL_STATIC_LIBRARIES := resid

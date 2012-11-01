@@ -2,7 +2,7 @@
  * parallel.c - IEEE488 emulation.
  *
  * Written by
- *  Andre Fachat <a.fachat@physik.tu-chemnitz.de>
+ *  André Fachat <a.fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -706,3 +706,4 @@ drivefunc_context_t drive_funcs[DRIVE_NUM] = {
     }
 
 PARALLEL_CPU_SET_LINE(atn, cpu, CPU)
+

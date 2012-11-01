@@ -205,3 +205,4 @@ unsigned int rawfile_remove(const char *src_name, const char *path)
 
     return FILEIO_FILE_SCRATCHED;
 }
+

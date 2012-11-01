@@ -197,3 +197,4 @@ fail:
         snapshot_module_close(m);
     return -1;
 }
+

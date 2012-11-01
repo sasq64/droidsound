@@ -40,3 +40,4 @@ extern ted_resources_t ted_resources;
 extern int ted_resources_init(void);
 
 #endif
+

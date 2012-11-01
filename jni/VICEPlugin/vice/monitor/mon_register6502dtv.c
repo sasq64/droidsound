@@ -478,3 +478,4 @@ void mon_register6502dtv_init(monitor_cpu_type_t *monitor_cpu_type)
     monitor_cpu_type->mon_register_list_get = mon_register_list_get6502dtv;
     monitor_cpu_type->mon_register_list_set = mon_register_list_set6502dtv;
 }
+

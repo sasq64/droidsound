@@ -307,3 +307,4 @@ int output_graphics_init_resources(void)
 
     return 1; /* resources_register_int(resources_int); */
 }
+

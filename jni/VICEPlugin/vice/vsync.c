@@ -603,3 +603,4 @@ void vsyncarch_prepare_vbl(void)
 #endif /* defined (HAVE_OPENGL_SYNC) && !defined(USE_SDLUI) */
 
 #endif
+

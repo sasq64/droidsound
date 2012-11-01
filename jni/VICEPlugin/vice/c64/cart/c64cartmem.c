@@ -516,6 +516,7 @@ void cart_romlbank_set_slotmain(unsigned int bank)
 
         georam
         digimax
+        ds12c887rtc
         reu
         midi
         acia
@@ -1054,7 +1055,7 @@ void roml_no_ultimax_store(WORD addr, BYTE value)
             break;
         case CARTRIDGE_PAGEFOX:
             pagefox_roml_store(addr, value);
-            return;
+            break;
         case CARTRIDGE_RETRO_REPLAY:
             if (retroreplay_roml_no_ultimax_store(addr, value))
             {

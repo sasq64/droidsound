@@ -34,3 +34,4 @@ extern void signals_pipe_set(void);
 extern void signals_pipe_unset(void);
 
 #endif
+

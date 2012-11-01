@@ -57,7 +57,9 @@ int current_language_index = 0;
 
 /* GLOBAL STRING ID TEXT TABLE */
 
-#include "translate_text.c"
+//#include "translate_text.c"
+translate_t string_table[] = { {0, ""} };
+
 
 
 /* --------------------------------------------------------------------- */

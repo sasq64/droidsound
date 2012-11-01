@@ -188,3 +188,4 @@ void ieee_drive_parallel_set_atn(int state, drive_context_t *drv)
     via1d2031_set_atn(drv->via1d2031, state);
     riot2_set_atn(drv->riot2, state);
 }
+

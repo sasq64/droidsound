@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  Andre Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *  Daniel Kahlin <daniel@kahlin.net>
  *
  * Multiple memory configuration support originally by
@@ -757,3 +757,4 @@ int mem_patch_kernal(void)
 
     return 0;
 }
+

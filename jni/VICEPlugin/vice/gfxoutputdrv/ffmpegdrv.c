@@ -900,3 +900,4 @@ void gfxoutput_init_ffmpeg(void)
 
     (*ffmpeglib.p_av_register_all)();
 }
+

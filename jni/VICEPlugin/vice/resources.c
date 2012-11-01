@@ -1266,3 +1266,4 @@ int resources_register_callback(const char *name,
     }
     return -1;
 }
+

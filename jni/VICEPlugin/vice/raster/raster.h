@@ -224,3 +224,4 @@ extern void raster_line_changes_init(raster_t *raster);
 extern void raster_line_changes_sprite_init(raster_t *raster);
 
 #endif
+

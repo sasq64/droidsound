@@ -357,3 +357,4 @@ void fsimage_create_init(void)
 {
     createdisk_log = log_open("Disk Create");
 }
+

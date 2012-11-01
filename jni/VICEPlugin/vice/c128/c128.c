@@ -91,6 +91,7 @@
 #include "tpi.h"
 #include "traps.h"
 #include "types.h"
+#include "userport_rtc.h"
 #include "vicii.h"
 #include "vicii-mem.h"
 #include "video.h"
@@ -453,6 +454,7 @@ int machine_resources_init(void)
         || cartridge_resources_init() < 0
         || mmu_resources_init() < 0
         || z80mem_resources_init() < 0
+        || userport_rtc_resources_init() < 0
         || cartio_resources_init() < 0
         || functionrom_resources_init() < 0) {
         return -1;
@@ -473,6 +475,7 @@ void machine_resources_shutdown(void)
     cartridge_resources_shutdown();
     functionrom_resources_shutdown();
     rombanks_resources_shutdown();
+    userport_rtc_resources_shutdown();
     cartio_shutdown();
 }
 
@@ -503,6 +506,7 @@ int machine_cmdline_options_init(void)
         || cartridge_cmdline_options_init() < 0
         || mmu_cmdline_options_init() < 0
         || functionrom_cmdline_options_init() < 0
+        || userport_rtc_cmdline_options_init() < 0
         || cartio_cmdline_options_init() < 0
         || z80mem_cmdline_options_init() < 0) {
         return -1;
@@ -514,16 +518,18 @@ int machine_cmdline_options_init(void)
 static void c128_monitor_init(void)
 {
     unsigned int dnr;
-    monitor_cpu_type_t asm6502, asmz80;
+    monitor_cpu_type_t asm6502, asmz80, asmR65C02;
     monitor_interface_t *drive_interface_init[DRIVE_NUM];
-    monitor_cpu_type_t *asmarray[3];
+    monitor_cpu_type_t *asmarray[4];
 
     asmarray[0] = &asm6502;
     asmarray[1] = &asmz80;
-    asmarray[2] = NULL;
+    asmarray[2]=&asmR65C02;
+    asmarray[3] = NULL;
 
     asm6502_init(&asm6502);
     asmz80_init(&asmz80);
+    asmR65C02_init(&asmR65C02);
 
     for (dnr = 0; dnr < DRIVE_NUM; dnr++) {
         drive_interface_init[dnr] = drivecpu_monitor_interface_get(dnr);
@@ -722,6 +728,10 @@ void machine_specific_shutdown(void)
     ciacore_shutdown(machine_context.cia2);
 
     cartridge_shutdown();
+
+#ifdef HAVE_MOUSE
+    mouse_shutdown();
+#endif
 
     /* close the video chip(s) */
     vicii_shutdown();

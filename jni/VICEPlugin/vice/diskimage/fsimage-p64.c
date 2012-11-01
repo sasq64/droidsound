@@ -312,3 +312,4 @@ void fsimage_p64_init(void)
 {
     fsimage_p64_log = log_open("Filesystem Image P64");
 }
+

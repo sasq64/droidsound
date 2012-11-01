@@ -461,3 +461,4 @@ void drv_mps803_shutdown(void)
 {
     palette_free(palette);
 }
+

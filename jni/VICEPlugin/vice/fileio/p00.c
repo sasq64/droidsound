@@ -514,3 +514,4 @@ unsigned int p00_get_bytes_left(struct fileio_info_s *info)
 {
     return rawfile_get_bytes_left(info->rawfile);
 }
+

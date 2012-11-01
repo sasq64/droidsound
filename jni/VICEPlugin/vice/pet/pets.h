@@ -2,7 +2,7 @@
  * pets.h - PET version handling.
  *
  * Written by
- *  Andre Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -61,6 +61,7 @@
 #define SUPERPET_CPU_PROG       2
 
 #define NUM_6809_ROMS           6       /* at 0x[ABCDEF]000 */
+#define PET_6809_ROMSIZE        (NUM_6809_ROMS * 0x1000)
 
 /* This struct is used to hold the default values for the different models */
 typedef struct petinfo_s {
@@ -138,3 +139,4 @@ extern int pet_init_ok; /* used in pet.c */
 extern int petmem_set_conf_info(petinfo_t *pi); /* used in petmemsnapshot.c */
 
 #endif
+

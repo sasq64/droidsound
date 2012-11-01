@@ -762,3 +762,4 @@ BYTE vicii_peek(WORD addr)
         return vicii.regs[addr] | unused_bits_in_registers[addr];
     }
 }
+

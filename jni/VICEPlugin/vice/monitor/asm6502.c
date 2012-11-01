@@ -349,3 +349,4 @@ void asm6502_init(monitor_cpu_type_t *monitor_cpu_type)
     mon_assemble6502_init(monitor_cpu_type);
     mon_register6502_init(monitor_cpu_type);
 }
+

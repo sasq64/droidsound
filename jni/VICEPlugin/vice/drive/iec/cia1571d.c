@@ -218,3 +218,4 @@ void cia1571_setup_context(drive_context_t *ctxptr)
     cia->pre_read = NULL;
     cia->pre_peek = NULL;
 }
+

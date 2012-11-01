@@ -600,3 +600,4 @@ void vicii_fetch_init(void)
                                          "VicIIRasterFetch",
                                          vicii_fetch_alarm_handler, NULL);
 }
+

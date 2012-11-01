@@ -56,3 +56,4 @@ extern int fsimage_p64_read_sector(struct disk_image_s *image, BYTE *buf,
 extern int fsimage_p64_write_sector(struct disk_image_s *image, BYTE *buf,
                                     unsigned int track, unsigned int sector);
 #endif
+

@@ -39,3 +39,4 @@ extern vic_resources_t vic_resources;
 extern int vic_resources_init(void);
 
 #endif
+

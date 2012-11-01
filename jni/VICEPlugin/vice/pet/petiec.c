@@ -3,7 +3,7 @@
  *
  * Written by
  *  Daniel Sladic <sladic@eecg.toronto.edu>
- *  Andre Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
  * See README for copyright notice.
@@ -62,3 +62,4 @@ int iec_available_busses(void)
 {
     return IEC_BUS_IEEE;
 }
+

@@ -3,7 +3,7 @@
  *
  * Written by
  *  Ettore Perazzoli <ettore@comm2000.it>
- *  Andr? Fachat <fachat@physik.tu-chemnitz.de>
+ *  André Fachat <fachat@physik.tu-chemnitz.de>
  *  Andreas Boose <viceteam@t-online.de>
  *
  * This file is part of VICE, the Versatile Commodore Emulator.
@@ -77,6 +77,17 @@ extern int spet_bank;
 extern int spet_ctrlwp;
 extern int spet_diag;
 extern int spet_ramwp;
+extern int spet_flat_mode;
+extern int spet_firq_disabled;
+
+struct dongle6702_s {
+    int val;
+    int prevodd;
+    int wantodd;
+    int shift[8];
+};
+
+extern struct dongle6702_s dongle6702;
 
 extern BYTE petmem_map_reg;
 extern BYTE petmem_2001_buf_ef[];
@@ -89,5 +100,8 @@ extern WORD mem6809_read16(WORD addr);
 extern void mem6809_store32(WORD addr, DWORD value);
 extern DWORD mem6809_read32(WORD addr);
 #endif
+extern void mem_initialize_memory_6809(void);
+
+extern int superpet_sync(void);
 
 #endif

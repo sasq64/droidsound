@@ -303,3 +303,4 @@ extern void video_render_pal_init(void);
 extern void video_render_crt_init(void);
 
 #endif
+

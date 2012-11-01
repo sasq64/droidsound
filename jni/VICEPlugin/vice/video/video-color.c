@@ -601,3 +601,4 @@ void video_render_initraw(struct video_render_config_s *videoconfig)
 {
     video_calc_gammatable(&(videoconfig->video_resources));
 }
+

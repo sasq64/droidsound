@@ -1132,3 +1132,4 @@ int zfile_close_action(const char *filename, zfile_action_t action,
     lib_free(fullname);
     return -1;
 }
+

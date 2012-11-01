@@ -474,3 +474,4 @@ static void show_fliplist(unsigned int unit)
     } else
         log_message(LOG_DEFAULT, "\tnothing");
 }
+
