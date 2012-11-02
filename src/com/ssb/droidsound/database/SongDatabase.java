@@ -363,6 +363,8 @@ public class SongDatabase implements Runnable {
 		//ZipFile zfile = new ZipFile(zipFile);
 		
 		Archive archive = Unpacker.openArchive(zipFile);
+		if(archive == null)
+			return false;
 		
 		//NativeZipFile zfile = new NativeZipFile(zipFile);
 		Log.d(TAG, "ENTRY");

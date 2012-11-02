@@ -254,39 +254,52 @@ public class Player implements Runnable {
 		Message msg = mHandler.obtainMessage(MSG_WAVDUMPED, outFile.getPath());
 		mHandler.sendMessage(msg);
 	}
-
 	
-	private void reloadSong() {
-		if(currentPlugin != null) {
-			currentPlugin.unload();
-		}
+	
+	private FileSource openSong(String path) {
 		
-		FileSource songSource;
+		FileSource songSource = null;
 		
-		String path = lastSong.getPath();
 		if(path.startsWith("http"))
 			songSource = FileSource.create(path);
 		else
 		if(lastSong.getZipPath() != null) {
-			
 			try {
 				Archive archive = Unpacker.openArchive(new File(lastSong.getZipPath()));
-				Archive.Entry entry = archive.getEntry(lastSong.getZipName());
-				songSource = archive.getFileSource(entry);
+				if(archive != null) {
+					Archive.Entry entry = archive.getEntry(lastSong.getZipName());
+					if(entry != null) {
+						songSource = archive.getFileSource(entry);
+					}
+				}
 			} catch (IOException e) {
-				// TODO: Display error dialog
-				Message msg = mHandler.obtainMessage(MSG_FAILED, "Zip file broken");
-				mHandler.sendMessage(msg);
-				return;
+				//Message msg = mHandler.obtainMessage(MSG_FAILED, "Zip file broken");
+				//mHandler.sendMessage(msg);
 			}
-			
-			//songSource = new FileSource(song.getZipPath(), song.getZipName());
-			
-			
+						
 		} else {
 			songSource = FileSource.fromFile(lastSong.getFile());
 		}
 		
+		return songSource;
+		
+	}
+
+	
+	private void reloadSong() {
+
+		currentPlugin.unload();
+		
+		String path = lastSong.getPath();
+
+		FileSource songSource = openSong(path);
+		
+		if(songSource == null) {
+			Message msg = mHandler.obtainMessage(MSG_FAILED, "Failed to open " + path);
+			mHandler.sendMessage(msg);
+			return;
+		}
+	
 		currentPlugin.load(songSource);
 		songSource.close();
 		songSource = null;
@@ -309,34 +322,14 @@ public class Player implements Runnable {
 		
 		lastSong = song;
 		
-		FileSource songSource;
-		
 		String path = song.getPath();
-		if(path.startsWith("http"))
-			songSource = FileSource.create(path);
-		else
-		if(song.getZipPath() != null) {
-			
-			try {
-				Archive archive = Unpacker.openArchive(new File(song.getZipPath()));
-				Archive.Entry entry = archive.getEntry(song.getZipName());
-				songSource = archive.getFileSource(entry);
-			} catch (IOException e) {
-				// TODO: Display error dialog
-				Message msg = mHandler.obtainMessage(MSG_FAILED, "Zip file broken");
-				mHandler.sendMessage(msg);
-				return;
-			}
-			
-			//songSource = new FileSource(song.getZipPath(), song.getZipName());
-			
-			
-		} else {
-			songSource = FileSource.fromFile(song.getFile());
+		
+		FileSource songSource = openSong(path);		
+		if(songSource == null) {
+			Message msg = mHandler.obtainMessage(MSG_FAILED, "Failed to open " + path);
+			mHandler.sendMessage(msg);
+			return;
 		}
-		
-		
-		// SongFile sf = new SongFile(songName);
 
 		List<DroidSoundPlugin> list = new ArrayList<DroidSoundPlugin>();
 
@@ -448,7 +441,9 @@ public class Player implements Runnable {
 				songDetails.put(SongMeta.STATE, 1);
 	
 				Message msg = mHandler.obtainMessage(MSG_NEWSONG, songDetails);
-	
+
+				audioPlayer.stop();
+
 				MediaPlayer mp = currentPlugin.getMediaPlayer();
 				if(mp != null) {
 					currentState = State.PLAYING;
@@ -464,7 +459,6 @@ public class Player implements Runnable {
 	
 				mHandler.sendMessage(msg);
 	
-				audioPlayer.stop();
 				audioPlayer.start();
 				currentState = State.PLAYING;
 			}

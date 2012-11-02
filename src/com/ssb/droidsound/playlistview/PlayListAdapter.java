@@ -192,7 +192,7 @@ class PlayListAdapter extends BaseAdapter {
 			if(date > 0) {
 				//Log.d(TAG, "DATE " + date);
 				int year = date / 10000;
-				if(year >= 1980 || year <= 2014)
+				if(year >= 1980 && year <= 2014)
 					side = years[year-1980];
 				else
 					side = String.format("(%04d)", date / 10000);

@@ -51,6 +51,7 @@ public class AsyncAudioPlayer implements Runnable {
 
 	private int framesWritten;
 
+	@SuppressWarnings("unused")
 	private volatile int framesRead;
 
 	private volatile boolean stopped;
