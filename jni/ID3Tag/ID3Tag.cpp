@@ -185,11 +185,18 @@ JNIEXPORT jbyteArray JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getBinaryInfo(
 	if(frame) {
 
 		__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "APIC %d fields", frame->nfields);
+		char *f0 = 0, *f1 = 0;
+		const id3_ucs4_t* s = id3_field_getstrings(&frame->fields[2], 0);
+		if(s)
+			f0 = (char*)id3_ucs4_utf8duplicate(s);
+		s = id3_field_getstrings(&frame->fields[3], 0);
+		if(s)
+			f1 = (char*)id3_ucs4_utf8duplicate(s);
 
 		id3_length_t length;
 		id3_byte_t const *data = id3_field_getbinarydata(&frame->fields[4], &length);
 
-		__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "APIC %p %d", data, length);
+		__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "APIC %p %d %s %s", data, length, f0 ? f0 : "NULL" ,f1 ? f1 : "NULL");
 
 		jbyteArray bArray = env->NewByteArray(length);
 		jbyte *ptr = env->GetByteArrayElements(bArray, NULL);

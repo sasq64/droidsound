@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
+import java.util.List;
 import java.util.Map;
 
 import android.app.Activity;
@@ -61,6 +62,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.osbcp.cssparser.CSSParser;
+import com.osbcp.cssparser.PropertyValue;
+import com.osbcp.cssparser.Rule;
+import com.osbcp.cssparser.Selector;
 import com.ssb.droidsound.database.CSDBParser;
 import com.ssb.droidsound.database.MediaSource;
 import com.ssb.droidsound.database.SongDatabase;
@@ -532,8 +537,23 @@ public class PlayerActivity extends Activity  {
 		
 		player = new PlayerServiceConnection();
 
-		
-		
+		try {
+			List<Rule> rules = CSSParser.parse("div { width: 100px; -mozilla-opacity: 345; }");
+			for(Rule r : rules) {
+				List<Selector> selectors = r.getSelectors();
+				for(Selector s : selectors) {
+					System.out.printf("%s\n", s.toString());
+				}
+				List<PropertyValue> vals = r.getPropertyValues();
+				for(PropertyValue p : vals) {
+					System.out.printf("%s = %s\n", p.getProperty(), p.getValue());
+				}
+				
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		//ViewGroup ps = (ViewGroup) findViewById(R.id.play_screen);
 		playScreen = new PlayScreen(state, player, this);
 		
@@ -546,11 +566,11 @@ public class PlayerActivity extends Activity  {
 		ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
 		searchListView = (PlayListView) sl.findViewById(R.id.search_list);
 		
-		setupLandscape();
-		setContentView(landscapeLayout);
+		//setupLandscape();
+		//setContentView(landscapeLayout);
 	
-		//setupNormal();
-		//setContentView(R.layout.player);
+		setContentView(R.layout.player);
+		setupNormal();
 
 		searchButton = (ImageButton) sl.findViewById(R.id.search_button);
 		searchBar = (ViewGroup) sl.findViewById(R.id.title_bar);

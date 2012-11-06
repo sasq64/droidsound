@@ -92,6 +92,9 @@ public class PlayScreen {
 
 	private JSInterface jsInterface;
 
+	private File artworkFile;
+	private int aCounter = 0;
+
 
 
 	//private FileObserver observer2;
@@ -526,11 +529,18 @@ public class PlayScreen {
 			int what = (Integer) data.get("binary");
 			if(what >= 0) {
 				byte [] bindata = (byte[]) data.get("binary_" + what);
-				state.artWork = BitmapFactory.decodeByteArray(bindata,  0,  bindata.length);
-				
-				File f = new File(dataDir,  "cover.jpg");
-				Utils.dumpFile(f, bindata);
-				data.put("artwork", f.getPath());
+				String ext = "";
+				if(bindata[0] == -1 && bindata[1] == -40)
+					ext = ".jpg";
+				else if(bindata[1] == 0x50 && bindata[2] == 0x4e && bindata[2] == 0x47)
+					ext = ".png";				
+				//state.artWork = BitmapFactory.decodeByteArray(bindata,  0,  bindata.length);
+				if(artworkFile != null)
+					artworkFile.delete();
+				artworkFile = new File(dataDir,  "artwork" + String.valueOf(aCounter) + ext);
+				aCounter++;
+				Utils.dumpFile(artworkFile, bindata);
+				data.put("artwork", "file:" + artworkFile.getPath());
 			}
 		}
 		if(newsong)
