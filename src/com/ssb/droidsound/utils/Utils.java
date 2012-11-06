@@ -1,6 +1,7 @@
 package com.ssb.droidsound.utils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +41,19 @@ public class Utils {
 		return outFile;
 	}
 
+	public static void dumpFile(File outFile, byte[] bindata) {
+		FileOutputStream os;
+		try {
+			os = new FileOutputStream(outFile);
+			os.write(bindata);
+			os.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+
 	public static String readAsset(Context ctx, String name) {
 		InputStream is;
 		String s = null;
@@ -54,6 +68,7 @@ public class Utils {
 		}
 		return s;
 	}
+
 	
 	
 

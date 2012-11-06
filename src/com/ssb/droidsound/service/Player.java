@@ -73,6 +73,8 @@ public class Player implements Runnable {
 	private Command command = Command.NO_COMMAND;
 	private Object argument;
 
+	private  byte [] [] binaryInfo = new byte [1] [];
+	
 	// Player state
 	
 	// Increases when player is idle, used to avoid unnecessary polling
@@ -390,6 +392,14 @@ public class Player implements Runnable {
 						} else 
 							songDetails.put(SongMeta.TITLE, basename);
 					}
+				}
+				
+				byte [] data = currentPlugin.getBinaryInfo(0);
+				if(data != null) {
+					synchronized (binaryInfo) {
+						binaryInfo[0] = data;
+					}
+					songDetails.put("binary", 0);
 				}
 	
 				songDetails.put(SongMeta.COPYRIGHT,  getPluginInfo(DroidSoundPlugin.INFO_COPYRIGHT));
@@ -946,6 +956,13 @@ public class Player implements Runnable {
 
 	public boolean isSwitching() {
 		return (currentState == State.SWITCHING);
+	}
+	
+	public byte [] getBinaryInfo(int what) {
+		synchronized (binaryInfo) {
+			return binaryInfo[what];	
+		}
+		
 	}
 
 	public void setBufSize(int bs) {

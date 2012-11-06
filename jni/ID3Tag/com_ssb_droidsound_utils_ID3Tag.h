@@ -63,6 +63,14 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getIntInfo
   (JNIEnv *, jobject, jint);
 
+/*
+ * Class:     com_ssb_droidsound_utils_ID3Tag
+ * Method:    getBinaryInfo
+ * Signature: (I)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getBinaryInfo
+  (JNIEnv *, jobject, jint);
+
 #ifdef __cplusplus
 }
 #endif
