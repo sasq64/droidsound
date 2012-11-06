@@ -295,11 +295,10 @@ public class PlayerServiceConnection implements ServiceConnection {
 		
 	}
 
-	public byte [] getSongMD5() {
+	public byte [] getBinaryData(int what) {
 		try {
-			return mService.getSongMD5();
+			return mService.getBinaryData(what);
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return null;
@@ -309,7 +308,6 @@ public class PlayerServiceConnection implements ServiceConnection {
 		try {
 			return mService.dumpWav(modName, destFile, length, flags);
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return false;

@@ -4,6 +4,7 @@ import java.util.Map;
 
 import android.content.BroadcastReceiver;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
 
 public class PlayState {
 	public int seekingSong;
@@ -35,6 +36,7 @@ public class PlayState {
 	public boolean playerSwitch;
 	public String songSource;
 	public int buffering;
+	public Bitmap artWork;
 
 	public PlayState() {
 	}

@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 
 import com.ssb.droidsound.MediaStreamer;
@@ -175,6 +177,12 @@ public class MP3Plugin extends DroidSoundPlugin {
 			break;
 		}
 		return null;
+	}
+	
+	@Override
+	public byte [] getBinaryInfo(int what) {
+		
+		return id3Tag.getBinaryInfo(0);
 	}
 
 	@Override

@@ -1491,6 +1491,17 @@ public class PlayerActivity extends Activity  {
 	
 	public void update(Map<String, Object> data, boolean newsong) {
 		
+		if(data.containsKey("binary")) {
+			int what = (Integer) data.get("binary");
+			if(what >= 0) {
+				byte [] bin = player.getBinaryData(what);
+				if(bin != null) {
+					data.put("binary_" + what, bin);
+				}
+			}
+				
+		}
+		
 		playScreen.update(data, newsong);
 		
 		String fileName = (String) data.get(SongMeta.FILENAME);

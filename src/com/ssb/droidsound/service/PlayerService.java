@@ -1050,9 +1050,8 @@ public class PlayerService extends Service implements PlayerInterface {
 		}
 
 		@Override
-		public byte[] getSongMD5() throws RemoteException {
-
-			return null;//currentmd5;
+		public byte[] getBinaryData(int what) throws RemoteException {			
+			return player.getBinaryInfo(what);
 		}
 
 		@Override

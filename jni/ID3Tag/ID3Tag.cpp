@@ -145,6 +145,7 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo(JNI
 				title = id3_field_getfullstring(&frame->fields[3]);
 		}
 		break;
+
 	}
 
 	if(frame) {
@@ -164,6 +165,43 @@ JNIEXPORT jstring JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getStringInfo(JNI
 	return NULL;
 
 }
+
+JNIEXPORT jbyteArray JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getBinaryInfo(JNIEnv *env, jobject obj, jint what)
+{
+	struct id3_file *id3file = (struct id3_file*)env->GetLongField(obj, refField);
+	struct id3_tag *tag = (struct id3_tag*)env->GetLongField(obj, tagRefField);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "Get Binary Info %p %p", id3file, tag);
+
+	if(!tag && id3file)
+		tag = id3_file_tag(id3file);
+
+	if(!tag) return 0;
+
+	const id3_ucs4_t *title = NULL;
+	struct id3_frame *frame = NULL;
+
+	frame = id3_tag_findframe(tag, "APIC", 0);
+	if(frame) {
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "APIC %d fields", frame->nfields);
+
+		id3_length_t length;
+		id3_byte_t const *data = id3_field_getbinarydata(&frame->fields[4], &length);
+
+		__android_log_print(ANDROID_LOG_VERBOSE, "ID3Tag", "APIC %p %d", data, length);
+
+		jbyteArray bArray = env->NewByteArray(length);
+		jbyte *ptr = env->GetByteArrayElements(bArray, NULL);
+		memcpy(ptr, data, length);
+		env->ReleaseByteArrayElements(bArray, ptr, 0);
+		return bArray;
+	}
+
+	return NULL;
+
+}
+
 
 JNIEXPORT jint JNICALL Java_com_ssb_droidsound_utils_ID3Tag_getIntInfo(JNIEnv *env, jobject obj, jint what)
 {

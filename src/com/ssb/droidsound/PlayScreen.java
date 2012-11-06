@@ -14,6 +14,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.FileObserver;
@@ -521,7 +522,17 @@ public class PlayScreen {
 		if(data.containsKey(SongMeta.SOURCE)) {
 			state.songSource = (String) data.get(SongMeta.SOURCE);
 		}
-		
+		if(data.containsKey("binary")) {
+			int what = (Integer) data.get("binary");
+			if(what >= 0) {
+				byte [] bindata = (byte[]) data.get("binary_" + what);
+				state.artWork = BitmapFactory.decodeByteArray(bindata,  0,  bindata.length);
+				
+				File f = new File(dataDir,  "cover.jpg");
+				Utils.dumpFile(f, bindata);
+				data.put("artwork", f.getPath());
+			}
+		}
 		if(newsong)
 			infoText.scrollTo(0, 0);
 		

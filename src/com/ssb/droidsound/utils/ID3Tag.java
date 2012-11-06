@@ -52,6 +52,7 @@ public class ID3Tag {
 	native void closeID3Tag();
 	native public String getStringInfo(int what);
 	native public int getIntInfo(int what);
+	native public byte [] getBinaryInfo(int what);
 	
 	
 }

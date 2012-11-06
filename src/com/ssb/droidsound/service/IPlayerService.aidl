@@ -20,7 +20,7 @@ interface IPlayerService {
 	
 	String [] getSongInfo();
 
-	byte [] getSongMD5();
+	byte [] getBinaryData(int what);
 	
 	void registerCallback(IPlayerServiceCallback cb, int flags);
 	void unRegisterCallback(IPlayerServiceCallback cb);
