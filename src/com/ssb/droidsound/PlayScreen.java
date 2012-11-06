@@ -39,6 +39,7 @@ import com.ssb.droidsound.service.SongMeta;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.Utils;
 
+@SuppressLint("SetJavaScriptEnabled")
 public class PlayScreen {
 	private static final String TAG = PlayScreen.class.getSimpleName();
 
@@ -141,7 +142,6 @@ public class PlayScreen {
 		return parent;
 	}
 
-	@SuppressLint("SetJavaScriptEnabled")
 	public PlayScreen(PlayState st, PlayerServiceConnection plr, Activity act) {
 		player = plr;
 		state = st;
@@ -166,7 +166,7 @@ public class PlayScreen {
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
 		infoText = (WebView) parent.findViewById(R.id.web_view);		
-		infoText.getSettings().setJavaScriptEnabled(true);		
+		infoText.getSettings().setJavaScriptEnabled(true);
 		jsInterface = new JSInterface(variables);		
 		infoText.addJavascriptInterface(jsInterface, "info");
 		//infoText.addJavascriptInterface(songInfo, "info");

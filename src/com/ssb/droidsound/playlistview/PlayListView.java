@@ -69,7 +69,7 @@ public class PlayListView extends ListView { //extends TouchListView {
     } */
     
     
-    public boolean editMode() { return adapter.isEditMode(); }
+   // public boolean editMode() { return adapter.isEditMode(); }
     
     public void setEditMode(boolean on) {
     	/*

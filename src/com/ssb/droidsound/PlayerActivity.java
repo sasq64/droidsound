@@ -55,6 +55,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -172,6 +174,7 @@ public class PlayerActivity extends Activity  {
 	private RingToneCreator.RingTone currentRingTone;
 	private RingToneCreator ringToneCreator;
 	private PlayScreen playScreen;
+	private LinearLayout landscapeLayout;
 
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "########## Activity finalize");
@@ -394,6 +397,76 @@ public class PlayerActivity extends Activity  {
 		}
 		return true;
 	}
+	
+	private void setupLandscape() {
+		
+		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		ViewGroup pl = (ViewGroup) inflater.inflate(R.layout.playlist, null);
+		playListView = (PlayListView) pl.findViewById(R.id.play_list);
+		
+		LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+		landscapeLayout = new LinearLayout(this);
+		landscapeLayout.setOrientation(LinearLayout.HORIZONTAL);
+		landscapeLayout.setLayoutParams(lp);
+
+		lp = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT, 1.0F);
+		landscapeLayout.addView(pl, lp);
+		landscapeLayout.addView(playScreen.getView(), lp);
+		
+		
+		ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
+		searchListView = (PlayListView) sl.findViewById(R.id.search_list);
+		//flipper.addView(sl);
+	}
+
+	private void setupNormal() {
+		
+		int pixels = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, getResources().getDisplayMetrics());
+		ViewPager vp = (ViewPager) findViewById(R.id.flipper);
+		vp.setPageMargin(pixels);
+		//vp.setPageMarginDrawable(0x444444);
+		
+		PageIndicator titleIndicator = (PageIndicator)findViewById(R.id.titles);
+		flipper = new Pager(vp, titleIndicator);
+		
+		
+		//playListView = (PlayListView) findViewById(R.id.play_list);
+		//searchListView = (PlayListView) findViewById(R.id.search_list);
+		//playListView = new PlayListView(this);
+		//searchListView = new PlayListView(this);
+		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		ViewGroup pl = (ViewGroup) inflater.inflate(R.layout.playlist, null);
+		playListView = (PlayListView) pl.findViewById(R.id.play_list);
+				
+		flipper.addView(pl);
+		flipper.addView(playScreen.getView());
+		
+		
+		ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
+		searchListView = (PlayListView) sl.findViewById(R.id.search_list);
+		flipper.addView(sl);
+		
+		flipper.onFlip(new Pager.FlipCallback() {
+			@Override
+			public void flipped(int to, int from, View v) {
+				Log.d(TAG, "Flipped to %d", to);
+				switch(to) {
+				case INFO_VIEW:
+					currentPlaylistView = null;
+					break;
+				case SEARCH_VIEW:
+					currentPlaylistView = searchListView;
+					break;
+				case FILE_VIEW:
+					currentPlaylistView = playListView;
+					updateFileView();
+					break;
+				}			
+			}
+		});
+		
+
+	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -459,40 +532,25 @@ public class PlayerActivity extends Activity  {
 		
 		player = new PlayerServiceConnection();
 
-		setContentView(R.layout.player);
 		
 		
 		//ViewGroup ps = (ViewGroup) findViewById(R.id.play_screen);
 		playScreen = new PlayScreen(state, player, this);
 		
-		
-		//flipper = new Flipper(findViewById(R.id.flipper));
-		
-		int pixels = (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, getResources().getDisplayMetrics());
-		ViewPager vp = (ViewPager) findViewById(R.id.flipper);
-		vp.setPageMargin(pixels);
-		//vp.setPageMarginDrawable(0x444444);
-		
-		PageIndicator titleIndicator = (PageIndicator)findViewById(R.id.titles);
-		flipper = new Pager(vp, titleIndicator);
-		
-		
-		//playListView = (PlayListView) findViewById(R.id.play_list);
-		//searchListView = (PlayListView) findViewById(R.id.search_list);
-		//playListView = new PlayListView(this);
-		//searchListView = new PlayListView(this);
 		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
 		ViewGroup pl = (ViewGroup) inflater.inflate(R.layout.playlist, null);
 		playListView = (PlayListView) pl.findViewById(R.id.play_list);
-		flipper.addView(pl);
-		
-		flipper.addView(playScreen.getView());
-		
+				
 		
 		ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
 		searchListView = (PlayListView) sl.findViewById(R.id.search_list);
-		flipper.addView(sl);
-
+		
+		setupLandscape();
+		setContentView(landscapeLayout);
+	
+		//setupNormal();
+		//setContentView(R.layout.player);
 
 		searchButton = (ImageButton) sl.findViewById(R.id.search_button);
 		searchBar = (ViewGroup) sl.findViewById(R.id.title_bar);
@@ -508,25 +566,6 @@ public class PlayerActivity extends Activity  {
 		//flipper.addView(playListView);
 		//flipper.addView(playScreen.getView());
 		//flipper.addView(searchListView);
-		
-		flipper.onFlip(new Pager.FlipCallback() {
-			@Override
-			public void flipped(int to, int from, View v) {
-				Log.d(TAG, "Flipped to %d", to);
-				switch(to) {
-				case INFO_VIEW:
-					currentPlaylistView = null;
-					break;
-				case SEARCH_VIEW:
-					currentPlaylistView = searchListView;
-					break;
-				case FILE_VIEW:
-					currentPlaylistView = playListView;
-					updateFileView();
-					break;
-				}			
-			}
-		});
 		
 	
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -646,7 +685,8 @@ public class PlayerActivity extends Activity  {
 			songDatabase.setActivePlaylist(new File(lastConfig.activePlaylist));
 			searchQuery = lastConfig.query;
 			state.shuffleSongs = lastConfig.shuffleSongs;
-			flipper.flipTo(lastConfig.flipper, false);
+			if(flipper != null)
+				flipper.flipTo(lastConfig.flipper, false);
 		} else {
 			CSDBParser.init();
 			File mf = new File(modsDir, "Favorites.plist");
@@ -798,7 +838,8 @@ public class PlayerActivity extends Activity  {
 					searchCursor = new SearchCursor(cr);
 					searchListView.setCursor(searchCursor, null);
 					//currentPlaylistView = searchListView;
-					flipper.flipTo(SAME_VIEW);
+					if(flipper != null)
+						flipper.flipTo(SAME_VIEW);
 				} else
 					searchCursor = null;
 				Log.d(TAG, "TB Sortorder now %d", state.sortOrderSearch);
@@ -1169,7 +1210,8 @@ public class PlayerActivity extends Activity  {
 			amg.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0);
 			break;
 		case KeyEvent.KEYCODE_TAB:
-			flipper.flipTo(NEXT_VIEW);
+			if(flipper != null)
+				flipper.flipTo(NEXT_VIEW);
 			break;
 		case KeyEvent.KEYCODE_S:
 			state.shuffleSongs = !state.shuffleSongs;
@@ -1266,7 +1308,8 @@ public class PlayerActivity extends Activity  {
 				if(currentPlaylistView != playListView) {
 					if(currentPlaylistView != searchListView || searchDirDepth == 0) {
 						updateFileView();
-						flipper.flipTo(FILE_VIEW);
+						if(flipper != null)
+							flipper.flipTo(FILE_VIEW);
 						if(state.songFile != null) {
 							playListView.setScrollPosition(state.songFile.getPath());
 						}
@@ -1430,7 +1473,8 @@ public class PlayerActivity extends Activity  {
 			c.activePlaylist = al.getFile().getPath();
 		}
 		searchCursor = null;
-		c.flipper = flipper.getDisplayedChild();
+		if(flipper != null)
+			c.flipper = flipper.getDisplayedChild();
 		return c;
 	}
 
@@ -1459,7 +1503,8 @@ public class PlayerActivity extends Activity  {
 			}
 		
 			if(state.songSelected && state.playerSwitch) {
-				flipper.flipTo(INFO_VIEW);
+				if(flipper != null)
+					flipper.flipTo(INFO_VIEW);
 				state.songSelected = false;
 			}
 		
@@ -1965,7 +2010,8 @@ public class PlayerActivity extends Activity  {
 			currentPlaylistView.setScrollPosition(file.getPath());
 			// flipper.setDisplayedChild(0);
 			updateFileView();
-			flipper.flipTo(FILE_VIEW);
+			if(flipper != null)
+				flipper.flipTo(FILE_VIEW);
 			break;
 		case R.id.set_plist:
 			songDatabase.setActivePlaylist(file);
