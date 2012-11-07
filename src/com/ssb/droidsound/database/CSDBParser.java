@@ -269,6 +269,7 @@ public class CSDBParser implements DataSource {
 			typeIndex = cursor.getColumnIndex("TYPE");
 			placeIndex = cursor.getColumnIndex("PLACE");
 			ratingIndex = cursor.getColumnIndex("RATING");
+			idIndex = cursor.getColumnIndex("ID");
 		}
 		
 		@Override

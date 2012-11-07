@@ -56,8 +56,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
-import android.widget.LinearLayout.LayoutParams;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -179,7 +177,7 @@ public class PlayerActivity extends Activity  {
 	private RingToneCreator.RingTone currentRingTone;
 	private RingToneCreator ringToneCreator;
 	private PlayScreen playScreen;
-	private LinearLayout landscapeLayout;
+	//private LinearLayout landscapeLayout;
 
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "########## Activity finalize");
@@ -403,7 +401,7 @@ public class PlayerActivity extends Activity  {
 		return true;
 	}
 	
-	private void setupLandscape() {
+	/*private void setupLandscape() {
 		
 		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		ViewGroup pl = (ViewGroup) inflater.inflate(R.layout.playlist, null);
@@ -422,7 +420,7 @@ public class PlayerActivity extends Activity  {
 		ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
 		searchListView = (PlayListView) sl.findViewById(R.id.search_list);
 		//flipper.addView(sl);
-	}
+	} */
 
 	private void setupNormal() {
 		
@@ -450,6 +448,17 @@ public class PlayerActivity extends Activity  {
 		ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
 		searchListView = (PlayListView) sl.findViewById(R.id.search_list);
 		flipper.addView(sl);
+		
+		searchButton = (ImageButton) sl.findViewById(R.id.search_button);
+		searchBar = (ViewGroup) sl.findViewById(R.id.title_bar);
+		playlistBar = (ViewGroup) pl.findViewById(R.id.title_bar);
+		//titleText = (TextView) pl.findViewById(R.id.list_title);		
+		//subtitleText = (TextView) pl.findViewById(R.id.list_subtitle);
+		dirText = (TextView) pl.findViewById(R.id.dir_text);
+		pathText = (TextView) pl.findViewById(R.id.path_text);
+		searchTitle = (TextView) sl.findViewById(R.id.search_text);
+		searchSubtitle = (TextView) sl.findViewById(R.id.subsearch_text);
+
 		
 		flipper.onFlip(new Pager.FlipCallback() {
 			@Override
@@ -557,14 +566,13 @@ public class PlayerActivity extends Activity  {
 		//ViewGroup ps = (ViewGroup) findViewById(R.id.play_screen);
 		playScreen = new PlayScreen(state, player, this);
 		
-		LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		//LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-		ViewGroup pl = (ViewGroup) inflater.inflate(R.layout.playlist, null);
-		playListView = (PlayListView) pl.findViewById(R.id.play_list);
-				
+		//ViewGroup pl = (ViewGroup) inflater.inflate(R.layout.playlist, null);
+		//playListView = (PlayListView) pl.findViewById(R.id.play_list);				
 		
-		ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
-		searchListView = (PlayListView) sl.findViewById(R.id.search_list);
+		//ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
+		//searchListView = (PlayListView) sl.findViewById(R.id.search_list);
 		
 		//setupLandscape();
 		//setContentView(landscapeLayout);
@@ -572,15 +580,6 @@ public class PlayerActivity extends Activity  {
 		setContentView(R.layout.player);
 		setupNormal();
 
-		searchButton = (ImageButton) sl.findViewById(R.id.search_button);
-		searchBar = (ViewGroup) sl.findViewById(R.id.title_bar);
-		playlistBar = (ViewGroup) pl.findViewById(R.id.title_bar);
-		//titleText = (TextView) pl.findViewById(R.id.list_title);		
-		//subtitleText = (TextView) pl.findViewById(R.id.list_subtitle);
-		dirText = (TextView) pl.findViewById(R.id.dir_text);
-		pathText = (TextView) pl.findViewById(R.id.path_text);
-		searchTitle = (TextView) sl.findViewById(R.id.search_text);
-		searchSubtitle = (TextView) sl.findViewById(R.id.subsearch_text);
 
 		
 		//flipper.addView(playListView);

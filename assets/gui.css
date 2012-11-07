@@ -1,0 +1,62 @@
+
+header {
+	color: #ffffff;
+	background-color: #000080;
+	padding-left: 2pt;	
+}
+
+header.title {
+	font-weight:bold;
+	font-size:16pt;
+	padding-top: 1pt;
+}
+
+header.subtitle {
+	font-size:12pt;
+	padding-bottom: 1pt;
+}
+
+
+item {
+	color : #FFFFFF;
+	subcolor: #FFA0A0FF;
+	sidecolor: #888888;
+}
+
+item.folder {
+	color : #FFA0A080;
+	icon : "icons/gflat_folder.png";
+}
+
+item.folder.net {
+	icon : "icons/gflat_net_folder.png";
+}
+
+item.archive {
+	color : #FFA0A080;
+	icon : "icons/gflat_package.png";
+}
+
+item.archive.media {
+	icon : "icons/gflat_mus_folder.png";
+}
+
+item.archive.csdb {
+	icon : "icons/gflat_bag.png";
+}
+
+item.playlist {
+	icon : "icons/gflat_note3.png";
+}
+
+item.playlist.favorites {
+	icon : "icons/gflat_heart.png";
+}
+
+item.online {
+	color : #ffffc0c0
+}
+
+item.hilight {
+	color : #ffffa000;
+}

@@ -899,17 +899,33 @@ public class Player implements Runnable {
 			command = Command.STOP;
 		}
 	}
+	
+	private Object whoPaused = null;
 
 	public void paused(boolean pause) {
+		paused(pause, null);
+	}
+
+	
+	public boolean pausedBy(Object who) {
+		return (currentState == State.PAUSED) && (whoPaused == who);
+	}
+	
+	public Object paused(boolean pause, Object who) {
+		
+		Object oldWho = whoPaused;
+		
 		synchronized (cmdLock) {
 			if(pause) {
 				Log.d(TAG, "Pausing");
 				command = Command.PAUSE;
+				whoPaused = who;
 			} else {
 				Log.d(TAG, "Unpausing");
 				command = Command.UNPAUSE;
 			}
 		}
+		return oldWho;
 	}
 
 	public void seekTo(int pos) {

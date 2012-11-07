@@ -613,16 +613,16 @@ public class PlayerService extends Service implements PlayerInterface {
 					
 					if(lastState  != -1 && lastState != state) {					
 						Log.d(TAG, "HEADSET PLUG " + state);
-						if(state == 0) {						
+						if(state == 0) {
 							if(player.isPlaying()) {
 								unpluggedTime = System.currentTimeMillis();
-								player.paused(true);						
+								player.paused(true, this);
 							}
 						} else if(state == 1) {
 							if(unpluggedTime > 0 && (System.currentTimeMillis() - unpluggedTime) < 5000) {
-								if(!player.isPlaying()) {
-									player.paused(false);						
-								}							
+								if(player.pausedBy(this)) {
+									player.paused(false);
+								}
 							}
 							unpluggedTime = -1;
 						}
