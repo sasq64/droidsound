@@ -18,10 +18,30 @@ header.subtitle {
 
 /* List items. Format: item.<type>.<FILENAME> or item.<type>.<flags> */
 
+/*
+
+		tv0.setTextSize(0);
+		tv0.setBackgroundColor(0);
+		tv0.setBackground(background);
+		tv0.setEllipsize(where);
+		tv0.setHighlightColor(color);
+		tv0.setRotation(0);
+		tv0.setSingleLine(false);
+		tv0.setTypeface(tf);
+		tv0.set
+*/
+
 item {
+	bgColor: #8888cc;
+	
 	color : #FFFFFF;
-	subcolor: #F0A0FF;
-	sidecolor: #888888;
+	subColor: #F0A0FF;
+	sideColor: #888888;
+
+	textSize: "22dp";
+	subtextSize : "15dp";
+	sidetextSize : "15dp";
+	
 }
 
 item.folder {

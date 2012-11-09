@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -62,22 +63,25 @@ class PlayListAdapter extends BaseAdapter {
 
 	//private Bitmap [] icons;
 	
-	private static final int CSDB = 0;
+	/*private static final int CSDB = 0;
 	private static final int MEDIA_STORE = 1;
 	private static final int PLAYLIST = 3;
 	private static final int NET_FOLDER = 4;
 	private static final int FOLDER = 5;
 	private static final int PACKAGE = 6;
-	private static final int FAVORITES = 7;
+	private static final int FAVORITES = 7;*/
 	
 	private static class ItemProps {
-		public Bitmap icon;
-		int textColor;
+		public Bitmap icon = null;
+		public int textColor = -1;
+		public int subColor = -1;
+		public int sideColor = -1;
+		public float textSize = -1;
+		public float subSize = -1;
+		public float sideSize = -1;
 		
-		public ItemProps() {
-			textColor = -1;
-			icon = null;
-		}
+		//public ItemProps() {
+		//}
 		
 		public void merge(ItemProps p) {
 			if(p.icon != null)
@@ -237,14 +241,52 @@ class PlayListAdapter extends BaseAdapter {
 							p.icon = getBitmapFromAsset(mContext, val);
 						}
 					} else if(key.equals("color")) {
-						if(val.charAt(0) == '#') {
-							p.textColor = Integer.parseInt(val.substring(1), 16);
-						}
+						p.textColor = parseColor(val);
+					} else if(key.equals("subColor")) {
+						p.subColor = parseColor(val);
+					} else if(key.equals("sideColor")) {
+						p.sideColor = parseColor(val);
+					} else if(key.equals("textSize")) {
+						p.textSize = parseSize(val);
+					} else if(key.equals("subtextSize")) {
+						p.subSize = parseSize(val);
+					} else if(key.equals("sidetextSize")) {
+						p.sideSize = parseSize(val);
 					}
 				}
 				
 				propMap.put(selectorName, p);				
 			}
+
+			private int parseColor(String val) {
+				if(val.charAt(0) == '#') {
+					return Integer.parseInt(val.substring(1), 16);
+				}
+				return 0;
+			}
+			
+			private float parseSize(String val) {
+				
+				int i = 0;
+				while(i < val.length() && Character.isDigit(val.charAt(i))) {
+					i++;
+				}
+				int size = Integer.parseInt(val.substring(0,i));
+				String unit = val.substring(i);
+				
+				float px = (int) size;
+				
+				Resources r = mContext.getResources();
+				if(unit.equals("dp"))
+					px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size, r.getDisplayMetrics());
+				else if(unit.equals("pt"))
+					px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PT, size, r.getDisplayMetrics());
+				else if(unit.equals("sp"))
+					px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, r.getDisplayMetrics());
+				
+				return px;
+			}
+			
 		});
 		
 		/*
@@ -444,6 +486,17 @@ class PlayListAdapter extends BaseAdapter {
 			iv.setVisibility(View.VISIBLE);
 		} else
 			iv.setVisibility(View.GONE);
+		
+		/*
+		tv0.setTextSize(0);
+		tv0.setBackgroundColor(0);
+		tv0.setBackground(background);
+		tv0.setEllipsize(where);
+		tv0.setHighlightColor(color);
+		tv0.setRotation(0);
+		tv0.setSingleLine(false);
+		tv0.setTypeface(tf);
+		tv0.set*/
 
 		
 		/*
