@@ -16,47 +16,49 @@ header.subtitle {
 	padding-bottom: 1pt;
 }
 
+/* List items. Format: item.<type>.<FILENAME> or item.<type>.<flags> */
 
 item {
 	color : #FFFFFF;
-	subcolor: #FFA0A0FF;
+	subcolor: #F0A0FF;
 	sidecolor: #888888;
 }
 
 item.folder {
-	color : #FFA0A080;
+	color : #ffff80;
 	icon : "icons/gflat_folder.png";
 }
 
-item.folder.net {
+item.network {
 	icon : "icons/gflat_net_folder.png";
 }
 
 item.archive {
-	color : #FFA0A080;
+	color : #ffff80;
 	icon : "icons/gflat_package.png";
 }
 
-item.archive.media {
+item.media {
 	icon : "icons/gflat_mus_folder.png";
 }
 
-item.archive.csdb {
+item.csdb {
 	icon : "icons/gflat_bag.png";
 }
 
 item.playlist {
+	color : #ffff80;
 	icon : "icons/gflat_note3.png";
 }
 
-item.playlist.favorites {
+item.favorites {
 	icon : "icons/gflat_heart.png";
 }
 
-item.online {
-	color : #ffffc0c0
+item:online {
+	color : #ffc0c0;
 }
 
-item.hilight {
-	color : #ffffa000;
+item:hilight {
+	color : #ffa000;
 }

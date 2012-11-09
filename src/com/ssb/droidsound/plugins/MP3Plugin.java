@@ -182,7 +182,10 @@ public class MP3Plugin extends DroidSoundPlugin {
 	@Override
 	public byte [] getBinaryInfo(int what) {
 		
-		return id3Tag.getBinaryInfo(0);
+		if(id3Tag != null)
+			return id3Tag.getBinaryInfo(0);
+		else
+			return null;
 	}
 
 	@Override

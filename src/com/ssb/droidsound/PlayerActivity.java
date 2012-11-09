@@ -75,6 +75,7 @@ import com.ssb.droidsound.service.SongMeta;
 import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 import com.ssb.droidsound.utils.Unzipper;
+import com.ssb.droidsound.utils.Utils;
 import com.viewpagerindicator.PageIndicator;
 //import android.os.PowerManager;
 
@@ -545,6 +546,10 @@ public class PlayerActivity extends Activity  {
 		state.ttsStatus = TTS_UNCHECKED;
 		
 		player = new PlayerServiceConnection();
+		
+		ThemeManager tm = ThemeManager.getInstance();
+		tm.loadTheme(Utils.readAsset(this, "gui.css"), null);
+		
 
 		try {
 			List<Rule> rules = CSSParser.parse("div { width: 100px; -mozilla-opacity: 345; }");
