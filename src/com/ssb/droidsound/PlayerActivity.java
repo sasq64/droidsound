@@ -548,7 +548,10 @@ public class PlayerActivity extends Activity  {
 		player = new PlayerServiceConnection();
 		
 		ThemeManager tm = ThemeManager.getInstance();
-		tm.loadTheme(Utils.readAsset(this, "gui.css"), null);
+		
+		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
+		if(!tm.loadTheme(new File(droidDir, "gui.css")))		
+			tm.loadTheme(Utils.readAsset(this, "gui.css"), null);
 		
 
 		try {

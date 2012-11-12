@@ -35,17 +35,17 @@ item {
 	bgColor: #8888cc;
 	
 	color : #FFFFFF;
-	subColor: #F0A0FF;
-	sideColor: #888888;
+	subColor: #aaccff;
+	sideColor: #cccccc;
 
-	textSize: "22dp";
-	subtextSize : "15dp";
-	sidetextSize : "15dp";
+	textSize: "20dp";
+	subtextSize : "12dp";
+	sidetextSize : "10dp";
 	
 }
 
 item.folder {
-	color : #ffff80;
+	color : #ffff00;
 	icon : "icons/gflat_folder.png";
 }
 

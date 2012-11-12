@@ -1,6 +1,7 @@
 package com.ssb.droidsound.utils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -67,6 +68,23 @@ public class Utils {
 			e.printStackTrace();
 		}
 		return s;
+	}
+
+	public static String readFile(File f) {
+		FileInputStream is;
+		String contents = null;
+		try {
+			is = new FileInputStream(f);
+			byte [] data = new byte [is.available()];        
+	        is.read(data);
+	        is.close();
+	        contents = new String(data, "ISO8859_1");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return contents;
 	}
 
 	

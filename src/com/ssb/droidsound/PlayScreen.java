@@ -658,23 +658,6 @@ public class PlayScreen {
 			return null;
 		return s;
 	}
-
-	private String readFile(File f) {
-		FileInputStream is;
-		String contents = null;
-		try {
-			is = new FileInputStream(f);
-			byte [] data = new byte [is.available()];        
-	        is.read(data);
-	        is.close();
-	        contents = new String(data, "ISO8859_1");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return contents;
-	}
 	
 	public boolean updateHtml() {
 		
@@ -688,7 +671,7 @@ public class PlayScreen {
 		for(File f : templateDir.listFiles()) {
 			String parts[] = f.getName().split("\\.");
 			if(parts.length == 2 && parts[1].toLowerCase().equals("html")) {
-				String html = readFile(f);
+				String html = Utils.readFile(f);
 				String what = parts[0].toUpperCase();
 				String oldHtml = templates.get(what);
 				if(oldHtml == null || !oldHtml.equals(html)) {

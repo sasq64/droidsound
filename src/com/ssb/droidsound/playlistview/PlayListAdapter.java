@@ -88,6 +88,16 @@ class PlayListAdapter extends BaseAdapter {
 				icon = p.icon;
 			if(p.textColor != -1)
 				textColor = p.textColor;
+			if(p.subColor != -1)
+				subColor = p.subColor;
+			if(p.sideColor != -1)
+				sideColor = p.sideColor;
+			if(p.textSize > 0)
+				textSize = p.textSize;
+			if(p.subSize > 0)
+				subSize = p.subSize;
+			if(p.sideSize > 0)
+				sideSize = p.sideSize;
 		}
 	}
 	
@@ -255,7 +265,8 @@ class PlayListAdapter extends BaseAdapter {
 					}
 				}
 				
-				propMap.put(selectorName, p);				
+				propMap.put(selectorName, p);
+				notifyDataSetChanged();
 			}
 
 			private int parseColor(String val) {
@@ -469,18 +480,22 @@ class PlayListAdapter extends BaseAdapter {
 		
 		tv0.setText(title);
 
+		ItemProps props = findProps(filename, title, type, position == hilightedPosition);
+		tv0.setTextColor(0xff000000 | props.textColor);
+		tv1.setTextColor(0xff000000 | props.subColor);
+		tv2.setTextColor(0xff000000 | props.sideColor);
+		
 		if(sub != null) {
-			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, titleHeight);
+			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, props.textSize);
+			tv1.setTextSize(TypedValue.COMPLEX_UNIT_PX, props.subSize);
 			tv1.setText(sub);
 			tv1.setVisibility(View.VISIBLE);
 		} else {
-			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, titleHeight + subtitleHeight/2);
+			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, props.textSize + props.subSize);
 			tv1.setVisibility(View.GONE);
 		}
 		
 		
-		ItemProps props = findProps(filename, title, type, position == hilightedPosition);
-		tv0.setTextColor(0xff000000 | props.textColor);
 		if(props.icon != null) {
 			iv.setImageBitmap(props.icon);
 			iv.setVisibility(View.VISIBLE);

@@ -3,16 +3,23 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+import android.os.FileObserver;
+import android.os.Handler;
+import android.os.Message;
+
 import com.osbcp.cssparser.CSSParser;
 import com.osbcp.cssparser.PropertyValue;
 import com.osbcp.cssparser.Rule;
 import com.osbcp.cssparser.Selector;
+import com.ssb.droidsound.utils.Utils;
 
 public class ThemeManager {
 	
@@ -31,15 +38,20 @@ public class ThemeManager {
 		
 	private File basePath;
 	private List<Rule> cssRules;
-	private Map<String, SelectorListener> listeners;
+	private Map<String, List<SelectorListener> > listeners;
+	private static FileObserver observer = null;
+	private File themeFile;
 
 	private ThemeManager() {
-		listeners = new HashMap<String, SelectorListener>();
+		listeners = new HashMap<String, List<SelectorListener> >();
 		basePath = null;
 	}
 	
-	public void registerListener(String pattern, SelectorListener sl) {		
-		listeners.put(pattern, sl);
+	public void registerListener(String pattern, SelectorListener sl) {
+		List<SelectorListener> l = listeners.get(pattern);
+		if(l == null) l = new ArrayList<SelectorListener>();
+		l.add(sl);
+		listeners.put(pattern, l);
 		if(cssRules != null)
 			sendChanges(pattern, sl);
 	};
@@ -60,26 +72,58 @@ public class ThemeManager {
 		}
 		
 	}
+	
+	private static class MyHandler extends Handler {
+
+		private WeakReference<ThemeManager> tmRef;
+		public MyHandler(ThemeManager ps) {
+			tmRef = new WeakReference<ThemeManager>(ps);
+		}
+		@Override
+		public void handleMessage(Message msg) {
+			tmRef.get().reload();
+		}
+	};
+	
+	private void reload() {
+		String css = Utils.readFile(themeFile);
+		parseCss(css);
+		for(Entry<String, List<SelectorListener> > e : listeners.entrySet()) {
+			for(SelectorListener sl : e.getValue()) 
+				sendChanges(e.getKey(), sl);
+		}		
+	}
+
 
 	public boolean loadTheme(File themeFile) {
-		
+
+		if(!themeFile.exists())
+			return false;
+		this.themeFile = themeFile;
 		basePath = themeFile.getParentFile();
-		
-		Properties props = new Properties();
-		try {
-			FileInputStream is = new FileInputStream(themeFile);		
-			props.load(is);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		final Handler handler = new MyHandler(this);
+		if(observer != null) {
+			observer.stopWatching();
+			observer = null;
 		}
-		return false;
+		observer = new FileObserver(basePath.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
+			@Override
+			public void onEvent(int event, String path) {
+				Message msg = handler.obtainMessage(0);
+				handler.sendMessage(msg);
+			}
+		};
+		observer.startWatching();
+		reload();
+
+		return true;
 	}
 	
 	public boolean loadTheme(String css, String templateDir) {
 		parseCss(css);
-		for(Entry<String, SelectorListener> e : listeners.entrySet()) {
-			sendChanges(e.getKey(), e.getValue());
+		for(Entry<String, List<SelectorListener> > e : listeners.entrySet()) {
+			for(SelectorListener sl : e.getValue()) 
+				sendChanges(e.getKey(), sl);
 		}
 		return true;
 	}
