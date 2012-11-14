@@ -15,6 +15,10 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.GradientDrawable.Orientation;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -61,6 +65,13 @@ class PlayListAdapter extends BaseAdapter {
 
 	private String [] years;
 
+	private Map<String, ItemProps> propMap;
+	private Map<String, Typeface> fontCache;
+
+	public int dividerColor;
+
+	private PlayListView playListView;
+
 	//private Bitmap [] icons;
 	
 	/*private static final int CSDB = 0;
@@ -73,12 +84,14 @@ class PlayListAdapter extends BaseAdapter {
 	
 	private static class ItemProps {
 		public Bitmap icon = null;
-		public int textColor = -1;
-		public int subColor = -1;
-		public int sideColor = -1;
+		public int textColor = 0;
+		public int subColor = 0;
+		public int sideColor = 0;
+		public Drawable background = null;
 		public float textSize = -1;
 		public float subSize = -1;
 		public float sideSize = -1;
+		public Typeface font;
 		
 		//public ItemProps() {
 		//}
@@ -86,22 +99,25 @@ class PlayListAdapter extends BaseAdapter {
 		public void merge(ItemProps p) {
 			if(p.icon != null)
 				icon = p.icon;
-			if(p.textColor != -1)
+			if(p.textColor != 0)
 				textColor = p.textColor;
-			if(p.subColor != -1)
+			if(p.subColor != 0)
 				subColor = p.subColor;
-			if(p.sideColor != -1)
+			if(p.sideColor != 0)
 				sideColor = p.sideColor;
+			if(p.background != null)
+				background = p.background;
 			if(p.textSize > 0)
 				textSize = p.textSize;
 			if(p.subSize > 0)
 				subSize = p.subSize;
 			if(p.sideSize > 0)
 				sideSize = p.sideSize;
+			if(p.font != null)
+				font = p.font;
 		}
 	}
 	
-	private Map<String, ItemProps> propMap;
 	
 	private String getTypeName(String filename, String title, int type) {
 		switch(type) {
@@ -122,7 +138,7 @@ class PlayListAdapter extends BaseAdapter {
 		
 		String flags = "";
 		if(hilighted)
-			flags += "hillight";
+			flags += "hilight";
 		String typeName = getTypeName(filename, title, type);
 		/*StringBuilder sb = new StringBuilder();
 		for(int i=0; i<filename.length(); i++) {
@@ -210,7 +226,7 @@ class PlayListAdapter extends BaseAdapter {
 	} */
 	
 	
-	PlayListAdapter(Context context, int dc, int ac, int ic, int sc) {
+	PlayListAdapter(PlayListView view, Context context, int dc, int ac, int ic, int sc) {
 		mContext = context;
 
 		itemColor = ic;
@@ -220,96 +236,57 @@ class PlayListAdapter extends BaseAdapter {
 		titleHeight = -1;
 		subtitleHeight = -1;
 		
+		playListView = view;
+		
 		years = new String [35];
 		for(int i=0;i<years.length; i++)
-			years[i] = String.format("(%04d)", i+1980);
+			years[i] = String.format("%04d", i+1980);
 		
 		//icons = new Bitmap [32];
 		
 		propMap = new HashMap<String, ItemProps>();
+		fontCache = new HashMap<String, Typeface>();
 		
 		final ThemeManager tm = ThemeManager.getInstance();
+		final File baseDir = tm.getBaseDir();
 		tm.registerListener("item", new ThemeManager.SelectorListener() {			
 			@Override
-			public void propertiesChanged(String selectorName, Map<String, String> changes) {
+			public void propertyChanged(ThemeManager.Property prop) {
 				
-				ItemProps p = new ItemProps();
-				File bd = tm.getBaseDir();
+				ItemProps ip = propMap.get(prop.selector());
+				if(ip == null)
+					ip = new ItemProps();
 				
-				for(Entry<String, String> e : changes.entrySet()) {
-					
-					String key = e.getKey();
-					String val = e.getValue();
-					val = val.replaceAll("^\"|\"$", "");
-					val = val.replaceAll("^'|'$", "");
-					
-					if(key.equals("icon")) {						
-						if(bd != null) {
-							File f = new File(bd, val);						
-							p.icon = BitmapFactory.decodeFile(f.getPath());						
-						} else {
-							p.icon = getBitmapFromAsset(mContext, val);
-						}
-					} else if(key.equals("color")) {
-						p.textColor = parseColor(val);
-					} else if(key.equals("subColor")) {
-						p.subColor = parseColor(val);
-					} else if(key.equals("sideColor")) {
-						p.sideColor = parseColor(val);
-					} else if(key.equals("textSize")) {
-						p.textSize = parseSize(val);
-					} else if(key.equals("subtextSize")) {
-						p.subSize = parseSize(val);
-					} else if(key.equals("sidetextSize")) {
-						p.sideSize = parseSize(val);
-					}
-				}
 				
-				propMap.put(selectorName, p);
+				if(prop.isNamed("divider")) {
+					dividerColor = prop.getColor();
+					int[] colors = {0, dividerColor, 0}; // red for the example
+					playListView.setDivider(new GradientDrawable(Orientation.RIGHT_LEFT, colors));
+					playListView.setDividerHeight(1);
+				} else if(prop.isNamed("icon")) {
+					ip.icon = prop.getBitmap();
+				} else if(prop.isNamed("color")) {
+					ip.textColor = prop.getColor();
+				} else if(prop.isNamed("sub-color")) {
+					ip.subColor = prop.getColor();
+				} else if(prop.isNamed("side-color")) {
+					ip.sideColor = prop.getColor();
+				} else if(prop.isNamed("background")) {
+					ip.background = prop.getDrawable();
+				} else if(prop.isNamed("font-size")) {
+					ip.textSize = prop.getSize();
+				} else if(prop.isNamed("sub-font-size")) {
+					ip.subSize = prop.getSize();
+				} else if(prop.isNamed("side-font-size")) {
+					ip.sideSize = prop.getSize();
+				} else if(prop.isNamed("font")) {
+					ip.font = prop.getFont();
+				}				
+				propMap.put(prop.selector(), ip);
 				notifyDataSetChanged();
 			}
 
-			private int parseColor(String val) {
-				if(val.charAt(0) == '#') {
-					return Integer.parseInt(val.substring(1), 16);
-				}
-				return 0;
-			}
-			
-			private float parseSize(String val) {
-				
-				int i = 0;
-				while(i < val.length() && Character.isDigit(val.charAt(i))) {
-					i++;
-				}
-				int size = Integer.parseInt(val.substring(0,i));
-				String unit = val.substring(i);
-				
-				float px = (int) size;
-				
-				Resources r = mContext.getResources();
-				if(unit.equals("dp"))
-					px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size, r.getDisplayMetrics());
-				else if(unit.equals("pt"))
-					px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PT, size, r.getDisplayMetrics());
-				else if(unit.equals("sp"))
-					px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, r.getDisplayMetrics());
-				
-				return px;
-			}
-			
 		});
-		
-		/*
-		icons[CSDB] = getBitmapFromAsset(context, "icons/gflat_bag.png");
-		icons[MEDIA_STORE] = getBitmapFromAsset(context, "icons/gflat_mus_folder.png");
-		icons[FAVORITES] = getBitmapFromAsset(context, "icons/gflat_heart.png");
-		icons[PACKAGE] = getBitmapFromAsset(context, "icons/gflat_package.png");
-		icons[PLAYLIST] = getBitmapFromAsset(context, "icons/gflat_note3.png");
-		icons[NET_FOLDER] = getBitmapFromAsset(context, "icons/gflat_net_folder.png");
-		icons[FOLDER] = getBitmapFromAsset(context, "icons/gflat_folder.png");
-		*/
-		
 	}
 	
 	public void setCursor(Cursor cursor, String dirName) {
@@ -375,7 +352,7 @@ class PlayListAdapter extends BaseAdapter {
 	}
 	
 	@Override
-	public int getViewTypeCount() { return 2; }
+	public int getViewTypeCount() { return 1; }
 	
 	@Override
 	public int getItemViewType(int position) {
@@ -390,7 +367,7 @@ class PlayListAdapter extends BaseAdapter {
 		
 		if(convertView == null) {
 			convertView = inflater.inflate(R.layout.songlist_item, parent, false);
-			ViewGroup vg = (ViewGroup)convertView;
+			/*ViewGroup vg = (ViewGroup)convertView;
 			TextView tv0 = (TextView)vg.getChildAt(1);
 			TextView tv1 = (TextView)vg.getChildAt(2);
 			tv1.setTextColor(subitemColor);
@@ -398,8 +375,8 @@ class PlayListAdapter extends BaseAdapter {
 				titleHeight = tv0.getTextSize();
 			}
 			if(subtitleHeight < 0) {
-				subtitleHeight = tv1.getTextSize();
-			}				
+				subtitleHeight = tv1.getTextSize(); 
+			}*/
 		}
 		ViewGroup vg = (ViewGroup)convertView;
 		ImageView iv = (ImageView)vg.getChildAt(0);
@@ -430,7 +407,7 @@ class PlayListAdapter extends BaseAdapter {
 				if(year >= 1980 && year <= 2014)
 					side = years[year-1980];
 				else
-					side = String.format("(%04d)", date / 10000);
+					side = String.format("%04d", date / 10000);
 			}
 		}
 		
@@ -481,9 +458,14 @@ class PlayListAdapter extends BaseAdapter {
 		tv0.setText(title);
 
 		ItemProps props = findProps(filename, title, type, position == hilightedPosition);
-		tv0.setTextColor(0xff000000 | props.textColor);
-		tv1.setTextColor(0xff000000 | props.subColor);
-		tv2.setTextColor(0xff000000 | props.sideColor);
+		tv0.setTextColor(props.textColor);
+		tv1.setTextColor(props.subColor);
+		tv2.setTextColor(props.sideColor);
+		vg.setBackgroundDrawable(props.background);
+		
+		tv0.setTypeface(props.font);
+		tv1.setTypeface(props.font);
+		tv2.setTypeface(props.font);
 		
 		if(sub != null) {
 			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, props.textSize);
@@ -710,19 +692,4 @@ class PlayListAdapter extends BaseAdapter {
 	public String getPathName() {
 		return pathName;
 	}
-
-	public static Bitmap getBitmapFromAsset(Context context, String strName) {
-	    AssetManager assetManager = context.getAssets();
-
-	    InputStream istr;
-	    Bitmap bitmap = null;
-	    try {
-	        istr = assetManager.open(strName);
-	        bitmap = BitmapFactory.decodeStream(istr);
-	    } catch (IOException e) {
-	        return null;
-	    }
-
-	    return bitmap;
-	}			
 }

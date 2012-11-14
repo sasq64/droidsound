@@ -11,7 +11,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
-import java.util.List;
 import java.util.Map;
 
 import android.app.Activity;
@@ -60,10 +59,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.osbcp.cssparser.CSSParser;
-import com.osbcp.cssparser.PropertyValue;
-import com.osbcp.cssparser.Rule;
-import com.osbcp.cssparser.Selector;
+import com.ssb.droidsound.ThemeManager.Property;
 import com.ssb.droidsound.database.CSDBParser;
 import com.ssb.droidsound.database.MediaSource;
 import com.ssb.droidsound.database.SongDatabase;
@@ -76,7 +72,7 @@ import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 import com.ssb.droidsound.utils.Unzipper;
 import com.ssb.droidsound.utils.Utils;
-import com.viewpagerindicator.PageIndicator;
+import com.viewpagerindicator.TitlePageIndicator;
 //import android.os.PowerManager;
 
 @SuppressWarnings("deprecation") // No fragment support 
@@ -179,6 +175,7 @@ public class PlayerActivity extends Activity  {
 	private RingToneCreator ringToneCreator;
 	private PlayScreen playScreen;
 	//private LinearLayout landscapeLayout;
+	private TitlePageIndicator titleIndicator;
 
 	protected void finalize() throws Throwable {
 		Log.d(TAG, "########## Activity finalize");
@@ -430,7 +427,7 @@ public class PlayerActivity extends Activity  {
 		vp.setPageMargin(pixels);
 		//vp.setPageMarginDrawable(0x444444);
 		
-		PageIndicator titleIndicator = (PageIndicator)findViewById(R.id.titles);
+		titleIndicator = (TitlePageIndicator)findViewById(R.id.titles);
 		flipper = new Pager(vp, titleIndicator);
 		
 		
@@ -546,31 +543,7 @@ public class PlayerActivity extends Activity  {
 		state.ttsStatus = TTS_UNCHECKED;
 		
 		player = new PlayerServiceConnection();
-		
-		ThemeManager tm = ThemeManager.getInstance();
-		
-		File droidDir = new File(Environment.getExternalStorageDirectory(), "droidsound");
-		if(!tm.loadTheme(new File(droidDir, "gui.css")))		
-			tm.loadTheme(Utils.readAsset(this, "gui.css"), null);
-		
-
-		try {
-			List<Rule> rules = CSSParser.parse("div { width: 100px; -mozilla-opacity: 345; }");
-			for(Rule r : rules) {
-				List<Selector> selectors = r.getSelectors();
-				for(Selector s : selectors) {
-					System.out.printf("%s\n", s.toString());
-				}
-				List<PropertyValue> vals = r.getPropertyValues();
-				for(PropertyValue p : vals) {
-					System.out.printf("%s = %s\n", p.getProperty(), p.getValue());
-				}
 				
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		//ViewGroup ps = (ViewGroup) findViewById(R.id.play_screen);
 		playScreen = new PlayScreen(state, player, this);
 		
@@ -588,7 +561,43 @@ public class PlayerActivity extends Activity  {
 		setContentView(R.layout.player);
 		setupNormal();
 
-
+		ThemeManager tm = ThemeManager.getInstance();
+		
+		File themeDir = new File(Environment.getExternalStorageDirectory(), "droidsound/theme");
+		if(!tm.loadTheme(this, new File(themeDir, "gui.css")))		
+			tm.loadTheme(this, Utils.readAsset(this, "gui.css"), null);
+		
+		final View rootView = this.getWindow().getDecorView();
+			
+		tm.manageView("root", rootView);
+		
+		tm.registerListener("flipper", new ThemeManager.SelectorListener() {
+			@Override
+			public void propertyChanged(Property property) {
+				if(property.isNamed("background-color")) {
+					int color = property.getColor();
+					titleIndicator.setBackgroundColor(color);
+				} else if(property.isNamed("text-color")) {
+					int color = property.getColor();
+					titleIndicator.setTextColor(color);
+				} else if(property.isNamed("hilight-color")) {
+					int color = property.getColor();
+					titleIndicator.setSelectedColor(color);
+				} else if(property.isNamed("footer-color")) {
+					int color = property.getColor();
+					titleIndicator.setFooterColor(color);
+				}
+			}
+		});
+		
+		
+		tm.manageView("browser-header", playlistBar);
+		tm.manageView("browser-header.title", dirText);
+		tm.manageView("browser-header.subtitle", pathText);
+		
+		tm.manageView("search-header", searchBar);
+		tm.manageView("search-header.title", searchTitle);
+		tm.manageView("search-header.subtitle", searchSubtitle);
 		
 		//flipper.addView(playListView);
 		//flipper.addView(playScreen.getView());

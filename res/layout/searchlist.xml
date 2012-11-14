@@ -25,7 +25,6 @@
                 android:paddingTop="4dp"
                 android:singleLine="true"
 				android:textColor="#FFFFFFFF"
-				android:background="#FF800000"
 				android:textSize="20dp"
                 android:textStyle="bold" />
 
@@ -38,7 +37,6 @@
                 android:ellipsize="start"
                 android:singleLine="true"
                 android:textColor="#FFFFFFFF"
-				android:background="#FF800000"
                 android:textSize="15dp" />
         </LinearLayout>
 

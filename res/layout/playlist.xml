@@ -7,6 +7,7 @@
 
     <LinearLayout
         	android:id="@+id/title_bar"
+			android:background="#FF000080"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical" >
@@ -20,7 +21,6 @@
 		android:text="Title"		
 		android:singleLine="true"
 		android:textColor="#FFFFFFFF"
-		android:background="#FF000080"
 		android:textSize="20dp"
 		android:textStyle="bold" />
 
@@ -34,7 +34,6 @@
 		android:ellipsize="start"
 		android:singleLine="true"
 		android:textColor="#FFFFFFFF"
-		android:background="#FF000080"
 		android:textSize="15dp" />
 
 	</LinearLayout>
@@ -48,7 +47,7 @@
 		itemColor="#ffffffff"
 		subitemColor="#ffa0a0ff"
 		android:fastScrollEnabled="true" />
-		<!-- android:background="#ff000000"
-		android:cacheColorHint="#ff000000"  -->
+		<!-- android:background="#ff000000" -->
+		
 		
 </LinearLayout>

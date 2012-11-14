@@ -50,7 +50,7 @@ public class PlayListView extends ListView { //extends TouchListView {
 			}
 		}
 
-		adapter = new PlayListAdapter(context, dirColor, archiveColor, itemColor, subitemColor);
+		adapter = new PlayListAdapter(this, context, dirColor, archiveColor, itemColor, subitemColor);
 		setAdapter(adapter);
 
 	}

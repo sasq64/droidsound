@@ -1,8 +1,6 @@
 package com.ssb.droidsound;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -14,7 +12,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.FileObserver;
@@ -80,9 +77,9 @@ public class PlayScreen {
 
 	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
 
-	private File htmlDir;
+	private File themeDir;
 	private File templateDir;
-	private File dataDir;
+	//private File dataDir;
 
 	private Map<String, String> templates = new HashMap<String, String>();
 
@@ -94,6 +91,12 @@ public class PlayScreen {
 
 	private File artworkFile;
 	private int aCounter = 0;
+
+	private View controls;
+
+	private TextView controlSeparator;
+
+	private File tempDir;
 
 
 
@@ -154,6 +157,8 @@ public class PlayScreen {
 		LayoutInflater inflater = (LayoutInflater)activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		parent = (ViewGroup) inflater.inflate(R.layout.info, null);
 	
+		controls = parent.findViewById(R.id.controls);
+		
 		stopButton = (ImageButton) parent.findViewById(R.id.stop_button);
 		playButton = (ImageButton) parent.findViewById(R.id.play_button);
 		backButton = (ImageButton) parent.findViewById(R.id.back_button);
@@ -169,22 +174,43 @@ public class PlayScreen {
 		//repeatText.setText("CONT");
 		plusText = (TextView) parent.findViewById(R.id.plus_text);
 		
+		controlSeparator = (TextView) parent.findViewById(R.id.low_text);
+		
 		infoText = (WebView) parent.findViewById(R.id.web_view);		
 		infoText.getSettings().setJavaScriptEnabled(true);
 		jsInterface = new JSInterface(variables);		
 		infoText.addJavascriptInterface(jsInterface, "info");
 		//infoText.addJavascriptInterface(songInfo, "info");
 		
+		ThemeManager tm = ThemeManager.getInstance();
+		
+		if(controlSeparator != null)
+			tm.manageView("control-separator", controlSeparator);
+		
+		tm.manageView("controls", controls);
+		tm.manageView("controls.seconds", songSecondsText);
+		tm.manageView("controls.total", songTotalText);
+		tm.manageView("controls.subtunes", songSubtunesText);
+		tm.manageView("controls.shuffle", shuffleText);
+		tm.manageView("controls.repeat", repeatText);
+		tm.manageView("controls.plus", plusText);
+		tm.manageView("controls.stop", stopButton);
+		tm.manageView("controls.play", playButton);
+		tm.manageView("controls.forward", fwdButton);
+		tm.manageView("controls.back", backButton);
+		tm.manageView("controls.seekbar", songSeeker);
 
 		infoText.loadData(empty, "text/html", "utf-8");
 		
 		defTemplate = Utils.readAsset(activity, "templates/def.html");
 		streamTemplate = Utils.readAsset(activity, "templates/stream.html");
 		
-		htmlDir = new File(Environment.getExternalStorageDirectory(), "droidsound/html");
-		templateDir = new File(htmlDir, "templates");
-		dataDir = new File(htmlDir, "data");
-		if(!htmlDir.exists())
+		themeDir = new File(Environment.getExternalStorageDirectory(), "droidsound/theme");
+		templateDir = new File(themeDir, "templates");
+		tempDir = new File(Environment.getExternalStorageDirectory(), "droidsound/tmp");
+		tempDir.mkdir();
+		//dataDir = new File(htmlDir, "data");
+		/*if(!htmlDir.exists())
 			htmlDir.mkdir();
 		if(!templateDir.exists()) {
 			templateDir.mkdir();
@@ -198,7 +224,7 @@ public class PlayScreen {
 			}		
 		}
 		if(!dataDir.exists())
-			dataDir.mkdir();
+			dataDir.mkdir(); */
 		
 
 		final Handler handler = new MyHandler(this);
@@ -537,7 +563,7 @@ public class PlayScreen {
 				//state.artWork = BitmapFactory.decodeByteArray(bindata,  0,  bindata.length);
 				if(artworkFile != null)
 					artworkFile.delete();
-				artworkFile = new File(dataDir,  "artwork" + String.valueOf(aCounter) + ext);
+				artworkFile = new File(tempDir,  "artwork" + String.valueOf(aCounter) + ext);
 				aCounter++;
 				Utils.dumpFile(artworkFile, bindata);
 				data.put("artwork", "file:" + artworkFile.getPath());
@@ -661,13 +687,15 @@ public class PlayScreen {
 	
 	public boolean updateHtml() {
 		
-		if(!templateDir.exists())
-			templateDir.mkdirs();
+		//templateDir.mkdirs();
 		boolean changed = false;
 		templates.clear();
 		templates.put("STREAM", streamTemplate);
 		templates.put("DEF", defTemplate);
-		
+
+		if(!templateDir.exists())
+			return false;
+
 		for(File f : templateDir.listFiles()) {
 			String parts[] = f.getName().split("\\.");
 			if(parts.length == 2 && parts[1].toLowerCase().equals("html")) {
@@ -740,7 +768,7 @@ public class PlayScreen {
 	private void updateInfo() {
 		
 		variables.clear();
-		variables.put("DATAPATH", "file://" + dataDir.getPath() + "/");
+		variables.put("THEMEDIR", "file://" + themeDir.getPath() + "/");
 		if(state.songDetails != null) {
 			
 			StringBuilder all = new StringBuilder();

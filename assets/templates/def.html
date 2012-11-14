@@ -3,18 +3,23 @@ body {
 	color: #ffffff; background-color: #000000; margin:0; padding:0;
 }
 
+.songhead {
+	background: -webkit-linear-gradient(top, #2F2727, #1a82f7);
+	height: 4.5em;
+}
+
 .title {
-	color: #ffffff; background-color: #000080; font-weight:bold; font-size:16pt; text-overflow: ellipsis; overflow: hidden;
+	color: #ffffff; font-weight:bold; font-size:16pt; text-overflow: ellipsis; overflow: hidden;
 	white-space: nowrap; padding: 2pt; height: 1.4em
 }
 
 .subtitle {
-	color: #ffffff; background-color: #000080; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+	color: #ffffff;  text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
 	padding: 2pt; height: 1.4em
 }
 
 .infotitle {
-	color: #ffffff; background-color: #8888ff; font-size:10pt; text-overflow: ellipsis; overflow: hidden;
+	color: #ffffff; background-color: #000000; font-size:10pt; text-overflow: ellipsis; overflow: hidden;
 	white-space: nowrap; padding-top: 1pt; padding-left: 2pt; height: 1.4em
 }
 
@@ -29,8 +34,10 @@ body {
 </style>
 
 </head><body>
+<div class="songhead">
 <div class="title">${title}</div>
 <div class="subtitle">${composer}</div>
+</div>
 <div class="infotitle">${song_source}</div>
 
 ${if copyright}
