@@ -258,12 +258,16 @@ public class ThemeManager {
 	private Context mContext;
 	private Map<Rule, List<Property>> ruleMap;
 
-	private ThemeManager() {
+	private ThemeManager() {}
+	
+	public void init() {
 		listeners = new HashMap<String, List<SelectorListener> >();
 		basePath = null;
 		fontCache = new HashMap<String, Typeface>();
 		managedViews = new LinkedHashMap<String, View>();
 	}
+
+	
 	
 	public void registerListener(String pattern, SelectorListener sl) {
 		List<SelectorListener> l = listeners.get(pattern);
@@ -490,14 +494,7 @@ public class ThemeManager {
 		updateViews();
 		return true;
 	}
-	
-	public void clear() {
-		cssRules = null;
-		ruleMap = null;
-		managedViews = null;
-		propMap = null;		
-	}
-	
+		
 	private void parseCss(String css) {
 		
 		try {

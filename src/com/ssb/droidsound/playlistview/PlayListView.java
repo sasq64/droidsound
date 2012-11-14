@@ -179,5 +179,9 @@ public class PlayListView extends ListView { //extends TouchListView {
 		return adapter.getPath(position);
 	}
 
+	public void init() {
+		adapter.init();
+	}
+
 	
 }

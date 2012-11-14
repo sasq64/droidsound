@@ -66,7 +66,6 @@ class PlayListAdapter extends BaseAdapter {
 	private String [] years;
 
 	private Map<String, ItemProps> propMap;
-	private Map<String, Typeface> fontCache;
 
 	public int dividerColor;
 
@@ -244,9 +243,10 @@ class PlayListAdapter extends BaseAdapter {
 		
 		//icons = new Bitmap [32];
 		
+	}
+	
+	public void init() {
 		propMap = new HashMap<String, ItemProps>();
-		fontCache = new HashMap<String, Typeface>();
-		
 		final ThemeManager tm = ThemeManager.getInstance();
 		final File baseDir = tm.getBaseDir();
 		tm.registerListener("item", new ThemeManager.SelectorListener() {			

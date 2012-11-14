@@ -543,33 +543,24 @@ public class PlayerActivity extends Activity  {
 		state.ttsStatus = TTS_UNCHECKED;
 		
 		player = new PlayerServiceConnection();
-				
-		//ViewGroup ps = (ViewGroup) findViewById(R.id.play_screen);
-		playScreen = new PlayScreen(state, player, this);
 		
-		//LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-		//ViewGroup pl = (ViewGroup) inflater.inflate(R.layout.playlist, null);
-		//playListView = (PlayListView) pl.findViewById(R.id.play_list);				
-		
-		//ViewGroup sl = (ViewGroup) inflater.inflate(R.layout.searchlist, null);
-		//searchListView = (PlayListView) sl.findViewById(R.id.search_list);
-		
-		//setupLandscape();
-		//setContentView(landscapeLayout);
-	
-		setContentView(R.layout.player);
-		setupNormal();
-
 		ThemeManager tm = ThemeManager.getInstance();
-		
+		tm.init();
+
 		File themeDir = new File(Environment.getExternalStorageDirectory(), "droidsound/theme");
 		if(!tm.loadTheme(this, new File(themeDir, "gui.css")))		
 			tm.loadTheme(this, Utils.readAsset(this, "gui.css"), null);
+
+				
+		playScreen = new PlayScreen(state, player, this);
+	
+		setContentView(R.layout.player);
+		setupNormal();
 		
-		final View rootView = this.getWindow().getDecorView();
-			
-		tm.manageView("root", rootView);
+		playListView.init();
+		searchListView.init();
+		
+		tm.manageView("root", getWindow().getDecorView());
 		
 		tm.registerListener("flipper", new ThemeManager.SelectorListener() {
 			@Override
