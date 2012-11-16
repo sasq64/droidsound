@@ -24,6 +24,7 @@ import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.webkit.JsResult;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
@@ -268,6 +269,7 @@ public class PlayScreen {
         		 return true;
         		
         	}
+        	
         };
         infoText.setWebViewClient(client);
         
@@ -830,6 +832,8 @@ public class PlayScreen {
 		
 		variables.put("width", infoText.getWidth());
 		variables.put("height", infoText.getHeight());
+		
+		variables.put("themeCSS", ThemeManager.getInstance().getCSS());
 		
 		if(variables.containsKey("webpage")) {
 			//jsInterface.listenMap.clear();

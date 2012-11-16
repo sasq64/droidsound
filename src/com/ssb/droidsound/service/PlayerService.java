@@ -28,6 +28,9 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.speech.tts.TextToSpeech;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
+import android.support.v4.app.TaskStackBuilder;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 
@@ -510,7 +513,7 @@ public class PlayerService extends Service implements PlayerInterface {
        		//info.put(SongMeta.FILENAME, song.getPath());
        		createThread();
 
-       		beforePlay(song.getName());
+       		beforePlay(song.getFullTitle());
        		player.playMod(song);
        		return true;
     	}
@@ -540,14 +543,14 @@ public class PlayerService extends Service implements PlayerInterface {
        		song = playQueue.current();
        		//info.put(SongMeta.FILENAME, song.getPath());
        		createThread();
-       		beforePlay(song.getName());
+       		beforePlay(song.getFullTitle());
        		player.playMod(song);
        		return true;
     	}
 		return false;
     }
   
-	private Notification notification;
+	//private Notification notification;
 
 	private PendingIntent contentIntent;
 
@@ -558,6 +561,8 @@ public class PlayerService extends Service implements PlayerInterface {
 	protected String playListName;
 
 	protected int callState = TelephonyManager.CALL_STATE_IDLE;
+
+	private Builder notificationBuilder;
 
     
 	@TargetApi(8)
@@ -655,20 +660,23 @@ public class PlayerService extends Service implements PlayerInterface {
 			remoteControl = new RemoteControlWrapper(this, myEventReceiver); 
 		if(hasAudioFocus)
 			afWrapper = new AudioFocusWrapper(this, player);
-		
-		notification = new Notification(R.drawable.note36, "Droidsound", System.currentTimeMillis());		
-		Intent notificationIntent = new Intent(this, PlayerActivity.class);
+
+		notificationBuilder = new NotificationCompat.Builder(this).setSmallIcon(R.drawable.note36).setContentTitle("Droidsound").setContentText("");
+
+		Intent notificationIntent = new Intent(this, PlayerActivity.class);		
 		contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, 0);
-	    notification.setLatestEventInfo(this, "Droidsound", "Playing", contentIntent);
-	    
+		notificationBuilder.setContentIntent(contentIntent);		
+
 	    playerInterface = this;
 	    
 	}
-	
-	@SuppressWarnings("deprecation")
+
 	void beforePlay(String name) {
-		notification.setLatestEventInfo(this, "Droidsound", name, contentIntent);
+
+		notificationBuilder.setContentText(name);
+		Notification notification = notificationBuilder.build();		
 		startForeground(R.string.notification, notification);
+
 		//AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 		//am.requestAudioFocus(this, AudioManager.STREAM_MUSIC,  AudioManager.AUDIOFOCUS_GAIN);
 		if(hasAudioFocus)
@@ -725,7 +733,7 @@ public class PlayerService extends Service implements PlayerInterface {
 						Log.d(TAG, "Want to play list with " + song.getPath());
 						//info.put(SongMeta.FILENAME, song.getPath());
 						playListName = "";
-						beforePlay(song.getName());
+						beforePlay(song.getFullTitle());
 						player.playMod(song);
 					}
 				} else {
@@ -735,7 +743,7 @@ public class PlayerService extends Service implements PlayerInterface {
 					//info[SongMeta.FILENAME] = uri.getLastPathSegment();
 					//info.put(SongMeta.FILENAME, uri.getLastPathSegment());
 					SongFile song = new SongFile(intent.getDataString());
-					beforePlay(song.getName());
+					beforePlay(song.getFullTitle());
 					player.playMod(song);
 				}
 			}
@@ -771,7 +779,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			//info[SongMeta.FILENAME] = name;
 			//info.put(SongMeta.FILENAME, name);
 			SongFile song = new SongFile(name);
-			beforePlay(song.getName());			
+			beforePlay(song.getFullTitle());			
 			player.playMod(song);
 			return true;
 		}
@@ -824,7 +832,7 @@ public class PlayerService extends Service implements PlayerInterface {
 	           		//info[SongMeta.FILENAME] = s.getPath();
 	           		//info.put(SongMeta.FILENAME, s.getPath());
 	           		createThread();
-	    			beforePlay(s.getName());			
+	    			beforePlay(s.getFullTitle());			
 	           		player.playMod(s);
 	           		return true;
 	    		}
@@ -976,7 +984,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			playListName = name;
 						
 
-			beforePlay(mod.getName());
+			beforePlay(mod.getFullTitle());
 			player.playMod(mod);
 	    	//info[SongMeta.REPEAT] = defaultRepeatMode;
 	    	//player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
@@ -1022,7 +1030,7 @@ public class PlayerService extends Service implements PlayerInterface {
 //			/info[SongMeta.FILENAME] = song.getPath();
 			//info.put(SongMeta.FILENAME, song.getPath());
 			playListName = "";
-			beforePlay(song.getName());
+			beforePlay(song.getFullTitle());
 			player.playMod(song);
 	    	//info[SongMeta.REPEAT] = defaultRepeatMode;
 	    	//player.setLoopMode(repeatMode != RM_CONTINUE ? 1 : 0);
@@ -1068,7 +1076,7 @@ public class PlayerService extends Service implements PlayerInterface {
 			//info[SongMeta.FILENAME] = modName;
 			info.put(SongMeta.FILENAME, modName);
 			SongFile song = new SongFile(modName);
-			//beforePlay(song.getName());			
+			//beforePlay(song.getFullTitle());			
 			player.dumpWav(song, destFile, length, flags);
 			
 			return false;

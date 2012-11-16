@@ -244,4 +244,13 @@ public class SongFile {
 		return file.delete();
 	}
 
+	public String getFullTitle() {
+		if(title != null) {
+			if(composer != null)
+				return composer + " - " + title;
+			return title;
+		}
+		return fileName;
+	}
+
 }

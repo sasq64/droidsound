@@ -134,6 +134,8 @@ public class ThemeManager {
 			}
 			else {				
 				String[] what = data.split("[\\(,\\s\\)]+");
+				if(what[0].startsWith("-webkit-"))
+					what[0] = what[0].substring(8);
 				if(what[0].equals("linear-gradient") || what[0].equals("radial-gradient")) {
 					
 					int [] colors = new int [ what.length - 2];
@@ -257,6 +259,7 @@ public class ThemeManager {
 
 	private Context mContext;
 	private Map<Rule, List<Property>> ruleMap;
+	private String css;
 
 	private ThemeManager() {}
 	
@@ -453,10 +456,14 @@ public class ThemeManager {
 	};
 	
 	private void reload() {
-		String css = Utils.readFile(themeFile);
+		this.css = Utils.readFile(themeFile);
 		parseCss(css);
 		sendAllChanges();
 		updateViews();
+	}
+	
+	public String getCSS() {
+		return css;
 	}
 
 
@@ -489,6 +496,7 @@ public class ThemeManager {
 	
 	public boolean loadTheme(Context ctx, String css, String templateDir) {
 		mContext = ctx;
+		this.css = css;
 		parseCss(css);
 		sendAllChanges();
 		updateViews();
