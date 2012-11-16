@@ -158,14 +158,19 @@ public class PlayerService extends Service implements PlayerInterface {
 			}
 			speakTitle();
 		}
-
-		String [] updates;
 		
 		if(newsong)
-			updates = mapToArray(info);
+			sendUpdates(info, newsong);
 		else
-			updates = mapToArray(changed);
+			sendUpdates(changed, newsong);
 		
+	}
+		
+	
+	private void sendUpdates(Map<String, Object> info, boolean newsong) {
+
+		String [] updates = mapToArray(info);
+
 		if(updates.length == 0)
 			return;
 
@@ -338,7 +343,8 @@ public class PlayerService extends Service implements PlayerInterface {
 			switch (msg.what) {
 			case Player.MSG_WAVDUMPED:
 				ps.info.put(SongMeta.FILENAME, msg.obj);
-				ps.updateInfo(false);
+				//ps.updateInfo(false);
+				ps.sendUpdates(ps.info, false);
 				ps.info.put(SongMeta.FILENAME, null);
 				break;
 			case Player.MSG_DETAILS:

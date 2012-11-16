@@ -144,8 +144,10 @@ public class Player implements Runnable {
 		startSong(song, true);
 		
 		audioPlayer.stop();
+		
+		int bufferSize = 1024*64;
 
-		byte [] bbuffer = new byte [dataSize * 8];
+		byte [] bbuffer = new byte [bufferSize * 8];
 		
 		int numSamples = (int)(((long)length * FREQ) / 1000);
 
@@ -200,8 +202,8 @@ public class Player implements Runnable {
 		int bytesWritten = 0;
 		while(sampleCount < numSamples) {
 			// In and out are number of shorts, not number of samples (2 bytes vs 4 bytes in 16bit stereo)
-			int len = currentPlugin.getSoundData(samples, dataSize);
-			Log.d(TAG, "READ %d (%d)", len, dataSize);
+			int len = currentPlugin.getSoundData(samples, bufferSize);
+			Log.d(TAG, "READ %d (%d)", len, bufferSize);
 			if(len < 0) {
 				wavSamples = sampleCount / divider;
 				dataSize = wavSamples * numChannels * 16/8;
