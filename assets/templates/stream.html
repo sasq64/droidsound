@@ -10,24 +10,6 @@ body {
 	margin-left: auto; margin-right: auto;
 }
 
-.subtitle {
-	color: #ffffff; background-color: #000080; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
-	padding: 2pt; height: 1.4em
-}
-
-.infotitle {
-	color: #ffffff; background-color: #8888ff; font-size:10pt; text-overflow: ellipsis; overflow: hidden;
-	white-space: nowrap; padding-top: 1pt; padding-left: 2pt; height: 1.4em
-}
-
-.heading {
-	color: #ffff88; font-weight:bold;
-}
-
-.comment {
-	color: #99aaff; white-space: pre-wrap;
-}
-
 .playing {
 	background-color: black;
 	padding: 10pt;
@@ -38,11 +20,9 @@ body {
 	color: #ffff88;
 	font-size: 16pt;
 }
-
 </style>
-
-</head><body>
-
+</head>
+<body>
 ${if name}
 <div class="title">${name}</div>
 ${else}
@@ -56,9 +36,7 @@ NOW PLAYING<br/>
 <span id="composer">${composer}</span>
 </div>
 ${end}
-BITRATE:<span id="bitrate">${bitrate}</span>
 
-<div class="comment">
-</div>
+BITRATE:<span id="bitrate">${bitrate}</span>
 
 </html></body>

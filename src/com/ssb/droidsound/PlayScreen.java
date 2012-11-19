@@ -247,6 +247,14 @@ public class PlayScreen {
 		};
 		observer.startWatching();
 		updateHtml();
+		
+		ThemeManager.getInstance().onChange(new ThemeManager.ChangeListener() {
+			@Override
+			public void themeChanged() {
+				Message msg = handler.obtainMessage(0);
+				handler.sendMessage(msg);
+			}
+		});
 				
         WebViewClient client = new WebViewClient() {
         	/*@Override

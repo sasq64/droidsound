@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
@@ -24,6 +23,7 @@ import android.graphics.drawable.StateListDrawable;
 import android.os.FileObserver;
 import android.os.Handler;
 import android.os.Message;
+import android.util.DisplayMetrics;
 import android.util.StateSet;
 import android.util.TypedValue;
 import android.view.View;
@@ -40,6 +40,8 @@ import com.osbcp.cssparser.Selector;
 import com.ssb.droidsound.utils.Utils;
 
 public class ThemeManager {
+	@SuppressWarnings("unused")
+	private static final String TAG = ThemeManager.class.getSimpleName();
 	
 	public static class Property {
 		private String name;
@@ -170,6 +172,8 @@ public class ThemeManager {
 		
 		public float getSize() {
 			
+			DisplayMetrics metrics =  tm.mContext.getResources().getDisplayMetrics();
+			
 			if(data.equals("match"))
 				return LayoutParams.MATCH_PARENT;
 			else if(data.equals("wrap"))
@@ -184,13 +188,15 @@ public class ThemeManager {
 			
 			float px = (int) size;
 			
-			Resources r = tm.mContext.getResources();
 			if(unit.equals("dp"))
-				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size, r.getDisplayMetrics());
+				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size, metrics);
 			else if(unit.equals("pt"))
-				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PT, size, r.getDisplayMetrics());
+				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PT, size, metrics);
 			else if(unit.equals("sp"))
-				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, r.getDisplayMetrics());
+				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, metrics);
+			
+			
+			//Log.d(TAG, "%s GETSIZE: %s => %d %s => %d", name, data, size, unit, (int)px);
 			
 			return px;
 		}
@@ -237,6 +243,11 @@ public class ThemeManager {
 		void propertyChanged(Property property);
 	}
 	
+	public static interface ChangeListener {
+		void themeChanged();
+	}
+
+	
 	private static ThemeManager __instance;
 	
 	public static ThemeManager getInstance() {
@@ -245,7 +256,6 @@ public class ThemeManager {
 		return __instance;
 	}
 
-	private Map<String, List<Property> > propMap;
 	private Map<String, Typeface> fontCache;
 	private Map<String, View> managedViews;
 		
@@ -260,13 +270,17 @@ public class ThemeManager {
 	private Context mContext;
 	private Map<Rule, List<Property>> ruleMap;
 	private String css;
+	private List<ChangeListener> changeListeners;
 
-	private ThemeManager() {}
+	private ThemeManager() {
+		fontCache = new HashMap<String, Typeface>();
+	}
 	
 	public void init() {
 		listeners = new HashMap<String, List<SelectorListener> >();
+		changeListeners = new ArrayList<ChangeListener>();
 		basePath = null;
-		fontCache = new HashMap<String, Typeface>();
+		cssRules = null;
 		managedViews = new LinkedHashMap<String, View>();
 	}
 
@@ -368,7 +382,7 @@ public class ThemeManager {
 			ok = true;
 			TextView tv = (TextView) view;
 			if(p.isNamed("font-size"))
-				tv.setTextSize(p.getSize());
+				tv.setTextSize(TypedValue.COMPLEX_UNIT_PX, p.getSize());
 			else if(p.isNamed("color"))
 				tv.setTextColor(p.getColor());
 			else if(p.isNamed("font"))
@@ -440,7 +454,12 @@ public class ThemeManager {
 		for(Entry<String, List<SelectorListener> > e : listeners.entrySet()) {
 			for(SelectorListener sl : e.getValue()) 
 				sendChanges(e.getKey(), sl);
-		}		
+		}
+		
+		for(ChangeListener cl : changeListeners) {
+			cl.themeChanged();
+		}
+		
 	}
 	
 	private static class MyHandler extends Handler {
@@ -482,7 +501,7 @@ public class ThemeManager {
 		observer = new FileObserver(basePath.getPath(), FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.CREATE) {			
 			@Override
 			public void onEvent(int event, String path) {
-				if(path.endsWith("gui.css")) {
+				if(path != null && path.endsWith("gui.css")) {
 					Message msg = handler.obtainMessage(0);
 					handler.sendMessage(msg);
 				}
@@ -521,7 +540,7 @@ public class ThemeManager {
 			}
 
 			
-			for(Rule r : cssRules) {
+			/*for(Rule r : cssRules) {
 				List<Selector> selectors = r.getSelectors();
 				for(Selector s : selectors) {
 					System.out.printf("%s\n", s.toString());
@@ -532,7 +551,8 @@ public class ThemeManager {
 					//System.out.printf("%s = %s\n", p.getProperty(), p.getValue());
 				}
 				
-			}
+			}*/
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -540,6 +560,10 @@ public class ThemeManager {
 	}
 	public File getBaseDir() {
 		return basePath;
+	}
+
+	public void onChange(ChangeListener changeListener) {
+		changeListeners.add(changeListener);
 	}
 	
 }

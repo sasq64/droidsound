@@ -1,15 +1,22 @@
 
+/************************************** DROIDSOUND GUI FAKE CSS *********************************************/
 
+/* This first part of the CSS is used to theme the android GUI. It is NOT compatible with real css. */
+
+
+/* Application default colors */
 root {
 	background-color : #000000;	
 	text-color : #ffffff;
 }
 
+/* Top view flipper */
 flipper {
 	hilight-color : #ffffff;	
 	footer-color : #33B5E5;
 }
 
+/* Browser header (Displaying current directory) */
 browser-header {
 	color: #ffffff;
 	background: -webkit-linear-gradient(top, #2F2727, #1a82f7);
@@ -18,13 +25,14 @@ browser-header {
 
 browser-header.title {
 	font-weight:bold;
-	font-size:"14sp";
+	font-size:"28sp";
 }
 
 browser-header.subtitle {
-	font-size: "8sp";
+	font-size: "16sp";
 }
- 
+
+/* Search header (Displaying current search) */
 search-header {
 	color: #ffffff;
 	background: -webkit-linear-gradient(top, #27272f, #f7271a);
@@ -33,22 +41,27 @@ search-header {
 
 search-header.title {
 	font-weight:bold;
-	font-size:14sp;
+	font-size:28sp;
 }
 
 search-header.subtitle {
-	font-size:8sp;
+	font-size:16sp;
 }
 
+/* Separating line between play info and controls */
 control-separator {
 	background-color: #33B5E5;
 	height: 2dp;
 }
  
+/* Play controls */
+ 
+ 
+/* Parent (default) settings for all play controls */
 controls {
 	font : "fonts/led.ttf";
 	color : #8080c0;
-	font-size : 14dp;
+	font-size : 24dp;
 }
 
 controls.seconds {
@@ -68,10 +81,9 @@ controls.repeat {
 	color : #80c0c0;
 }
 
-
 controls.plus {
 	color : #ff6060;
-	font-size: 20dp;
+	font-size: 36dp;
 }
 
 controls.forward {
@@ -96,11 +108,21 @@ controls.pause {
 
 controls.seekbar {
 	progress-background: linear-gradient(left, #404060, #404040);
+	/*thumb-image: img/mg_stop.png;*/
 }
 
 
-/* PLAYLIST ITEM TEMPLATES */
+/* Playlist item templates;
 
+-----------------------------
+TEXT
+subtext              sidetext
+-----------------------------    <-- divider
+TEXT
+subtext              sidetext
+*/
+
+/* Default for all items */
 item {
 	color : #ffffff;
 
@@ -113,9 +135,11 @@ item {
 	sub-font-size : "14sp";
 	side-font-size : "10sp";
 	
-	/*divider: #cccccc; */
+	divider: #555555;
 	
 }
+
+/* Settings for specific file types */
 
 item.folder {
 	font-size: "20sp";
@@ -165,13 +189,58 @@ item:hilight {
 }
 
 
-/*** WEB CSS FOR TEMPLATES ***/
+/************************************** WEB CSS FOR TEMPLATES *********************************************/
+
+/* This is used by a real webview - use any webkit compatible css */
+
+body {
+	color: #ffffff;
+	background-color: #000000;
+	margin:0;
+	padding:0;
+}
 
 .song-header {
 	color: #ffffff;
-	background: -webkit-linear-gradient(top, #2F2727, #1a8200);
+	background-color:  #2040a0;
+	background: -webkit-linear-gradient(top, #2F2727, #1a82f7);
 	padding-left: 2dp;	
 	height: 4.3em; 
 }
 
 
+.title {
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden;
+	font-weight:bold;
+	font-size:16pt; 
+	padding-left: 4pt;
+	padding-top: 4pt;
+}
+
+.subtitle {
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow: hidden; 
+	padding-left: 4pt;
+	padding-bottom: 4pt;
+	padding-top: 4pt;
+}
+
+.infotitle {
+	color: #ffffff;
+	background-color: #000000;
+	height: 2px;
+}
+
+.heading {
+	color: #ffff88;
+	font-weight:bold;
+}
+
+.comment {
+	color: #99aaff;
+	white-space: pre-wrap;
+	font-family: monospace;
+}
