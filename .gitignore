@@ -4,8 +4,9 @@ obj
 local.properties
 .project
 .cproject
+libs/x86
+libs/mips
 libs/armeabi
-<<<<<<< HEAD
-=======
 libs/armeabi-v7a
->>>>>>> simplify
+jni/.externalToolBuilders
+.pydevproject

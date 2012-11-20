@@ -51,6 +51,7 @@
 <string name="prev">Previous</string>
 <string name="stop">Stop</string>
 <string name="play">Play</string>
+<string name="pause">Pause</string>
 
 <!-- 
 <string name="hvsc_desc">The High Voltage Sid Collection (230 MB)</string>

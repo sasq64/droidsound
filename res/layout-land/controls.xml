@@ -63,6 +63,14 @@
             android:contentDescription="@string/play"/>
 
         <ImageButton
+            android:id="@+id/pause_button"
+            style="@style/Button"
+            android:visibility="gone"
+            android:background="@drawable/pause_button"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/pause"/>
+        
+        <ImageButton
             android:id="@+id/stop_button"
             style="@style/Button"
             android:background="@drawable/stop_button"

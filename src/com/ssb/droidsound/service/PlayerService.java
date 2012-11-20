@@ -30,7 +30,6 @@ import android.os.RemoteException;
 import android.speech.tts.TextToSpeech;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
-import android.support.v4.app.TaskStackBuilder;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 
@@ -566,7 +565,6 @@ public class PlayerService extends Service implements PlayerInterface {
 
     
 	@TargetApi(8)
-	@SuppressWarnings("deprecation") // Notifications needs to be backward compatible
 	@Override
 	public void onCreate() {
 		super.onCreate();

@@ -1,8 +1,6 @@
 package com.ssb.droidsound;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +15,7 @@ import android.os.Environment;
 import android.os.FileObserver;
 import android.os.Handler;
 import android.os.Message;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -24,7 +23,6 @@ import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.webkit.JsResult;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageButton;
@@ -49,6 +47,7 @@ public class PlayScreen {
 	private PlayState state;
 
 	private ImageButton playButton;
+	private ImageButton pauseButton;
 	private ImageButton backButton;
 	private ImageButton fwdButton;
 	private ImageButton stopButton;
@@ -76,7 +75,7 @@ public class PlayScreen {
 	private String defTemplate;
 	private String streamTemplate;
 
-	private String empty = "<html><body style=\"background-color: #000000;\"></body></body>";
+	private String empty = "<html><body style=\"background-color: #%06x;\"></body></body>";
 
 	private File themeDir;
 	private File templateDir;
@@ -98,6 +97,8 @@ public class PlayScreen {
 	private TextView controlSeparator;
 
 	private File tempDir;
+
+	private int backgroundColor;
 
 
 
@@ -162,6 +163,7 @@ public class PlayScreen {
 		
 		stopButton = (ImageButton) parent.findViewById(R.id.stop_button);
 		playButton = (ImageButton) parent.findViewById(R.id.play_button);
+		pauseButton = (ImageButton) parent.findViewById(R.id.pause_button);
 		backButton = (ImageButton) parent.findViewById(R.id.back_button);
 		fwdButton = (ImageButton) parent.findViewById(R.id.fwd_button);
 
@@ -197,11 +199,15 @@ public class PlayScreen {
 		tm.manageView("controls.plus", plusText);
 		tm.manageView("controls.stop", stopButton);
 		tm.manageView("controls.play", playButton);
+		tm.manageView("controls.pause", pauseButton);
 		tm.manageView("controls.forward", fwdButton);
 		tm.manageView("controls.back", backButton);
 		tm.manageView("controls.seekbar", songSeeker);
 
-		infoText.loadData(empty, "text/html", "utf-8");
+	
+		//infoText.loadData(String.format(empty, backgroundColor & 0xffffff), "text/html", "utf-8");
+		//infoText.getSettings();
+		//infoText.setBackgroundColor(backgroundColor);
 		
 		defTemplate = Utils.readAsset(activity, "templates/def.html");
 		streamTemplate = Utils.readAsset(activity, "templates/stream.html");
@@ -306,12 +312,14 @@ public class PlayScreen {
 		playButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				player.playPause(true);
+			}
+		});
 
-				if(state.songState == 1) {
-					player.playPause(false);
-				} else {
-					player.playPause(true);
-				}
+		pauseButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				player.playPause(false);
 			}
 		});
 
@@ -462,16 +470,18 @@ public class PlayScreen {
 			
 			
 			if(state.songState == 0) {
-				infoText.loadData(empty, "text/html", "utf-8");
+				infoText.loadData(String.format(empty, backgroundColor & 0xffffff), "text/html", "utf-8");
 				state.songLength = 0;
 				songTotalText.setText(secToString(state.songLength));
 			}
 			Log.d(TAG, "State %d", state.songState);
 			
 			if(state.songState == 1) {
-				playButton.setBackgroundResource(R.drawable.pause_button);
+				playButton.setVisibility(View.GONE);
+				pauseButton.setVisibility(View.VISIBLE);
 			} else {
-				playButton.setBackgroundResource(R.drawable.play_button);
+				playButton.setVisibility(View.VISIBLE);
+				pauseButton.setVisibility(View.GONE);
 			}
 		}
 		if(data.containsKey(SongMeta.LENGTH)) {
@@ -605,88 +615,6 @@ public class PlayScreen {
 		if(doUpdate)
 			updateInfo();
 	}
-
-	/*
-	public void intChanged(int what, int value) {
-		switch(what) {
-		case -1:
-			update();
-			break;
-		case PlayerService.SONG_STATE:
-			Log.d(TAG, "State now %d", value);
-			state.songState = value;
-			if(value == 1) {
-				playButton.setBackgroundResource(R.drawable.pause_button);
-			} else {
-				playButton.setBackgroundResource(R.drawable.play_button);
-				if(value == 0) {
-					// songTitleText.setText("");
-					// songComposerText.setText("");
-					// songCopyrightText.setText("");
-					// songSubtunesText.setText("[00/00]");
-					// songTotalText.setText("00:00");
-					// songSecondsText.setText("00:00");
-				}
-			}
-			break;
-		case PlayerService.SONG_BUFFERING:
-			if(value > 0) {
-				songSubtunesText.setText(String.format("%02d:%02d", value / 1000 / 60, (value/1000) % 60));
-			}
-			break;
-		case PlayerService.SONG_LENGTH:
-			if(value < 0) {
-				// TODO: Hide length
-				value = 0;
-				songTotalText.setVisibility(View.GONE);
-			} else {
-				songTotalText.setVisibility(View.VISIBLE);
-			}
-			state.songLength = value / 1000;
-			Log.d(TAG, "Songlength %02d:%02d", state.songLength / 60, state.songLength % 60);
-			songTotalText.setText(String.format("%02d:%02d", state.songLength / 60, state.songLength % 60));			
-			//songSeeker.setProgress(0);
-			break;
-		case PlayerService.SONG_POS:
-			if(state.seekingSong == 0) {
-				state.songPos = value / 1000;
-				songSecondsText.setText(String.format("%02d:%02d", state.songPos / 60, state.songPos % 60));
-				if(state.songLength > 0) {
-					int percent = 100 * state.songPos / state.songLength;
-					if(percent > 100) percent = 100;
-					songSeeker.setProgress(percent);
-				} else {
-					songSeeker.setProgress(0);
-				}
-			} else
-				state.seekingSong--;
-
-			break;
-		case PlayerService.SONG_SUBSONG:
-			if(value >= 0) {
-				state.subTune = value;
-				songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
-			}
-			break;
-		case PlayerService.SONG_TOTALSONGS:
-			state.subTuneCount = value;
-			songSubtunesText.setText(String.format("[%02d/%02d]", state.subTune + 1, state.subTuneCount));
-			break;
-		case PlayerService.SONG_FLAGS:
-			songSeeker.setEnabled((value & 1) != 0);
-			break;
-		case PlayerService.SONG_REPEAT:
-			state.songRepeat = value;
-			repeatText.setText(repnames[value]);
-			if(value == 1) {
-				repeatText.setTextColor(0xff80c0ff);
-			} else {
-				repeatText.setTextColor(0xff80ffc0);
-			}
-
-			break;
-		}
-	} */
 	
 	private String getString(Map<String, Object> data, String what) {
 		String s = (String) data.get(what);
@@ -720,49 +648,6 @@ public class PlayScreen {
 		}
 		return changed;
 	}
-	
-	
-/*
-	public void stringChanged(int what, String value) {
-		switch(what) {
-		case PlayerService.SONG_SOURCE:
-			Log.d(TAG, "SOURCE IS " + value);
-			state.songSource = value;
-			//if(value != null && value.length() > 0) {
-			//	plinfoText.setText(value);
-			//} else 
-			//	plinfoText.setText("");
-			break;
-		case PlayerService.SONG_TITLE:
-			Log.d(TAG, "############################## Title is %s", value);
-			state.songTitle = value;
-			state.subtuneTitle = null;
-		case PlayerService.SONG_DETAILS:
-			state.songDetails = player.getSongInfo();			
-			Log.d(TAG, "#### Got %d details", state.songDetails != null ? state.songDetails.size() : -1);
-			infoText.scrollTo(0, 0);
-			break;
-			
-		case PlayerService.SONG_SUBTUNE_TITLE:
-			Log.d(TAG, "############################## Subtunetitle is %s", value);
-			state.subtuneTitle = value;
-			if(state.subtuneTitle != null && state.subtuneTitle.length() == 0) state.subtuneTitle = null;
-			break;
-		case PlayerService.SONG_SUBTUNE_AUTHOR:
-			Log.d(TAG, "############################## Author is %s", value);
-			state.subtuneAuthor = value;
-			break;
-		case PlayerService.SONG_AUTHOR:
-			// songComposerText.setText(value);
-			state.songComposer = value;
-			break;
-		case PlayerService.SONG_COPYRIGHT:
-			variables.put("copyright", value);			
-			// songCopyrightText.setText(value);
-			break;
-
-		}
-	} */
 	
 	private String getVar(String name) {
 		if(variables.containsKey(name)) {
@@ -841,6 +726,9 @@ public class PlayScreen {
 		variables.put("width", infoText.getWidth());
 		variables.put("height", infoText.getHeight());
 		
+		DisplayMetrics metrics =  activity.getResources().getDisplayMetrics();
+		variables.put("dpi", metrics.xdpi);
+		
 		variables.put("themeCSS", ThemeManager.getInstance().getCSS());
 		
 		if(variables.containsKey("webpage")) {
@@ -873,6 +761,16 @@ public class PlayScreen {
 			s = String.format("%dMB", fileSize / (1024 * 1024));
 		}
 		return s;
+	}
+
+	public void setBackgroundColor(int color) {
+		backgroundColor = color;
+		if(infoText != null) {
+			String html = String.format(empty, backgroundColor & 0xffffff);
+			infoText.loadData(html, "text/html", "utf-8");
+			infoText.getSettings();
+			infoText.setBackgroundColor(backgroundColor);
+		}
 	}
 
 }

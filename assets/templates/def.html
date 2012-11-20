@@ -1,6 +1,16 @@
 <html><head>
 <style type="text/css">
 ${themeCSS}
+
+.content {
+	height: 100%;
+	${if artwork}
+		background-image:url('${artwork}');
+		background-size:100% 100%;
+		background-repeat:no-repeat;
+	${end}
+}
+
 </style>
 
 </head><body>
@@ -9,7 +19,7 @@ ${themeCSS}
 <div class="subtitle">${composer}</div>
 </div>
 <div class="infotitle">${song_source}</div>
-
+<div class="content">
 ${if copyright}
 <span class="heading">Copyright:</span> ${copyright}<br/>
 ${end}
@@ -31,4 +41,5 @@ ${end}
 ${if sizeText}
 <span class="heading">Size:</span> ${sizeText}<br/>
 ${end}
+</div>
 </html></body>

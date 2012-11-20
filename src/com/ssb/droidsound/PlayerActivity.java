@@ -544,27 +544,43 @@ public class PlayerActivity extends Activity  {
 		
 		player = new PlayerServiceConnection();
 		
-		ThemeManager tm = ThemeManager.getInstance();
+		final ThemeManager tm = ThemeManager.getInstance();
 		tm.init();
 
 		File themeDir = new File(Environment.getExternalStorageDirectory(), "droidsound/theme");
-		if(!tm.loadTheme(this, new File(themeDir, "gui.css")))		
-			tm.loadTheme(this, Utils.readAsset(this, "gui.css"), null);
+		if(!themeDir.exists())
+			themeDir.mkdir();
 
-				
+		String defaultCss = Utils.readAsset(this, "gui.css");
+		tm.loadTheme(this, new File(themeDir, "gui.css"), defaultCss);
+
 		playScreen = new PlayScreen(state, player, this);
-	
+
 		setContentView(R.layout.player);
 		setupNormal();
 		
 		playListView.init();
 		searchListView.init();
 		
-		tm.manageView("root", getWindow().getDecorView());
+		tm.registerListener("root", new ThemeManager.SelectorListener() {
+			@Override
+			public void propertyChanged(Property property, String selector) {
+				View rootView = getWindow().getDecorView();
+				tm.applyProperty(rootView, property);
+				if(property.isNamed("background-color")) {
+					int color = property.getColor();
+					playListView.setCacheColorHint(color);
+					titleIndicator.setBackgroundColor(color);
+					playScreen.setBackgroundColor(color);
+				} else if(property.isNamed("background")) {
+					playListView.setCacheColorHint(0);
+				}
+			}
+		});
 		
 		tm.registerListener("flipper", new ThemeManager.SelectorListener() {
 			@Override
-			public void propertyChanged(Property property) {
+			public void propertyChanged(Property property, String selector) {
 				if(property.isNamed("background-color")) {
 					int color = property.getColor();
 					titleIndicator.setBackgroundColor(color);

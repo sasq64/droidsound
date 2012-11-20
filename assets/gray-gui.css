@@ -6,20 +6,21 @@
 
 /* Application default colors */
 root {
-	background-color : #000000;	
-	text-color : #ffffff;
+	background-color : #cccccc;	
+	text-color : #000000;
 }
 
 /* Top view flipper */
 flipper {
-	hilight-color : #ffffff;	
-	footer-color : #33B5E5;
+	hilight-color : #000000;	
+	text-color : #888888;
+	footer-color : #000000;
 }
 
 /* Browser header (Displaying current directory) */
 browser-header {
-	color: #ffffff;
-	background: -webkit-linear-gradient(top, #2F2727, #1a82f7);
+	color: #000000;
+	background: #3b67a2;
 	padding-left: 2dp;	
 }
 
@@ -35,7 +36,7 @@ browser-header.subtitle {
 /* Search header (Displaying current search) */
 search-header {
 	color: #ffffff;
-	background: -webkit-linear-gradient(top, #27272f, #f7271a);
+	background: #555555;
 	padding-left: 2dp;	
 }
 
@@ -50,7 +51,7 @@ search-header.subtitle {
 
 /* Separating line between play info and controls */
 control-separator {
-	background-color: #33B5E5;
+	background-color: #000000;
 	height: 2dp;
 }
  
@@ -60,7 +61,7 @@ control-separator {
 /* Parent (default) settings for all play controls */
 controls {
 	font : "fonts/led.ttf";
-	color : #8080c0;
+	color : #000000;
 	font-size : 24dp;
 }
 
@@ -74,11 +75,11 @@ controls.subtunes {
 }
 
 controls.shuffle {
-	color : #80c0c0;
+	color : #3b67a2;
 }
 
 controls.repeat {
-	color : #80c0c0;
+	color : #3b67a2;
 }
 
 controls.plus {
@@ -124,75 +125,93 @@ subtext              sidetext
 
 /* Default for all items */
 item {
-
-	background-color: #000000;
-
-	main.color: #ffffff;
-	sub.color: #aaaaaa;
-	side.color: #ccccff;
-
-	main.font : "bold";
-	sub.font : "bold";
-	side.font : "bold";
+	color : #000000;
+	background-color: #cccccc;
+	font: bold;
 	
-	main.font-size: "24sp";
-	sub.font-size : "14sp";
-	side.font-size : "10sp";
+	1-padding-left: 8dp;
+	2-padding-left: 8dp;
 
-	main.padding-left: 0dp;
-	sub.padding-left: 0dp;
-
-	divider: #555555;
-
+	1-color: #000000;
+	2-color: #000000;
+	3-color: #000000;
+	
+	1-font : "bold";
+	2-font : "bold";
+	3-font : "bold";
+	
+	1-font-size: "24sp";
+	2-font-size : "14sp";
+	3-font-size : "10sp";
+	
+	divider: #000000;
+	
 }
 
 /* Settings for specific file types */
 
 item.folder {
-	main.font-size: "20sp";
-	main.color : #ffff80;
-	icon.image : "icons/gflat_folder.png";
+	1-font-size: "20sp";
+	1-color : #666666;
+	0-image : "icons/gflat_folder.png";
+	1-padding-left: 0dp;
+	2-padding-left: 0dp;	
 }
 
 item.network {
-	main.font-size: "20sp";
-	main.color : #ffff80;
-	icon.image : "icons/gflat_net_folder.png";
+	1-font-size: "20sp";
+	1-color : #666666;
+	0-image : "icons/gflat_net_folder.png";
+	1-padding-left: 0dp;
+	2-padding-left: 0dp;
 }
 
 item.archive {
-	main.font-size: "20sp";
-	main.color : #ffff80;
-	icon.image : "icons/gflat_package.png";
+	1-font-size: "20sp";
+	1-color : #666666;
+	0-image : "icons/gflat_package.png";
+	1-padding-left: 0dp;
+	2-padding-left: 0dp;
 }
 
 item.media {
-	main.font-size: "20sp";
-	main.color : #ffff80;
-	icon.image : "icons/gflat_mus_folder.png";
+	1-font-size: "20sp";
+	1-color : #666666;
+	0-image : "icons/gflat_mus_folder.png";
+	1-padding-left: 0dp;
+	2-padding-left: 0dp;
 }
 
 item.csdb {
-	main.font-size: "20sp";
-	main.color : #ffff80;
-	icon.image : "icons/gflat_bag.png";
+	1-font-size: "20sp";
+	1-color : #666666;
+	0-image : "icons/gflat_bag.png";
+	1-padding-left: 0dp;
+	2-padding-left: 0dp;
 }
 
 item.playlist {
-	icon.image : "icons/gflat_note3.png";
+	1-font-size: "20sp";
+	0-image : "icons/gflat_note3.png";
+	1-padding-left: 0dp;
+	2-padding-left: 0dp;
 }
 
 item.favorites {
-	icon.image : "icons/gflat_heart.png";
+	1-font-size: "20sp";
+	1-color : #666666;
+	0-image : "icons/gflat_heart.png";
+	1-padding-left: 0dp;
+	2-padding-left: 0dp;
 }
 
 item:online {
-	main.color : #ffc0c0;
+	1-color : #ffc0c0;
 }
 
 item:hilight {
-	main.color : #ffff88;
-	background: linear-gradient(left, #000000, #888888);
+	background-color: #777777;
+	1-color : #ffa998;
 }
 
 
@@ -201,8 +220,8 @@ item:hilight {
 /* This is used by a real webview - use any webkit compatible css */
 
 body {
-	color: #ffffff;
-	background-color: #000000;
+	color: #000000;
+	background-color: #cccccc;
 	margin:0;
 	padding:0;
 }
@@ -210,7 +229,7 @@ body {
 .song-header {
 	color: #ffffff;
 	background-color:  #2040a0;
-	background: -webkit-linear-gradient(top, #2F2727, #1a82f7);
+	background-color: #3b67a2;
 	padding-left: 2dp;	
 	height: 4.3em; 
 }
@@ -241,14 +260,14 @@ body {
 	height: 2px;
 }
 
-.heading {
-	color: #ffff88;
-	font-weight:bold;
-	text-shadow: 3px 3px 4px #000;
+.content {
+	margin: 8dp;
+	padding: 8dp;
 }
 
-.content {
-	text-shadow: 3px 3px 4px #000;
+.heading {
+	color: #000000;
+	font-weight:bold;	
 }
 
 .comment {

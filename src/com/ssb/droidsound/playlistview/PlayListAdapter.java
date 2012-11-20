@@ -1,24 +1,11 @@
 package com.ssb.droidsound.playlistview;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.AssetManager;
-import android.content.res.Resources;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.GradientDrawable.Orientation;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,12 +35,7 @@ class PlayListAdapter extends BaseAdapter {
 	private int mPathIndex;
 	private String pathName; 
 	private int hilightedPosition = -1;
-	private int itemColor;
-	private int subitemColor;
-	private int archiveColor;
-	private int dirColor;
-	private float titleHeight;
-	private float subtitleHeight;
+	
 	private boolean subDate;
 	private File hilightedFile;
 	private int mSideTitleIndex;
@@ -61,231 +43,53 @@ class PlayListAdapter extends BaseAdapter {
 
 	private String upperPathName;
 
-	private boolean inNetwork;
-
+	
 	private String [] years;
-
-	private Map<String, ItemProps> propMap;
 
 	public int dividerColor;
 
-	private PlayListView playListView;
+	
+	private ThemeManager tm;
 
-	//private Bitmap [] icons;
-	
-	/*private static final int CSDB = 0;
-	private static final int MEDIA_STORE = 1;
-	private static final int PLAYLIST = 3;
-	private static final int NET_FOLDER = 4;
-	private static final int FOLDER = 5;
-	private static final int PACKAGE = 6;
-	private static final int FAVORITES = 7;*/
-	
-	private static class ItemProps {
-		public Bitmap icon = null;
-		public int textColor = 0;
-		public int subColor = 0;
-		public int sideColor = 0;
-		public Drawable background = null;
-		public float textSize = -1;
-		public float subSize = -1;
-		public float sideSize = -1;
-		public Typeface font;
-		
-		//public ItemProps() {
-		//}
-		
-		public void merge(ItemProps p) {
-			if(p.icon != null)
-				icon = p.icon;
-			if(p.textColor != 0)
-				textColor = p.textColor;
-			if(p.subColor != 0)
-				subColor = p.subColor;
-			if(p.sideColor != 0)
-				sideColor = p.sideColor;
-			if(p.background != null)
-				background = p.background;
-			if(p.textSize > 0)
-				textSize = p.textSize;
-			if(p.subSize > 0)
-				subSize = p.subSize;
-			if(p.sideSize > 0)
-				sideSize = p.sideSize;
-			if(p.font != null)
-				font = p.font;
-		}
-	}
+	private boolean inNetwork;
 	
 	
 	private String getTypeName(String filename, String title, int type) {
 		switch(type) {
 		case SongDatabase.TYPE_FILE: return "file";
 		case SongDatabase.TYPE_DIR: return "folder";
-		case SongDatabase.TYPE_PLIST: return "playlist";
+		case SongDatabase.TYPE_PLIST:
+			if(title.equals("Favorites"))
+				return "favorites";
+			else
+				return "playlist";
 		case SongDatabase.TYPE_ARCHIVE:
 			if(title.equals("CSDb"))
 				return "csdb";
+			if(title.equals("Local Mediastore"))
+				return "media";
 			else
 				return "archive";
 		default: return null;
 		}
 	}
 	
-	
-	private ItemProps findProps(String filename, String title, int type, boolean hilighted) {
-		
-		String flags = "";
-		if(hilighted)
-			flags += "hilight";
-		String typeName = getTypeName(filename, title, type);
-		/*StringBuilder sb = new StringBuilder();
-		for(int i=0; i<filename.length(); i++) {
-			char c = filename.charAt(i);
-			if(Character.isLetter(c))
-				sb.append(c);
-		}
-		
-		String strippedName = sb.toString(); */
-		
-		ItemProps props = new ItemProps();
-		ItemProps p = propMap.get("item");
-		if(p != null)
-			props.merge(p);
-		p = propMap.get("item." + typeName);
-		if(p != null)
-			props.merge(p);
-		p = propMap.get("item:" + flags);
-		if(p != null)
-			props.merge(p);
-		p = propMap.get("item." + typeName + ":" + flags);
-		if(p != null)
-			props.merge(p);
-		
-		return props;
-	}
-	/*
-	private ItemProps findPropsOLD(String filename, String title, int type, boolean hilighted) {
 
-		ItemProps p = new ItemProps();
-		
-		
-		String path = mPathIndex >= 0 ? mCursor.getString(mPathIndex) : pathName;
-		
-		String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();		
-		boolean net = path != null && path.startsWith("http:/");
-		
-		if(type == SongDatabase.TYPE_FILE) {
-			p.textColor = itemColor;
-			if(net || ext.equals("M3U") || ext.equals("PLS"))
-				p.textColor = 0xffffc0c0;
-				//iv.setImageBitmap(icons[headphones);
-		} else if(type == SongDatabase.TYPE_ARCHIVE) {
-			p.textColor = archiveColor;
-			if(net)
-				p.textColor = 0xffff9090;
-			//iv.setImageBitmap(R.drawable.play_list);
-			if(title.equals("Local Mediastore")) {
-				p.icon = icons[MEDIA_STORE];
-			} else if(title.equals("CSDb")) {
-				p.icon = icons[CSDB];
-			} else {
-				p.icon = icons[PACKAGE];
-			}
-		} else if(type == SongDatabase.TYPE_PLIST) {
-			p.textColor = archiveColor;
-			if(net)
-				p.textColor = 0xffff9090;
-			//iv.setImageBitmap(R.drawable.play_list);
-			if(title.equals("Favorites")) {
-				p.icon = icons[FAVORITES];
-			} else {
-				p.icon = icons[PLAYLIST];
-			}
-		} else {
-			p.textColor = dirColor;
-			if(net)
-				p.textColor =  0xffff9090;
-			if(ext.equals("LNK")) {
-				p.icon = icons[NET_FOLDER];
-				p.textColor = 0xffffc0c0;
-			} else if(inNetwork) {
-				p.icon = icons[FOLDER];
-				p.textColor = 0xffffc0c0;
-			} else {
-				p.icon = icons[FOLDER];
-			}
-		}
-		
-		if(hilighted) {
-			p.textColor = 0xffffa000;
-		} 
-		
-		return p;
-	} */
-	
-	
 	PlayListAdapter(PlayListView view, Context context, int dc, int ac, int ic, int sc) {
 		mContext = context;
-
-		itemColor = ic;
-		subitemColor = sc;
-		archiveColor = ac;
-		dirColor = dc;
-		titleHeight = -1;
-		subtitleHeight = -1;
-		
-		playListView = view;
 		
 		years = new String [35];
 		for(int i=0;i<years.length; i++)
 			years[i] = String.format("%04d", i+1980);
-		
-		//icons = new Bitmap [32];
-		
 	}
 	
 	public void init() {
-		propMap = new HashMap<String, ItemProps>();
-		final ThemeManager tm = ThemeManager.getInstance();
-		final File baseDir = tm.getBaseDir();
+		tm = ThemeManager.getInstance();
 		tm.registerListener("item", new ThemeManager.SelectorListener() {			
 			@Override
-			public void propertyChanged(ThemeManager.Property prop) {
-				
-				ItemProps ip = propMap.get(prop.selector());
-				if(ip == null)
-					ip = new ItemProps();
-				
-				
-				if(prop.isNamed("divider")) {
-					dividerColor = prop.getColor();
-					int[] colors = {0, dividerColor, 0}; // red for the example
-					playListView.setDivider(new GradientDrawable(Orientation.RIGHT_LEFT, colors));
-					playListView.setDividerHeight(1);
-				} else if(prop.isNamed("icon")) {
-					ip.icon = prop.getBitmap();
-				} else if(prop.isNamed("color")) {
-					ip.textColor = prop.getColor();
-				} else if(prop.isNamed("sub-color")) {
-					ip.subColor = prop.getColor();
-				} else if(prop.isNamed("side-color")) {
-					ip.sideColor = prop.getColor();
-				} else if(prop.isNamed("background")) {
-					ip.background = prop.getDrawable();
-				} else if(prop.isNamed("font-size")) {
-					ip.textSize = prop.getSize();
-				} else if(prop.isNamed("sub-font-size")) {
-					ip.subSize = prop.getSize();
-				} else if(prop.isNamed("side-font-size")) {
-					ip.sideSize = prop.getSize();
-				} else if(prop.isNamed("font")) {
-					ip.font = prop.getFont();
-				}				
-				propMap.put(prop.selector(), ip);
+			public void propertyChanged(ThemeManager.Property prop, String selector) {
 				notifyDataSetChanged();
 			}
-
 		});
 	}
 	
@@ -367,16 +171,16 @@ class PlayListAdapter extends BaseAdapter {
 		
 		if(convertView == null) {
 			convertView = inflater.inflate(R.layout.songlist_item, parent, false);
-			/*ViewGroup vg = (ViewGroup)convertView;
+			ViewGroup vg = (ViewGroup)convertView;
+			ImageView iv = (ImageView)vg.getChildAt(0);
 			TextView tv0 = (TextView)vg.getChildAt(1);
 			TextView tv1 = (TextView)vg.getChildAt(2);
-			tv1.setTextColor(subitemColor);
-			if(titleHeight < 0) {
-				titleHeight = tv0.getTextSize();
-			}
-			if(subtitleHeight < 0) {
-				subtitleHeight = tv1.getTextSize(); 
-			}*/
+			TextView tv2 = (TextView)vg.getChildAt(3);
+			
+			iv.setTag("icon");
+			tv0.setTag("main");
+			tv1.setTag("sub");
+			tv2.setTag("side");			
 		}
 		ViewGroup vg = (ViewGroup)convertView;
 		ImageView iv = (ImageView)vg.getChildAt(0);
@@ -457,104 +261,28 @@ class PlayListAdapter extends BaseAdapter {
 		
 		tv0.setText(title);
 
-		ItemProps props = findProps(filename, title, type, position == hilightedPosition);
-		tv0.setTextColor(props.textColor);
-		tv1.setTextColor(props.subColor);
-		tv2.setTextColor(props.sideColor);
-		vg.setBackgroundDrawable(props.background);
+		String typeName = getTypeName(filename, title, type);
+		// item.main.TYPE, item.
+		String flags = "";
+		if(position == hilightedPosition)
+			flags += "hilight";
 		
-		tv0.setTypeface(props.font);
-		tv1.setTypeface(props.font);
-		tv2.setTypeface(props.font);
+		iv.setImageDrawable(null);
+				
+		tm.applySelector(vg, "item");
+		tm.applySelector(vg, "item." + typeName);
+		tm.applySelector(vg, "item:" + flags);
+		tm.applySelector(vg, "item." + typeName + ":" + flags);
 		
+		iv.setVisibility(iv.getDrawable() == null ? View.GONE : View.VISIBLE);
+
 		if(sub != null) {
-			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, props.textSize);
-			tv1.setTextSize(TypedValue.COMPLEX_UNIT_PX, props.subSize);
 			tv1.setText(sub);
 			tv1.setVisibility(View.VISIBLE);
 		} else {
-			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, props.textSize + props.subSize);
+			tv0.setTextSize(TypedValue.COMPLEX_UNIT_PX, tv0.getTextSize() + tv1.getTextSize());
 			tv1.setVisibility(View.GONE);
 		}
-		
-		
-		if(props.icon != null) {
-			iv.setImageBitmap(props.icon);
-			iv.setVisibility(View.VISIBLE);
-		} else
-			iv.setVisibility(View.GONE);
-		
-		/*
-		tv0.setTextSize(0);
-		tv0.setBackgroundColor(0);
-		tv0.setBackground(background);
-		tv0.setEllipsize(where);
-		tv0.setHighlightColor(color);
-		tv0.setRotation(0);
-		tv0.setSingleLine(false);
-		tv0.setTypeface(tf);
-		tv0.set*/
-
-		
-		/*
-		
-		String path = mPathIndex >= 0 ? mCursor.getString(mPathIndex) : pathName;
-		
-		String ext = filename.substring(filename.lastIndexOf('.')+1).toUpperCase();
-		
-		boolean net = path != null && path.startsWith("http:/");
-		
-		if(type == SongDatabase.TYPE_FILE) {
-			tv0.setTextColor(itemColor);
-			if(net || ext.equals("M3U") || ext.equals("PLS"))
-				tv0.setTextColor(0xffffc0c0);
-				//iv.setImageBitmap(icons[headphones);
-			iv.setVisibility(View.GONE);
-		} else if(type == SongDatabase.TYPE_ARCHIVE) {
-			tv0.setTextColor(archiveColor);
-			if(net)
-				tv0.setTextColor(0xffff9090);
-			//iv.setImageBitmap(R.drawable.play_list);
-			if(title.equals("Local Mediastore")) {
-				iv.setImageBitmap(icons[MEDIA_STORE]);
-			} else if(title.equals("CSDb")) {
-				iv.setImageBitmap(icons[CSDB]);
-			} else {
-				iv.setImageBitmap(icons[PACKAGE]);
-			}
-			iv.setVisibility(View.VISIBLE);
-		} else if(type == SongDatabase.TYPE_PLIST) {
-			tv0.setTextColor(archiveColor);
-			if(net)
-				tv0.setTextColor(0xffff9090);
-			//iv.setImageBitmap(R.drawable.play_list);
-			if(title.equals("Favorites")) {
-				iv.setImageBitmap(icons[FAVORITES]);
-			} else {
-				iv.setImageBitmap(icons[PLAYLIST]);
-			}
-
-			iv.setVisibility(View.VISIBLE);
-		} else {
-			tv0.setTextColor(dirColor);
-			if(net)
-				tv0.setTextColor(0xffff9090);
-			if(ext.equals("LNK")) {
-				iv.setImageBitmap(icons[NET_FOLDER]);
-				tv0.setTextColor(0xffffc0c0);
-			} else if(inNetwork) {
-				iv.setImageBitmap(icons[FOLDER]);
-				tv0.setTextColor(0xffffc0c0);
-			} else {
-				iv.setImageBitmap(icons[FOLDER]);
-			}
-			iv.setVisibility(View.VISIBLE);
-		}
-		
-		if(position == hilightedPosition) {
-			tv0.setTextColor(0xffffa000);
-		} */
-		
 		
 		return convertView;
 	}

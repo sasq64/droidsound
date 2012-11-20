@@ -27,6 +27,7 @@ import android.util.DisplayMetrics;
 import android.util.StateSet;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -47,16 +48,21 @@ public class ThemeManager {
 		private String name;
 		private String data;
 		private ThemeManager tm;
-		private String selector;
+		//private String selector;
+
+		private float size = -1;
+		private Bitmap bitmap = null;
+		private Drawable drawable = null;
+		private Typeface typeface = null;
 		
-		public Property(ThemeManager tm, String name, String data, String selector) {
+		public Property(ThemeManager tm, String name, String data) {
 			this.name = name;
 
 			data = data.replaceAll("^\"|\"$", "");
 			data = data.replaceAll("^'|'$", "");
 			this.data = data;
 			
-			this.selector = selector;
+			//this.selector = selector;
 			this.tm = tm;
 		}
 		
@@ -66,30 +72,31 @@ public class ThemeManager {
 		
 		public Typeface getFont() {
 
-			if(data.equals("bold"))
-				return Typeface.DEFAULT_BOLD;
-			else if(data.equals("serif"))
-				return Typeface.SERIF;
-			if(data.equals("sans"))
-				return Typeface.SANS_SERIF;
-			if(data.equals("mono"))
-				return Typeface.MONOSPACE;
-			
-			Typeface tf = tm.fontCache.get(data);
-			if(tf == null) {				
-				if(tm.basePath != null) {
+			if(typeface == null) {
+				
+				if(data.equals("bold"))
+					return Typeface.DEFAULT_BOLD;
+				else if(data.equals("serif"))
+					return Typeface.SERIF;
+				if(data.equals("sans"))
+					return Typeface.SANS_SERIF;
+				if(data.equals("mono"))
+					return Typeface.MONOSPACE;
+				
+				typeface = tm.fontCache.get(data);
+				if(typeface == null && tm.basePath != null) {
 					File f = new File(tm.basePath, data);
 					if(f.exists()) {
-						tf = Typeface.createFromFile(f);
-						tm.fontCache.put(data, tf);
+						typeface = Typeface.createFromFile(f);
+						tm.fontCache.put(data, typeface);
 					}
-				} else {
-					tf = Typeface.createFromAsset(tm.mContext.getAssets(), data);
 				}
+				if(typeface == null)
+					typeface = Typeface.createFromAsset(tm.mContext.getAssets(), data);
+				if(typeface == null)
+					typeface = Typeface.DEFAULT;
 			}
-			if(tf == null)
-				tf = Typeface.DEFAULT;
-			return tf;				
+			return typeface;				
 		}
 		
 		public int getColor() {
@@ -107,64 +114,64 @@ public class ThemeManager {
 		}
 		
 		public Drawable getDrawable() {
-			
-			Drawable drawable = null;
-			
-			if(data.charAt(0) == '#') {
-				int c = 0;
-				try {
-					c = Integer.parseInt(data.substring(1), 16);
-				} catch (NumberFormatException e) {}
-				return new ColorDrawable(0xff000000 | c);
-			} else if(data.charAt(0) == '(') {
-				String[] what = data.split("[\\(,\\s\\)]+");
-				StateListDrawable sld = new StateListDrawable();
 
-				if(what.length > 3) {
-					drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[3]));
-					sld.addState(new int [] { android.R.attr.state_focused }, drawable);
+			if(drawable == null) {
+				if(data.charAt(0) == '#') {
+					int c = 0;
+					try {
+						c = Integer.parseInt(data.substring(1), 16);
+					} catch (NumberFormatException e) {}
+					return new ColorDrawable(0xff000000 | c);
+				} else if(data.charAt(0) == '(') {
+					String[] what = data.split("[\\(,\\s\\)]+");
+					StateListDrawable sld = new StateListDrawable();
+	
+					if(what.length > 3) {
+						drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[3]));
+						sld.addState(new int [] { android.R.attr.state_focused }, drawable);
+					}
+					if(what.length > 2) {
+						drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[2]));
+						sld.addState(new int [] { android.R.attr.state_pressed }, drawable);
+					}
+					if(what.length > 1) {
+						drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[1]));
+						sld.addState(StateSet.WILD_CARD, drawable);
+					}
+					drawable = sld;
 				}
-				if(what.length > 2) {
-					drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[2]));
-					sld.addState(new int [] { android.R.attr.state_pressed }, drawable);
-				}
-				if(what.length > 1) {
-					drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[1]));
-					sld.addState(StateSet.WILD_CARD, drawable);
-				}
-				drawable = sld;
-			}
-			else {				
-				String[] what = data.split("[\\(,\\s\\)]+");
-				if(what[0].startsWith("-webkit-"))
-					what[0] = what[0].substring(8);
-				if(what[0].equals("linear-gradient") || what[0].equals("radial-gradient")) {
-					
-					int [] colors = new int [ what.length - 2];
-					for(int i=0; i<colors.length; i++) {
-						colors[i] = parseColor(what[i+2]);
+				else {				
+					String[] what = data.split("[\\(,\\s\\)]+");
+					if(what[0].startsWith("-webkit-"))
+						what[0] = what[0].substring(8);
+					if(what[0].equals("linear-gradient") || what[0].equals("radial-gradient")) {
+						
+						int [] colors = new int [ what.length - 2];
+						for(int i=0; i<colors.length; i++) {
+							colors[i] = parseColor(what[i+2]);
+						}
+						
+						Orientation o = Orientation.LEFT_RIGHT;
+						if(what[1].equals("right"))
+							o = Orientation.RIGHT_LEFT;
+						if(what[1].equals("top"))
+							o = Orientation.TOP_BOTTOM;
+						if(what[1].equals("bottom"))
+							o = Orientation.BOTTOM_TOP;
+						if(what[1].equals("right"))
+							o = Orientation.RIGHT_LEFT;
+						GradientDrawable gd = new GradientDrawable(o, colors);
+						if(what[0].startsWith("radial-"))
+							gd.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+						drawable = gd;
+					} else {
+						Bitmap bm = getBitmap();
+						drawable = new BitmapDrawable(tm.mContext.getResources(), bm);
 					}
 					
-					Orientation o = Orientation.LEFT_RIGHT;
-					if(what[1].equals("right"))
-						o = Orientation.RIGHT_LEFT;
-					if(what[1].equals("top"))
-						o = Orientation.TOP_BOTTOM;
-					if(what[1].equals("bottom"))
-						o = Orientation.BOTTOM_TOP;
-					if(what[1].equals("right"))
-						o = Orientation.RIGHT_LEFT;
-					GradientDrawable gd = new GradientDrawable(o, colors);
-					if(what[0].startsWith("radial-"))
-						gd.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-					drawable = gd;
-				} else {
-					Bitmap bm = getBitmap();
-					drawable = new BitmapDrawable(tm.mContext.getResources(), bm);
+					//linear-gradient(top, #2F2727, #1a82f7);
+					//radial-gradient(circle, #1a82f7, #2F2727);
 				}
-				
-				//linear-gradient(top, #2F2727, #1a82f7);
-				//radial-gradient(circle, #1a82f7, #2F2727);
 			}
 			return drawable;
 			
@@ -172,59 +179,58 @@ public class ThemeManager {
 		
 		public float getSize() {
 			
-			DisplayMetrics metrics =  tm.mContext.getResources().getDisplayMetrics();
-			
-			if(data.equals("match"))
-				return LayoutParams.MATCH_PARENT;
-			else if(data.equals("wrap"))
-				return LayoutParams.WRAP_CONTENT;
-			
-			int i = 0;
-			while(i < data.length() && Character.isDigit(data.charAt(i))) {
-				i++;
+			if(size < 0) {
+				
+				DisplayMetrics metrics =  tm.mContext.getResources().getDisplayMetrics();
+				
+				if(data.equals("match"))
+					return LayoutParams.MATCH_PARENT;
+				else if(data.equals("wrap"))
+					return LayoutParams.WRAP_CONTENT;
+				
+				int i = 0;
+				while(i < data.length() && Character.isDigit(data.charAt(i))) {
+					i++;
+				}
+				size = (float) Integer.parseInt(data.substring(0,i));
+				String unit = data.substring(i);
+				
+				if(unit.equals("dp"))
+					size = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size, metrics);
+				else if(unit.equals("pt"))
+					size = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PT, size, metrics);
+				else if(unit.equals("sp"))
+					size = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, metrics);
+				//Log.d(TAG, "%s GETSIZE: %s => %d %s => %d", name, data, size, unit, (int)px);
 			}
-			int size = Integer.parseInt(data.substring(0,i));
-			String unit = data.substring(i);
-			
-			float px = (int) size;
-			
-			if(unit.equals("dp"))
-				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, size, metrics);
-			else if(unit.equals("pt"))
-				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PT, size, metrics);
-			else if(unit.equals("sp"))
-				px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, metrics);
-			
-			
-			//Log.d(TAG, "%s GETSIZE: %s => %d %s => %d", name, data, size, unit, (int)px);
-			
-			return px;
+			return size;
 		}
 
 		public Bitmap getBitmap() {
-			if(tm.basePath != null) {
-				File f = new File(tm.basePath, data);						
-				return BitmapFactory.decodeFile(f.getPath());						
-			} else {
-				return Utils.getBitmapFromAsset(tm.mContext, data);
-			}
+			
+			if(bitmap == null)	
+				bitmap = parseBitmap(data);
+			return bitmap;
 		}
 
-		private Bitmap parseBitmap(String data) {
+		private Bitmap parseBitmap(String name) {
+			Bitmap bitmap = null;
 			if(tm.basePath != null) {
-				File f = new File(tm.basePath, data);						
-				return BitmapFactory.decodeFile(f.getPath());						
-			} else {
-				return Utils.getBitmapFromAsset(tm.mContext, data);
+				File f = new File(tm.basePath, name);
+				bitmap = tm.bitmapCache.get(f.getPath());
+				if(bitmap == null && f.exists())
+					bitmap = BitmapFactory.decodeFile(f.getPath());						
 			}
+			if(bitmap == null) {
+				bitmap = tm.bitmapCache.get(name);
+				if(bitmap == null)
+					bitmap = Utils.getBitmapFromAsset(tm.mContext, name);
+			}
+			return bitmap;
 		}
 
 		public String name() {
 			return name;
-		}
-		
-		public String selector() {
-			return selector;
 		}
 
 		public boolean startsWith(String string) {
@@ -240,7 +246,7 @@ public class ThemeManager {
 	}
 
 	public static interface SelectorListener {
-		void propertyChanged(Property property);
+		void propertyChanged(Property property, String selector);
 	}
 	
 	public static interface ChangeListener {
@@ -257,6 +263,7 @@ public class ThemeManager {
 	}
 
 	private Map<String, Typeface> fontCache;
+	private Map<String, Bitmap> bitmapCache;
 	private Map<String, View> managedViews;
 		
 	
@@ -271,9 +278,11 @@ public class ThemeManager {
 	private Map<Rule, List<Property>> ruleMap;
 	private String css;
 	private List<ChangeListener> changeListeners;
+	private String defaultCss;
 
 	private ThemeManager() {
 		fontCache = new HashMap<String, Typeface>();
+		bitmapCache = new HashMap<String, Bitmap>();
 	}
 	
 	public void init() {
@@ -337,9 +346,50 @@ public class ThemeManager {
 			}
 		}
 	}
+	
 
+	public void applySelector(View view, String selector) {
+		
+
+		for(Rule r : cssRules) {
+			List<Selector> selectors = r.getSelectors();
+			
+			List<Property> list = ruleMap.get(r);
+			
+			for(Selector s : selectors) {
+				if(selector.equals(s.toString())) {
+					Iterator<Property> iterator = list.iterator();
+					while(iterator.hasNext()) {
+						Property prop = iterator.next();
+						updateViewProperty(prop, view);
+					}
+				}				
+			}
+		}
+	}
+
+	public void applyProperty(View view, Property property) {
+		updateViewProperty(property, view);
+	}
+
+	@SuppressWarnings("deprecation")
 	private boolean updateViewProperty(Property p, View view) {
 		boolean ok = true;
+
+		int dot = p.name.lastIndexOf(".");
+		
+		if(dot > 0) {
+			view = ((ViewGroup)view).findViewWithTag(p.name.substring(0,dot));
+			p = new Property(this, p.name.substring(dot+1), p.data);
+			return updateViewProperty(p, view);
+		}
+		
+		if(Character.isDigit(p.name.charAt(0))) {
+			int index = Integer.parseInt(p.name.substring(0,1));
+			view = ((ViewGroup)view).getChildAt(index);
+			p = new Property(this, p.name.substring(2), p.data);
+			return updateViewProperty(p, view);
+		}
 
 		LayoutParams lp = view.getLayoutParams();
 		if(p.isNamed("width")) {
@@ -426,13 +476,6 @@ public class ThemeManager {
 		return ok;
 	}
 
-	private void updateView(List<PropertyValue> propertyValues, View view) {
-		for(PropertyValue val : propertyValues) {
-			Property p = new Property(this, val.getProperty(), val.getValue(), null);
-			updateViewProperty(p, view);			
-		}
-	}
-
 	private void sendChanges(String pattern, SelectorListener sl) {
 		
 		for(Rule r : cssRules) {
@@ -442,8 +485,8 @@ public class ThemeManager {
 				if(sname.startsWith(pattern)) {
 					//String [] parts = sname.split("\\.");
 					for(PropertyValue val : r.getPropertyValues()) {
-						Property p = new Property(this, val.getProperty(), val.getValue(), sname);
-						sl.propertyChanged(p);
+						Property p = new Property(this, val.getProperty(), val.getValue());
+						sl.propertyChanged(p, sname);
 					}
 				}
 			}
@@ -475,8 +518,22 @@ public class ThemeManager {
 	};
 	
 	private void reload() {
-		this.css = Utils.readFile(themeFile);
+		
+		String newCss = null;
+		if(themeFile.exists())
+			newCss = Utils.readFile(themeFile);
+
+		if(newCss != null)
+			css = newCss;
+		else
+			css = defaultCss;
 		parseCss(css);
+		
+		if(cssRules == null) {
+			css = defaultCss;
+			parseCss(css);
+		}
+		
 		sendAllChanges();
 		updateViews();
 	}
@@ -486,11 +543,12 @@ public class ThemeManager {
 	}
 
 
-	public boolean loadTheme(Context ctx, File themeFile) {
+	public boolean loadTheme(Context ctx, File themeFile, String defaultCss) {
 
 		mContext = ctx;
-		if(!themeFile.exists())
-			return false;
+		
+		this.defaultCss = defaultCss;
+		
 		this.themeFile = themeFile;
 		basePath = themeFile.getParentFile();
 		final Handler handler = new MyHandler(this);
@@ -513,15 +571,6 @@ public class ThemeManager {
 		return true;
 	}
 	
-	public boolean loadTheme(Context ctx, String css, String templateDir) {
-		mContext = ctx;
-		this.css = css;
-		parseCss(css);
-		sendAllChanges();
-		updateViews();
-		return true;
-	}
-		
 	private void parseCss(String css) {
 		
 		try {
@@ -533,7 +582,7 @@ public class ThemeManager {
 				List<PropertyValue> pvals = r.getPropertyValues();
 				List<Property> list = new ArrayList<Property>();
 				for(PropertyValue val : pvals) {
-					Property p = new Property(this, val.getProperty(), val.getValue(), null);
+					Property p = new Property(this, val.getProperty(), val.getValue());
 					list.add(p);				
 				}
 				ruleMap.put(r, list);
@@ -565,5 +614,6 @@ public class ThemeManager {
 	public void onChange(ChangeListener changeListener) {
 		changeListeners.add(changeListener);
 	}
+
 	
 }
