@@ -280,25 +280,7 @@ public class SettingsActivity extends PreferenceActivity {
 				}
 			});
 			break;
-/*
-		case R.string.about_droidsound:
-			String fullName = "<ERROR>";
-			try {
-				PackageInfo pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-				
-				String appName = getString(pinfo.applicationInfo.labelRes);
-				fullName = String.format("%s %s (vc%d)\n%s", appName, pinfo.versionName, pinfo.versionCode, getString(R.string.about_droidsound)); 					
-			} catch (NameNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			builder.setMessage(fullName);
-			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int id) {
-					dialog.cancel();
-				}
-			});
-			break; */
+
 		default:
 			builder.setMessage(id);
 			builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {

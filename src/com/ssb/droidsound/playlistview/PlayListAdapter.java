@@ -41,7 +41,7 @@ class PlayListAdapter extends BaseAdapter {
 	private int mSideTitleIndex;
 	private int mDateIndex;
 
-	private String upperPathName;
+	//private String upperPathName;
 
 	
 	private String [] years;
@@ -51,7 +51,7 @@ class PlayListAdapter extends BaseAdapter {
 	
 	private ThemeManager tm;
 
-	private boolean inNetwork;
+	//private boolean inNetwork;
 	
 	
 	private String getTypeName(String filename, String title, int type) {
@@ -102,11 +102,11 @@ class PlayListAdapter extends BaseAdapter {
 		mCursor = cursor;
 		pathName = dirName;
 		if(pathName != null) {
-			upperPathName = dirName.toUpperCase();
-			inNetwork = upperPathName.contains(".LNK");
+			//upperPathName = dirName.toUpperCase();
+			//inNetwork = upperPathName.contains(".LNK");
 		} else {
-			upperPathName = null;
-			inNetwork = false;
+			//upperPathName = null;
+			//inNetwork = false;
 		}
 		
 		

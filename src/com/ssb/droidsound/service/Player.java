@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,7 +71,8 @@ public class Player implements Runnable {
 
 	// Incoming state
 	private Object cmdLock = new Object();
-	private Command command = Command.NO_COMMAND;
+	private LinkedList<Command> commands = new LinkedList<Command>();
+
 	private Object argument;
 
 	private  byte [] [] binaryInfo = new byte [1] [];
@@ -528,12 +530,15 @@ public class Player implements Runnable {
 			}
 			
 			try {
-				if(command != Command.NO_COMMAND) {
-
-					Log.d(TAG, "Command %s while in state %s", command.toString(), currentState.toString());
+				if(commands.size() > 0) {
+				//if(command != Command.NO_COMMAND) {
+					
 
 					synchronized (cmdLock) {
 						
+						Command command = commands.removeFirst();
+						Log.d(TAG, "Command %s while in state %s", command.toString(), currentState.toString());
+
 						switch(command) {
 						case PLAY:
 							SongFile song = (SongFile) argument;
@@ -656,7 +661,6 @@ public class Player implements Runnable {
 								break;
 							}
 						}
-						command = Command.NO_COMMAND;
 					}
 				}
 				
@@ -898,7 +902,7 @@ public class Player implements Runnable {
 
 	public void stop() {
 		synchronized (cmdLock) {
-			command = Command.STOP;
+			commands.add(Command.STOP);
 		}
 	}
 	
@@ -920,11 +924,11 @@ public class Player implements Runnable {
 		synchronized (cmdLock) {
 			if(pause) {
 				Log.d(TAG, "Pausing");
-				command = Command.PAUSE;
+				commands.add(Command.PAUSE);
 				whoPaused = who;
 			} else {
 				Log.d(TAG, "Unpausing");
-				command = Command.UNPAUSE;
+				commands.add(Command.UNPAUSE);
 			}
 		}
 		return oldWho;
@@ -932,28 +936,28 @@ public class Player implements Runnable {
 
 	public void seekTo(int pos) {
 		synchronized (cmdLock) {
-			command = Command.SET_POS;
+			commands.add(Command.SET_POS);
 			argument = pos;
 		}
 	}
 
 	public void playMod(SongFile mod) {
 		synchronized (cmdLock) {
-			command = Command.PLAY;
+			commands.add(Command.PLAY);
 			argument = mod;
 		}
 	}
 	
 	public void repeatSong() {
 		synchronized (cmdLock) {
-			command = Command.RESTART;
+			commands.add(Command.RESTART);
 		}
 	}
 
 
 	public void setSubSong(int song) {
 		synchronized (cmdLock) {
-			command = Command.SET_TUNE;
+			commands.add(Command.SET_TUNE);
 			argument = song;
 		}
 	}
@@ -983,24 +987,9 @@ public class Player implements Runnable {
 		
 	}
 
-	public void setBufSize(int bs) {
-		/*synchronized (cmdLock) {
-			if(bufSize != bs) {
-				bufSize = bs;
-				dataSize = bufSize / 16;
-				Log.d(TAG, "Buffersize now " + bs);
-				if(audioPlayer != null)
-					audioPlayer.setBufferSize(bufSize);
-				
-				samples = new short [bufSize / 2];
-				
-			}
-		}*/
-	}
-
 	public void dumpWav(SongFile song, String destFile, int length, int flags) {
 		synchronized (cmdLock) {
-			command = Command.DUMP_WAV;
+			commands.add(Command.DUMP_WAV);
 			argument = new Object [] {song, new File(destFile), length, flags};
 		}
 		

@@ -742,9 +742,6 @@ public class PlayerActivity extends Activity  {
 		}
 		// repeatText.setText("CONT");
 
-		String b = prefs.getString("buffer", "Long");
-		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
-
 
 		if(!created && lastConfig == null) {
 			Log.d(TAG, "OPEN DB");
@@ -1434,20 +1431,6 @@ public class PlayerActivity extends Activity  {
 
 		state.playerSwitch = prefs.getBoolean("openplayer", true);
 		
-
-		String b = prefs.getString("buffer", "Long");
-		player.setOption(PlayerService.OPTION_BUFFERSIZE, b);
-
-		/*
-		String s = prefs.getString("indexing", "Basic");
-		int imode = SongDatabase.INDEX_BASIC;
-		if(s.equals("Full")) {
-			imode = SongDatabase.INDEX_FULL;
-		} else if(s.equals("None")) {
-			imode = SongDatabase.INDEX_NONE;
-		}
-
-		songDatabase.setIndexMode(imode);*/
 	}
 
 	@Override

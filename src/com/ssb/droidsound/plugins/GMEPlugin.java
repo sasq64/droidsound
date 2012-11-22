@@ -21,6 +21,12 @@ public class GMEPlugin extends DroidSoundPlugin {
 	
 	long currentSong = 0;
 
+	private int currentFrames;
+
+	private int songLength;
+
+	private Integer loopMode = 0;
+
 	public GMEPlugin() {
 		extensions = new HashSet<String>();
 		for(String s : ex) {			
@@ -60,15 +66,22 @@ public class GMEPlugin extends DroidSoundPlugin {
 	
 	@Override
 	public boolean load(FileSource fs) {
+		currentFrames = 0;
+		
 		if(fs.isFile() || fs.getExt().equals("VGZ")) 		
 			currentSong = N_loadFile(fs.getFile().getPath());
 		else
 			currentSong = N_load(fs.getContents(), (int) fs.getLength());
+		
+		if(currentSong != 0)
+			songLength = N_getIntInfo(currentSong, INFO_LENGTH);
+		
 		return (currentSong != 0);
 	}
 	
 	@Override
 	public boolean loadInfo(FileSource fs)  {
+		
 		if(fs.isFile() || fs.getExt().equals("VGZ")) 		
 			currentSong = N_loadFile(fs.getFile().getPath());
 		else
@@ -90,12 +103,38 @@ public class GMEPlugin extends DroidSoundPlugin {
 	
 	// Expects Stereo, 44.1Khz, signed, big-endian shorts
 	@Override
-	public int getSoundData(short [] dest, int size) { return N_getSoundData(currentSong, dest, size); }	
+	public int getSoundData(short [] dest, int size) {
+		
+		int len = N_getSoundData(currentSong, dest, size);
+		
+		currentFrames += len/2;
+		if(loopMode == 0 && songLength > 0 && currentFrames / 44100 >= (songLength/1000))
+			return -1;
+		
+		return len;
+	}
+	
+	@Override
+	public void setOption(String opt, Object val) {
+		
+		if(opt.equals("loop")) {
+			loopMode  = (Integer)val;
+		}
+	}
+
+	
 	@Override
 	public boolean seekTo(int seconds) { return N_seekTo(currentSong, seconds); }
 	@Override
 	public boolean setTune(int tune) {
-		return N_setTune(currentSong, tune);
+		
+		boolean rc = N_setTune(currentSong, tune);
+		if(rc) {
+			currentFrames = 0;
+			songLength = N_getIntInfo(currentSong, INFO_LENGTH);
+		}
+		return rc;	
+
 	}
 	@Override
 	public String getStringInfo(int what) {

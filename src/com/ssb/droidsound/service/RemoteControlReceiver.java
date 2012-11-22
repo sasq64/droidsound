@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.telephony.TelephonyManager;
 import android.view.KeyEvent;
 
@@ -11,9 +12,80 @@ import com.ssb.droidsound.utils.Log;
 
 public class RemoteControlReceiver extends BroadcastReceiver {
 	private static final String TAG = RemoteControlReceiver.class.getSimpleName();
+	private static Handler handler;
+	private volatile static MyRunnable currentRunnable;
+	public static boolean paused;
+	
+	private static class MyRunnable implements Runnable {		
+
+		//private RemoteControlReceiver parent;
+		private PlayerInterface player;
+		private int pressTime;
+		private volatile int clicks;
+		private volatile int cancel;
+
+		public MyRunnable(int pressTime) {
+			this.pressTime = pressTime;
+			clicks = 0;
+			player = PlayerService.getPlayerInterface();
+		}
+		
+		@Override
+		public void run() {
+			
+			if(cancel > 0) {
+				cancel--;
+				return;
+			}
+						
+			Log.d(TAG, "RUNNING RUNNABLE %d/%d", clicks,pressTime);
+			
+			if(clicks > 0) {				
+				if(paused) {
+					paused = false;					
+					player.playPrevSong(clicks);
+					player.paused(false);
+				} else {
+					player.playNextSong(clicks);
+				}
+			} else
+			if(pressTime > 2000) {								
+				player.speechOnOff();
+			} else
+			if(pressTime > 300) {
+				if(paused) {
+					paused = false;
+					player.playPrevFile();
+				} else {
+					player.playNextFile();
+				}
+				
+			} else  {
+				if(player.isPlaying()) {
+					paused = true;
+					player.paused(true);						
+				} else {
+					paused = false;
+					player.paused(false);
+				}
+			}
+			
+			RemoteControlReceiver.currentRunnable = null;
+			
+		}
+
+		public void click() {
+			clicks++;
+			cancel++;
+			handler.postDelayed(this, 500);
+			Log.d(TAG, "CLICKS %d", clicks);
+		}
+	}
 		
 	public RemoteControlReceiver() {
 		super();
+		if(handler == null)
+			handler = new Handler();
 	}
 	
 	@Override
@@ -83,19 +155,14 @@ public class RemoteControlReceiver extends BroadcastReceiver {
 		                	// Dont read headset button if call is in progress
 		                	if(player.getCallState() != TelephonyManager.CALL_STATE_IDLE)
 		                		return;
-
-							if(pressTime > 2000) {								
-								player.speechOnOff();
-							} else
-							if(pressTime > 300) {
-								player.playNextSong();
-							} else  {
-								if(player.isPlaying()) {
-									player.paused(true);						
-								} else {
-									player.paused(false);
-								}
-							}
+		                	
+		                	if(currentRunnable != null) {
+		                		currentRunnable.click();
+		                	} else {
+			                	currentRunnable = new MyRunnable(pressTime);
+			                	handler.postDelayed(currentRunnable, 500);
+		                	}
+		                	
 							//actionHandled = false;
 							break;
 			            }							

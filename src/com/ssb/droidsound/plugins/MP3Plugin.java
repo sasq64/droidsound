@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 
 import com.ssb.droidsound.MediaStreamer;

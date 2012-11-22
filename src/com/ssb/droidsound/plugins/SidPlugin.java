@@ -323,7 +323,7 @@ public class SidPlugin extends DroidSoundPlugin {
 	public int getSoundData(short[] dest, int size) {
 		int len =  currentPlugin.getSoundData(dest, size);
 		currentFrames += len/2;
-		if(loopMode == 0 && currentFrames / 44100 >= (songLengths[currentTune]/1000))
+		if(loopMode == 0 && songLengths[currentTune] > 0 && currentFrames / 44100 >= (songLengths[currentTune]/1000))
 			return -1;
 		return len;
 	}

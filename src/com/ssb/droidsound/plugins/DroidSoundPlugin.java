@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 
 import com.ssb.droidsound.file.FileSource;
