@@ -168,25 +168,22 @@ class PlayListAdapter extends BaseAdapter {
 	public View getView(int position, View convertView, ViewGroup parent) {
 
 		LayoutInflater inflater = ((Activity)mContext).getLayoutInflater();
-		
+		ViewGroup vg = (ViewGroup)convertView;
 		if(convertView == null) {
-			convertView = inflater.inflate(R.layout.songlist_item, parent, false);
-			ViewGroup vg = (ViewGroup)convertView;
-			ImageView iv = (ImageView)vg.getChildAt(0);
-			TextView tv0 = (TextView)vg.getChildAt(1);
-			TextView tv1 = (TextView)vg.getChildAt(2);
-			TextView tv2 = (TextView)vg.getChildAt(3);
-			
+			vg = (ViewGroup) inflater.inflate(R.layout.songlist_item, parent, false);
+		}
+
+		ImageView iv = (ImageView)vg.getChildAt(0);
+		TextView tv0 = (TextView)vg.getChildAt(1);
+		TextView tv1 = (TextView)vg.getChildAt(2);
+		TextView tv2 = (TextView)vg.getChildAt(3);
+
+		if(convertView == null) {
 			iv.setTag("icon");
 			tv0.setTag("main");
 			tv1.setTag("sub");
 			tv2.setTag("side");			
 		}
-		ViewGroup vg = (ViewGroup)convertView;
-		ImageView iv = (ImageView)vg.getChildAt(0);
-		TextView tv0 = (TextView)vg.getChildAt(1);
-		TextView tv1 = (TextView)vg.getChildAt(2);
-		TextView tv2 = (TextView)vg.getChildAt(3);
 		
 
 		mCursor.moveToPosition(position);
@@ -284,7 +281,7 @@ class PlayListAdapter extends BaseAdapter {
 			tv1.setVisibility(View.GONE);
 		}
 		
-		return convertView;
+		return vg;
 	}
 	
 	public File getFile(int position) {

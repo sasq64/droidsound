@@ -120,12 +120,16 @@ subtext              sidetext
 -----------------------------    <-- divider
 TEXT
 subtext              sidetext
+
+	background-color: #000000;
+
 */
 
 /* Default for all items */
 item {
+	
+	background : (#000000, #transp, #transp);
 
-	background-color: #000000;
 
 	main.color: #ffffff;
 	sub.color: #aaaaaa;
@@ -191,14 +195,16 @@ item:online {
 }
 
 item:hilight {
-	main.color : #ffff88;
-	background: linear-gradient(left, #000000, #888888);
+	main.color : #ffff88;	
+	background : (#555555, #transp, #transp);
 }
 
 
 /************************************** WEB CSS FOR TEMPLATES *********************************************/
 
-/* This is used by a real webview - use any webkit compatible css */
+/*
+background: linear-gradient(left, #000000, #888888);
+ This is used by a real webview - use any webkit compatible css */
 
 body {
 	color: #ffffff;

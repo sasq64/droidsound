@@ -100,81 +100,86 @@ public class ThemeManager {
 		}
 		
 		public int getColor() {
-			if(data.charAt(0) == '#') {
-				return 0xff000000 | Integer.parseInt(data.substring(1), 16);
-			}
-			return 0;
+			return parseColor(data);
 		}
 
 		private int parseColor(String data) {
 			if(data.charAt(0) == '#') {
-				return 0xff000000 | Integer.parseInt(data.substring(1), 16);
+				data = data.substring(1);
 			}
-			return 0;
+			if(data.startsWith("transp"))
+				return 0;
+			if(data.length() <= 6)
+				return 0xff000000 | Integer.parseInt(data, 16);
+			else
+				return Integer.parseInt(data, 16);
+				
 		}
 		
 		public Drawable getDrawable() {
-
 			if(drawable == null) {
-				if(data.charAt(0) == '#') {
-					int c = 0;
-					try {
-						c = Integer.parseInt(data.substring(1), 16);
-					} catch (NumberFormatException e) {}
-					return new ColorDrawable(0xff000000 | c);
-				} else if(data.charAt(0) == '(') {
-					String[] what = data.split("[\\(,\\s\\)]+");
-					StateListDrawable sld = new StateListDrawable();
-	
-					if(what.length > 3) {
-						drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[3]));
-						sld.addState(new int [] { android.R.attr.state_focused }, drawable);
-					}
-					if(what.length > 2) {
-						drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[2]));
-						sld.addState(new int [] { android.R.attr.state_pressed }, drawable);
-					}
-					if(what.length > 1) {
-						drawable = new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[1]));
-						sld.addState(StateSet.WILD_CARD, drawable);
-					}
-					drawable = sld;
-				}
-				else {				
-					String[] what = data.split("[\\(,\\s\\)]+");
-					if(what[0].startsWith("-webkit-"))
-						what[0] = what[0].substring(8);
-					if(what[0].equals("linear-gradient") || what[0].equals("radial-gradient")) {
-						
-						int [] colors = new int [ what.length - 2];
-						for(int i=0; i<colors.length; i++) {
-							colors[i] = parseColor(what[i+2]);
-						}
-						
-						Orientation o = Orientation.LEFT_RIGHT;
-						if(what[1].equals("right"))
-							o = Orientation.RIGHT_LEFT;
-						if(what[1].equals("top"))
-							o = Orientation.TOP_BOTTOM;
-						if(what[1].equals("bottom"))
-							o = Orientation.BOTTOM_TOP;
-						if(what[1].equals("right"))
-							o = Orientation.RIGHT_LEFT;
-						GradientDrawable gd = new GradientDrawable(o, colors);
-						if(what[0].startsWith("radial-"))
-							gd.setGradientType(GradientDrawable.RADIAL_GRADIENT);
-						drawable = gd;
-					} else {
-						Bitmap bm = getBitmap();
-						drawable = new BitmapDrawable(tm.mContext.getResources(), bm);
-					}
-					
-					//linear-gradient(top, #2F2727, #1a82f7);
-					//radial-gradient(circle, #1a82f7, #2F2727);
-				}
+				drawable = parseDrawable(data);
 			}
 			return drawable;
-			
+		}
+		
+		public Drawable parseDrawable(String data) {
+
+			Drawable drawable = null;
+
+			if(data.charAt(0) == '#') {
+				return new ColorDrawable(parseColor(data.substring(1)));
+			} else if(data.charAt(0) == '(') {
+				String[] what = data.split("[\\(,\\s\\)]+");
+				StateListDrawable sld = new StateListDrawable();
+
+				if(what.length > 3) {
+					drawable = parseDrawable(what[3]); //new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[3]));
+					sld.addState(new int [] { android.R.attr.state_focused }, drawable);
+				}
+				if(what.length > 2) {
+					drawable =  parseDrawable(what[2]); //new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[2]));
+					sld.addState(new int [] { android.R.attr.state_pressed }, drawable);
+				}
+				if(what.length > 1) {
+					drawable =  parseDrawable(what[1]); //new BitmapDrawable(tm.mContext.getResources(), parseBitmap(what[1]));
+					sld.addState(StateSet.WILD_CARD, drawable);
+				}
+				drawable = sld;
+			}
+			else {
+				String[] what = data.split("[\\(,\\s\\)]+");				
+				if(what[0].startsWith("-webkit-"))
+					what[0] = what[0].substring(8);
+				if(what[0].equals("linear-gradient") || what[0].equals("radial-gradient")) {
+					
+					int [] colors = new int [ what.length - 2];
+					for(int i=0; i<colors.length; i++) {
+						colors[i] = parseColor(what[i+2]);
+					}
+					
+					Orientation o = Orientation.LEFT_RIGHT;
+					if(what[1].equals("right"))
+						o = Orientation.RIGHT_LEFT;
+					if(what[1].equals("top"))
+						o = Orientation.TOP_BOTTOM;
+					if(what[1].equals("bottom"))
+						o = Orientation.BOTTOM_TOP;
+					if(what[1].equals("right"))
+						o = Orientation.RIGHT_LEFT;
+					GradientDrawable gd = new GradientDrawable(o, colors);
+					if(what[0].startsWith("radial-"))
+						gd.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+					drawable = gd;
+				} else {
+					Bitmap bm = parseBitmap(data);
+					drawable = new BitmapDrawable(tm.mContext.getResources(), bm);
+				}
+				
+				//linear-gradient(top, #2F2727, #1a82f7);
+				//radial-gradient(circle, #1a82f7, #2F2727);
+			}
+			return drawable;			
 		}
 		
 		public float getSize() {
@@ -239,6 +244,16 @@ public class ThemeManager {
 
 		public boolean endsWith(String string) {
 			return name.endsWith(string);
+		}
+
+		public Drawable getBackgroundDrawable() {
+			Drawable drawable = getDrawable();			
+			StateListDrawable sld = new StateListDrawable();			
+			ColorDrawable t = new ColorDrawable(android.R.color.transparent);			
+			sld.addState(new int [] { android.R.attr.state_focused }, t );
+			sld.addState(new int [] { android.R.attr.state_pressed }, t);
+			sld.addState(StateSet.WILD_CARD, drawable);
+			return sld;
 		}
 
 
