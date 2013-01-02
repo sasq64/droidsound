@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -98,6 +99,7 @@ public class RSNPlugin extends DroidSoundPlugin {
 		targetFile = FileUtils.getTempDir();//fs.getFile().getParentFile();
 		rarFile.extractTo(targetFile.getPath());		
 		File [] files = targetFile.listFiles();
+        Arrays.sort(files);
 		handlers = new ArrayList<SongHandler>();
 		for(File f : files) {
 			int dot = f.getName().lastIndexOf('.');
