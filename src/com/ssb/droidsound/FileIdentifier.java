@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.ssb.droidsound.utils.Log;
@@ -207,7 +208,7 @@ public class FileIdentifier {
 
 		int dot = name.lastIndexOf('.');
 		
-		String ext = name.substring(dot+1).toUpperCase();
+		String ext = name.substring(dot+1).toUpperCase(Locale.ENGLISH);
 		//Log.d(TAG, "hash %s %d", extensions.toString(), extensions.size());
 		Integer i = extensions.get(ext);
 		if(i == null) {

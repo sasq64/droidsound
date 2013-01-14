@@ -257,7 +257,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		}
 		
 		if(composer) {
-			String a = sb.toString().toUpperCase();
+			String a = sb.toString().toUpperCase(Locale.ENGLISH);
 			String x = composerTranslation.get(a);
 			Log.d(TAG, "Checked %s became %s", a, x == null ? "NULL" : x);
 			if(x != null) {

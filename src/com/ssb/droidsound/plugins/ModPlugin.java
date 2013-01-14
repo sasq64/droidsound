@@ -1,6 +1,7 @@
 package com.ssb.droidsound.plugins;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -145,14 +146,14 @@ public class ModPlugin extends DroidSoundPlugin {
 			if (t[i].length() > 0 && !t[i].equals("EOL")) {
 				// Log.d(TAG, "'%s'", t[i]);
 
-				if (t[i].toUpperCase().equals("PRO-WIZARD")) {
+				if (t[i].toUpperCase(Locale.ENGLISH).equals("PRO-WIZARD")) {
 					break;
 				}
 
 				String nextWord = "EOL";
 				int ii = i + 1;
 				while (ii < n && (nextWord.equals("EOL") || nextWord.length() == 0)) {
-					nextWord = t[ii++].toUpperCase();
+					nextWord = t[ii++].toUpperCase(Locale.ENGLISH);
 				}
 
 				// Log.d(TAG, "NW:%s", nextWord);
@@ -164,13 +165,13 @@ public class ModPlugin extends DroidSoundPlugin {
 					// a += ("and" + t[i+2]);
 					// }
 
-					if (a.toUpperCase().equals("ME")) {
+					if (a.toUpperCase(Locale.ENGLISH).equals("ME")) {
 						break;
 					}
 
 					ii = i + 1;
 					while (!t[ii].equals("EOL")) {
-						if (t[ii].toUpperCase().equals("OF") || t[ii].equals("/")) {
+						if (t[ii].toUpperCase(Locale.ENGLISH).equals("OF") || t[ii].equals("/")) {
 							break;
 						}
 						a += (" " + t[ii]);

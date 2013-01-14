@@ -2,6 +2,7 @@ package com.ssb.droidsound.plugins;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 
 import android.media.MediaPlayer;
@@ -281,11 +282,11 @@ public class MP3Plugin extends DroidSoundPlugin {
 
 		PlaylistParser pls = null;
 		type = "MP3";
-		if(file.getName().toUpperCase().endsWith(".M3U")) {
+		if(file.getName().toUpperCase(Locale.ENGLISH).endsWith(".M3U")) {
 			pls = new M3UParser(file);
 			type = "M3U";
 			webPage = pls.getVariable("webpage");
-		} else if(file.getName().toUpperCase().endsWith(".PLS")) {
+		} else if(file.getName().toUpperCase(Locale.ENGLISH).endsWith(".PLS")) {
 			pls = new PLSParser(file);
 			type = "PLS";
 		}

@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -173,7 +174,7 @@ public class SongDatabase implements Runnable {
 	}
 
 	public void registerDataSource(String dumpname, DataSource ds) {
-		String s = dumpname.toUpperCase();
+		String s = dumpname.toUpperCase(Locale.ENGLISH);
 		dbsources.put(s, ds);
 	}
 	
@@ -668,25 +669,25 @@ public class SongDatabase implements Runnable {
 							String fn = f.getName();
 							int end = fn.length();
 														
-							if(dbsources.containsKey(fn.toUpperCase())) {								
+							if(dbsources.containsKey(fn.toUpperCase(Locale.ENGLISH))) {								
 								foundDumps.add(f);
 								values = null;
 							}							
 							else
-							if(fn.toUpperCase().endsWith(".ZIP")) {
+							if(fn.toUpperCase(Locale.ENGLISH).endsWith(".ZIP")) {
 								Log.d(TAG, "Found zipfile (%s)", f.getPath());
 								zipFiles.add(f);
 								
 								values = null;
 							}
 							else 
-							if(fn.toUpperCase().endsWith(".PLIST")) {
+							if(fn.toUpperCase(Locale.ENGLISH).endsWith(".PLIST")) {
 								Log.d(TAG, "Found playlist (%s)", fn);
 								values.put("TYPE", TYPE_PLIST);
 								values.put("TITLE", fn.substring(0, end - 6));								
 							}
 							else 
-							if(fn.toUpperCase().endsWith(".LNK")) {
+							if(fn.toUpperCase(Locale.ENGLISH).endsWith(".LNK")) {
 								Log.d(TAG, "Found link (%s)", fn);
 								values.put("TYPE", TYPE_DIR);
 								values.put("TITLE", fn.substring(0, end - 4));								
@@ -772,14 +773,14 @@ public class SongDatabase implements Runnable {
 			}
 			
 			for(File dump : foundDumps) {
-				DataSource ds = dbsources.get(dump.getName().toUpperCase());
+				DataSource ds = dbsources.get(dump.getName().toUpperCase(Locale.ENGLISH));
 				isReady = false;
 				scanCallback.notifyScan(dump.getPath(), 0);
 				
 				InputStream is = null;
 				int size = -1;
 				ZipFile zf = null;
-				if(dump.getName().toUpperCase().endsWith(".ZIP")) {
+				if(dump.getName().toUpperCase(Locale.ENGLISH).endsWith(".ZIP")) {
 					try {
 						zf = new ZipFile(dump);
 						Enumeration<? extends ZipEntry> entries = zf.entries();
@@ -922,7 +923,7 @@ public class SongDatabase implements Runnable {
 		
 		if(f.isDirectory()) {
 			scanFiles(f, true, 0);
-		} else if(f.getName().toUpperCase().endsWith(".ZIP")) {			
+		} else if(f.getName().toUpperCase(Locale.ENGLISH).endsWith(".ZIP")) {			
 			try {
 				isReady = false;
 				scanCallback.notifyScan(f.getPath(), 0);
@@ -1028,7 +1029,7 @@ public class SongDatabase implements Runnable {
 						break;
 					}
 					String pathName = oc.getString(pindex);
-					if(!pathName.toUpperCase().contains(".zip")) {
+					if(!pathName.toUpperCase(Locale.ENGLISH).contains(".ZIP")) {
 						String fileName = oc.getString(findex);
 						File f = new File(pathName, fileName);
 						if(!f.exists()) {
@@ -1049,7 +1050,7 @@ public class SongDatabase implements Runnable {
 					for(File f : deletes) {
 						Log.d(TAG, "Removing %s from DB\n", f.getPath());
 						scanDb.delete("FILES", "PATH=? AND FILENAME=?", new String[] { f.getParent(), f.getName() });
-						if(f.getName().toUpperCase().endsWith(".ZIP")) {
+						if(f.getName().toUpperCase(Locale.ENGLISH).endsWith(".ZIP")) {
 							Log.d(TAG, "Removing zip contents");
 							scanDb.delete("FILES", "PATH LIKE ?", new String[] { f.getPath() + "/%" });
 						}
@@ -1102,7 +1103,7 @@ public class SongDatabase implements Runnable {
 		
 		
 		for(Entry<String, DataSource> ds : dbsources.entrySet()) {
-			if(fromPath.toUpperCase().contains("/" + ds.getKey())) {
+			if(fromPath.toUpperCase(Locale.ENGLISH).contains("/" + ds.getKey())) {
 				Cursor cursor = ds.getValue().search(query, fromPath, rdb);
 				if(cursor != null) {
 					return cursor;
@@ -1213,7 +1214,7 @@ public class SongDatabase implements Runnable {
 
 		pathTitle = null;
 		
-		String upath = pathName.toUpperCase();
+		String upath = pathName.toUpperCase(Locale.ENGLISH);
 		int dot = pathName.lastIndexOf('.');
 		String ext = "";
 		if(dot > 0) {
@@ -1360,7 +1361,7 @@ public class SongDatabase implements Runnable {
 			return;
 		}
 		
-		if(songFile.getName().toUpperCase().endsWith(".ZIP")) {
+		if(songFile.getName().toUpperCase(Locale.ENGLISH).endsWith(".ZIP")) {
 			Log.d(TAG, "WONT add zip files");
 			return;
 		}
@@ -1374,7 +1375,7 @@ public class SongDatabase implements Runnable {
 		
 		
 		if(songFile.exists()) {
-			if(songFile.getName().toUpperCase().endsWith(".PLIST")) {
+			if(songFile.getName().toUpperCase(Locale.ENGLISH).endsWith(".PLIST")) {
 				Playlist newpl = Playlist.getPlaylist(songFile.getFile());
 				List<SongFile> files = newpl.getSongs();
 				Log.d(TAG, "Adding %d files from playlist", files.size());

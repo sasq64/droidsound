@@ -6,6 +6,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class CueFile {
 	private static final String TAG = CueFile.class.getSimpleName();
@@ -32,7 +33,7 @@ public class CueFile {
 				String[] ll = line.trim().split(" ");
 				if(ll.length > 0) {
 					String arg;
-					String cmd = ll[0].toUpperCase();
+					String cmd = ll[0].toUpperCase(Locale.ENGLISH);
 					arg = getQuotedString(line);
 					
 					Log.d(TAG, "%s '%s'", cmd, arg);

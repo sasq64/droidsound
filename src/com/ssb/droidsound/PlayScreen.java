@@ -3,6 +3,7 @@ package com.ssb.droidsound;
 import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -636,9 +637,9 @@ public class PlayScreen {
 
 		for(File f : templateDir.listFiles()) {
 			String parts[] = f.getName().split("\\.");
-			if(parts.length == 2 && parts[1].toLowerCase().equals("html")) {
+			if(parts.length == 2 && parts[1].toLowerCase(Locale.ENGLISH).equals("html")) {
 				String html = Utils.readFile(f);
-				String what = parts[0].toUpperCase();
+				String what = parts[0].toUpperCase(Locale.ENGLISH);
 				String oldHtml = templates.get(what);
 				if(oldHtml == null || !oldHtml.equals(html)) {
 					templates.put(what, html);
@@ -719,7 +720,7 @@ public class PlayScreen {
 		}
 
 		if(variables.containsKey("plugin"))
-			currentPluginName = ((String)variables.get("plugin")).toUpperCase();
+			currentPluginName = ((String)variables.get("plugin")).toUpperCase(Locale.ENGLISH);
 		else
 			currentPluginName = "DEF";
 		

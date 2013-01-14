@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -164,10 +165,10 @@ public class UADEPlugin extends DroidSoundPlugin {
 		
 		int x = name.lastIndexOf('.');
 		if(x >= 0) {
-			String ext = name.substring(x+1).toUpperCase();
+			String ext = name.substring(x+1).toUpperCase(Locale.ENGLISH);
 			if(!extensions.contains(ext)) {	
 				x = name.indexOf('.');
-				ext = name.substring(0, x).toUpperCase();
+				ext = name.substring(0, x).toUpperCase(Locale.ENGLISH);
 
 				if(extensions.contains(ext)) {
 					return name.substring(x+1);

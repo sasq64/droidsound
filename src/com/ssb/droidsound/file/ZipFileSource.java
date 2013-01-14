@@ -2,6 +2,7 @@ package com.ssb.droidsound.file;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
 import java.util.zip.ZipEntry;
 
 import com.ssb.droidsound.utils.NativeZipFile;
@@ -68,7 +69,7 @@ public class ZipFileSource extends FileSource {
 	public ZipFileSource(String fileRef) {
 		super(fileRef);
 		
-		int ext = fileRef.toLowerCase().indexOf(".zip/");
+		int ext = fileRef.toLowerCase(Locale.ENGLISH).indexOf(".zip/");
 		if(ext < 0) return;
 		zipPath = fileRef.substring(0, ext+4);
 		String entryName = fileRef.substring(ext+5);

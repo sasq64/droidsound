@@ -11,6 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.channels.FileChannel;
+import java.util.Locale;
 import java.util.Map;
 
 import android.app.Activity;
@@ -337,7 +338,7 @@ public class PlayerActivity extends Activity  {
 
 		if(Intent.ACTION_VIEW.equals(intent.getAction())) {
 			String music = intent.getDataString();
-			if(music.toUpperCase().endsWith(".ZIP")) {
+			if(music.toUpperCase(Locale.ENGLISH).endsWith(".ZIP")) {
 				if(music.startsWith("file:/")) {
 					music = music.substring(6);				
 				}
@@ -497,7 +498,7 @@ public class PlayerActivity extends Activity  {
 		if(Intent.ACTION_VIEW.equals(intent.getAction())) {
 			String music = intent.getDataString();
 
-			if(music.toUpperCase().endsWith(".ZIP")) {
+			if(music.toUpperCase(Locale.ENGLISH).endsWith(".ZIP")) {
 
 				if(music.startsWith("file:/")) {
 					music = music.substring(6);

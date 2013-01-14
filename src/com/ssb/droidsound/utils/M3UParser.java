@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.ssb.droidsound.utils.Log;
@@ -47,7 +48,7 @@ public class M3UParser implements PlaylistParser {
 							String def = line.substring(8).trim();
 							String parts [] = def.split("=");
 							if(parts != null && parts.length == 2) {
-								defines.put(parts[0].toLowerCase(), parts[1]);
+								defines.put(parts[0].toLowerCase(Locale.ENGLISH), parts[1]);
 							}
 						}
 					} else {

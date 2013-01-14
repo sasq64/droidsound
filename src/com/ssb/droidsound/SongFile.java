@@ -114,7 +114,7 @@ public class SongFile {
 			midfix = fileName.substring(firstDot, lastDot+1);
 		}
 
-		int zip = s[0].toUpperCase(locale).indexOf(".ZIP/");
+		int zip = s[0].toUpperCase(Locale.ENGLISH).indexOf(".ZIP/");
 		if(zip > 0) {
 			zipPath = s[0].substring(0, zip+4);
 			zipName = s[0].substring(zip+5);

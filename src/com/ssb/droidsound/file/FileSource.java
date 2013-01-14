@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
 
 import com.ssb.droidsound.utils.DataFileSource;
 import com.ssb.droidsound.utils.Log;
@@ -47,7 +48,7 @@ public abstract class FileSource {
 
 		if(ref.toLowerCase().startsWith("http")) {
 			fs = new StreamSource(ref);
-		} else if(ref.toLowerCase().contains(".zip/")) {
+		} else if(ref.toLowerCase(Locale.ENGLISH).contains(".zip/")) {
 			fs = new ZipFileSource(ref);
 		} else {
 			fs = new RealFileSource(new File(ref));
@@ -280,7 +281,7 @@ public abstract class FileSource {
 			ext = ext.substring(0,e);
 			//Log.d(TAG, "EXT NOW: " + ext);
 		}
-		return ext.toUpperCase();
+		return ext.toUpperCase(Locale.ENGLISH);
 	}
 
 	public boolean isFile() {
