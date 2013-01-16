@@ -52,6 +52,8 @@ public class SidPlugin extends DroidSoundPlugin {
 	}
 	
 	private Info songInfo;
+
+	private int silence;
 	
 	private byte[] calculateMD5(byte[] module, int size) {
 		ByteBuffer src = ByteBuffer.wrap(module, 0, size);		
@@ -323,9 +325,18 @@ public class SidPlugin extends DroidSoundPlugin {
 	public int getSoundData(short[] dest, int size) {
 		int len =  currentPlugin.getSoundData(dest, size);
 		currentFrames += len/2;
-		if(loopMode == 0 && songLengths[currentTune] > 0 && currentFrames / 44100 >= (songLengths[currentTune]/1000))
+		
+		int played = currentFrames * 10 / 441;
+				
+		if(loopMode == 0 && songLengths[currentTune] > 0 && (played >= songLengths[currentTune]))
 			return -1;
 		return len;
+	}
+	
+	@Override
+	public void setSilence(int msec) {
+		//silence = msec;
+		//Log.d(TAG, "#SID SILENCE %d", msec);
 	}
 
 	@Override

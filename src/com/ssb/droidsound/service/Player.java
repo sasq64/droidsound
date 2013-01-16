@@ -764,6 +764,9 @@ public class Player implements Runnable {
 			audioPlayer.update(samples, len);
 			
 			int silence = audioPlayer.getSilence();
+			if(silence > 500) {
+				currentPlugin.setSilence(silence);
+			}
 			if(silence > 2500) {
 				if(!isSilent) {
 					isSilent = true;

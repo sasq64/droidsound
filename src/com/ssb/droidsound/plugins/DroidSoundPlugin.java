@@ -243,4 +243,6 @@ public abstract class DroidSoundPlugin {
 	public byte [] getBinaryInfo(int what) {
 		return null;
 	}
+
+	public void setSilence(int msec) {}
 }

@@ -130,7 +130,7 @@ public class AsyncAudioPlayer implements Runnable {
 					else
 						break;
 				}
-				Log.d(TAG, "Reveived %s", cmd.name());
+				Log.d(TAG, "Received %s", cmd.name());
 				switch(cmd) {
 				case START:
 					_start();
@@ -296,13 +296,14 @@ public class AsyncAudioPlayer implements Runnable {
 		
 		
 		Log.d(TAG, "Flush & stop");
-		audioTrack.pause();
-		try {
-			Thread.sleep(100);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		
+		buffers.clear();
+		framesWritten = framesRead = silence = 0;
+		bufferTotal = 0;
+		
+		stopped = true;
+		holdData = false;
+		
 		audioTrack.flush();
 		try {
 			Thread.sleep(100);
@@ -312,12 +313,6 @@ public class AsyncAudioPlayer implements Runnable {
 		}
 		audioTrack.stop();
 
-		buffers.clear();
-		framesWritten = framesRead = silence = 0;
-		bufferTotal = 0;
-		
-		stopped = true;
-		holdData = false;
 
 		/*if(reinitAudio) {
 			audioTrack.release();

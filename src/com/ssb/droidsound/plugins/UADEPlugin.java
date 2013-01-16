@@ -213,16 +213,16 @@ public class UADEPlugin extends DroidSoundPlugin {
 	}
 
 
-	private static String [] pref0 = new String [] { "MDAT", "TFX", "SNG", "RJP", "JPN", "DUM", "mdat", "tfx", "sng", "rjp", "jpn", "dum" };
-	private static String [] pref1 = new String [] { "SMPL", "SAM", "INS", "SMP", "SMP", "INS", "smpl", "sam", "ins", "smp", "smp", "ins" };
+	private static String [] pref0 = new String [] { "mdat", "tfx", "sng", "rjp", "jpn", "dum" };
+	private static String [] pref1 = new String [] { "smpl", "sam", "ins", "smp", "smp", "ins" };
 
 	private static String getSecondaryFile(String name) {
 				
 		int dot = name.lastIndexOf('.');		
 		int firstDot = name.indexOf('.');
 		
-		String ext = name.substring(dot+1);		
-		String pref = name.substring(0, firstDot);
+		String ext = name.substring(dot+1).toLowerCase(Locale.ENGLISH);		
+		String pref = name.substring(0, firstDot).toLowerCase(Locale.ENGLISH);
 
 		for(int i=0; i<pref0.length; i++) {
 			if(pref.equals(pref0[i])) {
