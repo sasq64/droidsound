@@ -104,6 +104,7 @@ public class MediaStreamer implements Runnable {
 	private long totalFrameBytes;
 	private boolean VBR;
 	private boolean parseMp3;
+	private int retryDelay;
 	
 	private static final int bitRateTab[] = new int [] {0,32,40,48,56,64,80,96,112,128,160,192,224,256,320,0};
 	
@@ -149,227 +150,244 @@ V/MediaStreamer(12369): icy-metaint: 16000
 
 		//localMPConnection = null;
 		loaded = false;
+		retryDelay = 500;
 		
-		for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
-
-			parseMp3 = false;
-			boolean doRetry = false;
+		while(!doQuit) {
 			
-			Log.d(TAG, "Looping, doQuit is " + (doQuit ? "SET" : "UNSET"));
-
-			String httpName = httpNames.get(httpNo);
-			StreamingHttpConnection httpConn = null;
-			int response = -1;
-			
-			while(true) {
+			for(int httpNo=0; httpNo < httpNames.size(); httpNo++) {
+	
+				parseMp3 = false;
+				boolean doRetry = false;
+				
+				Log.d(TAG, "Looping, doQuit is " + (doQuit ? "SET" : "UNSET"));
+	
+				String httpName = httpNames.get(httpNo);
+				StreamingHttpConnection httpConn = null;
+				int response = -1;
+				
+				while(true) {
+						
+					URL url = new URL(httpName);	
+					Log.d(TAG, "Opening URL " + httpName);
+	
+					try {
+						httpConn = new StreamingHttpConnection(url);
+					} catch (IOException e) {
+						break;
+					}
+					/*URLConnection conn = url.openConnection();
+					if (!(conn instanceof HttpURLConnection))
+						throw new IOException("Not a HTTP connection");
+					HttpURLConnection httpConn = (HttpURLConnection) conn; */
 					
-				URL url = new URL(httpName);	
-				Log.d(TAG, "Opening URL " + httpName);
-
-				try {
-					httpConn = new StreamingHttpConnection(url);
-				} catch (IOException e) {
+					httpConn.setAllowUserInteraction(false);
+					httpConn.setInstanceFollowRedirects(true);
+					httpConn.setRequestMethod("GET");
+					httpConn.addRequestProperty("Icy-MetaData", "1");
+			
+					Log.d(TAG, "Connecting");	
+					httpConn.connect();
+			
+					response = httpConn.getResponseCode();			
+					
+					if(response == HttpURLConnection.HTTP_MOVED_TEMP) {					
+						httpName = httpConn.getHeaderField("location");
+						Log.d(TAG, ">>>>> Redirecting to '%s'", httpName);
+						continue;
+					}
 					break;
 				}
-				/*URLConnection conn = url.openConnection();
-				if (!(conn instanceof HttpURLConnection))
-					throw new IOException("Not a HTTP connection");
-				HttpURLConnection httpConn = (HttpURLConnection) conn; */
+				//Log.d(TAG, "RESPONSE %d %s", response, httpConn.getResponseMessage());
 				
-				httpConn.setAllowUserInteraction(false);
-				httpConn.setInstanceFollowRedirects(true);
-				httpConn.setRequestMethod("GET");
-				httpConn.addRequestProperty("Icy-MetaData", "1");
-		
-				Log.d(TAG, "Connecting");	
-				httpConn.connect();
-		
-				response = httpConn.getResponseCode();			
-				
-				if(response == HttpURLConnection.HTTP_MOVED_TEMP) {					
-					httpName = httpConn.getHeaderField("location");
-					Log.d(TAG, ">>>>> Redirecting to '%s'", httpName);
-					continue;
-				}
-				break;
-			}
-			//Log.d(TAG, "RESPONSE %d %s", response, httpConn.getResponseMessage());
-			
-			if (response == HttpURLConnection.HTTP_OK) {
-				Log.d(TAG, "HTTP connected");
-				
-				metaInterval = -1;
-								
-				icyDesc = httpConn.getHeaderField("icy-description");
-				icyGenre = httpConn.getHeaderField("icy-genre");
-				icyName = httpConn.getHeaderField("icy-name");
-				icyUrl = httpConn.getHeaderField("icy-url");
-				icyBitrate = httpConn.getHeaderField("icy-br");
-				
-				String contentType = httpConn.getHeaderField("content-type");
-				String cl = httpConn.getHeaderField("content-length");
-				contentLength = -1;
-				try {
-					contentLength = Integer.parseInt(cl);
-				} catch (NumberFormatException e) {
-				}
-				
-				if(contentType.trim().startsWith("audio/mp"))
-					parseMp3 = true;
-				
-				String icy = httpConn.getHeaderField("icy-metaint");
-				if(icy != null) {
-					metaInterval = Integer.parseInt(icy);
-				}
-
-				Log.d(TAG, "META INTERVAL %d", metaInterval);
-				
-				if(localMPConnection == null) {
-					localMPConnection = new LocalMPConnection();
-					localMPConnection.setContentType(contentType);
-					localMPConnection.accept();
-				}
-
-				int size;
-				frameHeader = new byte[4];
-				byte[] buffer = new byte[128*1024];
-				
-				//tagBuffer = new byte[32768];
-				tagFilled = 0;
-				tagSize = 0;
-
-				metaArray = new byte[4092];
-				metaPos = 0;
-				metaSize = -1;				
-				metaCounter = 0;
-				
-				totalBytes = 0L;
-				totalFrameBytes = 0;
-				frameHeaderBits = 0;
-				boolean firstRead = true;
-
-				//last_usec = usec = 0L;
-				nextFramePos = -1;
-				hasQuit = false;
-				extraSize = 0;
-				
-				bufferEnded = false;
-				
-				
-				Log.d(TAG, "Opening connection");
-				InputStream in = httpConn.getInputStream();
-
-				if(!parseMp3)
-					usec = -1000;
-
-				while (!doQuit) {
-					int rem = buffer.length;
-					rem = updateMeta(in, rem);
-
-					if(rem > 0) {
-						try {
-							size = in.read(buffer, 0, rem);
-						} catch (IOException e) {
-							Log.d(TAG, "####### LOST CONNECTION");
-							if(!fileMode)
-								httpNo--;
-							doRetry = true;
-							break;
-						}
-						
-						if(size == 0) {
-							//Arrays.fill(samples, 0, len, (short) 0);
-							Log.d(TAG, "####### Getting nothing");
-						}
-						
-						if(size == -1) {
-							Log.d(TAG, "####### End of buffer");
-							bufferEnded = true;
-							if(!fileMode) {
-								httpNo--;
-								doRetry = true;
-								break;
-							} else {
-								if(httpNo+1 < httpNames.size()) {
-									doRetry = true;
-									break;
-								}
-								try {
-									Thread.sleep(100);
-								} catch (InterruptedException e) {
-									Log.d(TAG, "####### INTERRUPTED");
-									doQuit = true;
-								}
-								continue;
-							}							
-						}
-						
-						if(firstRead) {
-							Log.d(TAG, "### READ: %02x %02x %02x %02x", buffer[0], buffer[1], buffer[2], buffer[3]);
-							firstRead = false;
-						}
-						
-						if(parseMp3) {
-							parseMP3Frames(buffer, size);
-						}
-						
-						//Log.d(TAG, "####### %d", totalBytes);
-						
-						metaCounter += size;						
-						totalBytes += size;
-
-						if(tagSize == 0 || tagFilled >= tagSize) {						
-							localMPConnection.write(buffer, 0, size);
-						}
-						
-						//if(metaCounter == metaInterval)
-						//	Log.d(TAG, "META TIME");
-						
-					} //else
-						//Log.d(TAG, "IN META!");
+				if (response == HttpURLConnection.HTTP_OK) {
+					Log.d(TAG, "HTTP connected");
 					
-					if(parseMp3) {
-						if(usec - last_usec > 1000000) {
-							Log.d(TAG, "%%%%%%%%%% QUEUE POS %d msec", (int)(usec / 1000));
-							last_usec = usec;														
-							int sl = (int) ((usec/1000) * (contentLength-extraSize) /  (totalFrameBytes));
-							Log.d(TAG, "%d seconds in %dKB out of %dKB = %d seconds total", usec/1000000, totalBytes/1024, contentLength/1024, sl/1000);
-							//if(sl/1000 != songLength/1000) {
-								songLength = sl;
-								gotID3 = true;
-							//}
-						}
-						
-
+					metaInterval = -1;
+									
+					icyDesc = httpConn.getHeaderField("icy-description");
+					icyGenre = httpConn.getHeaderField("icy-genre");
+					icyName = httpConn.getHeaderField("icy-name");
+					icyUrl = httpConn.getHeaderField("icy-url");
+					icyBitrate = httpConn.getHeaderField("icy-br");
+					
+					String contentType = httpConn.getHeaderField("content-type");
+					String cl = httpConn.getHeaderField("content-length");
+					contentLength = -1;
+					try {
+						contentLength = Integer.parseInt(cl);
+					} catch (NumberFormatException e) {
 					}
 					
+					if(contentType.trim().startsWith("audio/mp"))
+						parseMp3 = true;
+					
+					String icy = httpConn.getHeaderField("icy-metaint");
+					if(icy != null) {
+						metaInterval = Integer.parseInt(icy);
+					}
+	
+					Log.d(TAG, "META INTERVAL %d", metaInterval);
+					
+					if(localMPConnection == null) {
+						localMPConnection = new LocalMPConnection();
+						localMPConnection.setContentType(contentType);
+						localMPConnection.accept();
+					}
+	
+					int size;
+					frameHeader = new byte[4];
+					byte[] buffer = new byte[128*1024];
+					
+					//tagBuffer = new byte[32768];
+					tagFilled = 0;
+					tagSize = 0;
+	
+					metaArray = new byte[4092];
+					metaPos = 0;
+					metaSize = -1;				
+					metaCounter = 0;
+					
+					totalBytes = 0L;
+					totalFrameBytes = 0;
+					frameHeaderBits = 0;
+					boolean firstRead = true;
+	
+					//last_usec = usec = 0L;
+					nextFramePos = -1;
+					hasQuit = false;
+					extraSize = 0;
+					
+					bufferEnded = false;
+					
+					
+					Log.d(TAG, "Opening connection");
+					InputStream in = httpConn.getInputStream();
+	
+					if(!parseMp3)
+						usec = -1000;
+	
+					while (!doQuit) {
+						int rem = buffer.length;
+						rem = updateMeta(in, rem);
+	
+						if(rem > 0) {
+							try {
+								size = in.read(buffer, 0, rem);
+							} catch (IOException e) {
+								Log.d(TAG, "####### LOST CONNECTION");
+								if(!fileMode)
+									httpNo--;
+								doRetry = true;
+								break;
+							}
+							
+							if(size == 0) {
+								//Arrays.fill(samples, 0, len, (short) 0);
+								Log.d(TAG, "####### Getting nothing");
+							}
+							
+							if(size == -1) {
+								Log.d(TAG, "####### End of buffer");
+								bufferEnded = true;
+								if(!fileMode) {
+									httpNo--;
+									doRetry = true;
+									break;
+								} else {
+									if(httpNo+1 < httpNames.size()) {
+										doRetry = true;
+										break;
+									}
+									try {
+										Thread.sleep(100);
+									} catch (InterruptedException e) {
+										Log.d(TAG, "####### INTERRUPTED");
+										doQuit = true;
+									}
+									continue;
+								}							
+							}
+							
+							if(firstRead) {
+								Log.d(TAG, "### READ: %02x %02x %02x %02x", buffer[0], buffer[1], buffer[2], buffer[3]);
+								firstRead = false;
+							}
+							
+							if(parseMp3) {
+								parseMP3Frames(buffer, size);
+							}
+							
+							//Log.d(TAG, "####### %d", totalBytes);
+							
+							metaCounter += size;						
+							totalBytes += size;
+	
+							if(tagSize == 0 || tagFilled >= tagSize) {						
+								localMPConnection.write(buffer, 0, size);
+							}
+							
+							//if(metaCounter == metaInterval)
+							//	Log.d(TAG, "META TIME");
+							
+						} //else
+							//Log.d(TAG, "IN META!");
+						
+						if(parseMp3) {
+							if(usec - last_usec > 1000000) {
+								Log.d(TAG, "%%%%%%%%%% QUEUE POS %d msec", (int)(usec / 1000));
+								last_usec = usec;														
+								int sl = (int) ((usec/1000) * (contentLength-extraSize) /  (totalFrameBytes));
+								Log.d(TAG, "%d seconds in %dKB out of %dKB = %d seconds total", usec/1000000, totalBytes/1024, contentLength/1024, sl/1000);
+								//if(sl/1000 != songLength/1000) {
+									songLength = sl;
+									gotID3 = true;
+								//}
+							}
+							
+	
+						}
+						
+					}
+					
+					if(!doRetry) {
+						localMPConnection.close();
+						localMPConnection = null;
+					}
+					httpConn.disconnect();
+		
+				} else {
+					Log.d(TAG, "Connection failed: %d", response);
+					continue;
 				}
 				
-				if(!doRetry) {
+				if(doRetry)
+					continue;
+				Log.d(TAG, "####### BREAKING");
+				
+				break;
+			}
+			
+			if(doQuit) {
+				hasQuit = true;		
+				Log.d(TAG, "THREAD ENDING");
+				
+				if(localMPConnection != null) {
 					localMPConnection.close();
 					localMPConnection = null;
 				}
-				httpConn.disconnect();
-	
 			} else {
-				Log.d(TAG, "Connection failed: %d", response);
-				continue;
+				Log.d(TAG, "SLEEPING %d before retrying", retryDelay);
+				try {
+					Thread.sleep(retryDelay);
+				} catch (InterruptedException e) {
+					Log.d(TAG, "####### INTERRUPTED");
+					doQuit = true;
+				}
+				if(retryDelay < 10000)
+					retryDelay *= 2;
 			}
-			
-			if(doRetry)
-				continue;
-			Log.d(TAG, "####### BREAKING");
-			
-			break;
 		}
-		hasQuit = true;		
-		Log.d(TAG, "THREAD ENDING");
-		
-		if(localMPConnection != null) {
-			localMPConnection.close();
-			localMPConnection = null;
-		}
-		
+		retryDelay = 500;
 		doQuit = false;			
 	}
 	

@@ -328,19 +328,21 @@ public class SidPlugin extends DroidSoundPlugin {
 		
 		int played = currentFrames * 10 / 441;
 				
-		if(loopMode == 0 && songLengths[currentTune] > 0 && (played >= songLengths[currentTune]))
+		if(loopMode == 0 && songLengths[currentTune] > 0 && (played + silence >= songLengths[currentTune]))
 			return -1;
 		return len;
 	}
 	
 	@Override
 	public void setSilence(int msec) {
-		//silence = msec;
+		silence = msec;
 		//Log.d(TAG, "#SID SILENCE %d", msec);
 	}
 
 	@Override
 	public boolean load(FileSource fs) {
+		
+		silence = 0;
 		
 		if(nextPlugin != null) {
 			Log.d(TAG, "############ SWITCHING PLUGINS");

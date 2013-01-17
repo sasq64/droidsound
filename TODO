@@ -1,3 +1,26 @@
 
-METADATA table for Rating, Last played etc. Especially handy for podcasts/audiobooks
-PARSE STIL INFO for sid songs
+
+NEXT GENERATION
+
+Drop support for < 2.3
+Remove the syncing file songdatabase
+Remove MODS special folder
+Let user browse file system anywhere OR any imported/downloaded databases
+Search only databases
+
+DATABASE
+
+Information in DBINF files like this;
+
+NAME=High Voltage Sid Collection
+VERSION=56
+URL=http://swimsuitboys.com/dsdb/
+DATABASE=hvsc.db
+FILES=hvsc/64Music
+
+SPEECH RECOGNITION
+
+[PLAY] NEXT
+PLAY ANYTHING [BY <author>]
+PLAY ANYTHING BY [AUTHOR]
+PLAY <song> [BY <author>]
