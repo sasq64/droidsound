@@ -319,9 +319,11 @@ public class PlayerService extends Service implements PlayerInterface {
 	private static class MyHandler extends Handler {
 		
 		private WeakReference<PlayerService> psRef;
+		private boolean musicEnded;
 
 		public MyHandler(PlayerService ps) {
 			psRef = new WeakReference<PlayerService>(ps);
+			musicEnded = false;
 		}
 		
 		@Override
@@ -334,8 +336,9 @@ public class PlayerService extends Service implements PlayerInterface {
 				ps.sendUpdates(ps.info, false);
 				ps.info.put(SongMeta.FILENAME, null);
 				break;
-			case Player.MSG_DETAILS:
 			case Player.MSG_SUBTUNE:
+				musicEnded = false;
+			case Player.MSG_DETAILS:
 				ps.updateInfo(false);
 				break;
 			case Player.MSG_FAILED:
@@ -346,10 +349,14 @@ public class PlayerService extends Service implements PlayerInterface {
 				// ps.info[SongMeta.ERROR] = 0;
 				break;
 			case Player.MSG_NEWSONG:
+				musicEnded = false;
 				ps.updateInfo(true);
 				break;
 			case Player.MSG_SILENT:
+				if(musicEnded)
+					break;
 				if(msg.arg1 > 4000) {
+					musicEnded = true;
 					if(ps.repeatSong) {
 						ps.repeatSong();
 					} else {
@@ -358,7 +365,10 @@ public class PlayerService extends Service implements PlayerInterface {
 				}
 				break;
 			case Player.MSG_DONE:
+				if(musicEnded)
+					break;
 				Log.d(TAG, "Music done");
+				musicEnded = true;
 				if(ps.repeatSong) {
 					ps.repeatSong();
 				} else {
