@@ -13,7 +13,6 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.SeekBar;
@@ -64,7 +63,7 @@ public class RingToneCreator {
 		//dialog.setTitle(id);
 		final String [] progressNames = new String [] { "0:10", "0:20", "0:30", "1:00", "5:00", "10:00" };
 		LayoutInflater inflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View dialog = inflater.inflate(R.layout.ringtone_dialog, (ViewGroup) activity.findViewById(R.layout.player));
+		View dialog = inflater.inflate(R.layout.ringtone_dialog, null);
 		builder.setView(dialog);			
 		builder.setTitle(id);
 		

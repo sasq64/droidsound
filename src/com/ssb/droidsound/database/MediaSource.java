@@ -89,7 +89,10 @@ public class MediaSource implements DataSource  {
 						sortOrder[sorting]);
 				
 				cursor.moveToFirst();
-				displayTitle = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+				displayTitle = "";
+				if(cursor.getCount() > 0) {
+					displayTitle = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+				}
 				cursor.moveToPosition(-1);
 				
 				CursorTransform ct = new CursorTransform();

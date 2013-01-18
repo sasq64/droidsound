@@ -280,9 +280,6 @@ public class PlayerService extends Service implements PlayerInterface {
 			songComposer = s;
 		}
 		
-		
-				
-		
 		if(songComposer != null && songComposer.endsWith(")")) {
 			int lpara = songComposer.lastIndexOf("(");
 			int rpara = songComposer.lastIndexOf(")");
@@ -298,6 +295,7 @@ public class PlayerService extends Service implements PlayerInterface {
 		}
 		
 		songTitle = fixSpeech(songTitle, false);
+		if(songTitle == null) songTitle = "Unknown song";
 		
 		
 		songComposer = fixSpeech(songComposer, true);
