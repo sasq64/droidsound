@@ -334,6 +334,9 @@ public class PlayerService extends Service implements PlayerInterface {
 				ps.sendUpdates(ps.info, false);
 				ps.info.put(SongMeta.FILENAME, null);
 				break;
+			case Player.MSG_RESTART:
+				musicEnded = false;
+				break;
 			case Player.MSG_SUBTUNE:
 				musicEnded = false;
 			case Player.MSG_DETAILS:

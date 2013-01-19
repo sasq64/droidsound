@@ -214,7 +214,7 @@ public class UADEPlugin extends DroidSoundPlugin {
 
 
 	private static String [] pref0 = new String [] { "mdat", "tfx", "sng", "rjp", "jpn", "dum" };
-	private static String [] pref1 = new String [] { "smpl", "sam", "ins", "smp", "smp", "ins" };
+	private static String [] pref1 = new String [] { "smpl", "sam", "INS", "SMP", "SMP", "ins" };
 
 	private static String getSecondaryFile(String name) {
 				

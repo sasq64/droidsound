@@ -51,10 +51,11 @@ public class Player implements Runnable {
 	public static final int MSG_DONE = 2;
 	public static final int MSG_STATE = 1;
 	public static final int MSG_PROGRESS = 3;
-	protected static final int MSG_SILENT = 4;
+	public static final int MSG_SILENT = 4;
 	public static final int MSG_SUBTUNE = 5;
 	public static final int MSG_DETAILS = 6;
-	protected static final int MSG_WAVDUMPED = 7;
+	public static final int MSG_WAVDUMPED = 7;
+	public static final int MSG_RESTART = 8;
 	public static final int MSG_FAILED = 99;
 
 	private Handler mHandler;
@@ -586,6 +587,8 @@ public class Player implements Runnable {
 								}
 							songEnded = false;
 							audioPlayer.seekTo(-1);
+							Message msg = mHandler.obtainMessage(MSG_RESTART, null);
+							mHandler.sendMessage(msg);
 							if(currentState == State.SWITCHING) {
 								currentState = State.PLAYING;
 							}							

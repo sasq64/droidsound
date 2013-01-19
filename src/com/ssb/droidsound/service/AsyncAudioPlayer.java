@@ -266,6 +266,7 @@ public class AsyncAudioPlayer implements Runnable {
 			buffers.clear();
 			bufferTotal = 0;			
 			//holdData = true;
+			silence = 0;
 		}
 		if(msec > 0) {
 			int playPos = (playbackPosition  - startPlaybackHead) * 10 / (FREQ / 100);
