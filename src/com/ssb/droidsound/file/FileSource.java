@@ -19,6 +19,7 @@ public abstract class FileSource {
 	private byte[] buffer;
 	int bufferPos;
 	long size;
+	protected boolean isValid;
 
 	//private File parentDir;
 
@@ -53,10 +54,11 @@ public abstract class FileSource {
 		} else {
 			fs = new RealFileSource(new File(ref));
 		}
-
-		return fs;		
+		if(fs.isValid)
+			return fs;
+		return null;
 	}
-	
+
 	public static FileSource fromFile(File f) {
 		return new RealFileSource(f);
 	}

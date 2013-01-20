@@ -36,7 +36,7 @@ public class Player implements Runnable {
 		STOPPED, PAUSED, PLAYING, SWITCHING
 	};
 
-	public enum Command {
+	public enum CommandName {
 		NO_COMMAND,
 		STOP, // Unload and stop if playing
 		PLAY, // Play new file or last file
@@ -46,6 +46,14 @@ public class Player implements Runnable {
 		// Only when Playing:
 		PAUSE, UNPAUSE, SET_POS, SET_TUNE,
 	};
+	
+	private static class Command{
+		public Command(CommandName cmd) { command = cmd; }
+		public Command(CommandName cmd, Object arg) { command = cmd; argument = arg; }
+		public Command(CommandName cmd, int arg) { command = cmd; argument = (Integer)arg; }
+		public CommandName command;
+		public Object argument;
+	}
 
 	public static final int MSG_NEWSONG = 0;
 	public static final int MSG_DONE = 2;
@@ -74,7 +82,7 @@ public class Player implements Runnable {
 	private Object cmdLock = new Object();
 	private LinkedList<Command> commands = new LinkedList<Command>();
 
-	private Object argument;
+	//private Object argument;
 
 	private  byte [] [] binaryInfo = new byte [1] [];
 	
@@ -537,7 +545,9 @@ public class Player implements Runnable {
 
 					synchronized (cmdLock) {
 						
-						Command command = commands.removeFirst();
+						Command cmd = commands.removeFirst();
+						CommandName command = cmd.command;
+						Object argument = cmd.argument;
 						Log.d(TAG, "Command %s while in state %s", command.toString(), currentState.toString());
 
 						switch(command) {
@@ -908,7 +918,7 @@ public class Player implements Runnable {
 
 	public void stop() {
 		synchronized (cmdLock) {
-			commands.add(Command.STOP);
+			commands.add(new Command(CommandName.STOP));
 		}
 	}
 	
@@ -930,11 +940,11 @@ public class Player implements Runnable {
 		synchronized (cmdLock) {
 			if(pause) {
 				Log.d(TAG, "Pausing");
-				commands.add(Command.PAUSE);
+				commands.add(new Command(CommandName.PAUSE));
 				whoPaused = who;
 			} else {
 				Log.d(TAG, "Unpausing");
-				commands.add(Command.UNPAUSE);
+				commands.add(new Command(CommandName.UNPAUSE));
 			}
 		}
 		return oldWho;
@@ -942,29 +952,26 @@ public class Player implements Runnable {
 
 	public void seekTo(int pos) {
 		synchronized (cmdLock) {
-			commands.add(Command.SET_POS);
-			argument = pos;
+			commands.add(new Command(CommandName.SET_POS, pos));
 		}
 	}
 
 	public void playMod(SongFile mod) {
 		synchronized (cmdLock) {
-			commands.add(Command.PLAY);
-			argument = mod;
+			commands.add(new Command(CommandName.PLAY, mod));
 		}
 	}
 	
 	public void repeatSong() {
 		synchronized (cmdLock) {
-			commands.add(Command.RESTART);
+			commands.add(new Command(CommandName.RESTART));
 		}
 	}
 
 
 	public void setSubSong(int song) {
 		synchronized (cmdLock) {
-			commands.add(Command.SET_TUNE);
-			argument = song;
+			commands.add(new Command(CommandName.SET_TUNE, song));
 		}
 	}
 	
@@ -995,8 +1002,7 @@ public class Player implements Runnable {
 
 	public void dumpWav(SongFile song, String destFile, int length, int flags) {
 		synchronized (cmdLock) {
-			commands.add(Command.DUMP_WAV);
-			argument = new Object [] {song, new File(destFile), length, flags};
+			commands.add(new Command(CommandName.DUMP_WAV, new Object [] {song, new File(destFile), length, flags}));
 		}
 		
 	}

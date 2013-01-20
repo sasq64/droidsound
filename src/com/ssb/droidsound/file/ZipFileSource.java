@@ -5,11 +5,12 @@ import java.io.InputStream;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
 
+import com.ssb.droidsound.utils.Log;
 import com.ssb.droidsound.utils.NativeZipFile;
 
 
 public class ZipFileSource extends FileSource {	
-	@SuppressWarnings("unused") private static final String TAG = ZipFileSource.class.getSimpleName();
+	private static final String TAG = ZipFileSource.class.getSimpleName();
 	
 	private NativeZipFile zipFile;
 	int bufferPos;
@@ -18,8 +19,6 @@ public class ZipFileSource extends FileSource {
 	private ZipEntry zipEntry;
 
 	private String zipPath;
-
-	
 	
 	public ZipFileSource(String zipPath, String entryName) {		
 		super(zipPath + "/" + entryName);
@@ -38,10 +37,16 @@ public class ZipFileSource extends FileSource {
 
 	public ZipFileSource(NativeZipFile zip, String entryName) {
 		super(zip.getZipName() + "/" + entryName);
+		isValid = false;
 		this.zipFile = zip;
 		this.zipPath = null;
 		zipEntry = (ZipEntry) zipFile.getEntry(entryName);
-		size = zipEntry.getSize();
+		if(zipEntry != null) {
+			size = zipEntry.getSize();
+			isValid = true;
+		} else {
+			Log.d(TAG, "ZIP %s does not contain '%s'", zip.getZipName(), entryName);
+		}
 	}
 	
 
@@ -61,14 +66,15 @@ public class ZipFileSource extends FileSource {
 		String zipDir = "";
 		if(slash > 0)
 			zipDir = entryName.substring(0, slash+1);		
-		return new ZipFileSource(zipFile, zipDir + name);
-		
+		ZipFileSource zfs = new ZipFileSource(zipFile, zipDir + name);
+		if(zfs != null && zfs.isValid)
+			return zfs;
+		return null;
 	}
-	
-	
+
 	public ZipFileSource(String fileRef) {
 		super(fileRef);
-		
+		isValid = false;
 		int ext = fileRef.toLowerCase(Locale.ENGLISH).indexOf(".zip/");
 		if(ext < 0) return;
 		zipPath = fileRef.substring(0, ext+4);
@@ -76,9 +82,12 @@ public class ZipFileSource extends FileSource {
 		try {
 			zipFile = new NativeZipFile(zipPath);
 			zipEntry = (ZipEntry) zipFile.getEntry(entryName);
+			if(zipEntry == null)
+				return;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		isValid = true;
 		size = zipEntry.getSize();
 	}
 

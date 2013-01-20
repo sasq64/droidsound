@@ -247,6 +247,8 @@ public class UADEPlugin extends DroidSoundPlugin {
 		if(name2 != null) {
 			Log.d(TAG, "File '%s' needs '%s'", fs.getName(), name2);
 			fs2 = fs.getRelative(name2);
+			if(fs2 == null)
+				return false;
 			String path = fs2.getFile().getPath();
 			Log.d(TAG, "Secondary file became '%s'", path);
 		}
