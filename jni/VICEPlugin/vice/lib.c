@@ -829,6 +829,7 @@ char *lib_mvsprintf(const char *fmt, va_list args)
     char *buf;
     unsigned int position, bufsize;
 
+
     size_t len;
     int i, base;
     unsigned long num;
@@ -844,6 +845,11 @@ char *lib_mvsprintf(const char *fmt, va_list args)
     buf = lib_malloc(10);
     position = 0;
     bufsize = 10;
+
+    if(fmt == NULL) {
+    	*buf = 0;
+    	return buf;
+    }
 
     for ( ; *fmt ; ++fmt) {
         if (*fmt != '%') {
@@ -1002,6 +1008,8 @@ char *lib_msprintf(const char *fmt, ...)
 {
     va_list args;
     char *buf;
+
+    //if(fmt == NULL) return "";
 
     va_start(args, fmt);
     buf = lib_mvsprintf(fmt, args);

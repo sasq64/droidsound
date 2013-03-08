@@ -716,19 +716,20 @@ static void intReset() {
 static int intExecute() {
 	int rc;
 	u32 count = 0;
+
+	//if(psxRegs.cycle > 0xe0000000)
+	psxRegs.cycle &= 0x3fffffff;
+
 	for(;;) {
 		rc = SPUendflush();
 		if(rc > 0)
 			return rc;
-
-		u32 targetCycle = psxRegs.cycle + 16;
-		if(targetCycle < psxRegs.cycle) {
-			while(psxRegs.cycle > 0xff)
-				execI();
-		}
-		while(psxRegs.cycle < targetCycle)
+		u32 startCycle = psxRegs.cycle;
+		count = 16;
+		while(count--)
 			execI();
-		if(!SPUasync(psxRegs.cycle - targetCycle + 16))
+
+		if(!SPUasync(psxRegs.cycle - startCycle))
 			return -1;
 	}
 	return 0;

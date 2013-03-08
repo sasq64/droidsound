@@ -18,7 +18,7 @@
 	<application
 		android:icon="@drawable/droidsound64x64"
 		android:label="@string/app_name"
-		androidXdebuggable="false"
+		android:debuggable="false"
 		android:theme="@android:style/Theme.NoTitleBar" >
 		<activity
 			android:name="com.ssb.droidsound.PlayerActivity"

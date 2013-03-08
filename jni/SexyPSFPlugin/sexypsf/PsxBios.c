@@ -269,18 +269,26 @@ static void bios_labs() { // 0x0f
 }
 
 static void bios_atoi() { // 0x10
-	v0 = atoi((char *)Ra0);
+	char *s = (char *)Ra0;
+	if(!s) return;
+	v0 = atoi(s);
 	pc0 = ra;
 }
 
 static void bios_atol() { // 0x11
-	v0 = atoi((char *)Ra0);
+	char *s = (char *)Ra0;
+	if(!s) return;
+	v0 = atoi(s);
 	pc0 = ra;
 }
 
 static void bios_setjmp() { // 13
+
 	u32 *jmp_buf= (u32*)Ra0;
 	int i;
+
+	if(!jmp_buf)
+		return;
 
 	jmp_buf[0] =  BFLIP32(ra);
 	jmp_buf[1] =  BFLIP32(sp);
@@ -295,6 +303,9 @@ static void bios_setjmp() { // 13
 static void bios_longjmp() { //14
 	u32 *jmp_buf= (u32*)Ra0;
 	int i;
+
+	if(!jmp_buf)
+		return;
 
 	ra = BFLIP32(jmp_buf[0]); /* ra */
 	sp = BFLIP32(jmp_buf[1]); /* sp */
@@ -311,6 +322,9 @@ static void bios_strcat() { // 0x15
 
 	dest=a0;
 	src=a1;
+
+	if(!PSXM(dest) || !PSXM(src))
+		return;
 
 	while(PSXMu8(dest) != 0) dest++; /* Move to end of first string. */
 	while(PSXMu8(src) != 0) 
@@ -336,6 +350,10 @@ static void bios_strncat()
         src=a1;
         count=a2;
 
+    	if(!PSXM(dest) || !PSXM(src))
+    		return;
+
+
         while(PSXMu8(dest) != 0) dest++; /* Move to end of first string. */
         while(PSXMu8(src) != 0 && count)
         {
@@ -353,6 +371,10 @@ static void bios_strncat()
 }
 
 static void bios_strcmp() { // 0x17
+
+	if(!PSXM(a0) || !PSXM(a1))
+		return;
+
 	v0 = strcmp(Ra0, Ra1);
 	pc0 = ra;
 }
@@ -362,6 +384,9 @@ static void bios_strncmp() { // 0x18
 	u32 string1=a0;
 	u32 string2=a1;
 	s8 tmpv=0;
+
+	if(!PSXM(a0) || !PSXM(a1))
+		return;
 
 	while(max>0)
 	{
@@ -391,6 +416,10 @@ static void bios_strcpy()
 { 
  u32 src=a1,dest=a0;
  u8 val;
+
+if(!PSXM(dest) || !PSXM(src))
+	return;
+
 
  do
  {

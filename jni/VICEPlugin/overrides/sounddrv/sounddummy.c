@@ -44,6 +44,7 @@ static int channels;
 
 static int dummy_init(const char *param, int *speed, int *fragsize, int *fragnr, int *channels_arg) {
 	channels = *channels_arg;
+	return 0;
 }
 
 static int dummy_write(SWORD *pbuf, size_t nr)

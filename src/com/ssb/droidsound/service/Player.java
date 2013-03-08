@@ -580,8 +580,10 @@ public class Player implements Runnable {
 									audioPlayer.stop();
 								}
 
-								currentPlugin.unload();
-								currentPlugin = null;
+								if(currentPlugin != null) {
+									currentPlugin.unload();
+									currentPlugin = null;
+								}
 								currentState = State.STOPPED;
 								songDetails.clear();
 								songDetails.put(SongMeta.STATE, 0);

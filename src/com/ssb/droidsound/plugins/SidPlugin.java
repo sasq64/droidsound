@@ -18,6 +18,10 @@ import com.ssb.droidsound.utils.Log;
 public class SidPlugin extends DroidSoundPlugin {
 	private static final String TAG = SidPlugin.class.getSimpleName();
 	
+	//static {
+	//	System.loadLibrary("vice");
+	//}
+	
 	private static VICEPlugin vicePlugin = new VICEPlugin();
 	private static SidplayPlugin sidplayPlugin = new SidplayPlugin();
 
