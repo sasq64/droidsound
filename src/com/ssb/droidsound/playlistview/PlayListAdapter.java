@@ -68,6 +68,8 @@ class PlayListAdapter extends BaseAdapter {
 				return "csdb";
 			if(title.equals("Local Mediastore"))
 				return "media";
+			else if(title.equals("Filesystem"))
+				return "filesys";
 			else
 				return "archive";
 		default: return null;

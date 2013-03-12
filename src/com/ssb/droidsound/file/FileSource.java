@@ -40,6 +40,7 @@ public abstract class FileSource {
 		int slash = ref.lastIndexOf('/');
 		baseName = ref.substring(slash + 1);
 		refPath = slash > 0 ? ref.subSequence(0, slash+1) : "";
+		isValid = true;
 	}
 
 	public static FileSource create(String ref) {

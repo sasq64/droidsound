@@ -62,6 +62,7 @@ import android.widget.Toast;
 
 import com.ssb.droidsound.ThemeManager.Property;
 import com.ssb.droidsound.database.CSDBParser;
+import com.ssb.droidsound.database.FileSystemSource;
 import com.ssb.droidsound.database.MediaSource;
 import com.ssb.droidsound.database.SongDatabase;
 import com.ssb.droidsound.playlistview.FileInfo;
@@ -919,6 +920,11 @@ public class PlayerActivity extends Activity  {
 
 		MediaSource ms = new MediaSource(this);
 		songDatabase.registerDataSource(MediaSource.NAME, ms);
+		
+		FileSystemSource.BasePath = "";
+		
+		FileSystemSource fss = new FileSystemSource();
+		songDatabase.registerDataSource(FileSystemSource.NAME, fss);
 
 		dbThread = new Thread(songDatabase);
 		dbThread.start();
@@ -1037,9 +1043,17 @@ public class PlayerActivity extends Activity  {
 			try {
 				FileWriter fw = new FileWriter(mf);
 				fw.close();
-				Log.d(TAG, "Done");
 			} catch (IOException e2) {
-				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
+		}
+
+		mf = new File(modsDir, FileSystemSource.NAME);
+		if(!mf.exists()) {
+			try {
+				FileWriter fw = new FileWriter(mf);
+				fw.close();
+			} catch (IOException e2) {
 				e2.printStackTrace();
 			}
 		}

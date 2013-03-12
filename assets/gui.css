@@ -172,15 +172,22 @@ item.archive {
 
 item.media {
 	main.font-size: "20sp";
-	main.color : #ffff80;
+	main.color : #ffcc80;
 	icon.image : "icons/gflat_mus_folder.png";
 }
 
 item.csdb {
 	main.font-size: "20sp";
-	main.color : #ffff80;
+	main.color : #ffcc80;
 	icon.image : "icons/gflat_bag.png";
 }
+
+item.filesys {
+	main.font-size: "20sp";
+	main.color : #ffcc80;
+	icon.image : "icons/gflat_folder.png";
+}
+
 
 item.playlist {
 	icon.image : "icons/gflat_note3.png";
