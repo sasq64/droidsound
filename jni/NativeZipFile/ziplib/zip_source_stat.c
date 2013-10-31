@@ -1,6 +1,6 @@
 /*
-  zip_entry_free.c -- free struct zip_entry
-  Copyright (C) 1999-2007 Dieter Baron and Thomas Klausner
+  zip_source_stat.c -- get meta information from zip_source
+  Copyright (C) 2009 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <libzip@nih.at>
@@ -33,20 +33,40 @@
 
 
 
-#include <stdlib.h>
-
 #include "zipint.h"
 
 
 
-void
-_zip_entry_free(struct zip_entry *ze)
+ZIP_EXTERN int
+zip_source_stat(struct zip_source *src, struct zip_stat *st)
 {
-    free(ze->ch_filename);
-    ze->ch_filename = NULL;
-    free(ze->ch_comment);
-    ze->ch_comment = NULL;
-    ze->ch_comment_len = -1;
+    zip_int64_t ret;
 
-    _zip_unchange_data(ze);
+    if (st == NULL) {
+	src->error_source = ZIP_LES_INVAL;
+	return -1;
+    }
+
+    if (src->src == NULL) {
+	if (src->cb.f(src->ud, st, sizeof(*st), ZIP_SOURCE_STAT) < 0)
+	    return -1;
+	return 0;
+    }
+
+    if (zip_source_stat(src->src, st) < 0) {
+	src->error_source = ZIP_LES_LOWER;
+	return -1;
+    }
+
+    ret = src->cb.l(src->src, src->ud, st, sizeof(*st), ZIP_SOURCE_STAT);
+
+    if (ret < 0) {
+	if (ret == ZIP_SOURCE_ERR_LOWER)
+	    src->error_source = ZIP_LES_LOWER;
+	else
+	    src->error_source = ZIP_LES_UPPER;
+	return -1;
+    }
+    
+    return 0;
 }

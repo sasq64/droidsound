@@ -1,6 +1,6 @@
 /*
   zip_name_locate.c -- get index by name
-  Copyright (C) 1999-2007 Dieter Baron and Thomas Klausner
+  Copyright (C) 1999-2011 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <libzip@nih.at>
@@ -53,23 +53,22 @@ _zip_name_locate(struct zip *za, const char *fname, int flags,
 {
     int (*cmp)(const char *, const char *);
     const char *fn, *p;
-    int i, n;
+    zip_uint64_t i;
+
+    if (za == NULL)
+	return -1;
 
     if (fname == NULL) {
 	_zip_error_set(error, ZIP_ER_INVAL, 0);
 	return -1;
     }
-    
+
     cmp = (flags & ZIP_FL_NOCASE) ? strcasecmp : strcmp;
 
-    n = (flags & ZIP_FL_UNCHANGED) ? za->cdir->nentry : za->nentry;
-    for (i=0; i<n; i++) {
-	if (flags & ZIP_FL_UNCHANGED)
-	    fn = za->cdir->entry[i].filename;
-	else
-	    fn = _zip_get_name(za, i, flags, error);
+    for (i=0; i<za->nentry; i++) {
+	fn = _zip_get_name(za, i, flags, error);
 
-	/* newly added (partially filled) entry */
+	/* newly added (partially filled) entry or error */
 	if (fn == NULL)
 	    continue;
 	
@@ -79,8 +78,10 @@ _zip_name_locate(struct zip *za, const char *fname, int flags,
 		fn = p+1;
 	}
 
-	if (cmp(fname, fn) == 0)
+	if (cmp(fname, fn) == 0) {
+	    _zip_error_clear(error);
 	    return i;
+	}
     }
 
     _zip_error_set(error, ZIP_ER_NOENT, 0);

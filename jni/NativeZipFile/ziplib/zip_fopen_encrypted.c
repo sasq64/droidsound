@@ -1,6 +1,6 @@
 /*
-  zip_entry_new.c -- create and init struct zip_entry
-  Copyright (C) 1999-2007 Dieter Baron and Thomas Klausner
+  zip_fopen_encrypted.c -- open file for reading with password
+  Copyright (C) 1999-2009 Dieter Baron and Thomas Klausner
 
   This file is part of libzip, a library to manipulate ZIP archives.
   The authors can be contacted at <libzip@nih.at>
@@ -33,46 +33,18 @@
 
 
 
-#include <stdlib.h>
-
 #include "zipint.h"
 
 
 
-struct zip_entry *
-_zip_entry_new(struct zip *za)
+ZIP_EXTERN struct zip_file *
+zip_fopen_encrypted(struct zip *za, const char *fname, int flags,
+		    const char *password)
 {
-    struct zip_entry *ze;
-    if (!za) {
-	ze = (struct zip_entry *)malloc(sizeof(struct zip_entry));
-	if (!ze) {
-	    _zip_error_set(&za->error, ZIP_ER_MEMORY, 0);
-	    return NULL;
-	}
-    }
-    else {
-	if (za->nentry >= za->nentry_alloc-1) {
-	    za->nentry_alloc += 16;
-	    za->entry = (struct zip_entry *)realloc(za->entry,
-						    sizeof(struct zip_entry)
-						    * za->nentry_alloc);
-	    if (!za->entry) {
-		_zip_error_set(&za->error, ZIP_ER_MEMORY, 0);
-		return NULL;
-	    }
-	}
-	ze = za->entry+za->nentry;
-    }
+    int idx;
 
-    ze->state = ZIP_ST_UNCHANGED;
+    if ((idx=zip_name_locate(za, fname, flags)) < 0)
+	return NULL;
 
-    ze->ch_filename = NULL;
-    ze->ch_comment = NULL;
-    ze->ch_comment_len = -1;
-    ze->source = NULL;
-
-    if (za)
-	za->nentry++;
-
-    return ze;
+    return zip_fopen_index_encrypted(za, idx, flags, password);
 }
