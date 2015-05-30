@@ -788,7 +788,7 @@ public class Player implements Runnable {
 					Message msg = mHandler.obtainMessage(MSG_SILENT, silence, 0);
 					mHandler.sendMessage(msg);
 				}
-				Log.d(TAG, "SILENCE %d", silence);
+				//Log.d(TAG, "SILENCE %d", silence);
 			} else if (isSilent) {
 				Message msg = mHandler.obtainMessage(MSG_SILENT, 0, 0);
 				mHandler.sendMessage(msg);

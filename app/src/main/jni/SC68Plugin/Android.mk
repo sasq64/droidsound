@@ -27,7 +27,7 @@ MY_SOURCES := \
 	$(wildcard $(LOCAL_PATH)/file68/**/*.c) \
 	$(wildcard $(LOCAL_PATH)/unice68/*.c)
 
-LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
+LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)/%=%)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH) $(LOCAL_PATH)/libsc68 \
 	$(LOCAL_PATH)/libsc68/sc68 \

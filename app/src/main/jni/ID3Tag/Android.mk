@@ -22,7 +22,7 @@ LOCAL_MODULE    := id3tag
 LOCAL_SRC_FILES := ID3Tag.cpp
 
 MY_SOURCES := $(wildcard $(LOCAL_PATH)/libid3tag/*.c)
-LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
+LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)/%=%)
 
 LOCAL_CFLAGS := -I$(LOCAL_PATH)/libid3tag
 LOCAL_LDLIBS := -llog -lz

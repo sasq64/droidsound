@@ -437,7 +437,7 @@ static int mod32check(unsigned char *buf, size_t bufsize, size_t realfilesize,
     }
 
     if (calculated_size > realfilesize) {
-        __android_log_print(ANDROID_LOG_VERBOSE, "UADE: File seems truncated and may get played badly (%s)\n", path);
+//        __android_log_print(ANDROID_LOG_VERBOSE, "UADE: File seems truncated and may get played badly (%s)\n", path);
     }
 
     if (calculated_size < realfilesize) {

@@ -199,6 +199,7 @@ public class TabPageIndicator extends HorizontalScrollView implements PageIndica
         notifyDataSetChanged();
     }
 
+    @Override
     public void notifyDataSetChanged() {
         mTabLayout.removeAllViews();
         PagerAdapter adapter = mViewPager.getAdapter();

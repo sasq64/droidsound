@@ -56,7 +56,7 @@ LOCAL_C_INCLUDES  += $(LOCAL_PATH)/libsidplay2/include/sidplay/builders
 LOCAL_C_INCLUDES  += $(LOCAL_PATH)/resid
 
 # MY_SOURCES := $(wildcard $(LOCAL_PATH)/gme/*.cpp)
-# LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
+# LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)/%=%)
 
 # LOCAL_C_INCLUDES := $(LOCAL_PATH)/include/sidplay $(LOCAL_PATH)/include 
 

@@ -9,7 +9,7 @@ LOCAL_SRC_FILES := SexyPSFPlugin.cpp sexypsf/PsxBios.c sexypsf/PsxCounters.c sex
        sexypsf/R3000A.c sexypsf/PsxInterpreter.c \
        sexypsf/PsxHLE.c sexypsf/spu/spu.c 
 
-#LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
+#LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)/%=%)
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/sexypsf
 LOCAL_LDLIBS := -llog -lz

@@ -62,7 +62,7 @@ static void write_debug(int level, void * cookie, const char * fmt, va_list list
 
 	static char temp[1024];
 	vsprintf(temp, fmt, list);
-	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Debug", temp);
+	__android_log_print(ANDROID_LOG_VERBOSE, "SC68Debug", "%s", temp);
 }
 
 JNIEXPORT jlong JNICALL Java_com_ssb_droidsound_plugins_SC68Plugin_N_1load(JNIEnv *env, jobject obj, jbyteArray bArray, jint size)

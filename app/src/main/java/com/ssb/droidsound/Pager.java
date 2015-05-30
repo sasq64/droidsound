@@ -63,6 +63,7 @@ public class Pager extends PagerAdapter {
 	
 	public void addView(View v) {
 		viewList.add(v);
+		notifyDataSetChanged();
 	}
 	
 	public void onFlip(FlipCallback cb) {

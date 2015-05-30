@@ -22,7 +22,7 @@ LOCAL_MODULE    := nativezipfile
 LOCAL_SRC_FILES := NativeZipFile.cpp
 
 MY_SOURCES := $(wildcard $(LOCAL_PATH)/ziplib/*.c)
-LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)%=%)
+LOCAL_SRC_FILES += $(MY_SOURCES:$(LOCAL_PATH)/%=%)
 
 LOCAL_CFLAGS := -I$(LOCAL_PATH)/ziplib $(MY_CFLAGS)
 LOCAL_LDLIBS := -llog -lz

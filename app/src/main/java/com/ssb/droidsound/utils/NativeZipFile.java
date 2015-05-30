@@ -214,7 +214,7 @@ public class NativeZipFile implements Archive {
 		
 		
 		long fd = open(index);
-		if(fd > 0) {
+		if(fd != 0) {
 			return new NZInputStream(fd, this, getSize(index));
 		} else {
 			return null;

@@ -5,7 +5,7 @@ LOCAL_ARM_MODE := arm
 LOCAL_CFLAGS := $(MY_CFLAGS) -ffast-math -fno-exceptions
 
 MY_RESID_FILES = $(wildcard $(LOCAL_PATH)/vice/resid/*.cpp)
-LOCAL_SRC_FILES := $(MY_RESID_FILES:$(LOCAL_PATH)%=%)
+LOCAL_SRC_FILES := $(MY_RESID_FILES:$(LOCAL_PATH)/%=%)
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
