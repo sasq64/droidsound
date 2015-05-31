@@ -952,6 +952,8 @@ public class PlayerActivity extends Activity  {
 		
 		if(md == null) {
 			File extFile = Environment.getExternalStorageDirectory();
+			String state = Environment.getExternalStorageState();
+
 			if(extFile != null) {
 				modsDir = new File(extFile, "MODS");
 			} else {

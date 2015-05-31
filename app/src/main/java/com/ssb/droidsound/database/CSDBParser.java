@@ -375,7 +375,7 @@ public class CSDBParser implements DataSource {
 		}
 		
 		if(hvsc == null) {
-			Cursor c = rdb.rawQuery("select path from files where path like '%C64Music'", null);			
+			Cursor c = rdb.rawQuery("select path from files where path like '%C64Music.zip'", null);
 			if(c.getCount() > 0) {
 				c.moveToFirst();
 				hvsc = c.getString(0);

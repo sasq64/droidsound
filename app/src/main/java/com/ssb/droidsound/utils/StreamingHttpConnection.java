@@ -128,7 +128,7 @@ public class StreamingHttpConnection {
 		while(true) {
 			line = readLine(is);
 			if(line != null) {
-				Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HEADER: " + line);
+				//Log.d(TAG, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! HEADER: " + line);
 				int pos = line.indexOf(":");
 				if(pos > 0) {
 					String var = line.substring(0,pos++);					

@@ -122,12 +122,7 @@ public class SettingsActivity extends PreferenceActivity {
 				try {
 					pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
 				} catch (NameNotFoundException e) {}
-				Intent intent;
-				if(pinfo != null && pinfo.versionName.contains("beta")) {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/beta.html"));
-				} else {
-					intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
-				}
+				Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://swimsuitboys.com/droidsound/dl/"));
 				startActivity(intent);
 				return true;
 			}
